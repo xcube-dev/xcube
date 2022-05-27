@@ -20,49 +20,122 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple, Callable, Dict, Any
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import Api, ApiRoute
+from xcube.server.api import Api
 from xcube.server.api import ApiContext
+from xcube.server.api import ApiRoute
 from xcube.server.context import Context
-from xcube.server.server import Server
 from xcube.server.framework import ServerFramework
+from xcube.server.server import Server
+from xcube.server.server import ServerContext
 from xcube.util.extension import ExtensionRegistry
-from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonObjectSchema, JsonArraySchema
 
 
 class ServerTest(unittest.TestCase):
 
-    def setUp(self) -> None:
-        self.web_server = MockServerFramework()
-        self.extension_registry = self.new_extension_registry()
-        # noinspection PyTypeChecker
-        self.server = Server(self.web_server,
-                             {},
-                             extension_registry=self.extension_registry)
-        self.assertTrue(self.web_server.add_routes_called)
-        self.assertTrue(self.web_server.update_called)
-
-    def test_start_and_stop(self):
-        web_server = self.web_server
+    def test_web_server_delegation(self):
+        extension_registry = new_extension_registry([
+            ("datasets", dict()),
+        ])
+        web_server = MockServerFramework()
+        server = Server(
+            web_server, {},
+            extension_registry=extension_registry
+        )
+        self.assertTrue(web_server.add_routes_called)
+        self.assertTrue(web_server.update_called)
         self.assertFalse(web_server.start_called)
         self.assertFalse(web_server.stop_called)
-        self.server.start()
+        server.start()
         self.assertTrue(web_server.start_called)
         self.assertFalse(web_server.stop_called)
-        self.server.stop()
+        server.stop()
         self.assertTrue(web_server.start_called)
         self.assertTrue(web_server.stop_called)
 
-    def test_ctx(self):
-        server = self.server
+    def test_root_ctx(self):
+        class SomeApiContext(ApiContext):
+            def update(self, prev_ctx: Optional[ApiContext]):
+                pass
+
+        extension_registry = new_extension_registry([
+            ("datasets", dict(create_ctx=SomeApiContext)),
+        ])
+        server = Server(
+            MockServerFramework(), {},
+            extension_registry=extension_registry
+        )
+        self.assertIsInstance(server.ctx, ServerContext)
+        self.assertIsInstance(server.ctx.get_api_ctx('datasets'),
+                              SomeApiContext)
+        self.assertIsNone(server.ctx.get_api_ctx('timeseries'))
         self.assertEqual({'address': '0.0.0.0',
                           'port': 8080},
                          server.ctx.config)
 
+    def test_config_schema(self):
+        extension_registry = new_extension_registry([
+            (
+                "datasets",
+                dict(
+                    config_schema=JsonObjectSchema(
+                        properties=dict(
+                            data_stores=JsonArraySchema(
+                                items=JsonObjectSchema(
+                                    additional_properties=True
+                                )
+                            )
+                        ),
+                        required=['data_stores'],
+                        additional_properties=False
+                    ))
+            ),
+        ])
+        server = Server(
+            MockServerFramework(),
+            {
+                "data_stores": []
+            },
+            extension_registry=extension_registry
+        )
+        self.assertIsInstance(server.config_schema, JsonObjectSchema)
+        self.assertEqual(
+            {
+                'type': 'object',
+                'properties': {
+                    'address': {
+                        'type': 'string',
+                        'default': '0.0.0.0'
+                    },
+                    'port': {
+                        'type': 'integer',
+                        'default': 8080
+                    },
+                    'data_stores': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'additionalProperties': True,
+                        }
+                    },
+                },
+                'required': ['data_stores'],
+                'additionalProperties': False,
+            },
+            server.config_schema.to_dict()
+        )
+
     def test_update(self):
-        server = self.server
+        extension_registry = new_extension_registry([
+            ("datasets", dict()),
+        ])
+        server = Server(
+            MockServerFramework(), {},
+            extension_registry=extension_registry
+        )
         prev_ctx = server.ctx
         server.update({"port": 9090})
         self.assertEqual({'address': '0.0.0.0',
@@ -70,49 +143,58 @@ class ServerTest(unittest.TestCase):
                          server.ctx.config)
         self.assertIsNot(prev_ctx, server.ctx)
 
-    def test_load_apis(self):
-        apis = Server.load_apis(
-            extension_registry=self.extension_registry
-        )
+    def test_apis_loaded_in_order(self):
+        extension_registry = new_extension_registry([
+            ("datasets", dict()),
+            ("places", dict()),
+            ("timeseries", dict()),
+            ("stac", dict(required_apis=("datasets", "places"))),
+            ("openeo", dict(required_apis=("datasets",
+                                           "places", "timeseries"))),
+            ("wcs", dict(required_apis=("datasets",))),
+            ("wmts", dict(required_apis=("datasets",))),
+        ])
+        apis = Server.load_apis(extension_registry=extension_registry)
         self.assertIsInstance(apis, dict)
         self.assertEqual(['datasets',
                           'places',
                           'timeseries',
-                          'wcs', 'wmts',
+                          'wcs',
+                          'wmts',
                           'stac',
                           'openeo'],
                          list(apis.keys()))
 
-    @staticmethod
-    def new_extension_registry() -> ExtensionRegistry:
-        extension_registry = ExtensionRegistry()
+    def test_illegal_api_context_detected(self):
+        # noinspection PyUnusedLocal
+        def create_ctx(root_ctx):
+            return 42
 
-        config_schema = JsonObjectSchema(additional_properties=True,
-                                         default={})
+        extension_registry = new_extension_registry(
+            [('datasets', dict())],
+            create_ctx=create_ctx
+        )
 
-        for api_name, api_deps in (
-                ("datasets", ()),
-                ("places", ()),
-                ("timeseries", ()),
-                ("stac", ("datasets", "places")),
-                ("openeo", ("datasets", "places", "timeseries")),
-                ("wcs", ("datasets",)),
-                ("wmts", ("datasets",)),
-        ):
-            class SomeApiContext(ApiContext):
+        with self.assertRaises(TypeError) as cm:
+            Server(MockServerFramework(),
+                   {},
+                   extension_registry=extension_registry)
+        self.assertEqual("API 'datasets':"
+                         " context must be instance of ApiContext",
+                         f'{cm.exception}')
 
-                def update(self, prev_ctx: Optional[ApiContext]):
-                    pass
+    def test_missing_dependency_detected(self):
+        extension_registry = new_extension_registry(
+            [('timeseries', dict(required_apis=('datasets',)))]
+        )
 
-            api = Api(api_name,
-                      required_apis=api_deps,
-                      config_schema=config_schema,
-                      api_ctx_cls=SomeApiContext)
-            extension_registry.add_extension(EXTENSION_POINT_SERVER_APIS,
-                                             api.name,
-                                             component=api)
-
-        return extension_registry
+        with self.assertRaises(ValueError) as cm:
+            Server(MockServerFramework(),
+                   {},
+                   extension_registry=extension_registry)
+        self.assertEqual("API 'timeseries':"
+                         " missing API dependency 'datasets'",
+                         f'{cm.exception}')
 
 
 class MockServerFramework(ServerFramework):
@@ -134,3 +216,36 @@ class MockServerFramework(ServerFramework):
 
     def stop(self, ctx: Context):
         self.stop_called = True
+
+
+def new_extension_registry(
+        api_spec: Sequence[Tuple[str, Dict[str, Any]]],
+        config_schema: Optional[JsonObjectSchema] = None,
+        create_ctx: Optional[Callable] = None,
+) -> ExtensionRegistry:
+    extension_registry = ExtensionRegistry()
+
+    # if config_schema is None:
+    #     config_schema = JsonObjectSchema(additional_properties=True,
+    #                                      default={})
+    #
+    # if create_ctx is None:
+    #     class SomeApiContext(ApiContext):
+    #
+    #         def update(self, prev_ctx: Optional[ApiContext]):
+    #             pass
+    #
+    #     create_ctx = SomeApiContext
+
+    for api_name, api_kwargs in api_spec:
+        api_kwargs = dict(api_kwargs)
+        if config_schema is not None:
+            api_kwargs.update(config_schema=config_schema)
+        if create_ctx is not None:
+            api_kwargs.update(create_ctx=create_ctx)
+        api = Api(api_name, **api_kwargs)
+        extension_registry.add_extension(EXTENSION_POINT_SERVER_APIS,
+                                         api.name,
+                                         component=api)
+
+    return extension_registry

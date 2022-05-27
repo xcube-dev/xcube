@@ -89,6 +89,12 @@ class Server:
 
     # Used mainly for testing
     @property
+    def config_schema(self) -> JsonObjectSchema:
+        """The effective JSON schema for the server configuration."""
+        return self._config_schema
+
+    # Used mainly for testing
+    @property
     def ctx(self) -> "ServerContext":
         """The root (server) context."""
         return self._ctx
@@ -122,8 +128,8 @@ class Server:
             for api_name, api in apis.items():
                 for dep_api_name in api.required_apis:
                     if dep_api_name not in apis:
-                        raise ValueError(f'Missing API {dep_api_name!r}'
-                                         f' that is required by {api_name!r}')
+                        raise ValueError(f'API {api_name!r}: missing API'
+                                         f' dependency {dep_api_name!r}')
 
         assert_required_apis_available()
 
@@ -238,6 +244,6 @@ class ServerContext(Context):
     @classmethod
     def _assert_api_ctx_type(cls, api_ctx: Any, api_name: str):
         if not isinstance(api_ctx, ApiContext):
-            raise TypeError(f'API {api_name}:'
+            raise TypeError(f'API {api_name!r}:'
                             f' context must be instance of'
                             f' {ApiContext.__name__}')

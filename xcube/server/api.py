@@ -21,7 +21,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
-    Generic, TypeVar, Union
+    Generic, TypeVar, Union, Callable
 
 from .config import Config
 from .context import Context
@@ -106,25 +106,37 @@ class Api(Generic[ApiContextT]):
     :param config_schema: Optional JSON schema for the API's configuration.
         If not given, or None is passed, the API is assumed to
         have no configuration.
-    :param api_ctx_cls: Optional API context class.
-        If given, it must be derived from ApiContext.
+    :param create_ctx: Optional API context factory.
+        If given, must be a callable that accepts the server root context
+        as only argument and returns an instance ApiContext or None.
     """
 
-    def __init__(self,
-                 name: str, /,
-                 version: str = '0.0.0',
-                 routes: Optional[Sequence["ApiRoute"]] = None,
-                 required_apis: Optional[Sequence[str]] = None,
-                 optional_apis: Optional[Sequence[str]] = None,
-                 config_schema: Optional[JsonObjectSchema] = None,
-                 api_ctx_cls: Optional[Type[ApiContextT]] = None):
+    def __init__(
+            self,
+            name: str, /,
+            version: str = '0.0.0',
+            routes: Optional[Sequence["ApiRoute"]] = None,
+            required_apis: Optional[Sequence[str]] = None,
+            optional_apis: Optional[Sequence[str]] = None,
+            config_schema: Optional[JsonObjectSchema] = None,
+            create_ctx: Optional[
+                Callable[[Context], Optional[ApiContextT]]
+            ] = None
+    ):
+        assert_instance(name, str, 'name')
+        assert_instance(version, str, 'version')
+        if config_schema is not None:
+            assert_instance(config_schema, JsonObjectSchema, 'config_schema')
+        if create_ctx is not None:
+            assert_true(callable(create_ctx),
+                        message='create_ctx must be callable')
         self._name = name
         self._version = version
         self._required_apis = tuple(required_apis or ())
         self._optional_apis = tuple(optional_apis or ())
         self._routes: List[ApiRoute] = list(routes or [])
         self._config_schema = config_schema
-        self._api_ctx_cls = api_ctx_cls
+        self._create_ctx = create_ctx
 
     @property
     def name(self) -> str:
@@ -206,9 +218,8 @@ class Api(Generic[ApiContextT]):
         :param root_ctx: The server's current root context.
         :return: An instance of ApiContext or None
         """
-        if self._api_ctx_cls is not None:
-            assert issubclass(self._api_ctx_cls, ApiContext)
-            return self._api_ctx_cls(root_ctx)
+        if self._create_ctx is not None:
+            return self._create_ctx(root_ctx)
         return None
 
 
