@@ -26,6 +26,7 @@ from .context import DatasetsContext
 
 
 class DatasetApi(Api[DatasetsContext]):
+    """Access to datasets."""
 
     def __init__(self):
         super().__init__('datasets', config_schema=DATASETS_CONFIG_SCHEMA)

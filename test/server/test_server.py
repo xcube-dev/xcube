@@ -213,7 +213,7 @@ class ServerTest(unittest.TestCase):
             ("wmts", dict(required_apis=("datasets",))),
         ])
         apis = Server.load_apis(extension_registry=extension_registry)
-        self.assertIsInstance(apis, dict)
+        self.assertIsInstance(apis, list)
         self.assertEqual(['datasets',
                           'places',
                           'timeseries',
@@ -221,7 +221,7 @@ class ServerTest(unittest.TestCase):
                           'wmts',
                           'stac',
                           'openeo'],
-                         list(apis.keys()))
+                         [api.name for api in apis])
 
     def test_illegal_api_context_detected(self):
         # noinspection PyUnusedLocal

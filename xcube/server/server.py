@@ -20,7 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 
 import copy
-from typing import Optional, Dict, Mapping, Any, List, Union, Callable
+from typing import Optional, Dict, Mapping, Any, List, Union, Callable, \
+    Sequence
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import Api
@@ -74,14 +75,14 @@ class Server:
 
     def start(self):
         """Start this server."""
-        for api in self._apis.values():
+        for api in self._apis:
             api.start(self.ctx)
         self._framework.start(self.ctx)
 
     def stop(self):
         """Stop this server."""
         self._framework.stop(self.ctx)
-        for api in self._apis.values():
+        for api in self._apis:
             api.stop(self.ctx)
         self._ctx.dispose()
 
@@ -130,25 +131,27 @@ class Server:
     def load_apis(
             cls,
             extension_registry: Optional[ExtensionRegistry] = None
-    ) -> Dict[str, Api]:
+    ) -> Sequence[Api]:
         extension_registry = extension_registry \
                              or get_extension_registry()
 
         # Collect all registered APIs
-        apis = {
-            ext.name: ext.component
+        apis = [
+            ext.component
             for ext in extension_registry.find_extensions(
                 EXTENSION_POINT_SERVER_APIS
             )
-        }
+        ]
+
+        api_lookup = {api.name: api for api in apis}
 
         def assert_required_apis_available():
             # Assert that required APIs are available.
-            for api_name, api in apis.items():
-                for dep_api_name in api.required_apis:
-                    if dep_api_name not in apis:
-                        raise ValueError(f'API {api_name!r}: missing API'
-                                         f' dependency {dep_api_name!r}')
+            for api in apis:
+                for req_api_name in api.required_apis:
+                    if req_api_name not in api_lookup:
+                        raise ValueError(f'API {api.name!r}: missing API'
+                                         f' dependency {req_api_name!r}')
 
         assert_required_apis_available()
 
@@ -156,42 +159,40 @@ class Server:
             # Count the number of times the given API is referenced.
             dep_sum = 0
             for req_api_name in api.required_apis:
-                dep_sum += count_api_refs(apis[req_api_name]) + 1
+                dep_sum += count_api_refs(api_lookup[req_api_name]) + 1
             for opt_api_name in api.optional_apis:
-                if opt_api_name in apis:
-                    dep_sum += count_api_refs(apis[opt_api_name]) + 1
+                if opt_api_name in api_lookup:
+                    dep_sum += count_api_refs(api_lookup[opt_api_name]) + 1
             return dep_sum
 
         # Count the number of times each API is referenced.
         api_ref_counts = {
             api.name: count_api_refs(api)
-            for api in apis.values()
+            for api in apis
         }
 
         # Return an ordered dict sorted by an API's reference count
-        return {
-            api.name: api
-            for api in sorted(apis.values(),
-                              key=lambda api: api_ref_counts[api.name])
-        }
+        return sorted(apis,
+                      key=lambda api: api_ref_counts[api.name])
 
     @classmethod
-    def collect_api_routes(cls, apis: Dict[str, Api]) -> List[ApiRoute]:
+    def collect_api_routes(cls, apis: Sequence[Api]) -> Sequence[ApiRoute]:
         handlers = []
-        for api in apis.values():
+        for api in apis:
             handlers.extend(api.routes)
         return handlers
 
     @classmethod
-    def get_effective_config_schema(cls, apis: Dict[str, Api]):
+    def get_effective_config_schema(cls, apis: Sequence[Api]) \
+            -> JsonObjectSchema:
         effective_config_schema = copy.deepcopy(BASE_SERVER_CONFIG_SCHEMA)
-        for api_name, api in apis.items():
+        for api in apis:
             api_config_schema = api.config_schema
             if api_config_schema is not None:
                 assert isinstance(api_config_schema, JsonObjectSchema)
                 for k, v in api_config_schema.properties.items():
                     if k in effective_config_schema.properties:
-                        raise ValueError(f'API {api_name!r}:'
+                        raise ValueError(f'API {api.name!r}:'
                                          f' configuration parameter {k!r}'
                                          f' is already defined.')
                     effective_config_schema.properties[k] = v
@@ -209,20 +210,23 @@ class ServerContext(Context):
 
     A new server context is created for any new server configuration.
 
-    :param apis: The loaded server APIs.
+    :param apis: The ordered sequence of loaded server APIs.
     :param config: The current server configuration.
     """
 
     def __init__(self,
-                 apis: Mapping[str, Api],
+                 apis: Sequence[Api],
                  config: Config):
         self._apis = apis
         self._config = config
         self._api_contexts: Dict[str, ApiContext] = dict()
 
+    # @property
+    # def apis(self) -> Mapping[str, Api]:
+    #     return dict(self._apis)
+
     @property
     def config(self) -> Config:
-        assert self._config is not None
         return self._config
 
     def get_api_ctx(self, api_name: str) -> Optional[ApiContext]:
@@ -234,18 +238,18 @@ class ServerContext(Context):
         setattr(self, api_name, api_ctx)
 
     def update(self, prev_ctx: Optional["ServerContext"]):
-        for api_name, api in self._apis.items():
+        for api in self._apis:
             prev_api_ctx: Optional[ApiContext] = None
             if prev_ctx is not None:
                 prev_api_ctx = prev_ctx.get_api_ctx(
-                    api_name
+                    api.name
                 )
             for dep_api_name in api.required_apis:
                 dep_api_ctx = self.get_api_ctx(dep_api_name)
                 assert dep_api_ctx is not None
             next_api_ctx: Optional[ApiContext] = api.create_ctx(self)
             if next_api_ctx is not None:
-                self.set_api_ctx(api_name, next_api_ctx)
+                self.set_api_ctx(api.name, next_api_ctx)
                 next_api_ctx.update(prev_api_ctx)
             elif prev_api_ctx is not None:
                 # There is no next context so dispose() the previous one

@@ -39,6 +39,7 @@ class ApiTest(unittest.TestCase):
         api = Api("datasets")
         self.assertEqual("datasets", api.name)
         self.assertEqual("0.0.0", api.version)
+        self.assertEqual(None, api.description)
         self.assertEqual((), api.required_apis)
         self.assertEqual((), api.optional_apis)
         self.assertEqual(None, api.config_schema)
@@ -171,8 +172,7 @@ class ApiContextTest(unittest.TestCase):
                    create_ctx=self.TimeSeriesContext,
                    required_apis=["datasets"])
         config = {}
-        root_ctx = ServerContext({api1.name: api1,
-                                  api2.name: api2}, config)
+        root_ctx = ServerContext([api1, api2], config)
         root_ctx.update(None)
         api1_ctx = root_ctx.get_api_ctx('datasets')
         api2_ctx = root_ctx.get_api_ctx('timeseries')
@@ -199,7 +199,7 @@ class ApiHandlerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        self.root_ctx = ServerContext({"datasets": self.api}, self.config)
+        self.root_ctx = ServerContext([self.api], self.config)
         self.root_ctx.update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()
@@ -277,6 +277,9 @@ class MockApiRequest(ApiRequest):
 
 
 class MockApiResponse(ApiResponse):
+    def set_status(self, status_code: int, reason: Optional[str] = None):
+        pass
+
     def write(self, data: Union[str, bytes, JSON]):
         pass
 

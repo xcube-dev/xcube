@@ -35,6 +35,7 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import JSON
 from xcube.server.context import Context
 from xcube.server.framework import ServerFramework
+from xcube.version import version
 
 _CTX_ATTR_NAME = "__xcube_server_root_context"
 
@@ -59,7 +60,7 @@ class TornadoFramework(ServerFramework):
                 pass
 
             handlers.append((
-                api_route.pattern,
+                api_route.path,
                 TornadoHandler,
                 {
                     "api_route": api_route
@@ -120,6 +121,16 @@ class TornadoBaseHandler(tornado.web.RequestHandler, ABC):
             **api_route.handler_kwargs
         )
 
+    def set_default_headers(self):
+        self.set_header('Server', f'xcube-server/{version}')
+        # TODO: get from config
+        self.set_header('Access-Control-Allow-Origin', '*')
+        self.set_header('Access-Control-Allow-Methods',
+                        'GET,PUT,DELETE,OPTIONS')
+        self.set_header('Access-Control-Allow-Headers',
+                        'x-requested-with,access-control-allow-origin,'
+                        'authorization,content-type')
+
     def write_error(self, status_code: int, **kwargs: Any):
         self.finish({
             "error": {
@@ -142,6 +153,11 @@ class TornadoBaseHandler(tornado.web.RequestHandler, ABC):
 
     async def options(self, *args, **kwargs):
         return self._api_handler.options(*args, **kwargs)
+
+    # # noinspection PyUnusedLocal
+    # def options(self, *args, **kwargs):
+    #     self.set_status(204)
+    #     self.finish()
 
 
 class TornadoApiRequest(ApiRequest):
@@ -166,6 +182,9 @@ class TornadoApiRequest(ApiRequest):
 class TornadoApiResponse(ApiResponse):
     def __init__(self, handler: TornadoBaseHandler):
         self._handler = handler
+
+    def set_status(self, status_code: int, reason: Optional[str] = None):
+        self._handler.set_status(status_code, reason=reason)
 
     def write(self, data: Union[str, bytes, JSON]):
         self._handler.write(data)

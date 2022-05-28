@@ -28,6 +28,10 @@ from .context import DatasetsContext
 # noinspection PyAbstractClass
 @api.route("/datasets")
 class DatasetsHandler(ApiHandler[DatasetsContext]):
+    @api.operation(
+        operationId='getDatasets',
+        summary='Get all the datasets published by this service.'
+    )
     def get(self):
         ctx = self.ctx
         assert isinstance(ctx, DatasetsContext)

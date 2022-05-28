@@ -20,13 +20,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Any, Optional
+from typing import Any, Optional, Mapping
 
 from xcube.server.config import Config
 
 
 class Context(abc.ABC):
     """An abstract context."""
+
+    # @property
+    # @abc.abstractmethod
+    # def apis(self) -> Mapping[str, "Api"]:
+    #     """The registered APIs."""
 
     @property
     @abc.abstractmethod

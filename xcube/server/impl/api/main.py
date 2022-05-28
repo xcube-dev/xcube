@@ -21,8 +21,10 @@
 
 from xcube.server.api import Api
 from xcube.server.api import ApiHandler
+from xcube.server.server import Server
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from xcube.version import version
 
 CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -31,12 +33,130 @@ CONFIG_SCHEMA = JsonObjectSchema(
     additional_properties=False
 )
 
-api = Api('main', config_schema=CONFIG_SCHEMA)
+api = Api('main',
+          config_schema=CONFIG_SCHEMA,
+          description="Information about this service.")
 
 
 # noinspection PyAbstractClass
 @api.route("/")
 class MainHandler(ApiHandler):
-    @api.operation(operationId='get')
+    @api.operation(operationId='getServiceInfo',
+                   summary='Get information about the service')
     def get(self):
-        self.response.finish(dict(config=self.config))
+        apis = Server.load_apis()
+        api_infos = []
+        for other_api in apis:
+            api_info = {
+                "name": other_api.name,
+                "version": other_api.version,
+                "description": other_api.description
+            }
+            api_infos.append({k: v
+                              for k, v in api_info.items()
+                              if v is not None})
+        self.response.finish({
+            "version": version,
+            "apis": api_infos
+        })
+
+
+# noinspection PyAbstractClass
+@api.route("/openapi")
+class MainHandler(ApiHandler):
+    @api.operation(
+        operationId='getOpenAPIDoc',
+        summary='Get API documentation as OpenAPI 3.0 JSON document'
+    )
+    def get(self):
+
+        schema_components = {
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "status_code": {
+                        "type": "integer",
+                        "minimum": 200,
+                    },
+                    "message": {
+                        "type": "string",
+                    }
+                },
+                "additionalProperties": True,
+                "required": ["status_code", "message"],
+            }
+        }
+
+        response_components = {
+            "UnexpectedError": {
+                "description": "Unexpected error.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            }
+        }
+
+        default_responses = {
+            "200": {
+                "description": "On success.",
+            },
+            "default": {
+                "$ref": "#/components/responses/UnexpectedError"
+            }
+        }
+
+        apis = Server.load_apis()
+        tags = []
+        paths = {}
+        for other_api in apis:
+            tags.append({
+                "name": other_api.name,
+                "description": other_api.description or ""
+            })
+            for route in other_api.routes:
+                path = dict(
+                    description=getattr(
+                        route.handler_cls, "__doc__", ""
+                    ) or ""
+                )
+                for method in ("get", "post", "put", "delete", "options"):
+                    fn = getattr(route.handler_cls, method, None)
+                    fn_openapi = getattr(fn, '__openapi__', None)
+                    if fn_openapi is not None:
+                        fn_openapi = dict(**fn_openapi)
+                        if 'tags' not in fn_openapi:
+                            fn_openapi['tags'] = [other_api.name]
+                        if 'description' not in fn_openapi:
+                            fn_openapi['description'] = \
+                                getattr(fn, "__doc__", None) or ""
+                        if 'responses' not in fn_openapi:
+                            fn_openapi['responses'] = default_responses
+                        path[method] = dict(**fn_openapi)
+                paths[route.path] = path
+
+        openapi_doc = {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "xcube Server",
+                "description": "xcube Server API",
+                "version": version,
+            },
+            "servers": [
+                {
+                    "url": "http://localhost:8080",
+                    "description": "Local development server."
+                },
+            ],
+            "tags": tags,
+            "paths": paths,
+            "components": {
+                "schemas": schema_components,
+                "responses": response_components
+            }
+        }
+
+        self.response.finish(openapi_doc)

@@ -26,7 +26,8 @@ from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
 
 from .config import Config
 from .context import Context
-from ..util.assertions import assert_instance, assert_true
+from ..util.assertions import assert_instance
+from ..util.assertions import assert_true
 from ..util.jsonschema import JsonObjectSchema
 
 _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
@@ -117,6 +118,7 @@ class Api(Generic[ApiContextT]):
             self,
             name: str, /,
             version: str = '0.0.0',
+            description: Optional[str] = None,
             routes: Optional[Sequence["ApiRoute"]] = None,
             required_apis: Optional[Sequence[str]] = None,
             optional_apis: Optional[Sequence[str]] = None,
@@ -127,6 +129,8 @@ class Api(Generic[ApiContextT]):
     ):
         assert_instance(name, str, 'name')
         assert_instance(version, str, 'version')
+        if description is not None:
+            assert_instance(description, str, 'description')
         if config_schema is not None:
             assert_instance(config_schema, JsonObjectSchema, 'config_schema')
         if create_ctx is not None:
@@ -134,6 +138,7 @@ class Api(Generic[ApiContextT]):
                         message='create_ctx must be callable')
         self._name = name
         self._version = version
+        self._description = description
         self._required_apis = tuple(required_apis or ())
         self._optional_apis = tuple(optional_apis or ())
         self._routes: List[ApiRoute] = list(routes or [])
@@ -151,6 +156,13 @@ class Api(Generic[ApiContextT]):
         return self._version
 
     @property
+    def description(self) -> Optional[str]:
+        """The description of this API."""
+        return self._description \
+               or (getattr(self, '__doc__', None)
+                   if self.__class__ is not Api else None)
+
+    @property
     def required_apis(self) -> Tuple[str]:
         """The names of other required APIs."""
         return self._required_apis
@@ -160,13 +172,13 @@ class Api(Generic[ApiContextT]):
         """The names of other optional APIs."""
         return self._required_apis
 
-    def route(self, pattern: str, **handler_kwargs):
+    def route(self, path: str, **handler_kwargs):
         """
         Decorator that adds a route to this API.
 
         The decorator target must be a class derived from ApiHandler.
 
-        :param pattern: The route pattern.
+        :param path: The route path.
         :param handler_kwargs: Optional keyword arguments passed to
             ApiHandler constructor.
         :return: A decorator function that receives a
@@ -175,7 +187,7 @@ class Api(Generic[ApiContextT]):
 
         def decorator_func(handler_cls: Type[ApiHandler]):
             self._routes.append(ApiRoute(self.name,
-                                         pattern,
+                                         path,
                                          handler_cls,
                                          handler_kwargs))
             return handler_cls
@@ -323,6 +335,10 @@ class ApiRequest:
 
 class ApiResponse(ABC):
     @abstractmethod
+    def set_status(self, status_code: int, reason: Optional[str] = None):
+        """Set the HTTP status code and optionally the reason."""
+
+    @abstractmethod
     def write(self, data: Union[str, bytes, JSON]):
         """Write data."""
 
@@ -404,11 +420,11 @@ class ApiHandler(Generic[ApiContextT], ABC):
 class ApiRoute:
     def __init__(self,
                  api_name: str,
-                 pattern: str,
+                 path: str,
                  handler_cls: Type[ApiHandler],
                  handler_kwargs: Optional[Dict[str, Any]] = None):
         assert_instance(api_name, str, name="api_name")
-        assert_instance(pattern, str, name="pattern")
+        assert_instance(path, str, name="path")
         assert_instance(handler_cls, type, name="handler_cls")
         assert_true(issubclass(handler_cls, ApiHandler),
                     message=f'handler_cls must be a subclass'
@@ -417,21 +433,21 @@ class ApiRoute:
         assert_instance(handler_kwargs, (type(None), dict),
                         name="handler_kwargs")
         self.api_name = api_name
-        self.pattern = pattern
+        self.path = path
         self.handler_cls = handler_cls
         self.handler_kwargs = dict(handler_kwargs or {})
 
     def __eq__(self, other) -> bool:
         if isinstance(other, ApiRoute):
             return self.api_name == other.api_name \
-                   and self.pattern == other.pattern \
+                   and self.path == other.path \
                    and self.handler_cls == other.handler_cls \
                    and self.handler_kwargs == other.handler_kwargs
         return False
 
     def __hash__(self) -> int:
         return hash(self.api_name) \
-               + 2 * hash(self.pattern) \
+               + 2 * hash(self.path) \
                + 4 * hash(self.handler_cls) \
                + 16 * hash(tuple(sorted(tuple(self.handler_kwargs.items()),
                                         key=lambda p: p[0])))
@@ -441,7 +457,7 @@ class ApiRoute:
 
     def __repr__(self) -> str:
         args = (f"{self.api_name!r},"
-                f" {self.pattern!r},"
+                f" {self.path!r},"
                 f" {self.handler_cls.__name__}")
         if self.handler_kwargs:
             args += f", handler_kwargs={self.handler_kwargs!r}"
