@@ -22,16 +22,17 @@
 from abc import ABC
 from typing import Tuple, Optional
 
+import rasterio
+import rioxarray
 import xarray as xr
 import zarr
-import rioxarray
 
 from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
@@ -359,12 +360,13 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
             file_path = protocol + "://" + data_id
         tile_size = open_params.get("tile_size", (512, 512))
         overview_level = open_params.get("overview_level", None)
-        return self.open_dataset(file_path, tile_size,
+        return self.open_dataset(fs, file_path, tile_size,
                                  overview_level=overview_level)
 
     @classmethod
     def open_dataset(cls,
-                     file_spec: str,
+                     file_spec,
+                     file_path,
                      tile_size: Tuple[int, int],
                      overview_level: Optional[int] = None) -> xr.Dataset:
         """
@@ -376,12 +378,31 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
         @param tile_size: tile size as tuple.
         @type file_spec: fsspec.AbstractFileSystem object.
         """
-
-        array: xr.DataArray = rioxarray.open_rasterio(
-            file_spec,
-            overview_level=overview_level,
-            chunks=dict(zip(('x', 'y'), tile_size))
-        )
+        if isinstance(file_spec, str):
+            array: xr.DataArray = rioxarray.open_rasterio(
+                file_path,
+                overview_level=overview_level,
+                chunks=dict(zip(('x', 'y'), tile_size))
+            )
+        else:
+            if file_spec.secret == '' or file_spec.key == '':
+                AWS_NO_SIGN_REQUEST = True
+            else:
+                AWS_NO_SIGN_REQUEST = False
+            Session = rasterio.env.Env(
+                region_name=file_spec.kwargs.get('region_name', 'eu-central-1'),
+                # region_name=file_spec.kwargs['region_name'],
+                AWS_NO_SIGN_REQUEST=AWS_NO_SIGN_REQUEST,
+                aws_session_token=file_spec.token,
+                aws_access_key_id=file_spec.key,
+                aws_secret_access_key=file_spec.secret
+            )
+            with Session:
+                array: xr.DataArray = rioxarray.open_rasterio(
+                    file_path,
+                    overview_level=overview_level,
+                    chunks=dict(zip(('x', 'y'), tile_size))
+                )
         arrays = {}
         if array.ndim == 3:
             for i in range(array.shape[0]):

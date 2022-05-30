@@ -58,17 +58,40 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         self._root = root
         self._path = data_id
         self._open_params = open_params
+        self._file_url = None
 
     def _get_num_levels_lazily(self) -> int:
-        with rasterio.open(self._get_file_url()) as rio_dataset:
-            overviews = rio_dataset.overviews(1)
+        self._file_url = self._get_file_url()
+        if isinstance(self._fs.protocol, str):
+            with rasterio.open(self._file_url) as rio_dataset:
+                overviews = rio_dataset.overviews(1)
+        else:
+            if self._fs.secret is None or self._fs.key is None:
+                AWS_NO_SIGN_REQUEST = True
+            else:
+                AWS_NO_SIGN_REQUEST = False
+            Session = rasterio.env.Env(
+                region_name=self._fs.kwargs.get('region_name', 'eu-central-1'),
+                # region_name=self._fs.kwargs['region_name'],
+                # AWS_NO_SIGN_REQUEST=AWS_NO_SIGN_REQUEST,
+                AWS_NO_SIGN_REQUEST=True if self._fs.secret is None
+                                            or self._fs.key is None else False,
+                aws_session_token=self._fs.token,
+                aws_access_key_id=self._fs.key,
+                aws_secret_access_key=self._fs.secret
+
+            )
+            with Session:
+                with rasterio.open(self._file_url) as rio_dataset: \
+                        overviews = rio_dataset.overviews(1)
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (512, 512))
         return DatasetGeoTiffFsDataAccessor.open_dataset(
-            self._get_file_url(),
+            self._fs,
+            self._file_url,
             tile_size,
             overview_level=index - 1 if index > 0 else None
         )
@@ -76,9 +99,11 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     def _get_file_url(self):
         if isinstance(self._fs.protocol, str):
             protocol = self._fs.protocol
+            url = protocol + "://" + self._path
         else:
             protocol = self._fs.protocol[0]
-        return protocol + "://" + self._path
+            url = protocol + "://" + self._path
+        return url
 
 
 MULTI_LEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
