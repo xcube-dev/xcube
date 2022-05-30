@@ -373,25 +373,25 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
         A method to open the cog/geotiff dataset using rioxarray,
         returns xarray.Dataset
 
+        @param file_path: path of the file
         @param overview_level: the overview level of GeoTIFF, 0 is the first
                overview and None means full resolution.
         @param tile_size: tile size as tuple.
         @type file_spec: fsspec.AbstractFileSystem object.
         """
-        if isinstance(file_spec, str):
+        if isinstance(file_spec.protocol, str):
             array: xr.DataArray = rioxarray.open_rasterio(
                 file_path,
                 overview_level=overview_level,
                 chunks=dict(zip(('x', 'y'), tile_size))
             )
         else:
-            if file_spec.secret == '' or file_spec.key == '':
+            if file_spec.secret is None or file_spec.key is None:
                 AWS_NO_SIGN_REQUEST = True
             else:
                 AWS_NO_SIGN_REQUEST = False
             Session = rasterio.env.Env(
                 region_name=file_spec.kwargs.get('region_name', 'eu-central-1'),
-                # region_name=file_spec.kwargs['region_name'],
                 AWS_NO_SIGN_REQUEST=AWS_NO_SIGN_REQUEST,
                 aws_session_token=file_spec.token,
                 aws_access_key_id=file_spec.key,

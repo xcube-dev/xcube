@@ -72,10 +72,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
                 AWS_NO_SIGN_REQUEST = False
             Session = rasterio.env.Env(
                 region_name=self._fs.kwargs.get('region_name', 'eu-central-1'),
-                # region_name=self._fs.kwargs['region_name'],
-                # AWS_NO_SIGN_REQUEST=AWS_NO_SIGN_REQUEST,
-                AWS_NO_SIGN_REQUEST=True if self._fs.secret is None
-                                            or self._fs.key is None else False,
+                AWS_NO_SIGN_REQUEST=AWS_NO_SIGN_REQUEST,
                 aws_session_token=self._fs.token,
                 aws_access_key_id=self._fs.key,
                 aws_secret_access_key=self._fs.secret
@@ -89,6 +86,7 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (512, 512))
+        self._file_url = self._get_file_url()
         return DatasetGeoTiffFsDataAccessor.open_dataset(
             self._fs,
             self._file_url,
