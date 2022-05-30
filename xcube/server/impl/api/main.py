@@ -62,6 +62,29 @@ class MainHandler(ApiHandler):
 
 
 # noinspection PyAbstractClass
+@api.route("/shutdown")
+class MainHandler(ApiHandler):
+    @api.operation(operationId='getServiceInfo',
+                   summary='Get information about the service')
+    def get(self):
+        apis = Server.load_apis()
+        api_infos = []
+        for other_api in apis:
+            api_info = {
+                "name": other_api.name,
+                "version": other_api.version,
+                "description": other_api.description
+            }
+            api_infos.append({k: v
+                              for k, v in api_info.items()
+                              if v is not None})
+        self.response.finish({
+            "version": version,
+            "apis": api_infos
+        })
+
+
+# noinspection PyAbstractClass
 @api.route("/openapi")
 class MainHandler(ApiHandler):
     @api.operation(
@@ -70,20 +93,29 @@ class MainHandler(ApiHandler):
     )
     def get(self):
 
+        error_schema = {
+            "type": "object",
+            "properties": {
+                "status_code": {
+                    "type": "integer",
+                    "minimum": 200,
+                },
+                "message": {
+                    "type": "string",
+                }
+            },
+            "additionalProperties": True,
+            "required": ["status_code", "message"],
+        }
+
         schema_components = {
             "Error": {
                 "type": "object",
                 "properties": {
-                    "status_code": {
-                        "type": "integer",
-                        "minimum": 200,
-                    },
-                    "message": {
-                        "type": "string",
-                    }
+                    "error": error_schema,
                 },
                 "additionalProperties": True,
-                "required": ["status_code", "message"],
+                "required": ["error"],
             }
         }
 
