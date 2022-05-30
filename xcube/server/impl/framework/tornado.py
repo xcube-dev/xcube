@@ -28,6 +28,7 @@ import tornado.httputil
 import tornado.ioloop
 import tornado.web
 
+from xcube.constants import LOG
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
@@ -74,9 +75,17 @@ class TornadoFramework(ServerFramework):
 
     def start(self, ctx: Context):
         config = ctx.config
+
         port = config["port"]
         address = config["address"]
+
         self._application.listen(port, address=address)
+
+        address = "127.0.0.1" if address == "0.0.0.0" else address
+        test_url = f"http://{address}:{port}/openapi"
+        LOG.info(f"Service running, listening on {address}:{port}, try {test_url}")
+        LOG.info(f"Press CTRL+C to stop service")
+
         self._io_loop.start()
 
     def stop(self, ctx: Context):

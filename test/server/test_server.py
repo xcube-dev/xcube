@@ -31,8 +31,9 @@ from xcube.server.framework import ServerFramework
 from xcube.server.server import Server
 from xcube.server.server import ServerContext
 from xcube.util.extension import ExtensionRegistry
-from xcube.util.jsonschema import JsonObjectSchema, JsonArraySchema, \
-    JsonStringSchema
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 
 
 class ServerTest(unittest.TestCase):
@@ -41,21 +42,21 @@ class ServerTest(unittest.TestCase):
         extension_registry = mock_extension_registry([
             ("datasets", dict(create_ctx=MockApiContext)),
         ])
-        web_server = MockServerFramework()
+        framework = MockServerFramework()
         server = Server(
-            web_server, {},
+            framework, {},
             extension_registry=extension_registry
         )
-        self.assertEqual(1, web_server.add_routes_count)
-        self.assertEqual(1, web_server.update_count)
-        self.assertEqual(0, web_server.start_count)
-        self.assertEqual(0, web_server.stop_count)
+        self.assertEqual(1, framework.add_routes_count)
+        self.assertEqual(1, framework.update_count)
+        self.assertEqual(0, framework.start_count)
+        self.assertEqual(0, framework.stop_count)
         server.start()
-        self.assertEqual(1, web_server.start_count)
-        self.assertEqual(0, web_server.stop_count)
+        self.assertEqual(1, framework.start_count)
+        self.assertEqual(0, framework.stop_count)
         server.stop()
-        self.assertEqual(1, web_server.start_count)
-        self.assertEqual(1, web_server.stop_count)
+        self.assertEqual(1, framework.start_count)
+        self.assertEqual(1, framework.stop_count)
 
     def test_root_ctx(self):
         extension_registry = mock_extension_registry([

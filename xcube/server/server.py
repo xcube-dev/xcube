@@ -20,10 +20,10 @@
 # DEALINGS IN THE SOFTWARE.
 
 import copy
-from typing import Optional, Dict, Mapping, Any, List, Union, Callable, \
-    Sequence
+from typing import Optional, Dict, Any, Union, Callable, Sequence
 
-from xcube.constants import EXTENSION_POINT_SERVER_APIS, LOG
+from xcube.constants import EXTENSION_POINT_SERVER_APIS
+from xcube.constants import LOG
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiRoute
@@ -37,12 +37,9 @@ from xcube.util.jsonschema import JsonObjectSchema
 
 
 # TODO:
-#   - generate OpenAPI document and add default endpoint "/openapi"
 #   - allow for JSON schema for requests and responses (openAPI)
 #   - introduce change management (per API?)
-#     - detect server config changes
 #     - detect API context patches
-#   - fix logging, log server activities
 #   - aim at 100% test coverage
 
 class Server:

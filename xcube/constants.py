@@ -123,3 +123,7 @@ XCUBE_LOG_FORMAT = '%(levelname)s: %(message)s'
 # xcube logger
 LOG = logging.getLogger('xcube')
 LOG.setLevel(DEFAULT_XCUBE_LOG_LEVEL)
+
+DEFAULT_SERVER_FRAMEWORK = "tornado"
+DEFAULT_SERVER_PORT = 8080
+DEFAULT_SERVER_ADDRESS = "0.0.0.0"

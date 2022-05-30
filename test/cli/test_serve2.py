@@ -1,12 +1,4 @@
-import os
-import os.path
-from typing import Mapping
-
-from test.cli.helpers import CliDataTest, CliTest
-from xcube.cli.serve import BASE_ENV_VAR
-from xcube.cli.serve import CONFIG_ENV_VAR
-from xcube.cli.serve import VIEWER_ENV_VAR
-from xcube.cli.serve import main
+from test.cli.helpers import CliTest
 
 
 class ServerCliTest(CliTest):
@@ -14,6 +6,8 @@ class ServerCliTest(CliTest):
         result = self.invoke_cli(["serve2", "--help"])
         self.assertEqual(0, result.exit_code)
 
-    def test_stop_after(self):
-        result = self.invoke_cli(["serve2", "--stop-after",  "0.1"])
+    def test_update_after(self):
+        result = self.invoke_cli(["serve2",
+                                  "--update-after", "0.1",
+                                  "--stop-after", "0.2"])
         self.assertEqual(0, result.exit_code)
