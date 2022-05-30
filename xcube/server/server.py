@@ -23,7 +23,7 @@ import copy
 from typing import Optional, Dict, Mapping, Any, List, Union, Callable, \
     Sequence
 
-from xcube.constants import EXTENSION_POINT_SERVER_APIS
+from xcube.constants import EXTENSION_POINT_SERVER_APIS, LOG
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiRoute
@@ -64,6 +64,8 @@ class Server:
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
         apis = self.load_apis(extension_registry)
+        for api in apis:
+            LOG.info(f'Loaded service API {api.name!r}')
         handlers = self.collect_api_routes(apis)
         framework.add_routes(handlers)
         self._framework = framework
@@ -75,12 +77,14 @@ class Server:
 
     def start(self):
         """Start this server."""
+        LOG.info(f'Starting service...')
         for api in self._apis:
             api.start(self.ctx)
         self._framework.start(self.ctx)
 
     def stop(self):
         """Stop this server."""
+        LOG.info(f'Stopping service...')
         self._framework.stop(self.ctx)
         for api in self._apis:
             api.stop(self.ctx)
@@ -222,8 +226,8 @@ class ServerContext(Context):
         self._api_contexts: Dict[str, ApiContext] = dict()
 
     # @property
-    # def apis(self) -> Mapping[str, Api]:
-    #     return dict(self._apis)
+    # def apis(self) -> Tuple[Api]:
+    #     return tuple(self._apis)
 
     @property
     def config(self) -> Config:
@@ -238,6 +242,10 @@ class ServerContext(Context):
         setattr(self, api_name, api_ctx)
 
     def update(self, prev_ctx: Optional["ServerContext"]):
+        if prev_ctx is None:
+            LOG.info(f'Applying initial configuration...')
+        else:
+            LOG.info(f'Applying configuration changes...')
         for api in self._apis:
             prev_api_ctx: Optional[ApiContext] = None
             if prev_ctx is not None:
