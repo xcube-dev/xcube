@@ -19,11 +19,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import fnmatch
 from typing import Any, List, Dict, Optional
 
+from xcube.constants import LOG
+from xcube.core.store import new_data_store
 from xcube.server.api import ApiContext
 from xcube.server.context import Context
-from xcube.constants import LOG
 
 
 class DatasetsContext(ApiContext):
@@ -38,10 +40,57 @@ class DatasetsContext(ApiContext):
             self.config.get('data_stores', [])
         for data_store_config in data_store_configs:
             store_id = data_store_config['store_id']
-            store_params = data_store_config['store_params']
+            store_params = data_store_config.get('store_params', {})
+            store = new_data_store(store_id, **store_params)
             dataset_configs: List[Dict[str, Any]] \
                 = data_store_config.get('datasets', [])
+            available_data_ids = list(store.get_data_ids())
             for dataset_config in dataset_configs:
-                data_id = data_store_config['data_id']
-                open_params = data_store_config['open_params']
-                print(f'opening {data_id!r} of store {store_id!r}')
+                data_id = dataset_config['data_id']
+                if _is_wildcard(data_id):
+                    available_data_ids = list(store.get_data_ids())
+                    break
+
+            dataset_resources = []
+            for dataset_config in dataset_configs:
+                data_id = dataset_config['data_id']
+                if _is_wildcard(data_id):
+                    for available_data_id in available_data_ids:
+                        if fnmatch.fnmatch(available_data_id, data_id):
+                            _collect_dataset_resource(
+                                store,
+                                dataset_config,
+                                available_data_id,
+                                dataset_resources
+                            )
+                else:
+                    _collect_dataset_resource(
+                        store,
+                        dataset_config,
+                        data_id,
+                        dataset_resources
+                    )
+
+
+def _collect_dataset_resource(store,
+                              dataset_config,
+                              data_id,
+                              dataset_resources):
+    try:
+        data_descriptor = store.describe_data(data_id)
+    except Exception as e:
+        LOG.error(f'{e}', exc_info=1)
+        LOG.warning(f'Skipping data resource {data_id}'
+                    f' of store {store.__class__.__name__}'
+                    f' due to error above')
+        return
+    LOG.info(f'Loaded data resource {data_id}'
+             f' of store {store.__class__.__name__}')
+    dataset_resource = dict(dataset_config)
+    dataset_resource['data_id'] = data_id
+    dataset_resource['data_descriptor'] = data_descriptor
+    dataset_resources.append(dataset_resource)
+
+
+def _is_wildcard(data_id):
+    return '?' in data_id or '*' in data_id
