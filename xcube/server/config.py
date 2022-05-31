@@ -21,18 +21,16 @@
 
 from typing import Mapping, Any
 
+from xcube.constants import DEFAULT_SERVER_ADDRESS
+from xcube.constants import DEFAULT_SERVER_PORT
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
-
-DEFAULT_PORT = 8080
-DEFAULT_ADDRESS = "0.0.0.0"
-
 BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
-        port=JsonIntegerSchema(default=DEFAULT_PORT),
-        address=JsonStringSchema(default=DEFAULT_ADDRESS),
+        port=JsonIntegerSchema(default=DEFAULT_SERVER_PORT),
+        address=JsonStringSchema(default=DEFAULT_SERVER_ADDRESS),
     ),
     additional_properties=False,
 )
