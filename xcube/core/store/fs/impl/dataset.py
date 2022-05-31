@@ -22,10 +22,13 @@
 from abc import ABC
 from typing import Tuple, Optional
 
+import boto3
 import rasterio
 import rioxarray
+import s3fs
 import xarray as xr
 import zarr
+from rasterio.session import AWSSession
 
 from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
@@ -379,30 +382,34 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
         @param tile_size: tile size as tuple.
         @type file_spec: fsspec.AbstractFileSystem object.
         """
-        if isinstance(file_spec.protocol, str):
-            array: xr.DataArray = rioxarray.open_rasterio(
-                file_path,
-                overview_level=overview_level,
-                chunks=dict(zip(('x', 'y'), tile_size))
-            )
-        else:
-            if file_spec.secret is None or file_spec.key is None:
-                AWS_NO_SIGN_REQUEST = True
-            else:
-                AWS_NO_SIGN_REQUEST = False
-            Session = rasterio.env.Env(
-                region_name=file_spec.kwargs.get('region_name', 'eu-central-1'),
-                AWS_NO_SIGN_REQUEST=AWS_NO_SIGN_REQUEST,
-                aws_session_token=file_spec.token,
-                aws_access_key_id=file_spec.key,
-                aws_secret_access_key=file_spec.secret
-            )
+        if isinstance(file_spec, s3fs.S3FileSystem):
+            fs: s3fs.S3FileSystem = file_spec
+            boto3_session = boto3.Session(aws_secret_access_key=fs.token,
+                                          aws_access_key_id=fs.key,
+                                          aws_session_token=fs.token,
+                                          region_name=fs.client_kwargs.get(
+                                           'region_name',
+                                           'eu-central-1'
+                                           )
+                                          )
+            Session = rasterio.env.Env(AWSSession(boto3_session),
+                                       AWS_NO_SIGN_REQUEST=fs.anon if fs.anon
+                                       else True,
+                                       # AWS_S3_ENDPOINT=fs.client_kwargs.get(
+                                       #     'endpoint_url', None)
+                                       )
             with Session:
                 array: xr.DataArray = rioxarray.open_rasterio(
                     file_path,
                     overview_level=overview_level,
                     chunks=dict(zip(('x', 'y'), tile_size))
                 )
+        else:
+            array: xr.DataArray = rioxarray.open_rasterio(
+                file_path,
+                overview_level=overview_level,
+                chunks=dict(zip(('x', 'y'), tile_size))
+            )
         arrays = {}
         if array.ndim == 3:
             for i in range(array.shape[0]):

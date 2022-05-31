@@ -204,10 +204,10 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
     """
     A Test class to test opening a cog file from AWS S3
     """
+
     def test_s3_fs(self):
         region_name = 'eu-central-1'
-        s3 = s3fs.S3FileSystem(region_name=region_name, key=None,
-                               secret=None)
+        s3 = s3fs.S3FileSystem(region_name=region_name, anon=True)
         data_id = "xcube-examples/sample-cog.tif"
         ml_dataset = GeoTIFFMultiLevelDataset(s3, None, data_id)
         self.assertEqual(3, ml_dataset.num_levels)

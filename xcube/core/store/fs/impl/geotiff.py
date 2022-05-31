@@ -22,9 +22,12 @@
 from abc import ABC
 from typing import Optional, Tuple, Dict, Any
 
+import boto3
 import fsspec
 import rasterio
+import s3fs
 import xarray as xr
+from rasterio.session import AWSSession
 
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
@@ -62,25 +65,31 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_num_levels_lazily(self) -> int:
         self._file_url = self._get_file_url()
-        if isinstance(self._fs.protocol, str):
+        if isinstance(self._fs, s3fs.S3FileSystem):
+            fs: s3fs.S3FileSystem = self._fs
+            boto3_session = boto3.Session(aws_secret_access_key=fs.token,
+                                          aws_access_key_id=fs.key,
+                                          aws_session_token=fs.token,
+                                          region_name=fs.client_kwargs.get(
+                                           'region_name',
+                                           'eu-central-1'
+                                           )
+                                          )
+            Session = rasterio.env.Env(AWSSession(boto3_session),
+                                       AWS_NO_SIGN_REQUEST=fs.anon if fs.anon
+                                       else True,
+                                       # rasterio.errors.RasterioIOError: CURL
+                                       # error: Could not resolve host:
+                                       # xcube-examples.None
+                                       # AWS_S3_ENDPOINT=fs.client_kwargs.get(
+                                       #     'endpoint_url', None)
+                                       )
+            with Session:
+                with rasterio.open(self._file_url) as rio_dataset:
+                    overviews = rio_dataset.overviews(1)
+        else:
             with rasterio.open(self._file_url) as rio_dataset:
                 overviews = rio_dataset.overviews(1)
-        else:
-            if self._fs.secret is None or self._fs.key is None:
-                AWS_NO_SIGN_REQUEST = True
-            else:
-                AWS_NO_SIGN_REQUEST = False
-            Session = rasterio.env.Env(
-                region_name=self._fs.kwargs.get('region_name', 'eu-central-1'),
-                AWS_NO_SIGN_REQUEST=AWS_NO_SIGN_REQUEST,
-                aws_session_token=self._fs.token,
-                aws_access_key_id=self._fs.key,
-                aws_secret_access_key=self._fs.secret
-
-            )
-            with Session:
-                with rasterio.open(self._file_url) as rio_dataset: \
-                        overviews = rio_dataset.overviews(1)
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) \
