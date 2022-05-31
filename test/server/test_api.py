@@ -265,7 +265,8 @@ class MockApiRequest(ApiRequest):
     def json(self) -> JSON:
         return {}
 
-    def get_query_args(self, name: str) -> Sequence[str]:
+    # noinspection PyShadowingBuiltins
+    def get_query_args(self, name: str, type: Any = None) -> Sequence[Any]:
         if name == 'details':
             return ['1']
         return []
@@ -286,11 +287,14 @@ class MockApiResponse(ApiResponse):
     def finish(self, data: Union[str, bytes, JSON] = None):
         pass
 
-    def error(self, status_code: int, message: Optional[str] = None,
-              *args: Any, **kwargs: Any) -> Exception:
-        return MockApiError(status_code, message)
+    def error(self,
+              status_code: int,
+              message: Optional[str] = None,
+              reason: Optional[str] = None) -> Exception:
+        return MockApiError(status_code, message, reason)
 
 
 class MockApiError(Exception):
-    def __init__(self, status_code, message):
-        super().__init__(status_code, message)
+    def __init__(self, *args, **kwargs):
+        # noinspection PyArgumentList
+        super().__init__(*args, **kwargs)
