@@ -168,15 +168,20 @@ def load_json_or_yaml_config(config_path: str) -> Dict[str, Any]:
         config_dict = _load_json_or_yaml_config(config_path)
     except yaml.YAMLError as e:
         raise ValueError(
-            f'YAML in {config_path!r} is invalid: {e}') from e
+            f'YAML in {config_path!r} is invalid: {e}'
+        ) from e
     except OSError as e:
         raise ValueError(
             f'Cannot load configuration from'
-            f' {config_path!r}: {e}') from e
+            f' {config_path!r}: {e}'
+        ) from e
+    if config_dict is None:
+        return {}
     if not isinstance(config_dict, dict):
         raise ValueError(
             f'Invalid configuration format in'
-            f' {config_path!r}: dictionary expected')
+            f' {config_path!r}: dictionary expected'
+        )
     return config_dict
 
 
