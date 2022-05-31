@@ -29,6 +29,7 @@ import tornado.ioloop
 import tornado.web
 
 from xcube.constants import LOG
+from xcube.constants import LOG_LEVEL_DETAIL
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
@@ -61,12 +62,16 @@ class TornadoFramework(ServerFramework):
                 pass
 
             handlers.append((
-                api_route.path,
+                self._convert_path_to_pattern(api_route.path),
                 TornadoHandler,
                 {
                     "api_route": api_route
                 }
             ))
+
+            LOG.log(LOG_LEVEL_DETAIL, f'Added route'
+                                      f' {api_route.path!r}'
+                                      f' from API {api_route.api_name!r}')
 
         self._application.add_handlers(".*$", handlers)
 
@@ -81,9 +86,10 @@ class TornadoFramework(ServerFramework):
 
         self._application.listen(port, address=address)
 
-        address = "127.0.0.1" if address == "0.0.0.0" else address
-        test_url = f"http://{address}:{port}/openapi"
-        LOG.info(f"Service running, listening on {address}:{port}, try {test_url}")
+        address_ = "127.0.0.1" if address == "0.0.0.0" else address
+        test_url = f"http://{address_}:{port}/openapi"
+        LOG.info(f"Service running, listening on {address}:{port}")
+        LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
 
         self._io_loop.start()
@@ -110,6 +116,44 @@ class TornadoFramework(ServerFramework):
         for h in list(logging.root.handlers):
             tornado_logger.addHandler(h)
         tornado_logger.setLevel(logging.root.level)
+
+    @staticmethod
+    def _convert_path_to_pattern(path: str):
+        """
+        Convert a string *pattern* where any occurrences of ``{NAME}``
+        are replaced by an equivalent regex expression which will
+        assign matching character groups to NAME. Characters match until
+        one of the RFC 2396 reserved characters is found or the end of
+        the *pattern* is reached.
+
+        :param path: URL path
+        :return: equivalent regex pattern
+        :raise ValueError: if *pattern* is invalid
+        """
+        if '{' not in path:
+            return path
+        name_pattern = r'(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)'
+        reg_expr = ''
+        pos = 0
+        while True:
+            pos1 = path.find('{', pos)
+            if pos1 >= 0:
+                pos2 = path.find('}', pos1 + 2)
+                if pos2 > pos1:
+                    name = path[pos1 + 2:pos2]
+                    if not name.isidentifier():
+                        raise ValueError(
+                            '"{name}" in path must be a valid identifier,'
+                            ' but got "%s"' % name)
+                    reg_expr += path[pos:pos1] + (name_pattern % name)
+                    pos = pos2 + 2
+                else:
+                    raise ValueError('no matching "}"'
+                                     ' after "{" in "%s"' % path)
+            else:
+                reg_expr += path[pos:]
+                break
+        return reg_expr
 
 
 class TornadoBaseHandler(tornado.web.RequestHandler, ABC):
