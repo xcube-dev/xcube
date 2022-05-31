@@ -90,13 +90,15 @@ class ErrorHandler(ApiHandler):
         that HTTP status code. Otherwise, the operation causes
         an internal server error.
         """
-        code = self.request.get_query_arg('code')
-        code = int(code) if code else None
-        message = self.request.get_query_arg('message')
-        message = message or 'Error! No worries, this is just a test.'
+        code = self.request.get_query_arg('code', type=int)
+        message = self.request.get_query_arg(
+            'message',
+            default='Error! No worries, this is just a test.'
+        )
         if code is None:
             raise RuntimeError(message)
-        raise self.response.error(code, message=message)
+        else:
+            raise self.response.error(code, message=message)
 
 
 # noinspection PyAbstractClass
