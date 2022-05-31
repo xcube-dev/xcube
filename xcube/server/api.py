@@ -33,6 +33,8 @@ from ..util.jsonschema import JsonObjectSchema
 _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
 _HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
 
+ArgT = TypeVar('ArgT')
+
 # API Context type variable
 ApiContextT = TypeVar("ApiContextT", bound="ApiContext")
 
@@ -45,6 +47,8 @@ JSON = Union[
     List["JSON"],
     Dict[str, "JSON"],
 ]
+
+_builtin_type = type
 
 
 class Api(Generic[ApiContextT]):
@@ -194,23 +198,33 @@ class Api(Generic[ApiContextT]):
 
         return decorator_func
 
-    def operation(self, **kwargs):
+    def operation(self,
+                  operation_id: Optional[str] = None,
+                  summary: Optional[str] = None,
+                  description: Optional[str] = None,
+                  parameters: Optional[List[Dict[str, Any]]] = None,
+                  **kwargs):
         """
         Decorator that adds OpenAPI 3.0 information to an
-        API handler's get, post, put, delete or options method.
+        API handler's operation,
+        i.e. one of the get, post, put, delete, or options methods.
 
-        :param kwargs: OpenAPI 3.0 keyword mappings
-            using pythonic snake-case, e.g. "operation_id" instead
-            of "operationId".
         :return: A decorator function that receives a
-            and returns an ApiHandler method.
+            and returns an ApiHandler's operation.
         """
+        openapi = {
+            "operationId": operation_id or kwargs.pop("operationId", None),
+            "summary": summary,
+            "description": description,
+            "parameters": parameters,
+        }
+        openapi = {k: v for k, v in openapi.items() if v is not None}
 
         def decorator_func(target: Union[Type[ApiHandler], Callable]):
             if inspect.isfunction(target) \
                     and hasattr(target, '__name__') \
                     and target.__name__ in _HTTP_METHODS:
-                setattr(target, "__openapi__", kwargs)
+                setattr(target, "__openapi__", openapi)
             else:
                 raise TypeError(f'API {self.name}:'
                                 f' @operation() decorator'
@@ -315,13 +329,22 @@ class ApiRequest:
     def json(self) -> JSON:
         """The request body as JSON value."""
 
-    def get_query_arg(self, name: str) -> Optional[str]:
+    # noinspection PyShadowingBuiltins
+    def get_query_arg(self, name: str,
+                      type: Optional[Type[ArgT]] = None,
+                      default: Any = None) -> Optional[ArgT]:
         """Get the value of query argument given by *name*."""
-        args = self.get_query_args(name)
-        return args[0] if len(args) > 0 else None
+        if type is None and default is not None:
+            type = _builtin_type(default)
+            type = type if callable(type) else None
+        values = self.get_query_args(name, type=type)
+        return values[0] if values else default
 
+    # noinspection PyShadowingBuiltins
     @abstractmethod
-    def get_query_args(self, name: str) -> Sequence[str]:
+    def get_query_args(self,
+                       name: str,
+                       type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
         """Get the values of query argument given by *name*."""
 
     def get_body_arg(self, name: str) -> Optional[bytes]:
@@ -350,11 +373,15 @@ class ApiResponse(ABC):
     def error(self,
               status_code: int,
               message: Optional[str] = None,
-              *args: Any,
-              **kwargs: Any) -> Exception:
+              reason: Optional[str] = None) -> Exception:
         """
         Get an exception that can be raised.
         If raised, a standard error response will be generated.
+
+        :param status_code: The HTTP status code.
+        :param message: Optional message.
+        :param reason: Optional reason.
+        :return: An exception that may be raised.
         """
 
 

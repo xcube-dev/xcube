@@ -41,7 +41,7 @@ api = Api('main',
 # noinspection PyAbstractClass
 @api.route("/")
 class MainHandler(ApiHandler):
-    @api.operation(operationId='getServiceInfo',
+    @api.operation(operation_id='getServiceInfo',
                    summary='Get information about the service')
     def get(self):
         apis = Server.load_apis()
@@ -62,33 +62,48 @@ class MainHandler(ApiHandler):
 
 
 # noinspection PyAbstractClass
-@api.route("/shutdown")
-class MainHandler(ApiHandler):
-    @api.operation(operationId='getServiceInfo',
-                   summary='Get information about the service')
+@api.route("/error")
+class ErrorHandler(ApiHandler):
+    @api.operation(operation_id='forceError',
+                   summary='Force a server error (for testing)',
+                   parameters=[
+                       {
+                           "name": "code",
+                           "in": "query",
+                           "description": "HTTP status code",
+                           "schema": {
+                               "type": "integer",
+                               "minimum": 400,
+                           }
+                       },
+                       {
+                           "name": "message",
+                           "in": "query",
+                           "description": "HTTP error message",
+                           "schema": {
+                               "type": "string",
+                           }
+                       },
+                   ])
     def get(self):
-        apis = Server.load_apis()
-        api_infos = []
-        for other_api in apis:
-            api_info = {
-                "name": other_api.name,
-                "version": other_api.version,
-                "description": other_api.description
-            }
-            api_infos.append({k: v
-                              for k, v in api_info.items()
-                              if v is not None})
-        self.response.finish({
-            "version": version,
-            "apis": api_infos
-        })
+        """If *code* is given, the operation fails with
+        that HTTP status code. Otherwise, the operation causes
+        an internal server error.
+        """
+        code = self.request.get_query_arg('code')
+        code = int(code) if code else None
+        message = self.request.get_query_arg('message')
+        message = message or 'Error! No worries, this is just a test.'
+        if code is None:
+            raise RuntimeError(message)
+        raise self.response.error(code, message=message)
 
 
 # noinspection PyAbstractClass
 @api.route("/openapi")
 class MainHandler(ApiHandler):
     @api.operation(
-        operationId='getOpenAPIDoc',
+        operation_id='getOpenAPIDoc',
         summary='Get API documentation as OpenAPI 3.0 JSON document'
     )
     def get(self):

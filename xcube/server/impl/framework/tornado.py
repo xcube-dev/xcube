@@ -18,10 +18,12 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
-
+import functools
 import logging
+import traceback
+import urllib.parse
 from abc import ABC
-from typing import Any, Optional, Sequence, Union, Callable
+from typing import Any, Optional, Sequence, Union, Callable, Dict, Type
 
 import tornado.escape
 import tornado.httputil
@@ -30,13 +32,14 @@ import tornado.web
 
 from xcube.constants import LOG
 from xcube.constants import LOG_LEVEL_DETAIL
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiHandler, ArgT
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
 from xcube.server.api import JSON
 from xcube.server.context import Context
 from xcube.server.framework import ServerFramework
+from xcube.util.assertions import assert_true
 from xcube.version import version
 
 _CTX_ATTR_NAME = "__xcube_server_root_context"
@@ -185,11 +188,21 @@ class TornadoBaseHandler(tornado.web.RequestHandler, ABC):
                         'authorization,content-type')
 
     def write_error(self, status_code: int, **kwargs: Any):
+        valid_json_types = str, int, float, bool, type(None)
+        error_info = {k: v for k, v in kwargs.items()
+                      if isinstance(v, valid_json_types)}
+        error_info.update(status_code=status_code)
+        if "exc_info" in kwargs:
+            exc_type, exc_val, exc_tb = kwargs["exc_info"]
+            error_info.update(
+                exception=traceback.format_exception(exc_type, exc_val,
+                                                     exc_tb),
+                message=str(exc_val)
+            )
+            if isinstance(exc_val, tornado.web.HTTPError) and exc_val.reason:
+                error_info.update(reason=exc_val.reason)
         self.finish({
-            "error": {
-                "status_code": status_code,
-                **kwargs
-            }
+            "error": error_info
         })
 
     async def get(self, *args, **kwargs):
@@ -216,9 +229,30 @@ class TornadoBaseHandler(tornado.web.RequestHandler, ABC):
 class TornadoApiRequest(ApiRequest):
     def __init__(self, request: tornado.httputil.HTTPServerRequest):
         self._request = request
+        self._query_args = None
 
-    def get_query_args(self, name: str) -> Sequence[str]:
-        return self._request.query_arguments.get(name, [])
+    @functools.cached_property
+    def query_args(self) -> Dict[str, Sequence[str]]:
+        return urllib.parse.parse_qs(self._request.query)
+
+    # noinspection PyShadowingBuiltins
+    def get_query_args(self,
+                       name: str,
+                       type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
+        query_args = self.query_args
+        if not query_args or name not in query_args:
+            return []
+        values = query_args[name]
+        if type is not None and type is not str:
+            assert_true(callable(type), 'type must be callable')
+            try:
+                return [type(v) for v in values]
+            except (ValueError, TypeError):
+                raise tornado.web.HTTPError(
+                    400, f'Query parameter {name!r}'
+                         f' must have type {type.__name__!r}.'
+                )
+        return values
 
     def get_body_args(self, name: str) -> Sequence[bytes]:
         return self._request.body_arguments.get(name, [])
@@ -248,9 +282,7 @@ class TornadoApiResponse(ApiResponse):
     def error(self,
               status_code: int,
               message: Optional[str] = None,
-              *args: Any,
-              **kwargs: Any) -> Exception:
+              reason: Optional[str] = None) -> Exception:
         return tornado.web.HTTPError(status_code,
                                      log_message=message,
-                                     *args,
-                                     **kwargs)
+                                     reason=reason)
