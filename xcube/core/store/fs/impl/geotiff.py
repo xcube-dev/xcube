@@ -22,12 +22,10 @@
 from abc import ABC
 from typing import Optional, Tuple, Dict, Any
 
-import boto3
 import fsspec
 import rasterio
 import s3fs
 import xarray as xr
-from rasterio.session import AWSSession
 
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
@@ -63,33 +61,20 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         self._open_params = open_params
         self._file_url = None
 
+    def _open_dataset_with_rasterio(self):
+        with rasterio.open(self._file_url) as rio_dataset:
+            overviews = rio_dataset.overviews(1)
+        return overviews
+
     def _get_num_levels_lazily(self) -> int:
         self._file_url = self._get_file_url()
         if isinstance(self._fs, s3fs.S3FileSystem):
             fs: s3fs.S3FileSystem = self._fs
-            boto3_session = boto3.Session(aws_secret_access_key=fs.token,
-                                          aws_access_key_id=fs.key,
-                                          aws_session_token=fs.token,
-                                          region_name=fs.client_kwargs.get(
-                                           'region_name',
-                                           'eu-central-1'
-                                           )
-                                          )
-            Session = rasterio.env.Env(AWSSession(boto3_session),
-                                       AWS_NO_SIGN_REQUEST=fs.anon if fs.anon
-                                       else True,
-                                       # rasterio.errors.RasterioIOError: CURL
-                                       # error: Could not resolve host:
-                                       # xcube-examples.None
-                                       # AWS_S3_ENDPOINT=fs.client_kwargs.get(
-                                       #     'endpoint_url', None)
-                                       )
-            with Session:
-                with rasterio.open(self._file_url) as rio_dataset:
-                    overviews = rio_dataset.overviews(1)
+            session = DatasetGeoTiffFsDataAccessor.create_env_session(fs)
+            with session:
+                overviews = self._open_dataset_with_rasterio()
         else:
-            with rasterio.open(self._file_url) as rio_dataset:
-                overviews = rio_dataset.overviews(1)
+            overviews = self._open_dataset_with_rasterio()
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) \
