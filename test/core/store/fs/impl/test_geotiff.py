@@ -33,7 +33,7 @@ from test.s3test import S3Test
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.geotiff import GeoTIFFMultiLevelDataset
 from xcube.core.store.fs.impl.geotiff import \
-    MultiLevelDatasetGeoTiffFsDataAccessor
+     MultiLevelDatasetGeoTiffFsDataAccessor
 from xcube.util.jsonschema import JsonSchema
 
 

@@ -388,7 +388,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
     @classmethod
     def open_dataset(cls,
                      file_spec,
-                     file_path,
+                     file_path: str,
                      tile_size: Tuple[int, int],
                      overview_level: Optional[int] = None) -> xr.Dataset:
         """
@@ -431,7 +431,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
         else:
             raise RuntimeError('number of dimensions must be 2 or 3')
 
-        dataset = xr.Dataset(arrays, attrs=dict(source=file_spec))
+        dataset = xr.Dataset(arrays, attrs=dict(source=file_path))
         # For CRS, rioxarray uses variable "spatial_ref" by default
         if 'spatial_ref' in array.coords:
             for data_var in dataset.data_vars.values():
