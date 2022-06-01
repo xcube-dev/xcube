@@ -120,7 +120,7 @@ class ServerTest(unittest.TestCase):
                     },
                 },
                 'required': ['data_stores'],
-                'additionalProperties': False,
+                'additionalProperties': True,
             },
             server.config_schema.to_dict()
         )
