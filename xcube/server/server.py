@@ -22,23 +22,23 @@
 import concurrent.futures
 import copy
 from typing import (Optional, Dict, Any, Union,
-                    Callable, Sequence, Awaitable, TypeVar)
+                    Callable, Sequence, Awaitable, Tuple, List)
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import LOG
-from xcube.server.api import Api
-from xcube.server.api import ApiContext
-from xcube.server.api import ApiRoute
-from xcube.server.config import BASE_SERVER_CONFIG_SCHEMA
-from xcube.server.config import Config
-from xcube.server.context import Context
-from xcube.server.framework import ServerFramework
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
+from .api import Api
+from .api import ApiContext
+from .api import ApiRoute
+from .api import Config
+from .api import Context
+from .api import ReturnT
+from .asyncexec import AsyncExecution
+from .config import BASE_SERVER_CONFIG_SCHEMA
+from .framework import ServerFramework
 
-
-ReturnT = TypeVar("ReturnT")
 
 # TODO:
 #   - allow for JSON schema for requests and responses (openAPI)
@@ -47,11 +47,11 @@ ReturnT = TypeVar("ReturnT")
 #   - aim at 100% test coverage
 
 
-class Server:
+class Server(AsyncExecution):
     """
     A REST server extendable by API extensions.
 
-    APIs are registered using the extension point "xcube.server.api".
+    APIs are registered using the extension point ".api".
 
     :param framework: The web server framework to be used
     :param config: The server configuration.
@@ -73,30 +73,52 @@ class Server:
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(apis)
-        ctx = self._new_ctx(config)
-        ctx.update(None)
-        self._set_ctx(ctx)
+        server_ctx = self._new_server_ctx(config)
+        server_ctx.on_update(None)
+        self._set_server_ctx(server_ctx)
+
+    @property
+    def apis(self) -> Tuple[Api]:
+        return self._apis
+
+    @property
+    def config_schema(self) -> JsonObjectSchema:
+        """The effective JSON schema for the server configuration."""
+        return self._config_schema
+
+    @property
+    def server_ctx(self) -> "ServerContext":
+        """The current server context."""
+        return self._server_ctx
+
+    def _set_server_ctx(self, server_ctx: "ServerContext"):
+        self._server_ctx = server_ctx
+        self._framework.update(server_ctx)
+
+    def _new_server_ctx(self, config: Config):
+        return ServerContext(self,
+                             self._config_schema.from_instance(config))
 
     def start(self):
         """Start this server."""
         LOG.info(f'Starting service...')
         for api in self._apis:
-            api.start(self.ctx)
-        self._framework.start(self.ctx)
+            api.on_start(self.server_ctx)
+        self._framework.start(self.server_ctx)
 
     def stop(self):
         """Stop this server."""
         LOG.info(f'Stopping service...')
-        self._framework.stop(self.ctx)
+        self._framework.stop(self.server_ctx)
         for api in self._apis:
-            api.stop(self.ctx)
-        self._ctx.dispose()
+            api.on_stop(self.server_ctx)
+        self._server_ctx.on_dispose()
 
     def update(self, config: Config):
         """Update this server with new configuration."""
-        ctx = self._new_ctx(config)
-        ctx.update(prev_ctx=self._ctx)
-        self._set_ctx(ctx)
+        server_ctx = self._new_server_ctx(config)
+        server_ctx.on_update(prev_ctx=self._server_ctx)
+        self._set_server_ctx(server_ctx)
 
     def call_later(self,
                    delay: Union[int, float],
@@ -137,36 +159,16 @@ class Server:
             executor, function, *args, **kwargs
         )
 
-    # Used mainly for testing
-    @property
-    def config_schema(self) -> JsonObjectSchema:
-        """The effective JSON schema for the server configuration."""
-        return self._config_schema
-
-    # Used mainly for testing
-    @property
-    def ctx(self) -> "ServerContext":
-        """The root (server) context."""
-        return self._ctx
-
-    def _set_ctx(self, ctx: "ServerContext"):
-        self._ctx = ctx
-        self._framework.update(ctx)
-
-    def _new_ctx(self, config: Config):
-        return ServerContext(self._apis,
-                             self._config_schema.from_instance(config))
-
     @classmethod
     def load_apis(
             cls,
             extension_registry: Optional[ExtensionRegistry] = None
-    ) -> Sequence[Api]:
+    ) -> Tuple[Api]:
         extension_registry = extension_registry \
                              or get_extension_registry()
 
         # Collect all registered APIs
-        apis = [
+        apis: List[Api] = [
             ext.component
             for ext in extension_registry.find_extensions(
                 EXTENSION_POINT_SERVER_APIS
@@ -202,8 +204,8 @@ class Server:
         }
 
         # Return an ordered dict sorted by an API's reference count
-        return sorted(apis,
-                      key=lambda api: api_ref_counts[api.name])
+        return tuple(sorted(apis,
+                            key=lambda api: api_ref_counts[api.name]))
 
     @classmethod
     def collect_api_routes(cls, apis: Sequence[Api]) -> Sequence[ApiRoute]:
@@ -240,20 +242,26 @@ class ServerContext(Context):
 
     A new server context is created for any new server configuration.
 
-    :param apis: The ordered sequence of loaded server APIs.
+    The constructor shall not be called directly.
+
+    :param server: The server.
     :param config: The current server configuration.
     """
 
     def __init__(self,
-                 apis: Sequence[Api],
+                 server: Server,
                  config: Config):
-        self._apis = apis
+        self._server = server
         self._config = config
         self._api_contexts: Dict[str, ApiContext] = dict()
 
-    # @property
-    # def apis(self) -> Tuple[Api]:
-    #     return tuple(self._apis)
+    @property
+    def apis(self) -> Tuple[Api]:
+        return self._server.apis
+
+    @property
+    def root(self) -> Context:
+        return self
 
     @property
     def config(self) -> Config:
@@ -262,17 +270,36 @@ class ServerContext(Context):
     def get_api_ctx(self, api_name: str) -> Optional[ApiContext]:
         return self._api_contexts.get(api_name)
 
-    def set_api_ctx(self, api_name: str, api_ctx: ApiContext):
-        self._assert_api_ctx_type(api_ctx, api_name)
+    def _set_api_ctx(self, api_name: str, api_ctx: ApiContext):
+        if not isinstance(api_ctx, ApiContext):
+            raise TypeError(f'API {api_name!r}:'
+                            f' context must be instance of'
+                            f' {ApiContext.__name__}')
         self._api_contexts[api_name] = api_ctx
         setattr(self, api_name, api_ctx)
 
-    def update(self, prev_ctx: Optional["ServerContext"]):
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs) -> object:
+        return self._server.call_later(delay, callback,
+                                       *args, **kwargs)
+
+    def run_in_executor(self,
+                        executor: Optional[concurrent.futures.Executor],
+                        function: Callable[..., ReturnT],
+                        *args: Any,
+                        **kwargs: Any) -> Awaitable[ReturnT]:
+        return self._server.run_in_executor(executor, function,
+                                            *args, **kwargs)
+
+    def on_update(self, prev_ctx: Optional["ServerContext"]):
         if prev_ctx is None:
             LOG.info(f'Applying initial configuration...')
         else:
             LOG.info(f'Applying configuration changes...')
-        for api in self._apis:
+        for api in self.apis:
             prev_api_ctx: Optional[ApiContext] = None
             if prev_ctx is not None:
                 prev_api_ctx = prev_ctx.get_api_ctx(
@@ -283,20 +310,14 @@ class ServerContext(Context):
                 assert dep_api_ctx is not None
             next_api_ctx: Optional[ApiContext] = api.create_ctx(self)
             if next_api_ctx is not None:
-                self.set_api_ctx(api.name, next_api_ctx)
-                next_api_ctx.update(prev_api_ctx)
+                self._set_api_ctx(api.name, next_api_ctx)
+                next_api_ctx.on_update(prev_api_ctx)
             elif prev_api_ctx is not None:
                 # There is no next context so dispose() the previous one
-                prev_api_ctx.dispose()
+                prev_api_ctx.on_dispose()
 
-    def dispose(self):
-        reversed_api_contexts = reversed(list(self._api_contexts.items()))
-        for api_name, api_ctx in reversed_api_contexts:
-            api_ctx.dispose()
-
-    @classmethod
-    def _assert_api_ctx_type(cls, api_ctx: Any, api_name: str):
-        if not isinstance(api_ctx, ApiContext):
-            raise TypeError(f'API {api_name!r}:'
-                            f' context must be instance of'
-                            f' {ApiContext.__name__}')
+    def on_dispose(self):
+        for api_name in reversed([api.name for api in self.apis]):
+            api_ctx = self.get_api_ctx(api_name)
+            if api_ctx is not None:
+                api_ctx.on_dispose()

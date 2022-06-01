@@ -19,13 +19,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import concurrent.futures
 import inspect
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
-    Generic, TypeVar, Union, Callable
+    Generic, TypeVar, Union, Callable, Awaitable, Mapping
 
-from .config import Config
-from .context import Context
+from .asyncexec import AsyncExecution
 from ..util.assertions import assert_instance
 from ..util.assertions import assert_true
 from ..util.jsonschema import JsonObjectSchema
@@ -34,7 +34,7 @@ _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
 _HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
 
 ArgT = TypeVar('ArgT')
-
+ReturnT = TypeVar('ReturnT')
 # API Context type variable
 ApiContextT = TypeVar("ApiContextT", bound="ApiContext")
 
@@ -47,6 +47,8 @@ JSON = Union[
     List["JSON"],
     Dict[str, "JSON"],
 ]
+
+Config = Mapping[str, Any]
 
 _builtin_type = type
 
@@ -128,8 +130,14 @@ class Api(Generic[ApiContextT]):
             optional_apis: Optional[Sequence[str]] = None,
             config_schema: Optional[JsonObjectSchema] = None,
             create_ctx: Optional[
-                Callable[[Context], Optional[ApiContextT]]
-            ] = None
+                Callable[["Context"], Optional[ApiContextT]]
+            ] = None,
+            on_start: Optional[
+                Callable[["Context"], Any]
+            ] = None,
+            on_stop: Optional[
+                Callable[["Context"], Any]
+            ] = None,
     ):
         assert_instance(name, str, 'name')
         assert_instance(version, str, 'version')
@@ -137,9 +145,12 @@ class Api(Generic[ApiContextT]):
             assert_instance(description, str, 'description')
         if config_schema is not None:
             assert_instance(config_schema, JsonObjectSchema, 'config_schema')
-        if create_ctx is not None:
-            assert_true(callable(create_ctx),
-                        message='create_ctx must be callable')
+        if on_start is not None:
+            assert_true(callable(on_start),
+                        message='on_start must be callable')
+        if on_stop is not None:
+            assert_true(callable(on_stop),
+                        message='on_stop must be callable')
         self._name = name
         self._version = version
         self._description = description
@@ -148,6 +159,8 @@ class Api(Generic[ApiContextT]):
         self._routes: List[ApiRoute] = list(routes or [])
         self._config_schema = config_schema
         self._create_ctx = create_ctx
+        self._on_start = on_start
+        self._on_stop = on_stop
 
     @property
     def name(self) -> str:
@@ -162,9 +175,8 @@ class Api(Generic[ApiContextT]):
     @property
     def description(self) -> Optional[str]:
         """The description of this API."""
-        return self._description \
-               or (getattr(self, '__doc__', None)
-                   if self.__class__ is not Api else None)
+        return self._description or (getattr(self, '__doc__', None)
+                                     if self.__class__ is not Api else None)
 
     @property
     def required_apis(self) -> Tuple[str]:
@@ -235,40 +247,25 @@ class Api(Generic[ApiContextT]):
         return decorator_func
 
     @property
-    def routes(self) -> List["ApiRoute"]:
+    def routes(self) -> Tuple["ApiRoute"]:
         """The routes provided by this API."""
-        return self._routes
+        return tuple(self._routes)
 
     @property
     def config_schema(self) -> Optional[JsonObjectSchema]:
-        """
-        Get the JSON schema for the configuration of this API.
-        """
+        """Get the JSON schema for the configuration of this API."""
         return self._config_schema
 
-    def start(self, root_ctx: Context):
-        """
-        Called when the server is started.
-
-        :param root_ctx: The server's current root context
-        """
-
-    def stop(self, root_ctx: Context):
-        """
-        Called when the server is stopped.
-
-        :param root_ctx: The server's current root context
-        """
-
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def create_ctx(self, root_ctx: Context) -> Optional[ApiContextT]:
-        """
-        Create a new context object for this API.
+    def create_ctx(self, root_ctx: "Context") -> Optional[ApiContextT]:
+        """Create a new context object for this API.
         If the API doesn't require a context object, the method should
         return None.
-        The default implementation uses the *api_ctx_cls* class, if any,
-        to instantiate an API context using root_ctx as only argument.
+        The default implementation uses the *create_ctx*
+        argument passed to the constructor, if any,
+        to instantiate an API context using *root_ctx* as only argument.
         Otherwise, None is returned.
+        Should not be called directly.
 
         :param root_ctx: The server's current root context.
         :return: An instance of ApiContext or None
@@ -276,6 +273,83 @@ class Api(Generic[ApiContextT]):
         if self._create_ctx is not None:
             return self._create_ctx(root_ctx)
         return None
+
+    def on_start(self, root_ctx: "Context"):
+        """Called when the server is started.
+        Can be overridden to initialize the API.
+        Should not be called directly.
+
+        The default implementation calls the *on_start*
+        argument passed to the constructor, if any.
+
+        :param root_ctx: The server's current root context
+        """
+        if self._on_start is not None:
+            return self._on_start(root_ctx)
+
+    def on_stop(self, root_ctx: "Context"):
+        """Called when the server is stopped.
+        Can be overridden to initialize the API.
+        Should not be called directly.
+
+        The default implementation calls the *on_stop*
+        argument passed to the constructor, if any.
+
+        :param root_ctx: The server's current root context
+        """
+        if self._on_stop is not None:
+            return self._on_stop(root_ctx)
+
+
+class Context(AsyncExecution, ABC):
+    """The interface for context objects."""
+
+    @property
+    @abstractmethod
+    def apis(self) -> Tuple[Api]:
+        """The APIs used by the server."""
+
+    @property
+    @abstractmethod
+    def config(self) -> Config:
+        """The server's current configuration."""
+
+    @property
+    @abstractmethod
+    def root(self) -> "Context":
+        """The server's current root context."""
+
+    @abstractmethod
+    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+        """
+        Get the API context for *api_name*.
+        Can be used to access context objects of other APIs.
+
+        :param api_name: The name of a registered API.
+        :return: The API context for *api_name*, or None if no such exists.
+        """
+
+    @abstractmethod
+    def on_update(self, prev_context: Optional["Context"]):
+        """Called when the server configuration changed.
+        Must be implemented by derived classes in order to update
+        this context with respect to the current configuration
+        ``self.config`` and the given *prev_context*, if any.
+        The method shall not be called directly.
+
+        :param prev_context: The previous context instance.
+            Will be ``None`` if ``on_update()`` is called for the
+            very first time.
+        """
+
+    @abstractmethod
+    def on_dispose(self):
+        """Called if this context will never be used again.
+        May be overridden by derived classes in order to
+        dispose allocated resources.
+        The default implementation does nothing.
+        The method shall not be called directly.
+        """
 
 
 class ApiContext(Context, ABC):
@@ -287,16 +361,16 @@ class ApiContext(Context, ABC):
 
     Derived classes
 
-    * must implement the `update()` method in order
+    * must implement the `on_update()` method in order
       to initialize or update this context object state with
       respect to the current server configuration, or with
       respect to other API context object states.
-    * may overwrite the `dispose()` method to empty any caches
+    * may overwrite the `on_dispose()` method to empty any caches
       and close access to resources.
     * must call the super class constructor with the *root* context,
       from their own constructor, if any.
 
-    :param root: The root (server) context object.
+    :param root: The server's root context.
     """
 
     def __init__(self, root: Context):
@@ -304,8 +378,12 @@ class ApiContext(Context, ABC):
 
     @property
     def root(self) -> Context:
-        """The root (server) context object."""
+        """The server context object."""
         return self._root
+
+    @property
+    def apis(self) -> Tuple[Api]:
+        return self.root.apis
 
     @property
     def config(self) -> Config:
@@ -314,8 +392,24 @@ class ApiContext(Context, ABC):
     def get_api_ctx(self, api_name: str) -> Optional["ApiContext"]:
         return self.root.get_api_ctx(api_name)
 
-    def dispose(self):
+    def on_dispose(self):
         """Does nothing."""
+
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs) -> object:
+        return self.root.call_later(delay, callback,
+                                    *args, **kwargs)
+
+    def run_in_executor(self,
+                        executor: Optional[concurrent.futures.Executor],
+                        function: Callable[..., ReturnT],
+                        *args: Any,
+                        **kwargs: Any) -> Awaitable[ReturnT]:
+        return self.root.run_in_executor(executor, function,
+                                         *args, **kwargs)
 
 
 class ApiRequest:

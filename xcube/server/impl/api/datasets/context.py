@@ -25,7 +25,7 @@ from typing import Any, List, Dict, Optional
 from xcube.constants import LOG
 from xcube.core.store import new_data_store
 from xcube.server.api import ApiContext
-from xcube.server.context import Context
+from xcube.server.api import Context
 
 
 class DatasetsContext(ApiContext):
@@ -34,7 +34,7 @@ class DatasetsContext(ApiContext):
         super().__init__(root)
         self._datasets = dict()
 
-    def update(self, prev_ctx: Optional["DatasetsContext"]):
+    def on_update(self, prev_ctx: Optional["DatasetsContext"]):
         LOG.info('Updating datasets...')
         data_store_configs: List[Dict[str, Any]] = \
             self.config.get('data_stores', [])

@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
-from xcube.server.context import Context
+from xcube.server.api import Context
 from .config import DATASETS_CONFIG_SCHEMA
 from .context import DatasetsContext
 

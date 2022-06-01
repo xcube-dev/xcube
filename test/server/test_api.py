@@ -20,17 +20,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional, Any, Union, Sequence
+from typing import Optional
 
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
-from xcube.server.api import ApiRequest
-from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
-from xcube.server.api import JSON
-from xcube.server.context import Context
+from xcube.server.api import Context
 from xcube.server.server import ServerContext
+from .mocks import MockApiError
+from .mocks import MockApiRequest
+from .mocks import MockApiResponse
+from .mocks import mock_server
 
 
 class ApiTest(unittest.TestCase):
@@ -43,9 +44,40 @@ class ApiTest(unittest.TestCase):
         self.assertEqual((), api.required_apis)
         self.assertEqual((), api.optional_apis)
         self.assertEqual(None, api.config_schema)
-        self.assertEqual([], api.routes)
+        self.assertEqual((), api.routes)
 
-    def test_route(self):
+    def test_ctor_functions(self):
+        class MyApiContext(ApiContext):
+            def on_update(self, prev_ctx: Optional["Context"]):
+                pass
+
+        test_dict = dict()
+
+        def handle_start(root):
+            test_dict['handle_start'] = root
+
+        def handle_stop(root):
+            test_dict['handle_stop'] = root
+
+        root_ctx = ServerContext(mock_server(), {})
+
+        api = Api("datasets",
+                  create_ctx=MyApiContext,
+                  on_start=handle_start,
+                  on_stop=handle_stop)
+
+        api_ctx = api.create_ctx(root_ctx)
+        self.assertIsInstance(api_ctx, MyApiContext)
+
+        api.on_start(root_ctx)
+        self.assertIs(root_ctx, test_dict.get('handle_start'))
+        self.assertIs(None, test_dict.get('handle_stop'))
+
+        api.on_stop(root_ctx)
+        self.assertIs(root_ctx, test_dict.get('handle_start'))
+        self.assertIs(root_ctx, test_dict.get('handle_stop'))
+
+    def test_route_decorator(self):
         api = Api("datasets")
 
         @api.route("/datasets")
@@ -61,14 +93,14 @@ class ApiTest(unittest.TestCase):
                 return {}
 
         self.assertEqual(
-            [
+            (
                 ApiRoute("datasets", "/datasets", DatasetsHandler),
                 ApiRoute("datasets", "/datasets/{dataset_id}", DatasetHandler)
-            ],
+            ),
             api.routes
         )
 
-    def test_openapi(self):
+    def test_operation_decorator(self):
         api = Api("datasets")
 
         @api.route("/datasets")
@@ -154,7 +186,7 @@ class ApiRouteTest(unittest.TestCase):
 class ApiContextTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
 
-        def update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     class TimeSeriesContext(ApiContext):
@@ -162,7 +194,7 @@ class ApiContextTest(unittest.TestCase):
             super().__init__(root)
             self.dataset_ctx = root.get_api_ctx("datasets")
 
-        def update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     def test_it(self):
@@ -172,8 +204,8 @@ class ApiContextTest(unittest.TestCase):
                    create_ctx=self.TimeSeriesContext,
                    required_apis=["datasets"])
         config = {}
-        root_ctx = ServerContext([api1, api2], config)
-        root_ctx.update(None)
+        root_ctx = ServerContext(mock_server([api1, api2]), config)
+        root_ctx.on_update(None)
         api1_ctx = root_ctx.get_api_ctx('datasets')
         api2_ctx = root_ctx.get_api_ctx('timeseries')
 
@@ -193,14 +225,14 @@ class ApiContextTest(unittest.TestCase):
 class ApiHandlerTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
 
-        def update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        self.root_ctx = ServerContext([self.api], self.config)
-        self.root_ctx.update(None)
+        self.root_ctx = ServerContext(mock_server([self.api]), self.config)
+        self.root_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()
         self.handler = ApiHandler("datasets",
@@ -255,46 +287,3 @@ class ApiRequestTest(unittest.TestCase):
         self.assertEqual([], request.get_body_args('key'))
         self.assertEqual(None, request.get_body_arg('key'))
 
-
-class MockApiRequest(ApiRequest):
-    @property
-    def body(self) -> bytes:
-        return bytes({})
-
-    @property
-    def json(self) -> JSON:
-        return {}
-
-    # noinspection PyShadowingBuiltins
-    def get_query_args(self, name: str, type: Any = None) -> Sequence[Any]:
-        if name == 'details':
-            return ['1']
-        return []
-
-    def get_body_args(self, name: str) -> Sequence[bytes]:
-        if name == 'secret':
-            return [bytes(10)]
-        return []
-
-
-class MockApiResponse(ApiResponse):
-    def set_status(self, status_code: int, reason: Optional[str] = None):
-        pass
-
-    def write(self, data: Union[str, bytes, JSON]):
-        pass
-
-    def finish(self, data: Union[str, bytes, JSON] = None):
-        pass
-
-    def error(self,
-              status_code: int,
-              message: Optional[str] = None,
-              reason: Optional[str] = None) -> Exception:
-        return MockApiError(status_code, message, reason)
-
-
-class MockApiError(Exception):
-    def __init__(self, *args, **kwargs):
-        # noinspection PyArgumentList
-        super().__init__(*args, **kwargs)

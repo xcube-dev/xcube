@@ -39,10 +39,10 @@ from xcube.server.api import ApiHandler, ArgT
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import Context
 from xcube.server.api import JSON
-from xcube.server.context import Context
+from xcube.server.api import ReturnT
 from xcube.server.framework import ServerFramework
-from xcube.server.framework import ReturnT
 from xcube.util.assertions import assert_true
 from xcube.version import version
 
@@ -167,9 +167,9 @@ class TornadoFramework(ServerFramework):
         while True:
             pos1 = path.find('{', pos)
             if pos1 >= 0:
-                pos2 = path.find('}', pos1 + 2)
+                pos2 = path.find('}', pos1 + 1)
                 if pos2 > pos1:
-                    name = path[pos1 + 2:pos2]
+                    name = path[pos1 + 1:pos2]
                     if not name.isidentifier():
                         raise ValueError(
                             '"{name}" in path must be a valid identifier,'

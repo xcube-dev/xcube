@@ -21,7 +21,6 @@
 
 from xcube.server.api import Api
 from xcube.server.api import ApiHandler
-from xcube.server.server import Server
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.version import version
@@ -44,9 +43,8 @@ class MainHandler(ApiHandler):
     @api.operation(operation_id='getServiceInfo',
                    summary='Get information about the service')
     def get(self):
-        apis = Server.load_apis()
         api_infos = []
-        for other_api in apis:
+        for other_api in self.root_ctx.apis:
             api_info = {
                 "name": other_api.name,
                 "version": other_api.version,
@@ -158,10 +156,9 @@ class MainHandler(ApiHandler):
             }
         }
 
-        apis = Server.load_apis()
         tags = []
         paths = {}
-        for other_api in apis:
+        for other_api in self.root_ctx.apis:
             tags.append({
                 "name": other_api.name,
                 "description": other_api.description or ""
