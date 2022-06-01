@@ -74,14 +74,14 @@ class Server:
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(apis)
         ctx = self._new_ctx(config)
-        ctx.update(None)
+        ctx.on_update(None)
         self._set_ctx(ctx)
 
     def start(self):
         """Start this server."""
         LOG.info(f'Starting service...')
         for api in self._apis:
-            api.start(self.ctx)
+            api.on_start(self.ctx)
         self._framework.start(self.ctx)
 
     def stop(self):
@@ -89,13 +89,13 @@ class Server:
         LOG.info(f'Stopping service...')
         self._framework.stop(self.ctx)
         for api in self._apis:
-            api.stop(self.ctx)
-        self._ctx.dispose()
+            api.on_stop(self.ctx)
+        self._ctx.on_dispose()
 
     def update(self, config: Config):
         """Update this server with new configuration."""
         ctx = self._new_ctx(config)
-        ctx.update(prev_ctx=self._ctx)
+        ctx.on_update(prev_ctx=self._ctx)
         self._set_ctx(ctx)
 
     def call_later(self,
@@ -267,7 +267,7 @@ class ServerContext(Context):
         self._api_contexts[api_name] = api_ctx
         setattr(self, api_name, api_ctx)
 
-    def update(self, prev_ctx: Optional["ServerContext"]):
+    def on_update(self, prev_ctx: Optional["ServerContext"]):
         if prev_ctx is None:
             LOG.info(f'Applying initial configuration...')
         else:
@@ -284,15 +284,15 @@ class ServerContext(Context):
             next_api_ctx: Optional[ApiContext] = api.create_ctx(self)
             if next_api_ctx is not None:
                 self.set_api_ctx(api.name, next_api_ctx)
-                next_api_ctx.update(prev_api_ctx)
+                next_api_ctx.on_update(prev_api_ctx)
             elif prev_api_ctx is not None:
                 # There is no next context so dispose() the previous one
-                prev_api_ctx.dispose()
+                prev_api_ctx.on_dispose()
 
-    def dispose(self):
+    def on_dispose(self):
         reversed_api_contexts = reversed(list(self._api_contexts.items()))
         for api_name, api_ctx in reversed_api_contexts:
-            api_ctx.dispose()
+            api_ctx.on_dispose()
 
     @classmethod
     def _assert_api_ctx_type(cls, api_ctx: Any, api_name: str):

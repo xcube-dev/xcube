@@ -49,18 +49,23 @@ class Context(abc.ABC):
         """
 
     @abc.abstractmethod
-    def update(self, prev_ctx: Optional["Context"]):
-        """
-        Update this context with respect to the current configuration.
-        Called when the server configuration changed.
+    def on_update(self, prev_context: Optional["Context"]):
+        """Called when the server configuration changed.
+        Must be implemented by derived classes in order to update
+        this context with respect to the current configuration
+        ``self.config`` and the given *prev_context*, if any.
+        The method shall not be called directly.
 
-        :param prev_ctx: The previous context instance, or None
-            if update() is called for the first time (= initialisation).
+        :param prev_context: The previous context instance.
+            Will be ``None`` if ``on_update()`` is called for the
+            very first time.
         """
 
     @abc.abstractmethod
-    def dispose(self):
-        """
-        Dispose all allocated resources.
-        Called if this context will never be used again.
+    def on_dispose(self):
+        """Called if this context will never be used again.
+        May be overridden by derived classes in order to
+        dispose allocated resources.
+        The default implementation does nothing.
+        The method shall not be called directly.
         """

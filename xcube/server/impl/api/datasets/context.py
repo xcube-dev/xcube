@@ -34,7 +34,7 @@ class DatasetsContext(ApiContext):
         super().__init__(root)
         self._datasets = dict()
 
-    def update(self, prev_ctx: Optional["DatasetsContext"]):
+    def on_update(self, prev_ctx: Optional["DatasetsContext"]):
         LOG.info('Updating datasets...')
         data_store_configs: List[Dict[str, Any]] = \
             self.config.get('data_stores', [])

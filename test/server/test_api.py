@@ -43,9 +43,40 @@ class ApiTest(unittest.TestCase):
         self.assertEqual((), api.required_apis)
         self.assertEqual((), api.optional_apis)
         self.assertEqual(None, api.config_schema)
-        self.assertEqual([], api.routes)
+        self.assertEqual((), api.routes)
 
-    def test_route(self):
+    def test_ctor_functions(self):
+        class MyApiContext(ApiContext):
+            def on_update(self, prev_ctx: Optional["Context"]):
+                pass
+
+        test_dict = dict()
+
+        def handle_start(root):
+            test_dict['handle_start'] = root
+
+        def handle_stop(root):
+            test_dict['handle_stop'] = root
+
+        root_ctx = ServerContext([], {})
+
+        api = Api("datasets",
+                  create_ctx=MyApiContext,
+                  on_start=handle_start,
+                  on_stop=handle_stop)
+
+        api_ctx = api.create_ctx(root_ctx)
+        self.assertIsInstance(api_ctx, MyApiContext)
+
+        api.on_start(root_ctx)
+        self.assertIs(root_ctx, test_dict.get('handle_start'))
+        self.assertIs(None, test_dict.get('handle_stop'))
+
+        api.on_stop(root_ctx)
+        self.assertIs(root_ctx, test_dict.get('handle_start'))
+        self.assertIs(root_ctx, test_dict.get('handle_stop'))
+
+    def test_route_decorator(self):
         api = Api("datasets")
 
         @api.route("/datasets")
@@ -61,14 +92,14 @@ class ApiTest(unittest.TestCase):
                 return {}
 
         self.assertEqual(
-            [
+            (
                 ApiRoute("datasets", "/datasets", DatasetsHandler),
                 ApiRoute("datasets", "/datasets/{dataset_id}", DatasetHandler)
-            ],
+            ),
             api.routes
         )
 
-    def test_openapi(self):
+    def test_operation_decorator(self):
         api = Api("datasets")
 
         @api.route("/datasets")
@@ -154,7 +185,7 @@ class ApiRouteTest(unittest.TestCase):
 class ApiContextTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
 
-        def update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     class TimeSeriesContext(ApiContext):
@@ -162,7 +193,7 @@ class ApiContextTest(unittest.TestCase):
             super().__init__(root)
             self.dataset_ctx = root.get_api_ctx("datasets")
 
-        def update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     def test_it(self):
@@ -173,7 +204,7 @@ class ApiContextTest(unittest.TestCase):
                    required_apis=["datasets"])
         config = {}
         root_ctx = ServerContext([api1, api2], config)
-        root_ctx.update(None)
+        root_ctx.on_update(None)
         api1_ctx = root_ctx.get_api_ctx('datasets')
         api2_ctx = root_ctx.get_api_ctx('timeseries')
 
@@ -193,14 +224,14 @@ class ApiContextTest(unittest.TestCase):
 class ApiHandlerTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
 
-        def update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
         self.root_ctx = ServerContext([self.api], self.config)
-        self.root_ctx.update(None)
+        self.root_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()
         self.handler = ApiHandler("datasets",

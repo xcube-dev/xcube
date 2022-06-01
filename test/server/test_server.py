@@ -321,10 +321,10 @@ class MockApiContext(ApiContext):
         self.update_count = 0
         self.dispose_count = 0
 
-    def update(self, prev_ctx: Optional[ApiContext]):
+    def on_update(self, prev_ctx: Optional[ApiContext]):
         self.update_count += 1
 
-    def dispose(self):
+    def on_dispose(self):
         self.dispose_count += 1
 
 
