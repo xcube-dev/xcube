@@ -20,11 +20,13 @@
 #  DEALINGS IN THE SOFTWARE.
 
 
-from typing import Sequence, Union, Callable
+from typing import Sequence, Union, Callable, Optional, Any, Awaitable
+
+from tornado import concurrent
 
 from xcube.server.api import ApiRoute
 from xcube.server.context import Context
-from xcube.server.framework import ServerFramework
+from xcube.server.framework import ServerFramework, ReturnT
 
 
 class FlaskFramework(ServerFramework):
@@ -50,5 +52,12 @@ class FlaskFramework(ServerFramework):
                    delay: Union[int, float],
                    callback: Callable,
                    *args,
-                   **kwargs):
+                   **kwargs) -> object:
+        raise NotImplementedError()
+
+    def run_in_executor(self,
+                        executor: Optional[concurrent.futures.Executor],
+                        function: Callable[..., ReturnT],
+                        *args: Any,
+                        **kwargs: Any) -> Awaitable[ReturnT]:
         raise NotImplementedError()

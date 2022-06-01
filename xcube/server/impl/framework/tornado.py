@@ -18,12 +18,15 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
+
+import concurrent.futures
 import functools
 import logging
 import traceback
 import urllib.parse
 from abc import ABC
-from typing import Any, Optional, Sequence, Union, Callable, Dict, Type
+from typing import Any, Optional, Sequence, Union, Callable, Dict, Type, \
+    Awaitable
 
 import tornado.escape
 import tornado.httputil
@@ -39,6 +42,7 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import JSON
 from xcube.server.context import Context
 from xcube.server.framework import ServerFramework
+from xcube.server.framework import ReturnT
 from xcube.util.assertions import assert_true
 from xcube.version import version
 
@@ -108,8 +112,26 @@ class TornadoFramework(ServerFramework):
                    delay: Union[int, float],
                    callback: Callable,
                    *args,
-                   **kwargs):
-        self.io_loop.call_later(delay, callback, *args, **kwargs)
+                   **kwargs) -> object:
+        return self.io_loop.call_later(
+            delay,
+            callback,
+            *args,
+            **kwargs
+        )
+
+    def run_in_executor(
+            self,
+            executor: Optional[concurrent.futures.Executor],
+            function: Callable[..., ReturnT],
+            *args: Any,
+            **kwargs: Any
+    ) -> Awaitable[ReturnT]:
+        return self.io_loop.run_in_executor(
+            executor,
+            functools.partial(function, **kwargs) if kwargs else function,
+            *args
+        )
 
     @staticmethod
     def _configure_logger():

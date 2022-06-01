@@ -19,8 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import concurrent.futures
 import copy
-from typing import Optional, Dict, Any, Union, Callable, Sequence
+from typing import (Optional, Dict, Any, Union,
+                    Callable, Sequence, Awaitable, TypeVar)
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import LOG
@@ -36,11 +38,14 @@ from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
 
 
+ReturnT = TypeVar("ReturnT")
+
 # TODO:
 #   - allow for JSON schema for requests and responses (openAPI)
 #   - introduce change management (per API?)
 #     - detect API context patches
 #   - aim at 100% test coverage
+
 
 class Server:
     """
@@ -106,7 +111,31 @@ class Server:
         :param args: Positional arguments passed to *callback*.
         :param kwargs: Keyword arguments passed to *callback*.
         """
-        self._framework.call_later(delay, callback, *args, **kwargs)
+        return self._framework.call_later(
+            delay, callback, *args, **kwargs
+        )
+
+    def run_in_executor(
+            self,
+            executor: Optional[concurrent.futures.Executor],
+            function: Callable[..., ReturnT],
+            *args: Any,
+            **kwargs: Any
+    ) -> Awaitable[ReturnT]:
+        """
+        Concurrently runs a *function* in a ``concurrent.futures.Executor``.
+        If *executor* is ``None``, the framework's default
+        executor will be used.
+
+        :param executor: An optional executor.
+        :param function: The function to be run concurrently.
+        :param args: Positional arguments passed to *function*.
+        :param kwargs: Keyword arguments passed to *function*.
+        :return: The awaitable return value of *function*.
+        """
+        return self._framework.run_in_executor(
+            executor, function, *args, **kwargs
+        )
 
     # Used mainly for testing
     @property

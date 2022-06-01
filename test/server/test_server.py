@@ -20,14 +20,17 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional, Sequence, Tuple, Dict, Any, Union, Callable
+from typing import Optional, Sequence, Tuple, Dict, Any, Union, Callable, \
+    Awaitable
+
+from tornado import concurrent
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiRoute
 from xcube.server.context import Context
-from xcube.server.framework import ServerFramework
+from xcube.server.framework import ServerFramework, ReturnT
 from xcube.server.server import Server
 from xcube.server.server import ServerContext
 from xcube.util.extension import ExtensionRegistry
@@ -199,8 +202,24 @@ class ServerTest(unittest.TestCase):
             framework, {},
             extension_registry=extension_registry
         )
-        server.call_later(0.01, lambda x: x)
+        self.assertEqual(0, framework.call_later_count)
+        result = server.call_later(0.01, lambda x: x)
+        self.assertIsInstance(result, object)
         self.assertEqual(1, framework.call_later_count)
+
+    def test_run_in_executor(self):
+        extension_registry = mock_extension_registry([
+            ("datasets", dict()),
+        ])
+        framework = MockServerFramework()
+        server = Server(
+            framework, {},
+            extension_registry=extension_registry
+        )
+        self.assertEqual(0, framework.run_in_executor_count)
+        result = server.run_in_executor(None, lambda x: x)
+        self.assertIsInstance(result, concurrent.futures.Future)
+        self.assertEqual(1, framework.run_in_executor_count)
 
     def test_apis_loaded_in_order(self):
         extension_registry = mock_extension_registry([
@@ -263,6 +282,7 @@ class MockServerFramework(ServerFramework):
         self.start_count = 0
         self.stop_count = 0
         self.call_later_count = 0
+        self.run_in_executor_count = 0
 
     def add_routes(self, routes: Sequence[ApiRoute]):
         self.add_routes_count += 1
@@ -280,8 +300,19 @@ class MockServerFramework(ServerFramework):
                    delay: Union[int, float],
                    callback: Callable,
                    *args,
-                   **kwargs):
+                   **kwargs) -> object:
         self.call_later_count += 1
+        return object()
+
+    def run_in_executor(self,
+                        executor: Optional[concurrent.futures.Executor],
+                        function: Callable[..., ReturnT],
+                        *args: Any,
+                        **kwargs: Any) -> Awaitable[ReturnT]:
+        self.run_in_executor_count += 1
+        import concurrent.futures
+        # noinspection PyTypeChecker
+        return concurrent.futures.Future()
 
 
 class MockApiContext(ApiContext):
