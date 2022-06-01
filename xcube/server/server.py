@@ -73,9 +73,9 @@ class Server(AsyncExecution):
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(apis)
-        ctx = self._new_server_ctx(config)
-        ctx.on_update(None)
-        self._set_server_ctx(ctx)
+        server_ctx = self._new_server_ctx(config)
+        server_ctx.on_update(None)
+        self._set_server_ctx(server_ctx)
 
     @property
     def apis(self) -> Tuple[Api]:
@@ -116,9 +116,9 @@ class Server(AsyncExecution):
 
     def update(self, config: Config):
         """Update this server with new configuration."""
-        ctx = self._new_server_ctx(config)
-        ctx.on_update(prev_ctx=self._server_ctx)
-        self._set_server_ctx(ctx)
+        server_ctx = self._new_server_ctx(config)
+        server_ctx.on_update(prev_ctx=self._server_ctx)
+        self._set_server_ctx(server_ctx)
 
     def call_later(self,
                    delay: Union[int, float],
