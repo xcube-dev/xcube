@@ -53,27 +53,27 @@ class ConfigChangeObserverTest(unittest.TestCase):
             extension_registry=extension_registry
         )
 
-        root_ctx = server.ctx
+        root_ctx = server.server_ctx
 
         observer = ConfigChangeObserver(server,
                                         [self.TEST_CONFIG],
                                         0.1)
 
         self.assertEqual(0, framework.call_later_count)
-        self.assertIs(root_ctx, server.ctx)
+        self.assertIs(root_ctx, server.server_ctx)
 
         observer.check()
         self.assertEqual(1, framework.call_later_count)
-        self.assertIs(root_ctx, server.ctx)
+        self.assertIs(root_ctx, server.server_ctx)
 
         observer.check()
         self.assertEqual(2, framework.call_later_count)
-        self.assertIs(root_ctx, server.ctx)
+        self.assertIs(root_ctx, server.server_ctx)
 
         with open(self.TEST_CONFIG, "w") as fp:
             yaml.safe_dump(config, fp)
 
         observer.check()
         self.assertEqual(3, framework.call_later_count)
-        self.assertIsNot(root_ctx, server.ctx)
+        self.assertIsNot(root_ctx, server.server_ctx)
 

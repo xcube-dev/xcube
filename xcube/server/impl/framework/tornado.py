@@ -167,9 +167,9 @@ class TornadoFramework(ServerFramework):
         while True:
             pos1 = path.find('{', pos)
             if pos1 >= 0:
-                pos2 = path.find('}', pos1 + 2)
+                pos2 = path.find('}', pos1 + 1)
                 if pos2 > pos1:
-                    name = path[pos1 + 2:pos2]
+                    name = path[pos1 + 1:pos2]
                     if not name.isidentifier():
                         raise ValueError(
                             '"{name}" in path must be a valid identifier,'

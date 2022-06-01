@@ -20,54 +20,18 @@
 #  DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Sequence, List, Type, Union, Callable, Optional, Any, \
+from typing import Union, Callable, Optional, Any, \
     Awaitable, TypeVar
 
 from tornado import concurrent
 
-from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
-from .api import ApiRoute
-from .asyncexec import AsyncExecution
-from .context import Context
-from xcube.util.extension import get_extension_registry
-
 ReturnT = TypeVar("ReturnT")
 
 
-class ServerFramework(AsyncExecution, abc.ABC):
+class AsyncExecution(abc.ABC):
     """
-    An abstract web server framework.
+    An interface that defines asynchronous function execution.
     """
-
-    @abc.abstractmethod
-    def add_routes(self, routes: Sequence[ApiRoute]):
-        """Adds the given routes to this web server."""
-
-    @abc.abstractmethod
-    def update(self, ctx: Context):
-        """
-        Called, when the server's root context has changed.
-
-        This is the case immediately after instantiation and before
-        start() is called. It may then be called on any context change,
-        likely due to a configuration change.
-
-        :param ctx: The current server's root context.
-        """
-
-    @abc.abstractmethod
-    def start(self, ctx: Context):
-        """
-        Starts the web service.
-        :param ctx: The initial server's root context.
-        """
-
-    @abc.abstractmethod
-    def stop(self, ctx: Context):
-        """
-        Stops the web service.
-        :param ctx: The current server's root context.
-        """
 
     @abc.abstractmethod
     def call_later(self,
@@ -108,22 +72,3 @@ class ServerFramework(AsyncExecution, abc.ABC):
         :param kwargs: Keyword arguments passed to *function*.
         :return: The awaitable return value of *function*.
         """
-
-
-def get_framework_names() -> List[str]:
-    """Get the names of possible web server frameworks."""
-    extension_registry = get_extension_registry()
-    return [
-        ext.name for ext in extension_registry.find_extensions(
-            EXTENSION_POINT_SERVER_FRAMEWORKS
-        )
-    ]
-
-
-def get_framework_class(framework_name: str) -> Type[ServerFramework]:
-    """Get the web server framework class for the given *framework_name*."""
-    extension_registry = get_extension_registry()
-    return extension_registry.get_component(
-        EXTENSION_POINT_SERVER_FRAMEWORKS,
-        framework_name
-    )

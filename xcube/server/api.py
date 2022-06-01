@@ -19,10 +19,11 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import concurrent.futures
 import inspect
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
-    Generic, TypeVar, Union, Callable
+    Generic, TypeVar, Union, Callable, Awaitable
 
 from .config import Config
 from .context import Context
@@ -34,7 +35,7 @@ _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
 _HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
 
 ArgT = TypeVar('ArgT')
-
+ReturnT = TypeVar('ReturnT')
 # API Context type variable
 ApiContextT = TypeVar("ApiContextT", bound="ApiContext")
 
@@ -309,16 +310,16 @@ class ApiContext(Context, ABC):
 
     Derived classes
 
-    * must implement the `update()` method in order
+    * must implement the `on_update()` method in order
       to initialize or update this context object state with
       respect to the current server configuration, or with
       respect to other API context object states.
-    * may overwrite the `dispose()` method to empty any caches
+    * may overwrite the `on_dispose()` method to empty any caches
       and close access to resources.
     * must call the super class constructor with the *root* context,
       from their own constructor, if any.
 
-    :param root: The root (server) context object.
+    :param root: The server's root context.
     """
 
     def __init__(self, root: Context):
@@ -326,7 +327,7 @@ class ApiContext(Context, ABC):
 
     @property
     def root(self) -> Context:
-        """The root (server) context object."""
+        """The server context object."""
         return self._root
 
     @property
@@ -338,6 +339,22 @@ class ApiContext(Context, ABC):
 
     def on_dispose(self):
         """Does nothing."""
+
+    def call_later(self,
+                   delay: Union[int, float],
+                   callback: Callable,
+                   *args,
+                   **kwargs) -> object:
+        return self.root.call_later(delay, callback,
+                                    *args, **kwargs)
+
+    def run_in_executor(self,
+                        executor: Optional[concurrent.futures.Executor],
+                        function: Callable[..., ReturnT],
+                        *args: Any,
+                        **kwargs: Any) -> Awaitable[ReturnT]:
+        return self.root.run_in_executor(executor, function,
+                                         *args, **kwargs)
 
 
 class ApiRequest:

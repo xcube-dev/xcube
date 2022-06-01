@@ -20,17 +20,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional, Any, Union, Sequence
+from typing import Optional
 
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
-from xcube.server.api import ApiRequest
-from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
-from xcube.server.api import JSON
 from xcube.server.context import Context
 from xcube.server.server import ServerContext
+from .mocks import mock_server
+from .mocks import MockApiError
+from .mocks import MockApiRequest
+from .mocks import MockApiResponse
 
 
 class ApiTest(unittest.TestCase):
@@ -58,7 +59,7 @@ class ApiTest(unittest.TestCase):
         def handle_stop(root):
             test_dict['handle_stop'] = root
 
-        root_ctx = ServerContext([], {})
+        root_ctx = ServerContext(mock_server(), {})
 
         api = Api("datasets",
                   create_ctx=MyApiContext,
@@ -203,7 +204,7 @@ class ApiContextTest(unittest.TestCase):
                    create_ctx=self.TimeSeriesContext,
                    required_apis=["datasets"])
         config = {}
-        root_ctx = ServerContext([api1, api2], config)
+        root_ctx = ServerContext(mock_server([api1, api2]), config)
         root_ctx.on_update(None)
         api1_ctx = root_ctx.get_api_ctx('datasets')
         api2_ctx = root_ctx.get_api_ctx('timeseries')
@@ -230,7 +231,7 @@ class ApiHandlerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        self.root_ctx = ServerContext([self.api], self.config)
+        self.root_ctx = ServerContext(mock_server([self.api]), self.config)
         self.root_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()
@@ -286,46 +287,3 @@ class ApiRequestTest(unittest.TestCase):
         self.assertEqual([], request.get_body_args('key'))
         self.assertEqual(None, request.get_body_arg('key'))
 
-
-class MockApiRequest(ApiRequest):
-    @property
-    def body(self) -> bytes:
-        return bytes({})
-
-    @property
-    def json(self) -> JSON:
-        return {}
-
-    # noinspection PyShadowingBuiltins
-    def get_query_args(self, name: str, type: Any = None) -> Sequence[Any]:
-        if name == 'details':
-            return ['1']
-        return []
-
-    def get_body_args(self, name: str) -> Sequence[bytes]:
-        if name == 'secret':
-            return [bytes(10)]
-        return []
-
-
-class MockApiResponse(ApiResponse):
-    def set_status(self, status_code: int, reason: Optional[str] = None):
-        pass
-
-    def write(self, data: Union[str, bytes, JSON]):
-        pass
-
-    def finish(self, data: Union[str, bytes, JSON] = None):
-        pass
-
-    def error(self,
-              status_code: int,
-              message: Optional[str] = None,
-              reason: Optional[str] = None) -> Exception:
-        return MockApiError(status_code, message, reason)
-
-
-class MockApiError(Exception):
-    def __init__(self, *args, **kwargs):
-        # noinspection PyArgumentList
-        super().__init__(*args, **kwargs)

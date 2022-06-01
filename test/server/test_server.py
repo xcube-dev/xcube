@@ -20,23 +20,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional, Sequence, Tuple, Dict, Any, Union, Callable, \
-    Awaitable
+from typing import Optional
 
 from tornado import concurrent
 
-from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import Api
-from xcube.server.api import ApiContext
-from xcube.server.api import ApiRoute
-from xcube.server.context import Context
-from xcube.server.framework import ServerFramework, ReturnT
 from xcube.server.server import Server
 from xcube.server.server import ServerContext
-from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from .mocks import MockApiContext
+from .mocks import MockServerFramework
+from .mocks import mock_extension_registry
 
 
 class ServerTest(unittest.TestCase):
@@ -69,14 +64,14 @@ class ServerTest(unittest.TestCase):
             MockServerFramework(), {},
             extension_registry=extension_registry
         )
-        self.assertIsInstance(server.ctx, ServerContext)
-        self.assertIsInstance(server.ctx.get_api_ctx('datasets'),
+        self.assertIsInstance(server.server_ctx, ServerContext)
+        self.assertIsInstance(server.server_ctx.get_api_ctx('datasets'),
                               MockApiContext)
-        self.assertTrue(server.ctx.get_api_ctx('datasets').update_count)
-        self.assertIsNone(server.ctx.get_api_ctx('timeseries'))
+        self.assertTrue(server.server_ctx.get_api_ctx('datasets').on_update_count)
+        self.assertIsNone(server.server_ctx.get_api_ctx('timeseries'))
         self.assertEqual({'address': '0.0.0.0',
                           'port': 8080},
-                         server.ctx.config)
+                         server.server_ctx.config)
 
     def test_config_schema_effectively_merged(self):
         extension_registry = mock_extension_registry([
@@ -161,12 +156,12 @@ class ServerTest(unittest.TestCase):
             MockServerFramework(), {},
             extension_registry=extension_registry
         )
-        prev_ctx = server.ctx
+        prev_ctx = server.server_ctx
         server.update({"port": 9090})
         self.assertEqual({'address': '0.0.0.0',
                           'port': 9090},
-                         server.ctx.config)
-        self.assertIsNot(prev_ctx, server.ctx)
+                         server.server_ctx.config)
+        self.assertIsNot(prev_ctx, server.server_ctx)
 
     def test_update_disposes(self):
         api_ctx: Optional[MockApiContext] = None
@@ -187,11 +182,11 @@ class ServerTest(unittest.TestCase):
             extension_registry=extension_registry
         )
         self.assertIsInstance(api_ctx, MockApiContext)
-        self.assertEqual(1, api_ctx.update_count)
-        self.assertEqual(0, api_ctx.dispose_count)
+        self.assertEqual(1, api_ctx.on_update_count)
+        self.assertEqual(0, api_ctx.on_dispose_count)
         server.update({})
-        self.assertEqual(1, api_ctx.update_count)
-        self.assertEqual(1, api_ctx.dispose_count)
+        self.assertEqual(1, api_ctx.on_update_count)
+        self.assertEqual(1, api_ctx.on_dispose_count)
 
     def test_call_later(self):
         extension_registry = mock_extension_registry([
@@ -233,15 +228,15 @@ class ServerTest(unittest.TestCase):
             ("wmts", dict(required_apis=("datasets",))),
         ])
         apis = Server.load_apis(extension_registry=extension_registry)
-        self.assertIsInstance(apis, list)
-        self.assertEqual(['datasets',
+        self.assertIsInstance(apis, tuple)
+        self.assertEqual(('datasets',
                           'places',
                           'timeseries',
                           'wcs',
                           'wmts',
                           'stac',
-                          'openeo'],
-                         [api.name for api in apis])
+                          'openeo'),
+                         tuple(api.name for api in apis))
 
     def test_illegal_api_context_detected(self):
         # noinspection PyUnusedLocal
@@ -273,69 +268,3 @@ class ServerTest(unittest.TestCase):
                          " missing API dependency 'datasets'",
                          f'{cm.exception}')
 
-
-class MockServerFramework(ServerFramework):
-
-    def __init__(self):
-        self.add_routes_count = 0
-        self.update_count = 0
-        self.start_count = 0
-        self.stop_count = 0
-        self.call_later_count = 0
-        self.run_in_executor_count = 0
-
-    def add_routes(self, routes: Sequence[ApiRoute]):
-        self.add_routes_count += 1
-
-    def update(self, ctx: Context):
-        self.update_count += 1
-
-    def start(self, ctx: Context):
-        self.start_count += 1
-
-    def stop(self, ctx: Context):
-        self.stop_count += 1
-
-    def call_later(self,
-                   delay: Union[int, float],
-                   callback: Callable,
-                   *args,
-                   **kwargs) -> object:
-        self.call_later_count += 1
-        return object()
-
-    def run_in_executor(self,
-                        executor: Optional[concurrent.futures.Executor],
-                        function: Callable[..., ReturnT],
-                        *args: Any,
-                        **kwargs: Any) -> Awaitable[ReturnT]:
-        self.run_in_executor_count += 1
-        import concurrent.futures
-        # noinspection PyTypeChecker
-        return concurrent.futures.Future()
-
-
-class MockApiContext(ApiContext):
-    def __init__(self, root: Context):
-        super().__init__(root)
-        self.update_count = 0
-        self.dispose_count = 0
-
-    def on_update(self, prev_ctx: Optional[ApiContext]):
-        self.update_count += 1
-
-    def on_dispose(self):
-        self.dispose_count += 1
-
-
-def mock_extension_registry(
-        api_spec: Sequence[Tuple[str, Dict[str, Any]]]
-) -> ExtensionRegistry:
-    extension_registry = ExtensionRegistry()
-    for api_name, api_kwargs in api_spec:
-        api_kwargs = dict(api_kwargs)
-        api = Api(api_name, **api_kwargs)
-        extension_registry.add_extension(EXTENSION_POINT_SERVER_APIS,
-                                         api.name,
-                                         component=api)
-    return extension_registry
