@@ -54,8 +54,12 @@ class TornadoFramework(ServerFramework):
                  application: Optional[tornado.web.Application] = None,
                  io_loop: Optional[tornado.ioloop.IOLoop] = None):
         self._application = application or tornado.web.Application()
-        self._io_loop = io_loop or tornado.ioloop.IOLoop.current()
+        self._io_loop = io_loop
         self._configure_logger()
+
+    @property
+    def io_loop(self) -> tornado.ioloop.IOLoop:
+        return self._io_loop or tornado.ioloop.IOLoop.current()
 
     def add_routes(self, api_routes: Sequence[ApiRoute]):
         handlers = []
@@ -95,17 +99,17 @@ class TornadoFramework(ServerFramework):
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
 
-        self._io_loop.start()
+        self.io_loop.start()
 
     def stop(self, ctx: Context):
-        self._io_loop.stop()
+        self.io_loop.stop()
 
     def call_later(self,
                    delay: Union[int, float],
                    callback: Callable,
                    *args,
                    **kwargs):
-        self._io_loop.call_later(delay, callback, *args, **kwargs)
+        self.io_loop.call_later(delay, callback, *args, **kwargs)
 
     @staticmethod
     def _configure_logger():
