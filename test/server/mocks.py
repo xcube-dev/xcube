@@ -30,9 +30,9 @@ from xcube.server.api import ApiContext
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import Config
+from xcube.server.api import Context
 from xcube.server.api import JSON
-from xcube.server.config import Config
-from xcube.server.context import Context
 from xcube.server.framework import ServerFramework, ReturnT
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry

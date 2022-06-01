@@ -25,7 +25,7 @@ from typing import Any, List, Dict, Optional
 from xcube.constants import LOG
 from xcube.core.store import new_data_store
 from xcube.server.api import ApiContext
-from xcube.server.context import Context
+from xcube.server.api import Context
 
 
 class DatasetsContext(ApiContext):

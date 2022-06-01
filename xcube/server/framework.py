@@ -26,10 +26,10 @@ from typing import Sequence, List, Type, Union, Callable, Optional, Any, \
 from tornado import concurrent
 
 from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
-from .api import ApiRoute
-from .asyncexec import AsyncExecution
-from .context import Context
 from xcube.util.extension import get_extension_registry
+from .api import ApiRoute
+from .api import Context
+from .asyncexec import AsyncExecution
 
 ReturnT = TypeVar("ReturnT")
 

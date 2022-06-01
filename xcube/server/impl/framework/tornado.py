@@ -39,10 +39,10 @@ from xcube.server.api import ApiHandler, ArgT
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import Context
 from xcube.server.api import JSON
-from xcube.server.context import Context
+from xcube.server.api import ReturnT
 from xcube.server.framework import ServerFramework
-from xcube.server.framework import ReturnT
 from xcube.util.assertions import assert_true
 from xcube.version import version
 

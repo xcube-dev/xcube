@@ -25,8 +25,9 @@ from typing import Sequence, Union, Callable, Optional, Any, Awaitable
 from tornado import concurrent
 
 from xcube.server.api import ApiRoute
-from xcube.server.context import Context
-from xcube.server.framework import ServerFramework, ReturnT
+from xcube.server.api import Context
+from xcube.server.api import ReturnT
+from xcube.server.framework import ServerFramework
 
 
 class FlaskFramework(ServerFramework):

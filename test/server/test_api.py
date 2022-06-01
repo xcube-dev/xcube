@@ -26,12 +26,12 @@ from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRoute
-from xcube.server.context import Context
+from xcube.server.api import Context
 from xcube.server.server import ServerContext
-from .mocks import mock_server
 from .mocks import MockApiError
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
+from .mocks import mock_server
 
 
 class ApiTest(unittest.TestCase):

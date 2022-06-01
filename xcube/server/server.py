@@ -22,7 +22,7 @@
 import concurrent.futures
 import copy
 from typing import (Optional, Dict, Any, Union,
-                    Callable, Sequence, Awaitable, TypeVar, Tuple, List)
+                    Callable, Sequence, Awaitable, Tuple, List)
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import LOG
@@ -32,13 +32,12 @@ from xcube.util.jsonschema import JsonObjectSchema
 from .api import Api
 from .api import ApiContext
 from .api import ApiRoute
+from .api import Config
+from .api import Context
+from .api import ReturnT
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
-from .config import Config
-from .context import Context
 from .framework import ServerFramework
-
-ReturnT = TypeVar("ReturnT")
 
 
 # TODO:
@@ -259,6 +258,10 @@ class ServerContext(Context):
     @property
     def apis(self) -> Tuple[Api]:
         return self._server.apis
+
+    @property
+    def root(self) -> Context:
+        return self
 
     @property
     def config(self) -> Config:
