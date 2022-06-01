@@ -25,12 +25,12 @@ from typing import Optional
 from tornado import concurrent
 
 from xcube.server.server import Server
-from xcube.server.server import ServerContext
+from xcube.server.server import ServerRootContext
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .mocks import MockApiContext
-from .mocks import MockServerFramework
+from .mocks import MockFramework
 from .mocks import mock_extension_registry
 
 
@@ -40,7 +40,7 @@ class ServerTest(unittest.TestCase):
         extension_registry = mock_extension_registry([
             ("datasets", dict(create_ctx=MockApiContext)),
         ])
-        framework = MockServerFramework()
+        framework = MockFramework()
         server = Server(
             framework, {},
             extension_registry=extension_registry
@@ -61,17 +61,17 @@ class ServerTest(unittest.TestCase):
             ("datasets", dict(create_ctx=MockApiContext)),
         ])
         server = Server(
-            MockServerFramework(), {},
+            MockFramework(), {},
             extension_registry=extension_registry
         )
-        self.assertIsInstance(server.server_ctx, ServerContext)
-        self.assertIsInstance(server.server_ctx.get_api_ctx('datasets'),
+        self.assertIsInstance(server.root_ctx, ServerRootContext)
+        self.assertIsInstance(server.root_ctx.get_api_ctx('datasets'),
                               MockApiContext)
-        self.assertTrue(server.server_ctx.get_api_ctx('datasets').on_update_count)
-        self.assertIsNone(server.server_ctx.get_api_ctx('timeseries'))
+        self.assertTrue(server.root_ctx.get_api_ctx('datasets').on_update_count)
+        self.assertIsNone(server.root_ctx.get_api_ctx('timeseries'))
         self.assertEqual({'address': '0.0.0.0',
                           'port': 8080},
-                         server.server_ctx.config)
+                         server.root_ctx.config)
 
     def test_config_schema_effectively_merged(self):
         extension_registry = mock_extension_registry([
@@ -92,7 +92,7 @@ class ServerTest(unittest.TestCase):
             ),
         ])
         server = Server(
-            MockServerFramework(),
+            MockFramework(),
             {
                 "data_stores": []
             },
@@ -138,7 +138,7 @@ class ServerTest(unittest.TestCase):
         ])
         with self.assertRaises(ValueError) as cm:
             Server(
-                MockServerFramework(), {},
+                MockFramework(), {},
                 extension_registry=extension_registry
             )
         self.assertEqual(f"API 'datasets':"
@@ -153,15 +153,15 @@ class ServerTest(unittest.TestCase):
                                 required_apis=["datasets"])),
         ])
         server = Server(
-            MockServerFramework(), {},
+            MockFramework(), {},
             extension_registry=extension_registry
         )
-        prev_ctx = server.server_ctx
+        prev_ctx = server.root_ctx
         server.update({"port": 9090})
         self.assertEqual({'address': '0.0.0.0',
                           'port': 9090},
-                         server.server_ctx.config)
-        self.assertIsNot(prev_ctx, server.server_ctx)
+                         server.root_ctx.config)
+        self.assertIsNot(prev_ctx, server.root_ctx)
 
     def test_update_disposes(self):
         api_ctx: Optional[MockApiContext] = None
@@ -178,7 +178,7 @@ class ServerTest(unittest.TestCase):
             ("datasets", dict(create_ctx=create_ctx)),
         ])
         server = Server(
-            MockServerFramework(), {},
+            MockFramework(), {},
             extension_registry=extension_registry
         )
         self.assertIsInstance(api_ctx, MockApiContext)
@@ -192,7 +192,7 @@ class ServerTest(unittest.TestCase):
         extension_registry = mock_extension_registry([
             ("datasets", dict()),
         ])
-        framework = MockServerFramework()
+        framework = MockFramework()
         server = Server(
             framework, {},
             extension_registry=extension_registry
@@ -206,7 +206,7 @@ class ServerTest(unittest.TestCase):
         extension_registry = mock_extension_registry([
             ("datasets", dict()),
         ])
-        framework = MockServerFramework()
+        framework = MockFramework()
         server = Server(
             framework, {},
             extension_registry=extension_registry
@@ -248,7 +248,7 @@ class ServerTest(unittest.TestCase):
         )
 
         with self.assertRaises(TypeError) as cm:
-            Server(MockServerFramework(),
+            Server(MockFramework(),
                    {},
                    extension_registry=extension_registry)
         self.assertEqual("API 'datasets':"
@@ -261,7 +261,7 @@ class ServerTest(unittest.TestCase):
         )
 
         with self.assertRaises(ValueError) as cm:
-            Server(MockServerFramework(),
+            Server(MockFramework(),
                    {},
                    extension_registry=extension_registry)
         self.assertEqual("API 'timeseries':"

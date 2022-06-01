@@ -27,7 +27,7 @@ from xcube.core.dsio import rimraf
 from xcube.server.helpers import ConfigChangeObserver
 from xcube.server.server import Server
 from .test_server import MockApiContext
-from .test_server import MockServerFramework
+from .test_server import MockFramework
 from .test_server import mock_extension_registry
 
 
@@ -47,33 +47,33 @@ class ConfigChangeObserverTest(unittest.TestCase):
         with open(self.TEST_CONFIG, "w") as fp:
             yaml.safe_dump(config, fp)
 
-        framework = MockServerFramework()
+        framework = MockFramework()
         server = Server(
             framework, config,
             extension_registry=extension_registry
         )
 
-        root_ctx = server.server_ctx
+        root_ctx = server.root_ctx
 
         observer = ConfigChangeObserver(server,
                                         [self.TEST_CONFIG],
                                         0.1)
 
         self.assertEqual(0, framework.call_later_count)
-        self.assertIs(root_ctx, server.server_ctx)
+        self.assertIs(root_ctx, server.root_ctx)
 
         observer.check()
         self.assertEqual(1, framework.call_later_count)
-        self.assertIs(root_ctx, server.server_ctx)
+        self.assertIs(root_ctx, server.root_ctx)
 
         observer.check()
         self.assertEqual(2, framework.call_later_count)
-        self.assertIs(root_ctx, server.server_ctx)
+        self.assertIs(root_ctx, server.root_ctx)
 
         with open(self.TEST_CONFIG, "w") as fp:
             yaml.safe_dump(config, fp)
 
         observer.check()
         self.assertEqual(3, framework.call_later_count)
-        self.assertIsNot(root_ctx, server.server_ctx)
+        self.assertIsNot(root_ctx, server.root_ctx)
 

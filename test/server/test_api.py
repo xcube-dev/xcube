@@ -26,8 +26,8 @@ from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRoute
-from xcube.server.api import Context
-from xcube.server.server import ServerContext
+from xcube.server.api import ServerContext
+from xcube.server.server import ServerRootContext
 from .mocks import MockApiError
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
@@ -48,7 +48,7 @@ class ApiTest(unittest.TestCase):
 
     def test_ctor_functions(self):
         class MyApiContext(ApiContext):
-            def on_update(self, prev_ctx: Optional["Context"]):
+            def on_update(self, prev_ctx: Optional["ServerContext"]):
                 pass
 
         test_dict = dict()
@@ -59,7 +59,7 @@ class ApiTest(unittest.TestCase):
         def handle_stop(root):
             test_dict['handle_stop'] = root
 
-        root_ctx = ServerContext(mock_server(), {})
+        root_ctx = ServerRootContext(mock_server(), {})
 
         api = Api("datasets",
                   create_ctx=MyApiContext,
@@ -186,15 +186,15 @@ class ApiRouteTest(unittest.TestCase):
 class ApiContextTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
 
-        def on_update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[ServerContext]):
             pass
 
     class TimeSeriesContext(ApiContext):
-        def __init__(self, root: Context):
+        def __init__(self, root: ServerContext):
             super().__init__(root)
             self.dataset_ctx = root.get_api_ctx("datasets")
 
-        def on_update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[ServerContext]):
             pass
 
     def test_it(self):
@@ -204,7 +204,7 @@ class ApiContextTest(unittest.TestCase):
                    create_ctx=self.TimeSeriesContext,
                    required_apis=["datasets"])
         config = {}
-        root_ctx = ServerContext(mock_server([api1, api2]), config)
+        root_ctx = ServerRootContext(mock_server([api1, api2]), config)
         root_ctx.on_update(None)
         api1_ctx = root_ctx.get_api_ctx('datasets')
         api2_ctx = root_ctx.get_api_ctx('timeseries')
@@ -225,13 +225,13 @@ class ApiContextTest(unittest.TestCase):
 class ApiHandlerTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
 
-        def on_update(self, prev_ctx: Optional[Context]):
+        def on_update(self, prev_ctx: Optional[ServerContext]):
             pass
 
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        self.root_ctx = ServerContext(mock_server([self.api]), self.config)
+        self.root_ctx = ServerRootContext(mock_server([self.api]), self.config)
         self.root_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()

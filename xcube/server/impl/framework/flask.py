@@ -25,12 +25,12 @@ from typing import Sequence, Union, Callable, Optional, Any, Awaitable
 from tornado import concurrent
 
 from xcube.server.api import ApiRoute
-from xcube.server.api import Context
+from xcube.server.api import ServerContext
 from xcube.server.api import ReturnT
-from xcube.server.framework import ServerFramework
+from xcube.server.framework import Framework
 
 
-class FlaskFramework(ServerFramework):
+class FlaskFramework(Framework):
     """
     The Flask web server framework.
 
@@ -40,13 +40,13 @@ class FlaskFramework(ServerFramework):
     def add_routes(self, api_routes: Sequence[ApiRoute]):
         raise NotImplementedError()
 
-    def update(self, ctx: Context):
+    def update(self, ctx: ServerContext):
         raise NotImplementedError()
 
-    def start(self, ctx: Context):
+    def start(self, ctx: ServerContext):
         raise NotImplementedError()
 
-    def stop(self, ctx: Context):
+    def stop(self, ctx: ServerContext):
         raise NotImplementedError()
 
     def call_later(self,

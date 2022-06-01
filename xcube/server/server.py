@@ -33,11 +33,11 @@ from .api import Api
 from .api import ApiContext
 from .api import ApiRoute
 from .api import Config
-from .api import Context
+from .api import ServerContext
 from .api import ReturnT
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
-from .framework import ServerFramework
+from .framework import Framework
 
 
 # TODO:
@@ -61,7 +61,7 @@ class Server(AsyncExecution):
 
     def __init__(
             self,
-            framework: ServerFramework,
+            framework: Framework,
             config: Config,
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
@@ -73,9 +73,9 @@ class Server(AsyncExecution):
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(apis)
-        server_ctx = self._new_server_ctx(config)
-        server_ctx.on_update(None)
-        self._set_server_ctx(server_ctx)
+        root_ctx = self._new_root_ctx(config)
+        root_ctx.on_update(None)
+        self._set_root_ctx(root_ctx)
 
     @property
     def apis(self) -> Tuple[Api]:
@@ -87,38 +87,44 @@ class Server(AsyncExecution):
         return self._config_schema
 
     @property
-    def server_ctx(self) -> "ServerContext":
-        """The current server context."""
-        return self._server_ctx
+    def root_ctx(self) -> "ServerRootContext":
+        """The current root context."""
+        return self._root_ctx
 
-    def _set_server_ctx(self, server_ctx: "ServerContext"):
-        self._server_ctx = server_ctx
-        self._framework.update(server_ctx)
+    def _set_root_ctx(self, root_ctx: "ServerRootContext"):
+        self._root_ctx = root_ctx
+        self._framework.update(root_ctx)
 
-    def _new_server_ctx(self, config: Config):
-        return ServerContext(self,
-                             self._config_schema.from_instance(config))
+    def _new_root_ctx(self, config: Config) -> "ServerRootContext":
+        config = dict(config)
+        for key in tuple(config.keys()):
+            if key not in self._config_schema.properties:
+                LOG.warning(f'Configuration setting {key!r} ignored,'
+                            f' because there is no schema describing it.')
+                config.pop(key)
+        return ServerRootContext(self,
+                                 self._config_schema.from_instance(config))
 
     def start(self):
         """Start this server."""
         LOG.info(f'Starting service...')
         for api in self._apis:
-            api.on_start(self.server_ctx)
-        self._framework.start(self.server_ctx)
+            api.on_start(self.root_ctx)
+        self._framework.start(self.root_ctx)
 
     def stop(self):
         """Stop this server."""
         LOG.info(f'Stopping service...')
-        self._framework.stop(self.server_ctx)
+        self._framework.stop(self.root_ctx)
         for api in self._apis:
-            api.on_stop(self.server_ctx)
-        self._server_ctx.on_dispose()
+            api.on_stop(self.root_ctx)
+        self._root_ctx.on_dispose()
 
     def update(self, config: Config):
         """Update this server with new configuration."""
-        server_ctx = self._new_server_ctx(config)
-        server_ctx.on_update(prev_ctx=self._server_ctx)
-        self._set_server_ctx(server_ctx)
+        root_ctx = self._new_root_ctx(config)
+        root_ctx.on_update(prev_ctx=self._root_ctx)
+        self._set_root_ctx(root_ctx)
 
     def call_later(self,
                    delay: Union[int, float],
@@ -235,12 +241,13 @@ class Server(AsyncExecution):
         return effective_config_schema
 
 
-class ServerContext(Context):
+class ServerRootContext(ServerContext):
     """
-    A server context holds the current server configuration and
-    current API context objects.
+    A server's root context holds the current server configuration and
+    the API context objects that depend on that specific configuration.
 
-    A new server context is created for any new server configuration.
+    A new server root context is created for any new server configuration,
+    which in turn will cause all API context objects to be updated.
 
     The constructor shall not be called directly.
 
@@ -260,7 +267,7 @@ class ServerContext(Context):
         return self._server.apis
 
     @property
-    def root(self) -> Context:
+    def root(self) -> ServerContext:
         return self
 
     @property
@@ -294,7 +301,7 @@ class ServerContext(Context):
         return self._server.run_in_executor(executor, function,
                                             *args, **kwargs)
 
-    def on_update(self, prev_ctx: Optional["ServerContext"]):
+    def on_update(self, prev_ctx: Optional["ServerRootContext"]):
         if prev_ctx is None:
             LOG.info(f'Applying initial configuration...')
         else:

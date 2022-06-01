@@ -31,9 +31,9 @@ from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
 from xcube.server.api import Config
-from xcube.server.api import Context
+from xcube.server.api import ServerContext
 from xcube.server.api import JSON
-from xcube.server.framework import ServerFramework, ReturnT
+from xcube.server.framework import Framework, ReturnT
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
 
@@ -47,7 +47,7 @@ ApiSpecs = Sequence[ApiSpec]
 def mock_server(api_specs: Optional[ApiSpecs] = None,
                 config: Optional[Config] = None) -> Server:
     return Server(
-        MockServerFramework(),
+        MockFramework(),
         config or {},
         extension_registry=mock_extension_registry(api_specs or ())
     )
@@ -68,7 +68,7 @@ def mock_extension_registry(api_specs: ApiSpecs) -> ExtensionRegistry:
     return extension_registry
 
 
-class MockServerFramework(ServerFramework):
+class MockFramework(Framework):
 
     def __init__(self):
         self.add_routes_count = 0
@@ -81,13 +81,13 @@ class MockServerFramework(ServerFramework):
     def add_routes(self, routes: Sequence[ApiRoute]):
         self.add_routes_count += 1
 
-    def update(self, ctx: Context):
+    def update(self, ctx: ServerContext):
         self.update_count += 1
 
-    def start(self, ctx: Context):
+    def start(self, ctx: ServerContext):
         self.start_count += 1
 
-    def stop(self, ctx: Context):
+    def stop(self, ctx: ServerContext):
         self.stop_count += 1
 
     def call_later(self,
@@ -110,7 +110,7 @@ class MockServerFramework(ServerFramework):
 
 
 class MockApiContext(ApiContext):
-    def __init__(self, root: Context):
+    def __init__(self, root: ServerContext):
         super().__init__(root)
         self.on_update_count = 0
         self.on_dispose_count = 0

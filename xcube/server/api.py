@@ -130,13 +130,13 @@ class Api(Generic[ApiContextT]):
             optional_apis: Optional[Sequence[str]] = None,
             config_schema: Optional[JsonObjectSchema] = None,
             create_ctx: Optional[
-                Callable[["Context"], Optional[ApiContextT]]
+                Callable[["ServerContext"], Optional[ApiContextT]]
             ] = None,
             on_start: Optional[
-                Callable[["Context"], Any]
+                Callable[["ServerContext"], Any]
             ] = None,
             on_stop: Optional[
-                Callable[["Context"], Any]
+                Callable[["ServerContext"], Any]
             ] = None,
     ):
         assert_instance(name, str, 'name')
@@ -257,7 +257,7 @@ class Api(Generic[ApiContextT]):
         return self._config_schema
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def create_ctx(self, root_ctx: "Context") -> Optional[ApiContextT]:
+    def create_ctx(self, root_ctx: "ServerContext") -> Optional[ApiContextT]:
         """Create a new context object for this API.
         If the API doesn't require a context object, the method should
         return None.
@@ -274,7 +274,7 @@ class Api(Generic[ApiContextT]):
             return self._create_ctx(root_ctx)
         return None
 
-    def on_start(self, root_ctx: "Context"):
+    def on_start(self, root_ctx: "ServerContext"):
         """Called when the server is started.
         Can be overridden to initialize the API.
         Should not be called directly.
@@ -287,7 +287,7 @@ class Api(Generic[ApiContextT]):
         if self._on_start is not None:
             return self._on_start(root_ctx)
 
-    def on_stop(self, root_ctx: "Context"):
+    def on_stop(self, root_ctx: "ServerContext"):
         """Called when the server is stopped.
         Can be overridden to initialize the API.
         Should not be called directly.
@@ -301,8 +301,8 @@ class Api(Generic[ApiContextT]):
             return self._on_stop(root_ctx)
 
 
-class Context(AsyncExecution, ABC):
-    """The interface for context objects."""
+class ServerContext(AsyncExecution, ABC):
+    """The interface for server context objects."""
 
     @property
     @abstractmethod
@@ -316,11 +316,11 @@ class Context(AsyncExecution, ABC):
 
     @property
     @abstractmethod
-    def root(self) -> "Context":
+    def root(self) -> "ServerContext":
         """The server's current root context."""
 
     @abstractmethod
-    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+    def get_api_ctx(self, api_name: str) -> Optional["ServerContext"]:
         """
         Get the API context for *api_name*.
         Can be used to access context objects of other APIs.
@@ -330,7 +330,7 @@ class Context(AsyncExecution, ABC):
         """
 
     @abstractmethod
-    def on_update(self, prev_context: Optional["Context"]):
+    def on_update(self, prev_context: Optional["ServerContext"]):
         """Called when the server configuration changed.
         Must be implemented by derived classes in order to update
         this context with respect to the current configuration
@@ -352,7 +352,7 @@ class Context(AsyncExecution, ABC):
         """
 
 
-class ApiContext(Context, ABC):
+class ApiContext(ServerContext, ABC):
     """
     An abstract base class for API context objects.
 
@@ -373,12 +373,12 @@ class ApiContext(Context, ABC):
     :param root: The server's root context.
     """
 
-    def __init__(self, root: Context):
+    def __init__(self, root: ServerContext):
         self._root = root
 
     @property
-    def root(self) -> Context:
-        """The server context object."""
+    def root(self) -> ServerContext:
+        """The server's root context."""
         return self._root
 
     @property
@@ -391,9 +391,6 @@ class ApiContext(Context, ABC):
 
     def get_api_ctx(self, api_name: str) -> Optional["ApiContext"]:
         return self.root.get_api_ctx(api_name)
-
-    def on_dispose(self):
-        """Does nothing."""
 
     def call_later(self,
                    delay: Union[int, float],
@@ -410,6 +407,9 @@ class ApiContext(Context, ABC):
                         **kwargs: Any) -> Awaitable[ReturnT]:
         return self.root.run_in_executor(executor, function,
                                          *args, **kwargs)
+
+    def on_dispose(self):
+        """Does nothing."""
 
 
 class ApiRequest:
@@ -492,15 +492,18 @@ class ApiHandler(Generic[ApiContextT], ABC):
 
     def __init__(self,
                  api_name: str,
-                 root_ctx: Context,
+                 root_ctx: ServerContext,
                  request: ApiRequest,
                  response: ApiResponse,
                  **kwargs: Any):
+        assert_true(not kwargs,
+                    message=f"Unknown keyword(s) passed to"
+                            f" {self.__class__.__name__}:"
+                            f" {', '.join(kwargs.keys())}.")
         self._root_ctx = root_ctx
         self._ctx = root_ctx.get_api_ctx(api_name)
         self._request = request
         self._response = response
-        self._kwargs = kwargs
 
     @property
     def request(self) -> ApiRequest:
@@ -518,7 +521,7 @@ class ApiHandler(Generic[ApiContextT], ABC):
         return self._root_ctx.config
 
     @property
-    def root_ctx(self) -> Context:
+    def root_ctx(self) -> ServerContext:
         """The server's root context."""
         return self._root_ctx
 

@@ -25,12 +25,12 @@ from typing import Any, List, Dict, Optional
 from xcube.constants import LOG
 from xcube.core.store import new_data_store
 from xcube.server.api import ApiContext
-from xcube.server.api import Context
+from xcube.server.api import ServerContext
 
 
 class DatasetsContext(ApiContext):
 
-    def __init__(self, root: Context):
+    def __init__(self, root: ServerContext):
         super().__init__(root)
         self._datasets = dict()
 
