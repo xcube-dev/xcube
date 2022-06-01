@@ -164,23 +164,14 @@ class ServerTest(unittest.TestCase):
         self.assertIsNot(prev_ctx, server.root_ctx)
 
     def test_update_disposes(self):
-        api_ctx: Optional[MockApiContext] = None
-
-        def create_ctx(root):
-            nonlocal api_ctx
-            if api_ctx is None:
-                api_ctx = MockApiContext(root)
-                return api_ctx
-            else:
-                return None
-
         extension_registry = mock_extension_registry([
-            ("datasets", dict(create_ctx=create_ctx)),
+            ("datasets", dict(create_ctx=MockApiContext)),
         ])
         server = Server(
             MockFramework(), {},
             extension_registry=extension_registry
         )
+        api_ctx = server.root_ctx.get_api_ctx("datasets")
         self.assertIsInstance(api_ctx, MockApiContext)
         self.assertEqual(1, api_ctx.on_update_count)
         self.assertEqual(0, api_ctx.on_dispose_count)
@@ -251,8 +242,10 @@ class ServerTest(unittest.TestCase):
             Server(MockFramework(),
                    {},
                    extension_registry=extension_registry)
-        self.assertEqual("API 'datasets':"
-                         " context must be instance of ApiContext",
+        self.assertEqual(("API 'datasets':"
+                          " context must be instance of"
+                          " <class 'xcube.server.api.ServerContext'>,"
+                          " but was <class 'int'>"),
                          f'{cm.exception}')
 
     def test_missing_dependency_detected(self):

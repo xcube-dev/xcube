@@ -36,7 +36,7 @@ _HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
 ArgT = TypeVar('ArgT')
 ReturnT = TypeVar('ReturnT')
 # API Context type variable
-ApiContextT = TypeVar("ApiContextT", bound="ApiContext")
+ServerContextT = TypeVar("CtxT", bound="ServerContext")
 
 JSON = Union[
     None,
@@ -48,12 +48,12 @@ JSON = Union[
     Dict[str, "JSON"],
 ]
 
-Config = Mapping[str, Any]
+ServerConfig = Mapping[str, Any]
 
 _builtin_type = type
 
 
-class Api(Generic[ApiContextT]):
+class Api(Generic[ServerContextT]):
     """
     A server API.
 
@@ -72,31 +72,29 @@ class Api(Generic[ApiContextT]):
 
     May be derived by clients to override the methods
 
-    * `start` - to do things on server start;
-    * `stop` - to do things on server stop;
-    * `create_ctx` - to create an API-specific context object.
+    * `create_ctx` - to create an API-specific context object;
+    * `on_start` - to do things on server start;
+    * `on_stop` - to do things on server stop.
+
+    Note that these methods can be also be effectively
+    implemented by respectively passing the *create_ctx*, *on_start*,
+    *on_stop* arguments to the constructor.
 
     Each extension API module must export an instance of this
     class. A typical use case of this class:
 
     ```
     class DatasetsContext(ApiContext)
-        def update(self, prev_ctx: Optional[Context]):
+        def update(self, prev_ctx: Optional[ServerContext]):
             config = self.config
             ...
 
         def get_datasets(self):
             ...
 
-    class DatasetsApi(Api[DatasetsContext]):
-        def __init__(self):
-            super().__init__("datasets",
-                             config_schema=DATASET_CONFIG_SCHEMA)
-
-        def create_ctx(self, root_ctx: Context):
-            return DatasetsApiContext(root_ctx)
-
-    api = DatasetsApi()
+    api = Api("datasets",
+              config_schema=DATASET_CONFIG_SCHEMA,
+              create_ctx=DatasetsApiContext)
 
     @api.route("/datasets")
     class DatasetsHandler(ApiHandler[DatasetsContext]):
@@ -117,7 +115,14 @@ class Api(Generic[ApiContextT]):
         have no configuration.
     :param create_ctx: Optional API context factory.
         If given, must be a callable that accepts the server root context
-        as only argument and returns an instance ApiContext or None.
+        and returns an instance ``ServerContext``.
+        Called when a new context is required after configuration changes.
+    :param on_start: Optional start handler.
+        If given, must be a callable that accepts the server root context.
+        Called when the server starts.
+    :param on_stop: Optional stop handler.
+        If given, must be a callable that accepts the server root context.
+        Called when the server stopped.
     """
 
     def __init__(
@@ -130,7 +135,7 @@ class Api(Generic[ApiContextT]):
             optional_apis: Optional[Sequence[str]] = None,
             config_schema: Optional[JsonObjectSchema] = None,
             create_ctx: Optional[
-                Callable[["ServerContext"], Optional[ApiContextT]]
+                Callable[["ServerContext"], Optional[ServerContextT]]
             ] = None,
             on_start: Optional[
                 Callable[["ServerContext"], Any]
@@ -158,9 +163,9 @@ class Api(Generic[ApiContextT]):
         self._optional_apis = tuple(optional_apis or ())
         self._routes: List[ApiRoute] = list(routes or [])
         self._config_schema = config_schema
-        self._create_ctx = create_ctx
-        self._on_start = on_start
-        self._on_stop = on_stop
+        self._create_ctx = create_ctx or ApiContext
+        self._on_start = on_start or self._handle_event
+        self._on_stop = on_stop or self._handle_event
 
     @property
     def name(self) -> str:
@@ -257,22 +262,18 @@ class Api(Generic[ApiContextT]):
         return self._config_schema
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def create_ctx(self, root_ctx: "ServerContext") -> Optional[ApiContextT]:
+    def create_ctx(self, root_ctx: "ServerContext") -> ServerContextT:
         """Create a new context object for this API.
-        If the API doesn't require a context object, the method should
-        return None.
         The default implementation uses the *create_ctx*
         argument passed to the constructor, if any,
         to instantiate an API context using *root_ctx* as only argument.
-        Otherwise, None is returned.
+        Otherwise, a new instance of ``ApiContext`` is returned.
         Should not be called directly.
 
         :param root_ctx: The server's current root context.
-        :return: An instance of ApiContext or None
+        :return: An instance of ``ServerContext``
         """
-        if self._create_ctx is not None:
-            return self._create_ctx(root_ctx)
-        return None
+        return self._create_ctx(root_ctx)
 
     def on_start(self, root_ctx: "ServerContext"):
         """Called when the server is started.
@@ -284,8 +285,7 @@ class Api(Generic[ApiContextT]):
 
         :param root_ctx: The server's current root context
         """
-        if self._on_start is not None:
-            return self._on_start(root_ctx)
+        return self._on_start(root_ctx)
 
     def on_stop(self, root_ctx: "ServerContext"):
         """Called when the server is stopped.
@@ -297,8 +297,10 @@ class Api(Generic[ApiContextT]):
 
         :param root_ctx: The server's current root context
         """
-        if self._on_stop is not None:
-            return self._on_stop(root_ctx)
+        return self._on_stop(root_ctx)
+
+    def _handle_event(self, root_ctx: "ServerContext"):
+        """Do nothing."""
 
 
 class ServerContext(AsyncExecution, ABC):
@@ -311,13 +313,8 @@ class ServerContext(AsyncExecution, ABC):
 
     @property
     @abstractmethod
-    def config(self) -> Config:
+    def config(self) -> ServerConfig:
         """The server's current configuration."""
-
-    @property
-    @abstractmethod
-    def root(self) -> "ServerContext":
-        """The server's current root context."""
 
     @abstractmethod
     def get_api_ctx(self, api_name: str) -> Optional["ServerContext"]:
@@ -352,20 +349,23 @@ class ServerContext(AsyncExecution, ABC):
         """
 
 
-class ApiContext(ServerContext, ABC):
+class ApiContext(ServerContext):
     """
-    An abstract base class for API context objects.
+    An implementation of the server context to be used by APIs.
 
     A typical use case is to cache computationally expensive
     resources served by a particular API.
 
-    Derived classes
+    An instance of this class is created for every API unless
+    an API provides its own, specific context.
 
-    * must implement the `on_update()` method in order
+    Specific context classes should derive from ``ApiContext`` and
+
+    * may override the `on_update()` method in order
       to initialize or update this context object state with
       respect to the current server configuration, or with
       respect to other API context object states.
-    * may overwrite the `on_dispose()` method to empty any caches
+    * may override the `on_dispose()` method to empty any caches
       and close access to resources.
     * must call the super class constructor with the *root* context,
       from their own constructor, if any.
@@ -383,13 +383,16 @@ class ApiContext(ServerContext, ABC):
 
     @property
     def apis(self) -> Tuple[Api]:
+        """Return the root's ``apis`` property."""
         return self.root.apis
 
     @property
-    def config(self) -> Config:
+    def config(self) -> ServerConfig:
+        """Return the root's ``config`` property."""
         return self.root.config
 
-    def get_api_ctx(self, api_name: str) -> Optional["ApiContext"]:
+    def get_api_ctx(self, api_name: str) -> Optional["ServerContext"]:
+        """Calls the root's ``get_api_ctx()`` method."""
         return self.root.get_api_ctx(api_name)
 
     def call_later(self,
@@ -397,6 +400,7 @@ class ApiContext(ServerContext, ABC):
                    callback: Callable,
                    *args,
                    **kwargs) -> object:
+        """Calls the root's ``call_later()`` method."""
         return self.root.call_later(delay, callback,
                                     *args, **kwargs)
 
@@ -405,8 +409,12 @@ class ApiContext(ServerContext, ABC):
                         function: Callable[..., ReturnT],
                         *args: Any,
                         **kwargs: Any) -> Awaitable[ReturnT]:
+        """Calls the root's ``run_in_executor()`` method."""
         return self.root.run_in_executor(executor, function,
                                          *args, **kwargs)
+
+    def on_update(self, prev_context: Optional["ServerContext"]):
+        """Does nothing."""
 
     def on_dispose(self):
         """Does nothing."""
@@ -479,20 +487,18 @@ class ApiResponse(ABC):
         """
 
 
-class ApiHandler(Generic[ApiContextT], ABC):
+class ApiHandler(Generic[ServerContextT], ABC):
     """
     Base class for all API handlers.
 
-    :param api_name: The name of the API that defines this handler.
-    :param root_ctx: The server's root context.
+    :param ctx: The API context.
     :param request: The API handler's request.
     :param response: The API handler's response.
     :param kwargs: Client keyword arguments (not used in base class).
     """
 
     def __init__(self,
-                 api_name: str,
-                 root_ctx: ServerContext,
+                 ctx: ServerContext,
                  request: ApiRequest,
                  response: ApiResponse,
                  **kwargs: Any):
@@ -500,10 +506,15 @@ class ApiHandler(Generic[ApiContextT], ABC):
                     message=f"Unknown keyword(s) passed to"
                             f" {self.__class__.__name__}:"
                             f" {', '.join(kwargs.keys())}.")
-        self._root_ctx = root_ctx
-        self._ctx = root_ctx.get_api_ctx(api_name)
+        self._ctx = ctx
         self._request = request
         self._response = response
+
+    @property
+    def ctx(self) -> ServerContextT:
+        """The API's context object, or None, if not defined."""
+        # noinspection PyTypeChecker
+        return self._ctx
 
     @property
     def request(self) -> ApiRequest:
@@ -514,22 +525,6 @@ class ApiHandler(Generic[ApiContextT], ABC):
     def response(self) -> ApiResponse:
         """The response that provides the handler's output."""
         return self._response
-
-    @property
-    def config(self) -> Config:
-        """The server configuration."""
-        return self._root_ctx.config
-
-    @property
-    def root_ctx(self) -> ServerContext:
-        """The server's root context."""
-        return self._root_ctx
-
-    @property
-    def ctx(self) -> Optional[ApiContextT]:
-        """The API's context object, or None, if not defined."""
-        # noinspection PyTypeChecker
-        return self._ctx
 
     def _unimplemented_method(self, *args: str, **kwargs: str) -> None:
         raise self.response.error(405)

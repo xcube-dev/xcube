@@ -231,22 +231,21 @@ class ApiHandlerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        self.root_ctx = ServerRootContext(mock_server([self.api]), self.config)
-        self.root_ctx.on_update(None)
+        root_ctx = ServerRootContext(mock_server([self.api]),
+                                     self.config)
+        root_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()
-        self.handler = ApiHandler("datasets",
-                                  self.root_ctx,
+        self.handler = ApiHandler(root_ctx.get_api_ctx("datasets"),
                                   self.request,
                                   self.response)
 
     def test_props(self):
         handler = self.handler
-        self.assertIs(self.root_ctx, handler.root_ctx)
         self.assertIs(self.request, handler.request)
         self.assertIs(self.response, handler.response)
-        self.assertIs(self.config, handler.config)
         self.assertIsInstance(handler.ctx, self.DatasetsContext)
+        self.assertIs(self.config, handler.ctx.config)
 
     def test_default_methods(self):
         handler = self.handler

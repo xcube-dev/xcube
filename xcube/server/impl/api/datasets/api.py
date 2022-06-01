@@ -20,19 +20,10 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
-from xcube.server.api import ServerContext
 from .config import DATASETS_CONFIG_SCHEMA
 from .context import DatasetsContext
 
 
-class DatasetApi(Api[DatasetsContext]):
-    """Access to datasets."""
-
-    def __init__(self):
-        super().__init__('datasets', config_schema=DATASETS_CONFIG_SCHEMA)
-
-    def create_ctx(self, root_ctx: ServerContext) -> DatasetsContext:
-        return DatasetsContext(root_ctx)
-
-
-api = DatasetApi()
+api = Api('datasets',
+          config_schema=DATASETS_CONFIG_SCHEMA,
+          create_ctx=DatasetsContext)

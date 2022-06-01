@@ -46,7 +46,7 @@ from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
 from xcube.version import version
 
-_CTX_ATTR_NAME = "__xcube_server_root_ctx"
+_SERVER_ROOT_CTX_ATTR_NAME = "__xcube_server_root_ctx"
 
 
 class TornadoFramework(Framework):
@@ -87,7 +87,7 @@ class TornadoFramework(Framework):
         self._application.add_handlers(".*$", handlers)
 
     def update(self, ctx: ServerContext):
-        setattr(self._application, _CTX_ATTR_NAME, ctx)
+        setattr(self._application, _SERVER_ROOT_CTX_ATTR_NAME, ctx)
 
     def start(self, ctx: ServerContext):
         config = ctx.config
@@ -192,12 +192,12 @@ class TornadoBaseHandler(tornado.web.RequestHandler, ABC):
                  request: tornado.httputil.HTTPServerRequest,
                  **kwargs: Any):
         super().__init__(application, request)
-        root_ctx = getattr(application, _CTX_ATTR_NAME, None)
+        root_ctx = getattr(application, _SERVER_ROOT_CTX_ATTR_NAME, None)
         assert isinstance(root_ctx, ServerContext)
         api_route: ApiRoute = kwargs.pop("api_route")
+        ctx: ServerContext = root_ctx.get_api_ctx(api_route.api_name)
         self._api_handler: ApiHandler = api_route.handler_cls(
-            api_route.api_name,
-            root_ctx,
+            ctx,
             TornadoApiRequest(request),
             TornadoApiResponse(self),
             **api_route.handler_kwargs

@@ -32,9 +32,9 @@ from xcube.util.jsonschema import JsonObjectSchema
 from .api import Api
 from .api import ApiContext
 from .api import ApiRoute
-from .api import Config
-from .api import ServerContext
 from .api import ReturnT
+from .api import ServerConfig
+from .api import ServerContext
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
 from .framework import Framework
@@ -62,7 +62,7 @@ class Server(AsyncExecution):
     def __init__(
             self,
             framework: Framework,
-            config: Config,
+            config: ServerConfig,
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
         apis = self.load_apis(extension_registry)
@@ -95,7 +95,7 @@ class Server(AsyncExecution):
         self._root_ctx = root_ctx
         self._framework.update(root_ctx)
 
-    def _new_root_ctx(self, config: Config) -> "ServerRootContext":
+    def _new_root_ctx(self, config: ServerConfig) -> "ServerRootContext":
         config = dict(config)
         for key in tuple(config.keys()):
             if key not in self._config_schema.properties:
@@ -120,7 +120,7 @@ class Server(AsyncExecution):
             api.on_stop(self.root_ctx)
         self._root_ctx.on_dispose()
 
-    def update(self, config: Config):
+    def update(self, config: ServerConfig):
         """Update this server with new configuration."""
         root_ctx = self._new_root_ctx(config)
         root_ctx.on_update(prev_ctx=self._root_ctx)
@@ -257,31 +257,28 @@ class ServerRootContext(ServerContext):
 
     def __init__(self,
                  server: Server,
-                 config: Config):
+                 config: ServerConfig):
         self._server = server
         self._config = config
-        self._api_contexts: Dict[str, ApiContext] = dict()
+        self._api_contexts: Dict[str, ServerContext] = dict()
 
     @property
     def apis(self) -> Tuple[Api]:
         return self._server.apis
 
     @property
-    def root(self) -> ServerContext:
-        return self
-
-    @property
-    def config(self) -> Config:
+    def config(self) -> ServerConfig:
         return self._config
 
-    def get_api_ctx(self, api_name: str) -> Optional[ApiContext]:
+    def get_api_ctx(self, api_name: str) -> Optional[ServerContext]:
         return self._api_contexts.get(api_name)
 
-    def _set_api_ctx(self, api_name: str, api_ctx: ApiContext):
-        if not isinstance(api_ctx, ApiContext):
+    def _set_api_ctx(self, api_name: str, api_ctx: ServerContext):
+        if not isinstance(api_ctx, ServerContext):
             raise TypeError(f'API {api_name!r}:'
                             f' context must be instance of'
-                            f' {ApiContext.__name__}')
+                            f' {ServerContext},'
+                            f' but was {type(api_ctx)}')
         self._api_contexts[api_name] = api_ctx
         setattr(self, api_name, api_ctx)
 
@@ -309,18 +306,16 @@ class ServerRootContext(ServerContext):
         for api in self.apis:
             prev_api_ctx: Optional[ApiContext] = None
             if prev_ctx is not None:
-                prev_api_ctx = prev_ctx.get_api_ctx(
-                    api.name
-                )
+                prev_api_ctx = prev_ctx.get_api_ctx(api.name)
+                assert prev_api_ctx is not None
             for dep_api_name in api.required_apis:
                 dep_api_ctx = self.get_api_ctx(dep_api_name)
                 assert dep_api_ctx is not None
             next_api_ctx: Optional[ApiContext] = api.create_ctx(self)
-            if next_api_ctx is not None:
-                self._set_api_ctx(api.name, next_api_ctx)
-                next_api_ctx.on_update(prev_api_ctx)
-            elif prev_api_ctx is not None:
-                # There is no next context so dispose() the previous one
+            self._set_api_ctx(api.name, next_api_ctx)
+            next_api_ctx.on_update(prev_api_ctx)
+            if prev_api_ctx is not None \
+                    and prev_api_ctx is not next_api_ctx:
                 prev_api_ctx.on_dispose()
 
     def on_dispose(self):

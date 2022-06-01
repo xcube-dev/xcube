@@ -44,7 +44,7 @@ class MainHandler(ApiHandler):
                    summary='Get information about the service')
     def get(self):
         api_infos = []
-        for other_api in self.root_ctx.apis:
+        for other_api in self.ctx.apis:
             api_info = {
                 "name": other_api.name,
                 "version": other_api.version,
@@ -158,7 +158,7 @@ class MainHandler(ApiHandler):
 
         tags = []
         paths = {}
-        for other_api in self.root_ctx.apis:
+        for other_api in self.ctx.apis:
             tags.append({
                 "name": other_api.name,
                 "description": other_api.description or ""

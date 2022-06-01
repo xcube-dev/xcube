@@ -30,10 +30,11 @@ from xcube.server.api import ApiContext
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
-from xcube.server.api import Config
-from xcube.server.api import ServerContext
 from xcube.server.api import JSON
-from xcube.server.framework import Framework, ReturnT
+from xcube.server.api import ReturnT
+from xcube.server.api import ServerConfig
+from xcube.server.api import ServerContext
+from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
 
@@ -45,7 +46,7 @@ ApiSpecs = Sequence[ApiSpec]
 
 
 def mock_server(api_specs: Optional[ApiSpecs] = None,
-                config: Optional[Config] = None) -> Server:
+                config: Optional[ServerConfig] = None) -> Server:
     return Server(
         MockFramework(),
         config or {},
