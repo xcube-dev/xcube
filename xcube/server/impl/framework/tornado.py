@@ -24,7 +24,6 @@ import functools
 import logging
 import traceback
 import urllib.parse
-from abc import ABC
 from typing import Any, Optional, Sequence, Union, Callable, Dict, Type, \
     Awaitable
 
@@ -39,9 +38,9 @@ from xcube.server.api import ApiHandler, ArgT
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
-from xcube.server.api import ServerContext
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
+from xcube.server.api import ServerContext
 from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
 from xcube.version import version
@@ -59,7 +58,7 @@ class TornadoFramework(Framework):
                  io_loop: Optional[tornado.ioloop.IOLoop] = None):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
-        self._configure_logger()
+        self.configure_logger()
 
     @property
     def application(self) -> tornado.web.Application:
@@ -72,13 +71,9 @@ class TornadoFramework(Framework):
     def add_routes(self, api_routes: Sequence[ApiRoute]):
         handlers = []
         for api_route in api_routes:
-            # noinspection PyAbstractClass
-            class TornadoHandler(TornadoBaseHandler):
-                pass
-
             handlers.append((
-                self._convert_path_to_pattern(api_route.path),
-                TornadoHandler,
+                self.path_to_pattern(api_route.path),
+                TornadoRequestHandler,
                 {
                     "api_route": api_route
                 }
@@ -138,7 +133,7 @@ class TornadoFramework(Framework):
         )
 
     @staticmethod
-    def _configure_logger():
+    def configure_logger():
         # Configure Tornado logger to use configured root handlers.
         # For some reason, Tornado's log records will not arrive at
         # the root logger.
@@ -151,7 +146,7 @@ class TornadoFramework(Framework):
         tornado_logger.setLevel(logging.root.level)
 
     @staticmethod
-    def _convert_path_to_pattern(path: str):
+    def path_to_pattern(path: str):
         """
         Convert a string *pattern* where any occurrences of ``{NAME}``
         are replaced by an equivalent regex expression which will
@@ -163,8 +158,6 @@ class TornadoFramework(Framework):
         :return: equivalent regex pattern
         :raise ValueError: if *pattern* is invalid
         """
-        if '{' not in path:
-            return path
         name_pattern = r'(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)'
         reg_expr = ''
         pos = 0
@@ -179,17 +172,20 @@ class TornadoFramework(Framework):
                             '"{name}" in path must be a valid identifier,'
                             ' but got "%s"' % name)
                     reg_expr += path[pos:pos1] + (name_pattern % name)
-                    pos = pos2 + 2
+                    pos = pos2 + 1
                 else:
-                    raise ValueError('no matching "}"'
-                                     ' after "{" in "%s"' % path)
+                    raise ValueError('missing closing "}" in "%s"' % path)
             else:
+                pos2 = path.find('}', pos)
+                if pos2 >= pos:
+                    raise ValueError('missing opening "{" in "%s"' % path)
                 reg_expr += path[pos:]
                 break
         return reg_expr
 
 
-class TornadoBaseHandler(tornado.web.RequestHandler, ABC):
+# noinspection PyAbstractClass
+class TornadoRequestHandler(tornado.web.RequestHandler):
 
     def __init__(self,
                  application: tornado.web.Application,
@@ -260,6 +256,12 @@ class TornadoApiRequest(ApiRequest):
     def __init__(self, request: tornado.httputil.HTTPServerRequest):
         self._request = request
         self._query_args = None
+        # print("full_url:", self._request.full_url())
+        # print("protocol:", self._request.protocol)
+        # print("host:", self._request.host)
+        # print("uri:", self._request.uri)
+        # print("path:", self._request.path)
+        # print("query:", self._request.query)
 
     @functools.cached_property
     def query_args(self) -> Dict[str, Sequence[str]]:
@@ -287,6 +289,20 @@ class TornadoApiRequest(ApiRequest):
     def get_body_args(self, name: str) -> Sequence[bytes]:
         return self._request.body_arguments.get(name, [])
 
+    def url_for_path(self,
+                     path: str,
+                     query: Optional[str] = None) -> str:
+        protocol = self._request.protocol
+        host = self._request.host
+        uri = path if path.startswith('/') else '/' + path
+        if query:
+            uri += '?' + query
+        return f"{protocol}://{host}{uri}"
+
+    @property
+    def url(self) -> str:
+        return self._request.full_url()
+
     @property
     def body(self) -> bytes:
         return self._request.body
@@ -297,7 +313,7 @@ class TornadoApiRequest(ApiRequest):
 
 
 class TornadoApiResponse(ApiResponse):
-    def __init__(self, handler: TornadoBaseHandler):
+    def __init__(self, handler: TornadoRequestHandler):
         self._handler = handler
 
     def set_status(self, status_code: int, reason: Optional[str] = None):

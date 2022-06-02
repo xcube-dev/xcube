@@ -421,6 +421,24 @@ class ApiContext(ServerContext):
 
 
 class ApiRequest:
+
+    @abstractmethod
+    def url_for_path(self,
+                     path: str,
+                     query: Optional[str] = None) -> str:
+        """Get the full URL for the given *path* component and
+        optional *query* string.
+
+        :param path: The path component.
+        :param query: Optional query string.
+        :return: Full URL for *path* and *query*.
+        """
+
+    @property
+    @abstractmethod
+    def url(self) -> str:
+        """The full URL of the request."""
+
     @property
     @abstractmethod
     def body(self) -> bytes:
