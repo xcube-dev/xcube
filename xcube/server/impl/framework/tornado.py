@@ -62,6 +62,10 @@ class TornadoFramework(Framework):
         self._configure_logger()
 
     @property
+    def application(self) -> tornado.web.Application:
+        return self._application
+
+    @property
     def io_loop(self) -> tornado.ioloop.IOLoop:
         return self._io_loop or tornado.ioloop.IOLoop.current()
 
@@ -84,10 +88,10 @@ class TornadoFramework(Framework):
                                       f' {api_route.path!r}'
                                       f' from API {api_route.api_name!r}')
 
-        self._application.add_handlers(".*$", handlers)
+        self.application.add_handlers(".*$", handlers)
 
     def update(self, ctx: ServerContext):
-        setattr(self._application, _SERVER_ROOT_CTX_ATTR_NAME, ctx)
+        setattr(self.application, _SERVER_ROOT_CTX_ATTR_NAME, ctx)
 
     def start(self, ctx: ServerContext):
         config = ctx.config
@@ -95,7 +99,7 @@ class TornadoFramework(Framework):
         port = config["port"]
         address = config["address"]
 
-        self._application.listen(port, address=address)
+        self.application.listen(port, address=address)
 
         address_ = "127.0.0.1" if address == "0.0.0.0" else address
         test_url = f"http://{address_}:{port}/openapi"
