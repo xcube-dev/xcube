@@ -78,7 +78,13 @@ class Server(AsyncExecution):
         self._set_root_ctx(root_ctx)
 
     @property
+    def framework(self) -> Framework:
+        """The web server framework use by this server."""
+        return self._framework
+
+    @property
     def apis(self) -> Tuple[Api]:
+        """The APIs supported by this server."""
         return self._apis
 
     @property

@@ -432,9 +432,10 @@ class ApiRequest:
         """The request body as JSON value."""
 
     # noinspection PyShadowingBuiltins
-    def get_query_arg(self, name: str,
+    def get_query_arg(self,
+                      name: str,
                       type: Optional[Type[ArgT]] = None,
-                      default: Any = None) -> Optional[ArgT]:
+                      default: Optional[Type[ArgT]] = None) -> Optional[ArgT]:
         """Get the value of query argument given by *name*."""
         if type is None and default is not None:
             type = _builtin_type(default)

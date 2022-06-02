@@ -31,16 +31,17 @@ from xcube.server.server import ServerRootContext
 from .mocks import MockApiError
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
+from .mocks import MockFramework
 from .mocks import mock_server
 
 
 class ApiTest(unittest.TestCase):
 
-    def test_default_props(self):
-        api = Api("datasets")
+    def test_basic_props(self):
+        api = Api("datasets", description='What an API!')
         self.assertEqual("datasets", api.name)
         self.assertEqual("0.0.0", api.version)
-        self.assertEqual(None, api.description)
+        self.assertEqual('What an API!', api.description)
         self.assertEqual((), api.required_apis)
         self.assertEqual((), api.optional_apis)
         self.assertEqual(None, api.config_schema)
@@ -115,6 +116,13 @@ class ApiTest(unittest.TestCase):
             getattr(DatasetsHandler.get, '__openapi__', None)
         )
 
+        with self.assertRaises(TypeError) as cm:
+            api.operation()(42)
+        self.assertEqual("API datasets: @operation() decorator"
+                         " must be used with one of the HTTP"
+                         " methods of an ApiHandler",
+                         f"{cm.exception}")
+
 
 class ApiRouteTest(unittest.TestCase):
 
@@ -184,42 +192,29 @@ class ApiRouteTest(unittest.TestCase):
 
 
 class ApiContextTest(unittest.TestCase):
-    class DatasetsContext(ApiContext):
-
-        def on_update(self, prev_ctx: Optional[ServerContext]):
-            pass
-
-    class TimeSeriesContext(ApiContext):
-        def __init__(self, root: ServerContext):
-            super().__init__(root)
-            self.dataset_ctx = root.get_api_ctx("datasets")
-
-        def on_update(self, prev_ctx: Optional[ServerContext]):
-            pass
-
-    def test_it(self):
-        api1 = Api("datasets",
-                   create_ctx=self.DatasetsContext)
-        api2 = Api("timeseries",
-                   create_ctx=self.TimeSeriesContext,
-                   required_apis=["datasets"])
+    def test_basic_props(self):
         config = {}
-        root_ctx = ServerRootContext(mock_server([api1, api2]), config)
-        root_ctx.on_update(None)
-        api1_ctx = root_ctx.get_api_ctx('datasets')
-        api2_ctx = root_ctx.get_api_ctx('timeseries')
+        root_ctx = ServerRootContext(mock_server(), config)
+        api_ctx = ApiContext(root_ctx)
+        self.assertIs(config, api_ctx.config)
+        self.assertEqual((), api_ctx.apis)
 
-        self.assertIsInstance(api1_ctx, self.DatasetsContext)
-        self.assertIsInstance(api2_ctx, self.TimeSeriesContext)
+    def test_async_exec(self):
+        framework = MockFramework()
+        server = mock_server(framework=framework)
+        root_ctx = ServerRootContext(server, {})
+        api_ctx = ApiContext(root_ctx)
 
-        self.assertIs(root_ctx, api1_ctx.root)
-        self.assertIs(root_ctx, api2_ctx.root)
+        def my_func(a, b):
+            return a + b
 
-        self.assertIs(config, api1_ctx.config)
-        self.assertIs(config, api2_ctx.config)
+        self.assertEqual(0, framework.call_later_count)
+        api_ctx.call_later(0.1, my_func, 40, 2)
+        self.assertEqual(1, framework.call_later_count)
 
-        api21_ctx = api2_ctx.get_api_ctx("datasets")
-        self.assertIsInstance(api21_ctx, self.DatasetsContext)
+        self.assertEqual(0, framework.run_in_executor_count)
+        api_ctx.run_in_executor(None, my_func, 40, 2)
+        self.assertEqual(1, framework.run_in_executor_count)
 
 
 class ApiHandlerTest(unittest.TestCase):
@@ -231,7 +226,7 @@ class ApiHandlerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        root_ctx = ServerRootContext(mock_server([self.api]),
+        root_ctx = ServerRootContext(mock_server(api_specs=[self.api]),
                                      self.config)
         root_ctx.on_update(None)
         self.request = MockApiRequest()
@@ -272,17 +267,35 @@ class ApiHandlerTest(unittest.TestCase):
 
 
 class ApiRequestTest(unittest.TestCase):
+
     def test_query_args(self):
-        request = MockApiRequest()
+        request = MockApiRequest(query_args=dict(details=['1']))
         self.assertEqual(['1'], request.get_query_args('details'))
-        self.assertEqual('1', request.get_query_arg('details'))
         self.assertEqual([], request.get_query_args('crs'))
-        self.assertEqual(None, request.get_query_arg('crs'))
+
+    def test_query_args_with_type(self):
+        request = MockApiRequest(query_args=dict(details=['1']))
+        self.assertEqual([True], request.get_query_args('details', type=bool))
+        self.assertEqual([], request.get_query_args('crs', type=str))
+
+    def test_query_arg_with_type(self):
+        request = MockApiRequest(query_args=dict(details=['1']))
+        self.assertEqual(True, request.get_query_arg('details', type=bool))
+        self.assertEqual(None, request.get_query_arg('crs', type=str))
+
+    def test_query_arg_with_default(self):
+        request = MockApiRequest(query_args=dict(details=['1']))
+        self.assertEqual(True, request.get_query_arg('details',
+                                                     default=False))
+        self.assertEqual('CRS84', request.get_query_arg('crs',
+                                                        default='CRS84'))
 
     def test_body_args(self):
-        request = MockApiRequest()
+        request = MockApiRequest(body_args=dict(secret=[bytes(10)]))
         self.assertEqual([bytes(10)], request.get_body_args('secret'))
-        self.assertEqual(bytes(10), request.get_body_arg('secret'))
         self.assertEqual([], request.get_body_args('key'))
-        self.assertEqual(None, request.get_body_arg('key'))
 
+    def test_body_arg(self):
+        request = MockApiRequest(body_args=dict(secret=[bytes(10)]))
+        self.assertEqual(bytes(10), request.get_body_arg('secret'))
+        self.assertEqual(None, request.get_body_arg('key'))

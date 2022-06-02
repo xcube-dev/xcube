@@ -20,7 +20,7 @@
 #  DEALINGS IN THE SOFTWARE.
 
 from typing import Optional, Sequence, Tuple, Dict, Any, Union, Callable, \
-    Awaitable
+    Awaitable, List
 
 from tornado import concurrent
 
@@ -45,10 +45,11 @@ ApiSpec = Union[Api,
 ApiSpecs = Sequence[ApiSpec]
 
 
-def mock_server(api_specs: Optional[ApiSpecs] = None,
-                config: Optional[ServerConfig] = None) -> Server:
+def mock_server(framework: Optional[Framework] = None,
+                config: Optional[ServerConfig] = None,
+                api_specs: Optional[ApiSpecs] = None) -> Server:
     return Server(
-        MockFramework(),
+        framework or MockFramework(),
         config or {},
         extension_registry=mock_extension_registry(api_specs or ())
     )
@@ -124,6 +125,12 @@ class MockApiContext(ApiContext):
 
 
 class MockApiRequest(ApiRequest):
+    def __init__(self,
+                 query_args: Optional[Dict[str, List[str]]] = None,
+                 body_args: Optional[Dict[str, List[bytes]]] = None):
+        self._query_args = query_args or {}
+        self._body_args = body_args or {}
+
     @property
     def body(self) -> bytes:
         return bytes({})
@@ -134,14 +141,11 @@ class MockApiRequest(ApiRequest):
 
     # noinspection PyShadowingBuiltins
     def get_query_args(self, name: str, type: Any = None) -> Sequence[Any]:
-        if name == 'details':
-            return ['1']
-        return []
+        args = self._query_args.get(name, [])
+        return [type(arg) for arg in args] if type is not None else args
 
     def get_body_args(self, name: str) -> Sequence[bytes]:
-        if name == 'secret':
-            return [bytes(10)]
-        return []
+        return self._body_args.get(name, [])
 
 
 class MockApiResponse(ApiResponse):
