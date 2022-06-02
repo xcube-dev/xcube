@@ -17,6 +17,11 @@
   including the protocols "s3" and "file". It also allows patching
   xcube multi-level datasets (`*.levels` format).
 
+### Fixes
+
+* Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
+  Demo cubes now all have consolidated metadata.
+
 ## Changes in 0.11.2
 
 ### Enhancements
