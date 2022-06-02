@@ -26,9 +26,9 @@ from tornado import concurrent
 
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
-from xcube.server.api import ServerContext
+from xcube.server.api import Context
 from xcube.server.server import Server
-from xcube.server.server import ServerRootContext
+from xcube.server.server import RootContext
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -51,7 +51,7 @@ class ServerTest(unittest.TestCase):
         self.assertIs(framework, server.framework)
         self.assertIsInstance(server.apis, tuple)
         self.assertIs(server.apis, server.apis)
-        self.assertIsInstance(server.root_ctx, ServerRootContext)
+        self.assertIsInstance(server.root_ctx, RootContext)
         self.assertIs(server.root_ctx, server.root_ctx)
 
     def test_accepts_unknown_config_settings(self):
@@ -97,7 +97,7 @@ class ServerTest(unittest.TestCase):
             MockFramework(), {},
             extension_registry=extension_registry
         )
-        self.assertIsInstance(server.root_ctx, ServerRootContext)
+        self.assertIsInstance(server.root_ctx, RootContext)
         datasets_api_ctx = server.root_ctx.get_api_ctx('datasets')
         self.assertIsInstance(datasets_api_ctx, MockApiContext)
         self.assertTrue(datasets_api_ctx.on_update_count)
@@ -278,7 +278,7 @@ class ServerTest(unittest.TestCase):
                    extension_registry=extension_registry)
         self.assertEqual(("API 'datasets':"
                           " context must be instance of"
-                          " <class 'xcube.server.api.ServerContext'>,"
+                          " <class 'xcube.server.api.Context'>,"
                           " but was <class 'int'>"),
                          f'{cm.exception}')
 
@@ -300,13 +300,13 @@ class ServerRootContextTest(unittest.TestCase):
     def test_basic_props(self):
         server = mock_server()
         config = {}
-        root_ctx = ServerRootContext(server, config)
+        root_ctx = RootContext(server, config)
         self.assertIs(config, root_ctx.config)
         self.assertEqual((), root_ctx.apis)
 
     def test_on_update_and_on_dispose(self):
         server = mock_server()
-        root_ctx = ServerRootContext(server, {})
+        root_ctx = RootContext(server, {})
         self.assertIs(None, root_ctx.on_update(None))
         self.assertIs(None, root_ctx.on_dispose())
 
@@ -314,7 +314,7 @@ class ServerRootContextTest(unittest.TestCase):
         framework = MockFramework()
         server = mock_server(framework=framework)
         config = {}
-        root_ctx = ServerRootContext(server, config)
+        root_ctx = RootContext(server, config)
 
         def my_func(a, b):
             return a + b
@@ -329,15 +329,15 @@ class ServerRootContextTest(unittest.TestCase):
 
     class DatasetsContext(ApiContext):
 
-        def on_update(self, prev_ctx: Optional[ServerContext]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     class TimeSeriesContext(ApiContext):
-        def __init__(self, root: ServerContext):
+        def __init__(self, root: Context):
             super().__init__(root)
             self.dataset_ctx = root.get_api_ctx("datasets")
 
-        def on_update(self, prev_ctx: Optional[ServerContext]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     def test_on_update(self):
@@ -347,8 +347,8 @@ class ServerRootContextTest(unittest.TestCase):
                    create_ctx=self.TimeSeriesContext,
                    required_apis=["datasets"])
         config = {}
-        root_ctx = ServerRootContext(mock_server(api_specs=[api1, api2]),
-                                     config)
+        root_ctx = RootContext(mock_server(api_specs=[api1, api2]),
+                               config)
         root_ctx.on_update(None)
         api1_ctx = root_ctx.get_api_ctx('datasets')
         api2_ctx = root_ctx.get_api_ctx('timeseries')

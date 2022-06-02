@@ -34,7 +34,7 @@ from .api import ApiContext
 from .api import ApiRoute
 from .api import ReturnT
 from .api import ServerConfig
-from .api import ServerContext
+from .api import Context
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
 from .framework import Framework
@@ -93,23 +93,23 @@ class Server(AsyncExecution):
         return self._config_schema
 
     @property
-    def root_ctx(self) -> "ServerRootContext":
+    def root_ctx(self) -> "RootContext":
         """The current root context."""
         return self._root_ctx
 
-    def _set_root_ctx(self, root_ctx: "ServerRootContext"):
+    def _set_root_ctx(self, root_ctx: "RootContext"):
         self._root_ctx = root_ctx
         self._framework.update(root_ctx)
 
-    def _new_root_ctx(self, config: ServerConfig) -> "ServerRootContext":
+    def _new_root_ctx(self, config: ServerConfig) -> "RootContext":
         config = dict(config)
         for key in tuple(config.keys()):
             if key not in self._config_schema.properties:
                 LOG.warning(f'Configuration setting {key!r} ignored,'
                             f' because there is no schema describing it.')
                 config.pop(key)
-        return ServerRootContext(self,
-                                 self._config_schema.from_instance(config))
+        return RootContext(self,
+                           self._config_schema.from_instance(config))
 
     def start(self):
         """Start this server."""
@@ -247,7 +247,7 @@ class Server(AsyncExecution):
         return effective_config_schema
 
 
-class ServerRootContext(ServerContext):
+class RootContext(Context):
     """
     A server's root context holds the current server configuration and
     the API context objects that depend on that specific configuration.
@@ -266,7 +266,7 @@ class ServerRootContext(ServerContext):
                  config: ServerConfig):
         self._server = server
         self._config = config
-        self._api_contexts: Dict[str, ServerContext] = dict()
+        self._api_contexts: Dict[str, Context] = dict()
 
     @property
     def apis(self) -> Tuple[Api]:
@@ -276,14 +276,14 @@ class ServerRootContext(ServerContext):
     def config(self) -> ServerConfig:
         return self._config
 
-    def get_api_ctx(self, api_name: str) -> Optional[ServerContext]:
+    def get_api_ctx(self, api_name: str) -> Optional[Context]:
         return self._api_contexts.get(api_name)
 
-    def _set_api_ctx(self, api_name: str, api_ctx: ServerContext):
-        if not isinstance(api_ctx, ServerContext):
+    def _set_api_ctx(self, api_name: str, api_ctx: Context):
+        if not isinstance(api_ctx, Context):
             raise TypeError(f'API {api_name!r}:'
                             f' context must be instance of'
-                            f' {ServerContext},'
+                            f' {Context},'
                             f' but was {type(api_ctx)}')
         self._api_contexts[api_name] = api_ctx
         setattr(self, api_name, api_ctx)
@@ -304,7 +304,7 @@ class ServerRootContext(ServerContext):
         return self._server.run_in_executor(executor, function,
                                             *args, **kwargs)
 
-    def on_update(self, prev_ctx: Optional["ServerRootContext"]):
+    def on_update(self, prev_ctx: Optional["RootContext"]):
         if prev_ctx is None:
             LOG.info(f'Applying initial configuration...')
         else:

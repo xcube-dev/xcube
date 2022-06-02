@@ -28,7 +28,7 @@ from xcube.server.framework import get_framework_names
 from xcube.util.plugin import get_extension_registry
 
 
-class ServerFrameworkTest(unittest.TestCase):
+class FrameworkTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:

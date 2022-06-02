@@ -26,8 +26,8 @@ from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRoute
-from xcube.server.api import ServerContext
-from xcube.server.server import ServerRootContext
+from xcube.server.api import Context
+from xcube.server.server import RootContext
 from .mocks import MockApiError
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
@@ -49,7 +49,7 @@ class ApiTest(unittest.TestCase):
 
     def test_ctor_functions(self):
         class MyApiContext(ApiContext):
-            def on_update(self, prev_ctx: Optional["ServerContext"]):
+            def on_update(self, prev_ctx: Optional["Context"]):
                 pass
 
         test_dict = dict()
@@ -60,7 +60,7 @@ class ApiTest(unittest.TestCase):
         def handle_stop(root):
             test_dict['handle_stop'] = root
 
-        root_ctx = ServerRootContext(mock_server(), {})
+        root_ctx = RootContext(mock_server(), {})
 
         api = Api("datasets",
                   create_ctx=MyApiContext,
@@ -194,7 +194,7 @@ class ApiRouteTest(unittest.TestCase):
 class ApiContextTest(unittest.TestCase):
     def test_basic_props(self):
         config = {}
-        root_ctx = ServerRootContext(mock_server(), config)
+        root_ctx = RootContext(mock_server(), config)
         api_ctx = ApiContext(root_ctx)
         self.assertIs(config, api_ctx.config)
         self.assertEqual((), api_ctx.apis)
@@ -202,7 +202,7 @@ class ApiContextTest(unittest.TestCase):
     def test_async_exec(self):
         framework = MockFramework()
         server = mock_server(framework=framework)
-        root_ctx = ServerRootContext(server, {})
+        root_ctx = RootContext(server, {})
         api_ctx = ApiContext(root_ctx)
 
         def my_func(a, b):
@@ -220,14 +220,14 @@ class ApiContextTest(unittest.TestCase):
 class ApiHandlerTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
 
-        def on_update(self, prev_ctx: Optional[ServerContext]):
+        def on_update(self, prev_ctx: Optional[Context]):
             pass
 
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        root_ctx = ServerRootContext(mock_server(api_specs=[self.api]),
-                                     self.config)
+        root_ctx = RootContext(mock_server(api_specs=[self.api]),
+                               self.config)
         root_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()

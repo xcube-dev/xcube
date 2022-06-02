@@ -40,7 +40,7 @@ from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
-from xcube.server.api import ServerContext
+from xcube.server.api import Context
 from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
 from xcube.version import version
@@ -85,10 +85,10 @@ class TornadoFramework(Framework):
 
         self.application.add_handlers(".*$", handlers)
 
-    def update(self, ctx: ServerContext):
+    def update(self, ctx: Context):
         setattr(self.application, _SERVER_ROOT_CTX_ATTR_NAME, ctx)
 
-    def start(self, ctx: ServerContext):
+    def start(self, ctx: Context):
         config = ctx.config
 
         port = config["port"]
@@ -104,7 +104,7 @@ class TornadoFramework(Framework):
 
         self.io_loop.start()
 
-    def stop(self, ctx: ServerContext):
+    def stop(self, ctx: Context):
         self.io_loop.stop()
 
     def call_later(self,
@@ -193,9 +193,9 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
                  **kwargs: Any):
         super().__init__(application, request)
         root_ctx = getattr(application, _SERVER_ROOT_CTX_ATTR_NAME, None)
-        assert isinstance(root_ctx, ServerContext)
+        assert isinstance(root_ctx, Context)
         api_route: ApiRoute = kwargs.pop("api_route")
-        ctx: ServerContext = root_ctx.get_api_ctx(api_route.api_name)
+        ctx: Context = root_ctx.get_api_ctx(api_route.api_name)
         self._api_handler: ApiHandler = api_route.handler_cls(
             ctx,
             TornadoApiRequest(request),

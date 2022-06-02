@@ -25,7 +25,7 @@ from typing import Sequence, List, Type
 from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
 from xcube.util.extension import get_extension_registry
 from .api import ApiRoute
-from .api import ServerContext
+from .api import Context
 from .asyncexec import AsyncExecution
 
 
@@ -39,7 +39,7 @@ class Framework(AsyncExecution, abc.ABC):
         """Adds the given routes to this web server."""
 
     @abc.abstractmethod
-    def update(self, ctx: ServerContext):
+    def update(self, ctx: Context):
         """
         Called, when the server's root context has changed.
 
@@ -51,14 +51,14 @@ class Framework(AsyncExecution, abc.ABC):
         """
 
     @abc.abstractmethod
-    def start(self, ctx: ServerContext):
+    def start(self, ctx: Context):
         """
         Starts the web service.
         :param ctx: The initial server's root context.
         """
 
     @abc.abstractmethod
-    def stop(self, ctx: ServerContext):
+    def stop(self, ctx: Context):
         """
         Stops the web service.
         :param ctx: The current server's root context.

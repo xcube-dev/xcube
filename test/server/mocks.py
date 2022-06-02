@@ -33,7 +33,7 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
 from xcube.server.api import ServerConfig
-from xcube.server.api import ServerContext
+from xcube.server.api import Context
 from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
@@ -83,13 +83,13 @@ class MockFramework(Framework):
     def add_routes(self, routes: Sequence[ApiRoute]):
         self.add_routes_count += 1
 
-    def update(self, ctx: ServerContext):
+    def update(self, ctx: Context):
         self.update_count += 1
 
-    def start(self, ctx: ServerContext):
+    def start(self, ctx: Context):
         self.start_count += 1
 
-    def stop(self, ctx: ServerContext):
+    def stop(self, ctx: Context):
         self.stop_count += 1
 
     def call_later(self,
@@ -112,7 +112,7 @@ class MockFramework(Framework):
 
 
 class MockApiContext(ApiContext):
-    def __init__(self, root: ServerContext):
+    def __init__(self, root: Context):
         super().__init__(root)
         self.on_update_count = 0
         self.on_dispose_count = 0
