@@ -64,6 +64,7 @@ Cube manipulation
    cli/xcube_edit
    cli/xcube_level
    cli/xcube_optimize
+   cli/xcube_patch
    cli/xcube_prune
    cli/xcube_resample
    cli/xcube_vars2dim
