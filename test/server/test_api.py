@@ -27,7 +27,7 @@ from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRoute
 from xcube.server.api import Context
-from xcube.server.server import RootContext
+from xcube.server.server import ServerContext
 from .mocks import MockApiError
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
@@ -54,29 +54,29 @@ class ApiTest(unittest.TestCase):
 
         test_dict = dict()
 
-        def handle_start(root):
-            test_dict['handle_start'] = root
+        def handle_start(ctx):
+            test_dict['handle_start'] = ctx
 
-        def handle_stop(root):
-            test_dict['handle_stop'] = root
+        def handle_stop(ctx):
+            test_dict['handle_stop'] = ctx
 
-        root_ctx = RootContext(mock_server(), {})
+        server_ctx = ServerContext(mock_server(), {})
 
         api = Api("datasets",
                   create_ctx=MyApiContext,
                   on_start=handle_start,
                   on_stop=handle_stop)
 
-        api_ctx = api.create_ctx(root_ctx)
+        api_ctx = api.create_ctx(server_ctx)
         self.assertIsInstance(api_ctx, MyApiContext)
 
-        api.on_start(root_ctx)
-        self.assertIs(root_ctx, test_dict.get('handle_start'))
+        api.on_start(server_ctx)
+        self.assertIs(server_ctx, test_dict.get('handle_start'))
         self.assertIs(None, test_dict.get('handle_stop'))
 
-        api.on_stop(root_ctx)
-        self.assertIs(root_ctx, test_dict.get('handle_start'))
-        self.assertIs(root_ctx, test_dict.get('handle_stop'))
+        api.on_stop(server_ctx)
+        self.assertIs(server_ctx, test_dict.get('handle_start'))
+        self.assertIs(server_ctx, test_dict.get('handle_stop'))
 
     def test_route_decorator(self):
         api = Api("datasets")
@@ -194,16 +194,16 @@ class ApiRouteTest(unittest.TestCase):
 class ApiContextTest(unittest.TestCase):
     def test_basic_props(self):
         config = {}
-        root_ctx = RootContext(mock_server(), config)
-        api_ctx = ApiContext(root_ctx)
+        server_ctx = ServerContext(mock_server(), config)
+        api_ctx = ApiContext(server_ctx)
         self.assertIs(config, api_ctx.config)
         self.assertEqual((), api_ctx.apis)
 
     def test_async_exec(self):
         framework = MockFramework()
         server = mock_server(framework=framework)
-        root_ctx = RootContext(server, {})
-        api_ctx = ApiContext(root_ctx)
+        server_ctx = ServerContext(server, {})
+        api_ctx = ApiContext(server_ctx)
 
         def my_func(a, b):
             return a + b
@@ -226,12 +226,12 @@ class ApiHandlerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        root_ctx = RootContext(mock_server(api_specs=[self.api]),
-                               self.config)
-        root_ctx.on_update(None)
+        server_ctx = ServerContext(mock_server(api_specs=[self.api]),
+                                   self.config)
+        server_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()
-        self.handler = ApiHandler(root_ctx.get_api_ctx("datasets"),
+        self.handler = ApiHandler(server_ctx.get_api_ctx("datasets"),
                                   self.request,
                                   self.response)
 

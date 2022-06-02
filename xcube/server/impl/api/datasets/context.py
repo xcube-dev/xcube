@@ -30,8 +30,8 @@ from xcube.server.api import Context
 
 class DatasetsContext(ApiContext):
 
-    def __init__(self, root: Context):
-        super().__init__(root)
+    def __init__(self, server_ctx: Context):
+        super().__init__(server_ctx)
         self._datasets = dict()
 
     def on_update(self, prev_ctx: Optional["DatasetsContext"]):

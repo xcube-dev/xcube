@@ -30,10 +30,10 @@ from xcube.server.api import ApiContext
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
 from xcube.server.api import ServerConfig
-from xcube.server.api import Context
 from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
@@ -112,8 +112,8 @@ class MockFramework(Framework):
 
 
 class MockApiContext(ApiContext):
-    def __init__(self, root: Context):
-        super().__init__(root)
+    def __init__(self, server_ctx: Context):
+        super().__init__(server_ctx)
         self.on_update_count = 0
         self.on_dispose_count = 0
 
@@ -125,11 +125,19 @@ class MockApiContext(ApiContext):
 
 
 class MockApiRequest(ApiRequest):
+
     def __init__(self,
                  query_args: Optional[Dict[str, List[str]]] = None,
                  body_args: Optional[Dict[str, List[bytes]]] = None):
         self._query_args = query_args or {}
         self._body_args = body_args or {}
+
+    def url_for_path(self, path: str, query: Optional[str] = None) -> str:
+        return ''
+
+    @property
+    def url(self) -> str:
+        return ''
 
     @property
     def body(self) -> bytes:

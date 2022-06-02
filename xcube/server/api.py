@@ -114,14 +114,14 @@ class Api(Generic[ServerContextT]):
         If not given, or None is passed, the API is assumed to
         have no configuration.
     :param create_ctx: Optional API context factory.
-        If given, must be a callable that accepts the server root context
-        and returns an instance ``Context``.
+        If given, must be a callable that accepts the server context
+        and returns a ``Context`` instance for the API.
         Called when a new context is required after configuration changes.
     :param on_start: Optional start handler.
-        If given, must be a callable that accepts the server root context.
+        If given, must be a callable that accepts the server context.
         Called when the server starts.
     :param on_stop: Optional stop handler.
-        If given, must be a callable that accepts the server root context.
+        If given, must be a callable that accepts the server context.
         Called when the server stopped.
     """
 
@@ -262,20 +262,20 @@ class Api(Generic[ServerContextT]):
         return self._config_schema
 
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def create_ctx(self, root_ctx: "Context") -> ServerContextT:
+    def create_ctx(self, server_ctx: "Context") -> ServerContextT:
         """Create a new context object for this API.
         The default implementation uses the *create_ctx*
         argument passed to the constructor, if any,
-        to instantiate an API context using *root_ctx* as only argument.
+        to instantiate an API context using *ctx* as only argument.
         Otherwise, a new instance of ``ApiContext`` is returned.
         Should not be called directly.
 
-        :param root_ctx: The server's current root context.
+        :param server_ctx: The server's current context.
         :return: An instance of ``Context``
         """
-        return self._create_ctx(root_ctx)
+        return self._create_ctx(server_ctx)
 
-    def on_start(self, root_ctx: "Context"):
+    def on_start(self, server_ctx: "Context"):
         """Called when the server is started.
         Can be overridden to initialize the API.
         Should not be called directly.
@@ -283,11 +283,11 @@ class Api(Generic[ServerContextT]):
         The default implementation calls the *on_start*
         argument passed to the constructor, if any.
 
-        :param root_ctx: The server's current root context
+        :param server_ctx: The server's current context
         """
-        return self._on_start(root_ctx)
+        return self._on_start(server_ctx)
 
-    def on_stop(self, root_ctx: "Context"):
+    def on_stop(self, server_ctx: "Context"):
         """Called when the server is stopped.
         Can be overridden to initialize the API.
         Should not be called directly.
@@ -295,11 +295,11 @@ class Api(Generic[ServerContextT]):
         The default implementation calls the *on_stop*
         argument passed to the constructor, if any.
 
-        :param root_ctx: The server's current root context
+        :param server_ctx: The server's current context
         """
-        return self._on_stop(root_ctx)
+        return self._on_stop(server_ctx)
 
-    def _handle_event(self, root_ctx: "Context"):
+    def _handle_event(self, server_ctx: "Context"):
         """Do nothing."""
 
 
@@ -367,51 +367,51 @@ class ApiContext(Context):
       respect to other API context object states.
     * may override the `on_dispose()` method to empty any caches
       and close access to resources.
-    * must call the super class constructor with the *root* context,
-      from their own constructor, if any.
+    * must call the super class constructor with the
+      *server_ctx* context, from their own constructor, if any.
 
-    :param root: The server's root context.
+    :param server_ctx: The server context.
     """
 
-    def __init__(self, root: Context):
-        self._root = root
+    def __init__(self, server_ctx: Context):
+        self._server_ctx = server_ctx
 
     @property
-    def root(self) -> Context:
-        """The server's root context."""
-        return self._root
+    def server_ctx(self) -> Context:
+        """The server context."""
+        return self._server_ctx
 
     @property
     def apis(self) -> Tuple[Api]:
-        """Return the root's ``apis`` property."""
-        return self.root.apis
+        """Return the server context's ``apis`` property."""
+        return self.server_ctx.apis
 
     @property
     def config(self) -> ServerConfig:
-        """Return the root's ``config`` property."""
-        return self.root.config
+        """Return the server context's ``config`` property."""
+        return self.server_ctx.config
 
     def get_api_ctx(self, api_name: str) -> Optional["Context"]:
-        """Calls the root's ``get_api_ctx()`` method."""
-        return self.root.get_api_ctx(api_name)
+        """Calls the server context's ``get_api_ctx()`` method."""
+        return self.server_ctx.get_api_ctx(api_name)
 
     def call_later(self,
                    delay: Union[int, float],
                    callback: Callable,
                    *args,
                    **kwargs) -> object:
-        """Calls the root's ``call_later()`` method."""
-        return self.root.call_later(delay, callback,
-                                    *args, **kwargs)
+        """Calls the server context's ``call_later()`` method."""
+        return self.server_ctx.call_later(delay, callback,
+                                          *args, **kwargs)
 
     def run_in_executor(self,
                         executor: Optional[concurrent.futures.Executor],
                         function: Callable[..., ReturnT],
                         *args: Any,
                         **kwargs: Any) -> Awaitable[ReturnT]:
-        """Calls the root's ``run_in_executor()`` method."""
-        return self.root.run_in_executor(executor, function,
-                                         *args, **kwargs)
+        """Calls the server context's ``run_in_executor()`` method."""
+        return self.server_ctx.run_in_executor(executor, function,
+                                               *args, **kwargs)
 
     def on_update(self, prev_context: Optional["Context"]):
         """Does nothing."""

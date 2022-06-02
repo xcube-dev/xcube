@@ -73,9 +73,9 @@ class Server(AsyncExecution):
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(apis)
-        root_ctx = self._new_root_ctx(config)
-        root_ctx.on_update(None)
-        self._set_root_ctx(root_ctx)
+        ctx = self._new_ctx(config)
+        ctx.on_update(None)
+        self._set_ctx(ctx)
 
     @property
     def framework(self) -> Framework:
@@ -93,44 +93,44 @@ class Server(AsyncExecution):
         return self._config_schema
 
     @property
-    def root_ctx(self) -> "RootContext":
-        """The current root context."""
-        return self._root_ctx
+    def ctx(self) -> "ServerContext":
+        """The current server context."""
+        return self._ctx
 
-    def _set_root_ctx(self, root_ctx: "RootContext"):
-        self._root_ctx = root_ctx
-        self._framework.update(root_ctx)
+    def _set_ctx(self, ctx: "ServerContext"):
+        self._ctx = ctx
+        self._framework.update(ctx)
 
-    def _new_root_ctx(self, config: ServerConfig) -> "RootContext":
+    def _new_ctx(self, config: ServerConfig) -> "ServerContext":
         config = dict(config)
         for key in tuple(config.keys()):
             if key not in self._config_schema.properties:
                 LOG.warning(f'Configuration setting {key!r} ignored,'
                             f' because there is no schema describing it.')
                 config.pop(key)
-        return RootContext(self,
-                           self._config_schema.from_instance(config))
+        return ServerContext(self,
+                             self._config_schema.from_instance(config))
 
     def start(self):
         """Start this server."""
         LOG.info(f'Starting service...')
         for api in self._apis:
-            api.on_start(self.root_ctx)
-        self._framework.start(self.root_ctx)
+            api.on_start(self.ctx)
+        self._framework.start(self.ctx)
 
     def stop(self):
         """Stop this server."""
         LOG.info(f'Stopping service...')
-        self._framework.stop(self.root_ctx)
+        self._framework.stop(self.ctx)
         for api in self._apis:
-            api.on_stop(self.root_ctx)
-        self._root_ctx.on_dispose()
+            api.on_stop(self.ctx)
+        self._ctx.on_dispose()
 
     def update(self, config: ServerConfig):
         """Update this server with new configuration."""
-        root_ctx = self._new_root_ctx(config)
-        root_ctx.on_update(prev_ctx=self._root_ctx)
-        self._set_root_ctx(root_ctx)
+        ctx = self._new_ctx(config)
+        ctx.on_update(prev_ctx=self._ctx)
+        self._set_ctx(ctx)
 
     def call_later(self,
                    delay: Union[int, float],
@@ -247,12 +247,12 @@ class Server(AsyncExecution):
         return effective_config_schema
 
 
-class RootContext(Context):
+class ServerContext(Context):
     """
-    A server's root context holds the current server configuration and
+    The server context holds the current server configuration and
     the API context objects that depend on that specific configuration.
 
-    A new server root context is created for any new server configuration,
+    A new server context is created for any new server configuration,
     which in turn will cause all API context objects to be updated.
 
     The constructor shall not be called directly.
@@ -304,7 +304,7 @@ class RootContext(Context):
         return self._server.run_in_executor(executor, function,
                                             *args, **kwargs)
 
-    def on_update(self, prev_ctx: Optional["RootContext"]):
+    def on_update(self, prev_ctx: Optional["ServerContext"]):
         if prev_ctx is None:
             LOG.info(f'Applying initial configuration...')
         else:

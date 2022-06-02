@@ -28,7 +28,7 @@ from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import Context
 from xcube.server.server import Server
-from xcube.server.server import RootContext
+from xcube.server.server import ServerContext
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -51,8 +51,8 @@ class ServerTest(unittest.TestCase):
         self.assertIs(framework, server.framework)
         self.assertIsInstance(server.apis, tuple)
         self.assertIs(server.apis, server.apis)
-        self.assertIsInstance(server.root_ctx, RootContext)
-        self.assertIs(server.root_ctx, server.root_ctx)
+        self.assertIsInstance(server.ctx, ServerContext)
+        self.assertIs(server.ctx, server.ctx)
 
     def test_accepts_unknown_config_settings(self):
         extension_registry = mock_extension_registry([
@@ -67,7 +67,7 @@ class ServerTest(unittest.TestCase):
             extension_registry=extension_registry
         )
         self.assertNotIn("i_am_an_unknown_setting",
-                         server.root_ctx.config)
+                         server.ctx.config)
 
     def test_web_server_delegation(self):
         extension_registry = mock_extension_registry([
@@ -97,15 +97,15 @@ class ServerTest(unittest.TestCase):
             MockFramework(), {},
             extension_registry=extension_registry
         )
-        self.assertIsInstance(server.root_ctx, RootContext)
-        datasets_api_ctx = server.root_ctx.get_api_ctx('datasets')
+        self.assertIsInstance(server.ctx, ServerContext)
+        datasets_api_ctx = server.ctx.get_api_ctx('datasets')
         self.assertIsInstance(datasets_api_ctx, MockApiContext)
         self.assertTrue(datasets_api_ctx.on_update_count)
-        time_series_api_ctx = server.root_ctx.get_api_ctx('timeseries')
+        time_series_api_ctx = server.ctx.get_api_ctx('timeseries')
         self.assertIsNone(time_series_api_ctx)
         self.assertEqual({'address': '0.0.0.0',
                           'port': 8080},
-                         server.root_ctx.config)
+                         server.ctx.config)
 
     def test_config_schema_effectively_merged(self):
         extension_registry = mock_extension_registry([
@@ -190,12 +190,12 @@ class ServerTest(unittest.TestCase):
             MockFramework(), {},
             extension_registry=extension_registry
         )
-        prev_ctx = server.root_ctx
+        prev_ctx = server.ctx
         server.update({"port": 9090})
         self.assertEqual({'address': '0.0.0.0',
                           'port': 9090},
-                         server.root_ctx.config)
-        self.assertIsNot(prev_ctx, server.root_ctx)
+                         server.ctx.config)
+        self.assertIsNot(prev_ctx, server.ctx)
 
     def test_update_disposes(self):
         extension_registry = mock_extension_registry([
@@ -205,7 +205,7 @@ class ServerTest(unittest.TestCase):
             MockFramework(), {},
             extension_registry=extension_registry
         )
-        api_ctx = server.root_ctx.get_api_ctx("datasets")
+        api_ctx = server.ctx.get_api_ctx("datasets")
         self.assertIsInstance(api_ctx, MockApiContext)
         self.assertEqual(1, api_ctx.on_update_count)
         self.assertEqual(0, api_ctx.on_dispose_count)
@@ -265,7 +265,7 @@ class ServerTest(unittest.TestCase):
 
     def test_illegal_api_context_detected(self):
         # noinspection PyUnusedLocal
-        def create_ctx(root_ctx):
+        def create_ctx(server_ctx):
             return 42
 
         extension_registry = mock_extension_registry(
@@ -300,31 +300,31 @@ class ServerRootContextTest(unittest.TestCase):
     def test_basic_props(self):
         server = mock_server()
         config = {}
-        root_ctx = RootContext(server, config)
-        self.assertIs(config, root_ctx.config)
-        self.assertEqual((), root_ctx.apis)
+        server_ctx = ServerContext(server, config)
+        self.assertIs(config, server_ctx.config)
+        self.assertEqual((), server_ctx.apis)
 
     def test_on_update_and_on_dispose(self):
         server = mock_server()
-        root_ctx = RootContext(server, {})
-        self.assertIs(None, root_ctx.on_update(None))
-        self.assertIs(None, root_ctx.on_dispose())
+        server_ctx = ServerContext(server, {})
+        self.assertIs(None, server_ctx.on_update(None))
+        self.assertIs(None, server_ctx.on_dispose())
 
     def test_async_exec(self):
         framework = MockFramework()
         server = mock_server(framework=framework)
         config = {}
-        root_ctx = RootContext(server, config)
+        server_ctx = ServerContext(server, config)
 
         def my_func(a, b):
             return a + b
 
         self.assertEqual(0, framework.call_later_count)
-        root_ctx.call_later(0.1, my_func, 40, 2)
+        server_ctx.call_later(0.1, my_func, 40, 2)
         self.assertEqual(1, framework.call_later_count)
 
         self.assertEqual(0, framework.run_in_executor_count)
-        root_ctx.run_in_executor(None, my_func, 40, 2)
+        server_ctx.run_in_executor(None, my_func, 40, 2)
         self.assertEqual(1, framework.run_in_executor_count)
 
     class DatasetsContext(ApiContext):
@@ -333,9 +333,9 @@ class ServerRootContextTest(unittest.TestCase):
             pass
 
     class TimeSeriesContext(ApiContext):
-        def __init__(self, root: Context):
-            super().__init__(root)
-            self.dataset_ctx = root.get_api_ctx("datasets")
+        def __init__(self, server_ctx: Context):
+            super().__init__(server_ctx)
+            self.dataset_ctx = server_ctx.get_api_ctx("datasets")
 
         def on_update(self, prev_ctx: Optional[Context]):
             pass
@@ -347,17 +347,17 @@ class ServerRootContextTest(unittest.TestCase):
                    create_ctx=self.TimeSeriesContext,
                    required_apis=["datasets"])
         config = {}
-        root_ctx = RootContext(mock_server(api_specs=[api1, api2]),
-                               config)
-        root_ctx.on_update(None)
-        api1_ctx = root_ctx.get_api_ctx('datasets')
-        api2_ctx = root_ctx.get_api_ctx('timeseries')
+        server_ctx = ServerContext(mock_server(api_specs=[api1, api2]),
+                                   config)
+        server_ctx.on_update(None)
+        api1_ctx = server_ctx.get_api_ctx('datasets')
+        api2_ctx = server_ctx.get_api_ctx('timeseries')
 
         self.assertIsInstance(api1_ctx, self.DatasetsContext)
         self.assertIsInstance(api2_ctx, self.TimeSeriesContext)
 
-        self.assertIs(root_ctx, api1_ctx.root)
-        self.assertIs(root_ctx, api2_ctx.root)
+        self.assertIs(server_ctx, api1_ctx.server_ctx)
+        self.assertIs(server_ctx, api2_ctx.server_ctx)
 
         self.assertIs(config, api1_ctx.config)
         self.assertIs(config, api2_ctx.config)

@@ -41,27 +41,27 @@ class Framework(AsyncExecution, abc.ABC):
     @abc.abstractmethod
     def update(self, ctx: Context):
         """
-        Called, when the server's root context has changed.
+        Called, when the server context has changed.
 
         This is the case immediately after instantiation and before
         start() is called. It may then be called on any context change,
         likely due to a configuration change.
 
-        :param ctx: The current server's root context.
+        :param ctx: The current server context.
         """
 
     @abc.abstractmethod
     def start(self, ctx: Context):
         """
         Starts the web service.
-        :param ctx: The initial server's root context.
+        :param ctx: The initial server context.
         """
 
     @abc.abstractmethod
     def stop(self, ctx: Context):
         """
         Stops the web service.
-        :param ctx: The current server's root context.
+        :param ctx: The current server context.
         """
 
 
