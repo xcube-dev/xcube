@@ -19,7 +19,7 @@ Patch and consolidate the metadata of a xcube dataset.
       Patch and consolidate the metadata of an xcube dataset CUBE.
 
       CUBE can be either a local filesystem path or a URL. It must point to either
-      a Zarr dataset (*.zarr) or a xcube multi-level dataset (*.levels).
+      a Zarr dataset (*.zarr) or an xcube multi-level dataset (*.levels).
       Additional storage options for a given protocol may be passed by the OPTIONS
       option.
 
