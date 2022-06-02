@@ -132,6 +132,8 @@ def gen_cube(input_paths: Sequence[str] = None,
         # noinspection PyUnusedLocal
         def monitor(*args):
             pass
+    # not sure why logging does not work
+    monitor = print
 
     input_paths = [input_file for f in input_paths for input_file in glob.glob(f, recursive=True)]
 
@@ -253,7 +255,11 @@ def _process_input(input_processor: InputProcessor,
         if subset is None:
             monitor('no spatial overlap with input')
         elif subset is not input_slice:
-            grid_mapping = GridMapping.from_dataset(subset)
+            if grid_mapping.xy_var_names != ('lat', 'lon') and 'lat' in subset and 'lon' in subset:
+                xy_dataset = xr.Dataset({'lat': subset['lat'], 'lon': subset['lon']})
+                grid_mapping = GridMapping.from_dataset(xy_dataset, xy_var_names=['lon', 'lat'])
+            else:
+                grid_mapping = GridMapping.from_dataset(subset)
         return subset
 
     steps.append((step1a, 'spatial subsetting'))

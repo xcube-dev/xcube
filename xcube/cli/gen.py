@@ -64,7 +64,7 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
               help='Fallback spatial resampling algorithm to be used for all variables. '
                    f'Defaults to {DEFAULT_OUTPUT_RESAMPLING!r}. '
                    f'The choices for the resampling algorithm are: {resampling_methods}')
-@click.option('--append', '-a', is_flag=True,
+@click.option('--append', '-a', is_flag=True, default=None,
               help='Deprecated. The command will now always create, insert, replace, or append input slices.')
 @click.option('--prof', is_flag=True,
               help='Collect profiling information and dump results after processing.')

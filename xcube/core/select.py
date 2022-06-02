@@ -134,7 +134,24 @@ def select_spatial_subset(dataset: xr.Dataset,
     x = dataset[x_name]
     y = dataset[y_name]
 
-    if x.ndim == 1 and y.ndim == 1:
+    # fix temporarily the selection of coordinate variables in case there are both y,x and lat,lon
+    if xy_bbox and (x_name != 'lon' or y_name != 'lat') and 'lon' in dataset and 'lat' in dataset:
+        xy_dataset = xr.Dataset({'lat': dataset['lat'], 'lon': dataset['lon']})
+        xy_grid_mapping = GridMapping.from_dataset(xy_dataset, xy_var_names=['lon', 'lat'])
+        ij_bbox = xy_grid_mapping.ij_bbox_from_xy_bbox(xy_bbox,
+                                                        ij_border=ij_border,
+                                                        xy_border=xy_border)
+        if ij_bbox[0] == -1:
+            return None
+        width, height = grid_mapping.size
+        i_min, j_min, i_max, j_max = ij_bbox
+        if i_min > 0 or j_min > 0 or i_max < width - 1 or j_max < height - 1:
+            x_dim, y_dim = grid_mapping.xy_dim_names
+            i_slice = slice(i_min, i_max + 1)
+            j_slice = slice(j_min, j_max + 1)
+            return dataset.isel({x_dim: i_slice, y_dim: j_slice})
+        return dataset
+    elif x.ndim == 1 and y.ndim == 1:
         # Hotfix für #981 and #985
         if xy_bbox:
             if y.values[0] < y.values[-1]:
