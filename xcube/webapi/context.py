@@ -22,7 +22,6 @@
 import fnmatch
 import glob
 import itertools
-import json
 import os
 import os.path
 import threading
@@ -49,7 +48,6 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
-from xcube.util.assertions import assert_instance
 from xcube.util.cache import Cache
 from xcube.util.cache import MemoryCacheStore
 from xcube.util.cache import parse_mem_size
@@ -461,11 +459,12 @@ class ServiceContext:
                         f'{store_dataset_id}'
                     all_dataset_configs.append(dataset_config)
 
-        # Just for testing:
-        debug_file = 'all_dataset_configs.json'
-        with open(debug_file, 'w') as stream:
-            json.dump(all_dataset_configs, stream)
-            LOG.debug(f'Wrote file {debug_file!r}')
+        # # Uncomment for testing:
+        # debug_file = 'all_dataset_configs.json'
+        # with open(debug_file, 'w') as stream:
+        #     import json
+        #     json.dump(all_dataset_configs, stream)
+        #     LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
 
