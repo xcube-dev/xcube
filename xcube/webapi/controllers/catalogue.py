@@ -26,6 +26,7 @@ from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 import numpy as np
 import pyproj
 import xarray as xr
+
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.normalize import DatasetIsNotACubeError
@@ -270,6 +271,13 @@ def get_dataset(ctx: ServiceContext,
             dim_names.add(dim_name)
 
     dataset_dict["variables"] = variable_dicts
+
+    if not variable_dicts:
+        if not ds.data_vars:
+            message = f'Dataset {ds_id!r} has no variables'
+        else:
+            message = f'Dataset {ds_id!r} has no published variables'
+        raise DatasetIsNotACubeError(message)
 
     rgb_var_names, rgb_norm_ranges = ctx.get_rgb_color_mapping(ds_id)
     if any(rgb_var_names):
