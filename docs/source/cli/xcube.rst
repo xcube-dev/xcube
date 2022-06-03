@@ -32,14 +32,21 @@
     
     Commands:
       chunk     (Re-)chunk xcube dataset.
+      compute   Compute a cube from one or more other cubes.
       dump      Dump contents of an input dataset.
+      edit      Edit the metadata of an xcube dataset.
       extract   Extract cube points.
       gen       Generate xcube dataset.
-      grid      Find spatial xcube dataset resolutions and adjust bounding boxes.
+      grid      Find spatial xcube dataset resolutions and adjust bounding...
       level     Generate multi-resolution levels.
       optimize  Optimize xcube dataset for faster access.
+      patch     Patch and consolidate the metadata of a xcube dataset CUBE.
       prune     Delete empty chunks.
       resample  Resample data along the time dimension.
       serve     Serve data cubes via web service.
+      sh        SentinelHub tools for xcube.
+      tile      IMPORTANT NOTE: The xcube tile tool in its current form is...
       vars2dim  Convert cube variables into new dimension.
       verify    Perform cube verification.
+      versions  Get versions of important packages used by xcube.
+

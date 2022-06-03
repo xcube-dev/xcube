@@ -111,6 +111,18 @@ Datasets:
     Path: sample-geotiff.tif
     Style: tif_style
 
+  - Identifier: cog_local
+    Title: "COG example"
+    FileSystem: file
+    Path: sample-cog.tif
+    Style: tif_style
+
+  - Identifier: geotiff_local
+    Title: "GeoTIFF example"
+    FileSystem: file
+    Path: sample-geotiff.tif
+    Style: tif_style
+
 PlaceGroups:
   - Identifier: inside-cube
     Title: Places inside the cube

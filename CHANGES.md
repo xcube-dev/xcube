@@ -1,5 +1,7 @@
 ## Changes in 0.11.3 (in development)
 
+### Enhancements
+
 * Allow xcube Server to work with any OIDC-compliant auth service such as
   Auth0, Keycloak, or Google. Permissions of the form 
   `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
@@ -23,6 +25,17 @@
 * Removed all upper version bounds of package dependencies.
   This increases compatibility with existing Python environments.
 
+* A new CLI tool `xcube patch` has been added. It allows for in-place
+  metadata patches of Zarr data cubes stored in almost any filesystem 
+  supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
+  including the protocols "s3" and "file". It also allows patching
+  xcube multi-level datasets (`*.levels` format).
+
+### Fixes
+
+* Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
+  Demo cubes now all have consolidated metadata.
+
 ## Changes in 0.11.2
 
 ### Enhancements
@@ -42,7 +55,6 @@
 * The functions
   - `mask_dataset_by_geometry()` 
   - `rasterize_features()`
-
   of module `xcube.core.geom` have been reimplemented to generate 
   lazy dask arrays. Both should now be applicable to datasets
   that have arbitrarily large spatial dimensions. 

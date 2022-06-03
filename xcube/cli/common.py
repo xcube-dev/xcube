@@ -85,6 +85,27 @@ def cli_option_verbosity(func):
     )(func)
 
 
+def cli_option_dry_run(func):
+    """
+    Decorator for adding a reusable CLI option `--dry-run`/'-d'.
+    The related kwarg is named `dry_run` and is of type bool.
+    """
+
+    # noinspection PyUnusedLocal
+    def _callback(ctx: click.Context, param: click.Option, value: bool):
+        ctx_obj = ctx.ensure_object(dict)
+        ctx_obj["dry_run"] = value
+        return value
+
+    return click.option(
+        '--dry-run', '-d', 'dry_run',
+        is_flag=True,
+        help="Do not change any data,"
+             " just report what would have been changed.",
+        callback=_callback
+    )(func)
+
+
 def cli_option_scheduler(func):
     """Decorator for adding a pre-defined, reusable CLI option `--scheduler`."""
 

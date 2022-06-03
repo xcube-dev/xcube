@@ -1,7 +1,8 @@
 {
     "metadata": {
         ".zattrs": {
-            "Conventions": "CF-1.7"
+            "Conventions": "CF-1.7",
+            "coordinates": "time_bnds lat_bnds lon_bnds"
         },
         ".zgroup": {
             "zarr_format": 2
@@ -25,8 +26,8 @@
             "order": "C",
             "shape": [
                 5,
-                500,
-                1000
+                1000,
+                2000
             ],
             "zarr_format": 2
         },
@@ -83,8 +84,8 @@
             "order": "C",
             "shape": [
                 5,
-                500,
-                1000
+                1000,
+                2000
             ],
             "zarr_format": 2
         },
@@ -165,8 +166,8 @@
             "order": "C",
             "shape": [
                 5,
-                500,
-                1000
+                1000,
+                2000
             ],
             "zarr_format": 2
         },
@@ -199,8 +200,8 @@
             "order": "C",
             "shape": [
                 5,
-                500,
-                1000
+                1000,
+                2000
             ],
             "zarr_format": 2
         },
@@ -216,7 +217,7 @@
         },
         "lat/.zarray": {
             "chunks": [
-                500
+                250
             ],
             "compressor": {
                 "blocksize": 0,
@@ -230,7 +231,7 @@
             "filters": null,
             "order": "C",
             "shape": [
-                500
+                1000
             ],
             "zarr_format": 2
         },
@@ -243,9 +244,10 @@
             "standard_name": "latitude",
             "units": "degrees_north"
         },
-        "lon/.zarray": {
+        "lat_bnds/.zarray": {
             "chunks": [
-                1000
+                250,
+                2
             ],
             "compressor": {
                 "blocksize": 0,
@@ -259,7 +261,37 @@
             "filters": null,
             "order": "C",
             "shape": [
-                1000
+                1000,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "lat_bnds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat",
+                "bnds"
+            ],
+            "long_name": "latitude",
+            "standard_name": "latitude",
+            "units": "degrees_north"
+        },
+        "lon/.zarray": {
+            "chunks": [
+                250
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                2000
             ],
             "zarr_format": 2
         },
@@ -268,6 +300,37 @@
                 "lon"
             ],
             "bounds": "lon_bnds",
+            "long_name": "longitude",
+            "standard_name": "longitude",
+            "units": "degrees_east"
+        },
+        "lon_bnds/.zarray": {
+            "chunks": [
+                250,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                2000,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "lon_bnds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon",
+                "bnds"
+            ],
             "long_name": "longitude",
             "standard_name": "longitude",
             "units": "degrees_east"
@@ -291,8 +354,8 @@
             "order": "C",
             "shape": [
                 5,
-                500,
-                1000
+                1000,
+                2000
             ],
             "zarr_format": 2
         },
@@ -343,7 +406,7 @@
         },
         "time/.zarray": {
             "chunks": [
-                5
+                1
             ],
             "compressor": {
                 "blocksize": 0,
@@ -366,6 +429,38 @@
                 "time"
             ],
             "bounds": "time_bnds",
+            "calendar": "gregorian",
+            "long_name": "time",
+            "standard_name": "time",
+            "units": "days since 1970-01-01"
+        },
+        "time_bnds/.zarray": {
+            "chunks": [
+                1,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                5,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "time_bnds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "bnds"
+            ],
             "calendar": "gregorian",
             "long_name": "time",
             "standard_name": "time",

@@ -188,6 +188,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'grid',
         'level',
         'optimize',
+        'patch',
         'prune',
         'rectify',
         'resample',
