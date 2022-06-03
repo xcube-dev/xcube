@@ -621,13 +621,13 @@ class MaintenanceHandler(ServiceRequestHandler):
         if action == "update":
             LOG.warning("Forcing resource update...")
             IOLoop.current().add_callback(get_service().update_config)
-            self.write("OK")
+            self.write(json.dumps(dict(status="ok")))
         elif action == "stop":
             get_service().stop()
-            self.write("OK")
+            self.write(json.dumps(dict(status="ok")))
         elif action == "kill":
             get_service().stop(kill=True)
-            self.write("OK")
+            self.write(json.dumps(dict(status="ok")))
         elif action == "fail":
             code = self.params.get_query_argument_int(
                 'code', default=None
