@@ -40,9 +40,15 @@ def new_application(route_prefix: str = None, base_dir: str = '.'):
         (route_prefix + '/images/(.*)',
          StaticFileHandler, {'path': os.path.join(base_dir, 'images')}),
 
+        # App Info API
         (route_prefix + url_pattern('/'),
          xcube.webapi.handlers.InfoHandler),
 
+        # App Maintenance API
+        (route_prefix + url_pattern('/maintenance/{{action}}'),
+         xcube.webapi.handlers.MaintenanceHandler),
+
+        # WMTS 1.0 API
         (route_prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
          xcube.webapi.handlers.GetWMTSCapabilitiesXmlHandler),
         (route_prefix + url_pattern('/wmts/1.0.0/{{tms_id}}/WMTSCapabilities.xml'),
@@ -53,6 +59,8 @@ def new_application(route_prefix: str = None, base_dir: str = '.'):
          xcube.webapi.handlers.GetWMTSTileTmsHandler),
         (route_prefix + url_pattern('/wmts/kvp'),
          xcube.webapi.handlers.WMTSKvpHandler),
+
+        # Datasets API
 
         (route_prefix + url_pattern('/datasets'),
          xcube.webapi.handlers.GetDatasetsHandler),

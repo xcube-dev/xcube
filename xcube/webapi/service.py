@@ -89,13 +89,7 @@ class Service:
                  aws_env: bool = False) -> None:
 
         """
-        Start a tile service.
-
-        The *service_info_file*, if given, represents the service in the filesystem, similar to
-        the ``/var/run/`` directory on Linux systems.
-
-        If the service file exist and its information is compatible with the requested *port*, *address*, *caller*, then
-        this function simply returns without taking any other actions.
+        The xcube server's service.
 
         :param application: The Tornado web application
         :param address: the address
@@ -168,6 +162,7 @@ class Service:
                                       tile_cache_capacity=tile_cache_capacity)
         self._maybe_load_config()
 
+        application.service = self
         application.service_context = self.context
         application.time_of_last_activity = time.process_time()
         self.application = application
@@ -200,6 +195,7 @@ class Service:
         Stops the Tornado web server.
         """
         if kill:
+            LOG.warning("Killing service...")
             sys.exit(0)
         else:
             IOLoop.current().add_callback(self._on_shutdown)
@@ -254,14 +250,23 @@ class Service:
 
         if self.context.config_mtime != stat.st_mtime:
             self.context.config_mtime = stat.st_mtime
-            try:
-                self.context.config = load_json_or_yaml_config(config_file)
-                self.config_error = None
-                LOG.info(f'Configuration file {config_file!r} successfully loaded')
-            except ValueError as e:
-                if self.config_error is None:
-                    LOG.error(f'Configuration file {config_file!r}: {e}')
-                    self.config_error = e
+            self.update_config()
+
+    def update_config(self):
+        config_file = self.config_file
+        if config_file is None:
+            return
+        try:
+            config = load_json_or_yaml_config(config_file)
+            LOG.info(f'Configuration file {config_file!r}'
+                     f' successfully loaded')
+            self.context.config = config
+            self.config_error = None
+        except ValueError as e:
+            if self.config_error is None:
+                LOG.error(f'Configuration file {config_file!r}: {e}')
+                self.config_error = e
+        return self.config_error
 
 
 # noinspection PyAbstractClass
