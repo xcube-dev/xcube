@@ -21,6 +21,12 @@
 
 * Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
   Demo cubes now all have consolidated metadata.
+* When writing multi-level datasets with file data stores, i.e.,
+  ```python
+  store.write_data(dataset, data_id="test.levels", use_saved_levels=True)
+  ``` 
+  and where `dataset` has different spatial resolutions in x and y, 
+  an exception was raised. This is no longer the case. 
 
 ## Changes in 0.11.2
 
