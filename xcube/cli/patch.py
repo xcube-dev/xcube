@@ -23,14 +23,12 @@ import warnings
 from typing import Dict, Any, MutableMapping
 
 import click
-import fsspec
 
 from xcube.cli.common import (cli_option_quiet,
                               cli_option_verbosity,
                               cli_option_dry_run,
                               configure_cli_output)
 from xcube.constants import LOG
-
 
 DELETE_ATTR_VALUE = '__delete__'
 
@@ -131,7 +129,9 @@ def patch_dataset(dataset_path: str,
                   dry_run: bool):
     if dataset_path.endswith('.levels'):
         fs, root = get_fs_and_root(dataset_path, storage_options)
-        protocol = fs.protocol if isinstance(fs.protocol, str) else fs.protocol[0]
+        protocol = fs.protocol \
+            if isinstance(fs.protocol, str) \
+            else fs.protocol[0]
         prefix = f"{protocol}://" if protocol != "file" else ""
         for item in fs.listdir(root, detail=False):
             if item.endswith('.zarr'):
