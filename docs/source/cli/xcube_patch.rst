@@ -57,6 +57,10 @@ value of the attribute ``long_name`` of variable ``conc_chl``:
 
     zarr_consolidated_format: 1
     metadata:
+
+      .zattrs:
+        TileSize: __delete__
+
       conc_chl/.zattrs:
         long_name: Chlorophyll concentration
 
