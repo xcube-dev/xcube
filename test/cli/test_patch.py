@@ -35,7 +35,8 @@ class PatchZarrCubeTest(CliTest):
             "zarr_consolidated_format": 1,
             "metadata": {
                 ".zattrs": {
-                    "title": "Humpty-Dumpty"
+                    "title": "Humpty-Dumpty",
+                    "TileSize": "__delete__",   # SNAP adds this, remove!
                 },
                 "conc_chl/.zattrs": {
                     "title": "CHL"
@@ -116,7 +117,8 @@ class PatchZarrCubeTest(CliTest):
         })
         cube.attrs.update({
             "Conventions": "CF-1.7",
-            "coordinates": "time lat lon"
+            "coordinates": "time lat lon",
+            "TileSize": "1024:1024"  # SNAP adds this to NetCDFs
         })
         cube.to_zarr(cls.CUBE_PATH)
 

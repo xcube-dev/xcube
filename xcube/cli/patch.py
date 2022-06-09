@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import warnings
 from typing import Dict, Any, MutableMapping
 
@@ -30,9 +31,12 @@ from xcube.cli.common import (cli_option_quiet,
 from xcube.constants import LOG
 
 
+DELETE_ATTR_VALUE = '__delete__'
+
+
 # noinspection PyShadowingBuiltins
 @click.command(name='patch')
-@click.argument('cube')
+@click.argument('DATASET')
 @click.option('--metadata', 'metadata_path', metavar='METADATA',
               help='The metadata to be patched.'
                    ' Must be a JSON or YAML file'
@@ -43,25 +47,28 @@ from xcube.constants import LOG
 @cli_option_quiet
 @cli_option_verbosity
 @cli_option_dry_run
-def patch(cube,
+def patch(dataset,
           metadata_path,
           options_path,
           quiet,
           verbosity,
           dry_run):
     """
-    Patch and consolidate the metadata of a xcube dataset CUBE.
+    Patch and consolidate the metadata of a dataset.
 
-    CUBE can be either a local filesystem path or a URL.
+    DATASET can be either a local filesystem path or a URL.
     It must point to either a Zarr dataset (*.zarr)
     or a xcube multi-level dataset (*.levels).
     Additional storage options for a given protocol may be passed
     by the OPTIONS option.
+
+    In METADATA, the special attribute value "__delete__" can be used to
+    remove that attribute from dataset or array metadata.
     """
     configure_cli_output(quiet=quiet, verbosity=verbosity)
     metadata = load_metadata(metadata_path)
     storage_options = load_storage_options(options_path)
-    patch_cube(cube, storage_options, metadata, dry_run)
+    patch_dataset(dataset, storage_options, metadata, dry_run)
 
 
 def load_metadata(metadata_path):
@@ -117,28 +124,28 @@ def load_storage_options(options_path):
     return storage_options
 
 
-def patch_cube(cube_path: str,
-               storage_options: Dict[str, Any],
-               metadata: Dict[str, Any],
-               dry_run: bool):
-    if cube_path.endswith('.levels'):
-        fs, root = get_fs_and_root(cube_path, storage_options)
+def patch_dataset(dataset_path: str,
+                  storage_options: Dict[str, Any],
+                  metadata: Dict[str, Any],
+                  dry_run: bool):
+    if dataset_path.endswith('.levels'):
+        fs, root = get_fs_and_root(dataset_path, storage_options)
         for item in fs.listdir(root, detail=False):
             if item.endswith('.zarr'):
-                _patch_cube(item,
-                            storage_options, metadata, dry_run)
+                _patch_dataset(item,
+                               storage_options, metadata, dry_run)
     else:
-        _patch_cube(cube_path,
-                    storage_options, metadata, dry_run)
+        _patch_dataset(dataset_path,
+                       storage_options, metadata, dry_run)
 
 
-def _patch_cube(cube_path: str,
-                storage_options: Dict[str, Any],
-                metadata: Dict[str, Any],
-                dry_run: bool):
+def _patch_dataset(dataset_path: str,
+                   storage_options: Dict[str, Any],
+                   metadata: Dict[str, Any],
+                   dry_run: bool):
     import zarr
-    LOG.info(f'Opening {cube_path}...')
-    cube_store = _open_zarr_store(cube_path, storage_options)
+    LOG.info(f'Opening {dataset_path}...')
+    cube_store = _open_zarr_store(dataset_path, storage_options)
     group = zarr.open(cube_store, mode='r+' if not dry_run else 'r')
     for k, v in metadata.items():
         parts = k.split('/')
@@ -153,24 +160,41 @@ def _patch_cube(cube_path: str,
                 warnings.warn(f'Ignoring metadata entry {k}:'
                               f' not found in dataset')
         if item is not None:
-            if not dry_run:
-                item.attrs.update(v)
-            LOG.info(f'Updated {k}')
+            upd_count = 0
+            del_count = 0
+            for ak, av in v.items():
+                if av == DELETE_ATTR_VALUE:
+                    if ak in item.attrs:
+                        if not dry_run:
+                            del item.attrs[ak]
+                        del_count += 1
+                else:
+                    if not dry_run:
+                        item.attrs[ak] = av
+                    upd_count += 1
+            if upd_count and del_count:
+                LOG.info(f'{k}:'
+                         f' {upd_count} attribute(s) updated,'
+                         f' {del_count} deleted')
+            elif upd_count:
+                LOG.info(f'{k}: {upd_count} attribute(s) updated')
+            elif del_count:
+                LOG.info(f'{k}: {del_count} attribute(s) deleted')
 
     if not dry_run:
         zarr.convenience.consolidate_metadata(cube_store)
-    LOG.info(f'Consolidated {cube_path}')
+    LOG.info(f'Consolidated {dataset_path}')
 
 
-def _open_zarr_store(cube_path: str, storage_options: Dict[str, Any]) \
+def _open_zarr_store(dataset_path: str, storage_options: Dict[str, Any]) \
         -> MutableMapping[str, bytes]:
-    fs, root = get_fs_and_root(cube_path, storage_options)
+    fs, root = get_fs_and_root(dataset_path, storage_options)
     return fs.get_mapper(root=root)
 
 
-def get_fs_and_root(cube_path: str, storage_options: Dict[str, Any]):
+def get_fs_and_root(dataset_path: str, storage_options: Dict[str, Any]):
     import fsspec
-    protocol, root = fsspec.core.split_protocol(cube_path)
+    protocol, root = fsspec.core.split_protocol(dataset_path)
     protocol = protocol or 'file'
     fs = fsspec.filesystem(protocol, **storage_options)
     return fs, root

@@ -14,14 +14,17 @@ Patch and consolidate the metadata of a xcube dataset.
 
 ::
 
-    Usage: xcube patch [OPTIONS] CUBE
+    Usage: xcube patch [OPTIONS] DATASET
 
-      Patch and consolidate the metadata of an xcube dataset CUBE.
+      Patch and consolidate the metadata of a dataset.
 
-      CUBE can be either a local filesystem path or a URL. It must point to either
-      a Zarr dataset (*.zarr) or an xcube multi-level dataset (*.levels).
+      DATASET can be either a local filesystem path or a URL. It must point to
+      either a Zarr dataset (*.zarr) or a xcube multi-level dataset (*.levels).
       Additional storage options for a given protocol may be passed by the OPTIONS
       option.
+
+      In METADATA, the special attribute value "__delete__" can be used to remove
+      that attribute from dataset or array metadata.
 
     Options:
       --metadata METADATA  The metadata to be patched. Must be a JSON or YAML file
@@ -36,10 +39,11 @@ Patch and consolidate the metadata of a xcube dataset.
                            times to control the level of log messages, i.e., -v
                            refers to level INFO, -vv to DETAIL, -vvv to DEBUG,
                            -vvvv to TRACE. If omitted, the log level of the
-                           console is WARNING.
+                           console is WARNING.  [x>=0]
       -d, --dry-run        Do not change any data, just report what would have
                            been changed.
       --help               Show this message and exit.
+
 
 
 Patch file example
