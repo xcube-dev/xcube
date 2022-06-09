@@ -23,6 +23,7 @@ import warnings
 from typing import Dict, Any, MutableMapping
 
 import click
+import fsspec
 
 from xcube.cli.common import (cli_option_quiet,
                               cli_option_verbosity,
@@ -130,9 +131,11 @@ def patch_dataset(dataset_path: str,
                   dry_run: bool):
     if dataset_path.endswith('.levels'):
         fs, root = get_fs_and_root(dataset_path, storage_options)
+        protocol = fs.protocol if isinstance(fs.protocol, str) else fs.protocol[0]
+        prefix = f"{protocol}://" if protocol != "file" else ""
         for item in fs.listdir(root, detail=False):
             if item.endswith('.zarr'):
-                _patch_dataset(item,
+                _patch_dataset(prefix + item,
                                storage_options, metadata, dry_run)
     else:
         _patch_dataset(dataset_path,
@@ -145,8 +148,8 @@ def _patch_dataset(dataset_path: str,
                    dry_run: bool):
     import zarr
     LOG.info(f'Opening {dataset_path}...')
-    cube_store = _open_zarr_store(dataset_path, storage_options)
-    group = zarr.open(cube_store, mode='r+' if not dry_run else 'r')
+    zarr_store = _open_zarr_store(dataset_path, storage_options)
+    group = zarr.open(zarr_store, mode='r+' if not dry_run else 'r')
     for k, v in metadata.items():
         parts = k.split('/')
         item = None
@@ -182,7 +185,7 @@ def _patch_dataset(dataset_path: str,
                 LOG.info(f'{k}: {del_count} attribute(s) deleted')
 
     if not dry_run:
-        zarr.convenience.consolidate_metadata(cube_store)
+        zarr.convenience.consolidate_metadata(zarr_store)
     LOG.info(f'Consolidated {dataset_path}')
 
 

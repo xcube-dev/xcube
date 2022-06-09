@@ -39,7 +39,7 @@ Patch and consolidate the metadata of a xcube dataset.
                            times to control the level of log messages, i.e., -v
                            refers to level INFO, -vv to DETAIL, -vvv to DEBUG,
                            -vvvv to TRACE. If omitted, the log level of the
-                           console is WARNING.  [x>=0]
+                           console is WARNING.
       -d, --dry-run        Do not change any data, just report what would have
                            been changed.
       --help               Show this message and exit.
