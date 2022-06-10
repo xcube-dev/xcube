@@ -97,7 +97,8 @@ class TornadoFramework(Framework):
         self.application.listen(port, address=address)
 
         address_ = "127.0.0.1" if address == "0.0.0.0" else address
-        test_url = f"http://{address_}:{port}/openapi"
+        # TODO: get test URL template from configuration
+        test_url = f"http://{address_}:{port}/openapi.html"
         LOG.info(f"Service running, listening on {address}:{port}")
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")

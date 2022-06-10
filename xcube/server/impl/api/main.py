@@ -100,10 +100,30 @@ class ErrorHandler(ApiHandler):
 
 
 # noinspection PyAbstractClass
-@api.route("/openapi")
+@api.route("/openapi.html")
 class MainHandler(ApiHandler):
     @api.operation(
-        operation_id='getOpenAPIDoc',
+        operation_id='getOpenApiHtml',
+        summary='Show API documentation'
+    )
+    def get(self):
+        # TODO: use package data to load HTML
+        import os.path
+        html_template_path = os.path.join(os.path.dirname(__file__),
+                                          'openapi.html')
+        with open(html_template_path) as fp:
+            html_template = fp.read()
+        from string import Template
+        self.response.write(Template(html_template).substitute(
+            open_api_url=self.request.url_for_path('openapi.json')
+        ))
+
+
+# noinspection PyAbstractClass
+@api.route("/openapi.json")
+class MainHandler(ApiHandler):
+    @api.operation(
+        operation_id='getOpenApiHtml',
         summary='Get API documentation as OpenAPI 3.0 JSON document'
     )
     def get(self):
