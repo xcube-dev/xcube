@@ -22,6 +22,7 @@
 from abc import ABC
 from typing import Tuple, Optional
 
+import fsspec
 import rasterio
 import rioxarray
 import s3fs
@@ -30,6 +31,7 @@ import zarr
 
 from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
@@ -366,19 +368,22 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     @classmethod
     def create_env_session(cls, fs):
-        session = rasterio.env.Env(aws_secret_access_key=fs.token,
-                                   aws_access_key_id=fs.key,
-                                   aws_session_token=fs.token,
-                                   region_name=fs.client_kwargs.get(
-                                       'region_name',
-                                       'eu-central-1'
-                                   ),
-                                   AWS_NO_SIGN_REQUEST=fs.anon if fs.anon
-                                   else True)
-        return session
+        if isinstance(fs, s3fs.S3FileSystem):
+            return rasterio.env.Env(aws_secret_access_key=fs.token,
+                                    aws_access_key_id=fs.key,
+                                    aws_session_token=fs.token,
+                                    region_name=fs.client_kwargs.get(
+                                        'region_name',
+                                        'eu-central-1'
+                                    ),
+                                    aws_no_sign_request=bool(fs.anon)
+                                    )
+        else:
+            return rasterio.env.NullContextManager()
 
     @classmethod
-    def open_dataset_with_rioxarray(cls, file_path, overview_level, tile_size):
+    def open_dataset_with_rioxarray(cls, file_path, overview_level,
+                                    tile_size) -> rioxarray.raster_array:
         return rioxarray.open_rasterio(
             file_path,
             overview_level=overview_level,
@@ -387,31 +392,31 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     @classmethod
     def open_dataset(cls,
-                     file_spec,
+                     fs,
                      file_path: str,
                      tile_size: Tuple[int, int],
                      overview_level: Optional[int] = None) -> xr.Dataset:
         """
         A method to open the cog/geotiff dataset using rioxarray,
         returns xarray.Dataset
-
+        @param fs: abstract file system
+        @type fs: fsspec.AbstractFileSystem object.
         @param file_path: path of the file
+        @type file_path: str
         @param overview_level: the overview level of GeoTIFF, 0 is the first
                overview and None means full resolution.
+        @type overview_level: int
         @param tile_size: tile size as tuple.
-        @type file_spec: fsspec.AbstractFileSystem object.
+        @type tile_size: tuple
         """
-        if isinstance(file_spec, s3fs.S3FileSystem):
-            fs: s3fs.S3FileSystem = file_spec
-            session = cls.create_env_session(fs)
-            with session:
+
+        if isinstance(fs, fsspec.AbstractFileSystem):
+            with cls.create_env_session(fs):
                 array = cls.open_dataset_with_rioxarray(file_path,
                                                         overview_level,
                                                         tile_size)
         else:
-            array = cls.open_dataset_with_rioxarray(file_path,
-                                                    overview_level,
-                                                    tile_size)
+            assert_true(fs is None, message="invalid type for fs")
         arrays = {}
         if array.ndim == 3:
             for i in range(array.shape[0]):

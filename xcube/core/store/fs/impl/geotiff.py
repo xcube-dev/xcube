@@ -24,7 +24,6 @@ from typing import Optional, Tuple, Dict, Any
 
 import fsspec
 import rasterio
-import s3fs
 import xarray as xr
 
 from xcube.core.mldataset import LazyMultiLevelDataset
@@ -34,6 +33,7 @@ from xcube.core.store import DataType
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
@@ -61,20 +61,18 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         self._open_params = open_params
         self._file_url = None
 
-    def _open_dataset_with_rasterio(self):
+    def _get_overview_count(self):
         with rasterio.open(self._file_url) as rio_dataset:
             overviews = rio_dataset.overviews(1)
         return overviews
 
     def _get_num_levels_lazily(self) -> int:
         self._file_url = self._get_file_url()
-        if isinstance(self._fs, s3fs.S3FileSystem):
-            fs: s3fs.S3FileSystem = self._fs
-            session = DatasetGeoTiffFsDataAccessor.create_env_session(fs)
-            with session:
-                overviews = self._open_dataset_with_rasterio()
+        if isinstance(self._fs, fsspec.AbstractFileSystem):
+            with DatasetGeoTiffFsDataAccessor.create_env_session(self._fs):
+                overviews = self._get_overview_count()
         else:
-            overviews = self._open_dataset_with_rasterio()
+            assert_true(self._fs is None, message="invalid type for fs")
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) \
@@ -91,11 +89,9 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     def _get_file_url(self):
         if isinstance(self._fs.protocol, str):
             protocol = self._fs.protocol
-            url = protocol + "://" + self._path
         else:
             protocol = self._fs.protocol[0]
-            url = protocol + "://" + self._path
-        return url
+        return protocol + "://" + self._path
 
 
 MULTI_LEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
