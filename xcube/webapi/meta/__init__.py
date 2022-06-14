@@ -19,11 +19,5 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import Api
-from .config import DATASETS_CONFIG_SCHEMA
-from .context import DatasetsContext
-
-
-api = Api('datasets',
-          config_schema=DATASETS_CONFIG_SCHEMA,
-          create_ctx=DatasetsContext)
+# noinspection PyUnresolvedReferences
+from .routes import api

@@ -219,16 +219,17 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     Register xcube's standard server APIs.
     """
     server_api_names = [
-        'main',
+        'meta',
+        'auth',
+        'places',
         'datasets',
-        # 'tiles',
-        # 'wmts',
-        # 'stac',
+        'tiles',
+        'timeseries',
     ]
     for api_name in server_api_names:
         ext_registry.add_extension(
             loader=extension.import_component(
-                f'xcube.server.impl.api.{api_name}:api'
+                f'xcube.webapi.{api_name}:api'
             ),
             point=EXTENSION_POINT_SERVER_APIS,
             name=api_name
@@ -243,7 +244,7 @@ def _register_server_frameworks(ext_registry: extension.ExtensionRegistry):
     for framework_name in server_framework_names:
         ext_registry.add_extension(
             loader=extension.import_component(
-                    f'xcube.server.impl.framework.{framework_name}'
+                    f'xcube.server.webservers.{framework_name}'
                     f':{framework_name.capitalize()}Framework',
                 ),
             point=EXTENSION_POINT_SERVER_FRAMEWORKS,

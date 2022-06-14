@@ -19,20 +19,5 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import ApiHandler
-
-from .api import api
-from .context import DatasetsContext
-
-
-# noinspection PyAbstractClass
-@api.route("/datasets")
-class DatasetsHandler(ApiHandler[DatasetsContext]):
-    @api.operation(
-        operationId='getDatasets',
-        summary='Get all the datasets published by this service.'
-    )
-    def get(self):
-        ctx = self.ctx
-        assert isinstance(ctx, DatasetsContext)
-        self.response.finish(dict(datasets=ctx.config.get("datasets", [])))
+# noinspection PyUnresolvedReferences
+from .routes import api

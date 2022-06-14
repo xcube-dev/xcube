@@ -19,25 +19,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import Api
+import pkgutil
+from string import Template
+
 from xcube.server.api import ApiHandler
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
 from xcube.version import version
-
-CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        audience=JsonStringSchema()
-    ),
-    additional_properties=False
-)
-
-api = Api('main',
-          config_schema=CONFIG_SCHEMA,
-          description="Information about this service.")
+from .api import api
 
 
-# noinspection PyAbstractClass
 @api.route("/")
 class MainHandler(ApiHandler):
     @api.operation(operation_id='getServiceInfo',
@@ -59,47 +48,6 @@ class MainHandler(ApiHandler):
         })
 
 
-# noinspection PyAbstractClass
-@api.route("/error")
-class ErrorHandler(ApiHandler):
-    @api.operation(operation_id='forceError',
-                   summary='Force a server error (for testing)',
-                   parameters=[
-                       {
-                           "name": "code",
-                           "in": "query",
-                           "description": "HTTP status code",
-                           "schema": {
-                               "type": "integer",
-                               "minimum": 400,
-                           }
-                       },
-                       {
-                           "name": "message",
-                           "in": "query",
-                           "description": "HTTP error message",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
-                   ])
-    def get(self):
-        """If *code* is given, the operation fails with
-        that HTTP status code. Otherwise, the operation causes
-        an internal server error.
-        """
-        code = self.request.get_query_arg('code', type=int)
-        message = self.request.get_query_arg(
-            'message',
-            default='Error! No worries, this is just a test.'
-        )
-        if code is None:
-            raise RuntimeError(message)
-        else:
-            raise self.response.error(code, message=message)
-
-
-# noinspection PyAbstractClass
 @api.route("/openapi.html")
 class MainHandler(ApiHandler):
     @api.operation(
@@ -107,19 +55,13 @@ class MainHandler(ApiHandler):
         summary='Show API documentation'
     )
     def get(self):
-        # TODO: use package data to load HTML
-        import os.path
-        html_template_path = os.path.join(os.path.dirname(__file__),
-                                          'openapi.html')
-        with open(html_template_path) as fp:
-            html_template = fp.read()
-        from string import Template
+        html_template = pkgutil.get_data('xcube.webapi.meta.res',
+                                         'openapi.html').decode('utf-8')
         self.response.write(Template(html_template).substitute(
             open_api_url=self.request.url_for_path('openapi.json')
         ))
 
 
-# noinspection PyAbstractClass
 @api.route("/openapi.json")
 class MainHandler(ApiHandler):
     @api.operation(
@@ -226,3 +168,42 @@ class MainHandler(ApiHandler):
         }
 
         self.response.finish(openapi_doc)
+
+
+@api.route("/error")
+class ErrorHandler(ApiHandler):
+    @api.operation(operation_id='forceError',
+                   summary='Force a server error (for testing)',
+                   parameters=[
+                       {
+                           "name": "code",
+                           "in": "query",
+                           "description": "HTTP status code",
+                           "schema": {
+                               "type": "integer",
+                               "minimum": 400,
+                           }
+                       },
+                       {
+                           "name": "message",
+                           "in": "query",
+                           "description": "HTTP error message",
+                           "schema": {
+                               "type": "string",
+                           }
+                       },
+                   ])
+    def get(self):
+        """If *code* is given, the operation fails with
+        that HTTP status code. Otherwise, the operation causes
+        an internal server error.
+        """
+        code = self.request.get_query_arg('code', type=int)
+        message = self.request.get_query_arg(
+            'message',
+            default='Error! No worries, this is just a test.'
+        )
+        if code is None:
+            raise RuntimeError(message)
+        else:
+            raise self.response.error(code, message=message)

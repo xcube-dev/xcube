@@ -18,3 +18,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
+from xcube.server.api import Api
+from .config import CONFIG_SCHEMA
+
+api = Api(
+    'meta',
+    description='xcube Meta API',
+    config_schema=CONFIG_SCHEMA,
+    required_apis=['auth'],
+)

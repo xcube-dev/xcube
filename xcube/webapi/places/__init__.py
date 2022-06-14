@@ -19,38 +19,5 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-
-DATASET_CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        data_id=JsonStringSchema(),
-        data_open_params=JsonObjectSchema(additional_properties=True),
-        style=JsonStringSchema(),
-        placemarks=JsonArraySchema(),
-    ),
-    required=['data_id'],
-    additional_properties=False
-)
-
-DATA_STORE_CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        store_id=JsonStringSchema(),
-        store_params=JsonObjectSchema(additional_properties=True),
-        datasets=JsonArraySchema(
-            items=DATASET_CONFIG_SCHEMA)
-    ),
-    required=['store_id'],
-    additional_properties=False
-)
-
-DATASETS_CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        dataset_cache_size=JsonStringSchema(),
-        data_stores=JsonArraySchema(
-            items=DATA_STORE_CONFIG_SCHEMA
-        )
-    ),
-    additional_properties=False
-)
+# noinspection PyUnresolvedReferences
+from .routes import api
