@@ -25,7 +25,7 @@ import logging
 import traceback
 import urllib.parse
 from typing import Any, Optional, Sequence, Union, Callable, Dict, Type, \
-    Awaitable
+    Awaitable, Mapping
 
 import tornado.escape
 import tornado.httputil
@@ -313,14 +313,20 @@ class TornadoApiRequest(ApiRequest):
                      query: Optional[str] = None) -> str:
         protocol = self._request.protocol
         host = self._request.host
-        uri = path if path.startswith('/') else '/' + path
+        uri = ""
+        if path:
+            uri = path if path.startswith("/") else "/" + path
         if query:
-            uri += '?' + query
+            uri += "?" + query
         return f"{protocol}://{host}{uri}"
 
     @property
     def url(self) -> str:
         return self._request.full_url()
+
+    @property
+    def headers(self) -> Mapping[str, str]:
+        return self._request.headers
 
     @property
     def body(self) -> bytes:

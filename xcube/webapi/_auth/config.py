@@ -20,48 +20,29 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonStringSchema
+from xcube.webapi.config import BooleanSchema
+from xcube.webapi.config import UrlSchema
 
-"""
-Authentication:
-  Domain: xcube-dev.eu.auth0.com
-  Audience: https://xcube-dev/api/
-  IsRequired: 
-  
-AccessControl:
-  RequiredScopes:
-    # Clients must be granted permission "read:dataset:l2c-cyanoalert-olci-balt" in auth0
-    # to be able to see this dataset
-    - "read:dataset:{Dataset}"
-    # Clients must be granted permission "read:variable:chl_c2rcc" in auth0
-    # to be able to see variable "chl_c2rcc"
-    - "read:variable:{Variable}"  
-"""
+AUTHENTICATION_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Domain=UrlSchema,
+        Audience=UrlSchema,
+        Algorithms=JsonArraySchema(
+            items=JsonStringSchema(const=["RS256"]),
+        ),
+        IsRequired=BooleanSchema,
+    ),
+    required=[
+        "Domain",
+        "Audience"
+    ],
+    additional_properties=False
+)
 
 CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Authentication=JsonObjectSchema(
-            properties=dict(
-                Domain=JsonStringSchema(min_length=1, format='uri'),
-                Audience=JsonStringSchema(min_length=1, format='uri'),
-                Algorithms=JsonArraySchema(
-                    items=JsonStringSchema(const=["RS256"]),
-                ),
-                IsRequired=JsonBooleanSchema(),
-            ),
-            required=["Domain", "Audience"],
-            additional_properties=False
-        ),
-        AccessControl=JsonObjectSchema(
-            properties=dict(
-                RequiredScopes=JsonArraySchema(
-                    items=JsonStringSchema(min_length=1)
-                ),
-            ),
-            additional_properties=False
-        ),
-    ),
-    additional_properties=False
+        Authentication=AUTHENTICATION_SCHEMA
+    )
 )

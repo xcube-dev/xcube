@@ -27,26 +27,44 @@ import jwt
 import jwt.algorithms
 import requests
 
-from xcube.server.api import ApiContext
-from xcube.webapi.errors import ServiceAuthError, ServiceConfigError
-
-READ_ALL_DATASETS_SCOPE = 'read:dataset:*'
-READ_ALL_VARIABLES_SCOPE = 'read:variable:*'
+from xcube.server.api import ApiContext, ApiError
 
 
 class AuthContext(ApiContext):
 
     @cached_property
-    def authentication(self) -> Optional[dict]:
-        return self.config.get('Authentication') or None
+    def authentication(self) -> Dict[str, Any]:
+        return self.config.get('Authentication') or {}
+
+    @property
+    def can_authenticate(self) -> bool:
+        """Test whether the user can authenticate.
+        Even if authentication service is configured, user authentication
+        may still be optional. In this case the server will publish
+        the resources configured to be free for everyone.
+        """
+        return bool(self.authentication.get('Domain'))
+
+    @cached_property
+    def is_required(self) -> bool:
+        authentication = self.authentication
+        if not authentication:
+            return False
+        return authentication.get('IsRequired', False)
+
+    @property
+    def must_authenticate(self) -> bool:
+        """
+        Test whether the user must authenticate.
+        """
+        return self.can_authenticate and self.is_required
 
     @cached_property
     def domain(self) -> str:
         authentication = self.authentication
-        assert isinstance(authentication, dict)
         domain = authentication.get('Domain')
         if not domain:
-            raise ServiceConfigError(
+            raise ApiError.InvalidServerConfig(
                 'Missing key "Domain" in section "Authentication"'
             )
         return domain
@@ -70,7 +88,7 @@ class AuthContext(ApiContext):
         assert isinstance(authentication, dict)
         audience = authentication.get('Audience')
         if not audience:
-            raise ServiceConfigError(
+            raise ApiError.InvalidServerConfig(
                 'Missing key "Audience" in section "Authentication"'
             )
         return audience
@@ -81,59 +99,50 @@ class AuthContext(ApiContext):
         assert isinstance(authentication, dict)
         algorithms = authentication.get('Algorithms', ["RS256"])
         if not algorithms:
-            raise ServiceConfigError(
+            raise ApiError.InvalidServerConfig(
                 'Value for key "Algorithms" in section'
                 ' "Authentication" must not be empty'
             )
         return algorithms
 
-    @cached_property
-    def is_required(self) -> bool:
-        authentication = self.authentication
-        if not authentication:
-            return False
-        return authentication.get('IsRequired', False)
-
-    @cached_property
-    def granted_scopes(self) -> Optional[Set[str]]:
-        # noinspection PyUnresolvedReferences
+    def granted_scopes(self, request_headers: Mapping[str, str]) \
+            -> Optional[Set[str]]:
         id_token = self.get_id_token(
-            require_auth=self.service_context.must_authenticate
+            request_headers,
+            require_auth=self.must_authenticate
         )
         return id_token.get('permissions') if id_token else None
 
-    def get_id_token(self, require_auth: bool = False) \
+    def get_id_token(self,
+                     request_headers: Mapping[str, str],
+                     require_auth: bool = False) \
             -> Optional[Mapping[str, str]]:
-        """
-        Decodes the access token is valid.
-        """
-        access_token = self.get_access_token(require_auth=require_auth)
+        """Decodes the access token and verifies it."""
+        access_token = self.get_access_token(request_headers,
+                                             require_auth=require_auth)
         if access_token is None:
             return None
 
         if not self.authentication:
             if require_auth:
-                raise ServiceAuthError(
-                    "Invalid header",
-                    log_message="Received access token,"
-                                " but this server doesn't support"
-                                " authentication."
+                raise ApiError.BadRequest(
+                    "Received access token,"
+                    " but this server doesn't support"
+                    " authentication."
                 )
             return None
 
         try:
             unverified_header = jwt.get_unverified_header(access_token)
         except jwt.InvalidTokenError:
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Invalid header."
-                            " Use an RS256 signed JWT Access Token"
+            raise ApiError.BadRequest(
+                "Invalid header."
+                " Use an RS256 signed JWT Access Token."
             )
         if unverified_header["alg"] != "RS256":  # e.g. "HS256"
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Invalid header."
-                            " Use an RS256 signed JWT Access Token"
+            raise ApiError.BadRequest(
+                "Invalid header."
+                " Use an RS256 signed JWT Access Token."
             )
 
         jwks = self.jwks
@@ -162,55 +171,50 @@ class AuthContext(ApiContext):
                     issuer=self.issuer
                 )
             except jwt.ExpiredSignatureError:
-                raise ServiceAuthError(
-                    "Token expired",
-                    log_message="Token is expired"
+                raise ApiError.Unauthorized(
+                    "Token is expired."
                 )
             except jwt.InvalidTokenError:
-                raise ServiceAuthError(
-                    "Invalid claims",
-                    log_message="Incorrect claims,"
-                                " please check the audience and issuer"
+                raise ApiError.Unauthorized(
+                    "Incorrect claims,"
+                    " please check the audience and domain."
                 )
             except Exception:
-                raise ServiceAuthError(
-                    "Invalid header",
-                    log_message="Unable to parse authentication token."
+                raise ApiError.Unauthorized(
+                    "Invalid header. Unable to parse authentication token."
                 )
             return id_token
 
-        raise ServiceAuthError("Invalid header",
-                               log_message="Unable to find appropriate key")
+        raise ApiError.Unauthorized("Invalid header."
+                                    " Unable to find appropriate key")
 
-    def get_access_token(self, require_auth: bool = False) -> Optional[str]:
+    def get_access_token(self,
+                         request_headers: Mapping[str, str],
+                         require_auth: bool = False) -> Optional[str]:
         """Obtains the access token from the Authorization Header
         """
         # noinspection PyUnresolvedReferences
-        auth = self.request.headers.get("Authorization", None)
+        auth = request_headers.get("Authorization", None)
         if not auth:
             if require_auth:
-                raise ServiceAuthError(
-                    "Authorization header missing",
-                    log_message="Authorization header is expected"
+                raise ApiError.Unauthorized(
+                    "Authorization header is expected."
                 )
             return None
 
         parts = auth.split()
 
         if parts[0].lower() != "bearer":
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message='Authorization header must start with "Bearer"'
+            raise ApiError.BadRequest(
+                'Invalid header. Authorization header must start with "Bearer"'
             )
         elif len(parts) == 1:
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Bearer token not found"
+            raise ApiError.BadRequest(
+                "Invalid header. Bearer token not found"
             )
         elif len(parts) > 2:
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Authorization header must be Bearer token"
+            raise ApiError.BadRequest(
+                "Invalid header. Authorization header must be Bearer token"
             )
 
         return parts[1]

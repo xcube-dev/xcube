@@ -19,6 +19,47 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.webapi.config import IdentifierSchema
+from xcube.webapi.config import PathSchema
+from xcube.webapi.config import StringSchema
 
-CONFIG_SCHEMA = JsonObjectSchema(additional_properties=True)
+PLACE_GROUP_JOIN_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Property=IdentifierSchema,
+        Path=PathSchema,
+    ),
+    required=[
+        'Property',
+        'Path',
+    ],
+    additional_properties=False,
+)
+
+PLACE_GROUP_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Identifier=IdentifierSchema,
+        Title=StringSchema,
+        Path=PathSchema,
+        Join=PLACE_GROUP_JOIN_SCHEMA,
+        PropertyMapping=JsonObjectSchema(
+            additional_properties=PathSchema
+        ),
+        PlaceGroupRef=IdentifierSchema,
+    ),
+    required=[
+        # Either we have
+        #   'Identifier',
+        #   'Path',
+        # or we must specify
+        #   'PlaceGroupRef',
+    ],
+    additional_properties=False,
+)
+
+CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        PlaceGroups=JsonArraySchema(items=PLACE_GROUP_SCHEMA)
+    )
+)

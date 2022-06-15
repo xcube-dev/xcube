@@ -305,42 +305,46 @@ class ApiErrorTest(unittest.TestCase):
         self.assertEqual(428, error.status_code)
         self.assertEqual('No idea', error.message)
 
+        self.assertIsNot(ApiError.BadRequest, ApiError.Unauthorized)
+        self.assertIsNot(ApiError.BadRequest, ApiError.Forbidden)
+
     def test_bad_request(self):
-        error = ApiError.bad_request()
+        error = ApiError.BadRequest()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(400, error.status_code)
 
     def test_unauthorized(self):
-        error = ApiError.unauthorized()
+        error = ApiError.Unauthorized()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(401, error.status_code)
 
     def test_forbidden(self):
-        error = ApiError.forbidden()
+        error = ApiError.Forbidden()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(403, error.status_code)
 
     def test_not_found(self):
-        error = ApiError.not_found()
+        error = ApiError.NotFound()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(404, error.status_code)
 
     def test_conflict(self):
-        error = ApiError.conflict()
+        error = ApiError.Conflict()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(409, error.status_code)
 
     def test_gone(self):
-        error = ApiError.gone()
+        error = ApiError.Gone()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(410, error.status_code)
 
-    def test_invalid_config(self):
-        error = ApiError.invalid_config()
-        self.assertIsInstance(error, ApiError)
-        self.assertEqual(500, error.status_code)
-
     def test_not_implemented(self):
-        error = ApiError.not_implemented()
+        error = ApiError.NotImplemented()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(501, error.status_code)
+
+    def test_invalid_server_config(self):
+        error = ApiError.InvalidServerConfig()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(580, error.status_code)
+

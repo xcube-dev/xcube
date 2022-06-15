@@ -48,7 +48,8 @@ JSON = Union[
     Dict[str, "JSON"],
 ]
 
-ServerConfig = Mapping[str, Any]
+ServerConfigObject = Mapping[str, Any]
+ServerConfig = ServerConfigObject
 
 _builtin_type = type
 
@@ -435,9 +436,18 @@ class ApiRequest:
         """
 
     @property
+    def base_url(self) -> str:
+        return self.url_for_path("")
+
+    @property
     @abstractmethod
     def url(self) -> str:
         """The full URL of the request."""
+
+    @property
+    @abstractmethod
+    def headers(self) -> Mapping[str, str]:
+        """The request headers."""
 
     @property
     @abstractmethod
@@ -632,9 +642,19 @@ class ApiError(Exception):
     """
 
     def __init__(self,
-                 status_code: int,
+                 status_code: int = 500,
                  message: Optional[str] = None):
         super().__init__(status_code, message)
+
+    BadRequest: Type["_DerivedApiError"]
+    Unauthorized: Type["_DerivedApiError"]
+    Forbidden: Type["_DerivedApiError"]
+    NotFound: Type["_DerivedApiError"]
+    Conflict: Type["_DerivedApiError"]
+    Gone: Type["_DerivedApiError"]
+    InternalServerError: Type["_DerivedApiError"]
+    NotImplemented: Type["_DerivedApiError"]
+    InvalidServerConfig: Type["_DerivedApiError"]
 
     @property
     def status_code(self) -> int:
@@ -644,34 +664,69 @@ class ApiError(Exception):
     def message(self) -> Optional[str]:
         return self.args[1]
 
-    @classmethod
-    def bad_request(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(400, message=message)
+    def __str__(self):
+        text = f'HTTP status {self.status_code}'
+        if self.message:
+            text += f': {self.message}'
+        return text
 
-    @classmethod
-    def unauthorized(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(401, message=message)
 
-    @classmethod
-    def forbidden(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(403, message=message)
+class _DerivedApiError(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(500, message=message)
 
-    @classmethod
-    def not_found(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(404, message=message)
 
-    @classmethod
-    def conflict(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(409, message=message)
+class _BadRequest(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(400, message=message)
 
-    @classmethod
-    def gone(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(410, message=message)
 
-    @classmethod
-    def invalid_config(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(500, message=message)
+class _Unauthorized(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(401, message=message)
 
-    @classmethod
-    def not_implemented(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(501, message=message)
+
+class _Forbidden(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(403, message=message)
+
+
+class _NotFound(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(404, message=message)
+
+
+class _Conflict(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(409, message=message)
+
+
+class _Gone(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(410, message=message)
+
+
+class _InternalServerError(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(500, message=message)
+
+
+class _NotImplemented(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(501, message=message)
+
+
+class _InvalidServerConfig(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(580, message=message)
+
+
+ApiError.BadRequest = _BadRequest
+ApiError.Unauthorized = _Unauthorized
+ApiError.Forbidden = _Forbidden
+ApiError.NotFound = _NotFound
+ApiError.Conflict = _Conflict
+ApiError.Gone = _Gone
+ApiError.InternalServerError = _InternalServerError
+ApiError.NotImplemented = _NotImplemented
+ApiError.InvalidServerConfig = _InvalidServerConfig
