@@ -21,7 +21,7 @@
 
 import unittest
 
-from xcube.server.impl.framework.flask import FlaskFramework
+from xcube.server.webservers.flask import FlaskFramework
 
 
 class TornadoFrameworkTest(unittest.TestCase):

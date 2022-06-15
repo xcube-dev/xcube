@@ -1,33 +1,42 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+#  The MIT License (MIT)
+#  Copyright (c) 2022 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Sequence
+from typing import Sequence, Optional, Callable, Any, Awaitable, Union, Tuple
 
+import pytest
 import tornado.httputil
 import tornado.web
+from tornado import concurrent
 
-from xcube.server.impl.framework.tornado import TornadoApiRequest
-from xcube.server.impl.framework.tornado import TornadoFramework
-from ...mocks import mock_server
+from test.server.mocks import mock_server
+from xcube.server.api import ApiError, ServerConfig, Api
+from xcube.server.api import ApiHandler
+from xcube.server.api import ApiRoute
+from xcube.server.api import Context
+from xcube.server.asyncexec import ReturnT
+from xcube.server.webservers.tornado import SERVER_CTX_ATTR_NAME
+from xcube.server.webservers.tornado import TornadoApiRequest
+from xcube.server.webservers.tornado import TornadoFramework
+from xcube.server.webservers.tornado import TornadoRequestHandler
 
 
 class TornadoFrameworkTest(unittest.TestCase):
@@ -191,6 +200,60 @@ class TornadoApiRequestTest(unittest.TestCase):
                          f'{cm.exception}')
 
 
+class TornadoRequestHandlerTest(unittest.TestCase):
+
+    # noinspection PyMethodMayBeStatic
+    def test_api_error_converted(self):
+        application = tornado.web.Application()
+
+        setattr(application, SERVER_CTX_ATTR_NAME, MockContext())
+
+        # noinspection PyTypeChecker
+        request = tornado.httputil.HTTPServerRequest(
+            method='GET',
+            host='localhost:8080',
+            uri='/datasets?details=x',
+            connection=MockConnection()
+        )
+
+        class TestHandler(ApiHandler):
+            def get(self):
+                raise ApiError(550)
+
+            def post(self):
+                raise ApiError(551)
+
+            def put(self):
+                raise ApiError(552)
+
+            def delete(self):
+                raise ApiError(553)
+
+            def options(self):
+                raise ApiError(554)
+
+        api_route = ApiRoute('test', '/test', TestHandler)
+        handler = TornadoRequestHandler(application, request,
+                                        api_route=api_route)
+
+        async def test_it():
+            with pytest.raises(tornado.web.HTTPError, match=r".*550.*"):
+                await handler.get()
+            with pytest.raises(tornado.web.HTTPError, match=r".*551.*"):
+                await handler.post()
+            with pytest.raises(tornado.web.HTTPError, match=r".*552.*"):
+                await handler.put()
+            with pytest.raises(tornado.web.HTTPError, match=r".*553.*"):
+                await handler.delete()
+            with pytest.raises(tornado.web.HTTPError, match=r".*554.*"):
+                await handler.options()
+
+        import asyncio
+        asyncio.run(test_it())
+
+
+# Helpers
+
 class MockIOLoop:
     def __init__(self):
         self.start_count = 0
@@ -221,3 +284,45 @@ class MockApplication:
 
     def listen(self, *args, **kwargs):
         self.listen_count += 1
+
+
+class MockConnection:
+    def __init__(self):
+        self._cb = None
+
+    def set_close_callback(self, cb):
+        self._cb = cb
+
+
+class MockContext(Context):
+
+    def __init__(self):
+        self._api = Api('test')
+        self._config = {}
+
+    @property
+    def apis(self) -> Tuple[Api]:
+        return self._api,
+
+    @property
+    def config(self) -> ServerConfig:
+        return self.config
+
+    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+        return self._api if api_name == 'test' else None
+
+    def on_update(self, prev_context: Optional["Context"]):
+        pass
+
+    def on_dispose(self):
+        pass
+
+    def call_later(self, delay: Union[int, float], callback: Callable,
+                   *args, **kwargs) -> object:
+        pass
+
+    def run_in_executor(self,
+                        executor: Optional[concurrent.futures.Executor],
+                        function: Callable[..., ReturnT], *args: Any,
+                        **kwargs: Any) -> Awaitable[ReturnT]:
+        pass
