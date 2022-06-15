@@ -146,8 +146,6 @@ class TornadoApiRequestTest(unittest.TestCase):
         self.assertEqual({"type": "feature", "id": 137}, request.json)
         self.assertEqual([],
                          request.get_query_args('details'))
-        self.assertEqual([],
-                         request.get_body_args('secret'))
 
     def test_url_for_path(self):
         tr = tornado.httputil.HTTPServerRequest(

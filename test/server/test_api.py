@@ -27,6 +27,7 @@ from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRoute
 from xcube.server.api import Context
+from xcube.server.api import ApiError
 from xcube.server.server import ServerContext
 from .mocks import MockApiError
 from .mocks import MockApiRequest
@@ -290,12 +291,56 @@ class ApiRequestTest(unittest.TestCase):
         self.assertEqual('CRS84', request.get_query_arg('crs',
                                                         default='CRS84'))
 
-    def test_body_args(self):
-        request = MockApiRequest(body_args=dict(secret=[bytes(10)]))
-        self.assertEqual([bytes(10)], request.get_body_args('secret'))
-        self.assertEqual([], request.get_body_args('key'))
 
-    def test_body_arg(self):
-        request = MockApiRequest(body_args=dict(secret=[bytes(10)]))
-        self.assertEqual(bytes(10), request.get_body_arg('secret'))
-        self.assertEqual(None, request.get_body_arg('key'))
+class ApiErrorTest(unittest.TestCase):
+
+    def test_base_class(self):
+        error = ApiError(428)
+        self.assertIsInstance(error, Exception)
+        self.assertEqual(428, error.status_code)
+        self.assertEqual(None, error.message)
+
+        error = ApiError(428, message='No idea')
+        self.assertIsInstance(error, Exception)
+        self.assertEqual(428, error.status_code)
+        self.assertEqual('No idea', error.message)
+
+    def test_bad_request(self):
+        error = ApiError.bad_request()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(400, error.status_code)
+
+    def test_unauthorized(self):
+        error = ApiError.unauthorized()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(401, error.status_code)
+
+    def test_forbidden(self):
+        error = ApiError.forbidden()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(403, error.status_code)
+
+    def test_not_found(self):
+        error = ApiError.not_found()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(404, error.status_code)
+
+    def test_conflict(self):
+        error = ApiError.conflict()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(409, error.status_code)
+
+    def test_gone(self):
+        error = ApiError.gone()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(410, error.status_code)
+
+    def test_invalid_config(self):
+        error = ApiError.invalid_config()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(500, error.status_code)
+
+    def test_not_implemented(self):
+        error = ApiError.not_implemented()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(501, error.status_code)

@@ -1,23 +1,23 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+#  The MIT License (MIT)
+#  Copyright (c) 2022 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
 
 import concurrent.futures
 import functools
@@ -34,13 +34,14 @@ import tornado.web
 
 from xcube.constants import LOG
 from xcube.constants import LOG_LEVEL_DETAIL
+from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler, ArgT
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
-from xcube.server.api import Context
 from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
 from xcube.version import version
@@ -233,19 +234,39 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         })
 
     async def get(self, *args, **kwargs):
-        return self._api_handler.get(*args, **kwargs)
+        try:
+            return self._api_handler.get(*args, **kwargs)
+        except ApiError as e:
+            raise tornado.web.HTTPError(e.status_code,
+                                        log_message=e.message) from e
 
     async def post(self, *args, **kwargs):
-        return self._api_handler.post(*args, **kwargs)
+        try:
+            return self._api_handler.post(*args, **kwargs)
+        except ApiError as e:
+            raise tornado.web.HTTPError(e.status_code,
+                                        log_message=e.message) from e
 
     async def put(self, *args, **kwargs):
-        return self._api_handler.put(*args, **kwargs)
+        try:
+            return self._api_handler.put(*args, **kwargs)
+        except ApiError as e:
+            raise tornado.web.HTTPError(e.status_code,
+                                        log_message=e.message) from e
 
     async def delete(self, *args, **kwargs):
-        return self._api_handler.delete(*args, **kwargs)
+        try:
+            return self._api_handler.delete(*args, **kwargs)
+        except ApiError as e:
+            raise tornado.web.HTTPError(e.status_code,
+                                        log_message=e.message) from e
 
     async def options(self, *args, **kwargs):
-        return self._api_handler.options(*args, **kwargs)
+        try:
+            return self._api_handler.options(*args, **kwargs)
+        except ApiError as e:
+            raise tornado.web.HTTPError(e.status_code,
+                                        log_message=e.message) from e
 
     # # noinspection PyUnusedLocal
     # def options(self, *args, **kwargs):
@@ -286,9 +307,6 @@ class TornadoApiRequest(ApiRequest):
                          f' must have type {type.__name__!r}.'
                 )
         return values
-
-    def get_body_args(self, name: str) -> Sequence[bytes]:
-        return self._request.body_arguments.get(name, [])
 
     def url_for_path(self,
                      path: str,

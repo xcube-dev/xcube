@@ -453,8 +453,18 @@ class ApiRequest:
     def get_query_arg(self,
                       name: str,
                       type: Optional[Type[ArgT]] = None,
-                      default: Optional[Type[ArgT]] = None) -> Optional[ArgT]:
-        """Get the value of query argument given by *name*."""
+                      default: Optional[ArgT] = None) -> Optional[ArgT]:
+        """Get the value of query argument given by *name*. To force
+        conversion to a specific target data type use the optional *type*
+        argument. If *type* is not given, but *default* is, then *type*
+        will be inferred from *default*.
+
+        :param name: The name of the argument
+        :param type: The requested data type.
+            Must be a callable type, e.g. bool, int.
+        :param default: Optional default value.
+        :return: The value of the query argument.
+        """
         if type is None and default is not None:
             type = _builtin_type(default)
             type = type if callable(type) else None
@@ -466,15 +476,13 @@ class ApiRequest:
     def get_query_args(self,
                        name: str,
                        type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
-        """Get the values of query argument given by *name*."""
-
-    def get_body_arg(self, name: str) -> Optional[bytes]:
-        args = self.get_body_args(name)
-        return args[0] if len(args) > 0 else None
-
-    @abstractmethod
-    def get_body_args(self, name: str) -> Sequence[bytes]:
-        """Get the values of body argument given by *name*."""
+        """Get the values of query argument given by *name*.
+        If *type* is given, a sequence of that type will be returned.
+        :param name: The name of the argument
+        :param type: The requested data type.
+            Must be a callable type, e.g. bool, int.
+        :return: The values of the query argument.
+        """
 
 
 class ApiResponse(ABC):
@@ -531,7 +539,7 @@ class ApiHandler(Generic[ServerContextT], ABC):
 
     @property
     def ctx(self) -> ServerContextT:
-        """The API's context object, or None, if not defined."""
+        """The API's context object."""
         # noinspection PyTypeChecker
         return self._ctx
 
@@ -556,6 +564,17 @@ class ApiHandler(Generic[ServerContextT], ABC):
 
 
 class ApiRoute:
+    """
+    An API route.
+
+    :param api_name: The name of the API to which this route belongs to.
+    :param path: The route path which may include path variable templates.
+    :param handler_cls: The route handler class.
+        Must be derived from ```ApiHandler```.
+    :param handler_kwargs: Optional keyword arguments passed to
+        the *handler_cls* when it is instantiated.
+    """
+
     def __init__(self,
                  api_name: str,
                  path: str,
@@ -600,3 +619,59 @@ class ApiRoute:
         if self.handler_kwargs:
             args += f", handler_kwargs={self.handler_kwargs!r}"
         return f"ApiRoute({args})"
+
+
+class ApiError(Exception):
+    """
+    An API error.
+    This exception should be raised to terminate the current request
+    with a defined HTTP status code.
+
+    :param status_code: The HTTP status code
+    :param message: Optional message
+    """
+
+    def __init__(self,
+                 status_code: int,
+                 message: Optional[str] = None):
+        super().__init__(status_code, message)
+
+    @property
+    def status_code(self) -> int:
+        return self.args[0]
+
+    @property
+    def message(self) -> Optional[str]:
+        return self.args[1]
+
+    @classmethod
+    def bad_request(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(400, message=message)
+
+    @classmethod
+    def unauthorized(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(401, message=message)
+
+    @classmethod
+    def forbidden(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(403, message=message)
+
+    @classmethod
+    def not_found(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(404, message=message)
+
+    @classmethod
+    def conflict(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(409, message=message)
+
+    @classmethod
+    def gone(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(410, message=message)
+
+    @classmethod
+    def invalid_config(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(500, message=message)
+
+    @classmethod
+    def not_implemented(cls, message: Optional[str] = None) -> "ApiError":
+        return ApiError(501, message=message)
