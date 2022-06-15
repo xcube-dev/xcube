@@ -20,22 +20,17 @@
 # DEALINGS IN THE SOFTWARE.
 
 import asyncio
-import pkgutil
-import unittest
-import urllib3
 import socket
 import threading
-import yaml
-
+import unittest
 from contextlib import closing
 
-from xcube.server.server import Server
-from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.util import extension
-from xcube.util.extension import ExtensionRegistry
-
+import urllib3
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
 from xcube.server.impl.framework.tornado import TornadoFramework
+from xcube.server.server import Server
+from xcube.util.extension import ExtensionRegistry
 
 
 # taken from https://stackoverflow.com/a/45690594
@@ -47,33 +42,27 @@ def find_free_port():
 
 
 class BaseTest(unittest.TestCase):
+    er = None
+    server = None
     port = None
 
     @classmethod
-    def setUpClass(cls) -> None:
+    def setUp(cls) -> None:
         cls.port = find_free_port()
-        data = pkgutil.get_data('test', 'test_config.yml')
-        config = yaml.safe_load(data)
-        config['port'] = cls.port
-        config['address'] = 'localhost'
+        config = {
+            'port': cls.port,
+            'address': 'localhost'
+        }
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        er = ExtensionRegistry()
-        extension_component = config['extension_component']
-        extension_name = config['extension_name']
-        if extension_component:
-            er.add_extension(loader=extension.import_component(
-                extension_component),
-                             point=EXTENSION_POINT_SERVER_APIS,
-                             name=extension_name)
-        server = Server(framework=TornadoFramework(), config=config,
-                        extension_registry=er)
-        tornado = threading.Thread(target=server.start)
+        cls.er = ExtensionRegistry()
+        cls.server = Server(framework=TornadoFramework(), config=config,
+                            extension_registry=cls.er)
+        tornado = threading.Thread(target=cls.server.start)
         tornado.daemon = True
         tornado.start()
 
         cls.http = urllib3.PoolManager()
 
-    def test_demonstrate_usage(self):
-        url = f'http://localhost:{self.port}/I_do_not_exist'
-        response = self.http.request('GET', url)
-        self.assertEqual(404, response.status)
+    @classmethod
+    def tearDown(cls) -> None:
+        cls.server.stop()
