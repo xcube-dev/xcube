@@ -152,9 +152,6 @@ class MockApiRequest(ApiRequest):
         args = self._query_args.get(name, [])
         return [type(arg) for arg in args] if type is not None else args
 
-    def get_body_args(self, name: str) -> Sequence[bytes]:
-        return self._body_args.get(name, [])
-
 
 class MockApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
