@@ -41,7 +41,7 @@ def find_free_port():
         return s.getsockname()[1]
 
 
-class BaseTest(unittest.TestCase):
+class ServerTest(unittest.TestCase):
     er = None
     server = None
     port = None
