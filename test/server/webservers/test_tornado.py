@@ -20,7 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Sequence, Optional, Callable, Any, Awaitable, Union, Tuple
+from typing import Sequence, Optional, Callable, Any, Awaitable, Union, Tuple, \
+    Type
 
 import pytest
 import tornado.httputil
@@ -28,10 +29,13 @@ import tornado.web
 from tornado import concurrent
 
 from test.server.mocks import mock_server
-from xcube.server.api import ApiError, ServerConfig, Api
+from xcube.server.api import Api
+from xcube.server.api import ApiContextT
+from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRoute
 from xcube.server.api import Context
+from xcube.server.api import ServerConfig
 from xcube.server.asyncexec import ReturnT
 from xcube.server.webservers.tornado import SERVER_CTX_ATTR_NAME
 from xcube.server.webservers.tornado import TornadoApiRequest
@@ -308,7 +312,10 @@ class MockContext(Context):
     def config(self) -> ServerConfig:
         return self.config
 
-    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
         return self._api if api_name == 'test' else None
 
     def on_update(self, prev_context: Optional["Context"]):

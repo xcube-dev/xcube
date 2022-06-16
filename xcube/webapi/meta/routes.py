@@ -19,16 +19,20 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 
+import os
 import pkgutil
 from string import Template
 
+from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
+from xcube.util.versions import get_xcube_versions
 from xcube.version import version
 from .api import api
+from .context import MetaContext
 
 
 @api.route("/")
-class ServiceInfoHandler(ApiHandler):
+class ServiceInfoHandler(ApiHandler[MetaContext]):
     @api.operation(operation_id='getServiceInfo',
                    summary='Get information about the service')
     def get(self):
@@ -42,10 +46,20 @@ class ServiceInfoHandler(ApiHandler):
             api_infos.append({k: v
                               for k, v in api_info.items()
                               if v is not None})
-        self.response.finish({
-            "version": version,
-            "apis": api_infos
-        })
+
+        # TODO (forman): once APIs are configurable, we should
+        #   get the server name, description from configuration too
+        self.response.finish(dict(
+            name="xcube Server",
+            description="xcube Server",
+            version=version,
+            versions=get_xcube_versions(),
+            apis=api_infos,
+            startTime=self.ctx.start_time,
+            currentTime=self.ctx.current_time,
+            updateTime=self.ctx.update_time,
+            serverProcessId=os.getpid()
+        ))
 
 
 @api.route("/openapi.html")
@@ -79,6 +93,15 @@ class OpenApiJsonHandler(ApiHandler):
                 },
                 "message": {
                     "type": "string",
+                },
+                "reason": {
+                    "type": "string",
+                },
+                "traceback": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             },
             "additionalProperties": True,
@@ -206,4 +229,4 @@ class ErrorHandler(ApiHandler):
         if code is None:
             raise RuntimeError(message)
         else:
-            raise self.response.error(code, message=message)
+            raise ApiError(code, message=message)

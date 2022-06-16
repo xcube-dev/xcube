@@ -145,6 +145,9 @@ class ServerTest(unittest.TestCase):
                         'type': 'integer',
                         'default': 8080
                     },
+                    'base_dir': {'type': 'string'},
+                    'prefix': {'type': 'string'},
+                    'trace_perf': {'type': 'boolean'},
                     'data_stores': {
                         'type': 'array',
                         'items': {
@@ -276,10 +279,10 @@ class ServerTest(unittest.TestCase):
             Server(MockFramework(),
                    {},
                    extension_registry=extension_registry)
-        self.assertEqual(("API 'datasets':"
-                          " context must be instance of"
-                          " <class 'xcube.server.api.Context'>,"
-                          " but was <class 'int'>"),
+        self.assertEqual("api_ctx (context of API 'datasets')"
+                         " must be an instance of"
+                         " <class 'xcube.server.api.ApiContext'>,"
+                         " was <class 'int'>",
                          f'{cm.exception}')
 
     def test_missing_dependency_detected(self):

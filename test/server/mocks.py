@@ -154,6 +154,9 @@ class MockApiRequest(ApiRequest):
 
 
 class MockApiResponse(ApiResponse):
+    def set_header(self, name: str, value: str):
+        pass
+
     def set_status(self, status_code: int, reason: Optional[str] = None):
         pass
 

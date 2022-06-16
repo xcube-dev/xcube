@@ -20,11 +20,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
-from .config import CONFIG_SCHEMA
+from .context import TimeSeriesContext
 
 api = Api(
     'timeseries',
     description='xcube Timeseries API',
-    config_schema=CONFIG_SCHEMA,
-    required_apis=['datasets']
+    required_apis=['datasets'],
+    create_ctx=TimeSeriesContext
 )

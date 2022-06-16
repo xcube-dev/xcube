@@ -25,7 +25,7 @@ import logging
 import traceback
 import urllib.parse
 from typing import Any, Optional, Sequence, Union, Callable, Dict, Type, \
-    Awaitable, Mapping
+    Awaitable, Mapping, List
 
 import tornado.escape
 import tornado.httputil
@@ -235,35 +235,35 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
 
     async def get(self, *args, **kwargs):
         try:
-            return self._api_handler.get(*args, **kwargs)
+            await self._api_handler.get(*args, **kwargs)
         except ApiError as e:
             raise tornado.web.HTTPError(e.status_code,
                                         log_message=e.message) from e
 
     async def post(self, *args, **kwargs):
         try:
-            return self._api_handler.post(*args, **kwargs)
+            await self._api_handler.post(*args, **kwargs)
         except ApiError as e:
             raise tornado.web.HTTPError(e.status_code,
                                         log_message=e.message) from e
 
     async def put(self, *args, **kwargs):
         try:
-            return self._api_handler.put(*args, **kwargs)
+            await self._api_handler.put(*args, **kwargs)
         except ApiError as e:
             raise tornado.web.HTTPError(e.status_code,
                                         log_message=e.message) from e
 
     async def delete(self, *args, **kwargs):
         try:
-            return self._api_handler.delete(*args, **kwargs)
+            await self._api_handler.delete(*args, **kwargs)
         except ApiError as e:
             raise tornado.web.HTTPError(e.status_code,
                                         log_message=e.message) from e
 
     async def options(self, *args, **kwargs):
         try:
-            return self._api_handler.options(*args, **kwargs)
+            await self._api_handler.options(*args, **kwargs)
         except ApiError as e:
             raise tornado.web.HTTPError(e.status_code,
                                         log_message=e.message) from e
@@ -286,14 +286,14 @@ class TornadoApiRequest(ApiRequest):
         # print("query:", self._request.query)
 
     @functools.cached_property
-    def query_args(self) -> Dict[str, Sequence[str]]:
+    def query(self) -> Dict[str, List[str]]:
         return urllib.parse.parse_qs(self._request.query)
 
     # noinspection PyShadowingBuiltins
     def get_query_args(self,
                        name: str,
                        type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
-        query_args = self.query_args
+        query_args = self.query
         if not query_args or name not in query_args:
             return []
         values = query_args[name]
@@ -340,6 +340,9 @@ class TornadoApiRequest(ApiRequest):
 class TornadoApiResponse(ApiResponse):
     def __init__(self, handler: TornadoRequestHandler):
         self._handler = handler
+
+    def set_header(self, name: str, value: str):
+        self._handler.set_header(name, value)
 
     def set_status(self, status_code: int, reason: Optional[str] = None):
         self._handler.set_status(status_code, reason=reason)

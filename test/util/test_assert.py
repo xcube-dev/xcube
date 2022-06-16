@@ -1,12 +1,13 @@
 from unittest import TestCase
 
-from xcube.util.assertions import assert_true
-from xcube.util.assertions import assert_false
 from xcube.util.assertions import assert_condition
-from xcube.util.assertions import assert_not_none
+from xcube.util.assertions import assert_false
 from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_in
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_not_none
+from xcube.util.assertions import assert_subclass
+from xcube.util.assertions import assert_true
 
 
 class AssertTest(TestCase):
@@ -31,6 +32,29 @@ class AssertTest(TestCase):
                           "(<class 'int'>, <class 'str'>), "
                           "was <class 'float'>",),
                          e.exception.args)
+
+    def test_assert_subclass(self):
+        class A:
+            pass
+
+        class B(A):
+            pass
+
+        assert_subclass(A, A, 'x')
+        assert_subclass(B, A, 'x')
+        assert_subclass(B, (A, B), 'x')
+        with self.assertRaises(TypeError):
+            assert_subclass(4, A, 'x')
+        with self.assertRaises(TypeError) as e:
+            assert_subclass(A, B, 'x')
+        self.assertEqual(
+            ("x must be a subclass of"
+             " <class 'test.util.test_assert.AssertTest"
+             ".test_assert_subclass.<locals>.B'>,"
+             " was"
+             " <class 'test.util.test_assert.AssertTest"
+             ".test_assert_subclass.<locals>.A'>",),
+            e.exception.args)
 
     def test_assert_in(self):
         assert_in(2, (1, 2, 3), 'x')

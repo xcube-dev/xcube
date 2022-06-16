@@ -22,29 +22,25 @@
 import concurrent.futures
 import copy
 from typing import (Optional, Dict, Any, Union,
-                    Callable, Sequence, Awaitable, Tuple, List)
+                    Callable, Sequence, Awaitable, Tuple, List, Type)
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import LOG
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_subclass
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
 from .api import Api
 from .api import ApiContext
+from .api import ApiContextT
 from .api import ApiRoute
+from .api import Context
 from .api import ReturnT
 from .api import ServerConfig
-from .api import Context
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
 from .framework import Framework
-
-
-# TODO:
-#   - allow for JSON schema for requests and responses (openAPI)
-#   - introduce change management (per API?)
-#     - detect API context patches
-#   - aim at 100% test coverage
 
 
 class Server(AsyncExecution):
@@ -52,6 +48,18 @@ class Server(AsyncExecution):
     A REST server extendable by API extensions.
 
     APIs are registered using the extension point ".api".
+
+    TODO:
+      - introduce change management (per API?)
+        - detect API context patches
+      - address common server configuration
+        - camel case vs snake case parameters names ("BaseDir" vs "base_dir")
+        - first capital letter in parameter names ("Address" vs "address")
+        - let server types decide on vocabulary (config aliases)?
+        - configure server types by meta-configuration,
+          e.g. server name, description, config aliases, APIs used.
+      - use any given request JSON schema to validate requests
+      - aim at 100% test coverage
 
     :param framework: The web server framework to be used
     :param config: The server configuration.
@@ -276,15 +284,20 @@ class ServerContext(Context):
     def config(self) -> ServerConfig:
         return self._config
 
-    def get_api_ctx(self, api_name: str) -> Optional[Context]:
-        return self._api_contexts.get(api_name)
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
+        api_ctx = self._api_contexts.get(api_name)
+        if cls is not None:
+            assert_subclass(cls, ApiContext, name='cls')
+            assert_instance(api_ctx, cls,
+                            name=f'api_ctx (context of API {api_name!r})')
+        return api_ctx
 
-    def _set_api_ctx(self, api_name: str, api_ctx: Context):
-        if not isinstance(api_ctx, Context):
-            raise TypeError(f'API {api_name!r}:'
-                            f' context must be instance of'
-                            f' {Context},'
-                            f' but was {type(api_ctx)}')
+    def _set_api_ctx(self, api_name: str, api_ctx: ApiContext):
+        assert_instance(api_ctx, ApiContext,
+                        name=f'api_ctx (context of API {api_name!r})')
         self._api_contexts[api_name] = api_ctx
         setattr(self, api_name, api_ctx)
 

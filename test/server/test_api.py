@@ -246,25 +246,30 @@ class ApiHandlerTest(unittest.TestCase):
     def test_default_methods(self):
         handler = self.handler
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.get()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method GET not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.post()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method POST not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.put()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method PUT not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.delete()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method DELETE not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.options()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method OPTIONS not allowed',
+                         f'{cm.exception}')
 
 
 class ApiRequestTest(unittest.TestCase):
@@ -327,6 +332,11 @@ class ApiErrorTest(unittest.TestCase):
         error = ApiError.NotFound()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(404, error.status_code)
+
+    def test_method_not_allowed(self):
+        error = ApiError.MethodNotAllowed()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(405, error.status_code)
 
     def test_conflict(self):
         error = ApiError.Conflict()

@@ -19,22 +19,54 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
 from .api import api
 from .context import DatasetsContext
 from .controllers import find_dataset_places
 from .controllers import get_datasets
+from ...util.assertions import assert_true
 
 
 @api.route('/datasets')
 class DatasetsHandler(ApiHandler[DatasetsContext]):
     """List the published datasets."""
 
-    @api.operation(operation_id='getDatasets')
+    @api.operation(
+        operation_id='getDatasets',
+        parameters=[
+            {
+                "name": "details",
+                "in": "query",
+                "description": "Whether to load dataset details",
+                "schema": {
+                    "type": "string",
+                    "enum": ["0", "1"],
+                }
+            },
+            {
+                "name": "point",
+                "in": "query",
+                "description": "Only get datasets intersecting"
+                               " given point. Format is \"lon,lat\","
+                               " for example \"11.2,52.3\"",
+                "schema": {
+                    "type": "string",
+                },
+            },
+        ]
+    )
     def get(self):
-        granted_scopes = self.ctx.auth_ctx.granted_scopes(self.request.headers)
+        granted_scopes = self.ctx.auth_ctx.granted_scopes(
+            self.request.headers)
         details = self.request.get_query_arg('details', default=False)
         point = self.request.get_query_arg('point', None)
+        if point is not None:
+            try:
+                point = tuple(map(float, point.split(',')))
+                assert_true(len(point) == 2, 'must be pair of two floats')
+            except (ValueError, TypeError) as e:
+                raise ApiError.BadRequest(f"illegal point: {e}")
         response = get_datasets(self.ctx,
                                 details=details,
                                 point=point,

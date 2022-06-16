@@ -36,7 +36,8 @@ _HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
 ArgT = TypeVar('ArgT')
 ReturnT = TypeVar('ReturnT')
 # API Context type variable
-ServerContextT = TypeVar("CtxT", bound="Context")
+ServerContextT = TypeVar("ServerContextT", bound="Context")
+ApiContextT = TypeVar("ApiContextT", bound="Context")
 
 JSON = Union[
     None,
@@ -51,7 +52,7 @@ JSON = Union[
 ServerConfigObject = Mapping[str, Any]
 ServerConfig = ServerConfigObject
 
-_builtin_type = type
+builtin_type = type
 
 
 class Api(Generic[ServerContextT]):
@@ -318,13 +319,22 @@ class Context(AsyncExecution, ABC):
         """The server's current configuration."""
 
     @abstractmethod
-    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
         """
         Get the API context for *api_name*.
         Can be used to access context objects of other APIs.
 
+        The keyword argument *type* can be used to assert a specific
+        type if of context.
+
         :param api_name: The name of a registered API.
-        :return: The API context for *api_name*, or None if no such exists.
+        :param cls: Optional context class.
+            If given, must be a class derived from `ApiContext`.
+        :return: The API context object for *api_name*,
+            or None if no such exists.
         """
 
     @abstractmethod
@@ -392,9 +402,12 @@ class ApiContext(Context):
         """Return the server context's ``config`` property."""
         return self.server_ctx.config
 
-    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
         """Calls the server context's ``get_api_ctx()`` method."""
-        return self.server_ctx.get_api_ctx(api_name)
+        return self.server_ctx.get_api_ctx(api_name, cls=cls)
 
     def call_later(self,
                    delay: Union[int, float],
@@ -459,6 +472,11 @@ class ApiRequest:
     def json(self) -> JSON:
         """The request body as JSON value."""
 
+    @property
+    @abstractmethod
+    def query(self) -> Dict[str, Union[str, List[str]]]:
+        """The request query arguments."""
+
     # noinspection PyShadowingBuiltins
     def get_query_arg(self,
                       name: str,
@@ -476,7 +494,7 @@ class ApiRequest:
         :return: The value of the query argument.
         """
         if type is None and default is not None:
-            type = _builtin_type(default)
+            type = builtin_type(default)
             type = type if callable(type) else None
         values = self.get_query_args(name, type=type)
         return values[0] if values else default
@@ -499,6 +517,10 @@ class ApiResponse(ABC):
     @abstractmethod
     def set_status(self, status_code: int, reason: Optional[str] = None):
         """Set the HTTP status code and optionally the reason."""
+
+    @abstractmethod
+    def set_header(self, name: str, value: str):
+        """Set the HTTP header *name* to given *value*."""
 
     @abstractmethod
     def write(self, data: Union[str, bytes, JSON]):
@@ -563,14 +585,29 @@ class ApiHandler(Generic[ServerContextT], ABC):
         """The response that provides the handler's output."""
         return self._response
 
-    def _unimplemented_method(self, *args: str, **kwargs: str) -> None:
-        raise self.response.error(405)
+    # def _unimplemented_method(self, *args: str, **kwargs: str) -> None:
+    #     raise ApiError.MethodNotAllowed()
+    #
+    # get = _unimplemented_method
+    # post = _unimplemented_method
+    # put = _unimplemented_method
+    # delete = _unimplemented_method
+    # options = _unimplemented_method
 
-    get = _unimplemented_method
-    post = _unimplemented_method
-    put = _unimplemented_method
-    delete = _unimplemented_method
-    options = _unimplemented_method
+    def get(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method GET not allowed")
+
+    def post(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method POST not allowed")
+
+    def put(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method PUT not allowed")
+
+    def delete(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method DELETE not allowed")
+
+    def options(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method OPTIONS not allowed")
 
 
 class ApiRoute:
@@ -650,6 +687,7 @@ class ApiError(Exception):
     Unauthorized: Type["_DerivedApiError"]
     Forbidden: Type["_DerivedApiError"]
     NotFound: Type["_DerivedApiError"]
+    MethodNotAllowed: Type["_DerivedApiError"]
     Conflict: Type["_DerivedApiError"]
     Gone: Type["_DerivedApiError"]
     InternalServerError: Type["_DerivedApiError"]
@@ -696,6 +734,11 @@ class _NotFound(ApiError):
         super().__init__(404, message=message)
 
 
+class _MethodNotAllowed(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(405, message=message)
+
+
 class _Conflict(ApiError):
     def __init__(self, message: Optional[str] = None):
         super().__init__(409, message=message)
@@ -725,6 +768,7 @@ ApiError.BadRequest = _BadRequest
 ApiError.Unauthorized = _Unauthorized
 ApiError.Forbidden = _Forbidden
 ApiError.NotFound = _NotFound
+ApiError.MethodNotAllowed = _MethodNotAllowed
 ApiError.Conflict = _Conflict
 ApiError.Gone = _Gone
 ApiError.InternalServerError = _InternalServerError

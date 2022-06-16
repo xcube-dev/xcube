@@ -19,6 +19,38 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.util.jsonschema import JsonObjectSchema
+import datetime
 
-CONFIG_SCHEMA = JsonObjectSchema(additional_properties=True)
+from xcube.core.timecoord import timestamp_to_iso_string
+from xcube.server.api import ApiContext
+from xcube.server.api import Context
+
+
+class MetaContext(ApiContext):
+    _start_time = None
+
+    def __init__(self, server_ctx: Context):
+        super().__init__(server_ctx)
+        # API contexts are instantiated every time the config changes
+        if self._start_time is None:
+            self._start_time = self.now()
+        self._update_time = self.now()
+
+    @property
+    def start_time(self) -> str:
+        return self._start_time
+
+    @property
+    def update_time(self) -> str:
+        return self._update_time
+
+    @property
+    def current_time(self) -> str:
+        return self.now()
+
+    @staticmethod
+    def now():
+        return timestamp_to_iso_string(
+            datetime.datetime.now()
+        )
+
