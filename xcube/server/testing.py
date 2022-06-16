@@ -24,6 +24,7 @@ import socket
 import threading
 import unittest
 from contextlib import closing
+from typing import Dict
 
 import urllib3
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
@@ -42,27 +43,30 @@ def find_free_port():
 
 
 class ServerTest(unittest.TestCase):
-    er = None
-    server = None
-    port = None
 
-    @classmethod
-    def setUp(cls) -> None:
-        cls.port = find_free_port()
+    def setUp(self) -> None:
+        self.port = find_free_port()
         config = {
-            'port': cls.port,
+            'port': self.port,
             'address': 'localhost'
         }
+        self.add_config(config)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        cls.er = ExtensionRegistry()
-        cls.server = Server(framework=TornadoFramework(), config=config,
-                            extension_registry=cls.er)
-        tornado = threading.Thread(target=cls.server.start)
+        er = ExtensionRegistry()
+        self.add_extension(er)
+        self.server = Server(framework=TornadoFramework(), config=config,
+                             extension_registry=er)
+        tornado = threading.Thread(target=self.server.start)
         tornado.daemon = True
         tornado.start()
 
-        cls.http = urllib3.PoolManager()
+        self.http = urllib3.PoolManager()
 
-    @classmethod
-    def tearDown(cls) -> None:
-        cls.server.stop()
+    def tearDown(self) -> None:
+        self.server.stop()
+
+    def add_extension(self, er: ExtensionRegistry) -> None:
+        pass
+
+    def add_config(self, config: Dict) -> None:
+        pass
