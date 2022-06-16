@@ -29,7 +29,7 @@ from typing import Dict
 import urllib3
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-from xcube.server.impl.framework.tornado import TornadoFramework
+from xcube.server.webservers.tornado import TornadoFramework
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
 
