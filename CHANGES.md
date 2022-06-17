@@ -11,6 +11,17 @@
 * Removed all upper version bounds of package dependencies.
   This increases compatibility with existing Python environments.
 
+* A new CLI tool `xcube patch` has been added. It allows for in-place
+  metadata patches of Zarr data cubes stored in almost any filesystem 
+  supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
+  including the protocols "s3" and "file". It also allows patching
+  xcube multi-level datasets (`*.levels` format).
+
+### Fixes
+
+* Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
+  Demo cubes now all have consolidated metadata.
+
 ## Changes in 0.11.2
 
 ### Enhancements

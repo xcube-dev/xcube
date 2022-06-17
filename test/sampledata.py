@@ -152,7 +152,7 @@ def create_conc_chl():
                      [5, 10, 2, 21],
                      [16, 6, 20, 17]], dtype=np.float32)
     return (('y', 'x'), data, dict(
-        long_name="Chlorophylll concentration",
+        long_name="Chlorophyll concentration",
         units="mg m^-3",
         _FillValue=np.nan,
         valid_pixel_expression="c2rcc_flags.F1",

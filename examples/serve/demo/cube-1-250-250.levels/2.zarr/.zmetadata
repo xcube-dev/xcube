@@ -142,7 +142,7 @@
                 30.0,
                 40.0
             ],
-            "long_name": "Chlorophylll concentration",
+            "long_name": "Chlorophyll concentration",
             "units": "mg m^-3",
             "valid_pixel_expression": "c2rcc_flags.Valid_PE"
         },
