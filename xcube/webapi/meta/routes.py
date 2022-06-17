@@ -79,7 +79,7 @@ class OpenApiHtmlHandler(ApiHandler):
 @api.route("/openapi.json")
 class OpenApiJsonHandler(ApiHandler):
     @api.operation(
-        operation_id='getOpenApiHtml',
+        operation_id='getOpenApiJson',
         summary='Get API documentation as OpenAPI 3.0 JSON document'
     )
     def get(self):
