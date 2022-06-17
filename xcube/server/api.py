@@ -329,7 +329,7 @@ class Context(AsyncExecution, ABC):
         Get the API context for *api_name*.
         Can be used to access context objects of other APIs.
 
-        The keyword argument *type* can be used to assert a specific
+        The keyword argument *cls* can be used to assert a specific
         type if of context.
 
         :param api_name: The name of a registered API.
