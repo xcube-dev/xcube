@@ -659,7 +659,7 @@ class ApiError(Exception):
     """
 
     def __init__(self,
-                 status_code: int = 500,
+                 status_code: int,
                  message: Optional[str] = None):
         super().__init__(status_code, message)
 
