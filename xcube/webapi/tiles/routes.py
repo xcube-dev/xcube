@@ -25,8 +25,11 @@ from .context import TilesContext
 from .controllers import compute_ml_dataset_tile
 
 
+# TODO (forman): rename route path
+#   to "/tiles/{datasetId}/{varName}/{z}/{y}/{x}"
+
 # noinspection PyPep8Naming
-@api.route('/tiles/{datasetId}/{varName}/{z}/{y}/{x}')
+@api.route('/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}')
 class TilesHandler(ApiHandler[TilesContext]):
     @api.operation(operation_id='getTile',
                    summary="Get the image tile for a variable"
@@ -144,7 +147,7 @@ class TilesHandler(ApiHandler[TilesContext]):
             varName,
             None,
             x, y, z,
-            {k: v[0] for k, v in self.request.query}
+            {k: v[0] for k, v in self.request.query.items()}
         )
         self.response.set_header('Content-Type', 'image/png')
         await self.response.finish(tile)

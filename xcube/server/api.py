@@ -222,6 +222,7 @@ class Api(Generic[ServerContextT]):
                   summary: Optional[str] = None,
                   description: Optional[str] = None,
                   parameters: Optional[List[Dict[str, Any]]] = None,
+                  tags: Optional[str] = None,
                   **kwargs):
         """
         Decorator that adds OpenAPI 3.0 information to an
@@ -236,6 +237,7 @@ class Api(Generic[ServerContextT]):
             "summary": summary,
             "description": description,
             "parameters": parameters,
+            "tags": tags,
         }
         openapi = {k: v for k, v in openapi.items() if v is not None}
 
@@ -474,7 +476,7 @@ class ApiRequest:
 
     @property
     @abstractmethod
-    def query(self) -> Dict[str, Union[str, List[str]]]:
+    def query(self) -> Mapping[str, Sequence[str]]:
         """The request query arguments."""
 
     # noinspection PyShadowingBuiltins
@@ -530,21 +532,6 @@ class ApiResponse(ABC):
     def finish(self, data: Union[str, bytes, JSON] = None):
         """Finish the response (and submit it)."""
 
-    @abstractmethod
-    def error(self,
-              status_code: int,
-              message: Optional[str] = None,
-              reason: Optional[str] = None) -> Exception:
-        """
-        Get an exception that can be raised.
-        If raised, a standard error response will be generated.
-
-        :param status_code: The HTTP status code.
-        :param message: Optional message.
-        :param reason: Optional reason.
-        :return: An exception that may be raised.
-        """
-
 
 class ApiHandler(Generic[ServerContextT], ABC):
     """
@@ -585,14 +572,7 @@ class ApiHandler(Generic[ServerContextT], ABC):
         """The response that provides the handler's output."""
         return self._response
 
-    # def _unimplemented_method(self, *args: str, **kwargs: str) -> None:
-    #     raise ApiError.MethodNotAllowed()
-    #
-    # get = _unimplemented_method
-    # post = _unimplemented_method
-    # put = _unimplemented_method
-    # delete = _unimplemented_method
-    # options = _unimplemented_method
+    # HTTP methods
 
     def get(self, *args, **kwargs):
         raise ApiError.MethodNotAllowed("method GET not allowed")

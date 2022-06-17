@@ -20,7 +20,7 @@
 #  DEALINGS IN THE SOFTWARE.
 
 from typing import Optional, Sequence, Tuple, Dict, Any, Union, Callable, \
-    Awaitable, List
+    Awaitable, List, Mapping
 
 from tornado import concurrent
 
@@ -127,13 +127,24 @@ class MockApiContext(ApiContext):
 class MockApiRequest(ApiRequest):
 
     def __init__(self,
-                 query_args: Optional[Dict[str, List[str]]] = None,
-                 body_args: Optional[Dict[str, List[bytes]]] = None):
+                 query_args: Optional[Mapping[str, Sequence[str]]] = None):
         self._query_args = query_args or {}
-        self._body_args = body_args or {}
+
+    @property
+    def query(self) -> Mapping[str, Sequence[str]]:
+        return self._query_args
+
+    # noinspection PyShadowingBuiltins
+    def get_query_args(self, name: str, type: Any = None) -> Sequence[Any]:
+        args = self._query_args.get(name, [])
+        return [type(arg) for arg in args] if type is not None else args
 
     def url_for_path(self, path: str, query: Optional[str] = None) -> str:
         return ''
+
+    @property
+    def headers(self) -> Mapping[str, str]:
+        return {}
 
     @property
     def url(self) -> str:
@@ -147,10 +158,6 @@ class MockApiRequest(ApiRequest):
     def json(self) -> JSON:
         return {}
 
-    # noinspection PyShadowingBuiltins
-    def get_query_args(self, name: str, type: Any = None) -> Sequence[Any]:
-        args = self._query_args.get(name, [])
-        return [type(arg) for arg in args] if type is not None else args
 
 
 class MockApiResponse(ApiResponse):
@@ -165,15 +172,3 @@ class MockApiResponse(ApiResponse):
 
     def finish(self, data: Union[str, bytes, JSON] = None):
         pass
-
-    def error(self,
-              status_code: int,
-              message: Optional[str] = None,
-              reason: Optional[str] = None) -> Exception:
-        return MockApiError(status_code, message, reason)
-
-
-class MockApiError(Exception):
-    def __init__(self, *args, **kwargs):
-        # noinspection PyArgumentList
-        super().__init__(*args, **kwargs)

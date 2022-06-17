@@ -29,7 +29,6 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import Context
 from xcube.server.api import ApiError
 from xcube.server.server import ServerContext
-from .mocks import MockApiError
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
 from .mocks import MockFramework
@@ -357,4 +356,3 @@ class ApiErrorTest(unittest.TestCase):
         error = ApiError.InvalidServerConfig()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(580, error.status_code)
-

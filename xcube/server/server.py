@@ -50,6 +50,12 @@ class Server(AsyncExecution):
     APIs are registered using the extension point ".api".
 
     TODO:
+      - a server must also serve generic static content, e.g.
+        "http://localhost:8080/images/outside-cube/${ID}.jpg"
+      - a route path should be able to match arbitrary sub-paths
+        e.g. we have to support "/s3bucket/{ds_id}/(?P<path>.*)"
+      - For openAPI, allow endpoints to appear in APIs other than
+        their home API.
       - introduce change management (per API?)
         - detect API context patches
       - address common server configuration

@@ -20,13 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
-from .config import CONFIG_SCHEMA
-from .context import MetaContext
 
 api = Api(
-    'meta',
-    description='xcube Server meta-information and -operations',
-    config_schema=CONFIG_SCHEMA,
-    required_apis=['auth'],
-    create_ctx=MetaContext
+    'styles',
+    description='xcube Styles API'
 )

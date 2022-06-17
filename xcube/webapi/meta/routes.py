@@ -71,7 +71,7 @@ class OpenApiHtmlHandler(ApiHandler):
     def get(self):
         html_template = pkgutil.get_data('xcube.webapi.meta.res',
                                          'openapi.html').decode('utf-8')
-        self.response.write(Template(html_template).substitute(
+        self.response.finish(Template(html_template).substitute(
             open_api_url=self.request.url_for_path('openapi.json')
         ))
 
@@ -97,7 +97,7 @@ class OpenApiJsonHandler(ApiHandler):
                 "reason": {
                     "type": "string",
                 },
-                "traceback": {
+                "exception": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -144,6 +144,9 @@ class OpenApiJsonHandler(ApiHandler):
         tags = []
         paths = {}
         for other_api in self.ctx.apis:
+            if not other_api.routes:
+                # Only include APIs with endpoints
+                continue
             tags.append({
                 "name": other_api.name,
                 "description": other_api.description or ""

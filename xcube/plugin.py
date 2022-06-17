@@ -222,6 +222,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         'meta',
         '_auth',
         'places',
+        'styles',
         'datasets',
         'tiles',
         'timeseries',

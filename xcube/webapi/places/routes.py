@@ -33,13 +33,14 @@ class PlaceGroupsHandler(ApiHandler[PlacesContext]):
         self.response.finish({"placeGroups": place_groups})
 
 
-@api.route('/places/{place_group_id}')
+# noinspection PyPep8Naming
+@api.route('/places/{placeGroupId}')
 class FindPlacesHandler(ApiHandler):
     """Find places within a known place group."""
 
     @api.operation(operationId='findPlacesInPlaceGroup',
                    summary='Find places in a given place group.')
-    def get(self, place_group_id: str):
+    def get(self, placeGroupId: str):
         query_expr = self.request.get_query_arg("query", default=None)
         geom_wkt = self.request.get_query_arg("geom", default=None)
         box_coords = self.request.get_query_arg("bbox", default=None)
@@ -49,7 +50,7 @@ class FindPlacesHandler(ApiHandler):
                 'Only one of "geom" and "bbox" may be given'
             )
         places = find_places(self.ctx,
-                             place_group_id,
+                             placeGroupId,
                              self.request.base_url,
                              query_geometry=box_coords or geom_wkt or None,
                              query_expr=query_expr, comb_op=comb_op)
@@ -58,12 +59,12 @@ class FindPlacesHandler(ApiHandler):
     @api.operation(operationId='findPlacesInPlaceGroup',
                    summary='Find places in a given place group'
                            ' for a GeoJSON object.')
-    def post(self, place_group_id: str):
+    def post(self, placeGroupId: str):
         query_expr = self.request.get_query_arg("query", default=None)
         comb_op = self.request.get_query_arg("comb", default="and")
         geojson_obj = self.request.json
         places = find_places(self.ctx,
-                             place_group_id,
+                             placeGroupId,
                              self.request.base_url,
                              query_geometry=geojson_obj,
                              query_expr=query_expr, comb_op=comb_op)

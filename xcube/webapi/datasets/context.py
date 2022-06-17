@@ -393,11 +393,11 @@ class DatasetsContext(ResourcesContext):
                         f'{store_dataset_id}'
                     all_dataset_configs.append(dataset_config)
 
-        # Just for testing:
-        debug_file = 'all_dataset_configs.json'
-        with open(debug_file, 'w') as stream:
-            json.dump(all_dataset_configs, stream)
-            LOG.debug(f'Wrote file {debug_file!r}')
+        # # Just for testing:
+        # debug_file = 'all_dataset_configs.json'
+        # with open(debug_file, 'w') as stream:
+        #     json.dump(all_dataset_configs, stream)
+        #     LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
 

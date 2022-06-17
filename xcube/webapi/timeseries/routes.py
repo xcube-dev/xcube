@@ -108,7 +108,7 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                                                 default=None)
         result = await self.ctx.run_in_executor(None,
                                                 get_time_series,
-                                                self.service_context,
+                                                self.ctx,
                                                 datasetId,
                                                 varName,
                                                 geo_json_object,
@@ -116,5 +116,5 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                                                 start_date,
                                                 end_date,
                                                 max_valids)
-        self.set_header('Content-Type', 'application/json')
-        await self.finish(dict(result=result))
+        self.response.set_header('Content-Type', 'application/json')
+        await self.response.finish(dict(result=result))
