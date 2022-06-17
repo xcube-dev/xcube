@@ -32,7 +32,7 @@ from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.schema import get_dataset_xy_var_names
 from xcube.util.cache import Cache
-from xcube.util.labels import ensure_time_label_compatible
+from xcube.util.timeindex import ensure_time_label_compatible
 from xcube.util.perf import measure_time_cm
 from xcube.util.tiledimage import ColorMappedRgbaImage
 from xcube.util.tiledimage import DEFAULT_COLOR_MAP_NAME

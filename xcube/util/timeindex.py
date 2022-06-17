@@ -19,6 +19,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+"""Utilities to ensure compatibility between time variables and their indexers
+
+The utilities in this module check and, where necessary, modify time indexers
+to ensure that they are compatible with the variables they are indexing.
+"""
+
 from typing import Dict, Any, Union
 
 import numpy as np

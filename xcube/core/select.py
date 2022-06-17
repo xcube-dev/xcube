@@ -30,7 +30,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_given
 
-from xcube.util.labels import ensure_time_index_compatible
+from xcube.util.timeindex import ensure_time_index_compatible
 
 Bbox = Tuple[float, float, float, float]
 TimeRange = Union[Tuple[Optional[str], Optional[str]],

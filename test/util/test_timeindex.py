@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 from pandas import DatetimeTZDtype
 
-from xcube.util.labels import ensure_time_label_compatible
+from xcube.util.timeindex import ensure_time_label_compatible
 
 
 class EnsureTimeCompatibleTest(unittest.TestCase):

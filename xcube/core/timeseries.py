@@ -35,7 +35,7 @@ from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_variables_subset
-from xcube.util.labels import ensure_time_index_compatible
+from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.util.assertions import assert_instance
 
 Date = Union[np.datetime64, str]
