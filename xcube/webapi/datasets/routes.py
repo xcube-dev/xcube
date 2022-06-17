@@ -129,7 +129,7 @@ class StylesColorBarsHandler(ApiHandler):
 class StylesColorBarsHtmlHandler(ApiHandler):
     """Show available color bars."""
 
-    @api.operation(operation_id='getColorBars',
+    @api.operation(operation_id='showColorBars',
                    summary="Show available color bars.",
                    tags=['styles'])
     def get(self):

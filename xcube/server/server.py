@@ -50,22 +50,23 @@ class Server(AsyncExecution):
     APIs are registered using the extension point ".api".
 
     TODO:
-      - a server must also serve generic static content, e.g.
-        "http://localhost:8080/images/outside-cube/${ID}.jpg"
-      - a route path should be able to match arbitrary sub-paths
+      * Allow route paths to match arbitrary subpaths,
         e.g. we have to support "/s3bucket/{ds_id}/(?P<path>.*)"
-      - For openAPI, allow endpoints to appear in APIs other than
-        their home API.
-      - introduce change management (per API?)
-        - detect API context patches
-      - address common server configuration
-        - camel case vs snake case parameters names ("BaseDir" vs "base_dir")
-        - first capital letter in parameter names ("Address" vs "address")
-        - let server types decide on vocabulary (config aliases)?
-        - configure server types by meta-configuration,
-          e.g. server name, description, config aliases, APIs used.
-      - use any given request JSON schema to validate requests
-      - aim at 100% test coverage
+      * Allow server to serve generic static content,
+        e.g. "http://localhost:8080/images/outside-cube/${ID}.jpg"
+      * Allow server updates triggered by local file changes
+        and changes in s3 buckets
+      * Address common server configuration
+        - Configure server types by meta-configuration,
+          e.g. server name, server description, names of APIs served,
+          aliases for common server config...
+        - Why we need aliases for common server config:
+          o Camel case vs snake case parameters names,
+            e.g. "BaseDir" vs "base_dir"
+          o First capital letter in parameter names,
+            e.g. "Address" vs "address"
+      * Use any given request JSON schema in openAPI
+        to validate requests in HTTP methods
 
     :param framework: The web server framework to be used
     :param config: The server configuration.
