@@ -37,7 +37,7 @@ logger = logging.getLogger('xcube')
 
 def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
                                  labels: Dict[str, Any]) -> Dict[str, Any]:
-    """Ensure that labels['time'] is timezone-naive, if necessary.
+    """Ensure that labels['time'] is compatible with var
 
     This function returns either the passed-in labels object, or a copy of
     it with a modified value for labels['time'].
@@ -45,17 +45,14 @@ def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
     If there is no 'time' key in the labels dictionary or if there is no
     'time' dimension in the var array, the original labels are returned.
 
-    If there is a 'time' key, it is expected that its value will be
-    a valid timestamp (i.e. a valid input to pandas.Timestamp.__init__), or
-    a slice in which the start and stop fields are valid timestamps. For a
-    slice, the start and stop fields are processed separately, and their
-    modified values (if required) are returned as the start and stop fields
-    of a new slice. The step field is included unchanged in the new slice.
+    If there is a 'time' key in the labels dictionary and a 'time' dimension
+    in the var array, they are checked for compatibility. If they are
+    compatible, the original labels are returned. If not, an altered labels
+    dictionary is returned, in which the time key has been modified to be
+    compatible with the type of the 'time' dimension in the var array.
 
-    If var has a 'time' dimension of type datetime64 and labels has a 'time'
-    key with a timezone-aware value, return a modified labels dictionary with
-    a timezone-naive time value. Otherwise return the original labels.
-
+    See the documentation for `ensure_time_index_compatible` for details on
+    the compatibility check.
     """
 
     if 'time' in labels and 'time' in var.dims:
@@ -67,6 +64,22 @@ def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
 
 def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
                                  timeval: Any) -> Any:
+    """Ensure that timeval is a valid time indexer for var
+
+    It is expected that the value of timeval will be a valid timestamp (i.e.
+    a valid input to pandas.Timestamp.__init__), or a slice in which the
+    start and stop fields are valid timestamps. For a slice, the start and
+    stop fields are processed separately, and their modified values (if
+    required) are returned as the start and stop fields of a new slice. The
+    step field is included unchanged in the new slice.
+
+    The compatibility check consists of checking the timezone-awareness
+    of the variable and its indexer. If the variable is timezone-aware and
+    the indexer is timezone-naive, or vice versa, a new indexer is returned
+    whose timezone-awareness corresponds to that of the variable. Otherwise
+    the original indexer is returned.
+    """
+    
     if isinstance(timeval, slice):
         # process start and stop separately, and pass step through unchanged
         return slice(
@@ -122,5 +135,5 @@ def _has_datetime64_time(var: xr.DataArray) -> bool:
 
     Assumes that a 'time' key is present in var.dims."""
     return hasattr(var['time'], 'dtype') \
-        and hasattr(var['time'].dtype, 'type') \
-        and var['time'].dtype.type is np.datetime64
+           and hasattr(var['time'].dtype, 'type') \
+           and var['time'].dtype.type is np.datetime64
