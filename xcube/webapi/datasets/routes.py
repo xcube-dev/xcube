@@ -35,7 +35,8 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
     """List the published datasets."""
 
     @api.operation(
-        operation_id='getDatasets',
+        operation_id="getDatasets",
+        summary="Get the published datasets",
         parameters=[
             {
                 "name": "details",
