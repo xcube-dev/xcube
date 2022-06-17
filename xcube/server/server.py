@@ -22,29 +22,25 @@
 import concurrent.futures
 import copy
 from typing import (Optional, Dict, Any, Union,
-                    Callable, Sequence, Awaitable, Tuple, List)
+                    Callable, Sequence, Awaitable, Tuple, List, Type)
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import LOG
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_subclass
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
 from .api import Api
 from .api import ApiContext
+from .api import ApiContextT
 from .api import ApiRoute
+from .api import Context
 from .api import ReturnT
 from .api import ServerConfig
-from .api import Context
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
 from .framework import Framework
-
-
-# TODO:
-#   - allow for JSON schema for requests and responses (openAPI)
-#   - introduce change management (per API?)
-#     - detect API context patches
-#   - aim at 100% test coverage
 
 
 class Server(AsyncExecution):
@@ -52,6 +48,25 @@ class Server(AsyncExecution):
     A REST server extendable by API extensions.
 
     APIs are registered using the extension point ".api".
+
+    TODO:
+      * Allow route paths to match arbitrary subpaths,
+        e.g. we have to support "/s3bucket/{ds_id}/(?P<path>.*)"
+      * Allow server to serve generic static content,
+        e.g. "http://localhost:8080/images/outside-cube/${ID}.jpg"
+      * Allow server updates triggered by local file changes
+        and changes in s3 buckets
+      * Address common server configuration
+        - Configure server types by meta-configuration,
+          e.g. server name, server description, names of APIs served,
+          aliases for common server config...
+        - Why we need aliases for common server config:
+          o Camel case vs snake case parameters names,
+            e.g. "BaseDir" vs "base_dir"
+          o First capital letter in parameter names,
+            e.g. "Address" vs "address"
+      * Use any given request JSON schema in openAPI
+        to validate requests in HTTP methods
 
     :param framework: The web server framework to be used
     :param config: The server configuration.
@@ -276,15 +291,20 @@ class ServerContext(Context):
     def config(self) -> ServerConfig:
         return self._config
 
-    def get_api_ctx(self, api_name: str) -> Optional[Context]:
-        return self._api_contexts.get(api_name)
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
+        api_ctx = self._api_contexts.get(api_name)
+        if cls is not None:
+            assert_subclass(cls, ApiContext, name='cls')
+            assert_instance(api_ctx, cls,
+                            name=f'api_ctx (context of API {api_name!r})')
+        return api_ctx
 
-    def _set_api_ctx(self, api_name: str, api_ctx: Context):
-        if not isinstance(api_ctx, Context):
-            raise TypeError(f'API {api_name!r}:'
-                            f' context must be instance of'
-                            f' {Context},'
-                            f' but was {type(api_ctx)}')
+    def _set_api_ctx(self, api_name: str, api_ctx: ApiContext):
+        assert_instance(api_ctx, ApiContext,
+                        name=f'api_ctx (context of API {api_name!r})')
         self._api_contexts[api_name] = api_ctx
         setattr(self, api_name, api_ctx)
 

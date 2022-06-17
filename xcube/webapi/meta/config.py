@@ -19,5 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# noinspection PyUnresolvedReferences
-from .routes import api
+from xcube.util.jsonschema import JsonObjectSchema
+
+CONFIG_SCHEMA = JsonObjectSchema(additional_properties=True)

@@ -21,6 +21,7 @@
 
 from xcube.constants import DEFAULT_SERVER_ADDRESS
 from xcube.constants import DEFAULT_SERVER_PORT
+from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -29,12 +30,12 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
         port=JsonIntegerSchema(default=DEFAULT_SERVER_PORT),
         address=JsonStringSchema(default=DEFAULT_SERVER_ADDRESS),
+        base_dir=JsonStringSchema(),
+        prefix=JsonStringSchema(),
+        trace_perf=JsonBooleanSchema(),
     ),
     # We allow for other configuration settings contributed
     # by APIs. If these APIs are currently not in use,
-    # validation would fail.
-    # TODO: just warn, if any settings are encountered that
-    #   are not covered by the current APIs config schemas.
+    # validation would fail if additional_properties=False.
     additional_properties=True,
 )
-

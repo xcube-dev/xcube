@@ -50,6 +50,16 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
               help='Configuration YAML or JSON file. '
                    ' If multiple are passed,'
                    ' they will be merged in order.')
+@click.option('--base-dir', 'base_dir',
+              metavar='BASE_DIR', default=None,
+              help='Directory used to resolve relative paths'
+                   ' in CONFIG files. Defaults to the parent directory'
+                   ' of (last) CONFIG file.')
+@click.option('--prefix',
+              metavar='PREFIX', default=None,
+              help='Prefix to be used for all endpoint URLs.')
+@click.option('--traceperf', is_flag=True, default=None,
+              help='Whether to output extra performance logs.')
 @click.option('--update-after', 'update_after',
               metavar='TIME', type=float, default=None,
               help='Check for server configuration updates every'
@@ -63,6 +73,9 @@ def serve2(framework_name: str,
            port: int,
            address: str,
            config_paths: List[str],
+           base_dir: Optional[str],
+           prefix: Optional[str],
+           traceperf: Optional[bool],
            update_after: Optional[float],
            stop_after: Optional[float],
            quiet: bool,
@@ -78,10 +91,23 @@ def serve2(framework_name: str,
     configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     config = load_configs(*config_paths) if config_paths else {}
+
     if port is not None:
         config["port"] = port
     if address is not None:
         config["address"] = address
+
+    if base_dir is not None:
+        config["base_dir"] = base_dir
+    elif "base_dir" not in config and config_paths:
+        import os.path
+        config["base_dir"] = os.path.abspath(os.path.dirname(config_paths[-1]))
+
+    if prefix is not None:
+        config["prefix"] = prefix
+
+    if traceperf is not None:
+        config["trace_perf"] = traceperf
 
     framework = get_framework_class(framework_name)()
     server = Server(framework, config)

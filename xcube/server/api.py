@@ -36,7 +36,8 @@ _HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
 ArgT = TypeVar('ArgT')
 ReturnT = TypeVar('ReturnT')
 # API Context type variable
-ServerContextT = TypeVar("CtxT", bound="Context")
+ServerContextT = TypeVar("ServerContextT", bound="Context")
+ApiContextT = TypeVar("ApiContextT", bound="Context")
 
 JSON = Union[
     None,
@@ -48,9 +49,10 @@ JSON = Union[
     Dict[str, "JSON"],
 ]
 
-ServerConfig = Mapping[str, Any]
+ServerConfigObject = Mapping[str, Any]
+ServerConfig = ServerConfigObject
 
-_builtin_type = type
+builtin_type = type
 
 
 class Api(Generic[ServerContextT]):
@@ -220,6 +222,7 @@ class Api(Generic[ServerContextT]):
                   summary: Optional[str] = None,
                   description: Optional[str] = None,
                   parameters: Optional[List[Dict[str, Any]]] = None,
+                  tags: Optional[str] = None,
                   **kwargs):
         """
         Decorator that adds OpenAPI 3.0 information to an
@@ -234,6 +237,7 @@ class Api(Generic[ServerContextT]):
             "summary": summary,
             "description": description,
             "parameters": parameters,
+            "tags": tags,
         }
         openapi = {k: v for k, v in openapi.items() if v is not None}
 
@@ -317,13 +321,22 @@ class Context(AsyncExecution, ABC):
         """The server's current configuration."""
 
     @abstractmethod
-    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
         """
         Get the API context for *api_name*.
         Can be used to access context objects of other APIs.
 
+        The keyword argument *cls* can be used to assert a specific
+        type if of context.
+
         :param api_name: The name of a registered API.
-        :return: The API context for *api_name*, or None if no such exists.
+        :param cls: Optional context class.
+            If given, must be a class derived from `ApiContext`.
+        :return: The API context object for *api_name*,
+            or None if no such exists.
         """
 
     @abstractmethod
@@ -391,9 +404,12 @@ class ApiContext(Context):
         """Return the server context's ``config`` property."""
         return self.server_ctx.config
 
-    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
         """Calls the server context's ``get_api_ctx()`` method."""
-        return self.server_ctx.get_api_ctx(api_name)
+        return self.server_ctx.get_api_ctx(api_name, cls=cls)
 
     def call_later(self,
                    delay: Union[int, float],
@@ -435,9 +451,18 @@ class ApiRequest:
         """
 
     @property
+    def base_url(self) -> str:
+        return self.url_for_path("")
+
+    @property
     @abstractmethod
     def url(self) -> str:
         """The full URL of the request."""
+
+    @property
+    @abstractmethod
+    def headers(self) -> Mapping[str, str]:
+        """The request headers."""
 
     @property
     @abstractmethod
@@ -448,6 +473,11 @@ class ApiRequest:
     @abstractmethod
     def json(self) -> JSON:
         """The request body as JSON value."""
+
+    @property
+    @abstractmethod
+    def query(self) -> Mapping[str, Sequence[str]]:
+        """The request query arguments."""
 
     # noinspection PyShadowingBuiltins
     def get_query_arg(self,
@@ -466,7 +496,7 @@ class ApiRequest:
         :return: The value of the query argument.
         """
         if type is None and default is not None:
-            type = _builtin_type(default)
+            type = builtin_type(default)
             type = type if callable(type) else None
         values = self.get_query_args(name, type=type)
         return values[0] if values else default
@@ -491,27 +521,16 @@ class ApiResponse(ABC):
         """Set the HTTP status code and optionally the reason."""
 
     @abstractmethod
+    def set_header(self, name: str, value: str):
+        """Set the HTTP header *name* to given *value*."""
+
+    @abstractmethod
     def write(self, data: Union[str, bytes, JSON]):
         """Write data."""
 
     @abstractmethod
     def finish(self, data: Union[str, bytes, JSON] = None):
         """Finish the response (and submit it)."""
-
-    @abstractmethod
-    def error(self,
-              status_code: int,
-              message: Optional[str] = None,
-              reason: Optional[str] = None) -> Exception:
-        """
-        Get an exception that can be raised.
-        If raised, a standard error response will be generated.
-
-        :param status_code: The HTTP status code.
-        :param message: Optional message.
-        :param reason: Optional reason.
-        :return: An exception that may be raised.
-        """
 
 
 class ApiHandler(Generic[ServerContextT], ABC):
@@ -553,14 +572,22 @@ class ApiHandler(Generic[ServerContextT], ABC):
         """The response that provides the handler's output."""
         return self._response
 
-    def _unimplemented_method(self, *args: str, **kwargs: str) -> None:
-        raise self.response.error(405)
+    # HTTP methods
 
-    get = _unimplemented_method
-    post = _unimplemented_method
-    put = _unimplemented_method
-    delete = _unimplemented_method
-    options = _unimplemented_method
+    def get(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method GET not allowed")
+
+    def post(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method POST not allowed")
+
+    def put(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method PUT not allowed")
+
+    def delete(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method DELETE not allowed")
+
+    def options(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method OPTIONS not allowed")
 
 
 class ApiRoute:
@@ -636,6 +663,17 @@ class ApiError(Exception):
                  message: Optional[str] = None):
         super().__init__(status_code, message)
 
+    BadRequest: Type["_DerivedApiError"]
+    Unauthorized: Type["_DerivedApiError"]
+    Forbidden: Type["_DerivedApiError"]
+    NotFound: Type["_DerivedApiError"]
+    MethodNotAllowed: Type["_DerivedApiError"]
+    Conflict: Type["_DerivedApiError"]
+    Gone: Type["_DerivedApiError"]
+    InternalServerError: Type["_DerivedApiError"]
+    NotImplemented: Type["_DerivedApiError"]
+    InvalidServerConfig: Type["_DerivedApiError"]
+
     @property
     def status_code(self) -> int:
         return self.args[0]
@@ -644,34 +682,75 @@ class ApiError(Exception):
     def message(self) -> Optional[str]:
         return self.args[1]
 
-    @classmethod
-    def bad_request(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(400, message=message)
+    def __str__(self):
+        text = f'HTTP status {self.status_code}'
+        if self.message:
+            text += f': {self.message}'
+        return text
 
-    @classmethod
-    def unauthorized(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(401, message=message)
 
-    @classmethod
-    def forbidden(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(403, message=message)
+class _DerivedApiError(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(500, message=message)
 
-    @classmethod
-    def not_found(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(404, message=message)
 
-    @classmethod
-    def conflict(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(409, message=message)
+class _BadRequest(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(400, message=message)
 
-    @classmethod
-    def gone(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(410, message=message)
 
-    @classmethod
-    def invalid_config(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(500, message=message)
+class _Unauthorized(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(401, message=message)
 
-    @classmethod
-    def not_implemented(cls, message: Optional[str] = None) -> "ApiError":
-        return ApiError(501, message=message)
+
+class _Forbidden(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(403, message=message)
+
+
+class _NotFound(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(404, message=message)
+
+
+class _MethodNotAllowed(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(405, message=message)
+
+
+class _Conflict(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(409, message=message)
+
+
+class _Gone(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(410, message=message)
+
+
+class _InternalServerError(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(500, message=message)
+
+
+class _NotImplemented(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(501, message=message)
+
+
+class _InvalidServerConfig(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(580, message=message)
+
+
+ApiError.BadRequest = _BadRequest
+ApiError.Unauthorized = _Unauthorized
+ApiError.Forbidden = _Forbidden
+ApiError.NotFound = _NotFound
+ApiError.MethodNotAllowed = _MethodNotAllowed
+ApiError.Conflict = _Conflict
+ApiError.Gone = _Gone
+ApiError.InternalServerError = _InternalServerError
+ApiError.NotImplemented = _NotImplemented
+ApiError.InvalidServerConfig = _InvalidServerConfig

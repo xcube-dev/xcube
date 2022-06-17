@@ -19,5 +19,30 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# noinspection PyUnresolvedReferences
-from .routes import api
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
+from xcube.webapi.config import BooleanSchema
+from xcube.webapi.config import UrlSchema
+
+AUTHENTICATION_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Domain=UrlSchema,
+        Audience=UrlSchema,
+        Algorithms=JsonArraySchema(
+            items=JsonStringSchema(const=["RS256"]),
+        ),
+        IsRequired=BooleanSchema,
+    ),
+    required=[
+        "Domain",
+        "Audience"
+    ],
+    additional_properties=False
+)
+
+CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Authentication=AUTHENTICATION_SCHEMA
+    )
+)

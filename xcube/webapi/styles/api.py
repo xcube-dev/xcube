@@ -19,5 +19,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# noinspection PyUnresolvedReferences
-from .routes import api
+from xcube.server.api import Api
+
+api = Api(
+    'styles',
+    description='xcube Styles API'
+)

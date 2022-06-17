@@ -30,6 +30,8 @@ from typing import Any, Dict, Optional, Iterable, Tuple, List
 
 import yaml
 
+from xcube.constants import LOG
+
 PRIMITIVE_TYPES = (int, float, str, type(None))
 
 NameAnyDict = Dict[str, Any]
@@ -166,6 +168,7 @@ def load_configs(*config_paths: str) -> Dict[str, Any]:
 def load_json_or_yaml_config(config_path: str) -> Dict[str, Any]:
     try:
         config_dict = _load_json_or_yaml_config(config_path)
+        LOG.info(f'Configuration loaded: {config_path}')
     except yaml.YAMLError as e:
         raise ValueError(
             f'YAML in {config_path!r} is invalid: {e}'

@@ -220,10 +220,12 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     """
     server_api_names = [
         'meta',
+        '_auth',
+        'places',
+        'styles',
         'datasets',
-        # 'tiles',
-        # 'wmts',
-        # 'stac',
+        'tiles',
+        'timeseries',
     ]
     for api_name in server_api_names:
         ext_registry.add_extension(

@@ -29,7 +29,6 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import Context
 from xcube.server.api import ApiError
 from xcube.server.server import ServerContext
-from .mocks import MockApiError
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
 from .mocks import MockFramework
@@ -246,25 +245,30 @@ class ApiHandlerTest(unittest.TestCase):
     def test_default_methods(self):
         handler = self.handler
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.get()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method GET not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.post()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method POST not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.put()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method PUT not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.delete()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method DELETE not allowed',
+                         f'{cm.exception}')
 
-        with self.assertRaises(MockApiError) as cm:
+        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.options()
-        self.assertEqual(405, cm.exception.args[0])
+        self.assertEqual('HTTP status 405: method OPTIONS not allowed',
+                         f'{cm.exception}')
 
 
 class ApiRequestTest(unittest.TestCase):
@@ -305,42 +309,50 @@ class ApiErrorTest(unittest.TestCase):
         self.assertEqual(428, error.status_code)
         self.assertEqual('No idea', error.message)
 
+        self.assertIsNot(ApiError.BadRequest, ApiError.Unauthorized)
+        self.assertIsNot(ApiError.BadRequest, ApiError.Forbidden)
+
     def test_bad_request(self):
-        error = ApiError.bad_request()
+        error = ApiError.BadRequest()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(400, error.status_code)
 
     def test_unauthorized(self):
-        error = ApiError.unauthorized()
+        error = ApiError.Unauthorized()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(401, error.status_code)
 
     def test_forbidden(self):
-        error = ApiError.forbidden()
+        error = ApiError.Forbidden()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(403, error.status_code)
 
     def test_not_found(self):
-        error = ApiError.not_found()
+        error = ApiError.NotFound()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(404, error.status_code)
 
+    def test_method_not_allowed(self):
+        error = ApiError.MethodNotAllowed()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(405, error.status_code)
+
     def test_conflict(self):
-        error = ApiError.conflict()
+        error = ApiError.Conflict()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(409, error.status_code)
 
     def test_gone(self):
-        error = ApiError.gone()
+        error = ApiError.Gone()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(410, error.status_code)
 
-    def test_invalid_config(self):
-        error = ApiError.invalid_config()
-        self.assertIsInstance(error, ApiError)
-        self.assertEqual(500, error.status_code)
-
     def test_not_implemented(self):
-        error = ApiError.not_implemented()
+        error = ApiError.NotImplemented()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(501, error.status_code)
+
+    def test_invalid_server_config(self):
+        error = ApiError.InvalidServerConfig()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(580, error.status_code)

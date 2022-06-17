@@ -19,5 +19,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# noinspection PyUnresolvedReferences
-from .routes import api
+from xcube.server.api import ApiContext
+from xcube.server.api import Context
+from ..datasets.context import DatasetsContext
+
+
+class TilesContext(ApiContext):
+
+    def __init__(self, server_ctx: Context):
+        super().__init__(server_ctx)
+        self._datasets_ctx = server_ctx.get_api_ctx("datasets")
+
+    @property
+    def datasets_ctx(self) -> DatasetsContext:
+        return self._datasets_ctx

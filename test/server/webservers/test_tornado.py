@@ -1,26 +1,27 @@
-#  The MIT License (MIT)
-#  Copyright (c) 2022 by the xcube development team and contributors
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube team and contributors
 #
-#  Permission is hereby granted, free of charge, to any person obtaining a
-#  copy of this software and associated documentation files (the "Software"),
-#  to deal in the Software without restriction, including without limitation
-#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-#  and/or sell copies of the Software, and to permit persons to whom the
-#  Software is furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-#  The above copyright notice and this permission notice shall be included in
-#  all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-#  DEALINGS IN THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Sequence, Optional, Callable, Any, Awaitable, Union, Tuple
+from typing import Sequence, Optional, Callable, Any, Awaitable, Union, Tuple, \
+    Type
 
 import pytest
 import tornado.httputil
@@ -28,10 +29,13 @@ import tornado.web
 from tornado import concurrent
 
 from test.server.mocks import mock_server
-from xcube.server.api import ApiError, ServerConfig, Api
+from xcube.server.api import Api
+from xcube.server.api import ApiContextT
+from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRoute
 from xcube.server.api import Context
+from xcube.server.api import ServerConfig
 from xcube.server.asyncexec import ReturnT
 from xcube.server.webservers.tornado import SERVER_CTX_ATTR_NAME
 from xcube.server.webservers.tornado import TornadoApiRequest
@@ -308,7 +312,10 @@ class MockContext(Context):
     def config(self) -> ServerConfig:
         return self.config
 
-    def get_api_ctx(self, api_name: str) -> Optional["Context"]:
+    def get_api_ctx(self,
+                    api_name: str,
+                    cls: Optional[Type[ApiContextT]] = None) \
+            -> Optional[ApiContextT]:
         return self._api if api_name == 'test' else None
 
     def on_update(self, prev_context: Optional["Context"]):

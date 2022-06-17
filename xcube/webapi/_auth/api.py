@@ -19,5 +19,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# noinspection PyUnresolvedReferences
-from .routes import api
+from xcube.server.api import Api
+from .config import CONFIG_SCHEMA
+from .context import AuthContext
+
+api = Api(
+    'auth',
+    description='xcube Auth API',
+    config_schema=CONFIG_SCHEMA,
+    create_ctx=AuthContext,
+)

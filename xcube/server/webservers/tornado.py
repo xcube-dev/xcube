@@ -18,14 +18,14 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
-
+import asyncio
 import concurrent.futures
 import functools
 import logging
 import traceback
 import urllib.parse
 from typing import Any, Optional, Sequence, Union, Callable, Dict, Type, \
-    Awaitable
+    Awaitable, Mapping, List
 
 import tornado.escape
 import tornado.httputil
@@ -234,44 +234,30 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         })
 
     async def get(self, *args, **kwargs):
-        try:
-            return self._api_handler.get(*args, **kwargs)
-        except ApiError as e:
-            raise tornado.web.HTTPError(e.status_code,
-                                        log_message=e.message) from e
+        await self._call_method('get', *args, **kwargs)
 
     async def post(self, *args, **kwargs):
-        try:
-            return self._api_handler.post(*args, **kwargs)
-        except ApiError as e:
-            raise tornado.web.HTTPError(e.status_code,
-                                        log_message=e.message) from e
+        await self._call_method('post', *args, **kwargs)
 
     async def put(self, *args, **kwargs):
-        try:
-            return self._api_handler.put(*args, **kwargs)
-        except ApiError as e:
-            raise tornado.web.HTTPError(e.status_code,
-                                        log_message=e.message) from e
+        await self._call_method('put', *args, **kwargs)
 
     async def delete(self, *args, **kwargs):
-        try:
-            return self._api_handler.delete(*args, **kwargs)
-        except ApiError as e:
-            raise tornado.web.HTTPError(e.status_code,
-                                        log_message=e.message) from e
+        await self._call_method('delete', *args, **kwargs)
 
     async def options(self, *args, **kwargs):
+        await self._call_method('options', *args, **kwargs)
+
+    async def _call_method(self, method_name: str, *args, **kwargs):
+        method = getattr(self._api_handler, method_name)
         try:
-            return self._api_handler.options(*args, **kwargs)
+            if asyncio.iscoroutinefunction(method):
+                await method(*args, **kwargs)
+            else:
+                method(*args, **kwargs)
         except ApiError as e:
             raise tornado.web.HTTPError(e.status_code,
                                         log_message=e.message) from e
-
-    # # noinspection PyUnusedLocal
-    # def options(self, *args, **kwargs):
-    #     self.set_status(204)
-    #     self.finish()
 
 
 class TornadoApiRequest(ApiRequest):
@@ -286,14 +272,14 @@ class TornadoApiRequest(ApiRequest):
         # print("query:", self._request.query)
 
     @functools.cached_property
-    def query_args(self) -> Dict[str, Sequence[str]]:
+    def query(self) -> Mapping[str, Sequence[str]]:
         return urllib.parse.parse_qs(self._request.query)
 
     # noinspection PyShadowingBuiltins
     def get_query_args(self,
                        name: str,
                        type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
-        query_args = self.query_args
+        query_args = self.query
         if not query_args or name not in query_args:
             return []
         values = query_args[name]
@@ -313,14 +299,20 @@ class TornadoApiRequest(ApiRequest):
                      query: Optional[str] = None) -> str:
         protocol = self._request.protocol
         host = self._request.host
-        uri = path if path.startswith('/') else '/' + path
+        uri = ""
+        if path:
+            uri = path if path.startswith("/") else "/" + path
         if query:
-            uri += '?' + query
+            uri += "?" + query
         return f"{protocol}://{host}{uri}"
 
     @property
     def url(self) -> str:
         return self._request.full_url()
+
+    @property
+    def headers(self) -> Mapping[str, str]:
+        return self._request.headers
 
     @property
     def body(self) -> bytes:
@@ -335,6 +327,9 @@ class TornadoApiResponse(ApiResponse):
     def __init__(self, handler: TornadoRequestHandler):
         self._handler = handler
 
+    def set_header(self, name: str, value: str):
+        self._handler.set_header(name, value)
+
     def set_status(self, status_code: int, reason: Optional[str] = None):
         self._handler.set_status(status_code, reason=reason)
 
@@ -342,14 +337,5 @@ class TornadoApiResponse(ApiResponse):
         self._handler.write(data)
 
     def finish(self, data: Union[str, bytes, JSON] = None):
-        self._handler.finish(data)
-
-    def error(self,
-              status_code: int,
-              message: Optional[str] = None,
-              reason: Optional[str] = None) -> Exception:
-        return tornado.web.HTTPError(status_code,
-                                     log_message=message,
-                                     reason=reason)
-
+        return self._handler.finish(data)
 
