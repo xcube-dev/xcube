@@ -150,6 +150,7 @@ class ServiceContext:
                 if self._data_store_pool:
                     self._data_store_pool.remove_all_store_configs()
                 self._dataset_configs = None
+                LOG.warning(f'All resource caches cleared.')
         self._config = config
 
     @property
