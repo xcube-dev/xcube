@@ -16,6 +16,9 @@
   supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
   including the protocols "s3" and "file". It also allows patching
   xcube multi-level datasets (`*.levels` format).
+  
+* In configuration for `xcube server`, datasets defined in datastores may now
+  have user-set identifiers, in case their path unambiguously defines a dataset
 
 ### Fixes
 
