@@ -70,9 +70,23 @@ class ServiceContextTest(unittest.TestCase):
         self.assertIsNotNone(dataset_configs_from_stores)
         self.assertEqual(3, len(dataset_configs_from_stores))
         ids = [config['Identifier'] for config in dataset_configs_from_stores]
+        self.assertIn('Cube 1', ids)
+        self.assertIn('Cube 5', ids)
+        self.assertIn('test~cube-1-250-250.levels', ids)
+
+    def test_get_dataset_configs_with_duplicate_ids_from_stores(self):
+        ctx = new_test_service_context(
+            config_file_name='config-datastores-double-ids.yml'
+        )
+
+        dataset_configs_from_stores = ctx.get_dataset_configs_from_stores(
+            ctx.get_data_store_pool()
+        )
+        self.assertIsNotNone(dataset_configs_from_stores)
+        self.assertEqual(2, len(dataset_configs_from_stores))
+        ids = [config['Identifier'] for config in dataset_configs_from_stores]
         self.assertIn('test~cube-1-250-250.zarr', ids)
         self.assertIn('test~cube-5-100-200.zarr', ids)
-        self.assertIn('test~cube-1-250-250.levels', ids)
 
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()

@@ -455,6 +455,14 @@ class ServiceContext:
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
                     )
+                    if dataset_config.get('Identifier') is not None:
+                        if dataset_config['Path'] == store_dataset_id:
+                            # we will use the preconfigured identifier
+                            all_dataset_configs.append(dataset_config)
+                            continue
+                        LOG.info('Pre-configured identifier is ignored as '
+                                 'the configured path does not unambiguously '
+                                 'denote a dataset')
                     dataset_config['Path'] = store_dataset_id
                     dataset_config['Identifier'] = \
                         f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
