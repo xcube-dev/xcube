@@ -25,6 +25,22 @@ class NewDataDescriptorTest(unittest.TestCase):
                                       DatasetDescriptor,
                                       'dataset')
 
+    def test_new_dataset_descriptor_with_bbox_from_metadata(self):
+        cube = new_cube(
+            variables=dict(a=4.1, b=7.4),
+            x_name='you_did',
+            y_name='not_expect_this'
+        )
+        cube.attrs.update(geospatial_lon_min=50,
+                          geospatial_lon_max=60,
+                          geospatial_lat_max=40,
+                          geospatial_lat_min=30)
+        cube.you_did.attrs.update(standard_name='you_did', long_name='you_did')
+        cube.not_expect_this.attrs.update(standard_name='not_expect_this',
+                                          long_name='not_expect_this')
+        descriptor = new_data_descriptor('cube', cube)
+        self.assertEqual((50, 30, 60, 40), descriptor.bbox)
+
     def test_new_ml_dataset_descriptor(self):
         cube = new_cube(variables=dict(a=4.1, b=7.4))
         ml_cube = BaseMultiLevelDataset(cube)
