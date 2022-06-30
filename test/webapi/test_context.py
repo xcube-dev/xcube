@@ -7,6 +7,7 @@ from test.webapi.helpers import new_test_service_context
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.webapi.context import normalize_prefix
 from xcube.webapi.errors import ServiceResourceNotFoundError
+from xcube.webapi.errors import ServiceConfigError
 
 
 class ServiceContextTest(unittest.TestCase):
@@ -79,14 +80,11 @@ class ServiceContextTest(unittest.TestCase):
             config_file_name='config-datastores-double-ids.yml'
         )
 
-        dataset_configs_from_stores = ctx.get_dataset_configs_from_stores(
-            ctx.get_data_store_pool()
-        )
-        self.assertIsNotNone(dataset_configs_from_stores)
-        self.assertEqual(2, len(dataset_configs_from_stores))
-        ids = [config['Identifier'] for config in dataset_configs_from_stores]
-        self.assertIn('test~cube-1-250-250.zarr', ids)
-        self.assertIn('test~cube-5-100-200.zarr', ids)
+        with self.assertRaises(ServiceConfigError) as sce:
+            ctx.get_dataset_configs_from_stores(ctx.get_data_store_pool())
+        self.assertEqual(sce.exception.reason,
+                         'User-defined identifiers can only be assigned to '
+                         'datasets with non-wildcard paths.')
 
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()
