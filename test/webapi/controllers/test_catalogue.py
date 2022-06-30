@@ -38,7 +38,8 @@ def new_ctx():
                 Datasets=[
                     # "base" will only appear for unauthorized clients
                     dict(
-                        Identifier='base',
+                        Identifier='local_base_id',
+                        Title='A local base dataset',
                         Path='cube-1-250-250.zarr',
                         TimeSeriesDataset='local~cube-5-100-200.zarr',
                         AccessControl=dict(
@@ -63,7 +64,7 @@ def new_ctx():
                 ),
                 Datasets=[
                     dict(
-                        Identifier='base',
+                        Title='A remote base dataset',
                         Path='OLCI-SNS-RAW-CUBE-2.zarr'
                     ),
                 ]
@@ -76,7 +77,7 @@ def new_ctx():
                 FileSystem='memory',
                 Path='examples/serve/demo/resample_in_time.py',
                 Function='compute_dataset',
-                InputDatasets=['local~cube-1-250-250.zarr'],
+                InputDatasets=['local_base_id'],
                 InputParameters=dict(
                     period='1W',
                     incl_stdev=True
@@ -110,7 +111,7 @@ class CatalogueControllerTest(unittest.TestCase):
         datasets_dict = {ds['id']: ds for ds in datasets}
         self.assertEqual(
             {
-                'local~cube-1-250-250.zarr',
+                'local_base_id',
                 'local_base_1w',
                 # Not selected, because they require authorisation
                 # 'remote~OLCI-SNS-RAW-CUBE-2.zarr',
@@ -118,8 +119,18 @@ class CatalogueControllerTest(unittest.TestCase):
             },
             set(datasets_dict)
         )
-
-        dataset = get_dataset(ctx, 'local~cube-1-250-250.zarr')
+        dataset_titles_dict = {ds['title']: ds for ds in datasets}
+        self.assertEqual(
+            {
+                'local_base_1w',
+                'A local base dataset',
+                # Not selected, because they require authorisation
+                # 'remote_base_1w',
+                # 'A remote base dataset',
+            },
+            set(dataset_titles_dict)
+        )
+        dataset = get_dataset(ctx, 'local_base_id')
         self.assertIn('variables', dataset)
         var_dict = {v['name']: v for v in dataset['variables']}
         self.assertEqual({'c2rcc_flags',
@@ -170,15 +181,25 @@ class CatalogueControllerTest(unittest.TestCase):
         }
         response = get_datasets(ctx, granted_scopes=granted_scopes)
         datasets = self._assert_datasets(response)
-        datasets_dict = {ds['id']: ds for ds in datasets}
+        dataset_ids_dict = {ds['id']: ds for ds in datasets}
         self.assertEqual(
             {
                 'local_base_1w',
-                'local~cube-1-250-250.zarr',
+                'local_base_id',
                 'remote_base_1w',
                 'remote~OLCI-SNS-RAW-CUBE-2.zarr',
             },
-            set(datasets_dict)
+            set(dataset_ids_dict)
+        )
+        dataset_titles_dict = {ds['title']: ds for ds in datasets}
+        self.assertEqual(
+            {
+                'local_base_1w',
+                'A local base dataset',
+                'remote_base_1w',
+                'A remote base dataset',
+            },
+            set(dataset_titles_dict)
         )
 
     def test_authorized_access_with_specific_scopes(self):
@@ -189,16 +210,27 @@ class CatalogueControllerTest(unittest.TestCase):
         }
         response = get_datasets(ctx, granted_scopes=granted_scopes)
         datasets = self._assert_datasets(response)
-        datasets_dict = {ds['id']: ds for ds in datasets}
+        dataset_ids_dict = {ds['id']: ds for ds in datasets}
         self.assertEqual(
             {
                 # Not selected, because they are substitutes
                 # 'local_base_1w',
-                # 'local~cube-1-250-250.zarr',
+                # 'local_base_id',
                 'remote_base_1w',
                 'remote~OLCI-SNS-RAW-CUBE-2.zarr',
             },
-            set(datasets_dict)
+            set(dataset_ids_dict)
+        )
+        dataset_titles_dict = {ds['title']: ds for ds in datasets}
+        self.assertEqual(
+            {
+                # Not selected, because they are substitutes
+                # 'local_base_1w',
+                # 'A local base dataset',
+                'remote_base_1w',
+                'A remote base dataset',
+            },
+            set(dataset_titles_dict)
         )
 
     def test_datasets(self):
