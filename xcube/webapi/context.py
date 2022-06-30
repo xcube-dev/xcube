@@ -463,7 +463,7 @@ class ServiceContext:
                             continue
                         raise ServiceConfigError(
                             'User-defined identifiers can only be assigned to '
-                            'datasets with unambiguous paths.')
+                            'datasets with non-wildcard paths.')
                     dataset_config['Path'] = store_dataset_id
                     dataset_config['Identifier'] = \
                         f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \

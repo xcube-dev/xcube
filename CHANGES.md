@@ -19,7 +19,7 @@
   
 * In the configuration for `xcube server`, datasets defined in `DataStores` 
   may now have user-defined identifiers. In case the path does not unambiguously 
-  define a dataset (because, e.g., it contains wildcards, providing a 
+  define a dataset (because it contains wildcards), providing a 
   user-defined identifier will raise an error. 
 
 ### Fixes
