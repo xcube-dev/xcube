@@ -461,9 +461,9 @@ class ServiceContext:
                             # we will use the preconfigured identifier
                             all_dataset_configs.append(dataset_config)
                             continue
-                        LOG.info('Pre-configured identifier is ignored as '
-                                 'the configured path does not unambiguously '
-                                 'denote a dataset')
+                        raise ServiceConfigError(
+                            'User-defined identifiers can only be assigned to '
+                            'datasets with unambiguous paths.')
                     dataset_config['Path'] = store_dataset_id
                     dataset_config['Identifier'] = \
                         f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
