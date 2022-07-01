@@ -1,10 +1,6 @@
-#Authentication:
-#  Domain: kc.brockmann-consult.de/auth/realms/AVL
-#  Audience: avl-xc-api
-
 Authentication:
-  Domain: cyanoalert.eu.auth0.com
-  Audience: https://cyanoalert.eu/api/
+  Domain: xcube-dev.eu.auth0.com
+  Audience: https://xcube-dev/api/
 
 DatasetAttribution:
   - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
@@ -48,23 +44,23 @@ Datasets:
     Hidden: true
     Style: default
 
-#  # Will only appear for bearer tokens with "read:datasets" scope
-#  - Identifier: remote
-#    Title: Remote OLCI L2C cube for region SNS
-#    BoundingBox: [0.0, 50, 5.0, 52.5]
-#    FileSystem: s3
-#    Endpoint: "https://s3.eu-central-1.amazonaws.com"
-#    Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
-#    Region: "eu-central-1"
-#    Anonymous: true
-#    Style: default
-#    ChunkCacheSize: 250M
-#    PlaceGroups:
-#      - PlaceGroupRef: inside-cube
-#      - PlaceGroupRef: outside-cube
-#    AccessControl:
-#      RequiredScopes:
-#        - read:datasets
+  # Will only appear for bearer tokens with "read:datasets" scope
+  - Identifier: remote
+    Title: Remote OLCI L2C cube for region SNS
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: s3
+    Endpoint: "https://s3.eu-central-1.amazonaws.com"
+    Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
+    Region: "eu-central-1"
+    Anonymous: true
+    Style: default
+    ChunkCacheSize: 250M
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
+    AccessControl:
+      RequiredScopes:
+        - read:datasets
 
   # Will only appear for unauthorized clients
   - Identifier: local_1w
@@ -84,36 +80,24 @@ Datasets:
     AccessControl:
       IsSubstitute: True
 
-#  # Will only appear for bearer tokens with "read:datasets" scope
-#  - Identifier: remote_1w
-#    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
-#    BoundingBox: [0.0, 50, 5.0, 52.5]
-#    FileSystem: memory
-#    Path: "resample_in_time.py"
-#    Function: "compute_dataset"
-#    InputDatasets: ["remote"]
-#    InputParameters:
-#      period: "1W"
-#      incl_stdev: True
-#    Style: default
-#    PlaceGroups:
-#      - PlaceGroupRef: inside-cube
-#      - PlaceGroupRef: outside-cube
-#    AccessControl:
-#      RequiredScopes:
-#        - read:datasets
-
-  - Identifier: cog_local
-    Title: "COG example"
-    FileSystem: file
-    Path: sample-cog.tif
-    Style: tif_style
-
-  - Identifier: geotiff_local
-    Title: "GeoTIFF example"
-    FileSystem: file
-    Path: sample-geotiff.tif
-    Style: tif_style
+  # Will only appear for bearer tokens with "read:datasets" scope
+  - Identifier: remote_1w
+    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: memory
+    Path: "resample_in_time.py"
+    Function: "compute_dataset"
+    InputDatasets: ["remote"]
+    InputParameters:
+      period: "1W"
+      incl_stdev: True
+    Style: default
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
+    AccessControl:
+      RequiredScopes:
+        - read:datasets
 
   - Identifier: cog_local
     Title: "COG example"
