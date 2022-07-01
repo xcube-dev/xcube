@@ -30,11 +30,22 @@
   supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
   including the protocols "s3" and "file". It also allows patching
   xcube multi-level datasets (`*.levels` format).
+  
+* In the configuration for `xcube server`, datasets defined in `DataStores` 
+  may now have user-defined identifiers. In case the path does not unambiguously 
+  define a dataset (because it contains wildcards), providing a 
+  user-defined identifier will raise an error. 
 
 ### Fixes
 
 * Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
   Demo cubes now all have consolidated metadata.
+* When writing multi-level datasets with file data stores, i.e.,
+  ```python
+  store.write_data(dataset, data_id="test.levels", use_saved_levels=True)
+  ``` 
+  and where `dataset` has different spatial resolutions in x and y, 
+  an exception was raised. This is no longer the case. 
 
 ## Changes in 0.11.2
 

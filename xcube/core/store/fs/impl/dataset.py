@@ -22,16 +22,20 @@
 from abc import ABC
 from typing import Tuple, Optional
 
+import fsspec
+import rasterio
+import rioxarray
+import s3fs
 import xarray as xr
 import zarr
-import rioxarray
 
 from xcube.core.chunkstore import LoggingStore
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
@@ -359,29 +363,60 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
             file_path = protocol + "://" + data_id
         tile_size = open_params.get("tile_size", (512, 512))
         overview_level = open_params.get("overview_level", None)
-        return self.open_dataset(file_path, tile_size,
+        return self.open_dataset(fs, file_path, tile_size,
                                  overview_level=overview_level)
 
     @classmethod
+    def create_env_session(cls, fs):
+        if isinstance(fs, s3fs.S3FileSystem):
+            return rasterio.env.Env(aws_secret_access_key=fs.token,
+                                    aws_access_key_id=fs.key,
+                                    aws_session_token=fs.token,
+                                    region_name=fs.client_kwargs.get(
+                                        'region_name',
+                                        'eu-central-1'
+                                    ),
+                                    aws_no_sign_request=bool(fs.anon)
+                                    )
+        else:
+            return rasterio.env.NullContextManager()
+
+    @classmethod
+    def open_dataset_with_rioxarray(cls, file_path, overview_level,
+                                    tile_size) -> rioxarray.raster_array:
+        return rioxarray.open_rasterio(
+            file_path,
+            overview_level=overview_level,
+            chunks=dict(zip(('x', 'y'), tile_size))
+        )
+
+    @classmethod
     def open_dataset(cls,
-                     file_spec: str,
+                     fs,
+                     file_path: str,
                      tile_size: Tuple[int, int],
                      overview_level: Optional[int] = None) -> xr.Dataset:
         """
         A method to open the cog/geotiff dataset using rioxarray,
         returns xarray.Dataset
-
+        @param fs: abstract file system
+        @type fs: fsspec.AbstractFileSystem object.
+        @param file_path: path of the file
+        @type file_path: str
         @param overview_level: the overview level of GeoTIFF, 0 is the first
                overview and None means full resolution.
+        @type overview_level: int
         @param tile_size: tile size as tuple.
-        @type file_spec: fsspec.AbstractFileSystem object.
+        @type tile_size: tuple
         """
 
-        array: xr.DataArray = rioxarray.open_rasterio(
-            file_spec,
-            overview_level=overview_level,
-            chunks=dict(zip(('x', 'y'), tile_size))
-        )
+        if isinstance(fs, fsspec.AbstractFileSystem):
+            with cls.create_env_session(fs):
+                array = cls.open_dataset_with_rioxarray(file_path,
+                                                        overview_level,
+                                                        tile_size)
+        else:
+            assert_true(fs is None, message="invalid type for fs")
         arrays = {}
         if array.ndim == 3:
             for i in range(array.shape[0]):
@@ -401,7 +436,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
         else:
             raise RuntimeError('number of dimensions must be 2 or 3')
 
-        dataset = xr.Dataset(arrays, attrs=dict(source=file_spec))
+        dataset = xr.Dataset(arrays, attrs=dict(source=file_path))
         # For CRS, rioxarray uses variable "spatial_ref" by default
         if 'spatial_ref' in array.coords:
             for data_var in dataset.data_vars.values():
