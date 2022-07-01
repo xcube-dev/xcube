@@ -79,6 +79,9 @@ def get_datasets(ctx: ServiceContext,
                                        dataset_config,
                                        granted_scopes,
                                        check_scopes):
+            LOG.info(
+                f'Rejected dataset {ds_id!r} due to missing permission'
+            )
             continue
 
         dataset_dict = dict(id=ds_id)
@@ -132,6 +135,9 @@ def get_datasets(ctx: ServiceContext,
         )
         # noinspection PyTypeChecker
         dataset_dicts = list(filter(is_point_in_dataset_bbox, dataset_dicts))
+
+    if not dataset_dicts:
+        LOG.warn(f'No datasets provided for current user.')
 
     return dict(datasets=dataset_dicts)
 
