@@ -50,8 +50,9 @@ Patch file example
 ==================
 
 Patch files use the Zarr Consolidated Metadata Format, v1.
-For example, the following patch file (YAML) will change the
-value of the attribute ``long_name`` of variable ``conc_chl``:
+For example, the following patch file (YAML) will delete the 
+global attribute ``TileSize`` and change the value of the 
+attribute ``long_name`` of variable ``conc_chl``:
 
 .. code-block:: yaml
 
