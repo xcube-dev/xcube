@@ -53,7 +53,7 @@ class AuthConfig:
 
     @property
     def issuer(self) -> str:
-        return f"https://{self.domain}"
+        return f"https://{self.domain}/"
 
     @property
     def well_known_oid_config(self) -> str:
@@ -204,16 +204,15 @@ class AuthMixin:
         try:
             unverified_header = jwt.get_unverified_header(access_token)
         except jwt.InvalidTokenError:
+            unverified_header = None
+        if not unverified_header \
+                or not unverified_header.get("kid") \
+                or not unverified_header.get("alg"):
+            # "alg" should be "RS256" or "HS256" or others
             raise ServiceAuthError(
                 "Invalid header",
                 log_message="Invalid header."
-                            " An RS256 signed JWT Access Token is expected."
-            )
-        if unverified_header["alg"] != "RS256":  # e.g. "HS256"
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Invalid header."
-                            " An RS256 signed JWT Access Token is expected."
+                            " An signed JWT Access Token is expected."
             )
 
         # The key identifier of the access token which we must validate.
