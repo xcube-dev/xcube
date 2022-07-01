@@ -61,6 +61,8 @@ def get_datasets(ctx: ServiceContext,
     else:
         can_read_all_datasets = READ_ALL_DATASETS_SCOPE in granted_scopes
 
+    LOG.info(f'Collecting datasets for granted scopes {granted_scopes!r}')
+
     dataset_configs = list(ctx.get_dataset_configs())
 
     dataset_dicts = list()
