@@ -9,7 +9,7 @@ ENV XCUBE_CCI_VERSION=latest
 ENV XCUBE_CDS_VERSION=latest
 
 # Metadata
-LABEL maintainer="helge.dzierzon@brockmann-consult.de"
+LABEL maintainer="xcube-team@brockmann-consult.de"
 LABEL name=xcube
 LABEL conda_env=xcube
 
