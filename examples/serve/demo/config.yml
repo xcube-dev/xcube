@@ -1,5 +1,5 @@
 Authentication:
-  Domain: xcube-dev.eu.auth0.com
+  Authority: https://xcube-dev.eu.auth0.com
   Audience: https://xcube-dev/api/
 
 DatasetAttribution:

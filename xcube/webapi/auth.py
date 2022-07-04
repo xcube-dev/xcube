@@ -30,6 +30,7 @@ import jwt
 import requests
 from jwt.algorithms import RSAAlgorithm
 
+from xcube.constants import LOG
 from xcube.webapi.errors import ServiceAuthError, ServiceConfigError
 
 READ_ALL_DATASETS_SCOPE = 'read:dataset:*'
@@ -38,30 +39,32 @@ READ_ALL_VARIABLES_SCOPE = 'read:variable:*'
 
 class AuthConfig:
     def __init__(self,
-                 domain: str,
+                 authority: str,
                  audience: str,
                  algorithms: List[str],
                  is_required: bool = False):
-        self._domain = domain
+        self._authority = authority
         self._audience = audience
         self._algorithms = algorithms
         self._is_required = is_required
 
     @property
-    def domain(self) -> str:
-        return self._domain
+    def authority(self) -> str:
+        return self._authority
 
     @property
-    def issuer(self) -> str:
-        return f"https://{self.domain}/"
+    def _norm_authority(self) -> str:
+        return self.authority[:-1] \
+            if self.authority.endswith('/') \
+            else self.authority
 
     @property
     def well_known_oid_config(self) -> str:
-        return f"https://{self.domain}/.well-known/openid-configuration"
+        return f"{self._norm_authority}/.well-known/openid-configuration"
 
     @property
     def well_known_jwks(self) -> str:
-        return f"https://{self.domain}/.well-known/jwks.json"
+        return f"{self._norm_authority}/.well-known/jwks.json"
 
     @property
     def audience(self) -> str:
@@ -80,10 +83,17 @@ class AuthConfig:
         authentication = config.get('Authentication')
         if not authentication:
             return None
+        authority = authentication.get('Authority')
         domain = authentication.get('Domain')
-        if not domain:
+        if domain:
+            LOG.warning('Configuration parameter "Domain"'
+                        ' in section "Authentication"'
+                        ' has been deprecated. Use "Authority" instead.')
+            if not authority:
+                authority = f"https:/{domain}"
+        if not authority:
             raise ServiceConfigError(
-                'Missing key "Domain" in section "Authentication"'
+                'Missing key "Authority" in section "Authentication"'
             )
         audience = authentication.get('Audience')
         if not audience:
@@ -97,7 +107,7 @@ class AuthConfig:
                 ' "Authentication" must not be empty'
             )
         is_required = authentication.get('IsRequired', False)
-        return AuthConfig(domain,
+        return AuthConfig(authority,
                           audience,
                           algorithms,
                           is_required=is_required)
@@ -244,9 +254,9 @@ class AuthMixin:
             id_token = jwt.decode(
                 access_token,
                 RSAAlgorithm.from_jwk(rsa_key),
-                algorithms=auth_config.algorithms,
+                issuer=auth_config.authority,
                 audience=auth_config.audience,
-                issuer=auth_config.issuer
+                algorithms=auth_config.algorithms
             )
         except jwt.PyJWTError as e:
             msg = f"Failed to decode access token: {e}"

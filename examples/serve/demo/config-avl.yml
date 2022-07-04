@@ -1,5 +1,5 @@
 Authentication:
-  Domain: kc.brockmann-consult.de/auth/realms/AVL
+  Authority: https://kc.brockmann-consult.de/auth/realms/AVL
   Audience: avl-xc-api
 
 AccessControl:
