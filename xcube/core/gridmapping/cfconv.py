@@ -31,7 +31,7 @@ import zarr.convenience
 
 from xcube.core.schema import get_dataset_chunks
 from xcube.util.assertions import assert_instance
-
+from .base import CRS_WGS84
 
 class GridCoords:
     """
@@ -52,12 +52,14 @@ class GridMappingProxy:
     """
 
     def __init__(self,
-                 crs: pyproj.crs.CRS,
-                 name: Optional[str] = None):
-        self.crs: pyproj.crs.CRS = crs
-        self.name: Optional[str] = name
-        self.coords: Optional[xr.DataArray] = None
-        self.tile_size: Optional[Tuple[int, int]] = None
+                 crs: Optional[pyproj.crs.CRS] = None,
+                 name: Optional[str] = None,
+                 coords: Optional[GridCoords] = None,
+                 tile_size: Optional[Tuple[int, int]] = None):
+        self.crs = crs
+        self.name = name
+        self.coords = coords
+        self.tile_size = tile_size
 
 
 def get_dataset_grid_mapping_proxies(
@@ -137,29 +139,32 @@ def get_dataset_grid_mapping_proxies(
             continue
         standard_name = var.attrs.get('standard_name')
         for coords, x_name, y_name in coords_standard_names:
-            if standard_name == x_name:
+            if coords.x is None and standard_name == x_name:
                 coords.x = var
-            if standard_name == y_name:
+            if coords.y is None and standard_name == y_name:
                 coords.y = var
 
     # Find coordinate variables by common naming convention.
     #
     coords_var_names = (
         (latitude_longitude_coords,
-         {'lon', 'longitude'}, {'lat', 'latitude'}),
+         ('lon', 'longitude'),
+         ('lat', 'latitude')),
         (rotated_latitude_longitude_coords,
-         {'rlon', 'rlongitude'}, {'rlat', 'rlatitude'}),
+         ('rlon', 'rlongitude'),
+         ('rlat', 'rlatitude')),
         (projected_coords,
-         {'x', 'xc', 'transformed_x'}, {'y', 'yc', 'transformed_y'})
+         ('x', 'xc', 'transformed_x'),
+         ('y', 'yc', 'transformed_y'))
     )
     for var_name in potential_coord_vars:
         var = dataset[var_name]
         if var.ndim not in (1, 2):
             continue
         for coords, x_names, y_names in coords_var_names:
-            if var_name in x_names:
+            if coords.x is None and var_name in x_names:
                 coords.x = var
-            if var_name in y_names:
+            if coords.y is None and var_name in y_names:
                 coords.y = var
 
     # Assign found coordinates to grid mappings
@@ -175,7 +180,7 @@ def get_dataset_grid_mapping_proxies(
     _complement_grid_mapping_coords(latitude_longitude_coords,
                                     'latitude_longitude',
                                     missing_latitude_longitude_crs
-                                    or pyproj.crs.CRS(4326),
+                                    or CRS_WGS84,
                                     grid_mapping_proxies)
     _complement_grid_mapping_coords(rotated_latitude_longitude_coords,
                                     'rotated_latitude_longitude',
