@@ -276,16 +276,14 @@ class AuthMixinAuthConfigTest(unittest.TestCase):
         auth_mixin = AuthMixin()
         auth_mixin.service_context = ServiceContextMock(config=dict(
             Authentication=dict(
-                Domain='xcube-dev.eu.auth0.com',
+                Authority='https://xcube-dev.eu.auth0.com',
                 Audience='https://xcube-dev/api/'
             )))
         auth_config = auth_mixin.auth_config
-        self.assertEqual('xcube-dev.eu.auth0.com',
-                         auth_config.domain)
         self.assertEqual('https://xcube-dev/api/',
                          auth_config.audience)
         self.assertEqual('https://xcube-dev.eu.auth0.com',
-                         auth_config.issuer)
+                         auth_config.authority)
         self.assertEqual('https://xcube-dev.eu.auth0.com/'
                          '.well-known/openid-configuration',
                          auth_config.well_known_oid_config)
@@ -302,7 +300,7 @@ class AuthMixinAuthConfigTest(unittest.TestCase):
         auth_mixin = AuthMixin()
         auth_mixin.service_context = ServiceContextMock(config=dict(
             Authentication=dict(
-                Domain='xcube-dev.eu.auth0.com',
+                Authority='https://xcube-dev.eu.auth0.com',
             )))
 
         with self.assertRaises(ServiceConfigError) as cm:
@@ -321,7 +319,7 @@ class AuthMixinAuthConfigTest(unittest.TestCase):
             # noinspection PyUnusedLocal
             auth_config = auth_mixin.auth_config
         self.assertEqual('HTTP 500: Missing'
-                         ' key "Domain" in section "Authentication"',
+                         ' key "Authority" in section "Authentication"',
                          f'{cm.exception}')
 
         auth_mixin.service_context = ServiceContextMock(config=dict(
