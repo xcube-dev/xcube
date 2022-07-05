@@ -244,16 +244,23 @@ def _complement_grid_mapping_coords(
     if coords.x is not None or coords.y is not None:
         grid_mapping = next((grid_mapping
                              for grid_mapping in grid_mappings.values()
-                             if grid_mapping.name == grid_mapping_name), None)
-        if grid_mapping is None:
-            grid_mapping = grid_mappings.get(None)
-            if grid_mapping is None and missing_crs is not None:
-                grid_mapping = GridMappingProxy(crs=missing_crs,
-                                                name=grid_mapping_name)
-                grid_mappings[None] = grid_mapping
+                             if grid_mapping_name is None
+                             or grid_mapping_name == grid_mapping.name),
+                            None)
+        if grid_mapping is None and missing_crs is not None:
+            grid_mapping = GridMappingProxy(crs=missing_crs,
+                                            name=grid_mapping_name)
+            grid_mappings[None] = grid_mapping
 
-        if grid_mapping is not None and grid_mapping.coords is None:
-            grid_mapping.coords = coords
+        if grid_mapping is not None:
+            if grid_mapping.coords is None:
+                grid_mapping.coords = coords
+            # Edge case from GeoTIFF with CRS-84 with 1D
+            # coordinates named "x" and "y" as read by rioxarray
+            if grid_mapping.coords.x is None:
+                grid_mapping.coords.x = coords.x
+            if grid_mapping.coords.y is None:
+                grid_mapping.coords.y = coords.y
 
 
 def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
