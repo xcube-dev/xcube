@@ -2,6 +2,20 @@
 
 ### Enhancements
 
+* Allow xcube Server to work with any OIDC-compliant auth service such as
+  Auth0, Keycloak, or Google. Permissions of the form 
+  `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
+  passed by two id token claims: 
+  - `permissions` must be a JSON list of permissions;
+  - `scope` must be a space-separated character string of permissions.
+
+  It is now also possible to include id token claim values into the 
+  permissions as template variables. For example, if the currently
+  authenticated user is `demo_user`, the permission 
+  `"read:dataset:$username/*"` will effectively be
+  `"read:dataset:demo_user/*"` and only allow access to datasets
+  with resource identifiers having the prefix `demo_user/`.
+
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
