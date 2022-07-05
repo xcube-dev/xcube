@@ -56,10 +56,11 @@ class Authentication(_ConfigObject):
         return JsonObjectSchema(
             factory=Authentication,
             required=[
-                'Domain',
+                'Authority',
                 'Audience',
             ],
             properties=dict(
+                Authority=JsonStringSchema(),
                 Domain=JsonStringSchema(),
                 Audience=UrlSchema,
                 Algorithms=JsonArraySchema(items=IdentifierSchema),

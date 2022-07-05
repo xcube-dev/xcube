@@ -195,7 +195,9 @@ class ServiceContext:
         may still be optional. In this case the server will publish
         the resources configured to be free for everyone.
         """
-        return bool(self.authentication.get('Domain'))
+        return bool(self.authentication.get(
+            'Authority', self.authentication.get('Domain')
+        ))
 
     @property
     def must_authenticate(self) -> bool:
