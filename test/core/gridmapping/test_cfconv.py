@@ -98,6 +98,31 @@ class GetDatasetGridMappingsTest(unittest.TestCase):
         self.assertEqual('myx', grid_mapping.coords.x.name)
         self.assertEqual('myy', grid_mapping.coords.y.name)
 
+    def test_latitude_longitude_with_x_y(self):
+        # This is what we get when opening a CRS-84 GeoTIFF using rioxarray
+        dataset = xr.Dataset(
+            dict(
+                band_1=xr.DataArray(np.zeros((11, 11)), dims=["y", "x"]),
+                spatial_ref=xr.DataArray(0, attrs=CRS_CRS84.to_cf())
+            ),
+            coords=dict(
+                x=xr.DataArray(np.linspace(10, 20, 11), dims='x'),
+                y=xr.DataArray(np.linspace(50, 40, 11), dims='y'),
+            )
+        )
+        grid_mappings = get_dataset_grid_mapping_proxies(dataset)
+        self.assertEqual(1, len(grid_mappings))
+        self.assertIn('spatial_ref', grid_mappings)
+        grid_mapping = grid_mappings.get('spatial_ref')
+        self.assertIsInstance(grid_mapping, GridMappingProxy)
+        self.assertEqual(CRS_CRS84, grid_mapping.crs)
+        self.assertEqual('latitude_longitude', grid_mapping.name)
+        self.assertIsInstance(grid_mapping.coords, GridCoords)
+        self.assertIsInstance(grid_mapping.coords.x, xr.DataArray)
+        self.assertIsInstance(grid_mapping.coords.y, xr.DataArray)
+        self.assertEqual('x', grid_mapping.coords.x.name)
+        self.assertEqual('y', grid_mapping.coords.y.name)
+
     def test_rotated_pole_with_common_names(self):
         dataset = xr.Dataset(
             dict(

@@ -38,6 +38,10 @@
 
 ### Fixes
 
+* xcube Server did not find any grid mapping if a grid mapping variable
+  (e.g. spatial_ref or crs) encodes a geographic CRS
+  (CF grid mapping name "latitude_longitude") and the related geographical 
+  1-D coordinates were named "x" and "y". (#706) 
 * Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
   Demo cubes now all have consolidated metadata.
 * When writing multi-level datasets with file data stores, i.e.,
