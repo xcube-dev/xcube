@@ -1,6 +1,16 @@
-Authentication:
-  Domain: xcube-dev.eu.auth0.com
-  Audience: https://xcube-dev/api/
+## Example of OIDC configuration for auth0.
+## Please note the trailing slash in the "Authority" URL.
+#
+#Authentication:
+#  Authority: https://xcube-dev.eu.auth0.com/
+#  Audience: https://xcube-dev/api/
+#
+## Example of OIDC configuration for Keycloak.
+## Please note no trailing slash in the "Authority" URL.
+#
+#Authentication:
+#  Authority: https://kc.brockmann-consult.de/auth/realms/AVL
+#  Audience: avl-xc-api
 
 DatasetAttribution:
   - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"

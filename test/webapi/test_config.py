@@ -15,7 +15,7 @@ class ServiceConfigTest(unittest.TestCase):
         test_dir = os.path.dirname(__file__)
         service_config_dict = {
             "Authentication": {
-                "Domain": "xcube - dev.eu.auth0.com",
+                "Authority": "https://dev.eu.auth0.com",
                 "Audience": "https://xcube-dev/api/",
             },
             "DatasetAttribution":

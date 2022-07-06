@@ -32,6 +32,7 @@ import json
 import os.path
 import pathlib
 
+import tornado.web
 from tornado.ioloop import IOLoop
 
 from xcube.constants import LOG
@@ -604,6 +605,44 @@ class InfoHandler(ServiceRequestHandler):
                                    serverTime=server_time,
                                    serverPID=os.getpid()),
                               indent=2))
+
+
+# noinspection PyAbstractClass
+class MaintenanceHandler(ServiceRequestHandler):
+
+    def get(self, action: str):
+        def get_service():
+            from xcube.webapi.service import Service
+            # noinspection PyUnresolvedReferences
+            service: Service = self.application.service
+            assert isinstance(service, Service)
+            return service
+
+        if action == "update":
+            LOG.warning("Forcing resource update...")
+            IOLoop.current().add_callback(get_service().update_config)
+            self.write(json.dumps(dict(status="ok")))
+        elif action == "stop":
+            get_service().stop()
+            self.write(json.dumps(dict(status="ok")))
+        elif action == "kill":
+            get_service().stop(kill=True)
+            self.write(json.dumps(dict(status="ok")))
+        elif action == "fail":
+            code = self.params.get_query_argument_int(
+                'code', default=None
+            )
+            message = self.params.get_query_argument(
+                'message', default='This is just a test error.'
+            )
+            if code is None:
+                raise ValueError(message)
+            else:
+                raise tornado.web.HTTPError(code, log_message=message)
+        else:
+            raise tornado.web.HTTPError(
+                400, log_message=f'Unknown action {action}'
+            )
 
 
 # noinspection PyAbstractClass

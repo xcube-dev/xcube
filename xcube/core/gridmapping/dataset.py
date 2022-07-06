@@ -83,10 +83,17 @@ def new_grid_mapping_from_dataset(
                 if gm.crs == prefer_crs \
                         and gm.is_regular == prefer_is_regular:
                     return gm
+            for gm in grid_mappings:
+                if gm.crs.is_geographic and prefer_crs.is_geographic \
+                        and gm.is_regular == prefer_is_regular:
+                    return gm
 
         if prefer_crs is not None:
             for gm in grid_mappings:
                 if gm.crs == prefer_crs:
+                    return gm
+            for gm in grid_mappings:
+                if gm.crs.is_geographic and prefer_crs.is_geographic:
                     return gm
 
         if prefer_is_regular is not None:

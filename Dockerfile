@@ -9,7 +9,7 @@ ENV XCUBE_CCI_VERSION=latest
 ENV XCUBE_CDS_VERSION=latest
 
 # Metadata
-LABEL maintainer="helge.dzierzon@brockmann-consult.de"
+LABEL maintainer="xcube-team@brockmann-consult.de"
 LABEL name=xcube
 LABEL conda_env=xcube
 
@@ -29,7 +29,7 @@ RUN chown -R ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /opt/conda
 USER ${XCUBE_USER_NAME}
 
 RUN source activate base && conda update -n base conda && conda init
-RUN source activate base && conda install -n base -c conda-forge mamba=0.7.0 pip=21.3.1
+RUN source activate base && conda install -n base -c conda-forge mamba==0.24.0 pip=21.3.1
 
 # Setup conda environment
 # Copy yml config into image

@@ -2,6 +2,20 @@
 
 ### Enhancements
 
+* Allow xcube Server to work with any OIDC-compliant auth service such as
+  Auth0, Keycloak, or Google. Permissions of the form 
+  `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
+  passed by two id token claims: 
+  - `permissions` must be a JSON list of permissions;
+  - `scope` must be a space-separated character string of permissions.
+
+  It is now also possible to include id token claim values into the 
+  permissions as template variables. For example, if the currently
+  authenticated user is `demo_user`, the permission 
+  `"read:dataset:$username/*"` will effectively be
+  `"read:dataset:demo_user/*"` and only allow access to datasets
+  with resource identifiers having the prefix `demo_user/`.
+
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
@@ -10,6 +24,32 @@
 
 * Removed all upper version bounds of package dependencies.
   This increases compatibility with existing Python environments.
+
+* A new CLI tool `xcube patch` has been added. It allows for in-place
+  metadata patches of Zarr data cubes stored in almost any filesystem 
+  supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
+  including the protocols "s3" and "file". It also allows patching
+  xcube multi-level datasets (`*.levels` format).
+  
+* In the configuration for `xcube server`, datasets defined in `DataStores` 
+  may now have user-defined identifiers. In case the path does not unambiguously 
+  define a dataset (because it contains wildcards), providing a 
+  user-defined identifier will raise an error. 
+
+### Fixes
+
+* xcube Server did not find any grid mapping if a grid mapping variable
+  (e.g. spatial_ref or crs) encodes a geographic CRS
+  (CF grid mapping name "latitude_longitude") and the related geographical 
+  1-D coordinates were named "x" and "y". (#706) 
+* Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
+  Demo cubes now all have consolidated metadata.
+* When writing multi-level datasets with file data stores, i.e.,
+  ```python
+  store.write_data(dataset, data_id="test.levels", use_saved_levels=True)
+  ``` 
+  and where `dataset` has different spatial resolutions in x and y, 
+  an exception was raised. This is no longer the case. 
 
 ## Changes in 0.11.2
 

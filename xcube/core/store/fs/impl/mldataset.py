@@ -167,7 +167,6 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             ml_dataset = BaseMultiLevelDataset(
                 ml_dataset.get_dataset(0),
                 grid_mapping=ml_dataset.grid_mapping,
-                tile_grid=ml_dataset.tile_grid,
                 agg_methods=agg_methods
             )
 

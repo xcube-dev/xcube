@@ -39,7 +39,7 @@ build_script:
   # Install mamba as a dramatically faster conda replacement. Specifying a
   # fixed version makes the installation of mamba itself much faster, and
   # avoids potential breakage due to changes in mamba behaviour.
-  - conda install -c conda-forge mamba=0.23.3
+  - conda install -c conda-forge mamba=0.24.0 pip=22.1.2
 
   # Environments created by mamba can't be referenced by name from conda
   # (presumably a bug), so we use an explicit path instead.

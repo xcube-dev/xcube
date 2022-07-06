@@ -1,7 +1,8 @@
+from tornado.escape import json_decode
 from tornado.testing import AsyncHTTPTestCase
 
-from test.webapi.helpers import new_test_service_context
 from xcube.webapi.app import new_application
+from .helpers import new_test_service_context
 
 CTX = new_test_service_context()
 
@@ -30,17 +31,46 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertEqual(200, response.code, response.reason)
         self.assertEqual("OK", response.reason)
 
-    def assertBadRequestResponse(self, response, expected_reason="Bad Request"):
+    def assertBadRequestResponse(self, response,
+                                 expected_reason="Bad Request"):
         self.assertEqual(400, response.code)
         self.assertEqual(expected_reason, response.reason)
 
-    def assertResourceNotFoundResponse(self, response, expected_reason="Not Found"):
+    def assertResourceNotFoundResponse(self, response,
+                                       expected_reason="Not Found"):
         self.assertEqual(404, response.code)
         self.assertEqual(expected_reason, response.reason)
 
     def test_fetch_base(self):
         response = self.fetch(self.prefix + '/')
         self.assertResponseOK(response)
+
+    def test_fetch_maintenance_fail(self):
+        response = self.fetch(self.prefix + '/maintenance/fail')
+        self.assertEqual(500, response.code)
+        self.assertEqual("Internal Server Error", response.reason)
+        body = json_decode(response.body)
+        self.assertIn("error", body)
+        self.assertEqual(500, body["error"].get("code"))
+        self.assertEqual("Internal Server Error", body["error"].get("message"))
+
+        response = self.fetch(self.prefix + '/maintenance/fail?code=403')
+        self.assertEqual(403, response.code)
+        self.assertEqual("Forbidden", response.reason)
+        body = json_decode(response.body)
+        self.assertIn("error", body)
+        self.assertEqual(403, body["error"].get("code"))
+        self.assertEqual("Forbidden", body["error"].get("message"))
+
+        response = self.fetch(
+            self.prefix + '/maintenance/fail?code=400&message=wrong!'
+        )
+        self.assertEqual(400, response.code)
+        self.assertEqual("Bad Request", response.reason)
+        body = json_decode(response.body)
+        self.assertIn("error", body)
+        self.assertEqual(400, body["error"].get("code"))
+        self.assertEqual("Bad Request", body["error"].get("message"))
 
     def test_fetch_wmts_kvp_capabilities(self):
         response = self.fetch(self.prefix + '/wmts/kvp'

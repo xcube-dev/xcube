@@ -435,8 +435,8 @@ def _determine_bbox(data: xr.Dataset) \
                 'geospatial_lat_min' in data.attrs and \
                 'geospatial_lon_max' in data.attrs and \
                 'geospatial_lat_max' in data.attrs:
-            return (data.geospatial_lat_min, data.geospatial_lon_min,
-                    data.geospatial_lat_max, data.geospatial_lon_max)
+            return (data.geospatial_lon_min, data.geospatial_lat_min,
+                    data.geospatial_lon_max, data.geospatial_lat_max)
 
 
 def _determine_spatial_res(data: xr.Dataset):
