@@ -61,7 +61,8 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
     )
     def get(self):
         granted_scopes = self.ctx.auth_ctx.granted_scopes(
-            self.request.headers)
+            self.request.headers
+        )
         details = self.request.get_query_arg('details', default=False)
         point = self.request.get_query_arg('point', None)
         if point is not None:

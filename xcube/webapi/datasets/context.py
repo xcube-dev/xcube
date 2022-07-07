@@ -22,7 +22,6 @@
 
 import fnmatch
 import itertools
-import json
 import os
 import os.path
 import warnings
@@ -127,15 +126,19 @@ class DatasetsContext(ResourcesContext):
     def required_scopes(self) -> List[str]:
         return self.access_control.get('RequiredScopes', [])
 
-    def get_required_dataset_scopes(self,
-                                    dataset_config: DatasetConfig) -> Set[str]:
+    def get_required_dataset_scopes(
+            self,
+            dataset_config: DatasetConfig
+    ) -> Set[str]:
         return self._get_required_scopes(dataset_config,
                                          'read:dataset', 'Dataset',
                                          dataset_config['Identifier'])
 
-    def get_required_variable_scopes(self,
-                                     dataset_config: DatasetConfig,
-                                     var_name: str) -> Set[str]:
+    def get_required_variable_scopes(
+            self,
+            dataset_config: DatasetConfig,
+            var_name: str
+    ) -> Set[str]:
         return self._get_required_scopes(dataset_config,
                                          'read:variable', 'Variable',
                                          var_name)

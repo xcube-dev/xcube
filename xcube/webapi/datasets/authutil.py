@@ -22,6 +22,7 @@
 import fnmatch
 from typing import Optional, Set
 
+from xcube.server.api import ApiError
 from xcube.webapi.errors import ServiceAuthError
 
 READ_ALL_DATASETS_SCOPE = 'read:dataset:*'
@@ -46,9 +47,8 @@ def assert_scopes(required_scopes: Set[str],
                                        granted_scopes,
                                        is_substitute=is_substitute)
     if missing_scope is not None:
-        raise ServiceAuthError(
-            'Missing permission',
-            log_message=f'Missing permission {missing_scope}'
+        raise ApiError.Unauthorized(
+            f'Missing permission "{missing_scope}"'
         )
 
 

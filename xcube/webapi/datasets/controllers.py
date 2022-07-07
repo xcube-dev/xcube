@@ -75,6 +75,8 @@ def get_datasets(ctx: DatasetsContext,
     else:
         can_read_all_datasets = READ_ALL_DATASETS_SCOPE in granted_scopes
 
+    LOG.info(f'Collecting datasets for granted scopes {granted_scopes!r}')
+
     dataset_configs = list(ctx.get_dataset_configs())
 
     dataset_dicts = list()
@@ -91,6 +93,9 @@ def get_datasets(ctx: DatasetsContext,
                                        dataset_config,
                                        granted_scopes,
                                        check_scopes):
+            LOG.info(
+                f'Rejected dataset {ds_id!r} due to missing permission'
+            )
             continue
 
         dataset_dict = dict(id=ds_id)
@@ -143,6 +148,9 @@ def get_datasets(ctx: DatasetsContext,
         )
         # noinspection PyTypeChecker
         dataset_dicts = list(filter(is_point_in_dataset_bbox, dataset_dicts))
+
+    if not dataset_dicts:
+        LOG.warn(f'No datasets provided for current user.')
 
     return dict(datasets=dataset_dicts)
 
@@ -270,6 +278,13 @@ def get_dataset(ctx: DatasetsContext,
             dim_names.add(dim_name)
 
     dataset_dict["variables"] = variable_dicts
+
+    if not variable_dicts:
+        if not ds.data_vars:
+            message = f'Dataset {ds_id!r} has no variables'
+        else:
+            message = f'Dataset {ds_id!r} has no published variables'
+        raise DatasetIsNotACubeError(message)
 
     rgb_var_names, rgb_norm_ranges = ctx.get_rgb_color_mapping(ds_id)
     if any(rgb_var_names):

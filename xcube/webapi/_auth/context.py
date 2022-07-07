@@ -21,20 +21,24 @@
 
 import json
 from functools import cached_property
-from typing import Optional, Mapping, List, Set, Dict, Any
+from itertools import filterfalse
+from string import Template
+from typing import Optional, Mapping, Dict, Any, Set, Union
 
 import jwt
 import jwt.algorithms
 import requests
 
-from xcube.server.api import ApiContext, ApiError
+from xcube.server.api import ApiContext
+from xcube.server.api import ApiError
+from .config import AuthConfig
 
 
 class AuthContext(ApiContext):
 
     @cached_property
-    def authentication(self) -> Dict[str, Any]:
-        return self.config.get('Authentication') or {}
+    def auth_config(self) -> Optional[AuthConfig]:
+        return AuthConfig.from_config(self.config)
 
     @property
     def can_authenticate(self) -> bool:
@@ -43,113 +47,96 @@ class AuthContext(ApiContext):
         may still be optional. In this case the server will publish
         the resources configured to be free for everyone.
         """
-        return bool(self.authentication.get('Domain'))
-
-    @cached_property
-    def is_required(self) -> bool:
-        authentication = self.authentication
-        if not authentication:
-            return False
-        return authentication.get('IsRequired', False)
+        return self.auth_config is not None
 
     @property
     def must_authenticate(self) -> bool:
         """
         Test whether the user must authenticate.
         """
-        return self.can_authenticate and self.is_required
-
-    @cached_property
-    def domain(self) -> str:
-        authentication = self.authentication
-        domain = authentication.get('Domain')
-        if not domain:
-            raise ApiError.InvalidServerConfig(
-                'Missing key "Domain" in section "Authentication"'
-            )
-        return domain
-
-    @cached_property
-    def issuer(self) -> str:
-        return f"https://{self.domain}/"
-
-    @cached_property
-    def well_known_jwks(self) -> str:
-        return f"https://{self.domain}/.well-known/jwks.json"
+        return self.auth_config is not None and self.auth_config.is_required
 
     @cached_property
     def jwks(self) -> Dict[str, Any]:
-        response = requests.get(self.well_known_jwks)
+        response = requests.get(self.auth_config.well_known_jwks)
         return json.loads(response.content)
 
     @cached_property
-    def audience(self) -> str:
-        authentication = self.authentication
-        assert isinstance(authentication, dict)
-        audience = authentication.get('Audience')
-        if not audience:
-            raise ApiError.InvalidServerConfig(
-                'Missing key "Audience" in section "Authentication"'
-            )
-        return audience
-
-    @cached_property
-    def algorithms(self) -> List[str]:
-        authentication = self.authentication
-        assert isinstance(authentication, dict)
-        algorithms = authentication.get('Algorithms', ["RS256"])
-        if not algorithms:
-            raise ApiError.InvalidServerConfig(
-                'Value for key "Algorithms" in section'
-                ' "Authentication" must not be empty'
-            )
-        return algorithms
+    def jwks(self):
+        assert self.auth_config is not None
+        jwks_uri = self.auth_config.well_known_jwks
+        openid_config_uri = self.auth_config.well_known_oid_config
+        response = requests.get(openid_config_uri)
+        if response.ok:
+            openid_config = json.loads(response.content)
+            if openid_config and 'jwks_uri' in openid_config:
+                jwks_uri = openid_config['jwks_uri']
+        response = requests.get(jwks_uri)
+        if response.ok:
+            return json.loads(response.content)
+        # TODO (forman): convert into ApiError
+        response.raise_for_status()
 
     def granted_scopes(self, request_headers: Mapping[str, str]) \
             -> Optional[Set[str]]:
-        id_token = self.get_id_token(
-            request_headers,
-            require_auth=self.must_authenticate
-        )
-        return id_token.get('permissions') if id_token else None
+        must_authenticate = self.must_authenticate
+        id_token = self.get_id_token(request_headers,
+                                     require_auth=must_authenticate)
+        permissions = None
+        if id_token:
+            permissions = id_token.get('permissions')
+            if not isinstance(permissions, (list, tuple)):
+                scope = id_token.get('scope')
+                if isinstance(scope, str):
+                    permissions = scope.split(' ')
+            if permissions is not None:
+                permissions = self._interpolate_permissions(id_token,
+                                                            permissions)
+        return permissions
 
     def get_id_token(self,
                      request_headers: Mapping[str, str],
                      require_auth: bool = False) \
             -> Optional[Mapping[str, str]]:
-        """Decodes the access token and verifies it."""
+        """Decode the access token and verifies it."""
+
         access_token = self.get_access_token(request_headers,
                                              require_auth=require_auth)
         if access_token is None:
             return None
 
-        if not self.authentication:
-            if require_auth:
-                raise ApiError.BadRequest(
-                    "Received access token,"
-                    " but this server doesn't support"
-                    " authentication."
-                )
+        auth_config = self.auth_config
+        if auth_config is None:
+            # Ignore access token
             return None
 
+        # With auth_config and access_token, we expect authorization
+        # to work. From here on we raise, if anything fails.
+
+        # Get the unverified header of the access token
         try:
             unverified_header = jwt.get_unverified_header(access_token)
         except jwt.InvalidTokenError:
+            unverified_header = None
+        if not unverified_header \
+                or not unverified_header.get("kid") \
+                or not unverified_header.get("alg"):
+            # "alg" should be "RS256" or "HS256" or others
             raise ApiError.BadRequest(
                 "Invalid header."
-                " Use an RS256 signed JWT Access Token."
-            )
-        if unverified_header["alg"] != "RS256":  # e.g. "HS256"
-            raise ApiError.BadRequest(
-                "Invalid header."
-                " Use an RS256 signed JWT Access Token."
+                " A signed JWT Access Token is expected."
             )
 
+        # The key identifier of the access token which we must validate.
+        access_token_kid = unverified_header["kid"]
+
+        # Get JSON Web Token (JWK) Keys
         jwks = self.jwks
 
-        rsa_key = {}
+        # Find access_token_kid in JWKS to obtain rsa_key
+        rsa_key = None
         for key in jwks["keys"]:
-            if key["kid"] == unverified_header["kid"]:
+            if key["kid"] == access_token_kid:
                 rsa_key = {
                     "kty": key["kty"],
                     "kid": key["kid"],
@@ -158,40 +145,32 @@ class AuthContext(ApiContext):
                     "e": key["e"]
                 }
                 break
+        if rsa_key is None:
+            raise ApiError.BadRequest(
+                "Invalid header. Unable to find appropriate key in JWKS."
+            )
 
-        if rsa_key:
-            try:
-                id_token = jwt.decode(
-                    access_token,
-                    # TODO: this is stupid: we convert rsa_key to
-                    #  JWT JSON only to produce the public key JSON string
-                    jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(rsa_key)),
-                    algorithms=self.algorithms,
-                    audience=self.audience,
-                    issuer=self.issuer
-                )
-            except jwt.ExpiredSignatureError:
-                raise ApiError.Unauthorized(
-                    "Token is expired."
-                )
-            except jwt.InvalidTokenError:
-                raise ApiError.Unauthorized(
-                    "Incorrect claims,"
-                    " please check the audience and domain."
-                )
-            except Exception:
-                raise ApiError.Unauthorized(
-                    "Invalid header. Unable to parse authentication token."
-                )
-            return id_token
+        # Now we are ready to decode the access token
+        try:
+            id_token = jwt.decode(
+                access_token,
+                jwt.algorithms.RSAAlgorithm.from_jwk(rsa_key),
+                issuer=auth_config.authority,
+                audience=auth_config.audience,
+                algorithms=auth_config.algorithms
+            )
+        except jwt.PyJWTError as e:
+            raise ApiError.BadRequest(
+                f"Failed to decode access token: {e}"
+            ) from e
 
-        raise ApiError.Unauthorized("Invalid header."
-                                    " Unable to find appropriate key")
+        return id_token
 
-    def get_access_token(self,
+    @classmethod
+    def get_access_token(cls,
                          request_headers: Mapping[str, str],
                          require_auth: bool = False) -> Optional[str]:
-        """Obtains the access token from the Authorization Header
+        """Obtain the access token from the Authorization Header
         """
         # noinspection PyUnresolvedReferences
         auth = request_headers.get("Authorization", None)
@@ -206,15 +185,47 @@ class AuthContext(ApiContext):
 
         if parts[0].lower() != "bearer":
             raise ApiError.BadRequest(
-                'Invalid header. Authorization header must start with "Bearer"'
+                'Invalid header.'
+                ' Authorization header must start with "Bearer".'
             )
         elif len(parts) == 1:
             raise ApiError.BadRequest(
-                "Invalid header. Bearer token not found"
+                "Invalid header."
+                " Bearer token not found."
             )
         elif len(parts) > 2:
             raise ApiError.BadRequest(
-                "Invalid header. Authorization header must be Bearer token"
+                "Invalid header."
+                " Authorization header must be Bearer token."
             )
 
         return parts[1]
+
+    def _interpolate_permissions(self,
+                                 id_token: Mapping[str, Any],
+                                 permissions: Union[list, tuple]):
+        predicate = self._is_template_permission
+
+        plain_permissions = set(filterfalse(predicate, permissions))
+        if len(plain_permissions) == len(permissions):
+            return plain_permissions
+
+        templ_permissions = filter(predicate, permissions)
+        id_mapping = self._get_template_dict(id_token)
+        return plain_permissions.union(
+            set(Template(permission).safe_substitute(id_mapping)
+                for permission in templ_permissions)
+        )
+
+    @staticmethod
+    def _is_template_permission(permission: str) -> bool:
+        return '$' in permission
+
+    @staticmethod
+    def _get_template_dict(id_token: Mapping[str, Any]) -> Dict[str, str]:
+        d = {k: v
+             for k, v in id_token.items()
+             if isinstance(v, str)}
+        if 'username' not in d and 'preferred_username' in d:
+            d['username'] = d['preferred_username']
+        return d
