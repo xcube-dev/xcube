@@ -292,7 +292,7 @@ class DatasetsContext(ResourcesContext):
                 # For local file systems: Determine absolute root from base dir
                 fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system, file_system)
                 if fs_protocol == 'file' and not os.path.isabs(abs_root):
-                    abs_root = os.path.join(self._base_dir, abs_root)
+                    abs_root = os.path.join(self.base_dir, abs_root)
                     abs_root = os.path.normpath(abs_root)
                 store_params_for_root = store_params.copy()
                 store_params_for_root['root'] = abs_root

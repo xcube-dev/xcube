@@ -18,3 +18,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
+import unittest
+
+from test.webapi.helpers import get_api_ctx
+from xcube.server.api import Context
+from xcube.webapi.places.context import PlacesContext
+
+
+def get_places_ctx() -> PlacesContext:
+    return get_api_ctx("places", PlacesContext, "config.yml")
+
+
+class PlacesContextTest(unittest.TestCase):
+
+    def test_ctx_ok(self):
+        ctx = get_places_ctx()
+        self.assertIsInstance(ctx.server_ctx, Context)
+        self.assertIsInstance(ctx.auth_ctx, Context)

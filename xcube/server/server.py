@@ -50,6 +50,7 @@ class Server(AsyncExecution):
     APIs are registered using the extension point ".api".
 
     TODO:
+      * Allow for route prefixes, e.g. "api/v2"
       * Allow route paths to match arbitrary subpaths,
         e.g. we have to support "/s3bucket/{ds_id}/(?P<path>.*)"
       * Allow server to serve generic static content,

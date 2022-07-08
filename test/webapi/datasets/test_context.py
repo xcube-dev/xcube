@@ -18,3 +18,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
+import unittest
+from typing import Union
+
+from test.webapi.helpers import get_api_ctx
+from xcube.server.api import Context, ServerConfig
+from xcube.webapi.datasets.context import DatasetsContext
+
+
+def get_datasets_ctx(
+        server_config: Union[str, ServerConfig] = "config.yml"
+) -> DatasetsContext:
+    return get_api_ctx("datasets", DatasetsContext, server_config)
+
+
+class DatasetsContextTest(unittest.TestCase):
+
+    def test_ctx_ok(self):
+        ctx = get_datasets_ctx()
+        self.assertIsInstance(ctx.server_ctx, Context)
+        self.assertIsInstance(ctx.auth_ctx, Context)
+        self.assertIsInstance(ctx.places_ctx, Context)

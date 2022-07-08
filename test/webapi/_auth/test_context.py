@@ -23,42 +23,23 @@ import json
 import os
 import types
 import unittest
-from typing import TypeVar, Optional
 
 import requests
 
-from test.server.mocks import MockFramework
+from test.webapi.helpers import get_api_ctx
 from xcube.server.api import ApiError
-from xcube.server.api import Context
-from xcube.server.server import Server
+from xcube.server.api import ServerConfig
 # noinspection PyProtectedMember
-from xcube.util.plugin import get_extension_registry
 # noinspection PyProtectedMember
 from xcube.webapi._auth.config import AuthConfig
 from xcube.webapi._auth.context import AuthContext
-
-T = TypeVar('T', bound=Context)
-
-
-class ServiceContextMock:
-    def __init__(self, config):
-        self.config = config
-
-
-class RequestMock:
-    def __init__(self, headers):
-        self.headers = headers
-
 
 XCUBE_TEST_CLIENT_ID = os.environ.get('XCUBE_TEST_CLIENT_ID')
 XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
 
 
-def get_auth_ctx(config) -> Optional[AuthContext]:
-    server = Server(MockFramework(),
-                    config,
-                    extension_registry=get_extension_registry())
-    return server.ctx.get_api_ctx("auth")
+def get_auth_ctx(config: ServerConfig) -> AuthContext:
+    return get_api_ctx("auth", AuthContext, config)
 
 
 class AuthMixinPropsTest2(unittest.TestCase):
@@ -69,7 +50,6 @@ class AuthMixinPropsTest2(unittest.TestCase):
                 "Audience": "myapi"
             }
         })
-        self.assertIsInstance(auth_ctx, AuthContext)
         auth_config = auth_ctx.auth_config
         self.assertIsInstance(auth_config, AuthConfig)
         # Assert that it is a cached property
@@ -137,7 +117,7 @@ class AuthMixinPropsTest2(unittest.TestCase):
 
 
 class AuthContextIdTokenTest(unittest.TestCase):
-
+    # TODO (forman): setup Keycloak xcube test account
     @unittest.skipUnless(
         XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET,
         'XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET must be set'
@@ -208,6 +188,7 @@ class AuthContextIdTokenTest(unittest.TestCase):
         })
         self.assertEqual(None, auth_ctx.get_id_token({}))
 
+    # TODO (forman): setup Keycloak xcube test account
     @unittest.skipUnless(
         XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET,
         'XCUBE_TEST_CLIENT_ID and XCUBE_TEST_CLIENT_SECRET must be set'

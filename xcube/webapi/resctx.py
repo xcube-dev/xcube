@@ -41,7 +41,7 @@ class ResourcesContext(ApiContext):
         # noinspection PyTypeChecker
         self._auth_ctx: AuthContext = server_ctx.get_api_ctx("auth")
         assert isinstance(self._auth_ctx, AuthContext)
-        self._base_dir = os.path.abspath(self.config.get("base_dir", ""))
+        self._base_dir = os.path.abspath(self.config.get("base_dir", "."))
         self._prefix = normalize_prefix(self.config.get("prefix", ""))
         self._trace_perf = self.config.get("trace_perf", False)
         self._rlock = threading.RLock()

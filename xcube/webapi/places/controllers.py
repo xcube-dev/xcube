@@ -68,7 +68,7 @@ def find_places(
                 query_geometry = shapely.geometry.shape(
                     query_geometry
                 )
-        else:
+        elif query_geometry is not None:
             assert_instance(query_geometry,
                             shapely.geometry.base.BaseGeometry,
                             name='query_geometry')
@@ -88,12 +88,14 @@ def find_places(
     return features
 
 
-def _find_places(ctx: PlacesContext,
-                 place_group_id: str,
-                 base_url: str,
-                 query_geometry: shapely.geometry.base.BaseGeometry = None,
-                 query_expr: Any = None,
-                 comb_op: str = "and") -> GeoJsonFeatureCollection:
+def _find_places(
+        ctx: PlacesContext,
+        place_group_id: str,
+        base_url: str,
+        query_geometry: Optional[shapely.geometry.base.BaseGeometry] = None,
+        query_expr: Optional[Any] = None,
+        comb_op: str = "and"
+) -> GeoJsonFeatureCollection:
     if comb_op is not None and comb_op != "and":
         raise ApiError.NotImplemented("comb_op not yet supported")
 

@@ -22,6 +22,7 @@
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.webapi.config import BooleanSchema
 from xcube.webapi.config import BoundingBoxSchema
 from xcube.webapi.config import ChunkSizeSchema
@@ -31,6 +32,12 @@ from xcube.webapi.config import PathSchema
 from xcube.webapi.config import StringSchema
 from xcube.webapi.config import UrlSchema
 from ..places.config import PLACE_GROUP_SCHEMA
+
+
+AttributionSchema = JsonComplexSchema(one_of=[
+            StringSchema,
+            JsonArraySchema(items=StringSchema),
+        ])
 
 AUGMENTATION_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -65,6 +72,7 @@ COMMON_DATASET_PROPERTIES = dict(
     Hidden=BooleanSchema,
     AccessControl=ACCESS_CONTROL_SCHEMA,
     PlaceGroups=JsonArraySchema(items=PLACE_GROUP_SCHEMA),
+    Attribution=AttributionSchema
 )
 
 DATASET_CONFIG_SCHEMA = JsonObjectSchema(
@@ -184,7 +192,7 @@ SERVICE_PROVIDER_SCHEMA = JsonObjectSchema(
 
 CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
-        DatasetAttribution=JsonArraySchema(items=StringSchema),
+        DatasetAttribution=AttributionSchema,
         AccessControl=ACCESS_CONTROL_SCHEMA,
         DatasetChunkCacheSize=ChunkSizeSchema,
         Datasets=JsonArraySchema(items=DATASET_CONFIG_SCHEMA),

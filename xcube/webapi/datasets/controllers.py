@@ -310,7 +310,7 @@ def get_dataset(ctx: DatasetsContext,
     }
 
     dataset_attributions = dataset_config.get(
-        'DatasetAttribution',
+        'Attribution',
         ctx.config.get('DatasetAttribution')
     )
     if dataset_attributions is not None:

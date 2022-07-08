@@ -270,9 +270,12 @@ class CatalogueControllerTest(unittest.TestCase):
 
         self.assertIsNotNone(demo_dataset)
         self.assertIsNotNone(demo_1w_dataset)
-        self.assertEqual(["© by EU H2020 CyanoAlert project"], demo_dataset['attributions'])
+        self.assertEqual(['© by EU H2020 CyanoAlert project'],
+                         demo_dataset['attributions'])
         self.assertEqual(["© by Brockmann Consult GmbH 2020, "
-                          "contains modified Copernicus Data 2019, processed by ESA"], demo_1w_dataset['attributions'])
+                          "contains modified Copernicus Data 2019, "
+                          "processed by ESA"],
+                         demo_1w_dataset['attributions'])
 
     def test_dataset_with_details_and_rgb_schema(self):
         ctx = new_test_service_context('config-rgb.yml')
