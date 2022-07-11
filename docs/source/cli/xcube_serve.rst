@@ -566,4 +566,3 @@ The xcube server implements the OGC WMTS RESTful and KVP architectural styles of
 * **GetTile**: ``/xcube/wmts/1.0.0/tile/{DatasetName}/{VarName}/{TileMatrix}/{TileCol}/{TileRow}.png``
 * **GetFeatureInfo**: *in progress*
 
-
