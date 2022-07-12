@@ -513,7 +513,7 @@ Example
 
 Server Demo Configuration File for DataStores
 =============================================
-The server configuration file consists of various parts, some of them are necessary others are optional.
+The server configuration file consists of various parts, some of them are necessary, others are optional.
 Here the `demo_stores configuration file`_ used in the `example-stores`_ is explained in detail.
 
 This configuration file differs only in one part compared from `config`_. This part is `data-stores`_.
