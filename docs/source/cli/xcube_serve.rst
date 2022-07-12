@@ -550,11 +550,11 @@ is a unique ID for each DataStore.
 *StoreID* [mandatory]
 can be *file* for locally stored datasets and *s3* for datasets located in the cloud.
 
-*StoreParams* [mandatory]
-*root* [mandatory] states a common beginning part of the paths of the served datasets.
-*max_depth* [optional] if wildcard is used in *Dataset Path* this indicated how far the server should step down and serve the discovered datasets.
-*storage_options* [optional] is necessary when serving datasets from the cloud. With *anon* the accessibility is
-configured, if the datasets are public-read, *anon* is set to "true", "false" indicates they are protected. Credentials
+| *StoreParams* [mandatory]
+| *root* [mandatory] states a common beginning part of the paths of the served datasets.
+| *max_depth* [optional] if wildcard is used in *Dataset Path* this indicated how far the server should step down and serve the discovered datasets.
+| *storage_options* [optional] is necessary when serving datasets from the cloud. With *anon* the accessibility is
+| configured, if the datasets are public-read, *anon* is set to "true", "false" indicates they are protected. Credentials
 may be set by keywords *key* and *secret*.
 
 *Datasets* [optional]
