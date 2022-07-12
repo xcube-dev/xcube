@@ -493,9 +493,9 @@ Server Demo Configuration File for DataStores
 The server configuration file consists of various parts, some of them are necessary others are optional.
 Here the `demo_stores configuration file`_ used in the :ref:`example-stores` is explained in detail.
 
-This configuration file differs only in one part compared to :ref:`..config`. This part is :ref:`data-stores`,
-the other main parts :ref:`authentication`, :ref:`dataset-attribution`,
-:ref:`place-groups` and :ref:`styles`. Can be used in combination with :ref:`data-stores`.
+This configuration file differs only in one part compared from :ref:`..config`. This part is :ref:`data-stores`.
+The other main parts (:ref:`authentication`, :ref:`dataset-attribution`,
+:ref:`place-groups`, and :ref:`styles`) can be used in combination with :ref:`data-stores`.
 
 .. _data-stores:
 DataStores [mandatory]
