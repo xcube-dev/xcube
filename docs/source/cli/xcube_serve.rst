@@ -106,7 +106,7 @@ xcube datasets are any datasets that
 * that have variables that have the dimensions and shape (``time``, ``lat``, ``lon``);
 * that have variables that have the dimensions and shape (``lat``, ``lon``), e.g. GeoTIFF / COG files;
 * that have 1D-coordinate variables corresponding to the dimensions;
-* that have their spatial grid defined arbitrary spatial coordinate reference systems.
+* that have their spatial grid defined in arbitrary spatial coordinate reference systems.
 
 The xcube server supports xcube datasets stored as local NetCDF files, as well as
 `Zarr <https://zarr.readthedocs.io/en/stable/>`_ directories in the local file system or remote object storage.
