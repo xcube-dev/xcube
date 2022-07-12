@@ -249,8 +249,9 @@ is a unique ID for each xcube dataset, it is ment for machine-to-machine interac
 and therefore does not have to be a fancy human-readable name.
 
 *Title* [optional]
-should be understandable for humans and this is the title that will be displayed within the viewer
-for the dataset selection. If the dataset metadata contains a metadata key title its value is used.
+should be understandable for humans. This title that will be displayed within the viewer
+for the dataset selection. If omitted, the key title from the dataset metadata will be used.
+If that is missing too, the identifier will be used.
 
 *BoundingBox* [optional]
 may be set in order to restrict the region which is served from a certain datacube. The
