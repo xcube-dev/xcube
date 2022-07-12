@@ -166,7 +166,7 @@ The configuration file consists of five main parts :ref:`authentication`, :ref:`
 Authentication [optional]
 -------------------------
 In order to display data via xcube-viewer exclusively to registered and authorized users, the data served by xcube serve
-may be protected by adding Authentication to the server configuration. In order to ensure protection, a *Authority* and an
+may be protected by adding Authentication to the server configuration. In order to ensure protection, an *Authority* and an
 *Audience* needs to be provided. Here authentication by `Auth0`_ is used.
 Please note the trailing slash in the "Authority" URL.
 
