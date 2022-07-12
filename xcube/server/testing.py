@@ -20,17 +20,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 import asyncio
+import json
 import socket
 import threading
 import unittest
 from contextlib import closing
-from typing import Dict
+from typing import Dict, Optional, Any, Union, Tuple
 
 import urllib3
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-from xcube.server.webservers.tornado import TornadoFramework
 from xcube.server.server import Server
+from xcube.server.webservers.tornado import TornadoFramework
 from xcube.util.extension import ExtensionRegistry
 
 
@@ -46,13 +47,14 @@ class ServerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.port = find_free_port()
-        config = {
+        config = self.get_config()
+        config.update({
             'port': self.port,
             'address': 'localhost'
-        }
+        })
         self.add_config(config)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        er = ExtensionRegistry()
+        er = self.get_extension_registry()
         self.add_extension(er)
         self.server = Server(framework=TornadoFramework(), config=config,
                              extension_registry=er)
@@ -65,8 +67,38 @@ class ServerTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.server.stop()
 
+    # noinspection PyMethodMayBeStatic
+    def get_extension_registry(self) -> ExtensionRegistry:
+        return ExtensionRegistry()
+
     def add_extension(self, er: ExtensionRegistry) -> None:
         pass
 
+    # noinspection PyMethodMayBeStatic
+    def get_config(self) -> Dict[str, Any]:
+        return {}
+
     def add_config(self, config: Dict) -> None:
         pass
+
+    def fetch(self,
+              path: str,
+              method: str = "GET",
+              headers: Optional[Dict[str, str]] = None,
+              body: Optional[Any] = None) \
+            -> urllib3.response.HTTPResponse:
+        if path.startswith("/"):
+            path = path[1:]
+        url = f'http://localhost:{self.port}/{path}'
+        return self.http.request(method, url, headers=headers, body=body)
+
+    def fetch_json(self,
+                   path: str,
+                   method: str = "GET",
+                   headers: Optional[Dict[str, str]] = None,
+                   body: Optional[Any] = None) \
+            -> Tuple[
+                Union[type(None), bool, int, float, str, list, dict], int]:
+        response = self.fetch(path, method=method, headers=headers, body=body)
+        data = response.data
+        return json.loads(data), response.status

@@ -196,11 +196,26 @@ class TornadoApiRequestTest(unittest.TestCase):
             uri='/datasets?details=x',
         )
         request = TornadoApiRequest(tr)
-        with self.assertRaises(tornado.web.HTTPError) as cm:
+        with self.assertRaises(ApiError.BadRequest) as cm:
             request.get_query_args('details', type=int)
-        self.assertEqual("HTTP 400: Bad Request"
-                         " (Query parameter 'details'"
-                         " must have type 'int'.)",
+        self.assertEqual("HTTP status 400:"
+                         " Query parameter 'details'"
+                         " must have type 'int'.",
+                         f'{cm.exception}')
+
+    def test_invalid_json(self):
+        tr = tornado.httputil.HTTPServerRequest(
+            method='GET',
+            host='localhost:8080',
+            uri='/datasets?details=x',
+        )
+        request = TornadoApiRequest(tr)
+        with self.assertRaises(ApiError.BadRequest) as cm:
+            # noinspection PyUnusedLocal
+            result = request.json
+        self.assertEqual("HTTP status 400:"
+                         " Body does not contain valid JSON:"
+                         " Expecting value: line 1 column 1 (char 0)",
                          f'{cm.exception}')
 
 

@@ -24,8 +24,8 @@ import functools
 import logging
 import traceback
 import urllib.parse
-from typing import Any, Optional, Sequence, Union, Callable, Dict, Type, \
-    Awaitable, Mapping, List
+from typing import Any, Optional, Sequence, Union, Callable, Type, \
+    Awaitable, Mapping
 
 import tornado.escape
 import tornado.httputil
@@ -288,9 +288,9 @@ class TornadoApiRequest(ApiRequest):
             try:
                 return [type(v) for v in values]
             except (ValueError, TypeError):
-                raise tornado.web.HTTPError(
-                    400, f'Query parameter {name!r}'
-                         f' must have type {type.__name__!r}.'
+                raise ApiError.BadRequest(
+                    f'Query parameter {name!r}'
+                    f' must have type {type.__name__!r}.'
                 )
         return values
 
@@ -320,7 +320,12 @@ class TornadoApiRequest(ApiRequest):
 
     @property
     def json(self) -> JSON:
-        return tornado.escape.json_decode(self.body)
+        try:
+            return tornado.escape.json_decode(self.body)
+        except ValueError as e:
+            raise ApiError.BadRequest(
+                f'Body does not contain valid JSON: {e}'
+            ) from e
 
 
 class TornadoApiResponse(ApiResponse):
