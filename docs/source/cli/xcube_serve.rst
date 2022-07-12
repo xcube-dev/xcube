@@ -103,8 +103,7 @@ xcube datasets are any datasets that
 
 * that comply to `Unidata's CDM <https://www.unidata.ucar.edu/software/thredds/v4.3/netcdf-java/CDM/>`_ and to the `CF Conventions <http://cfconventions.org/>`_;
 * that can be opened with the `xarray <https://xarray.pydata.org/en/stable/>`_ Python library;
-* that have variables that have the dimensions and shape (``time``, ``lat``, ``lon``);
-* that have variables that have the dimensions and shape (``lat``, ``lon``), e.g. GeoTIFF / COG files;
+* that have variables that have the dimensions and shape (``lat``, ``lon``) or (``time``, ``lat``, ``lon``);
 * that have 1D-coordinate variables corresponding to the dimensions;
 * that have their spatial grid defined in arbitrary spatial coordinate reference systems.
 
