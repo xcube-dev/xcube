@@ -177,7 +177,7 @@ Please note the trailing slash in the "Authority" URL.
       Audience: https://xcube-dev/api/
 
 Example of OIDC configuration for Keycloak.
-Please note no trailing slash in the "Authority" URL.
+Please note that there is no trailing slash in the "Authority" URL.
 
 .. code:: yaml
 
