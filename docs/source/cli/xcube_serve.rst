@@ -231,7 +231,7 @@ Remotely Stored xcube Datasets
 
 The above example of how to specify a xcube dataset to be served above is using a datacube stored in
 an S3 bucket within the Amazon Cloud. Please have a closer look at the parameter *Anonymous: true*.
-This means, the datasets permissions are set to public read. If you have a dataset that is not public-public read, set
+This means, the datasets permissions are set to public read in your source s3 bucket. If you have a dataset that is not public-read, set
 *Anonymous: false*. Furthermore, you need to have valid credentials on the machine where the server runs.
 Credentials may be saved either in a file called .aws/credentials with content like below:
 
