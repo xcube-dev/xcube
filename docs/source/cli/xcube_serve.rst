@@ -116,7 +116,7 @@ The parts of the demo configuration file are explained in detail further down.
 
 Some hints before, which are not addressed in the server demo configuration file.
 To increase imaging performance, xcube datasets can be converted to multi-resolution pyramids using the
-:doc:`cli/xcube_level` tool. In the configuration, the format must be set to ``'level'``.
+:doc:`/cli/xcube_level` tool. In the configuration, the format must be set to ``'level'``.
 Leveled xcube datasets are configured this way:
 
 .. code:: yaml
@@ -131,7 +131,7 @@ Leveled xcube datasets are configured this way:
       - ...
 
 To increase time-series extraction performance, xcube datasets may be rechunked with larger chunk size in the ``time``
-dimension using the :doc:`cli/xcube_chunk` tool. In the xcube server configuration a hidden dataset is given,
+dimension using the :doc:`/cli/xcube_chunk` tool. In the xcube server configuration a hidden dataset is given,
 and the it is referred to by the non-hidden, actual dataset using the ``TimeSeriesDataset`` setting:
 
 .. code:: yaml
@@ -159,8 +159,8 @@ Server Demo Configuration File
 The server configuration file consists of various parts, some of them are necessary others are optional.
 Here the `demo configuration file`_ used in the `example`_ is explained in detail.
 
-The configuration file consists of five main parts `authentication`_, `dataset-attribution`_, `datasets`_,
-`place-groups`_ and `styles`_.
+The configuration file consists of five main parts `authentication`_, `dataset attribution`_, `datasets`_,
+`place groups`_ and `styles`_.
 
 .. _authentication:
 Authentication [optional]
@@ -185,7 +185,7 @@ Please note that there is no trailing slash in the "Authority" URL.
       Authority: https://kc.brockmann-consult.de/auth/realms/AVL
       Audience: avl-xc-api
 
-.. _dataset-attribution:
+.. _dataset attribution:
 Dataset Attribution [optional]
 ------------------------------
 
@@ -270,17 +270,17 @@ OpenTelecomCloud S3 bucket called "xcube-examples" and the datacube is called "O
 *Region* [optional]
 is the region where the specified cloud provider is operating.
 
-*Styles* [optional]
-influence the visualization of the xucbe dataset in the xcube viewer if specified
+| *Styles* [optional]
+| influence the visualization of the xucbe dataset in the xcube viewer if specified
 in the server configuration file. The usage of *Styles* is described in section `styles`_.
 
-*PlaceGroups* [optional]
-allow to associate places (e.g. polygons or point-location) with a particular xcube dataset.
+| *PlaceGroups* [optional]
+| allow to associate places (e.g. polygons or point-location) with a particular xcube dataset.
 Several different place groups may be connected to a xcube dataset, these different place groups are distinguished by
-the *PlaceGroupRef*. The configuration of *PlaceGroups* is described in section `place-groups`_.
+the *PlaceGroupRef*. The configuration of *PlaceGroups* is described in section `place groups`_.
 
-*AccessControl* [optional]
-can only be used when providing `authentication`_. Datasets may be protected by
+| *AccessControl* [optional]
+| can only be used when providing `authentication`_. Datasets may be protected by
 configuring the *RequiredScopes* entry whose value is a list of required scopes, e.g. "read:datasets".
 
 .. _locally-stored-xcube-datasets:
@@ -313,11 +313,11 @@ To serve a locally stored dataset the configuration of it would look like the ex
 Most of the configuration of locally stored datasets is equal to the configuration of
 `remotely-stored-xcube-datasets`_.
 
-*FileSystem* [mandatory]
-is set to "file" which lets xcube serve know, that the datacube is locally stored.
+| *FileSystem* [mandatory]
+| is set to "file" which lets xcube serve know, that the datacube is locally stored.
 
-*TimeSeriesDataset* [optional]
-is not bound to local datasets, this parameter may be used for remotely stored datasets
+| *TimeSeriesDataset* [optional]
+| is not bound to local datasets, this parameter may be used for remotely stored datasets
 as well. By using this parameter a time optimized datacube will be used for generating the time series. The configuration
 of this time optimized datacube is shown below. By adding *Hidden* with *true* to the dataset configuration, the time optimized
 datacube will not appear among the displayed datasets in xcube viewer.
@@ -333,13 +333,13 @@ datacube will not appear among the displayed datasets in xcube viewer.
     Hidden: true
     Style: default
 
-*Augmentation* [optional]
-augments data cubes by new variables computed on-the-fly, the generation of the on-the-fly
+| *Augmentation* [optional]
+| augments data cubes by new variables computed on-the-fly, the generation of the on-the-fly
 variables depends on the implementation of the python module specified in the *Path* within the *Augmentation*
 configuration.
 
-*AccessControl* [optional]
-can only be used when providing `authentication`_. By passing the *IsSubstitute* flag
+| *AccessControl* [optional]
+| can only be used when providing `authentication`_. By passing the *IsSubstitute* flag
 a dataset disappears for authorized requests. This might be useful for showing a demo dataset in the viewer for
 user who are not logged in.
 
@@ -369,23 +369,23 @@ obtain daily or weekly averages of a xcube dataset.
     AccessControl:
       IsSubstitute: True
 
-*FileSystem* [mandatory]
-is defined as "memory" for the on-the-fly generated dataset.
+| *FileSystem* [mandatory]
+| is defined as "memory" for the on-the-fly generated dataset.
 
-*Path* [mandatory]
-leads to the resample python module. There might be several functions specified in the
-python module, therefore the particular *Function* needs to be included into the configuration.
+| *Path* [mandatory]
+| leads to the resample python module. There might be several functions specified in the
+| python module, therefore the particular *Function* needs to be included into the configuration.
 
-*InputDatasets* [mandatory]
-specifies the dataset to be resampled.
+| *InputDatasets* [mandatory]
+| specifies the dataset to be resampled.
 
-*InputParameter* [mandatory]
-defines which kind of resampling should be performed.
-In the example a weekly average is computed.
+| *InputParameter* [mandatory]
+| defines which kind of resampling should be performed.
+| In the example a weekly average is computed.
 
 Again, the dataset may be associated with place groups.
 
-.. _place-groups:
+.. _place groups:
 Place Groups [optional]
 -----------------------
 
@@ -402,22 +402,21 @@ Place groups may be stored e.g. in shapefiles or a geoJson.
           image: "${base_url}/images/outside-cube/${ID}.jpg"
 
 
-*Identifier* [mandatory]
-is a unique ID for each place group, it is the one xcube serve uses to associate
+| *Identifier* [mandatory]
+| is a unique ID for each place group, it is the one xcube serve uses to associate
 a place group to a particular dataset.
 
-*Title* [mandatory]
-should be understandable for humans and this is the title that will be displayed within the viewer
+| *Title* [mandatory]
+| should be understandable for humans and this is the title that will be displayed within the viewer
 for the place selection if the selected xcube dataset contains a place group.
 
-*Path* [mandatory]
-defines where the file storing the place group is located.
-Please note that the paths within the example config are relative.
+| *Path* [mandatory]
+| defines where the file storing the place group is located.
+| Please note that the paths within the example config are relative.
 
-*PropertyMapping* [mandatory]
-determines which information contained within the place group
-should be used for selecting a certain location of the given place group. This depends very
-strongly of the data used. In the above example, the image URL is determined by a feature's ``ID`` property.
+| *PropertyMapping* [mandatory]
+| determines which information contained within the place group should be used for selecting a certain location of the given place group.
+This depends very strongly of the data used. In the above example, the image URL is determined by a feature's ``ID`` property.
 
 Property Mappings
 -----------------
@@ -514,13 +513,13 @@ Example
 Server Demo Configuration File for DataStores
 =============================================
 The server configuration file consists of various parts, some of them are necessary, others are optional.
-Here the `demo_stores configuration file`_ used in the `example-stores`_ is explained in detail.
+Here the `demo_stores configuration file`_ used in the `example stores`_ is explained in detail.
 
-This configuration file differs only in one part compared from `config`_. This part is `data-stores`_.
-The other main parts (`authentication`_, `dataset-attribution`_,
-`place-groups`_, and `styles`_) can be used in combination with `data-stores`_.
+This configuration file differs only in one part compared from `config`_. This part is `data stores`_.
+The other main parts (`authentication`_, `dataset attribution`_,
+`place groups`_, and `styles`_) can be used in combination with `data stores`_.
 
-.. _data-stores:
+.. _data stores:
 DataStores [mandatory]
 --------------------
 
@@ -545,10 +544,10 @@ Datasets, which are stored in the same location, may be configured in the config
             # ChunkCacheSize: 1G
 
 | *Identifier* [mandatory]
-is a unique ID for each DataStore.
+| is a unique ID for each DataStore.
 
 | *StoreID* [mandatory]
-can be *file* for locally stored datasets and *s3* for datasets located in the cloud.
+| can be *file* for locally stored datasets and *s3* for datasets located in the cloud.
 
 | *StoreParams* [mandatory]
 | *root* [mandatory] states a common beginning part of the paths of the served datasets.
@@ -556,12 +555,12 @@ can be *file* for locally stored datasets and *s3* for datasets located in the c
 | *storage_options* [optional] is necessary when serving datasets from the cloud. With *anon* the accessibility is configured, if the datasets are public-read, *anon* is set to "true", "false" indicates they are protected. Credentials may be set by keywords *key* and *secret*.
 
 *Datasets* [optional]
-if not specified, every dataset in the indicated location supported by xcube will be read and
+| if not specified, every dataset in the indicated location supported by xcube will be read and
 served by xcube serve. In order to filter certain datasets you can list Paths that shall be served by xcube serve.
 *Path* may contain wildcards. Each Dataset entry may have *Styles* and *PlaceGroups* associated with them, the same way
 as in `config`_.
 
-.. _example-stores:
+.. _example stores:
 Example
 =======
 
