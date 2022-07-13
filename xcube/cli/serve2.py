@@ -23,6 +23,7 @@ import json
 from typing import List, Optional, Dict, Tuple, Callable
 
 import click
+import yaml
 
 from xcube.cli.common import (cli_option_quiet,
                               cli_option_verbosity,
@@ -33,7 +34,6 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
 
 
 @click.command(name='serve2')
-@click.argument('command', metavar='[COMMAND]', nargs=-1)
 @click.option('--framework', 'framework_name',
               metavar='FRAMEWORK', default=DEFAULT_SERVER_FRAMEWORK,
               type=click.Choice(["tornado", "flask"]),
@@ -71,8 +71,8 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
               help='Unconditionally stop service after TIME seconds.')
 @cli_option_quiet
 @cli_option_verbosity
-def serve2(command: List[str],
-           framework_name: str,
+@click.argument('command', metavar='[COMMAND]', nargs=-1)
+def serve2(framework_name: str,
            port: int,
            address: str,
            config_paths: List[str],
@@ -82,9 +82,23 @@ def serve2(command: List[str],
            update_after: Optional[float],
            stop_after: Optional[float],
            quiet: bool,
-           verbosity: int):
+           verbosity: int,
+           command: List[str]):
     """
-    Run xcube restful server.
+    Run the xcube Server.
+
+    The optional COMMAND is one of the following
+
+    \b
+    - "list apis" lists the APIs provided by the server
+    - "show openapi" outputs the OpenAPI document representing this server
+    - "show config" outputs the current server configuration
+    - "show configschema" outputs the JSON Schema for the server configuration
+
+    The "show" commands may be suffixed by "yaml" or "json"
+    forcing the respective output format. The default format is YAML.
+
+    If COMMAND is provided, the server will not start.
     """
     from xcube.server.framework import get_framework_class
     from xcube.server.helpers import ConfigChangeObserver
@@ -116,34 +130,7 @@ def serve2(command: List[str],
     server = Server(framework, config)
 
     if command:
-        def list_apis():
-            for api in server.apis:
-                print(f'{api.name} - {api.description}')
-
-        def show_openapi():
-            # TODO (forman): implement me!
-            print(f'Not implemented yet!')
-
-        def show_config():
-            print(json.dumps(server.ctx.config, indent=2))
-
-        def show_config_schema():
-            print(json.dumps(server.config_schema.to_dict(), indent=2))
-
-        available_commands: Dict[Tuple[str, ...], Callable[[], None]] = {
-            ("list", "apis"): list_apis,
-            ("show", "openapi"): show_openapi,
-            ("show", "config"): show_config,
-            ("show", "configschema"): show_config_schema,
-        }
-        command_fn = available_commands.get(tuple(c.lower() for c in command))
-        if command_fn is None:
-            raise click.ClickException(
-                f'Invalid command {" ".join(command)}. '
-                f'Possible commands are '
-                f'{", ".join(" ".join(k) for k in available_commands.keys())}.'
-            )
-        return command_fn()
+        return exec_command(server, command)
 
     if update_after is not None:
         change_observer = ConfigChangeObserver(server,
@@ -155,3 +142,57 @@ def serve2(command: List[str],
         server.call_later(stop_after, server.stop)
 
     server.start()
+
+
+def exec_command(server, command):
+    def to_yaml(obj):
+        yaml.safe_dump(obj, sys.stdout, indent=2)
+
+    def to_json(obj):
+        json.dump(obj, sys.stdout, indent=2)
+
+    available_formats = {
+        'yaml': to_yaml,
+        'json': to_json
+    }
+
+    format_name = 'yaml'
+    import sys
+    if len(command) == 3:
+        format_name = command[2]
+        command = command[:2]
+    if format_name.lower() not in available_formats:
+        raise click.ClickException(
+            f'Invalid format {format_name}.'
+            f' Must be one of {", ".join(available_formats.keys())}.'
+        )
+    output_fn = available_formats[format_name.lower()]
+
+    def list_apis():
+        for api in server.apis:
+            print(f'{api.name} - {api.description}')
+
+    def show_open_api():
+        output_fn(server.ctx.open_api_doc)
+
+    def show_config():
+        output_fn(server.ctx.config)
+
+    def show_config_schema():
+        output_fn(server.config_schema.to_dict())
+
+    available_commands: Dict[Tuple[str, ...], Callable[[], None]] = {
+        ("list", "apis"): list_apis,
+        ("show", "openapi"): show_open_api,
+        ("show", "config"): show_config,
+        ("show", "configschema"): show_config_schema,
+    }
+
+    command_fn = available_commands.get(tuple(c.lower() for c in command))
+    if command_fn is None:
+        raise click.ClickException(
+            f'Invalid command {" ".join(command)}. '
+            f'Possible commands are '
+            f'{", ".join(" ".join(k) for k in available_commands.keys())}.'
+        )
+    return command_fn()
