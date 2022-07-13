@@ -31,6 +31,7 @@ from xcube.util.assertions import assert_subclass
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.version import version
 from .api import Api
 from .api import ApiContext
 from .api import ApiContextT
@@ -262,6 +263,118 @@ class Server(AsyncExecution):
                     )
         return effective_config_schema
 
+    @property
+    def open_api_doc(self) -> Dict[str, Any]:
+        """Get the OpenAPI JSON document for this server."""
+        error_schema = {
+            "type": "object",
+            "properties": {
+                "status_code": {
+                    "type": "integer",
+                    "minimum": 200,
+                },
+                "message": {
+                    "type": "string",
+                },
+                "reason": {
+                    "type": "string",
+                },
+                "exception": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "additionalProperties": True,
+            "required": ["status_code", "message"],
+        }
+
+        schema_components = {
+            "Error": {
+                "type": "object",
+                "properties": {
+                    "error": error_schema,
+                },
+                "additionalProperties": True,
+                "required": ["error"],
+            }
+        }
+
+        response_components = {
+            "UnexpectedError": {
+                "description": "Unexpected error.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            }
+        }
+
+        default_responses = {
+            "200": {
+                "description": "On success.",
+            },
+            "default": {
+                "$ref": "#/components/responses/UnexpectedError"
+            }
+        }
+
+        tags = []
+        paths = {}
+        for other_api in self.ctx.apis:
+            if not other_api.routes:
+                # Only include APIs with endpoints
+                continue
+            tags.append({
+                "name": other_api.name,
+                "description": other_api.description or ""
+            })
+            for route in other_api.routes:
+                path = dict(
+                    description=getattr(
+                        route.handler_cls, "__doc__", ""
+                    ) or ""
+                )
+                for method in ("get", "post", "put", "delete", "options"):
+                    fn = getattr(route.handler_cls, method, None)
+                    fn_openapi = getattr(fn, '__openapi__', None)
+                    if fn_openapi is not None:
+                        fn_openapi = dict(**fn_openapi)
+                        if 'tags' not in fn_openapi:
+                            fn_openapi['tags'] = [other_api.name]
+                        if 'description' not in fn_openapi:
+                            fn_openapi['description'] = \
+                                getattr(fn, "__doc__", None) or ""
+                        if 'responses' not in fn_openapi:
+                            fn_openapi['responses'] = default_responses
+                        path[method] = dict(**fn_openapi)
+                paths[route.path] = path
+
+        return {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "xcube Server",
+                "description": "xcube Server API",
+                "version": version,
+            },
+            "servers": [
+                {
+                    "url": "http://localhost:8080",
+                    "description": "Local development server."
+                },
+            ],
+            "tags": tags,
+            "paths": paths,
+            "components": {
+                "schemas": schema_components,
+                "responses": response_components
+            }
+        }
+
 
 class ServerContext(Context):
     """
@@ -287,6 +400,10 @@ class ServerContext(Context):
     @property
     def apis(self) -> Tuple[Api]:
         return self._server.apis
+
+    @property
+    def open_api_doc(self) -> Dict[str, Any]:
+        return self._server.open_api_doc
 
     @property
     def config(self) -> ServerConfig:

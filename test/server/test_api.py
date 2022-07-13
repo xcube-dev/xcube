@@ -198,6 +198,7 @@ class ApiContextTest(unittest.TestCase):
         api_ctx = ApiContext(server_ctx)
         self.assertIs(config, api_ctx.config)
         self.assertEqual((), api_ctx.apis)
+        self.assertIsInstance(api_ctx.open_api_doc, dict)
 
     def test_async_exec(self):
         framework = MockFramework()

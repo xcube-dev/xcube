@@ -51,6 +51,7 @@ class ServerTest(unittest.TestCase):
         self.assertIs(framework, server.framework)
         self.assertIsInstance(server.apis, tuple)
         self.assertIs(server.apis, server.apis)
+        self.assertIsInstance(server.open_api_doc, dict)
         self.assertIsInstance(server.ctx, ServerContext)
         self.assertIs(server.ctx, server.ctx)
 
@@ -69,7 +70,7 @@ class ServerTest(unittest.TestCase):
         self.assertNotIn("i_am_an_unknown_setting",
                          server.ctx.config)
 
-    def test_web_server_delegation(self):
+    def test_framework_delegation(self):
         extension_registry = mock_extension_registry([
             ("datasets", dict(create_ctx=MockApiContext)),
         ])
@@ -89,7 +90,7 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(1, framework.start_count)
         self.assertEqual(1, framework.stop_count)
 
-    def test_root_ctx(self):
+    def test_server_ctx(self):
         extension_registry = mock_extension_registry([
             ("datasets", dict(create_ctx=MockApiContext)),
         ])
@@ -299,13 +300,14 @@ class ServerTest(unittest.TestCase):
                          f'{cm.exception}')
 
 
-class ServerRootContextTest(unittest.TestCase):
+class ServerContextTest(unittest.TestCase):
     def test_basic_props(self):
         server = mock_server()
         config = {}
         server_ctx = ServerContext(server, config)
         self.assertIs(config, server_ctx.config)
         self.assertEqual((), server_ctx.apis)
+        self.assertIsInstance(server_ctx.open_api_doc, dict)
 
     def test_on_update_and_on_dispose(self):
         server = mock_server()

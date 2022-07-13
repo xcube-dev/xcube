@@ -317,6 +317,11 @@ class Context(AsyncExecution, ABC):
 
     @property
     @abstractmethod
+    def open_api_doc(self) -> Dict[str, Any]:
+        """The OpenAPI JSON document for the server."""
+
+    @property
+    @abstractmethod
     def config(self) -> ServerConfig:
         """The server's current configuration."""
 
@@ -398,6 +403,11 @@ class ApiContext(Context):
     def apis(self) -> Tuple[Api]:
         """Return the server context's ``apis`` property."""
         return self.server_ctx.apis
+
+    @property
+    def open_api_doc(self) -> Dict[str, Any]:
+        """Return the server context's ``apis`` property."""
+        return self.server_ctx.open_api_doc
 
     @property
     def config(self) -> ServerConfig:

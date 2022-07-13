@@ -21,7 +21,7 @@
 
 import unittest
 from typing import Sequence, Optional, Callable, Any, Awaitable, Union, Tuple, \
-    Type
+    Type, Dict
 
 import pytest
 import tornado.httputil
@@ -322,6 +322,10 @@ class MockContext(Context):
     @property
     def apis(self) -> Tuple[Api]:
         return self._api,
+
+    @property
+    def open_api_doc(self) -> Dict[str, Any]:
+        return {}
 
     @property
     def config(self) -> ServerConfig:
