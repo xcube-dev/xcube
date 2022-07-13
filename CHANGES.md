@@ -50,6 +50,8 @@
   ``` 
   and where `dataset` has different spatial resolutions in x and y, 
   an exception was raised. This is no longer the case. 
+* xcube Server can now also compute spatial 2D datasets from users' 
+  Python code. In former versions, spatio-temporal 3D cubes were enforced.
 
 ## Changes in 0.11.2
 
