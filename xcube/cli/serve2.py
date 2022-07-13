@@ -87,16 +87,16 @@ def serve2(framework_name: str,
     """
     Run the xcube Server.
 
-    The optional COMMAND is one of the following
+    The optional COMMAND is one of
 
     \b
-    - "list apis" lists the APIs provided by the server
-    - "show openapi" outputs the OpenAPI document representing this server
-    - "show config" outputs the current server configuration
-    - "show configschema" outputs the JSON Schema for the server configuration
+    list apis            lists the APIs provided by the server
+    show openapi         outputs the OpenAPI document representing this server
+    show config          outputs the effective server configuration
+    show configschema    outputs the JSON Schema for the server configuration
 
-    The "show" commands may be suffixed by "yaml" or "json"
-    forcing the respective output format. The default format is YAML.
+    The show-commands may be suffixed by yaml or json
+    forcing the respective output format. The default format is yaml.
 
     If COMMAND is provided, the server will not start.
     """
