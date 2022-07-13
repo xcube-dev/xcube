@@ -19,7 +19,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import List, Optional
+import json
+from typing import List, Optional, Dict, Tuple, Callable
 
 import click
 
@@ -32,6 +33,7 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
 
 
 @click.command(name='serve2')
+@click.argument('command', metavar='[COMMAND]', nargs=-1)
 @click.option('--framework', 'framework_name',
               metavar='FRAMEWORK', default=DEFAULT_SERVER_FRAMEWORK,
               type=click.Choice(["tornado", "flask"]),
@@ -69,7 +71,8 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
               help='Unconditionally stop service after TIME seconds.')
 @cli_option_quiet
 @cli_option_verbosity
-def serve2(framework_name: str,
+def serve2(command: List[str],
+           framework_name: str,
            port: int,
            address: str,
            config_paths: List[str],
@@ -111,6 +114,36 @@ def serve2(framework_name: str,
 
     framework = get_framework_class(framework_name)()
     server = Server(framework, config)
+
+    if command:
+        def list_apis():
+            for api in server.apis:
+                print(f'{api.name} - {api.description}')
+
+        def show_openapi():
+            # TODO (forman): implement me!
+            print(f'Not implemented yet!')
+
+        def show_config():
+            print(json.dumps(server.ctx.config, indent=2))
+
+        def show_config_schema():
+            print(json.dumps(server.config_schema.to_dict(), indent=2))
+
+        available_commands: Dict[Tuple[str, ...], Callable[[], None]] = {
+            ("list", "apis"): list_apis,
+            ("show", "openapi"): show_openapi,
+            ("show", "config"): show_config,
+            ("show", "configschema"): show_config_schema,
+        }
+        command_fn = available_commands.get(tuple(c.lower() for c in command))
+        if command_fn is None:
+            raise click.ClickException(
+                f'Invalid command {" ".join(command)}. '
+                f'Possible commands are '
+                f'{", ".join(" ".join(k) for k in available_commands.keys())}.'
+            )
+        return command_fn()
 
     if update_after is not None:
         change_observer = ConfigChangeObserver(server,
