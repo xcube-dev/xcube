@@ -170,7 +170,10 @@ class ListBucketV1Test(ListS3BucketTest, ListS3BucketV12TestsMixin):
         self.assert_list_bucket_result(list_bucket_result, delimiter='/',
                                        max_keys=10, prefix='bibo.zarr/')
         xml = list_bucket_result_to_xml(list_bucket_result)
-        with open(os.path.join(os.path.dirname(__file__), 's3', 'list-bucket-v1-result.xml')) as fp:
+        with open(os.path.join(os.path.dirname(__file__),
+                               'res',
+                               'res/s3',
+                               'list-bucket-v1-result.xml')) as fp:
             expected_xml = fp.read()
         self.assertEqual(expected_xml, xml)
 
@@ -241,7 +244,10 @@ class ListS3BucketV2Test(ListS3BucketTest, ListS3BucketV12TestsMixin):
         self.assert_list_bucket_result(list_bucket_result, delimiter='/',
                                        max_keys=10, prefix='bibo.zarr/')
         xml = list_bucket_result_to_xml(list_bucket_result)
-        with open(os.path.join(os.path.dirname(__file__), 's3', 'list-bucket-v2-result.xml')) as fp:
+        with open(os.path.join(os.path.dirname(__file__),
+                               'res',
+                               'res/s3',
+                               'list-bucket-v2-result.xml')) as fp:
             expected_xml = fp.read()
         self.assertEqual(expected_xml, xml)
 
