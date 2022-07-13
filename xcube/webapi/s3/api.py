@@ -19,4 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from .api import api
+from xcube.server.api import Api
+
+api = Api(
+    's3',
+    description='xcube S3-compatibility API',
+    required_apis=['datasets'],
+)

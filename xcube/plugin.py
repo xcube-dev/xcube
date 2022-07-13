@@ -227,6 +227,8 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         'datasets',
         'tiles',
         'timeseries',
+        'ows.wmts',
+        's3',
     ]
     for api_name in server_api_names:
         ext_registry.add_extension(
