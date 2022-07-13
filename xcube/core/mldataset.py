@@ -47,7 +47,6 @@ from xcube.core.subsampling import assert_valid_agg_methods
 from xcube.core.subsampling import subsample_dataset
 from xcube.core.tilingscheme import get_num_levels
 from xcube.core.tilingscheme import TilingScheme
-from xcube.core.verify import assert_cube
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.perf import measure_time
