@@ -1,7 +1,7 @@
-from xcube.server.testing import ServerTest
+from xcube.server.testing import ServerTestCase
 
 
-class ServerTestTest(ServerTest):
+class ServerTestCaseTest(ServerTestCase):
 
     def test_demonstrate_usage(self):
         url = f'http://localhost:{self.port}/I_do_not_exist'

@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Mapping, Union
+from typing import Dict, Any
+from typing import Mapping, Union
 from typing import Optional, Type, TypeVar
 
 import yaml
@@ -9,10 +10,12 @@ from xcube.server.api import Context
 from xcube.server.api import ServerConfig
 from xcube.server.framework import Framework
 from xcube.server.server import Server
+from xcube.server.testing import ServerTestCase
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.plugin import get_extension_registry
 from xcube.util.undefined import UNDEFINED
-from xcube.webapi.context import ServiceContext, MultiLevelDatasetOpener
+from xcube.webapi.context import MultiLevelDatasetOpener
+from xcube.webapi.context import ServiceContext
 from xcube.webapi.errors import ServiceBadRequestError
 from xcube.webapi.reqparams import RequestParams
 
@@ -95,8 +98,27 @@ class RequestParamsMock(RequestParams):
     def get_query_arguments(self) -> Mapping[str, str]:
         return dict(self.kvp)
 
-    def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
+    def get_query_argument(self, name: str,
+                           default: Optional[str] = UNDEFINED) -> Optional[
+        str]:
         value = self.kvp.get(name, default)
         if value == UNDEFINED:
             raise ServiceBadRequestError(f'Missing query parameter "{name}"')
         return value
+
+
+class ServerTest(ServerTestCase):
+
+    # noinspection PyMethodMayBeStatic
+    def get_config_filename(self) -> str:
+        return "config.yml"
+
+    def get_config(self) -> Dict[str, Any]:
+        base_dir = get_res_test_dir()
+        with open(f'{base_dir}/{self.get_config_filename()}') as fp:
+            server_config = yaml.safe_load(fp)
+            server_config["base_dir"] = base_dir
+            return server_config
+
+    def get_extension_registry(self):
+        return get_extension_registry()

@@ -24,6 +24,7 @@ import json
 import socket
 import threading
 import unittest
+from abc import ABC
 from contextlib import closing
 from typing import Dict, Optional, Any, Union, Tuple
 
@@ -43,7 +44,8 @@ def find_free_port():
         return s.getsockname()[1]
 
 
-class ServerTest(unittest.TestCase):
+# TODO (forman): Rename into ServerTestCase
+class ServerTest(unittest.TestCase, ABC):
 
     def setUp(self) -> None:
         self.port = find_free_port()
@@ -102,3 +104,6 @@ class ServerTest(unittest.TestCase):
         response = self.fetch(path, method=method, headers=headers, body=body)
         data = response.data
         return json.loads(data), response.status
+
+
+ServerTestCase = ServerTest
