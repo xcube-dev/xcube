@@ -18,27 +18,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import json
-from typing import Dict, Any
 
-import yaml
-from xcube.server.testing import ServerTest
-from xcube.util.plugin import get_extension_registry
-
-from ..helpers import get_res_test_dir
+from ..helpers import ServerTest
 
 
 class PlacesRoutesTest(ServerTest):
-
-    def get_config(self) -> Dict[str, Any]:
-        base_dir = get_res_test_dir()
-        with open(base_dir + "/config.yml") as fp:
-            server_config = yaml.safe_load(fp)
-            server_config["base_dir"] = base_dir
-            return server_config
-
-    def get_extension_registry(self):
-        return get_extension_registry()
 
     def test_places(self):
         result, status = self.fetch_json('/places')
