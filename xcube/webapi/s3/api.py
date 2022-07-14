@@ -20,9 +20,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
+from .context import S3Context
 
 api = Api(
     's3',
-    description='xcube S3-compatibility API',
+    description='xcube S3 data access API',
     required_apis=['datasets'],
+    create_ctx=S3Context
 )
