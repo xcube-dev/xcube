@@ -117,6 +117,15 @@ class TornadoFrameworkTest(unittest.TestCase):
                          ")",
                          p2p("/collections/{collection_id}/items/{item_id}"))
 
+        self.assertEqual("/s3bucket/"
+                         "("
+                         "?P<dataset_id>"
+                         "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
+                         ")"
+                         "\\/?"
+                         "(?P<path>.*)",
+                         p2p("/s3bucket/{dataset_id}/{*path}"))
+
     def test_path_to_pattern_fails(self):
         p2p = TornadoFramework.path_to_pattern
 
@@ -136,6 +145,19 @@ class TornadoFrameworkTest(unittest.TestCase):
             p2p('/datasets/dataset_id}/bbox')
         self.assertEqual('missing opening "{"'
                          ' in "/datasets/dataset_id}/bbox"',
+                         f"{cm.exception}")
+
+        with self.assertRaises(ValueError) as cm:
+            p2p('/datasets/{*dataset_id}/places')
+        self.assertEqual('wildcard variable must be last in path,'
+                         ' but path was "/datasets/{*dataset_id}/places"',
+                         f"{cm.exception}")
+
+        with self.assertRaises(ValueError) as cm:
+            p2p('/datasets/{*dataset_id}/{*places}')
+        self.assertEqual('only a single wildcard variable is allowed,'
+                         ' but found 2 in path'
+                         ' "/datasets/{*dataset_id}/{*places}"',
                          f"{cm.exception}")
 
 

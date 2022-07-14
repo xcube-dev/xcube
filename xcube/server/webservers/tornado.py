@@ -160,29 +160,55 @@ class TornadoFramework(Framework):
         :return: equivalent regex pattern
         :raise ValueError: if *pattern* is invalid
         """
-        name_pattern = r'(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)'
+        var_pattern = r'(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)'
+        rest_var_pattern = r'\/?(?P<%s>.*)'
+        num_rest_vars = 0
+        rest_var_seen = False
         reg_expr = ''
         pos = 0
         while True:
             pos1 = path.find('{', pos)
             if pos1 >= 0:
                 pos2 = path.find('}', pos1 + 1)
-                if pos2 > pos1:
-                    name = path[pos1 + 1:pos2]
-                    if not name.isidentifier():
-                        raise ValueError(
-                            '"{name}" in path must be a valid identifier,'
-                            ' but got "%s"' % name)
-                    reg_expr += path[pos:pos1] + (name_pattern % name)
-                    pos = pos2 + 1
-                else:
+                if pos2 <= pos1:
                     raise ValueError('missing closing "}" in "%s"' % path)
+                arg = path[pos1 + 1:pos2]
+                if arg.startswith('*'):
+                    rest_var_seen = True
+                    name = arg[1:]
+                    pattern = rest_var_pattern
+                    if pos1 > 0 and path[pos1 - 1] == '/':
+                        # Consume a trailing "/" because it is
+                        # covered in pattern
+                        pos1 -= 1
+                    num_rest_vars += 1
+                else:
+                    rest_var_seen = False
+                    name = arg
+                    pattern = var_pattern
+                if not name.isidentifier():
+                    raise ValueError(
+                        '"{name}" in path must be a valid identifier,'
+                        ' but got "%s"' % arg
+                    )
+                reg_expr += path[pos:pos1] + (pattern % name)
+                pos = pos2 + 1
             else:
                 pos2 = path.find('}', pos)
                 if pos2 >= pos:
                     raise ValueError('missing opening "{" in "%s"' % path)
-                reg_expr += path[pos:]
+                rest_of_path = path[pos:]
+                if rest_var_seen and rest_of_path:
+                    raise ValueError('wildcard variable must be last in path,'
+                                     f' but path was "{path}"')
+                reg_expr += rest_of_path
+                rest_var_seen = False
                 break
+        if num_rest_vars > 1:
+            raise ValueError(
+                'only a single wildcard variable is allowed,'
+                f' but found {num_rest_vars} in path "{path}"'
+            )
         return reg_expr
 
 
@@ -232,6 +258,9 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         self.finish({
             "error": error_info
         })
+
+    async def head(self, *args, **kwargs):
+        await self._call_method('head', *args, **kwargs)
 
     async def get(self, *args, **kwargs):
         await self._call_method('get', *args, **kwargs)
