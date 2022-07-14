@@ -31,7 +31,7 @@ from ..util.assertions import assert_true
 from ..util.jsonschema import JsonObjectSchema
 
 _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
-_HTTP_METHODS = {'get', 'post', 'put', 'delete', 'options'}
+_HTTP_METHODS = {'head', 'get', 'post', 'put', 'delete', 'options'}
 
 ArgT = TypeVar('ArgT')
 ReturnT = TypeVar('ReturnT')
@@ -583,6 +583,9 @@ class ApiHandler(Generic[ServerContextT], ABC):
         return self._response
 
     # HTTP methods
+
+    def head(self, *args, **kwargs):
+        raise ApiError.MethodNotAllowed("method HEAD not allowed")
 
     def get(self, *args, **kwargs):
         raise ApiError.MethodNotAllowed("method GET not allowed")

@@ -339,7 +339,12 @@ class Server(AsyncExecution):
                         route.handler_cls, "__doc__", ""
                     ) or ""
                 )
-                for method in ("get", "post", "put", "delete", "options"):
+                for method in ("head",
+                               "get",
+                               "post",
+                               "put",
+                               "delete",
+                               "options"):
                     fn = getattr(route.handler_cls, method, None)
                     fn_openapi = getattr(fn, '__openapi__', None)
                     if fn_openapi is not None:
