@@ -1,5 +1,6 @@
 import warnings
-from typing import Collection, Optional, Tuple
+from collections.abc import Mapping
+from typing import Collection, Optional, Tuple, Callable, Dict, Any
 from typing import Union
 
 import cftime
@@ -212,3 +213,121 @@ def select_temporal_subset(dataset: xr.Dataset,
         time_2 = cftime.datetime(time_2.year, time_2.month, time_2.day,
                                  calendar=calendar)
         return dataset.sel({time_name or 'time': slice(time_1, time_2)})
+
+
+_PREDICATE_SIGNATURE = "predicate(" \
+                       "slice_array: xr.DataArray, " \
+                       "slice_info: Dict" \
+                       ") -> bool"
+
+Predicate = Callable[
+    [
+        xr.DataArray,
+        Dict[str, Any]
+    ],
+    bool
+]
+
+
+def select_label_subset(dataset: xr.Dataset,
+                        dim: str,
+                        predicate: Union[Predicate,
+                                         Mapping[str, Predicate]]):
+    """Select the labels in *dataset* along a given dimension *dim*
+    using a predicate function *predicate* that is called for
+    all variable slices for a current label.
+
+    The *predicate* can also be provided as a mapping
+    from variable names to dedicated predicate functions.
+
+    The predicate function is called for all *dim* labels in *dataset*
+    and for every variable that contains *dim*.
+
+    If *predicate* returns False for any given label,
+    that label will be dropped from dimension *dim*.
+
+    Predicate functions are defined as follows:
+
+    ```python
+        def predicate(slice_array: xr.DataArray, slice_info: Dict) -> bool:
+            ...
+    ```
+
+    Here, *slice_array* is a variable's array slice for given label.
+    The argument *slice_info* is a dictionary that contains the
+    following keys:
+
+    * var: str - name of the current variable.
+    * dim: str - value of *dim*.
+    * index: int: value for the current index within dimension *dim*.
+    * label: Optional[xr.DataArray] - value for the current label
+      within dimension *dim*.
+
+    Note, the value of "label" will be None, if *dataset*
+    does not contain a 1D-coordinate variable named *dim*.
+
+    :param dataset: The dataset.
+    :param dim: The name of the dimension
+        from which to select the labels.
+    :param predicate: The predicate function
+        or a mapping from variable names
+        to variable-specific predicate functions.
+    :return: A new datasets with labels along *dim*
+        selected by the *predicate*.
+        If all labels are selected, *dataset* is returned without change.
+    """
+    if callable(predicate):
+        predicate_lookup = {var_name: predicate
+                            for var_name, var in dataset.data_vars.items()
+                            if dim in var.dims}
+    elif isinstance(predicate, Mapping):
+        predicate_lookup = predicate
+        for var_name, var_predicate in predicate_lookup.items():
+            if not callable(var_predicate):
+                raise TypeError(f'predicate for variable {var_name!r}'
+                                f' must be callable with'
+                                f' signature {_PREDICATE_SIGNATURE}')
+    else:
+        raise TypeError(f'predicate'
+                        f' must be callable with'
+                        f' signature {_PREDICATE_SIGNATURE}')
+
+    num_labels = dataset.dims[dim]
+    dropped_indexes = []
+    labels = dataset.get(dim)
+
+    # Performance note: obviously, whether a single dim_index is
+    # valid or not can be determined for all num_labels
+    # in parallel.
+    for index in range(num_labels):
+        label = labels[index] if labels is not None else None
+        if not _is_label_valid(dataset,
+                               predicate_lookup,
+                               dim,
+                               index,
+                               label):
+            dropped_indexes.append(index)
+
+    if not dropped_indexes:
+        return dataset
+
+    return dataset.drop_isel({dim: dropped_indexes})
+
+
+def _is_label_valid(dataset: xr.Dataset,
+                    predicate_lookup: Mapping[str, Predicate],
+                    dim: str,
+                    index: int,
+                    label: Optional[xr.DataArray]) -> bool:
+    for var_name, var in dataset.data_vars.items():
+        if dim in var.dims:
+            predicate = predicate_lookup.get(var_name)
+            if predicate is not None:
+                slice_array = var.isel({dim: index})
+                slice_info = dict(var=var_name,
+                                  dim=dim,
+                                  index=index,
+                                  label=label)
+                if not predicate(slice_array, slice_info):
+                    return False
+    return True
