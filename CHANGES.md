@@ -36,6 +36,10 @@
   define a dataset (because it contains wildcards), providing a 
   user-defined identifier will raise an error. 
 
+* Added a new function `xcube.core.select.select_label_subset()` that 
+  is used to select dataset labels along a given dimension using
+  user-defined predicate functions.
+
 ### Fixes
 
 * xcube Server did not find any grid mapping if a grid mapping variable
