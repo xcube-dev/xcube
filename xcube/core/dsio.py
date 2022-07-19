@@ -42,25 +42,11 @@ from xcube.core.timeslice import append_time_slice, insert_time_slice, \
 from xcube.core.verify import assert_cube
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
-_DEPRECATION_REASON = (
-    'This function should no longer be used. Use xcube data stores instead:\n'
-    '>>> from xcube.core.store import new_data_store\n'
-    '>>> store = new_data_store("file", root=root_dir)\n'
-    '>>> # or store = new_data_store("s3", root=bucket_name)\n'
-    '%s\n'
-    'For more info refer to xcube.core.store.DataStore interface'
-)
-
-_STORE_OPEN = '>>> dataset = store.open_data(rel_path)\n'
-_STORE_WRITE = '>>> store.write_data(dataset, rel_path)\n'
-
-_DEPRECATION_REASON_ANY = _DEPRECATION_REASON % ''
-_DEPRECATION_REASON_OPEN = _DEPRECATION_REASON % _STORE_OPEN
-_DEPRECATION_REASON_WRITE = _DEPRECATION_REASON % _STORE_WRITE
+_DEPRECATION_REASON = 'use xcube.core.store API instead'
 _DEPRECATION_VERSION = "0.11.3"
 
 
-@deprecated(_DEPRECATION_REASON_OPEN, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def open_cube(input_path: str,
               format_name: str = None,
               **kwargs) -> xr.Dataset:
@@ -75,7 +61,7 @@ def open_cube(input_path: str,
     return open_dataset(input_path, format_name=format_name, is_cube=True, **kwargs)
 
 
-@deprecated(_DEPRECATION_REASON_WRITE, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def write_cube(cube: xr.Dataset,
                output_path: str,
                format_name: str = None,
@@ -96,7 +82,7 @@ def write_cube(cube: xr.Dataset,
     return write_dataset(cube, output_path, format_name=format_name, **kwargs)
 
 
-@deprecated(_DEPRECATION_REASON_OPEN, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def open_dataset(input_path: str,
                  format_name: str = None,
                  is_cube: bool = False,
@@ -122,7 +108,7 @@ def open_dataset(input_path: str,
     return dataset
 
 
-@deprecated(_DEPRECATION_REASON_WRITE, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def write_dataset(dataset: xr.Dataset,
                   output_path: str,
                   format_name: str = None,
@@ -146,7 +132,7 @@ def write_dataset(dataset: xr.Dataset,
     return dataset
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
     """
     An abstract base class that represents dataset input/output.
@@ -212,12 +198,12 @@ class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
         raise NotImplementedError()
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def get_extension(name: str):
     return get_extension_registry().get_extension(EXTENSION_POINT_DATASET_IOS, name)
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def find_dataset_io_by_name(name: str):
     extension = get_extension(name)
     if not extension:
@@ -225,7 +211,7 @@ def find_dataset_io_by_name(name: str):
     return extension.component
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: DatasetIO = None) -> Optional[DatasetIO]:
     modes = set(modes) if modes else None
     format_name = format_name.lower()
@@ -245,7 +231,7 @@ def find_dataset_io(format_name: str, modes: Iterable[str] = None, default: Data
     return default
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def guess_dataset_format(path: str) -> Optional[str]:
     """
     Guess a dataset format for a file system path or URL given by *path*.
@@ -258,7 +244,7 @@ def guess_dataset_format(path: str) -> Optional[str]:
     return None
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def guess_dataset_ios(path: str) -> List[Tuple[DatasetIO, float]]:
     """
     Guess suitable DatasetIO objects for a file system path or URL given by *path*.
@@ -294,7 +280,7 @@ def _get_ext(path: str) -> Optional[str]:
     return ext.lower()
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
     dataset_ios = get_extension_registry().find_components(EXTENSION_POINT_DATASET_IOS)
     if filter_fn is None:
@@ -303,7 +289,7 @@ def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[Data
 
 
 # noinspection PyAbstractClass
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class MemDatasetIO(DatasetIO):
     """
     An in-memory  dataset I/O. Keeps all datasets in a dictionary.
@@ -351,7 +337,7 @@ class MemDatasetIO(DatasetIO):
             ds.attrs.update(global_attrs)
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class Netcdf4DatasetIO(DatasetIO):
     """
     A dataset I/O that reads from / writes to NetCDF files.
@@ -401,7 +387,7 @@ class Netcdf4DatasetIO(DatasetIO):
             ds.close()
 
 
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class ZarrDatasetIO(DatasetIO):
     """
     A dataset I/O that reads from / writes to Zarr directories or archives.
@@ -542,7 +528,7 @@ class ZarrDatasetIO(DatasetIO):
 
 
 # noinspection PyAbstractClass
-@deprecated(_DEPRECATION_REASON_ANY, version=_DEPRECATION_VERSION)
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class CsvDatasetIO(DatasetIO):
     """
     A dataset I/O that reads from / writes to CSV files.
@@ -566,6 +552,7 @@ class CsvDatasetIO(DatasetIO):
         dataset.to_dataframe().to_csv(output_path, **kwargs)
 
 
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def rimraf(*paths: str):
     """
     The UNIX command `rm -rf` for xcube.
@@ -586,6 +573,7 @@ def rimraf(*paths: str):
                 pass
 
 
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def get_path_or_s3_store(path_or_url: str,
                          s3_kwargs: Mapping[str, Any] = None,
                          s3_client_kwargs: Mapping[str, Any] = None,
@@ -619,6 +607,7 @@ def get_path_or_s3_store(path_or_url: str,
         return path_or_url, consolidated
 
 
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def parse_s3_fs_and_root(s3_url: str,
                          s3_kwargs: Mapping[str, Any] = None,
                          s3_client_kwargs: Mapping[str, Any] = None,
@@ -652,6 +641,7 @@ def parse_s3_fs_and_root(s3_url: str,
     return s3, root
 
 
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
                        s3_client_kwargs: Mapping[str, Any] = None,
                        s3_config_param_name: str = 's3_kwargs',
@@ -694,6 +684,7 @@ def new_s3_file_system(s3_kwargs: Mapping[str, Any] = None,
         raise
 
 
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def parse_s3_url_and_kwargs(s3_url: str,
                             s3_kwargs: Mapping[str, Any] = None,
                             s3_client_kwargs: Mapping[str, Any] = None) \
@@ -735,6 +726,7 @@ def parse_s3_url_and_kwargs(s3_url: str,
     return root, new_s3_kwargs, new_s3_client_kwargs
 
 
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def split_s3_url(path: str) -> Tuple[Optional[str], str]:
     """
     If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)
@@ -752,6 +744,7 @@ def split_s3_url(path: str) -> Tuple[Optional[str], str]:
     return None, path
 
 
+@deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def is_s3_url(path_or_url: str) -> bool:
     """
     Test if *path_or_url* is a potential object storage URL.
