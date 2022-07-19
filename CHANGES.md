@@ -53,6 +53,11 @@
 * xcube Server can now also compute spatial 2D datasets from users' 
   Python code. In former versions, spatio-temporal 3D cubes were enforced.
 
+### Other important changes
+
+* Deprecated all functions and classes defined in `xcube.core.dsio` 
+  in favor of the xcube data store API defined by `xcube.core.store`.
+
 ## Changes in 0.11.2
 
 ### Enhancements
