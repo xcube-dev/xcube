@@ -25,13 +25,6 @@ from ..helpers import ServerTest
 
 
 class S3RoutesTest(ServerTest):
-    def assertResponseOK(self, response: urllib3.response.HTTPResponse):
-        self.assertEqual(200, response.status)
-
-    def assertResourceNotFoundResponse(
-            self, response: urllib3.response.HTTPResponse
-    ):
-        self.assertEqual(404, response.status)
 
     def test_fetch_list_s3bucket(self):
         response = self.fetch('/s3bucket')

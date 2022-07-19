@@ -74,7 +74,7 @@ def _compute_ml_dataset_tile(ctx: ServiceContext,
     format = args.pop('format', DEFAULT_FORMAT)
     trace_perf = args.pop('debug', None) == '1' or ctx.trace_perf
 
-    if format not in ('png' or 'image/png'):
+    if format not in ('png', 'image/png'):
         raise ServiceBadRequestError(
             f'Illegal format {format!r}'
         )

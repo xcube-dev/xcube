@@ -74,7 +74,7 @@ def _compute_ml_dataset_tile(ctx: TilesContext,
     value_max = float(args.pop('vmax', 1.0))
     format = args.pop('format', DEFAULT_FORMAT)
 
-    if format not in ('png' or 'image/png'):
+    if format not in ('png', 'image/png'):
         raise ApiError.BadRequest(
             f'Illegal format {format!r}'
         )

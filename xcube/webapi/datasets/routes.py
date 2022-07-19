@@ -64,7 +64,7 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
             self.request.headers
         )
         details = self.request.get_query_arg('details', default=False)
-        point = self.request.get_query_arg('point', None)
+        point = self.request.get_query_arg('point', default=None)
         if point is not None:
             try:
                 point = tuple(map(float, point.split(',')))

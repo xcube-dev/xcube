@@ -1,24 +1,5 @@
-#  The MIT License (MIT)
-#  Copyright (c) 2022 by the xcube development team and contributors
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a
-#  copy of this software and associated documentation files (the "Software"),
-#  to deal in the Software without restriction, including without limitation
-#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-#  and/or sell copies of the Software, and to permit persons to whom the
-#  Software is furnished to do so, subject to the following conditions:
-#
-#  The above copyright notice and this permission notice shall be included in
-#  all copies or substantial portions of the Software.
-#
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-#  DEALINGS IN THE SOFTWARE.
-
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -26,9 +7,21 @@
 # the rights to use, copy, modify, merge, publish, distribute, sublicense,
 # and/or sell copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import urllib.parse
 import warnings
+from collections.abc import Mapping
 from typing import Dict, List, Tuple, Any
 
 import numpy as np
@@ -41,9 +34,9 @@ from xcube.core.tilingscheme import EARTH_CIRCUMFERENCE_WGS84
 from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
-from xcube.webapi.context import ServiceContext
 from xcube.webapi.xml import Document
 from xcube.webapi.xml import Element
+from .context import WmtsContext
 
 WMTS_VERSION = '1.0.0'
 WMTS_URL_PREFIX = f'wmts/{WMTS_VERSION}'
@@ -71,7 +64,7 @@ _TILE_URL_TEMPLATE = WMTS_URL_PREFIX \
                        '{TileCol}.png'
 
 
-def get_wmts_capabilities_xml(ctx: ServiceContext,
+def get_wmts_capabilities_xml(ctx: WmtsContext,
                               base_url: str,
                               tms_id: str = WMTS_CRS84_TMS_ID) -> str:
     """
@@ -94,7 +87,7 @@ def get_wmts_capabilities_xml(ctx: ServiceContext,
     return document.to_xml(indent=4)
 
 
-def get_capabilities_element(ctx: ServiceContext,
+def get_capabilities_element(ctx: WmtsContext,
                              base_url: str,
                              tms_id: str) -> Element:
     service_provider_element = get_service_provider_element(ctx)
@@ -111,10 +104,10 @@ def get_capabilities_element(ctx: ServiceContext,
         get_crs_name_from_tms_id(tms_id)
     )
 
-    for dataset_config in ctx.get_dataset_configs():
+    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
 
-        ml_dataset = ctx.get_ml_dataset(ds_name)
+        ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_name)
         grid_mapping = ml_dataset.grid_mapping
         ds = ml_dataset.base_dataset
 
@@ -137,8 +130,8 @@ def get_capabilities_element(ctx: ServiceContext,
             var = ds[var_name]
 
             is_spatial_var = var.ndim >= 2 \
-                             and var.dims[-1] == x_name \
-                             and var.dims[-2] == y_name
+                and var.dims[-1] == x_name \
+                and var.dims[-2] == y_name
             if not is_spatial_var:
                 continue
 
@@ -284,7 +277,7 @@ def get_dim_elements(
 
 def get_ds_theme_element(ds_name: str,
                          ds: xr.Dataset,
-                         dataset_config: Dict[str, Any]) -> Element:
+                         dataset_config: Mapping[str, Any]) -> Element:
     ds_title = dataset_config.get(
         'Title', ds.attrs.get('title', ds_name)
     )
@@ -452,7 +445,7 @@ def _get_tile_matrix_set_element(
     return element
 
 
-def get_operations_metadata_element(ctx: ServiceContext,
+def get_operations_metadata_element(ctx: WmtsContext,
                                     base_url: str,
                                     tms_id: str) -> Element:
     wmts_kvp_url = ctx.get_service_url(
@@ -611,7 +604,7 @@ def get_service_identification_element():
 
 
 def get_service_metadata_url_element(
-        ctx: ServiceContext,
+        ctx: WmtsContext,
         base_url: str,
         tms_id: str
 ) -> Element:

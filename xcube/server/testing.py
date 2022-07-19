@@ -44,8 +44,7 @@ def find_free_port():
         return s.getsockname()[1]
 
 
-# TODO (forman): Rename into ServerTestCase
-class ServerTest(unittest.TestCase, ABC):
+class ServerTestCase(unittest.TestCase, ABC):
 
     def setUp(self) -> None:
         self.port = find_free_port()
@@ -89,6 +88,14 @@ class ServerTest(unittest.TestCase, ABC):
               headers: Optional[Dict[str, str]] = None,
               body: Optional[Any] = None) \
             -> urllib3.response.HTTPResponse:
+        """Fetches the response for given request.
+
+        :param path: Route request path
+        :param method: HTTP request method, default to "GET"
+        :param headers: HTTP request headers
+        :param body: HTTP request body
+        :return: A response object
+        """
         if path.startswith("/"):
             path = path[1:]
         url = f'http://localhost:{self.port}/{path}'
@@ -101,9 +108,98 @@ class ServerTest(unittest.TestCase, ABC):
                    body: Optional[Any] = None) \
             -> Tuple[
                 Union[type(None), bool, int, float, str, list, dict], int]:
+        """Fetches the response's JSON value for given request.
+
+        :param path: Route request path
+        :param method: HTTP request method, default to "GET"
+        :param headers: HTTP request headers
+        :param body: HTTP request body
+        :return: A json object parsed from response data
+        """
         response = self.fetch(path, method=method, headers=headers, body=body)
-        data = response.data
-        return json.loads(data), response.status
+        return json.loads(response.data), response.status
+
+    def assertResponseOK(
+            self,
+            response: urllib3.response.HTTPResponse
+    ):
+        """ Assert that response has status code 200.
+
+        :param response: The response from a ``self.fetch()`` call
+        """
+        self.assertResponse(response, expected_status=200)
+
+    def assertResourceNotFoundResponse(
+            self,
+            response: urllib3.response.HTTPResponse,
+            expected_message: str = None
+    ):
+        """ Assert that response
+        has the given status code 404, and
+        has the given error message *expected_message*, if given.
+
+        :param response: The response from a ``self.fetch()`` call
+        :param expected_message: The expected error message or part of it.
+        """
+        self.assertResponse(response,
+                            expected_status=404,
+                            expected_message=expected_message)
+
+    def assertBadRequestResponse(
+            self,
+            response: urllib3.response.HTTPResponse,
+            expected_message: str = None
+    ):
+        """ Assert that response
+        has the given status code 400, and
+        has the given error message *expected_message*, if given.
+
+        :param response: The response from a ``self.fetch()`` call
+        :param expected_message: The expected error message or part of it.
+        """
+        self.assertResponse(response,
+                            expected_status=400,
+                            expected_message=expected_message)
+
+    def assertResponse(
+            self,
+            response: urllib3.response.HTTPResponse,
+            expected_status: Optional[int] = None,
+            expected_message: Optional[str] = None
+    ):
+        """ Assert that response
+        has the given status code *expected_status*, if given, and
+        has the given error message *expected_message*, if given.
+
+        :param response: The response from a ``self.fetch()`` call
+        :param expected_status: The expected status code.
+        :param expected_message: The expected error message or part of it.
+        """
+        message = self.parse_error_message(response)
+        if expected_status is not None:
+            self.assertEqual(expected_status, response.status,
+                             msg=message)
+        if expected_message is not None:
+            self.assertIsNotNone(message,
+                                 msg="error message not available")
+            self.assertIsInstance(message, str,
+                                  msg="error message must be a string,"
+                                      f" was {message!r}")
+            self.assertIn(expected_message, message)
+
+    @classmethod
+    def parse_error_message(
+            cls,
+            response: urllib3.response.HTTPResponse
+    ) -> Optional[str]:
+        """Parse an error message from the given response object."""
+        # noinspection PyBroadException
+        try:
+            result = json.loads(response.data)
+            return result['error']['message']
+        except BaseException:
+            return None
 
 
-ServerTestCase = ServerTest
+# TODO (forman): Remove before final PR
+ServerTest = ServerTestCase

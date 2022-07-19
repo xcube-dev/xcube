@@ -18,14 +18,15 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
+
 import asyncio
 import concurrent.futures
 import functools
 import logging
 import traceback
 import urllib.parse
-from typing import Any, Optional, Sequence, Union, Callable, Type, \
-    Awaitable, Mapping
+from typing import (Any, Optional, Sequence, Union, Callable, Type,
+                    Awaitable, Mapping)
 
 import tornado.escape
 import tornado.httputil
@@ -292,7 +293,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
 class TornadoApiRequest(ApiRequest):
     def __init__(self, request: tornado.httputil.HTTPServerRequest):
         self._request = request
-        self._query_args = None
+        self._is_query_lower_case = False
         # print("full_url:", self._request.full_url())
         # print("protocol:", self._request.protocol)
         # print("host:", self._request.host)
@@ -300,18 +301,23 @@ class TornadoApiRequest(ApiRequest):
         # print("path:", self._request.path)
         # print("query:", self._request.query)
 
+    def make_query_lower_case(self):
+        self._is_query_lower_case = True
+
     @functools.cached_property
     def query(self) -> Mapping[str, Sequence[str]]:
-        return urllib.parse.parse_qs(self._request.query)
+        mapping = urllib.parse.parse_qs(self._request.query)
+        if self._is_query_lower_case:
+            mapping = {k.lower(): v for k, v in mapping.items()}
+        return mapping
 
     # noinspection PyShadowingBuiltins
     def get_query_args(self,
                        name: str,
                        type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
-        query_args = self.query
-        if not query_args or name not in query_args:
+        if not self.query or name not in self.query:
             return []
-        values = query_args[name]
+        values = self.query[name]
         if type is not None and type is not str:
             assert_true(callable(type), 'type must be callable')
             try:

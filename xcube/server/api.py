@@ -484,6 +484,10 @@ class ApiRequest:
     def json(self) -> JSON:
         """The request body as JSON value."""
 
+    @abstractmethod
+    def make_query_lower_case(self):
+        """Make the query keys case-insensitive."""
+
     @property
     @abstractmethod
     def query(self) -> Mapping[str, Sequence[str]]:
