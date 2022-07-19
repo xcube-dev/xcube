@@ -244,6 +244,10 @@ class SelectLabelSubsetTest(unittest.TestCase):
         self.assertEqual(3 * 2, actual_count)
 
     def test_no_change(self):
+        self._test_no_change(use_dask=False)
+        self._test_no_change(use_dask=True)
+
+    def _test_no_change(self, use_dask: bool):
         ds = xr.Dataset(
             {
                 "a": (["time", "y", "x"], np.zeros((3, 4, 8))),
@@ -256,12 +260,16 @@ class SelectLabelSubsetTest(unittest.TestCase):
         def predicate(slice_array, slice_info):
             return True
 
-        result = select_label_subset(ds, "time", predicate)
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIs(ds, result)
         self.assertEqual({"a", "b", "time"}, set(result.variables.keys()))
         self.assertEqual({'time': 3, 'y': 4, 'x': 8}, result.dims)
 
     def test_select_by_slice_info(self):
+        self._test_select_by_slice_info(use_dask=False)
+        self._test_select_by_slice_info(use_dask=True)
+
+    def _test_select_by_slice_info(self, use_dask: bool):
         ds = xr.Dataset(
             {
                 "a": (["time", "y", "x"], np.zeros((3, 4, 8))),
@@ -274,7 +282,7 @@ class SelectLabelSubsetTest(unittest.TestCase):
         def predicate(slice_array, slice_info):
             return slice_info.get('label') == 2022
 
-        result = select_label_subset(ds, "time", predicate)
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIsInstance(result, xr.Dataset)
         self.assertEqual({'time': 1, 'y': 4, 'x': 8}, result.dims)
         self.assertEqual([2022], list(result.time))
@@ -283,12 +291,16 @@ class SelectLabelSubsetTest(unittest.TestCase):
         def predicate(slice_array, slice_info):
             return slice_info.get('label') in (2020, 2022)
 
-        result = select_label_subset(ds, "time", predicate)
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIsInstance(result, xr.Dataset)
         self.assertEqual({'time': 2, 'y': 4, 'x': 8}, result.dims)
         self.assertEqual([2020, 2022], list(result.time))
 
-    def test_select_by_slice(self):
+    def test_select_by_slice_array(self):
+        self._test_select_by_slice_array(use_dask=False)
+        self._test_select_by_slice_array(use_dask=True)
+
+    def _test_select_by_slice_array(self, use_dask: bool):
         ds = xr.Dataset(
             {
                 "a": (["time", "y", "x"], np.stack([np.full((4, 8), 1),
@@ -305,7 +317,7 @@ class SelectLabelSubsetTest(unittest.TestCase):
         def predicate(slice_array, slice_info):
             return not np.all(slice_array == 2)
 
-        result = select_label_subset(ds, "time", predicate)
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIsInstance(result, xr.Dataset)
         self.assertEqual({'time': 2, 'y': 4, 'x': 8}, result.dims)
         self.assertEqual([2020, 2022], list(result.time))
@@ -319,7 +331,8 @@ class SelectLabelSubsetTest(unittest.TestCase):
             return not np.all(slice_array == 2)
 
         result = select_label_subset(ds, "time",
-                                     dict(a=predicate_a, b=predicate_b))
+                                     dict(a=predicate_a, b=predicate_b),
+                                     use_dask=use_dask)
         self.assertIsInstance(result, xr.Dataset)
         self.assertEqual({'time': 2, 'y': 4, 'x': 8}, result.dims)
         self.assertEqual([2020, 2022], list(result.time))

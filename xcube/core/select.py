@@ -1,35 +1,36 @@
-import warnings
-from collections.abc import Mapping
-from typing import Collection, Optional, Tuple, Callable, Dict, Any
-from typing import Union
-
-import cftime
-import pandas as pd
-import xarray as xr
-
-from xcube.core.gridmapping import GridMapping
-from xcube.util.assertions import assert_given
-
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
+import warnings
+from collections.abc import Mapping
+from typing import Collection, Optional, Tuple, Callable, Dict, Any, List
+from typing import Union
+
+import cftime
+import dask.array as da
+import pandas as pd
+import xarray as xr
+
+from xcube.core.gridmapping import GridMapping
+from xcube.util.assertions import assert_given
 
 Bbox = Tuple[float, float, float, float]
 TimeRange = Union[Tuple[Optional[str], Optional[str]],
@@ -232,7 +233,8 @@ Predicate = Callable[
 def select_label_subset(dataset: xr.Dataset,
                         dim: str,
                         predicate: Union[Predicate,
-                                         Mapping[str, Predicate]]):
+                                         Mapping[str, Predicate]],
+                        use_dask: bool = False):
     """Select the labels in *dataset* along a given dimension *dim*
     using a predicate function *predicate* that is called for
     all variable slices for a current label.
@@ -272,6 +274,11 @@ def select_label_subset(dataset: xr.Dataset,
     :param predicate: The predicate function
         or a mapping from variable names
         to variable-specific predicate functions.
+    :param use_dask: Whether to use a Dask graph that will
+        compute the validity of labels in parallel.
+        For a large number of labels, very complex Dask
+        graphs will result (every label is a node)
+        whose overhead may compensate the performance gain.
     :return: A new datasets with labels along *dim*
         selected by the *predicate*.
         If all labels are selected, *dataset* is returned without change.
@@ -293,21 +300,14 @@ def select_label_subset(dataset: xr.Dataset,
                         f' signature {_PREDICATE_SIGNATURE}')
 
     num_labels = dataset.dims[dim]
-    dropped_indexes = []
-    labels = dataset.get(dim)
 
-    # Performance note: obviously, whether a single dim_index is
-    # valid or not can be determined for all num_labels
-    # in parallel.
-    for index in range(num_labels):
-        label = labels[index] if labels is not None else None
-        if not _is_label_valid(dataset,
-                               predicate_lookup,
-                               dim,
-                               index,
-                               label):
-            dropped_indexes.append(index)
+    valid_mask = [_is_label_valid(dataset, predicate_lookup, dim, index)
+                  for index in range(num_labels)]
 
+    if use_dask:
+        valid_mask = da.stack(valid_mask).compute()
+
+    dropped_indexes = [i for i in range(num_labels) if not valid_mask[i]]
     if not dropped_indexes:
         return dataset
 
@@ -317,8 +317,9 @@ def select_label_subset(dataset: xr.Dataset,
 def _is_label_valid(dataset: xr.Dataset,
                     predicate_lookup: Mapping[str, Predicate],
                     dim: str,
-                    index: int,
-                    label: Optional[xr.DataArray]) -> bool:
+                    index: int) -> da.Array:
+    label = dataset[dim][index] if dim in dataset else None
+    results: List[da.Array] = []
     for var_name, var in dataset.data_vars.items():
         if dim in var.dims:
             predicate = predicate_lookup.get(var_name)
@@ -328,6 +329,16 @@ def _is_label_valid(dataset: xr.Dataset,
                                   dim=dim,
                                   index=index,
                                   label=label)
-                if not predicate(slice_array, slice_info):
-                    return False
-    return True
+                result = predicate(slice_array, slice_info)
+                if isinstance(result, xr.DataArray):
+                    result = result.data
+                if isinstance(result, da.Array):
+                    results.append(result)
+                else:
+                    results.append(da.from_array(result))
+    if len(results) == 0:
+        return da.from_array(True)
+    elif len(results) == 1:
+        return results[0]
+    else:
+        return da.all(da.stack(results))
