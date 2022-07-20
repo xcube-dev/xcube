@@ -113,7 +113,7 @@ class AuthMixinPropsTest2(unittest.TestCase):
         auth_ctx.get_id_token = types.MethodType(_get_id_token, auth_ctx)
 
         self.assertEqual(expected_permissions,
-                         auth_ctx.granted_scopes({}))
+                         auth_ctx.get_granted_scopes({}))
 
 
 class AuthContextIdTokenTest(unittest.TestCase):

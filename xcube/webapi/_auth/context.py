@@ -77,7 +77,7 @@ class AuthContext(ApiContext):
         # TODO (forman): convert into ApiError
         response.raise_for_status()
 
-    def granted_scopes(self, request_headers: Mapping[str, str]) \
+    def get_granted_scopes(self, request_headers: Mapping[str, str]) \
             -> Optional[Set[str]]:
         must_authenticate = self.must_authenticate
         id_token = self.get_id_token(request_headers,

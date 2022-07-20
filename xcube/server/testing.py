@@ -178,7 +178,7 @@ class ServerTestCase(unittest.TestCase, ABC):
         message = self.parse_error_message(response)
         if expected_status is not None:
             self.assertEqual(expected_status, response.status,
-                             msg=message)
+                             msg=message or response.reason)
         if expected_message is not None:
             self.assertIsNotNone(message,
                                  msg="error message not available")

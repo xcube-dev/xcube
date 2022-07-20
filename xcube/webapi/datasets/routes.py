@@ -25,8 +25,10 @@ from .api import api
 from .context import DatasetsContext
 from .controllers import find_dataset_places
 from .controllers import get_color_bars
+from .controllers import get_dataset
 from .controllers import get_dataset_place_group
 from .controllers import get_datasets
+from .controllers import get_dataset_coordinates
 from ...util.assertions import assert_true
 
 
@@ -60,12 +62,12 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
         ]
     )
     def get(self):
-        granted_scopes = self.ctx.auth_ctx.granted_scopes(
+        granted_scopes = self.ctx.auth_ctx.get_granted_scopes(
             self.request.headers
         )
         details = self.request.get_query_arg('details', default=False)
         point = self.request.get_query_arg('point', default=None)
-        if point is not None:
+        if isinstance(point, str):
             try:
                 point = tuple(map(float, point.split(',')))
                 assert_true(len(point) == 2, 'must be pair of two floats')
@@ -77,6 +79,35 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
                                 base_url=self.request.base_url,
                                 granted_scopes=granted_scopes)
         self.response.finish(response)
+
+
+@api.route('/datasets/{datasetId}')
+class DatasetHandler(ApiHandler[DatasetsContext]):
+    # noinspection PyPep8Naming
+    @api.operation(operation_id='getDataset',
+                   summary='Get dataset details')
+    async def get(self, datasetId: str):
+        granted_scopes = self.ctx.auth_ctx.get_granted_scopes(
+            self.request.headers
+        )
+        result = get_dataset(self.ctx,
+                             datasetId,
+                             base_url=self.request.base_url,
+                             granted_scopes=granted_scopes)
+        self.response.set_header('Content-Type', 'application/json')
+        await self.response.finish(result)
+
+
+@api.route('/datasets/{datasetId}/coords/{dimName}')
+class DatasetCoordsHandler(ApiHandler[DatasetsContext]):
+
+    # noinspection PyPep8Naming
+    @api.operation(operation_id='getDatasetCoordinates',
+                   summary='Get dataset coordinates')
+    async def get(self, datasetId: str, dimName: str):
+        result = get_dataset_coordinates(self.ctx, datasetId, dimName)
+        self.response.set_header('Content-Type', 'application/json')
+        await self.response.finish(result)
 
 
 # noinspection PyPep8Naming
