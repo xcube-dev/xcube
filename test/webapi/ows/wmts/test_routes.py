@@ -19,10 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from ...helpers import ServerTest
+from ...helpers import RoutesTestCase
 
 
-class WmtsRoutesTest(ServerTest):
+class WmtsRoutesTest(RoutesTestCase):
 
     def test_fetch_wmts_kvp_capabilities(self):
         response = self.fetch('/wmts/kvp'

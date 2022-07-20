@@ -24,7 +24,8 @@ import unittest
 
 import pyproj
 
-from test.webapi.helpers import ServerTest
+from test.webapi.helpers import get_api_ctx
+from test.webapi.helpers import get_server
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
 from xcube.webapi.ows.wmts.context import WmtsContext
@@ -46,15 +47,10 @@ def get_test_res_path(path: str) -> str:
                                          'res', path))
 
 
-class WmtsControllerTest(ServerTest):
+class WmtsControllerTest(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.wmts_ctx = self.server.ctx.get_api_ctx('ows.wmts',
-                                                    cls=WmtsContext)
-        self.assertIsInstance(
-            self.wmts_ctx,
-            WmtsContext
-        )
+        self.wmts_ctx = get_api_ctx('ows.wmts', WmtsContext)
 
     def test_get_wmts_capabilities_xml_crs84(self):
         self.maxDiff = None
@@ -83,10 +79,12 @@ class WmtsControllerTest(ServerTest):
         self.assertEqual(expected_xml, actual_xml)
 
 
-class WmtsControllerXmlGenTest(ServerTest):
+class WmtsControllerXmlGenTest(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
-        config = dict(self.server.ctx.config)
+
+        server = get_server()
+        config = dict(server.ctx.config)
         config.update(
             ServiceProvider=dict(
                 ProviderName='Bibo',
@@ -100,9 +98,8 @@ class WmtsControllerXmlGenTest(ServerTest):
                 ),
             )
         )
-        self.server.update(config)
-        self.wmts_ctx = self.server.ctx.get_api_ctx('ows.wmts',
-                                                    cls=WmtsContext)
+        server.update(config)
+        self.wmts_ctx = server.ctx.get_api_ctx('ows.wmts', cls=WmtsContext)
 
     def test_get_service_provider(self):
         element = get_service_provider_element(self.wmts_ctx)

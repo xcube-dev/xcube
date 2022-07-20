@@ -25,27 +25,29 @@ XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
 T = TypeVar('T', bound=Context)
 
 
-def get_api_ctx(api_name: str,
-                api_ctx_cls: Type[T],
-                server_config: Union[str, ServerConfig],
-                framework: Optional[Framework] = None,
-                extension_registry: Optional[ExtensionRegistry] = None) -> T:
-    """Get the API context object for the given
-    API name *api_name*,
-    API context class *api_ctx_cls*,
-    and server configuration path or dictionary *server_config*.
+def get_server(
+        server_config: Optional[Union[str, ServerConfig]] = None,
+        framework: Optional[Framework] = None,
+        extension_registry: Optional[ExtensionRegistry] = None
+) -> Server:
+    """Get the server object for the given
+    server configuration path or dictionary *server_config*.
 
-    :param api_name: The name of the API, e.g. "auth"
-    :param api_ctx_cls: The API context class
+    This function is used for testing API contexts and controllers.
+
     :param server_config: Server configuration string or dictionary.
-        If a relative path is passed it is made absolute using prefix
-        "${project}/test/webapi/res/test".
+        If it is just a filename, it is resolved against test resource
+        directory "${project}/test/webapi/res/test".
+        If it is a relative path, it is resolved against the current
+        working directory (not recommended).
+        Defaults to ``'config.yml'``.
     :param framework: Web framework, defaults to a MockFramework.
     :param extension_registry: Extension registry,
         defaults to xcube's populated default extension registry
     :return: The API context object
     :raise AssertionError: if API context object can not be determined
     """
+    server_config = server_config or 'config.yml'
     if isinstance(server_config, str):
         config_path = server_config
         base_dir = os.path.dirname(config_path)
@@ -63,14 +65,46 @@ def get_api_ctx(api_name: str,
 
     framework = framework or MockFramework()
     extension_registry = extension_registry or get_extension_registry()
-    server = Server(framework,
-                    server_config,
-                    extension_registry=extension_registry)
-    api_ctx = server.ctx.get_api_ctx(api_name)
+    return Server(framework,
+                  server_config,
+                  extension_registry=extension_registry)
+
+
+def get_api_ctx(api_name: str,
+                api_ctx_cls: Type[T],
+                server_config: Optional[Union[str, ServerConfig]] = None,
+                framework: Optional[Framework] = None,
+                extension_registry: Optional[ExtensionRegistry] = None) -> T:
+    """Get the API context object for the given
+    API name *api_name*,
+    API context class *api_ctx_cls*,
+    and server configuration path or dictionary *server_config*.
+
+    This function is used for testing API contexts and controllers.
+
+    :param api_name: The name of the API, e.g. "auth"
+    :param api_ctx_cls: The API context class
+    :param server_config: Server configuration string or dictionary.
+        If it is just a filename, it is resolved against test resource
+        directory "${project}/test/webapi/res/test".
+        If it is a relative path, it is resolved against the current
+        working directory (not recommended).
+        Defaults to ``'config.yml'``.
+    :param framework: Web framework, defaults to a MockFramework.
+    :param extension_registry: Extension registry,
+        defaults to xcube's populated default extension registry
+    :return: The API context object
+    :raise AssertionError: if API context object can not be determined
+    """
+    server = get_server(server_config or 'config.yml',
+                        framework=framework,
+                        extension_registry=extension_registry)
+    api_ctx = server.ctx.get_api_ctx(api_name, cls=api_ctx_cls)
     assert isinstance(api_ctx, api_ctx_cls)
     return api_ctx
 
 
+# DO NOT USE: User ServerTest class instead
 def new_test_service_context(config_file_name: str = 'config.yml',
                              ml_dataset_openers: Dict[
                                  str, MultiLevelDatasetOpener] = None,
@@ -84,13 +118,17 @@ def new_test_service_context(config_file_name: str = 'config.yml',
 
 
 def get_res_test_dir() -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__), 'res', 'test'))
+    return os.path.normpath(os.path.join(os.path.dirname(__file__),
+                                         'res', 'test'))
 
 
 def get_res_demo_dir() -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'xcube', 'webapi', 'res', 'demo'))
+    return os.path.normpath(os.path.join(os.path.dirname(__file__),
+                                         '..', '..',
+                                         'xcube', 'webapi', 'res', 'demo'))
 
 
+# DO NOT USE: mocks outdated API
 class RequestParamsMock(RequestParams):
     def __init__(self, **kvp):
         self.kvp = kvp
@@ -107,18 +145,38 @@ class RequestParamsMock(RequestParams):
         return value
 
 
-class ServerTest(ServerTestCase):
+class RoutesTestCase(ServerTestCase):
+    """Base class for xcube Server API tests."""
 
     # noinspection PyMethodMayBeStatic
     def get_config_filename(self) -> str:
-        return "config.yml"
+        """Get configuration filename.
+        Default impl. returns ``'config.yml'``."""
+        return f'config.yml'
+
+    # noinspection PyMethodMayBeStatic
+    def get_config_path(self) -> str:
+        """Get absolute path to configuration file.
+        Default impl. uses ``self.get_config_filename()`` to construct
+        a path into test resources.
+        """
+        return f'{get_res_test_dir()}/{self.get_config_filename()}'
 
     def get_config(self) -> Dict[str, Any]:
-        base_dir = get_res_test_dir()
-        with open(f'{base_dir}/{self.get_config_filename()}') as fp:
+        """Get configuration.
+        Default impl. uses ``self.get_config_path()`` to load
+        configuration from YAML file.
+        Then sets 'base_dir' configuration parameter.
+        """
+        config_path = self.get_config_path()
+        base_dir = os.path.dirname(config_path) or '.'
+        with open(config_path, encoding="utf-8") as fp:
             server_config = yaml.safe_load(fp)
             server_config["base_dir"] = base_dir
             return server_config
 
     def get_extension_registry(self):
+        """Gets xcube default extension registry
+         with all extensions loaded.
+         """
         return get_extension_registry()

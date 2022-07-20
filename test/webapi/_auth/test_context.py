@@ -42,7 +42,7 @@ def get_auth_ctx(config: ServerConfig) -> AuthContext:
     return get_api_ctx("auth", AuthContext, config)
 
 
-class AuthMixinPropsTest2(unittest.TestCase):
+class AuthContextPropsTest2(unittest.TestCase):
     def test_auth_config(self):
         auth_ctx = get_auth_ctx({
             "Authentication": {

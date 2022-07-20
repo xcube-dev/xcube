@@ -21,10 +21,10 @@
 
 import json
 
-from ..helpers import ServerTest
+from ..helpers import RoutesTestCase
 
 
-class PlacesRoutesTest(ServerTest):
+class PlacesRoutesTest(RoutesTestCase):
 
     def test_places(self):
         result, status = self.fetch_json('/places')

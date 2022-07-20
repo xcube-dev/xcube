@@ -21,10 +21,10 @@
 
 import urllib3.response
 
-from ..helpers import ServerTest
+from ..helpers import RoutesTestCase
 
 
-class S3RoutesTest(ServerTest):
+class S3RoutesTest(RoutesTestCase):
 
     def test_fetch_list_s3bucket(self):
         response = self.fetch('/s3bucket')

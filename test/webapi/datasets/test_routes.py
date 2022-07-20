@@ -19,10 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from ..helpers import ServerTest
+from ..helpers import RoutesTestCase
 
 
-class DatasetsRoutesTest(ServerTest):
+class DatasetsRoutesTest(RoutesTestCase):
 
     def test_fetch_datasets(self):
         response = self.fetch('/datasets')
