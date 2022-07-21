@@ -194,9 +194,9 @@ def _get_time_series_for_geometry(
     var_names = {agg_method: f'{var_name}_{agg_method}' for agg_method in
                  agg_methods}
 
-    return _collect_timeseries_result(time_series_ds,
-                                      var_names,
-                                      max_valids=max_valids)
+    return collect_timeseries_result(time_series_ds,
+                                     var_names,
+                                     max_valids=max_valids)
 
 
 def _get_time_series_for_point(
@@ -256,14 +256,14 @@ def _get_time_series_for_point(
     for role, anc_var_name in roles_to_anc_var_names.items():
         key_to_var_names[role] = anc_var_name
 
-    return _collect_timeseries_result(time_series_ds,
-                                      key_to_var_names,
-                                      max_valids=max_valids)
+    return collect_timeseries_result(time_series_ds,
+                                     key_to_var_names,
+                                     max_valids=max_valids)
 
 
-def _collect_timeseries_result(time_series_ds: xr.Dataset,
-                               key_to_var_names: Dict[str, str],
-                               max_valids: int = None) -> TimeSeries:
+def collect_timeseries_result(time_series_ds: xr.Dataset,
+                              key_to_var_names: Dict[str, str],
+                              max_valids: int = None) -> TimeSeries:
     _check_max_valids(max_valids)
 
     var_values_map = dict()

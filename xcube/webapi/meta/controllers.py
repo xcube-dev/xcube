@@ -19,42 +19,36 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import datetime
+import os
+from typing import Any, Dict
 
-from xcube.server.api import ApiContext
-from xcube.server.api import Context
-from xcube.server.server import ServerContext
+from xcube.util.versions import get_xcube_versions
+from xcube.version import version
+from .context import MetaContext
 
 
-class MetaContext(ApiContext):
-    _start_time = None
+def get_service_info(ctx: MetaContext) -> Dict[str, Any]:
+    api_infos = []
+    for other_api in ctx.apis:
+        api_info = {
+            "name": other_api.name,
+            "version": other_api.version,
+            "description": other_api.description
+        }
+        api_infos.append({k: v
+                          for k, v in api_info.items()
+                          if v is not None})
 
-    def __init__(self, server_ctx: Context):
-        super().__init__(server_ctx)
-        # API contexts are instantiated every time the config changes
-        if self._start_time is None:
-            self._start_time = self.now()
-        self._update_time = self.now()
-
-    @property
-    def server_ctx(self) -> ServerContext:
-        server_ctx = super().server_ctx
-        assert isinstance(server_ctx, ServerContext)
-        return server_ctx
-
-    @property
-    def start_time(self) -> str:
-        return self._start_time
-
-    @property
-    def update_time(self) -> str:
-        return self._update_time
-
-    @property
-    def current_time(self) -> str:
-        return self.now()
-
-    @staticmethod
-    def now():
-        return datetime.datetime.now().isoformat()
-
+    # TODO (forman): once APIs are configurable, we should
+    #   get the server name, description from configuration too
+    return dict(
+        name="xcube Server",
+        description="xcube Server",
+        version=version,
+        versions=get_xcube_versions(),
+        apis=api_infos,
+        startTime=ctx.start_time,
+        currentTime=ctx.current_time,
+        updateTime=ctx.update_time,
+        pid=os.getpid()
+    )

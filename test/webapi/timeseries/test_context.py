@@ -19,42 +19,25 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import datetime
+import unittest
+from typing import Union
 
-from xcube.server.api import ApiContext
+from test.webapi.helpers import get_api_ctx
 from xcube.server.api import Context
-from xcube.server.server import ServerContext
+from xcube.server.api import ServerConfig
+from xcube.webapi.datasets.context import DatasetsContext
+from xcube.webapi.timeseries.context import TimeSeriesContext
 
 
-class MetaContext(ApiContext):
-    _start_time = None
+def get_timeseries_ctx(
+        server_config: Union[str, ServerConfig] = "config.yml"
+) -> TimeSeriesContext:
+    return get_api_ctx("timeseries", TimeSeriesContext, server_config)
 
-    def __init__(self, server_ctx: Context):
-        super().__init__(server_ctx)
-        # API contexts are instantiated every time the config changes
-        if self._start_time is None:
-            self._start_time = self.now()
-        self._update_time = self.now()
 
-    @property
-    def server_ctx(self) -> ServerContext:
-        server_ctx = super().server_ctx
-        assert isinstance(server_ctx, ServerContext)
-        return server_ctx
+class DatasetsContextTest(unittest.TestCase):
 
-    @property
-    def start_time(self) -> str:
-        return self._start_time
-
-    @property
-    def update_time(self) -> str:
-        return self._update_time
-
-    @property
-    def current_time(self) -> str:
-        return self.now()
-
-    @staticmethod
-    def now():
-        return datetime.datetime.now().isoformat()
-
+    def test_ctx_ok(self):
+        ctx = get_timeseries_ctx()
+        self.assertIsInstance(ctx.server_ctx, Context)
+        self.assertIsInstance(ctx.datasets_ctx, DatasetsContext)

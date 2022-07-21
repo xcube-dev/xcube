@@ -19,42 +19,35 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import datetime
+import unittest
 
-from xcube.server.api import ApiContext
-from xcube.server.api import Context
-from xcube.server.server import ServerContext
+from test.mixins import AlmostEqualDeepMixin
+from test.webapi.helpers import get_api_ctx
+from xcube.webapi.meta.context import MetaContext
+from xcube.webapi.meta.controllers import get_service_info
 
 
-class MetaContext(ApiContext):
-    _start_time = None
+def get_meta_ctx(server_config=None) -> MetaContext:
+    return get_api_ctx("meta", MetaContext, server_config)
 
-    def __init__(self, server_ctx: Context):
-        super().__init__(server_ctx)
-        # API contexts are instantiated every time the config changes
-        if self._start_time is None:
-            self._start_time = self.now()
-        self._update_time = self.now()
 
-    @property
-    def server_ctx(self) -> ServerContext:
-        server_ctx = super().server_ctx
-        assert isinstance(server_ctx, ServerContext)
-        return server_ctx
+class MetaControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
 
-    @property
-    def start_time(self) -> str:
-        return self._start_time
-
-    @property
-    def update_time(self) -> str:
-        return self._update_time
-
-    @property
-    def current_time(self) -> str:
-        return self.now()
-
-    @staticmethod
-    def now():
-        return datetime.datetime.now().isoformat()
-
+    def test_get_service_info(self):
+        ctx = get_meta_ctx()
+        result = get_service_info(ctx)
+        self.assertIsInstance(result, dict)
+        self.assertEqual(
+            {
+                'apis',
+                'currentTime',
+                'description',
+                'name',
+                'pid',
+                'startTime',
+                'updateTime',
+                'version',
+                'versions'
+            },
+            set(result.keys())
+        )

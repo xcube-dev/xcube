@@ -151,7 +151,7 @@ class Server(AsyncExecution):
         self._ctx.on_dispose()
 
     def update(self, config: ServerConfig):
-        """Update this server with new configuration."""
+        """Update this server with given server configuration."""
         ctx = self._new_ctx(config)
         ctx.on_update(prev_ctx=self._ctx)
         self._set_ctx(ctx)
@@ -436,6 +436,10 @@ class ServerContext(Context):
         self._server = server
         self._config = config
         self._api_contexts: Dict[str, Context] = dict()
+
+    @property
+    def server(self) -> Server:
+        return self._server
 
     @property
     def apis(self) -> Tuple[Api]:
