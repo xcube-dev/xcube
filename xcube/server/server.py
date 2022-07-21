@@ -22,7 +22,7 @@
 import concurrent.futures
 import copy
 from typing import (Optional, Dict, Any, Union,
-                    Callable, Sequence, Awaitable, Tuple, List, Type)
+                    Callable, Sequence, Awaitable, Tuple, Type, List)
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import LOG
@@ -82,7 +82,8 @@ class Server(AsyncExecution):
             config: ServerConfig,
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
-        apis = self.load_apis(extension_registry)
+        apis = self.load_apis(config,
+                              extension_registry=extension_registry)
         for api in apis:
             LOG.info(f'Loaded service API {api.name!r}')
         handlers = self.collect_api_routes(apis)
@@ -194,18 +195,28 @@ class Server(AsyncExecution):
     @classmethod
     def load_apis(
             cls,
+            config: ServerConfig,
             extension_registry: Optional[ExtensionRegistry] = None
     ) -> Tuple[Api]:
+        # Collect all registered API extensions
         extension_registry = extension_registry \
                              or get_extension_registry()
+        api_extensions = extension_registry.find_extensions(
+            EXTENSION_POINT_SERVER_APIS
+        )
 
-        # Collect all registered APIs
-        apis: List[Api] = [
-            ext.component
-            for ext in extension_registry.find_extensions(
-                EXTENSION_POINT_SERVER_APIS
-            )
-        ]
+        # Get APIs specification
+        api_spec = config.get("api_spec", {})
+        incl_api_names = api_spec.get("includes",
+                                      [ext.name for ext in api_extensions])
+        excl_api_names = api_spec.get("excludes",
+                                      [])
+
+        # Collect effective APIs
+        api_names = set(incl_api_names).difference(set(excl_api_names))
+        apis: List[Api] = [ext.component
+                           for ext in api_extensions
+                           if ext.name in api_names]
 
         api_lookup = {api.name: api for api in apis}
 

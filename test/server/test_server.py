@@ -147,8 +147,27 @@ class ServerTest(unittest.TestCase):
                         'default': 8080
                     },
                     'base_dir': {'type': 'string'},
-                    'prefix': {'type': 'string'},
                     'trace_perf': {'type': 'boolean'},
+                    'api_spec': {
+                        'type': 'object',
+                        'properties': {
+                            'includes': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'string',
+                                    'minLength': 1,
+                                },
+                            },
+                            'excludes': {
+                                'type': 'array',
+                                'items': {
+                                    'type': 'string',
+                                    'minLength': 1,
+                                },
+                            }
+                        },
+                        'additionalProperties': False
+                    },
                     'data_stores': {
                         'type': 'array',
                         'items': {
@@ -245,18 +264,20 @@ class ServerTest(unittest.TestCase):
         self.assertIsInstance(result, concurrent.futures.Future)
         self.assertEqual(1, framework.run_in_executor_count)
 
+    api_spec = [
+        ("datasets", dict()),
+        ("places", dict()),
+        ("timeseries", dict()),
+        ("stac", dict(required_apis=("datasets", "places"))),
+        ("openeo", dict(required_apis=("datasets",
+                                       "places", "timeseries"))),
+        ("wcs", dict(required_apis=("datasets",))),
+        ("wmts", dict(required_apis=("datasets",))),
+    ]
+
     def test_apis_loaded_in_order(self):
-        extension_registry = mock_extension_registry([
-            ("datasets", dict()),
-            ("places", dict()),
-            ("timeseries", dict()),
-            ("stac", dict(required_apis=("datasets", "places"))),
-            ("openeo", dict(required_apis=("datasets",
-                                           "places", "timeseries"))),
-            ("wcs", dict(required_apis=("datasets",))),
-            ("wmts", dict(required_apis=("datasets",))),
-        ])
-        apis = Server.load_apis(extension_registry=extension_registry)
+        extension_registry = mock_extension_registry(self.api_spec)
+        apis = Server.load_apis({}, extension_registry=extension_registry)
         self.assertIsInstance(apis, tuple)
         self.assertEqual(('datasets',
                           'places',
@@ -265,6 +286,54 @@ class ServerTest(unittest.TestCase):
                           'wmts',
                           'stac',
                           'openeo'),
+                         tuple(api.name for api in apis))
+
+    def test_api_spec_includes(self):
+        extension_registry = mock_extension_registry(self.api_spec)
+        apis = Server.load_apis(
+            {
+                "api_spec": {
+                    "includes": ["datasets", "timeseries"],
+                }
+            },
+            extension_registry=extension_registry
+        )
+        self.assertIsInstance(apis, tuple)
+        self.assertEqual(('datasets',
+                          'timeseries'),
+                         tuple(api.name for api in apis))
+
+    def test_api_spec_excludes(self):
+        extension_registry = mock_extension_registry(self.api_spec)
+        apis = Server.load_apis(
+            {
+                "api_spec": {
+                    "excludes": ["stac", "openeo", "wcs"],
+                }
+            },
+            extension_registry=extension_registry
+        )
+        self.assertIsInstance(apis, tuple)
+        self.assertEqual(('datasets',
+                          'places',
+                          'timeseries',
+                          'wmts'),
+                         tuple(api.name for api in apis))
+
+    def test_api_spec_incl_excl(self):
+        extension_registry = mock_extension_registry(self.api_spec)
+        apis = Server.load_apis(
+            {
+                "api_spec": {
+                    "includes": ["datasets", "places", "timeseries", "wmts"],
+                    "excludes": ["places", "wmts", "wcs", "openeo"],
+                }
+            },
+            extension_registry=extension_registry
+        )
+        self.assertIsInstance(apis, tuple)
+        self.assertEqual(('datasets',
+                          'timeseries'),
                          tuple(api.name for api in apis))
 
     def test_illegal_api_context_detected(self):

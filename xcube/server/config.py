@@ -25,6 +25,7 @@ from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import JsonArraySchema
 
 BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -32,6 +33,13 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
         address=JsonStringSchema(default=DEFAULT_SERVER_ADDRESS),
         base_dir=JsonStringSchema(),
         trace_perf=JsonBooleanSchema(),
+        api_spec=JsonObjectSchema(
+            properties=dict(
+                includes=JsonArraySchema(JsonStringSchema(min_length=1)),
+                excludes=JsonArraySchema(JsonStringSchema(min_length=1)),
+            ),
+            additional_properties=False
+        )
     ),
     # We allow for other configuration settings contributed
     # by APIs. If these APIs are currently not in use,
