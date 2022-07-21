@@ -25,7 +25,7 @@ from .context import MetaContext
 
 api = Api(
     'meta',
-    description='xcube Server meta-information and -operations',
+    description='Server information and maintenance operations',
     config_schema=CONFIG_SCHEMA,
     required_apis=['_auth'],
     create_ctx=MetaContext
