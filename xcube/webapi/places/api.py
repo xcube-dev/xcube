@@ -27,6 +27,6 @@ api = Api(
     'places',
     description='xcube Places API',
     config_schema=CONFIG_SCHEMA,
-    required_apis=['auth'],
+    required_apis=['_auth'],
     create_ctx=PlacesContext
 )

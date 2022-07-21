@@ -39,7 +39,7 @@ XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
 
 
 def get_auth_ctx(config: ServerConfig) -> AuthContext:
-    return get_api_ctx("auth", AuthContext, config)
+    return get_api_ctx("_auth", AuthContext, config)
 
 
 class AuthContextPropsTest2(unittest.TestCase):

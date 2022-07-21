@@ -27,6 +27,6 @@ api = Api(
     'meta',
     description='xcube Server meta-information and -operations',
     config_schema=CONFIG_SCHEMA,
-    required_apis=['auth'],
+    required_apis=['_auth'],
     create_ctx=MetaContext
 )

@@ -24,7 +24,7 @@ from .config import AuthConfig
 from .context import AuthContext
 
 api = Api(
-    'auth',
+    '_auth',
     description='xcube Auth API',
     config_schema=AuthConfig.get_schema(),
     create_ctx=AuthContext,
