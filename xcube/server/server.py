@@ -24,6 +24,8 @@ import copy
 from typing import (Optional, Dict, Any, Union,
                     Callable, Sequence, Awaitable, Tuple, Type, List)
 
+import jsonschema.exceptions
+
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
 from xcube.constants import LOG
 from xcube.util.assertions import assert_instance
@@ -48,12 +50,10 @@ class Server(AsyncExecution):
     """
     A REST server extendable by API extensions.
 
-    APIs are registered using the extension point ".api".
+    APIs are registered using the extension point
+    "xcube.server.api".
 
     TODO:
-      * Allow for route prefixes, e.g. "api/v2"
-      * Allow route paths to match arbitrary subpaths,
-        e.g. we have to support "/s3bucket/{ds_id}/(?P<path>.*)"
       * Allow server to serve generic static content,
         e.g. "http://localhost:8080/images/outside-cube/${ID}.jpg"
       * Allow server updates triggered by local file changes
@@ -129,8 +129,11 @@ class Server(AsyncExecution):
                 LOG.warning(f'Configuration setting {key!r} ignored,'
                             f' because there is no schema describing it.')
                 config.pop(key)
-        return ServerContext(self,
-                             self._config_schema.from_instance(config))
+        try:
+            validated_config = self._config_schema.from_instance(config)
+        except jsonschema.exceptions.ValidationError as e:
+            raise ValueError(f"Invalid server configuration:\n{e}") from e
+        return ServerContext(self, validated_config)
 
     def start(self):
         """Start this server."""
