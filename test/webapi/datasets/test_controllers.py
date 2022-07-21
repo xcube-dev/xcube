@@ -278,7 +278,7 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
                 dict(
                     Identifier='local_base_1w',
                     FileSystem='memory',
-                    Path='examples/serve/demo/resample_in_time.py',
+                    Path='resample_in_time.py',
                     Function='compute_dataset',
                     InputDatasets=['local_base_id'],
                     InputParameters=dict(
@@ -292,7 +292,7 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
                 dict(
                     Identifier='remote_base_1w',
                     FileSystem='memory',
-                    Path='examples/serve/demo/resample_in_time.py',
+                    Path='resample_in_time.py',
                     Function='compute_dataset',
                     InputDatasets=['remote~OLCI-SNS-RAW-CUBE-2.zarr'],
                     InputParameters=dict(
@@ -358,18 +358,16 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
         with self.assertRaises(ApiError.Unauthorized) as cm:
             get_dataset(ctx, 'remote_base_1w')
         self.assertEqual(
-            'HTTP 401: Missing permission'
-            ' (Missing permission'
-            ' read:dataset:remote_base_1w)',
+            'HTTP status 401: Missing permission'
+            ' "read:dataset:remote_base_1w"',
             f'{cm.exception}'
         )
 
         with self.assertRaises(ApiError.Unauthorized) as cm:
             get_dataset(ctx, 'remote~OLCI-SNS-RAW-CUBE-2.zarr')
         self.assertEqual(
-            'HTTP 401: Missing permission'
-            ' (Missing permission'
-            ' read:dataset:remote~OLCI-SNS-RAW-CUBE-2.zarr)',
+            'HTTP status 401: Missing permission'
+            ' "read:dataset:remote~OLCI-SNS-RAW-CUBE-2.zarr"',
             f'{cm.exception}'
         )
 
