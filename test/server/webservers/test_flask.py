@@ -29,6 +29,9 @@ class TornadoFrameworkTest(unittest.TestCase):
     def setUp(self) -> None:
         self.framework = FlaskFramework()
 
+    def test_config_schema(self):
+        self.assertEqual(None, self.framework.config_schema)
+
     def test_add_routes(self):
         with self.assertRaises(NotImplementedError):
             self.framework.add_routes([])

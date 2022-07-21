@@ -31,7 +31,6 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
         port=JsonIntegerSchema(default=DEFAULT_SERVER_PORT),
         address=JsonStringSchema(default=DEFAULT_SERVER_ADDRESS),
         base_dir=JsonStringSchema(),
-        prefix=JsonStringSchema(),
         trace_perf=JsonBooleanSchema(),
     ),
     # We allow for other configuration settings contributed

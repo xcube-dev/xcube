@@ -89,7 +89,10 @@ class Server(AsyncExecution):
         framework.add_routes(handlers)
         self._framework = framework
         self._apis = apis
-        self._config_schema = self.get_effective_config_schema(apis)
+        self._config_schema = self.get_effective_config_schema(
+            framework,
+            apis
+        )
         ctx = self._new_ctx(config)
         ctx.on_update(None)
         self._set_ctx(ctx)
@@ -244,24 +247,42 @@ class Server(AsyncExecution):
         return handlers
 
     @classmethod
-    def get_effective_config_schema(cls, apis: Sequence[Api]) \
-            -> JsonObjectSchema:
+    def get_effective_config_schema(
+            cls,
+            framework: Framework,
+            apis: Sequence[Api]
+    ) -> JsonObjectSchema:
         effective_config_schema = copy.deepcopy(BASE_SERVER_CONFIG_SCHEMA)
+        framework_config_schema = framework.config_schema
+        if framework_config_schema is not None:
+            cls._update_config_schema(effective_config_schema,
+                                      framework_config_schema,
+                                      f'Server')
         for api in apis:
             api_config_schema = api.config_schema
             if api_config_schema is not None:
-                assert isinstance(api_config_schema, JsonObjectSchema)
-                for k, v in api_config_schema.properties.items():
-                    if k in effective_config_schema.properties:
-                        raise ValueError(f'API {api.name!r}:'
-                                         f' configuration parameter {k!r}'
-                                         f' is already defined.')
-                    effective_config_schema.properties[k] = v
-                if api_config_schema.required:
-                    effective_config_schema.required.update(
-                        api_config_schema.required
-                    )
+                cls._update_config_schema(effective_config_schema,
+                                          api_config_schema,
+                                          f'API {api.name!r}')
         return effective_config_schema
+
+    @classmethod
+    def _update_config_schema(cls,
+                              config_schema: JsonObjectSchema,
+                              config_schema_update: JsonObjectSchema,
+                              schema_name: str):
+        assert isinstance(config_schema, JsonObjectSchema)
+        assert isinstance(config_schema_update, JsonObjectSchema)
+        for k, v in config_schema_update.properties.items():
+            if k in config_schema.properties:
+                raise ValueError(f'{schema_name}:'
+                                 f' configuration parameter {k!r}'
+                                 f' is already defined.')
+            config_schema.properties[k] = v
+        if config_schema_update.required:
+            config_schema.required.update(
+                config_schema_update.required
+            )
 
     @property
     def open_api_doc(self) -> Dict[str, Any]:

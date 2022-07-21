@@ -45,6 +45,10 @@ from xcube.server.api import JSON
 from xcube.server.api import ReturnT
 from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
+from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonStringSchema
 from xcube.version import version
 
 SERVER_CTX_ATTR_NAME = "__xcube_server_ctx"
@@ -61,6 +65,42 @@ class TornadoFramework(Framework):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
         self.configure_logger()
+
+    @property
+    def config_schema(self) -> Optional[JsonObjectSchema]:
+        """Returns the JSON Schema for the configuration of the
+        ``tornado.httpserver.HTTPServer.initialize()``
+        method.
+        """
+        return JsonObjectSchema(
+            properties=dict(
+                tornado=JsonObjectSchema(
+                    # See kwargs of tornado.httpserver.HTTPServer.initialize()
+                    properties=dict(
+                        xheaders=JsonBooleanSchema(default=False),
+                        protocol=JsonStringSchema(nullable=True),
+                        no_keep_alive=JsonBooleanSchema(default=False),
+                        decompress_request=JsonBooleanSchema(default=False),
+                        ssl_options=JsonObjectSchema(
+                            additional_properties=True
+                        ),
+                        chunk_size=JsonIntegerSchema(
+                            nullable=True,
+                            exclusive_minimum=0
+                        ),
+                        max_header_size=JsonIntegerSchema(
+                            nullable=True,
+                            exclusive_minimum=0
+                        ),
+                        max_body_size=JsonIntegerSchema(
+                            nullable=True,
+                            exclusive_minimum=0
+                        ),
+                    ),
+                    additional_properties=True,
+                )
+            )
+        )
 
     @property
     def application(self) -> tornado.web.Application:
@@ -95,8 +135,9 @@ class TornadoFramework(Framework):
 
         port = config["port"]
         address = config["address"]
+        tornado_settings = config.get("tornado", {})
 
-        self.application.listen(port, address=address)
+        self.application.listen(port, address=address, **tornado_settings)
 
         address_ = "127.0.0.1" if address == "0.0.0.0" else address
         # TODO: get test URL template from configuration

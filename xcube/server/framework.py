@@ -20,10 +20,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Sequence, List, Type
+from typing import Sequence, List, Type, Optional
 
 from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
 from xcube.util.extension import get_extension_registry
+from xcube.util.jsonschema import JsonObjectSchema
 from .api import ApiRoute
 from .api import Context
 from .asyncexec import AsyncExecution
@@ -33,6 +34,13 @@ class Framework(AsyncExecution, abc.ABC):
     """
     An abstract web server framework.
     """
+
+    @property
+    @abc.abstractmethod
+    def config_schema(self) -> Optional[JsonObjectSchema]:
+        """Returns an optional JSON Schema for
+        the web server configuration. Returning None
+        indicates that configuration is not possible."""
 
     @abc.abstractmethod
     def add_routes(self, routes: Sequence[ApiRoute]):

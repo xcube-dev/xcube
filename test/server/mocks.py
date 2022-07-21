@@ -80,6 +80,9 @@ class MockFramework(Framework):
         self.call_later_count = 0
         self.run_in_executor_count = 0
 
+    def config_schema(self):
+        return None
+
     def add_routes(self, routes: Sequence[ApiRoute]):
         self.add_routes_count += 1
 

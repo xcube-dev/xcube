@@ -19,14 +19,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import concurrent.futures
 from typing import Sequence, Union, Callable, Optional, Any, Awaitable
-
-from tornado import concurrent
 
 from xcube.server.api import ApiRoute
 from xcube.server.api import Context
 from xcube.server.api import ReturnT
 from xcube.server.framework import Framework
+from xcube.util.jsonschema import JsonObjectSchema
 
 
 class FlaskFramework(Framework):
@@ -35,6 +35,10 @@ class FlaskFramework(Framework):
 
     TODO: implement me!
     """
+
+    @property
+    def config_schema(self) -> Optional[JsonObjectSchema]:
+        return None
 
     def add_routes(self, api_routes: Sequence[ApiRoute]):
         raise NotImplementedError()

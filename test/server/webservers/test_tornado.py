@@ -41,6 +41,7 @@ from xcube.server.webservers.tornado import SERVER_CTX_ATTR_NAME
 from xcube.server.webservers.tornado import TornadoApiRequest
 from xcube.server.webservers.tornado import TornadoFramework
 from xcube.server.webservers.tornado import TornadoRequestHandler
+from xcube.util.jsonschema import JsonObjectSchema
 
 
 class TornadoFrameworkTest(unittest.TestCase):
@@ -50,6 +51,10 @@ class TornadoFrameworkTest(unittest.TestCase):
         # noinspection PyTypeChecker
         self.framework = TornadoFramework(application=self.application,
                                           io_loop=self.io_loop)
+
+    def test_config_schema(self):
+        self.assertIsInstance(self.framework.config_schema,
+                              JsonObjectSchema)
 
     # def test_add_routes(self):
     #     self.framework.add_routes([ApiRoute()])
