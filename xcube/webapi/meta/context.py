@@ -21,7 +21,6 @@
 
 import datetime
 
-from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.server.api import ApiContext
 from xcube.server.api import Context
 
@@ -50,7 +49,5 @@ class MetaContext(ApiContext):
 
     @staticmethod
     def now():
-        return timestamp_to_iso_string(
-            datetime.datetime.now()
-        )
+        return datetime.datetime.now().isoformat()
 

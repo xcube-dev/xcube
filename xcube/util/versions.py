@@ -23,8 +23,6 @@ import sys
 from typing import Dict
 from typing import List
 
-from .plugin import get_plugins
-
 DEFAULT_DEPENDENCY_NAMES = \
     ['affine', 'click', 'cmocean', 'dask', 'dask - image', 'distributed',
      'fiona', 'fsspec', 'gdal', 'geopandas', 'jdcal', 'jsonschema',
@@ -43,6 +41,8 @@ def get_xcube_versions() -> Dict[str, str]:
     :return: A mapping of the package names to package versions
     The result computed from the evaluating the expression.
     """
+    from .plugin import get_plugins
+
     global _XCUBE_VERSIONS
     if _XCUBE_VERSIONS is None:
         plugin_names = [f'{plugin}.version'
