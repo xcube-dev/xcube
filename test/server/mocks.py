@@ -20,7 +20,7 @@
 #  DEALINGS IN THE SOFTWARE.
 
 from typing import Optional, Sequence, Tuple, Dict, Any, Union, Callable, \
-    Awaitable, List, Mapping
+    Awaitable, Mapping
 
 from tornado import concurrent
 
@@ -73,6 +73,7 @@ def mock_extension_registry(api_specs: ApiSpecs) -> ExtensionRegistry:
 class MockFramework(Framework):
 
     def __init__(self):
+        self.add_static_routes_count = 0
         self.add_routes_count = 0
         self.update_count = 0
         self.start_count = 0
@@ -83,6 +84,9 @@ class MockFramework(Framework):
     @property
     def config_schema(self):
         return None
+
+    def add_static_routes(self, static_routes: Sequence[Tuple[str, str]]):
+        self.add_static_routes_count += 1
 
     def add_routes(self, routes: Sequence[ApiRoute]):
         self.add_routes_count += 1

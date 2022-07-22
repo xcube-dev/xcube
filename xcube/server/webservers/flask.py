@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import concurrent.futures
-from typing import Sequence, Union, Callable, Optional, Any, Awaitable
+from typing import Sequence, Union, Callable, Optional, Any, Awaitable, Tuple
 
 from xcube.server.api import ApiRoute
 from xcube.server.api import Context
@@ -40,7 +40,10 @@ class FlaskFramework(Framework):
     def config_schema(self) -> Optional[JsonObjectSchema]:
         return None
 
-    def add_routes(self, api_routes: Sequence[ApiRoute]):
+    def add_static_routes(self, static_routes: Sequence[Tuple[str, str]]):
+        raise NotImplementedError()
+
+    def add_routes(self, routes: Sequence[ApiRoute]):
         raise NotImplementedError()
 
     def update(self, ctx: Context):

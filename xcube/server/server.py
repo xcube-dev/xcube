@@ -21,6 +21,7 @@
 
 import concurrent.futures
 import copy
+import os.path
 from typing import (Optional, Dict, Any, Union,
                     Callable, Sequence, Awaitable, Tuple, Type, List)
 
@@ -86,8 +87,10 @@ class Server(AsyncExecution):
                               extension_registry=extension_registry)
         for api in apis:
             LOG.info(f'Loaded service API {api.name!r}')
-        handlers = self.collect_api_routes(apis)
-        framework.add_routes(handlers)
+        static_routes = self.collect_static_routes(config)
+        routes = self.collect_api_routes(apis)
+        framework.add_static_routes(static_routes)
+        framework.add_routes(routes)
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(
@@ -252,6 +255,20 @@ class Server(AsyncExecution):
         # Return an ordered dict sorted by an API's reference count
         return tuple(sorted(apis,
                             key=lambda api: api_ref_counts[api.name]))
+
+    @classmethod
+    def collect_static_routes(cls, config: ServerConfig) \
+            -> Sequence[Tuple[str, str]]:
+        static_routes = config.get('static_routes', [])
+        base_dir = config.get('base_dir', os.path.abspath(""))
+        return [
+            (
+                url_path,
+                local_path if os.path.isabs(local_path)
+                else os.path.join(base_dir, local_path)
+            )
+            for url_path, local_path in static_routes
+        ]
 
     @classmethod
     def collect_api_routes(cls, apis: Sequence[Api]) -> Sequence[ApiRoute]:

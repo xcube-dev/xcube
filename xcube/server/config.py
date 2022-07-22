@@ -21,22 +21,51 @@
 
 from xcube.constants import DEFAULT_SERVER_ADDRESS
 from xcube.constants import DEFAULT_SERVER_PORT
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.jsonschema import JsonArraySchema
 
 BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
-        port=JsonIntegerSchema(default=DEFAULT_SERVER_PORT),
-        address=JsonStringSchema(default=DEFAULT_SERVER_ADDRESS),
-        base_dir=JsonStringSchema(),
-        trace_perf=JsonBooleanSchema(),
+        port=JsonIntegerSchema(
+            title='Server port.',
+            default=DEFAULT_SERVER_PORT
+        ),
+        address=JsonStringSchema(
+            title='Server address.',
+            default=DEFAULT_SERVER_ADDRESS
+        ),
+        base_dir=JsonStringSchema(
+            title='Base directory used to resolve relative local paths.',
+        ),
+        trace_perf=JsonBooleanSchema(
+            title='Output performance measures',
+        ),
+        static_routes=JsonArraySchema(
+            title='Static content routes',
+            items=JsonArraySchema([
+                JsonStringSchema(
+                    title='URL path',
+                    min_length=1
+                ),
+                JsonStringSchema(
+                    title='Local path',
+                    min_length=1
+                ),
+            ])
+        ),
         api_spec=JsonObjectSchema(
+            title='API specification',
+            description='selected = (includes | ALL) - (excludes | NONE)',
             properties=dict(
-                includes=JsonArraySchema(JsonStringSchema(min_length=1)),
-                excludes=JsonArraySchema(JsonStringSchema(min_length=1)),
+                includes=JsonArraySchema(
+                    JsonStringSchema(min_length=1)
+                ),
+                excludes=JsonArraySchema(
+                    JsonStringSchema(min_length=1)
+                ),
             ),
             additional_properties=False
         )

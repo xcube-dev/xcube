@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Sequence, List, Type, Optional
+from typing import Sequence, List, Type, Optional, Tuple
 
 from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
 from xcube.util.extension import get_extension_registry
@@ -41,6 +41,10 @@ class Framework(AsyncExecution, abc.ABC):
         """Returns an optional JSON Schema for
         the web server configuration. Returning None
         indicates that configuration is not possible."""
+
+    @abc.abstractmethod
+    def add_static_routes(self, routes: Sequence[Tuple[str, str]]):
+        """Adds the given static routes to this web server."""
 
     @abc.abstractmethod
     def add_routes(self, routes: Sequence[ApiRoute]):

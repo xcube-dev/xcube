@@ -26,7 +26,7 @@ import logging
 import traceback
 import urllib.parse
 from typing import (Any, Optional, Sequence, Union, Callable, Type,
-                    Awaitable, Mapping)
+                    Awaitable, Mapping, Tuple)
 
 import tornado.escape
 import tornado.httputil
@@ -110,6 +110,18 @@ class TornadoFramework(Framework):
     def io_loop(self) -> tornado.ioloop.IOLoop:
         return self._io_loop or tornado.ioloop.IOLoop.current()
 
+    def add_static_routes(self, static_routes: Sequence[Tuple[str, str]]):
+        if static_routes:
+            handlers = [
+                (
+                    f'{url_path}/(.*)',
+                    tornado.web.StaticFileHandler,
+                    {'path': local_path}
+                )
+                for url_path, local_path in static_routes
+            ]
+            self.application.add_handlers(".*$", handlers)
+
     def add_routes(self, api_routes: Sequence[ApiRoute]):
         handlers = []
         for api_route in api_routes:
@@ -124,8 +136,8 @@ class TornadoFramework(Framework):
             LOG.log(LOG_LEVEL_DETAIL, f'Added route'
                                       f' {api_route.path!r}'
                                       f' from API {api_route.api_name!r}')
-
-        self.application.add_handlers(".*$", handlers)
+        if handlers:
+            self.application.add_handlers(".*$", handlers)
 
     def update(self, ctx: Context):
         setattr(self.application, SERVER_CTX_ATTR_NAME, ctx)
