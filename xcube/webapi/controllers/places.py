@@ -1,3 +1,5 @@
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
 from typing import Any, Dict
 
 import shapely.geometry

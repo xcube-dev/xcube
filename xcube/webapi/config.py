@@ -1,3 +1,5 @@
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
 from abc import ABC
 
 from xcube.util.jsonschema import JsonArraySchema

@@ -19,6 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
+
 import fnmatch
 import json
 from functools import cached_property

@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
 from tornado.web import HTTPError
 
 
@@ -27,7 +29,8 @@ class ServiceError(HTTPError):
     Exception raised by Web API service.
     """
 
-    def __init__(self, reason: str, status_code: int = 500, log_message: str = None):
+    def __init__(self, reason: str, status_code: int = 500,
+                 log_message: str = None):
         super().__init__(status_code=status_code, log_message=log_message, reason=reason)
 
 

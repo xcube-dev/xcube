@@ -19,6 +19,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+# TODO (forman): xcube Server NG: rename this module into "serve"
+
+
 import json
 from typing import List, Optional, Dict, Tuple, Callable
 

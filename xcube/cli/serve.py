@@ -19,15 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import warnings
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
+
 from typing import List
 
 import click
 
-from xcube.constants import LOG
 from xcube.cli.common import (cli_option_quiet,
                               cli_option_verbosity,
                               configure_cli_output)
+from xcube.constants import LOG
 from xcube.webapi.defaults import (DEFAULT_PORT,
                                    DEFAULT_ADDRESS,
                                    DEFAULT_UPDATE_PERIOD,

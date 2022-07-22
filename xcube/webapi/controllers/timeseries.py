@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
 """
 This module implements the controller for the "/ts" handler.
 It is maintained for legacy reasons only (DCS4COP VITO viewer).

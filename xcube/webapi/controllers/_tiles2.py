@@ -35,6 +35,9 @@ from xcube.webapi.errors import ServiceResourceNotFoundError
 from xcube.webapi.reqparams import RequestParams
 
 
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
+
 def compute_ml_dataset_tile(ctx: ServiceContext,
                             ds_id: str,
                             var_name: str,

@@ -22,6 +22,8 @@ from xcube.webapi.reqparams import RequestParams
 # noinspection PyUnresolvedReferences
 from ._tiles2 import compute_ml_dataset_tile
 
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
 
 def get_dataset_tile(ctx: ServiceContext,
                      ds_id: str,

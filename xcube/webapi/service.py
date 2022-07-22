@@ -61,6 +61,9 @@ from xcube.webapi.reqparams import RequestParams
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
+
 # TODO: fix hack for SNAP color palettes, see #661
 SNAP_CPD_LIST = list()
 

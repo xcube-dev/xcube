@@ -28,6 +28,8 @@ from xcube.util.undefined import UNDEFINED
 from xcube.webapi.errors import ServiceBadRequestError
 
 
+# TODO (forman): xcube Server NG: remove this module, must no longer be used
+
 class RequestParams(metaclass=ABCMeta):
 
     @classmethod
