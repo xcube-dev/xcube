@@ -24,117 +24,111 @@ from .api import api
 from .context import TilesContext
 from .controllers import compute_ml_dataset_tile
 
+TILE_PARAMETERS = [
+    {
+        "name": "datasetId",
+        "in": "path",
+        "description": "Dataset identifier",
+        "schema": {
+            "type": "string",
+        }
+    },
+    {
+        "name": "varName",
+        "in": "path",
+        "description": "Name of variable in dataset",
+        "schema": {
+            "type": "string",
+        }
+    },
+    {
+        "name": "z",
+        "in": "path",
+        "description": "The tile grid's z-coordinate",
+        "schema": {
+            "type": "integer",
+        }
+    },
+    {
+        "name": "y",
+        "in": "path",
+        "description": "The tile grid's y-coordinate",
+        "schema": {
+            "type": "integer",
+        }
+    },
+    {
+        "name": "x",
+        "in": "path",
+        "description": "The tile grid's x-coordinate",
+        "schema": {
+            "type": "integer",
+        }
+    },
+    {
+        "name": "crs",
+        "in": "query",
+        "description": "The tile grid's spatial CRS",
+        "schema": {
+            "type": "string",
+            "enum": ["EPSG:3857", "CRS84"],
+            "default": "CRS84"
+        }
+    },
+    {
+        "name": "vmin",
+        "in": "query",
+        "description": "Minimum value of variable" 
+                       " for color mapping",
+        "schema": {
+            "type": "number",
+            "default": 0
+        }
+    },
+    {
+        "name": "vmax",
+        "in": "query",
+        "description": "Maximum value of variable" 
+                       " for color mapping",
+        "schema": {
+            "type": "number",
+            "default": 1
+        }
+    },
+    {
+        "name": "cbar",
+        "in": "query",
+        "description": "Name of the color bar" 
+                       " for color mapping",
+        "schema": {
+            "type": "string",
+            "default": "bone"
+        }
+    },
+    {
+        "name": "format",
+        "in": "query",
+        "description": "Image format",
+        "schema": {
+            "type": "string",
+            "enum": ["png", "image/png"],
+            "default": "png"
+        }
+    },
+    {
+        "name": "retina",
+        "in": "query",
+        "description": "Returns tiles of size" 
+                       " 512 instead of 256",
+        "schema": {
+            "type": "boolean"
+        }
+    },
+]
 
-# TODO (forman): rename route path
-#   to "/tiles/{datasetId}/{varName}/{z}/{y}/{x}"
 
 # noinspection PyPep8Naming
-@api.route('/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}')
 class TilesHandler(ApiHandler[TilesContext]):
-    @api.operation(operation_id='getTile',
-                   summary="Get the image tile for a variable"
-                           " and given tile grid coordinates.",
-                   parameters=[
-                       {
-                           "name": "datasetId",
-                           "in": "path",
-                           "description": "Dataset identifier",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
-                       {
-                           "name": "varName",
-                           "in": "path",
-                           "description": "Name of variable in dataset",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
-                       {
-                           "name": "z",
-                           "in": "path",
-                           "description": "The tile grid's z-coordinate",
-                           "schema": {
-                               "type": "integer",
-                           }
-                       },
-                       {
-                           "name": "y",
-                           "in": "path",
-                           "description": "The tile grid's y-coordinate",
-                           "schema": {
-                               "type": "integer",
-                           }
-                       },
-                       {
-                           "name": "x",
-                           "in": "path",
-                           "description": "The tile grid's x-coordinate",
-                           "schema": {
-                               "type": "integer",
-                           }
-                       },
-                       {
-                           "name": "crs",
-                           "in": "query",
-                           "description": "The tile grid's spatial CRS",
-                           "schema": {
-                               "type": "string",
-                               "enum": ["EPSG:3857", "CRS84"],
-                               "default": "CRS84"
-                           }
-                       },
-                       {
-                           "name": "vmin",
-                           "in": "query",
-                           "description": "Minimum value of variable"
-                                          " for color mapping",
-                           "schema": {
-                               "type": "number",
-                               "default": 0
-                           }
-                       },
-                       {
-                           "name": "vmax",
-                           "in": "query",
-                           "description": "Maximum value of variable"
-                                          " for color mapping",
-                           "schema": {
-                               "type": "number",
-                               "default": 1
-                           }
-                       },
-                       {
-                           "name": "cbar",
-                           "in": "query",
-                           "description": "Name of the color bar"
-                                          " for color mapping",
-                           "schema": {
-                               "type": "string",
-                               "default": "bone"
-                           }
-                       },
-                       {
-                           "name": "format",
-                           "in": "query",
-                           "description": "Image format",
-                           "schema": {
-                               "type": "string",
-                               "enum": ["png", "image/png"],
-                               "default": "png"
-                           }
-                       },
-                       {
-                           "name": "retina",
-                           "in": "query",
-                           "description": "Returns tiles of size"
-                                          " 512 instead of 256",
-                           "schema": {
-                               "type": "boolean"
-                           }
-                       },
-                   ])
     async def get(self,
                   datasetId: str,
                   varName: str,
@@ -151,3 +145,34 @@ class TilesHandler(ApiHandler[TilesContext]):
         )
         self.response.set_header('Content-Type', 'image/png')
         await self.response.finish(tile)
+
+
+# noinspection PyPep8Naming
+@api.route('/tiles/{datasetId}/{varName}/{z}/{y}/{x}')
+class NewTilesHandler(TilesHandler):
+    @api.operation(operation_id='getTile',
+                   summary="Get the image tile for a variable"
+                           " and given tile grid coordinates.",
+                   parameters=TILE_PARAMETERS)
+    async def get(self,
+                  datasetId: str,
+                  varName: str,
+                  z: str, y: str, x: str):
+        await super().get(datasetId, varName, z, y, x)
+
+
+# For backward compatibility only
+# noinspection PyPep8Naming
+@api.route('/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}')
+class OldTilesHandler(TilesHandler):
+    """Deprecated. Use /tiles/{datasetId}/{varName}/{z}/{y}/{x}."""
+    @api.operation(operation_id='getDatasetVariableTile',
+                   tags=['datasets'],
+                   summary="Get the image tile for a variable"
+                           " and given tile grid coordinates. (deprecated)",
+                   parameters=TILE_PARAMETERS)
+    async def get(self,
+                  datasetId: str,
+                  varName: str,
+                  z: str, y: str, x: str):
+        await super().get(datasetId, varName, z, y, x)

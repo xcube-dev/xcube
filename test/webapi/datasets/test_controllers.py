@@ -33,6 +33,7 @@ from xcube.webapi.datasets.controllers import get_color_bars
 from xcube.webapi.datasets.controllers import get_dataset
 from xcube.webapi.datasets.controllers import get_datasets
 from xcube.webapi.datasets.controllers import get_time_chunk_size
+from xcube.webapi.datasets.controllers import get_legend
 
 
 def get_datasets_ctx(server_config=None) -> DatasetsContext:
@@ -469,3 +470,28 @@ class TimeChunkSizeTest(unittest.TestCase):
         ts_ds = self._get_cube(time_chunk_size=5)
         ts_ds['CHL0'] = ts_ds.CHL.isel(time=0)
         self.assertEqual(None, get_time_chunk_size(ts_ds, 'CHL0', 'ds.zarr'))
+
+
+class DatasetLegendTest(unittest.TestCase):
+    def test_get_legend(self):
+        ctx = get_datasets_ctx('config.yml')
+
+        image = get_legend(ctx, 'demo', 'conc_chl', {})
+        self.assertEqual("<class 'bytes'>", str(type(image)))
+
+        # This is fine, because we fall back to "viridis".
+        image = get_legend(ctx, 'demo', 'conc_chl', dict(cbar='sun-shine'))
+        self.assertEqual("<class 'bytes'>", str(type(image)))
+
+        with self.assertRaises(ApiError.BadRequest) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', dict(vmin='sun-shine'))
+        self.assertEqual('HTTP status 400:'
+                         ' Invalid color legend parameter(s)',
+                         f'{cm.exception}')
+
+        with self.assertRaises(ApiError.BadRequest) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', dict(width='sun-shine'))
+        self.assertEqual('HTTP status 400:'
+                         ' Invalid color legend parameter(s)',
+                         f'{cm.exception}')
+

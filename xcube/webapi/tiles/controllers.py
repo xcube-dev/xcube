@@ -87,6 +87,11 @@ def _compute_ml_dataset_tile(ctx: TilesContext,
         components = 'r', 'g', 'b'
         for i, c in enumerate(components):
             var_names[i] = args.pop(c, var_names[i])
+            if var_names[i] is None:
+                raise ApiError.BadRequest(
+                    f'No variable in dataset {ds_id!r}'
+                    f' specified for RGB component {c.upper()}'
+                )
             value_ranges[i] = (
                 float(args.pop(
                     f'{c}vmin', value_ranges[i][0]

@@ -26,9 +26,10 @@ from .context import DatasetsContext
 from .controllers import find_dataset_places
 from .controllers import get_color_bars
 from .controllers import get_dataset
+from .controllers import get_dataset_coordinates
 from .controllers import get_dataset_place_group
 from .controllers import get_datasets
-from .controllers import get_dataset_coordinates
+from .controllers import get_legend
 from ...util.assertions import assert_true
 
 
@@ -144,7 +145,43 @@ class PlacesForDatasetHandler(ApiHandler[DatasetsContext]):
         self.response.finish(response)
 
 
+# noinspection PyPep8Naming
+class LegendHandler(ApiHandler[DatasetsContext]):
+    async def get(self, datasetId: str, varName: str):
+        legend = await self.ctx.run_in_executor(
+            None,
+            get_legend,
+            self.ctx,
+            datasetId,
+            varName,
+            {k: v[0] for k, v in self.request.query.items()}
+        )
+        self.response.set_header('Content-Type', 'image/png')
+        await self.response.finish(legend)
+
+
+# noinspection PyPep8Naming
+@api.route('/datasets/{datasetId}/vars/{varName}/legend.png')
+class OldLegendHandler(LegendHandler):
+    @api.operation(operation_id='getLegendForVariable',
+                   summary='Deprecated.')
+    async def get(self, datasetId: str, varName: str):
+        await super().get(datasetId, varName)
+
+
+# noinspection PyPep8Naming
+@api.route('/tiles/{datasetId}/{varName}/legend')
+class NewLegendHandler(LegendHandler):
+    @api.operation(operation_id='getLegendForTiles',
+                   tags=["tiles"],
+                   summary='Get the legend as PNG used for the tiles'
+                           ' for given variable.')
+    async def get(self, datasetId: str, varName: str):
+        await super().get(datasetId, varName)
+
+
 # TODO (forman): move as endpoint "styles/colorbars" into API "styles"
+
 
 @api.route('/colorbars')
 class StylesColorBarsHandler(ApiHandler):

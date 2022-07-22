@@ -22,39 +22,32 @@
 from ..helpers import RoutesTestCase
 
 
-class DatasetsRoutesTest(RoutesTestCase):
+class TilesRoutesTest(RoutesTestCase):
 
-    def test_fetch_datasets(self):
-        response = self.fetch('/datasets')
-        self.assertResponseOK(response)
-
-    def test_fetch_datasets_details(self):
-        response = self.fetch('/datasets?details=1')
-        self.assertResponseOK(response)
-        response = self.fetch('/datasets?details=1&tiles=ol')
-        self.assertResponseOK(response)
-        response = self.fetch('/datasets?details=1&point=2.8,51.0')
-        self.assertResponseOK(response)
-        response = self.fetch('/datasets?details=1&point=2,8a,51.0')
-        self.assertBadRequestResponse(
-            response,
-            "illegal point: could not convert string to float: '8a'"
-        )
-
-    def test_fetch_dataset(self):
-        response = self.fetch('/datasets/demo')
-        self.assertResponseOK(response)
-        response = self.fetch('/datasets/demo?tiles=ol4')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_coords(self):
-        response = self.fetch('/datasets/demo/coords/time')
-        self.assertResponseOK(response)
-
-    def test_fetch_legend(self):
+    def test_fetch_dataset_tile(self):
         # New
-        response = self.fetch('/tiles/demo/conc_chl/legend')
+        response = self.fetch('/tiles/demo/conc_chl/0/0/0')
         self.assertResponseOK(response)
         # Old
-        response = self.fetch('/datasets/demo/vars/conc_chl/legend.png')
+        response = self.fetch('/datasets/demo/vars/conc_chl/tiles2/0/0/0')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_rgb_tile(self):
+        # New
+        response = self.fetch('/tiles/demo/rgb/0/0/0?'
+                              'r=kd489&g=conc_chl&b=conc_tsm&time=first')
+        self.assertResponseOK(response)
+        # Old
+        response = self.fetch('/datasets/demo/vars/rgb/tiles2/0/0/0?'
+                              'r=kd489&g=conc_chl&b=conc_tsm&time=first')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile_with_params(self):
+        # New
+        response = self.fetch('/tiles/demo/conc_chl/0/0/0?'
+                              'time=current&cmap=jet&debug=1')
+        self.assertResponseOK(response)
+        # Old
+        response = self.fetch('/datasets/demo/vars/conc_chl/tiles2/0/0/0?'
+                              'time=current&cmap=jet&debug=1')
         self.assertResponseOK(response)

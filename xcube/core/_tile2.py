@@ -22,7 +22,6 @@
 import io
 import logging
 import math
-import warnings
 from typing import Optional, Tuple, Dict, Any, Hashable, Union, Sequence
 
 import PIL
@@ -176,10 +175,15 @@ def compute_rgba_tile(
 
         tile_bbox = tiling_scheme.get_tile_extent(tile_x, tile_y, tile_z)
         if tile_bbox is None:
-            raise TileRequestException.new(
-                'tile indices out of tile grid bounds',
-                logger=logger
-            )
+            # Whether to raise or not
+            # could be made a configuration option.
+            #
+            # raise TileRequestException.new(
+            #     'Tile indices out of tile grid bounds',
+            #     logger=logger
+            # )
+            return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
+
         tile_x_min, tile_y_min, tile_x_max, tile_y_max = tile_bbox
 
         tile_res = (tile_x_max - tile_x_min) / (tile_size - 1)
@@ -228,8 +232,8 @@ def compute_rgba_tile(
                               np.nanmax(ds_y_w), np.nanmax(ds_y_e)])
         if np.isnan(ds_x_min) or np.isnan(ds_y_min) \
                 or np.isnan(ds_y_max) or np.isnan(ds_y_max):
-            raise TileNotFoundException.new(
-                'tile bounds NaN after map projection',
+            raise TileNotFoundException(
+                'Tile bounds NaN after map projection',
                 logger=logger
             )
 
@@ -343,9 +347,9 @@ def _get_variable(ds_name,
                   non_spatial_labels,
                   logger):
     if variable_name not in dataset:
-        raise TileNotFoundException.new(
-            f'variable {variable_name!r}'
-            f' not found in {ds_name!r}',
+        raise TileNotFoundException(
+            f'Variable {variable_name!r}'
+            f' not found in dataset {ds_name!r}',
             logger=logger
         )
     variable = dataset[variable_name]
@@ -359,13 +363,12 @@ def _get_variable(ds_name,
 
 
 class TileException(Exception):
-    @classmethod
-    def new(cls,
-            message: str,
-            logger: Optional[logging.Logger] = None) -> 'TileException':
+    def __init__(self,
+                 message: str,
+                 logger: Optional[logging.Logger] = None):
+        super().__init__(message)
         if logger is not None:
             logger.warning(message)
-        return cls(message)
 
 
 class TileNotFoundException(TileException):
@@ -401,9 +404,14 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
                             variable: xr.DataArray,
                             labels: Optional[Dict[str, Any]],
                             logger: logging.Logger) -> Dict[Hashable, Any]:
+    labels = labels if labels is not None else {}
+
     new_labels = {}
+    # assuming last two dims are spatial: [..., y, x]
+    assert variable.ndim >= 2
     non_spatial_dims = variable.dims[0:-2]
     if not non_spatial_dims:
+        #  Ignore any extra labels passed.
         return new_labels
 
     for dim in non_spatial_dims:
@@ -415,26 +423,32 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
         except KeyError:
             continue
 
-        if labels and dim in labels:
-            label = labels[str(dim)]
-            try:
-                label = np.array(label).astype(coord_var.dtype)
-            except (TypeError, ValueError) as e:
-                msg = (f'illegal label {label!r} for dimension {dim!r},'
-                       f' using first label instead (error: {e})')
-                if logger:
-                    logger.warning(msg)
-                else:
-                    warnings.warn(msg)
-                label = coord_var[0].values
-        else:
-            msg = (f'missing label for dimension {dim!r},'
-                   f' using first label instead')
+        dim_name = str(dim)
+
+        label = labels.get(dim_name)
+        if label is None:
             if logger:
-                logger.warning(msg)
-            else:
-                warnings.warn(msg)
+                logger.debug((f'missing label for dimension {dim!r},'
+                              f' using first label instead'))
             label = coord_var[0].values
+
+        elif isinstance(label, str):
+            if '/' in label:
+                # In case of WMTS tile requests the tame range labels
+                # from WMTS dimensions may be passed.
+                label = label.split('/', maxsplit=1)[0]
+
+            if label.lower() == 'first':
+                label = coord_var[0].values
+            elif label.lower() in ('last', 'current'):
+                label = coord_var[-1].values
+            else:
+                try:
+                    label = np.array(label).astype(coord_var.dtype)
+                except (TypeError, ValueError) as e:
+                    raise TileRequestException(
+                        f'Illegal label {label!r} for dimension {dim!r}'
+                    ) from e
 
         new_labels[dim] = label
 

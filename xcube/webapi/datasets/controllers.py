@@ -20,9 +20,13 @@
 # DEALINGS IN THE SOFTWARE.
 
 import functools
+import io
 import json
-from typing import Dict, Tuple, List, Set, Optional, Any, Callable
+from typing import Dict, Tuple, List, Set, Optional, Any, Callable, Mapping
 
+import matplotlib.colorbar
+import matplotlib.colors
+import matplotlib.figure
 import numpy as np
 import pyproj
 import xarray as xr
@@ -34,17 +38,23 @@ from xcube.core.store import DataStoreError
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.server.api import ApiError
-from xcube.util.cmaps import get_cmaps
+from xcube.util.cmaps import get_cmaps, get_cmap, get_norm
 from .authutil import READ_ALL_DATASETS_SCOPE
 from .authutil import READ_ALL_VARIABLES_SCOPE
 from .authutil import assert_scopes
 from .authutil import check_scopes
 from .context import DatasetConfig
 from .context import DatasetsContext
+from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
 
 _CRS84 = pyproj.CRS.from_string('CRS84')
+
+
+# TODO (forman): Is this really still in use?
+class CubeIsNotDisplayable(ValueError):
+    pass
 
 
 def find_dataset_places(ctx: DatasetsContext,
@@ -512,11 +522,12 @@ def _is_point_in_dataset_bbox(point: Tuple[float, float], dataset_dict: Dict):
     if x_min < x_max:
         return x_min <= x <= x_max
     else:
-        # Bounding box crosses antimeridian
+        # Bounding box crosses anti-meridian
         return x_min <= x <= 180.0 or -180.0 <= x <= x_max
 
 
-def _filter_place_group(place_group: Dict, del_features: bool = False) -> Dict:
+def _filter_place_group(place_group: Dict,
+                        del_features: bool = False) -> Dict:
     place_group = dict(place_group)
     del place_group['sourcePaths']
     del place_group['sourceEncoding']
@@ -551,5 +562,51 @@ def _get_dataset_tile_url2(ctx: DatasetsContext,
                                '{z}/{y}/{x}')
 
 
-class CubeIsNotDisplayable(ValueError):
-    pass
+def get_legend(ctx: DatasetsContext,
+               ds_id: str,
+               var_name: str,
+               params: Mapping[str, str]):
+    default_cmap_cbar, (default_cmap_vmin, default_cmap_vmax) = \
+        ctx.get_color_mapping(ds_id, var_name)
+
+    try:
+        cmap_name = params.get('cbar', params.get('cmap', default_cmap_cbar))
+        cmap_vmin = float(params.get('vmin', str(default_cmap_vmin)))
+        cmap_vmax = float(params.get('vmax', str(default_cmap_vmax)))
+        cmap_w = int(params.get('width', str(DEFAULT_CMAP_WIDTH)))
+        cmap_h = int(params.get('height', str(DEFAULT_CMAP_HEIGHT)))
+    except (ValueError, TypeError):
+        raise ApiError.BadRequest("Invalid color legend parameter(s)")
+
+    try:
+        _, cmap = get_cmap(cmap_name)
+    except ValueError:
+        raise ApiError.NotFound(f"Colormap {cmap_name!r} not found")
+
+    fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
+    ax1 = fig.add_subplot(1, 1, 1)
+    if '.cpd' in cmap_name:
+        norm, ticks = get_norm(cmap_name)
+    else:
+        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+        ticks = None
+
+    image_legend = matplotlib.colorbar.ColorbarBase(ax1,
+                                                    format='%.1f',
+                                                    ticks=ticks,
+                                                    cmap=cmap,
+                                                    norm=norm,
+                                                    orientation='vertical')
+
+    image_legend_label = ctx.get_legend_label(ds_id, var_name)
+    if image_legend_label is not None:
+        image_legend.set_label(image_legend_label)
+
+    fig.patch.set_facecolor('white')
+    fig.patch.set_alpha(0.0)
+    fig.tight_layout()
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format='png')
+
+    return buffer.getvalue()
