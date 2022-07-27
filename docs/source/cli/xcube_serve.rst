@@ -101,7 +101,7 @@ The xcube server is used to configure the xcube datasets to be published.
 
 xcube datasets are any datasets that
 
-* that comply to `Unidata's CDM <https://www.unidata.ucar.edu/software/thredds/v4.3/netcdf-java/CDM/>`_ and to the `CF Conventions <http://cfconventions.org/>`_;
+* that comply to `Unidata's CDM <https://docs.unidata.ucar.edu/netcdf-java/current/userguide/common_data_model_overview.html>`_ and to the `CF Conventions <http://cfconventions.org/>`_;
 * that can be opened with the `xarray <https://xarray.pydata.org/en/stable/>`_ Python library;
 * that have variables that have the dimensions and shape (``lat``, ``lon``) or (``time``, ``lat``, ``lon``);
 * that have 1D-coordinate variables corresponding to the dimensions;
@@ -159,8 +159,8 @@ Server Demo Configuration File
 The server configuration file consists of various parts, some of them are necessary others are optional.
 Here the `demo configuration file`_ used in the `example`_ is explained in detail.
 
-The configuration file consists of five main parts `authentication`_, `dataset attribution`_, `datasets`_,
-`place groups`_ and `styles`_.
+The configuration file consists of five main parts :ref:`authentication`, :ref:`dataset attribution`, :ref:`datasets`,
+:ref:`place groups` and :ref:`styles`.
 
 .. _authentication:
 Authentication [optional]
