@@ -17,7 +17,8 @@
   with resource identifiers having the prefix `demo_user/`.
 
   With this change, server configuration has changed:     
-  Example of OIDC configuration for auth0.  
+  #### Example of OIDC configuration for auth0
+  
   Please note, there **must be** a trailing slash in the "Authority" URL.
   
   ```yaml
