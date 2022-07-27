@@ -159,8 +159,9 @@ Server Demo Configuration File
 The server configuration file consists of various parts, some of them are necessary others are optional.
 Here the `demo configuration file`_ used in the `example`_ is explained in detail.
 
-The configuration file consists of five main parts  :ref:`authentication <authentication>`, `dataset-attribution-optional`_, :ref:`datasets`,
-`place-groups-optional`_ and `styles-optional`_.
+The configuration file consists of five main parts  :ref:`authentication <authentication>`,
+:ref:`dataset attribution <dataset-attribution>`, :ref:`datasets <datasets>`,
+:ref:`place groups <place-groups>` and :ref:`styles <styles>`.
 
 .. _authentication:
 
@@ -186,7 +187,7 @@ Please note that there is no trailing slash in the "Authority" URL.
       Authority: https://kc.brockmann-consult.de/auth/realms/AVL
       Audience: avl-xc-api
 
-.. _dataset attribution:
+.. _dataset-attribution:
 Dataset Attribution [optional]
 ------------------------------
 
@@ -386,7 +387,7 @@ In the example a weekly average is computed.
 
 Again, the dataset may be associated with place groups.
 
-.. _place groups:
+.. _place-groups:
 Place Groups [optional]
 -----------------------
 
