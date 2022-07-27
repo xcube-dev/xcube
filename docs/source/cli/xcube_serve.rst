@@ -159,10 +159,11 @@ Server Demo Configuration File
 The server configuration file consists of various parts, some of them are necessary others are optional.
 Here the `demo configuration file`_ used in the `example`_ is explained in detail.
 
-The configuration file consists of five main parts `authentication-optional`_, `dataset-attribution-optional`_, :ref:`datasets`,
+The configuration file consists of five main parts  :ref:`authentication <authentication>`, `dataset-attribution-optional`_, :ref:`datasets`,
 `place-groups-optional`_ and `styles-optional`_.
 
 .. _authentication:
+
 Authentication [optional]
 -------------------------
 In order to display data via xcube-viewer exclusively to registered and authorized users, the data served by xcube serve
