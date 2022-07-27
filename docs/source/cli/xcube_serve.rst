@@ -1,5 +1,5 @@
 .. _demo configuration file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config.yml
-.. _demo_stores configuration file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config-with-stores.yml
+.. _demo stores configuration file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config-with-stores.yml
 .. _Auth0: https://auth0.com/
 
 ===============
@@ -210,7 +210,7 @@ In order to publish selected xcube datasets via xcube serve the datasets need to
 file of the server. Several xcube datasets may be served within one server, by providing a list of information
 concerning the xcube datasets.
 
-.. _remotely-stored-xcube-datasets:
+.. _remotely stored xcube datasets:
 
 Remotely Stored xcube Datasets
 -----------------------------
@@ -247,8 +247,8 @@ Credentials may be saved either in a file called .aws/credentials with content l
 
 Or they may be exported as environment variables AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID.
 
-Further down an example for a `locally-stored-xcube-datasets`_ will be given,
-as well as an example of a `on-the-fly-generation-of-xcube-datasets`_.
+Further down an example for a `locally stored xcube datasets`_ will be given,
+as well as an example of a `on-the-fly generation of xcube datasets`_.
 
 *Identifier* [mandatory]
 is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
@@ -289,7 +289,7 @@ the *PlaceGroupRef*. The configuration of *PlaceGroups* is described in section 
 can only be used when providing `authentication`_. Datasets may be protected by
 configuring the *RequiredScopes* entry whose value is a list of required scopes, e.g. "read:datasets".
 
-.. _locally-stored-xcube-datasets:
+.. _locally stored xcube datasets:
 
 Locally Stored xcube Datasets
 -----------------------------
@@ -318,7 +318,7 @@ To serve a locally stored dataset the configuration of it would look like the ex
           IsSubstitute: true
 
 Most of the configuration of locally stored datasets is equal to the configuration of
-`remotely-stored-xcube-datasets`_.
+`remotely stored xcube datasets`_.
 
 *FileSystem* [mandatory]
 is set to "file" which lets xcube serve know, that the datacube is locally stored.
@@ -350,7 +350,7 @@ can only be used when providing `authentication`_. By passing the *IsSubstitute*
 a dataset disappears for authorized requests. This might be useful for showing a demo dataset in the viewer for
 user who are not logged in.
 
-.. _on-the-fly-generation-of-xcube-datasets:
+.. _on-the-fly generation of xcube datasets:
 
 On-the-fly Generation of xcube Datasets
 ---------------------------------------
@@ -524,7 +524,7 @@ Example
 Server Demo Configuration File for DataStores
 =============================================
 The server configuration file consists of various parts, some of them are necessary, others are optional.
-Here the `demo_stores configuration file`_ used in the `example stores`_ is explained in detail.
+Here the `demo stores configuration file`_ used in the `example stores`_ is explained in detail.
 
 This configuration file differs only in one part compared from `config`_. This part is `data stores`_.
 The other main parts (`authentication`_, `dataset attribution`_,
@@ -570,7 +570,7 @@ can be *file* for locally stored datasets and *s3* for datasets located in the c
 if not specified, every dataset in the indicated location supported by xcube will be read and
 served by xcube serve. In order to filter certain datasets you can list Paths that shall be served by xcube serve.
 *Path* may contain wildcards. Each Dataset entry may have *Styles* and *PlaceGroups* associated with them, the same way
-as in `config`_.
+as described in section :ref:`Server Demo Configuration File <config>`.
 
 .. _example stores:
 
