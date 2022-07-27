@@ -25,7 +25,8 @@
     Authority: https://xcube-dev.eu.auth0.com/
     Audience: https://xcube-dev/api/
   ```  
-  Example of OIDC configuration for Keycloak.  
+  #### Example of OIDC configuration for Keycloak
+  
   Please note, **no** trailing slash in the "Authority" URL.
 
   ```yaml
