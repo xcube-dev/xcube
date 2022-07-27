@@ -154,14 +154,15 @@ and the it is referred to by the non-hidden, actual dataset using the ``TimeSeri
 
 
 .. _config:
+
 Server Demo Configuration File
 ==============================
 The server configuration file consists of various parts, some of them are necessary others are optional.
 Here the `demo configuration file`_ used in the `example`_ is explained in detail.
 
-The configuration file consists of five main parts  `authentication`_,
-:ref:`dataset attribution <dataset-attribution>`, :ref:`datasets <datasets>`,
-:ref:`place groups <place groups>` and :ref:`styles <styles>`.
+The configuration file consists of five main parts `authentication`_,
+`dataset attribution`_, `datasets`_,
+`place groups`_ and `styles`_.
 
 .. _authentication:
 
@@ -187,7 +188,7 @@ Please note that there is no trailing slash in the "Authority" URL.
       Authority: https://kc.brockmann-consult.de/auth/realms/AVL
       Audience: avl-xc-api
 
-.. _dataset-attribution:
+.. _dataset attribution:
 
 Dataset Attribution [optional]
 ------------------------------
@@ -504,6 +505,7 @@ variables which represent the bands red, green and blue, they may be combined to
 of the dataset may be combined to an RGB-Image, as shown in the configuration above.
 
 .. _example:
+
 Example
 =======
 
@@ -529,6 +531,7 @@ The other main parts (`authentication`_, `dataset attribution`_,
 `place groups`_, and `styles`_) can be used in combination with `data stores`_.
 
 .. _data stores:
+
 DataStores [mandatory]
 --------------------
 
@@ -570,6 +573,7 @@ served by xcube serve. In order to filter certain datasets you can list Paths th
 as in `config`_.
 
 .. _example stores:
+
 Example Stores
 ==============
 
