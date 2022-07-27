@@ -23,8 +23,8 @@
   
   ```yaml
   Authentication:
-    Authority: https://xcube-dev.eu.auth0.com/
-    Audience: https://xcube-dev/api/
+    Authority: https://some-demo-service.eu.auth0.com/
+    Audience: https://some-demo-service/api/
   ```  
   #### Example of OIDC configuration for Keycloak
   
@@ -32,8 +32,8 @@
 
   ```yaml
   Authentication: 
-    Authority: https://kc.brockmann-consult.de/auth/realms/AVL
-    Audience: avl-xc-api
+    Authority: https://kc.some-demo-service.de/auth/realms/some-kc-realm
+    Audience: some-kc-realm-xc-api
   ```
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
