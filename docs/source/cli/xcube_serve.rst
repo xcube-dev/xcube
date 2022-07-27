@@ -159,9 +159,9 @@ Server Demo Configuration File
 The server configuration file consists of various parts, some of them are necessary others are optional.
 Here the `demo configuration file`_ used in the `example`_ is explained in detail.
 
-The configuration file consists of five main parts  :ref:`authentication <authentication>`,
+The configuration file consists of five main parts  `authentication`_,
 :ref:`dataset attribution <dataset-attribution>`, :ref:`datasets <datasets>`,
-:ref:`place groups <place-groups>` and :ref:`styles <styles>`.
+:ref:`place groups <place groups>` and :ref:`styles <styles>`.
 
 .. _authentication:
 
@@ -188,6 +188,7 @@ Please note that there is no trailing slash in the "Authority" URL.
       Audience: avl-xc-api
 
 .. _dataset-attribution:
+
 Dataset Attribution [optional]
 ------------------------------
 
@@ -201,6 +202,7 @@ Dataset Attribution may be added to the server via *DatasetAttribution*.
 
 
 .. _datasets:
+
 Datasets [mandatory]
 --------------------
 In order to publish selected xcube datasets via xcube serve the datasets need to be specified in the configuration
@@ -208,6 +210,7 @@ file of the server. Several xcube datasets may be served within one server, by p
 concerning the xcube datasets.
 
 .. _remotely-stored-xcube-datasets:
+
 Remotely Stored xcube Datasets
 -----------------------------
 .. code:: yaml
@@ -286,6 +289,7 @@ can only be used when providing `authentication`_. Datasets may be protected by
 configuring the *RequiredScopes* entry whose value is a list of required scopes, e.g. "read:datasets".
 
 .. _locally-stored-xcube-datasets:
+
 Locally Stored xcube Datasets
 -----------------------------
 
@@ -346,6 +350,7 @@ a dataset disappears for authorized requests. This might be useful for showing a
 user who are not logged in.
 
 .. _on-the-fly-generation-of-xcube-datasets:
+
 On-the-fly Generation of xcube Datasets
 ---------------------------------------
 
@@ -387,7 +392,8 @@ In the example a weekly average is computed.
 
 Again, the dataset may be associated with place groups.
 
-.. _place-groups:
+.. _place groups:
+
 Place Groups [optional]
 -----------------------
 
@@ -455,6 +461,7 @@ The values on the right side may either **be** feature property names or **conta
 ``${PROPERTY}``. A special placeholder is ``${base_url}`` which is replaced by the server's current base URL.
 
 .. _styles:
+
 Styles [optional]
 -----------------
 
