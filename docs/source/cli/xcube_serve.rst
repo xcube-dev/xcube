@@ -526,7 +526,8 @@ Server Demo Configuration File for DataStores
 The server configuration file consists of various parts, some of them are necessary, others are optional.
 Here the `demo stores configuration file`_ used in the `example stores`_ is explained in detail.
 
-This configuration file differs only in one part compared from `config`_. This part is `data stores`_.
+This configuration file differs only in one part compared to section :ref:`Server Demo Configuration File <config>`:
+`data stores`_.
 The other main parts (`authentication`_, `dataset attribution`_,
 `place groups`_, and `styles`_) can be used in combination with `data stores`_.
 
