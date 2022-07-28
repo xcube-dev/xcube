@@ -41,6 +41,7 @@ dependencies:
   - shapely >=1.6
   - tornado >=6.0
   - urllib3 >=1.26
+  - werkzeug < 2.2
   - xarray >=0.19
   - zarr >=2.8
   # Required by Coiled
