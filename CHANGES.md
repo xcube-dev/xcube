@@ -1,4 +1,4 @@
-## Changes in 0.12.0 (in development)
+## Changes in 0.12.0
 
 ### Enhancements
 
