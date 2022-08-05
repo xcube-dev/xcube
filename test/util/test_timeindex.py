@@ -1,14 +1,14 @@
-import unittest
-
-import numpy as np
-import pandas as pd
+from unittest import TestCase
 import xarray as xr
+import pandas as pd
+from pytz import UTC
+import numpy as np
 from pandas import DatetimeTZDtype
 
 from xcube.util.timeindex import ensure_time_label_compatible
 
 
-class EnsureTimeCompatibleTest(unittest.TestCase):
+class TimeindexTest(TestCase):
     # A DataArray with a datetime64 time dimension -- actually implicitly
     # timezone-aware per the numpy docs, but treated as timzone-naive by
     # pandas and xarray.
@@ -61,8 +61,68 @@ class EnsureTimeCompatibleTest(unittest.TestCase):
                 ensure_time_label_compatible(self.da_tznaive,
                                              self.labels_tzaware)))
 
-    # TODO: also test with slice indexers
-    # TODO: test with Datasets as well as DataArrays
+    def test_ensure_time_label_compatible_no_time(self):
+        old_labels = dict(x=1)
+        new_labels = ensure_time_label_compatible(
+            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time')),
+            old_labels
+        )
+        self.assertEqual(old_labels, new_labels)
+
+    def test_ensure_time_label_compatible_no_timezone_info(self):
+        old_labels = dict(time='foo')
+        new_labels = ensure_time_label_compatible(
+            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                         coords=dict(time=['foo', 'bar'])),
+            old_labels
+        )
+        self.assertEqual(old_labels, new_labels)
+
+    def test_ensure_time_label_compatible_no_tz_convert(self):
+        class AwkwardTime:
+            tzinfo = UTC
+
+        old_labels = dict(time=AwkwardTime())
+        time_coords = [
+            pd.Timestamp('2020-01-01T12:00:00'),
+            pd.Timestamp('2020-01-02T12:00:00')
+        ]
+        new_labels = ensure_time_label_compatible(
+            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                         coords=dict(time=time_coords)),
+            old_labels
+        )
+        self.assertEqual(old_labels, new_labels)
+
+    def test_ensure_time_label_compatible_no_tz_localize(self):
+        class AwkwardTime:
+            tzinfo = None
+
+        old_labels = dict(time=AwkwardTime())
+        time_coords = [
+            pd.Timestamp('2020-01-01T12:00:00+00:00'),
+            pd.Timestamp('2020-01-02T12:00:00+00:00')
+        ]
+        new_labels = ensure_time_label_compatible(
+            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                         coords=dict(time=time_coords)),
+            old_labels
+        )
+        self.assertEqual(old_labels, new_labels)
+
+    def test_ensure_time_label_compatible_tz_localize(self):
+        old_labels = dict(time=pd.Timestamp('2020-01-01T12:00:00'))
+        time_coords = [
+            pd.Timestamp('2020-01-01T12:00:00+00:00'),
+            pd.Timestamp('2020-01-02T12:00:00+00:00')
+        ]
+        new_labels = ensure_time_label_compatible(
+            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                         coords=dict(time=time_coords)),
+            old_labels
+        )
+        self.assertEqual(dict(time=pd.Timestamp('2020-01-01T12:00:00+00:00')),
+                         new_labels)
 
 
 def _are_times_equal(labels1, labels2):
