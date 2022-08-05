@@ -1,13 +1,21 @@
 
 dataset_cache_size: 100M
 
-data_stores:
-  - store_id: file
-    store_params:
+DataStores:
+  - Identifier: test
+    StoreId: file
+    StoreParams:
       root: examples/serve/demo
-    datasets:
-      - data_id: cube-1-250-250.levels
-      - data_id: cube-5-100-200.zarr
+    Datasets:
+      - Path: "cube-1-250-250.zarr"
+        Identifier: "Cube 1"
+        Style: "default"
+      - Path: "cube-5-100-200.zarr"
+        Identifier: "Cube 5"
+        Style: "default"
+      - Path: "*.levels"
+        Style: "default"
+
 #  - store_id: s3
 #    store_params:
 #      root: xcube-examples
