@@ -1,0 +1,196 @@
+<?xml version="1.0" ?>
+
+<WCS_Capabilities xmlns="http://www.opengis.net/wcs"
+                  xmlns:gml="http://www.opengis.net/gml"
+                  xmlns:xlink="http://www.w3.org/1999/xlink"
+                  version="1.0.0">
+    <Service>
+        <description>xcube WCS server</description>
+        <name>xcube-WCS</name>
+        <label>xcube-WCS</label>
+        <keywords>
+            <keyword>OGC</keyword>
+            <keyword>WCS</keyword>
+            <keyword>xcube</keyword>
+            <keyword>datacubes</keyword>
+        </keywords>
+        <responsibleParty>
+            <individualName>Fomferra, Norman</individualName>
+            <organisationName>Brockmann Consult GmbH</organisationName>
+            <positionName>Senior Software Engineer</positionName>
+            <contactInfo>
+                <phone>
+                    <voice>+49 4152 889 303</voice>
+                    <facsimile>+49 4152 889 330</facsimile>
+                </phone>
+                <address>
+                    <deliveryPoint>HZG / GITZ</deliveryPoint>
+                    <city>Geesthacht</city>
+                    <administrativeArea>Herzogtum Lauenburg</administrativeArea>
+                    <postalCode>21502</postalCode>
+                    <country>Germany</country>
+                    <electronicMailAddress>norman.fomferra@brockmann-consult.de</electronicMailAddress>
+                </address>
+                <onlineResource xlink:href="https://www.brockmann-consult.de"/>
+            </contactInfo>
+        </responsibleParty>
+        <fees>NONE</fees>
+        <accessConstraints>NONE</accessConstraints>
+    </Service>
+    <Capability>
+        <Request>
+            <GetCapabilities>
+                <DCPType>
+                    <HTTP>
+                        <Get>
+                            <OnlineResource xlink:href="https://xcube.brockmann-consult.de/wcs/kvp?service=WCS&amp;version=1.0.0&amp;request=GetCapabilities"/>
+                        </Get>
+                    </HTTP>
+                </DCPType>
+            </GetCapabilities>
+            <DescribeCoverage>
+                <DCPType>
+                    <HTTP>
+                        <Get>
+                            <OnlineResource xlink:href="https://xcube.brockmann-consult.de/wcs/kvp?service=WCS&amp;version=1.0.0&amp;request=DescribeCoverage"/>
+                        </Get>
+                    </HTTP>
+                </DCPType>
+            </DescribeCoverage>
+            <GetCoverage>
+                <DCPType>
+                    <HTTP>
+                        <Get>
+                            <OnlineResource xlink:href="https://xcube.brockmann-consult.de/wcs/kvp?service=WCS&amp;version=1.0.0&amp;request=GetCoverage"/>
+                        </Get>
+                    </HTTP>
+                </DCPType>
+            </GetCoverage>
+        </Request>
+        <Exception>
+            <Format>application/x-ogc-wcs</Format>
+        </Exception>
+    </Capability>
+    <ContentMetadata>
+        <CoverageOfferingBrief>
+            <name>c2rcc_flags</name>
+            <label>C2RCC quality flags</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>conc_chl</name>
+            <label>Chlorophyll concentration</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>conc_tsm</name>
+            <label>Total suspended matter dry weight concentration</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>kd489</name>
+            <label>Irradiance attenuation coefficient at 489 nm</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>quality_flags</name>
+            <label>Classification and quality flags</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>c2rcc_flags</name>
+            <label>c2rcc_flags</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>c2rcc_flags_stdev</name>
+            <label>c2rcc_flags_stdev</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>conc_chl</name>
+            <label>conc_chl</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>conc_chl_stdev</name>
+            <label>conc_chl_stdev</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>conc_tsm</name>
+            <label>conc_tsm</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>conc_tsm_stdev</name>
+            <label>conc_tsm_stdev</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>kd489</name>
+            <label>kd489</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>kd489_stdev</name>
+            <label>kd489_stdev</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>quality_flags</name>
+            <label>quality_flags</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+        <CoverageOfferingBrief>
+            <name>quality_flags_stdev</name>
+            <label>quality_flags_stdev</label>
+            <lonLatEnvelope>
+                <gml:pos>0 50</gml:pos>
+                <gml:pos>5 52.5</gml:pos>
+            </lonLatEnvelope>
+        </CoverageOfferingBrief>
+    </ContentMetadata>
+</WCS_Capabilities>
