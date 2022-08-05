@@ -1,0 +1,698 @@
+<?xml version="1.0"?>
+<xs:schema targetNamespace="http://www.opengis.net/wcs" xmlns="http://www.opengis.net/wcs"
+    xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:gml="http://www.opengis.net/gml" elementFormDefault="qualified"
+    attributeFormDefault="unqualified" xml:lang="en" version="1.0.0.3">
+  <!-- This version of wcs/1.0.0 was previously versioned as '1.0.2 2010-02-01' . -->
+    <xs:annotation>
+        <xs:appinfo>wcsCapabilities.xsd v1.0.2 2010-02-01</xs:appinfo>
+        <xs:documentation>This schema defines the Capabilities operation request and reply XML
+            elements and types used by an OGC Web Coverage Service (WCS). This schema with the
+            schemas it uses are believed to be GML Application Schemas. </xs:documentation>
+        <xs:documentation>
+            WCS is an OGC Standard.
+            Copyright (c) 2003,2010 Open Geospatial Consortium.
+            To obtain additional rights of use, visit http://www.opengeospatial.org/legal/ .
+        </xs:documentation>
+        <xs:documentation>AEW 03/07/22 Changes made: Changed element name "Section" to "section" in
+            GetCapabilities Added documentation elements in GetCapabilities,
+            CapabilitiesSectionType, ContentMetadata, AbstractDescriptionBaseType,
+            AbstractDescriptionType Expanded documentation of WCS_CapabilitiesType Moved
+            documentation from Service to ServiceType Edited documentation of OnlineResourceType,
+            electronicMailAddress in AddressType Expanded separator comment before ContentMetadata
+            elements and types Added separator comment before CoverageOfferingBrief Moved
+            metadataLink from AbstractDescriptionType to AbstractDescriptionBaseType </xs:documentation>
+        <xs:documentation>in CoverageOfferingBrief, replaced boundedBy with a new lonLatBoundingBox
+            (added to owsBase.xsd); and made temporal domain of type TimeSequenceType.</xs:documentation>
+        <xs:documentation>AEW 03/07/29 Changes made: Changed optionality and documentation os "fees"
+            and accessConstraints" elements in ServiceType Changed reference to gml:description to
+            reference to (wcs:)description in AbstractDescriptionBaseType </xs:documentation>
+        <xs:documentation>AEW 03/07/30 Changes made: Added "version" and "updateSequence" attributes
+            to ServiceType, WCSCapabilityType, and ContentMetadata </xs:documentation>
+        <xs:documentation>JDE 03/07/30 - Added "version" and "updateSequence" attributes to
+            WCS_Capabilities type 03/08/27 - Made "version" attribute required </xs:documentation>
+        <xs:documentation>AEW 04/07/13 Changes made: Added declaration of the "xlink" namespace. In
+            wcs:AbstractDescriptionType, added the elements wcs:description and wcs:name, and the
+            attribute "gml:id" with use="prohibited". </xs:documentation>
+        <xs:documentation>AEW 05/07/18 Changes made: Changed documentation of updateSequence
+            attribute in GetCapabilities element, WCS_CapabilitiesType, ServiceType,
+            WCSCapabilityType, and ContentMetadata element. Added documentation of all enumeration
+            values in CapabilitiesSectionType. Added documentation of WCSCapabilityType,
+            DCPTypeType, CoverageOfferingBriefType, and AbstractDescriptionType. </xs:documentation>
+        <xs:documentation>JDE 2005/08/31 Changes made: AbstractDescriptionBaseType: made
+            metadataLink repeatable </xs:documentation>
+    </xs:annotation>
+    <!-- ========= includes and imports ================================ -->
+<!--    <xs:include schemaLocation="./wcsAll.xsd"/>-->
+<!--    <xs:include schemaLocation="./owsBase.xsd"/>-->
+    <xs:import namespace="http://www.opengis.net/gml" schemaLocation="http://schemas.opengis.net/wcs/1.0.0/gml4wcs.xsd"/>
+    <xs:import namespace="http://www.w3.org/1999/xlink" schemaLocation="http://www.w3.org/1999/xlink.xsd"/>
+    <!-- ==============================================================       elements and types	============================================================== -->
+    <xs:element name="GetCapabilities">
+        <xs:annotation>
+            <xs:documentation>Request to a WCS to perform the GetCapabilities operation. In this XML
+                encoding, no "request" parameter is included, since the element name specifies the
+                specific operation. </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="section" type="CapabilitiesSectionType" default="/" minOccurs="0"
+                />
+            </xs:sequence>
+            <xs:attribute name="service" type="xs:string" use="required" fixed="WCS"/>
+            <xs:attribute name="version" type="xs:string" use="optional" fixed="1.0.0"/>
+            <xs:attribute name="updateSequence" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:documentation>Service metadata (Capabilities) document version, having
+                        values that are "increased" whenever any change is made in service metadata
+                        document. Values are selected by each server, and are always opaque to
+                        clients. When omitted or not supported by server, server shall return latest
+                        complete service metadata document. </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <!-- =========================================================== -->
+    <xs:simpleType name="CapabilitiesSectionType">
+        <xs:annotation>
+            <xs:documentation>Identification of desired part of full Capabilities XML document to be
+                returned. </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="/">
+                <xs:annotation>
+                    <xs:documentation>TBD. </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="/WCS_Capabilities/Service">
+                <xs:annotation>
+                    <xs:documentation>TBD. </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="/WCS_Capabilities/Capability">
+                <xs:annotation>
+                    <xs:documentation>TBD. </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+            <xs:enumeration value="/WCS_Capabilities/ContentMetadata">
+                <xs:annotation>
+                    <xs:documentation>TBD. </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+    <!-- =========================================================== -->
+    <xs:element name="WCS_Capabilities" type="WCS_CapabilitiesType"/>
+    <!-- =========================================================== -->
+    <xs:complexType name="WCS_CapabilitiesType">
+        <xs:annotation>
+            <xs:documentation>Metadata for a WCS server, also known as Capabilities document. Reply
+                from a WCS that performed the GetCapabilities operation. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element ref="Service"/>
+            <xs:element ref="Capability"/>
+            <xs:element ref="ContentMetadata"/>
+        </xs:sequence>
+        <xs:attribute name="version" type="xs:string" use="required" fixed="1.0.0"/>
+        <xs:attribute name="updateSequence" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>Service metadata (Capabilities) document version, having values
+                    that are "increased" whenever any change is made in service metadata document.
+                    Values are selected by each server, and are always opaque to clients. When
+                    supported by server, server shall return this attribute. </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+    <!-- =============================================================		Service elements and types 	============================================================== -->
+    <xs:element name="Service" type="ServiceType" substitutionGroup="gml:_GML"/>
+    <!-- =========================================================== -->
+    <xs:complexType name="ServiceType">
+        <xs:annotation>
+            <xs:documentation>A minimal, human readable rescription of the service.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:extension base="AbstractDescriptionType">
+                <xs:sequence>
+                    <xs:element ref="keywords" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element name="responsibleParty" type="ResponsiblePartyType" minOccurs="0"/>
+                    <xs:element name="fees" type="gml:CodeListType">
+                        <xs:annotation>
+                            <xs:documentation>A text string identifying any fees imposed by the
+                                service provider. The keyword NONE shall be used to mean no fees.
+                            </xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                    <xs:element name="accessConstraints" type="gml:CodeListType"
+                        maxOccurs="unbounded">
+                        <xs:annotation>
+                            <xs:documentation>A text string identifying any access constraints
+                                imposed by the service provider. The keyword NONE shall be used to
+                                mean no access constraints are imposed. </xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attribute name="version" type="xs:string" use="optional" fixed="1.0.0"/>
+                <xs:attribute name="updateSequence" type="xs:string" use="optional">
+                    <xs:annotation>
+                        <xs:documentation>Service metadata (Capabilities) document version, having
+                            values that are "increased" whenever any change is made in service
+                            metadata document. Values are selected by each server, and are always
+                            opaque to clients. When supported by server, server shall return this
+                            attribute. </xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <!-- =========================================================== -->
+    <xs:complexType name="ResponsiblePartyType">
+        <xs:annotation>
+            <xs:documentation>Identification of, and means of communication with, person(s) and
+                organizations associated with the server. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:choice>
+                <xs:sequence>
+                    <xs:element name="individualName" type="xs:string">
+                        <xs:annotation>
+                            <xs:documentation>Name of the responsible person-surname, given name,
+                                title separated by a delimiter. </xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                    <xs:element name="organisationName" type="xs:string" minOccurs="0"/>
+                </xs:sequence>
+                <xs:element name="organisationName" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation>Name of the responsible organizationt. </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:choice>
+            <xs:element name="positionName" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Role or position of the responsible person.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="contactInfo" type="ContactType" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Address of the responsible party. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <!-- =========================================================== -->
+    <xs:complexType name="ContactType">
+        <xs:annotation>
+            <xs:documentation>Information required to enable contact with the responsible person
+                and/or organization. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="phone" type="TelephoneType" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Telephone numbers at which the organization or individual may
+                        becontacted. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="address" type="AddressType" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Physical and email address at which the organization or
+                        individualmay be contacted. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="onlineResource" type="OnlineResourceType" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>On-line information that can be used to contact the individual
+                        ororganization. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <!-- =========================================================== -->
+    <xs:complexType name="OnlineResourceType">
+        <xs:annotation>
+            <xs:documentation>Reference to on-line resource from which data can be obtained.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attributeGroup ref="xlink:simpleAttrs"/>
+    </xs:complexType>
+    <!-- ========================================================== -->
+    <xs:complexType name="TelephoneType">
+        <xs:annotation>
+            <xs:documentation>Telephone numbers for contacting the responsible individual or
+                organization. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="voice" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Telephone number by which individuals can speak to the
+                        responsible organization or individual. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="facsimile" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Telephone number of a facsimile machine for the
+                        responsibleorganization or individual. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <!-- =========================================================== -->
+    <xs:complexType name="AddressType">
+        <xs:annotation>
+            <xs:documentation>Location of the responsible individual or organization.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="deliveryPoint" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Address line for the location (as described in ISO 11180,
+                        Annex A). </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="city" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>City of the location. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="administrativeArea" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>State ot province of the location. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="postalCode" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>ZIP or other postal code. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="country" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Country of the physical address. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="electronicMailAddress" type="xs:string" minOccurs="0"
+                maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Address of the electronic mailbox of the responsible
+                        organization or individual. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <!-- =============================================================		WCSCapabilityType types and elements 	============================================================== -->
+    <xs:element name="Capability" type="WCSCapabilityType"/>
+    <xs:complexType name="WCSCapabilityType">
+        <xs:annotation>
+            <xs:documentation>XML encoded WCS GetCapabilities operation response. The Capabilities
+                document provides clients with service metadata about a specific service instance,
+                including metadata about the coverages served. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="Request">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="GetCapabilities">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="DCPType" type="DCPTypeType"
+                                        maxOccurs="unbounded"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="DescribeCoverage">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="DCPType" type="DCPTypeType"
+                                        maxOccurs="unbounded"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="GetCoverage">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="DCPType" type="DCPTypeType"
+                                        maxOccurs="unbounded"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="Exception">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="Format" type="xs:string" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="VendorSpecificCapabilities" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:any/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="version" type="xs:string" use="optional" fixed="1.0.0"/>
+        <xs:attribute name="updateSequence" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>Service metadata document version, having values that are
+                    "increased" whenever any change is made in service metadata document. Values are
+                    selected by each server, and are always opaque to clients. When not supported by
+                    server, server shall not return this attribute. </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+    <!-- =========================================================== -->
+    <xs:complexType name="DCPTypeType">
+        <xs:annotation>
+            <xs:documentation>Connect point URLs for the HTTP Distributed Computing Platform (DCP).
+                Normally, only one Get and/or one Post is included in this element. More than one
+                Get and/or Post is allowed to support including alternative URLs for uses such as
+                load balancing or backup. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="HTTP">
+                <xs:complexType>
+                    <xs:choice maxOccurs="unbounded">
+                        <xs:element name="Get">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="OnlineResource" type="OnlineResourceType"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:element name="Post">
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="OnlineResource" type="OnlineResourceType"/>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:choice>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <!-- =============================================================		ContentMetadata elements and types		=========================================================== -->
+    <xs:element name="ContentMetadata">
+        <xs:annotation>
+            <xs:documentation>Unordered list of brief descriptions of all coverages avaialble from
+                this WCS, or a reference to another service from which this information is
+                available. </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="CoverageOfferingBrief" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <xs:attributeGroup ref="gml:AssociationAttributeGroup"/>
+            <xs:attribute name="version" type="xs:string" use="optional" fixed="1.0.0"/>
+            <xs:attribute name="updateSequence" type="xs:string" use="optional">
+                <xs:annotation>
+                    <xs:documentation>Service metadata document version, having values that are
+                        "increased" whenever any change is made in service metadata document. Values
+                        are selected by each server, and are always opaque to clients. When not
+                        supported by server, server shall not return this attribute.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <!-- =========================================================== -->
+    <xs:element name="CoverageOfferingBrief" type="CoverageOfferingBriefType"
+        substitutionGroup="gml:_GML"/>
+    <!-- =========================================================== -->
+    <xs:complexType name="CoverageOfferingBriefType">
+        <xs:annotation>
+            <xs:documentation>Brief description of one coverage avaialble from a WCS.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:extension base="AbstractDescriptionType">
+                <xs:sequence>
+                    <xs:element ref="lonLatEnvelope"/>
+                    <xs:element ref="keywords" minOccurs="0" maxOccurs="unbounded"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <!-- =========================================================== -->
+    <xs:complexType name="AbstractDescriptionBaseType" abstract="true">
+        <xs:annotation>
+            <xs:documentation>Description of a WCS object. </xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:restriction base="gml:AbstractGMLType">
+                <xs:sequence>
+                    <xs:element ref="metadataLink" minOccurs="0" maxOccurs="unbounded"/>
+                </xs:sequence>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <!-- =========================================================== -->
+    <xs:complexType name="AbstractDescriptionType" abstract="true">
+        <xs:annotation>
+            <xs:documentation>Human-readable descriptive information for the object it is included
+                within.</xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:extension base="AbstractDescriptionBaseType">
+                <xs:sequence>
+                    <xs:element ref="description" minOccurs="0"/>
+                    <xs:element ref="name"/>
+                    <xs:element name="label" type="xs:string">
+                        <xs:annotation>
+                            <xs:documentation>Short human-readable label for this object, for human
+                                interface display. </xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attribute ref="gml:id" use="prohibited"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:element name="name" type="xs:string">
+        <xs:annotation>
+            <xs:documentation>Identifier for the object, normally a descriptive name. </xs:documentation>
+            <xs:documentation>For WCS use, removed optional CodeSpace attribute from gml:name.</xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    <!--  =========================================================== -->
+    <xs:element name="description" type="xs:string">
+        <xs:annotation>
+            <xs:documentation>Contains a simple text description of the object. </xs:documentation>
+            <xs:documentation>For WCS use, removed optional AssociationAttributeGroup from gml:description. </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    <!--  =========================================================== -->
+    <xs:element name="keywords">
+        <xs:annotation>
+            <xs:documentation>Unordered list of one or more commonly used or formalised word(s) or phrase(s) used to describe the subject. When needed, the optional "type" can name the type of the associated list of keywords that shall all have the same type. Also when needed, the codeSpace attribute of that "type" can also reference the type name authority and/or thesaurus. (Largely based on MD_Keywords class in ISO 19115.) </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="keyword" type="xs:string" maxOccurs="unbounded"/>
+                <xs:element name="type" type="gml:CodeType" minOccurs="0"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <!--  ===========================================================  -->
+    <xs:element name="lonLatEnvelope" type="LonLatEnvelopeType"/>
+    <!--  ===========================================================  -->
+    <xs:complexType name="LonLatEnvelopeBaseType">
+        <xs:annotation>
+            <xs:documentation>For WCS use, LonLatEnvelopeBaseType restricts gml:Envelope to the WGS84 geographic CRS with Longitude preceding Latitude and both using decimal degrees only. If included, height values are third and use metre units. </xs:documentation>
+            <xs:documentation>Envelope defines an extent using a pair of positions defining opposite corners in arbitrary dimensions. </xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:restriction base="gml:EnvelopeType">
+                <xs:sequence>
+                    <xs:element ref="gml:pos" minOccurs="2" maxOccurs="2"/>
+                </xs:sequence>
+                <xs:attribute name="srsName" type="xs:anyURI" use="optional" fixed="urn:ogc:def:crs:OGC:1.3:CRS84"/>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <!--  ===========================================================  -->
+    <xs:complexType name="LonLatEnvelopeType">
+        <xs:annotation>
+            <xs:documentation>Defines spatial extent by extending LonLatEnvelope with an optional time position pair. </xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:extension base="LonLatEnvelopeBaseType">
+                <xs:sequence minOccurs="0">
+                    <xs:element ref="gml:timePosition" minOccurs="2" maxOccurs="2"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <!--  ===========================================================  -->
+    <xs:element name="TimeSequence" type="TimeSequenceType"/>
+    <!--  ===========================================================  -->
+    <xs:complexType name="TimeSequenceType">
+        <xs:annotation>
+            <xs:documentation>An ordered sequence of time positions or intervals. The time positions and periods shall be ordered from the oldest to the newest. </xs:documentation>
+        </xs:annotation>
+        <xs:choice maxOccurs="unbounded">
+            <xs:element ref="gml:timePosition"/>
+            <xs:element ref="timePeriod"/>
+        </xs:choice>
+    </xs:complexType>
+    <!--  =========================================================  -->
+    <xs:element name="timePeriod" type="TimePeriodType"/>
+    <!--  =========================================================  -->
+    <xs:complexType name="TimePeriodType">
+        <xs:annotation>
+            <xs:documentation>This is a variation of the GML TimePeriod, which allows the beginning and end of a time-period to be expressed in short-form inline using the begin/endPosition element, which allows an identifiable TimeInstant to be defined simultaneously with using it, or by reference, using xlinks on the begin/end elements. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="beginPosition" type="gml:TimePositionType"/>
+            <xs:element name="endPosition" type="gml:TimePositionType"/>
+            <xs:element name="timeResolution" type="gml:TimeDurationType" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="frame" type="xs:anyURI" use="optional" default="#ISO-8601"/>
+    </xs:complexType>
+    <!--  =============================================================
+        Metadata Link elements and types
+        ==============================================================  -->
+    <xs:element name="metadataLink" type="MetadataLinkType" substitutionGroup="gml:metaDataProperty"/>
+    <!--  ===========================================================  -->
+    <xs:complexType name="MetadataLinkType">
+        <xs:annotation>
+            <xs:documentation>Refers to a metadata package that contains metadata properties for an object. The metadataType attribute indicates the type of metadata referred to. </xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:extension base="MetadataAssociationType">
+                <xs:attribute name="metadataType" use="required">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:NMTOKEN">
+                            <xs:enumeration value="TC211">
+                                <xs:annotation>
+                                    <xs:documentation>This metadata uses a profile of ISO TC211’s Geospatial Metadata Standard 19115. </xs:documentation>
+                                </xs:annotation>
+                            </xs:enumeration>
+                            <xs:enumeration value="FGDC">
+                                <xs:annotation>
+                                    <xs:documentation>This metadata uses a profile of the US FGDC Content Standard for Digital Geospatial Metadata. </xs:documentation>
+                                </xs:annotation>
+                            </xs:enumeration>
+                            <xs:enumeration value="other">
+                                <xs:annotation>
+                                    <xs:documentation>This metadata uses some other metadata standard(s) and/or no standard. </xs:documentation>
+                                </xs:annotation>
+                            </xs:enumeration>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <!--  ==========================================================  -->
+    <xs:complexType name="MetadataAssociationType">
+        <xs:annotation>
+            <xs:documentation>Refers to a metadata package that contains metadata properties for an object. </xs:documentation>
+        </xs:annotation>
+        <xs:complexContent>
+            <xs:restriction base="gml:MetaDataPropertyType">
+                <xs:sequence/>
+                <xs:attributeGroup ref="gml:AssociationAttributeGroup"/>
+                <xs:attribute name="about" type="xs:anyURI" use="optional"/>
+            </xs:restriction>
+        </xs:complexContent>
+    </xs:complexType>
+    <!--  =============================================================
+             Supported Format elements and types-
+        =============================================================  -->
+    <xs:element name="supportedFormats" type="SupportedFormatsType"/>
+    <!--  ==========================================================  -->
+    <xs:complexType name="SupportedFormatsType">
+        <xs:annotation>
+            <xs:documentation>Unordered list of data transfer formats supported. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element ref="formats" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="nativeFormat" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>Identifiers of one format in which the data is stored. </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+    <!--  ==========================================================  -->
+    <xs:element name="formats" type="gml:CodeListType">
+        <xs:annotation>
+            <xs:documentation>Identifiers of one or more formats in which coverage content can be retrieved. The codeSpace optional attribute can reference the semantic of the format identifiers. </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    <!--  ============================================================
+        Supports CRSs elemente and types
+        =============================================================  -->
+    <xs:element name="supportedCRSs" type="SupportedCRSsType"/>
+    <!--  ==========================================================  -->
+    <xs:complexType name="SupportedCRSsType">
+        <xs:annotation>
+            <xs:documentation>Unordered list(s) of identifiers of Coordinate Reference Systems (CRSs) supported in server operation requests and responses. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:choice>
+                <xs:element name="requestResponseCRSs" type="gml:CodeListType" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation>Unordered list of identifiers of the CRSs in which the server can both accept requests and deliver responses for this data. These CRSs should include the native CRSs defined below. </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:sequence>
+                    <xs:element name="requestCRSs" type="gml:CodeListType" maxOccurs="unbounded">
+                        <xs:annotation>
+                            <xs:documentation>Unordered list of identifiers of the CRSs in which the server can accept requests for this data. These CRSs should include the native CRSs defined below. </xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                    <xs:element name="responseCRSs" type="gml:CodeListType" maxOccurs="unbounded">
+                        <xs:annotation>
+                            <xs:documentation>Unordered list of identifiers of the CRSs in which the server can deliver responses for this data. These CRSs should include the native CRSs defined below. </xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
+            </xs:choice>
+            <xs:element name="nativeCRSs" type="gml:CodeListType" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>Unordered list of identifiers of the CRSs in which the server stores this data, that is, the CRS(s) in which data can be obtained without any distortion or degradation. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+    <!--  ==============================================================
+             Interpolation Method elements and types
+        ==============================================================  -->
+    <xs:element name="supportedInterpolations" type="SupportedInterpolationsType"/>
+    <!--  ===============================================  -->
+    <xs:complexType name="SupportedInterpolationsType">
+        <xs:annotation>
+            <xs:documentation>Unordered list of interpolation methods supported. </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element ref="interpolationMethod" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="default" type="InterpolationMethodType" use="optional" default="nearest neighbor"/>
+    </xs:complexType>
+    <!--  =========================================================  -->
+    <xs:element name="interpolationMethod" type="InterpolationMethodType"/>
+    <!--  =========================================================  -->
+    <xs:simpleType name="InterpolationMethodType">
+        <xs:annotation>
+            <xs:documentation>Codes that identify interpolation methods. The meanings of these codes are defined in Annex B of ISO 19123: Geographic information — Schema for coverage geometry and functions. </xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="nearest neighbor"/>
+            <xs:enumeration value="bilinear"/>
+            <xs:enumeration value="bicubic"/>
+            <xs:enumeration value="lost area"/>
+            <xs:enumeration value="barycentric"/>
+            <xs:enumeration value="none">
+                <xs:annotation>
+                    <xs:documentation>No interpolation. </xs:documentation>
+                </xs:annotation>
+            </xs:enumeration>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

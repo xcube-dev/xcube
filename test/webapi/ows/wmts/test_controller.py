@@ -19,13 +19,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os
 import unittest
 
 import pyproj
 
 from test.webapi.helpers import get_api_ctx
 from test.webapi.helpers import get_server
+from test.webapi.ows.test_utils import get_test_res_path
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
 from xcube.webapi.ows.wmts.context import WmtsContext
@@ -40,11 +40,6 @@ from xcube.webapi.ows.wmts.controllers import (
     WMTS_CRS84_TMS_ID,
     WMTS_WEB_MERCATOR_TMS_ID
 )
-
-
-def get_test_res_path(path: str) -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__),
-                                         'res', path))
 
 
 class WmtsControllerTest(unittest.TestCase):
