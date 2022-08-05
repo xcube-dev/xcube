@@ -101,7 +101,7 @@ def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
         try:
             timestamp = pd.Timestamp(timeval)
             timeval_tzinfo = timestamp.tzinfo
-        except TypeError:
+        except (TypeError, ValueError):
             logger.warning("Can't determine indexer timezone, leaving it "
                            "unmodified.")
             return timeval
@@ -121,11 +121,13 @@ def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
             return timestamp.tz_convert(None)
         else:
             logger.warning("Indexer lacks tz_convert, leaving unmodified")
+            return timeval
     elif array_timezone is not None and timeval_tzinfo is None:
         if hasattr(timestamp, 'tz_localize'):
             return timestamp.tz_localize(array_timezone)
         else:
             logger.warning("Indexer lacks tz_localize, leaving unmodified")
+            return timeval
     else:
         return timeval
 
