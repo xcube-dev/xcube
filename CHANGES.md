@@ -1,7 +1,48 @@
-## Changes in 0.11.3 (in development)
+## Changes in 0.12.1 (in development)
 
 ### Enhancements
 
+### Fixes
+
+
+
+## Changes in 0.12.0
+
+### Enhancements
+
+* Allow xcube Server to work with any OIDC-compliant auth service such as
+  Auth0, Keycloak, or Google. Permissions of the form 
+  `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
+  passed by two id token claims: 
+  - `permissions` must be a JSON list of permissions;
+  - `scope` must be a space-separated character string of permissions.
+
+  It is now also possible to include id token claim values into the 
+  permissions as template variables. For example, if the currently
+  authenticated user is `demo_user`, the permission 
+  `"read:dataset:$username/*"` will effectively be
+  `"read:dataset:demo_user/*"` and only allow access to datasets
+  with resource identifiers having the prefix `demo_user/`.
+
+  With this change, server configuration has changed:     
+  #### Example of OIDC configuration for auth0
+  
+  Please note, there **must be** a trailing slash in the "Authority" URL.
+  
+  ```yaml
+  Authentication:
+    Authority: https://some-demo-service.eu.auth0.com/
+    Audience: https://some-demo-service/api/
+  ```  
+  #### Example of OIDC configuration for Keycloak
+  
+  Please note, **no** trailing slash in the "Authority" URL.
+
+  ```yaml
+  Authentication: 
+    Authority: https://kc.some-demo-service.de/auth/realms/some-kc-realm
+    Audience: some-kc-realm-xc-api
+  ```
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
@@ -16,11 +57,28 @@
   supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
   including the protocols "s3" and "file". It also allows patching
   xcube multi-level datasets (`*.levels` format).
+  
+* In the configuration for `xcube server`, datasets defined in `DataStores` 
+  may now have user-defined identifiers. In case the path does not unambiguously 
+  define a dataset (because it contains wildcards), providing a 
+  user-defined identifier will raise an error. 
 
 ### Fixes
 
+* xcube Server did not find any grid mapping if a grid mapping variable
+  (e.g. spatial_ref or crs) encodes a geographic CRS
+  (CF grid mapping name "latitude_longitude") and the related geographical 
+  1-D coordinates were named "x" and "y". (#706) 
 * Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
   Demo cubes now all have consolidated metadata.
+* When writing multi-level datasets with file data stores, i.e.,
+  ```python
+  store.write_data(dataset, data_id="test.levels", use_saved_levels=True)
+  ``` 
+  and where `dataset` has different spatial resolutions in x and y, 
+  an exception was raised. This is no longer the case. 
+* xcube Server can now also compute spatial 2D datasets from users' 
+  Python code. In former versions, spatio-temporal 3D cubes were enforced.
 
 ## Changes in 0.11.2
 

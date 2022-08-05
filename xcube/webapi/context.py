@@ -22,7 +22,6 @@
 import fnmatch
 import glob
 import itertools
-import json
 import os
 import os.path
 import threading
@@ -49,7 +48,6 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
-from xcube.util.assertions import assert_instance
 from xcube.util.cache import Cache
 from xcube.util.cache import MemoryCacheStore
 from xcube.util.cache import parse_mem_size
@@ -150,6 +148,7 @@ class ServiceContext:
                 if self._data_store_pool:
                     self._data_store_pool.remove_all_store_configs()
                 self._dataset_configs = None
+                LOG.warning(f'All resource caches cleared.')
         self._config = config
 
     @property
@@ -196,7 +195,9 @@ class ServiceContext:
         may still be optional. In this case the server will publish
         the resources configured to be free for everyone.
         """
-        return bool(self.authentication.get('Domain'))
+        return bool(self.authentication.get(
+            'Authority', self.authentication.get('Domain')
+        ))
 
     @property
     def must_authenticate(self) -> bool:
@@ -455,17 +456,26 @@ class ServiceContext:
                         StoreInstanceId=store_instance_id,
                         **dataset_config_base
                     )
+                    if dataset_config.get('Identifier') is not None:
+                        if dataset_config['Path'] == store_dataset_id:
+                            # we will use the preconfigured identifier
+                            all_dataset_configs.append(dataset_config)
+                            continue
+                        raise ServiceConfigError(
+                            'User-defined identifiers can only be assigned to '
+                            'datasets with non-wildcard paths.')
                     dataset_config['Path'] = store_dataset_id
                     dataset_config['Identifier'] = \
                         f'{store_instance_id}{STORE_DS_ID_SEPARATOR}' \
                         f'{store_dataset_id}'
                     all_dataset_configs.append(dataset_config)
 
-        # Just for testing:
-        debug_file = 'all_dataset_configs.json'
-        with open(debug_file, 'w') as stream:
-            json.dump(all_dataset_configs, stream)
-            LOG.debug(f'Wrote file {debug_file!r}')
+        # # Uncomment for testing:
+        # debug_file = 'all_dataset_configs.json'
+        # with open(debug_file, 'w') as stream:
+        #     import json
+        #     json.dump(all_dataset_configs, stream)
+        #     LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
 

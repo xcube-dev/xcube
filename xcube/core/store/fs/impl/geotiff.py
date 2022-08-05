@@ -33,6 +33,7 @@ from xcube.core.store import DataType
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
@@ -58,17 +59,29 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
         self._root = root
         self._path = data_id
         self._open_params = open_params
+        self._file_url = None
+
+    def _get_overview_count(self):
+        with rasterio.open(self._file_url) as rio_dataset:
+            overviews = rio_dataset.overviews(1)
+        return overviews
 
     def _get_num_levels_lazily(self) -> int:
-        with rasterio.open(self._get_file_url()) as rio_dataset:
-            overviews = rio_dataset.overviews(1)
+        self._file_url = self._get_file_url()
+        if isinstance(self._fs, fsspec.AbstractFileSystem):
+            with DatasetGeoTiffFsDataAccessor.create_env_session(self._fs):
+                overviews = self._get_overview_count()
+        else:
+            assert_true(self._fs is None, message="invalid type for fs")
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) \
             -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (512, 512))
+        self._file_url = self._get_file_url()
         return DatasetGeoTiffFsDataAccessor.open_dataset(
-            self._get_file_url(),
+            self._fs,
+            self._file_url,
             tile_size,
             overview_level=index - 1 if index > 0 else None
         )

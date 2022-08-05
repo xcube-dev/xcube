@@ -14,14 +14,17 @@ Patch and consolidate the metadata of a xcube dataset.
 
 ::
 
-    Usage: xcube patch [OPTIONS] CUBE
+    Usage: xcube patch [OPTIONS] DATASET
 
-      Patch and consolidate the metadata of an xcube dataset CUBE.
+      Patch and consolidate the metadata of a dataset.
 
-      CUBE can be either a local filesystem path or a URL. It must point to either
-      a Zarr dataset (*.zarr) or an xcube multi-level dataset (*.levels).
+      DATASET can be either a local filesystem path or a URL. It must point to
+      either a Zarr dataset (*.zarr) or a xcube multi-level dataset (*.levels).
       Additional storage options for a given protocol may be passed by the OPTIONS
       option.
+
+      In METADATA, the special attribute value "__delete__" can be used to remove
+      that attribute from dataset or array metadata.
 
     Options:
       --metadata METADATA  The metadata to be patched. Must be a JSON or YAML file
@@ -42,17 +45,23 @@ Patch and consolidate the metadata of a xcube dataset.
       --help               Show this message and exit.
 
 
+
 Patch file example
 ==================
 
 Patch files use the Zarr Consolidated Metadata Format, v1.
-For example, the following patch file (YAML) will change the
-value of the attribute ``long_name`` of variable ``conc_chl``:
+For example, the following patch file (YAML) will delete the 
+global attribute ``TileSize`` and change the value of the 
+attribute ``long_name`` of variable ``conc_chl``:
 
 .. code-block:: yaml
 
     zarr_consolidated_format: 1
     metadata:
+
+      .zattrs:
+        TileSize: __delete__
+
       conc_chl/.zattrs:
         long_name: Chlorophyll concentration
 

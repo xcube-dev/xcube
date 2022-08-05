@@ -21,12 +21,16 @@
 
 import fnmatch
 import json
-from typing import Optional, Mapping, List, Dict, Any, Set
+from functools import cached_property
+from itertools import filterfalse
+from string import Template
+from typing import Optional, Mapping, List, Dict, Any, Set, Union
 
 import jwt
 import requests
 from jwt.algorithms import RSAAlgorithm
 
+from xcube.constants import LOG
 from xcube.webapi.errors import ServiceAuthError, ServiceConfigError
 
 READ_ALL_DATASETS_SCOPE = 'read:dataset:*'
@@ -35,26 +39,32 @@ READ_ALL_VARIABLES_SCOPE = 'read:variable:*'
 
 class AuthConfig:
     def __init__(self,
-                 domain: str,
+                 authority: str,
                  audience: str,
                  algorithms: List[str],
                  is_required: bool = False):
-        self._domain = domain
+        self._authority = authority
         self._audience = audience
         self._algorithms = algorithms
         self._is_required = is_required
 
     @property
-    def domain(self) -> str:
-        return self._domain
+    def authority(self) -> str:
+        return self._authority
 
     @property
-    def issuer(self) -> str:
-        return f"https://{self.domain}/"
+    def _norm_authority(self) -> str:
+        return self.authority[:-1] \
+            if self.authority.endswith('/') \
+            else self.authority
+
+    @property
+    def well_known_oid_config(self) -> str:
+        return f"{self._norm_authority}/.well-known/openid-configuration"
 
     @property
     def well_known_jwks(self) -> str:
-        return f"https://{self.domain}/.well-known/jwks.json"
+        return f"{self._norm_authority}/.well-known/jwks.json"
 
     @property
     def audience(self) -> str:
@@ -73,10 +83,17 @@ class AuthConfig:
         authentication = config.get('Authentication')
         if not authentication:
             return None
+        authority = authentication.get('Authority')
         domain = authentication.get('Domain')
-        if not domain:
+        if domain:
+            LOG.warning('Configuration parameter "Domain"'
+                        ' in section "Authentication"'
+                        ' has been deprecated. Use "Authority" instead.')
+            if not authority:
+                authority = f"https:/{domain}"
+        if not authority:
             raise ServiceConfigError(
-                'Missing key "Domain" in section "Authentication"'
+                'Missing key "Authority" in section "Authentication"'
             )
         audience = authentication.get('Audience')
         if not audience:
@@ -90,7 +107,7 @@ class AuthConfig:
                 ' "Authentication" must not be empty'
             )
         is_required = authentication.get('IsRequired', False)
-        return AuthConfig(domain,
+        return AuthConfig(authority,
                           audience,
                           algorithms,
                           is_required=is_required)
@@ -103,21 +120,153 @@ class AuthMixin:
     'request' of type tornado.Request.
     """
 
-    @property
+    @cached_property
     def auth_config(self) -> Optional[AuthConfig]:
+        assert hasattr(self, 'service_context')
         # noinspection PyUnresolvedReferences
         return AuthConfig.from_config(self.service_context.config)
 
+    @cached_property
+    def jwks(self):
+        jwks_uri = self.auth_config.well_known_jwks
+        openid_config_uri = self.auth_config.well_known_oid_config
+        response = requests.get(openid_config_uri)
+        if response.ok:
+            openid_config = json.loads(response.content)
+            if openid_config and 'jwks_uri' in openid_config:
+                jwks_uri = openid_config['jwks_uri']
+        response = requests.get(jwks_uri)
+        if response.ok:
+            return json.loads(response.content)
+        response.raise_for_status()
+
     @property
     def granted_scopes(self) -> Optional[Set[str]]:
+        assert hasattr(self, 'service_context')
         # noinspection PyUnresolvedReferences
-        id_token = self.get_id_token(
-            require_auth=self.service_context.must_authenticate
+        must_authenticate = self.service_context.must_authenticate
+        id_token = self.get_id_token(require_auth=must_authenticate)
+        permissions = None
+        if id_token:
+            permissions = id_token.get('permissions')
+            if not isinstance(permissions, (list, tuple)):
+                scope = id_token.get('scope')
+                if isinstance(scope, str):
+                    permissions = scope.split(' ')
+            if permissions is not None:
+                permissions = self._interpolate_permissions(id_token,
+                                                            permissions)
+        return permissions
+
+    def _interpolate_permissions(self,
+                                 id_token: Mapping[str, Any],
+                                 permissions: Union[list, tuple]):
+        predicate = self._is_template_permission
+
+        plain_permissions = set(filterfalse(predicate, permissions))
+        if len(plain_permissions) == len(permissions):
+            return plain_permissions
+
+        templ_permissions = filter(predicate, permissions)
+        id_mapping = self._get_template_dict(id_token)
+        return plain_permissions.union(
+            set(Template(permission).safe_substitute(id_mapping)
+                for permission in templ_permissions)
         )
-        return id_token.get('permissions') if id_token else None
+
+    @staticmethod
+    def _is_template_permission(permission: str) -> bool:
+        return '$' in permission
+
+    @staticmethod
+    def _get_template_dict(id_token: Mapping[str, Any]) -> Dict[str, str]:
+        d = {k: v
+             for k, v in id_token.items()
+             if isinstance(v, str)}
+        if 'username' not in d and 'preferred_username' in d:
+            d['username'] = d['preferred_username']
+        return d
+
+    def get_id_token(self, require_auth: bool = False) \
+            -> Optional[Mapping[str, Any]]:
+        """
+        Converts the request's access token into an id token.
+        """
+        auth_config = self.auth_config
+        if auth_config is None:
+            if require_auth:
+                raise ServiceAuthError(
+                    "Invalid header",
+                    log_message="Received access token,"
+                                " but this server doesn't support"
+                                " authentication."
+                )
+            return None
+
+        access_token = self.get_access_token(require_auth=require_auth)
+        if access_token is None:
+            return None
+
+        # With auth_config and access_token, we expect authorization
+        # to work. From here on we raise, if anything fails.
+
+        # Get the unverified header of the access token
+        try:
+            unverified_header = jwt.get_unverified_header(access_token)
+        except jwt.InvalidTokenError:
+            unverified_header = None
+        if not unverified_header \
+                or not unverified_header.get("kid") \
+                or not unverified_header.get("alg"):
+            # "alg" should be "RS256" or "HS256" or others
+            raise ServiceAuthError(
+                "Invalid header",
+                log_message="Invalid header."
+                            " An signed JWT Access Token is expected."
+            )
+
+        # The key identifier of the access token which we must validate.
+        access_token_kid = unverified_header["kid"]
+
+        # Get JSON Web Token (JWK) Keys
+        jwks = self.jwks
+
+        # Find access_token_kid in JWKS to obtain rsa_key
+        rsa_key = None
+        for key in jwks["keys"]:
+            if key["kid"] == access_token_kid:
+                rsa_key = {
+                    "kty": key["kty"],
+                    "kid": key["kid"],
+                    "use": key["use"],
+                    "n": key["n"],
+                    "e": key["e"]
+                }
+                break
+        if rsa_key is None:
+            raise ServiceAuthError(
+                "Invalid header",
+                log_message="Unable to find appropriate key."
+            )
+
+        # Now we are ready to decode the access token
+        try:
+            id_token = jwt.decode(
+                access_token,
+                RSAAlgorithm.from_jwk(rsa_key),
+                issuer=auth_config.authority,
+                audience=auth_config.audience,
+                algorithms=auth_config.algorithms
+            )
+        except jwt.PyJWTError as e:
+            msg = f"Failed to decode access token: {e}"
+            raise ServiceAuthError(msg, log_message=msg) from e
+
+        return id_token
 
     def get_access_token(self, require_auth: bool = False) -> Optional[str]:
-        """Obtains the access token from the Authorization Header
+        """
+        Obtain the request's access token from the Authorization Header.
         """
         # noinspection PyUnresolvedReferences
         auth = self.request.headers.get("Authorization", None)
@@ -148,89 +297,6 @@ class AuthMixin:
             )
 
         return parts[1]
-
-    def get_id_token(self, require_auth: bool = False) \
-            -> Optional[Mapping[str, str]]:
-        """
-        Decodes the access token is valid.
-        """
-        access_token = self.get_access_token(require_auth=require_auth)
-        if access_token is None:
-            return None
-
-        auth_config = self.auth_config
-        if auth_config is None:
-            if require_auth:
-                raise ServiceAuthError(
-                    "Invalid header",
-                    log_message="Received access token,"
-                                " but this server doesn't support"
-                                " authentication."
-                )
-            return None
-
-        try:
-            unverified_header = jwt.get_unverified_header(access_token)
-        except jwt.InvalidTokenError:
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Invalid header."
-                            " Use an RS256 signed JWT Access Token"
-            )
-        if unverified_header["alg"] != "RS256":  # e.g. "HS256"
-            raise ServiceAuthError(
-                "Invalid header",
-                log_message="Invalid header."
-                            " Use an RS256 signed JWT Access Token"
-            )
-
-        # TODO: read jwks from cache
-        response = requests.get(auth_config.well_known_jwks)
-        jwks = json.loads(response.content)
-
-        rsa_key = {}
-        for key in jwks["keys"]:
-            if key["kid"] == unverified_header["kid"]:
-                rsa_key = {
-                    "kty": key["kty"],
-                    "kid": key["kid"],
-                    "use": key["use"],
-                    "n": key["n"],
-                    "e": key["e"]
-                }
-                break
-
-        if rsa_key:
-            try:
-                id_token = jwt.decode(
-                    access_token,
-                    # TODO: this is stupid: we convert rsa_key to
-                    #  JWT JSON only to produce the public key JSON string
-                    RSAAlgorithm.from_jwk(json.dumps(rsa_key)),
-                    algorithms=auth_config.algorithms,
-                    audience=auth_config.audience,
-                    issuer=auth_config.issuer
-                )
-            except jwt.ExpiredSignatureError:
-                raise ServiceAuthError(
-                    "Token expired",
-                    log_message="Token is expired"
-                )
-            except jwt.InvalidTokenError:
-                raise ServiceAuthError(
-                    "Invalid claims",
-                    log_message="Incorrect claims,"
-                                " please check the audience and issuer"
-                )
-            except Exception:
-                raise ServiceAuthError(
-                    "Invalid header",
-                    log_message="Unable to parse authentication token."
-                )
-            return id_token
-
-        raise ServiceAuthError("Invalid header",
-                               log_message="Unable to find appropriate key")
 
 
 def assert_scopes(required_scopes: Set[str],
