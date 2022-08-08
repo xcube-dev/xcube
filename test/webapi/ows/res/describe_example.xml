@@ -1,0 +1,1984 @@
+<?xml version="1.0"?>
+<wcs:CoverageDescription xmlns:wcs="http://www.opengis.net/wcs"
+                         xmlns:ogc="http://www.opengis.net/ogc"
+                         xmlns:ows="http://www.opengis.net/ows/1.1"
+                         xmlns:gml="http://www.opengis.net/gml"
+                         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:schemaLocation="http://www.opengis.net/wcs https://okmaps.org/geoserver/schemas/wcs/1.0.0/describeCoverage.xsd"
+                         version="1.0.0">
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_BARE_EARTH</wcs:name>
+        <wcs:label>NRCS_DEM_BARE_EARTH</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06258098407854 33.87493530021817</gml:pos>
+            <gml:pos>-94.62493530021857 36.625080984078245</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_BARE_EARTH</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06258098407854 33.87493530021817</gml:pos>
+                    <gml:pos>-94.62493530021857 36.625080984078245</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>302149 152814</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06257198584758 36.6250719858473</gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.7996461896E-5 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.7996461896E-5</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_BARE_EARTH</wcs:name>
+                <wcs:label>NRCS_DEM_BARE_EARTH</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_BARE_EARTH_DegreeOverviews</wcs:name>
+        <wcs:label>NRCS_DEM_BARE_EARTH_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06258098407854 33.874955883658714</gml:pos>
+            <gml:pos>-94.62484189357944 36.625080984078245</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_BARE_EARTH_DegreeOverviews</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06258098407854 33.874955883658714</gml:pos>
+                    <gml:pos>-94.62484189357944 36.625080984078245</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>18883 9549</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06243701238337 36.62493701238308
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>2.87943390336E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -2.87943390336E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_BARE_EARTH_DegreeOverviews</wcs:name>
+                <wcs:label>NRCS_DEM_BARE_EARTH_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_BARE_EARTH_HILLSHADE</wcs:name>
+        <wcs:label>NRCS_DEM_BARE_EARTH_HILLSHADE</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06258098407854 33.68743530021817</gml:pos>
+            <gml:pos>-94.43743530021855 37.00008098407827</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_BARE_EARTH_HILLSHADE</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06258098407854 33.68743530021817</gml:pos>
+                    <gml:pos>-94.43743530021855 37.00008098407827</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>302149 152814</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06257198584758 36.6250719858473</gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.7996461896E-5 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.7996461896E-5</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_BARE_EARTH_HILLSHADE</wcs:name>
+                <wcs:label>NRCS_DEM_BARE_EARTH_HILLSHADE</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_BARE_EARTH_HILLSHADE_DegreeOverviews
+        </wcs:name>
+        <wcs:label>NRCS_DEM_BARE_EARTH_HILLSHADE_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06258098407854 33.687504736549975</gml:pos>
+            <gml:pos>-94.43730932498528 37.00008098407827</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_BARE_EARTH_HILLSHADE_DegreeOverviews
+            </wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06258098407854 33.687504736549975</gml:pos>
+                    <gml:pos>-94.43730932498528 37.00008098407827</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>19535 11503</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06243701238337 36.9999370123831</gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>2.87943390336E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -2.87943390336E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_BARE_EARTH_HILLSHADE_DegreeOverviews
+                </wcs:name>
+                <wcs:label>NRCS_DEM_BARE_EARTH_HILLSHADE_DegreeOverviews
+                </wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_FIRST_RETURN</wcs:name>
+        <wcs:label>NRCS_DEM_FIRST_RETURN</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06254499115475 33.87497129314196</gml:pos>
+            <gml:pos>-94.62497129314237 36.625044991154454</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_FIRST_RETURN</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06254499115475 33.87497129314196</gml:pos>
+                    <gml:pos>-94.62497129314237 36.625044991154454</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>302145 152810</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.0625359929238 36.62503599292351</gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.7996461896E-5 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.7996461896E-5</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_FIRST_RETURN</wcs:name>
+                <wcs:label>NRCS_DEM_FIRST_RETURN</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_FIRST_RETURN_DegreeOverviews</wcs:name>
+        <wcs:label>NRCS_DEM_FIRST_RETURN_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06254499115475 33.87491989073492</gml:pos>
+            <gml:pos>-94.6248873221411 36.625044991154454</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_FIRST_RETURN_DegreeOverviews</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06254499115475 33.87491989073492</gml:pos>
+                    <gml:pos>-94.6248873221411 36.625044991154454</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>18883 9549</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06240101945959 36.62490101945929
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>2.87943390336E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -2.87943390336E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_FIRST_RETURN_DegreeOverviews</wcs:name>
+                <wcs:label>NRCS_DEM_FIRST_RETURN_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_FIRST_RETURN_HILLSHADE</wcs:name>
+        <wcs:label>NRCS_DEM_FIRST_RETURN_HILLSHADE</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06254499115475 33.87497129314196</gml:pos>
+            <gml:pos>-94.62497129314237 36.625044991154454</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_FIRST_RETURN_HILLSHADE</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06254499115475 33.87491989073492</gml:pos>
+                    <gml:pos>-94.6248873221411 36.625044991154454</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>302145 152810</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.0625359929238 36.62503599292351</gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.7996461896E-5 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.7996461896E-5</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_FIRST_RETURN_HILLSHADE</wcs:name>
+                <wcs:label>NRCS_DEM_FIRST_RETURN_HILLSHADE</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:NRCS_DEM_FIRST_RETURN_HILLSHADE_DegreeOverviews
+        </wcs:name>
+        <wcs:label>NRCS_DEM_FIRST_RETURN_HILLSHADE_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06254499115475 33.87491989073492</gml:pos>
+            <gml:pos>-94.6248873221411 36.625044991154454</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NRCS_DEM_FIRST_RETURN_HILLSHADE_DegreeOverviews
+            </wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06254499115475 33.87491989073492</gml:pos>
+                    <gml:pos>-94.6248873221411 36.625044991154454</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>18883 9549</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06240101945959 36.62490101945929
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>2.87943390336E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -2.87943390336E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NRCS_DEM_FIRST_RETURN_HILLSHADE_DegreeOverviews
+                </wcs:name>
+                <wcs:label>NRCS_DEM_FIRST_RETURN_HILLSHADE_DegreeOverviews
+                </wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:OK_DEM_Bare_Earth</wcs:name>
+        <wcs:label>OK_DEM_Bare_Earth</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06252249557737 33.56248479048839</gml:pos>
+            <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>OK_DEM_Bare_Earth</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>Elevation</wcs:keyword>
+            <wcs:keyword>DEM</wcs:keyword>
+            <wcs:keyword>Lidar</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06252249557737 33.56248479048839</gml:pos>
+                    <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>632071 388968</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06251799646189 37.06251799646164
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>OK_DEM_Bare_Earth</wcs:name>
+                <wcs:label>OK_DEM_Bare_Earth</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi_lidar:OK_DEM_Bare_Earth_DegreeOverviews</wcs:name>
+        <wcs:label>OK_DEM_Bare_Earth_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-100.06252249557737 33.562478816643</gml:pos>
+            <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>OK_DEM_Bare_Earth_DegreeOverviews</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>Lidar</wcs:keyword>
+            <wcs:keyword>DEM</wcs:keyword>
+            <wcs:keyword>Elevation</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-100.06252249557737 33.562478816643</gml:pos>
+                    <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>39503 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-100.06245050972979 37.06245050972953
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>OK_DEM_Bare_Earth_DegreeOverviews</wcs:name>
+                <wcs:label>OK_DEM_Bare_Earth_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:AR_River_Flood_2019</wcs:name>
+        <wcs:label>AR_River_Flood_2019</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-96.31252249557737 35.12498479048845</gml:pos>
+            <gml:pos>-94.37498479048875 36.25002249557709</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>AR_River_Flood_2019</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-96.31252249557737 35.12498479048845</gml:pos>
+                    <gml:pos>-94.37498479048875 36.25002249557709</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>215323 125027</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-96.31251799646189 36.250017996461615
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>AR_River_Flood_2019</wcs:name>
+                <wcs:label>AR_River_Flood_2019</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:singleValue>1</wcs:singleValue>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:AR_River_Flood_2019_DegreeOverviews</wcs:name>
+        <wcs:label>AR_River_Flood_2019_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-96.31252249557737 35.12497622966442</gml:pos>
+            <gml:pos>-94.37505506417153 36.25002249557709</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>AR_River_Flood_2019_DegreeOverviews</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>Arkansas River</wcs:keyword>
+            <wcs:keyword>2019 Flooding</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-96.31252249557737 35.12497622966442</gml:pos>
+                    <gml:pos>-94.37505506417153 36.25002249557709</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>13456 7813</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-96.31245050972979 36.24995050972951</gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>AR_River_Flood_2019_DegreeOverviews</wcs:name>
+                <wcs:label>AR_River_Flood_2019_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>ArcGrid</wcs:formats>
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>ImageMosaic</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2008_Statewide</wcs:name>
+        <wcs:label>NAIP2008_Statewide</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.063 33.563</gml:pos>
+            <gml:pos>-94.375 37.063</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NAIP2008_Statewide</wcs:keyword>
+            <wcs:keyword>aerial</wcs:keyword>
+            <wcs:keyword>photo</wcs:keyword>
+            <wcs:keyword>ortho</wcs:keyword>
+            <wcs:keyword>image</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.063 33.563</gml:pos>
+                    <gml:pos>-94.375 37.063</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>965467 388965</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.0625000000012 37.06250000000512</gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.99822854011195E-6 0.0
+                    </gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998220184193299E-6
+                    </gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2008_Statewide</wcs:name>
+                <wcs:label>NAIP2008_Statewide</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="bilinear">
+                <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2008_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2008_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06250449911546 33.5624608201811</gml:pos>
+            <gml:pos>-94.37503706770964 37.062504499115214</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NAIP2008_Statewide_DegreeOverviews</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06250449911546 33.5624608201811</gml:pos>
+                    <gml:pos>-94.37503706770964 37.062504499115214</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06243251326788 37.06243251326763
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2008_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2008_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2010_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2010_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06250449911546 33.5624608201811</gml:pos>
+            <gml:pos>-94.37503706770964 37.062504499115214</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NAIP2010_Statewide_DegreeOverviews</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06250449911546 33.5624608201811</gml:pos>
+                    <gml:pos>-94.37503706770964 37.062504499115214</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06243251326788 37.06243251326763
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2010_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2010_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2013_Statewide</wcs:name>
+        <wcs:label>NAIP2013_Statewide</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.062504499115 33.5625027869503</gml:pos>
+            <gml:pos>-94.3750027869507 37.0625044991152</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NAIP2013_Statewide</wcs:keyword>
+            <wcs:keyword>Aerial Photography</wcs:keyword>
+            <wcs:keyword>orthophotography</wcs:keyword>
+            <wcs:keyword>orthos</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.062504499115 33.5625027869503</gml:pos>
+                    <gml:pos>-94.3750027869507 37.0625044991152</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>965466 388964</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06249999999952 37.06249999999972
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2013_Statewide</wcs:name>
+                <wcs:label>NAIP2013_Statewide</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs/>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2013_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2013_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.062504499115 33.5624608201811</gml:pos>
+            <gml:pos>-94.3750370677096 37.0625044991152</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP2013_Statewide_DegreeOverviews</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.062504499115 33.5624608201811</gml:pos>
+                    <gml:pos>-94.3750370677096 37.0625044991152</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06243251326741 37.062432513267616
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2013_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2013_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs/>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2015_Statewide</wcs:name>
+        <wcs:label>NAIP2015_Statewide</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+            <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NAIP2015_Statewide</wcs:keyword>
+            <wcs:keyword>Oklahoma</wcs:keyword>
+            <wcs:keyword>aerial</wcs:keyword>
+            <wcs:keyword>orthophotography</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+                    <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>965470 388968</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06251799646188 37.06251799646164
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2015_Statewide</wcs:name>
+                <wcs:label>NAIP2015_Statewide</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2015_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2015_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+            <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NAIP2015_Statewide_DegreeOverviews</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+                    <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06245050972977 37.06245050972953
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2015_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2015_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>ArcGrid</wcs:formats>
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>Gtopo30</wcs:formats>
+            <wcs:formats>ImageMosaic</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2017_Statewide</wcs:name>
+        <wcs:label>NAIP2017_Statewide</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+            <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP2017_Statewide</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+                    <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>965470 388968</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06251799646188 37.06251799646164
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2017_Statewide</wcs:name>
+                <wcs:label>NAIP2017_Statewide</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2017_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2017_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+            <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP2017_Statewide_DegreeOverviews</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+                    <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06245050972977 37.06245050972953
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2017_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2017_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2019_Statewide</wcs:name>
+        <wcs:label>NAIP2019_Statewide</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+            <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP2019_Statewide</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+                    <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>965470 388968</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06251799646188 37.06251799646164
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2019_Statewide</wcs:name>
+                <wcs:label>NAIP2019_Statewide</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="bilinear">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2019_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2019_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+            <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP2019_Statewide_DegreeOverviews</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+                    <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06245050972977 37.06245050972953
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2019_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2019_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="bilinear">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2021_CIR_Statewide</wcs:name>
+        <wcs:label>NAIP2021_CIR_Statewide</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+            <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP2021_CIR_Statewide</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+                    <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>965470 388968</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06251799646188 37.06251799646164
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2021_CIR_Statewide</wcs:name>
+                <wcs:label>NAIP2021_CIR_Statewide</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2021_CIR_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2021_CIR_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+            <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP2021_CIR_Statewide_DegreeOverviews</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+                    <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06245050972977 37.06245050972953
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2021_CIR_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2021_CIR_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP2021_NC_Statewide_DegreeOverviews</wcs:name>
+        <wcs:label>NAIP2021_NC_Statewide_DegreeOverviews</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+            <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>NAIP2021</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.562478816643</gml:pos>
+                    <gml:pos>-94.37505506417153 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>60340 24309</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06245050972977 37.06245050972953
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>1.43971695168E-4 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -1.43971695168E-4</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP2021_NC_Statewide_DegreeOverviews</wcs:name>
+                <wcs:label>NAIP2021_NC_Statewide_DegreeOverviews</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:NAIP_2021_NC_Statewide</wcs:name>
+        <wcs:label>NAIP_2021_NC_Statewide</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+            <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>NAIP_2021_NC</wcs:keyword>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.06252249557735 33.56248479048839</gml:pos>
+                    <gml:pos>-94.37498479048875 37.06252249557711</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>965470 388968</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06251799646188 37.06251799646164
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>8.998230948E-6 0.0</gml:offsetVector>
+                    <gml:offsetVector>0.0 -8.998230948E-6</gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>NAIP_2021_NC_Statewide</wcs:name>
+                <wcs:label>NAIP_2021_NC_Statewide</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs>EPSG:4326</wcs:requestResponseCRSs>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="nearest neighbor">
+            <wcs:interpolationMethod>nearest neighbor</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+    <wcs:CoverageOffering>
+        <wcs:description>Generated from ImageMosaic</wcs:description>
+        <wcs:name>ogi:ok_24K_DRG_Mosaic</wcs:name>
+        <wcs:label>ok_24K_DRG_Mosaic</wcs:label>
+        <wcs:lonLatEnvelope srsName="urn:ogc:def:crs:OGC:1.3:CRS84">
+            <gml:pos>-103.063 33.563</gml:pos>
+            <gml:pos>-94.375 37.063</gml:pos>
+        </wcs:lonLatEnvelope>
+        <wcs:keywords>
+            <wcs:keyword>WCS</wcs:keyword>
+            <wcs:keyword>ImageMosaic</wcs:keyword>
+            <wcs:keyword>ok_24K_DRG_Mosaic</wcs:keyword>
+            <wcs:keyword>USGS DRG</wcs:keyword>
+            <wcs:keyword>24K Quad</wcs:keyword>
+            <wcs:keyword>topo map</wcs:keyword>
+            <wcs:keyword>Quads</wcs:keyword>
+            <wcs:keyword>quadrangle</wcs:keyword>
+        </wcs:keywords>
+        <wcs:domainSet>
+            <wcs:spatialDomain>
+                <gml:Envelope srsName="EPSG:4326">
+                    <gml:pos>-103.063 33.563</gml:pos>
+                    <gml:pos>-94.375 37.063</gml:pos>
+                </gml:Envelope>
+                <gml:RectifiedGrid dimension="2" srsName="EPSG:4326">
+                    <gml:limits>
+                        <gml:GridEnvelope>
+                            <gml:low>0 0</gml:low>
+                            <gml:high>395942 159516</gml:high>
+                        </gml:GridEnvelope>
+                    </gml:limits>
+                    <gml:axisName>x</gml:axisName>
+                    <gml:axisName>y</gml:axisName>
+                    <gml:origin>
+                        <gml:pos>-103.06249999999983 37.06249999999972
+                        </gml:pos>
+                    </gml:origin>
+                    <gml:offsetVector>2.19412863436032E-5 0.0
+                    </gml:offsetVector>
+                    <gml:offsetVector>0.0 -2.19412863436032E-5
+                    </gml:offsetVector>
+                </gml:RectifiedGrid>
+            </wcs:spatialDomain>
+        </wcs:domainSet>
+        <wcs:rangeSet>
+            <wcs:RangeSet>
+                <wcs:name>ok_24K_DRG_Mosaic</wcs:name>
+                <wcs:label>ok_24K_DRG_Mosaic</wcs:label>
+                <wcs:axisDescription>
+                    <wcs:AxisDescription>
+                        <wcs:name>Band</wcs:name>
+                        <wcs:label>Band</wcs:label>
+                        <wcs:values>
+                            <wcs:interval>
+                                <wcs:min>1</wcs:min>
+                                <wcs:max>3</wcs:max>
+                            </wcs:interval>
+                        </wcs:values>
+                    </wcs:AxisDescription>
+                </wcs:axisDescription>
+            </wcs:RangeSet>
+        </wcs:rangeSet>
+        <wcs:supportedCRSs>
+            <wcs:requestResponseCRSs/>
+        </wcs:supportedCRSs>
+        <wcs:supportedFormats nativeFormat="ImageMosaic">
+            <wcs:formats>GeoTIFF</wcs:formats>
+            <wcs:formats>GIF</wcs:formats>
+            <wcs:formats>JPEG</wcs:formats>
+            <wcs:formats>PNG</wcs:formats>
+            <wcs:formats>TIFF</wcs:formats>
+        </wcs:supportedFormats>
+        <wcs:supportedInterpolations default="bilinear">
+            <wcs:interpolationMethod>bilinear</wcs:interpolationMethod>
+            <wcs:interpolationMethod>bicubic</wcs:interpolationMethod>
+        </wcs:supportedInterpolations>
+    </wcs:CoverageOffering>
+</wcs:CoverageDescription>

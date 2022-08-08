@@ -1,0 +1,45 @@
+<?xml version="1.0" ?>
+<CoverageDescription xmlns="http://www.opengis.net/wcs"
+                     xmlns:gml="http://www.opengis.net/gml"
+                     version="1.0.0">
+    <CoverageOffering>
+        <name>c2rcc_flags</name>
+        <label>C2RCC quality flags</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>c2rcc_flags</name>
+                <label>C2RCC quality flags</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>2147483652,0</min>
+                                <max>2147532813,0</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs> <!-- todo check if dataset really is in WGS84 -->
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr netcdf4 csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+</CoverageDescription>

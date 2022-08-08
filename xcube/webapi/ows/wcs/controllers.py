@@ -20,6 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 import warnings
 
+from typing import List
+
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
 
@@ -29,7 +31,7 @@ from xcube.webapi.xml import Element
 WCS_VERSION = '1.0.0'
 
 
-def get_wcs_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
+def get_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     """
     Get WCSCapabilities.xml according to
     https://schemas.opengis.net/wcs/1.0.0/.
@@ -38,54 +40,37 @@ def get_wcs_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     :param base_url: the request base URL
     :return: XML plain text in UTF-8 encoding
     """
-    element = get_capabilities_element(ctx, base_url)
+    element = _get_capabilities_element(ctx, base_url)
+    document = Document(element)
+    return document.to_xml(indent=4)
+
+
+def get_describe_xml(ctx: WcsContext) -> str:
+    # possible formats are shown on cli with xcube gen --info
+    element = _get_describe_element(ctx)
     document = Document(element)
     return document.to_xml(indent=4)
 
 
 # noinspection HttpUrlsUsage
-def get_capabilities_element(ctx: WcsContext,
-                             base_url: str) -> Element:
-    service_element = get_service_element(ctx)
-    capability_element = get_capability_element(base_url)
+def _get_capabilities_element(ctx: WcsContext,
+                              base_url: str) -> Element:
+    service_element = _get_service_element(ctx)
+    capability_element = _get_capability_element(base_url)
     content_element = Element('ContentMetadata')
 
-    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
-        ds_name = dataset_config['Identifier']
-        ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_name)
-        grid_mapping = ml_dataset.grid_mapping
-        ds = ml_dataset.base_dataset
-
-        try:
-            bbox = get_crs84_bbox(grid_mapping)
-        except ValueError:
-            warnings.warn(f'cannot compute geographical'
-                          f' bounds for dataset {ds_name}, ignoring it')
-            continue
-
-        x_name, y_name = grid_mapping.xy_dim_names
-
-        var_names = sorted(ds.data_vars)
-        for var_name in var_names:
-            var = ds[var_name]
-
-            label = var.long_name if hasattr(var, 'long_name') else var_name
-            is_spatial_var = var.ndim >= 2 \
-                             and var.dims[-1] == x_name \
-                             and var.dims[-2] == y_name
-            if not is_spatial_var:
-                continue
-
-            content_element.add(Element('CoverageOfferingBrief', elements=[
-                Element('name', text=var_name),
-                Element('label', text=label),
-                Element('lonLatEnvelope', elements=[
-                    Element('gml:pos', text=f'{bbox[0]}'
-                                            f' {bbox[1]}'),
-                    Element('gml:pos', text=f'{bbox[2]}'
-                                            f' {bbox[3]}')
-                ])
-            ]))
+    band_infos = _extract_band_infos(ctx)
+    for band_info in band_infos:
+        content_element.add(Element('CoverageOfferingBrief', elements=[
+            Element('name', text=band_info.var_name),
+            Element('label', text=band_info.label),
+            Element('lonLatEnvelope', elements=[
+                Element('gml:pos', text=f'{band_info.bbox[0]}'
+                                        f' {band_info.bbox[1]}'),
+                Element('gml:pos', text=f'{band_info.bbox[2]}'
+                                        f' {band_info.bbox[3]}')
+            ])
+        ]))
 
     return Element(
         'WCS_Capabilities',
@@ -103,7 +88,7 @@ def get_capabilities_element(ctx: WcsContext,
     )
 
 
-def get_service_element(ctx: WcsContext) -> Element:
+def _get_service_element(ctx: WcsContext) -> Element:
     service_provider = ctx.config.get('ServiceProvider')
 
     def _get_value(path):
@@ -194,7 +179,7 @@ def get_service_element(ctx: WcsContext) -> Element:
     return element
 
 
-def get_capability_element(base_url: str) -> Element:
+def _get_capability_element(base_url: str) -> Element:
     get_capabilities_url = f'{base_url}?service=WCS&amp;version=1.0.0&amp;' \
                            f'request=GetCapabilities'
     describe_url = f'{base_url}?service=WCS&amp;version=1.0.0&amp;' \
@@ -238,3 +223,104 @@ def get_capability_element(base_url: str) -> Element:
             Element('Format', text='application/x-ogc-wcs')
         ])
     ])
+
+
+# noinspection HttpUrlsUsage
+def _get_describe_element(ctx: WcsContext) -> Element:
+    coverage_elements = []
+
+    band_infos = _extract_band_infos(ctx)
+    for band_info in band_infos:
+        coverage_elements.append(Element('CoverageOffering', elements=[
+            Element('name', text=band_info.var_name),
+            Element('label', text=band_info.label),
+            Element('lonLatEnvelope', elements=[
+                Element('gml:pos', text=f'{band_info.bbox[0]} '
+                                        f'{band_info.bbox[1]}'),
+                Element('gml:pos', text=f'{band_info.bbox[2]} '
+                                        f'{band_info.bbox[3]}')
+            ]),
+            Element('domainSet', elements=[
+                Element('spatialDomain', elements=[
+                    Element('gml:Envelope', elements=[
+                        Element('gml:pos', text=f'{band_info.bbox[0]} '
+                                                f'{band_info.bbox[1]}'),
+                        Element('gml:pos', text=f'{band_info.bbox[2]} '
+                                                f'{band_info.bbox[3]}')
+                    ])
+                ])
+            ]),
+            Element('rangeSet', elements=[
+                Element('name', text=band_info.var_name),
+                Element('label', text=band_info.label),
+                Element('axisDescription', elements=[
+                    Element('AxisDescription', elements=[
+                        Element('name', text='Band'),
+                        Element('label', text='Band'),
+                        Element('values', elements=[
+                            Element('interval', elements=[
+                                Element('min', text='5'),
+                                Element('max', text='2')
+                            ])
+                        ]),
+                    ])
+                ])
+            ]),
+            Element('supportedCRSs', elements=[
+                Element('requestResponseCRSs', text='SomeCRS, fixme')
+            ]),
+            Element('supportedFormats', elements=[
+                Element('formats', text='the list of formats')
+            ])
+        ]))
+
+    return Element(
+        'CoverageDescription',
+        attrs={
+            'xmlns': "http://www.opengis.net/wcs",
+            'xmlns:gml': "http://www.opengis.net/gml",
+            'version': WCS_VERSION,
+        },
+        elements=coverage_elements
+    )
+
+
+class BandInfo:
+
+    def __init__(self, var_name: str, label: str,
+                 bbox: tuple[float, float, float, float]):
+        self.label = label
+        self.var_name = var_name
+        self.bbox = bbox
+
+
+def _extract_band_infos(ctx: WcsContext) -> List[BandInfo]:
+    band_infos = []
+    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
+        ds_name = dataset_config['Identifier']
+        ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_name)
+        grid_mapping = ml_dataset.grid_mapping
+        ds = ml_dataset.base_dataset
+
+        try:
+            bbox = get_crs84_bbox(grid_mapping)
+        except ValueError:
+            warnings.warn(f'cannot compute geographical'
+                          f' bounds for dataset {ds_name}, ignoring it')
+            continue
+
+        x_name, y_name = grid_mapping.xy_dim_names
+
+        var_names = sorted(ds.data_vars)
+        for var_name in var_names:
+            var = ds[var_name]
+
+            label = var.long_name if hasattr(var, 'long_name') else var_name
+            is_spatial_var = var.ndim >= 2 \
+                             and var.dims[-1] == x_name \
+                             and var.dims[-2] == y_name
+            if not is_spatial_var:
+                continue
+
+            band_infos.append(BandInfo(var_name, label, bbox))
+    return band_infos
