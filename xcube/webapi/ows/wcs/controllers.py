@@ -18,10 +18,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import warnings
-from typing import Dict, List
-
+from datetime import datetime
 import numpy as np
+import re
+import warnings
+
+from typing import Dict, List, Any
 
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.util.plugin import get_extension_registry
@@ -31,6 +33,9 @@ from xcube.webapi.xml import Document
 from xcube.webapi.xml import Element
 
 WCS_VERSION = '1.0.0'
+VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
+
+CoverageRequest = Dict[str, Any]
 
 
 def get_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
@@ -51,6 +56,85 @@ def get_describe_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
     element = _get_describe_element(ctx, coverages)
     document = Document(element)
     return document.to_xml(indent=4)
+
+
+def validate_coverage_req(req: CoverageRequest, ctx: WcsContext):
+    if 'COVERAGE' in req and is_valid_coverage(req['COVERAGE'], ctx) \
+            and 'CRS' in req and is_valid_crs(req['CRS']) \
+            and (('BBOX' in req and is_valid_bbox(req['BBOX'])) or
+                 ('TIME' in req and is_valid_time(req['TIME']))) \
+            and (is_valid_bbox(req['BBOX']) if 'BBOX' in req else True) \
+            and (is_valid_time(req['TIME']) if 'TIME' in req else True) \
+            and (('WIDTH' in req and 'HEIGHT' in req) or
+                 ('RESX' in req and 'RESY' in req)) \
+            and (('WIDTH' in req and 'RESX' not in req) or
+                 ('WIDTH' in req and 'RESY' not in req) or
+                 ('HEIGHT' in req and 'RESX' not in req) or
+                 ('HEIGHT' in req and 'RESY' not in req) or
+                 ('RESX' in req and 'WIDTH' not in req) or
+                 ('RESX' in req and 'HEIGHT' not in req) or
+                 ('RESY' in req and 'WIDTH' not in req) or
+                 ('RESY' in req and 'HEIGHT' not in req)) \
+            and 'FORMAT' in req and is_valid_format(req['FORMAT']) \
+            and 'PARAMETER' not in req \
+            and 'INTERPOLATION' not in req \
+            and 'EXCEPTIONS' not in req:
+        return
+    elif 'COVERAGE' not in req or not is_valid_coverage(req['COVERAGE'], ctx):
+        raise ValueError('No valid value for parameter COVERAGE provided. '
+                         'COVERAGE must be a variable name prefixed with '
+                         'its dataset name. Example: my_dataset.my_var')
+    elif 'PARAMETER' in req:
+        raise ValueError('PARAMETER not yet supported')
+    elif 'INTERPOLATION' in req:
+        raise ValueError('INTERPOLATION not yet supported')
+    elif 'EXCEPTIONS' in req:
+        raise ValueError('EXCEPTIONS not yet supported')
+    elif (('WIDTH' in req and 'HEIGHT' not in req) or
+          ('HEIGHT' in req and 'WIDTH' not in req) or
+          ('RESX' in req and 'RESY' not in req) or
+          ('RESY' in req and 'RESX' not in req) or
+          ('WIDTH' in req and 'RESX' in req or 'RESY' in req) or
+          ('HEIGHT' in req and 'RESX' in req or 'RESY' in req)):
+        raise ValueError('Either both WIDTH and HEIGHT, or both RESX and RESY '
+                         'must be provided.')
+    elif 'FORMAT' not in req or not is_valid_format(req['FORMAT']):
+        raise ValueError('FORMAT wrong or missing. Must be one of ' +
+                         ', '.join(_get_formats_list()))
+    elif True:
+        raise ValueError('Reason unclear, fix me')
+
+
+def is_valid_coverage(coverage: str, ctx: WcsContext) -> bool:
+    band_infos = _extract_band_infos(ctx, [coverage])
+    if band_infos:
+        return True
+    return False
+
+
+def is_valid_crs(crs: str) -> bool:
+    return crs in VALID_CRS_LIST
+
+
+def is_valid_bbox(bbox: str) -> bool:
+    bbox_regex = re.compile(r'-?\d{1,3} -?\d{1,2} -?\d{1,3} -?\d{1,2}')
+    if not bbox_regex.match(bbox):
+        raise ValueError('BBOX must be given as `minx miny maxx maxy`')
+    return True
+
+
+def is_valid_format(format_req: str) -> bool:
+    return format_req in _get_formats_list()
+
+
+def is_valid_time(time: str) -> bool:
+    try:
+        datetime.fromisoformat(time)
+    except ValueError:
+        raise ValueError('TIME value must be given in the format'
+                         '\'YYYY-MM-DD[*HH[:MM[:SS[.mmm[mmm]]]]'
+                         '[+HH:MM[:SS[.ffffff]]]]\'')
+    return True
 
 
 # noinspection HttpUrlsUsage
@@ -275,7 +359,7 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                 ])
             ]),
             Element('supportedCRSs', elements=[
-                Element('requestResponseCRSs', text='EPSG:4326 EPSG:3857')
+                Element('requestResponseCRSs', text=' '.join(VALID_CRS_LIST))
             ]),
             Element('supportedFormats', elements=[
                 Element('formats', text=f) for f in _get_formats_list()
@@ -294,11 +378,11 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
 
 
 def _get_formats_list() -> List[str]:
-    dsio_extensions = get_extension_registry().find_extensions(
+    formats = get_extension_registry().find_extensions(
         EXTENSION_POINT_DATASET_IOS,
         lambda e: 'w' in e.metadata.get('modes', set())
     )
-    return [ext.name for ext in dsio_extensions if not ext.name == 'mem']
+    return [ext.name for ext in formats if not ext.name == 'mem']
 
 
 class BandInfo:
