@@ -32,6 +32,15 @@ class ControllerTest(unittest.TestCase):
         actual_xml = get_describe_xml(self.wcs_ctx)
         self.check_xml(actual_xml, 'WCSDescribe.xml', 'wcsDescribe.xsd')
 
+    def test_describe_coverage_subset(self):
+        actual_xml = get_describe_xml(self.wcs_ctx,
+                                      [
+                                          'demo-1w.quality_flags_stdev',
+                                          'demo-1w.kd489_stdev',
+                                          'demo.conc_chl'
+                                      ])
+        self.check_xml(actual_xml, 'WCSDescribe_subset.xml', 'wcsDescribe.xsd')
+
     def check_xml(self, actual_xml, expected_xml_resource, xsd):
         self.maxDiff = None
         # Do not delete, useful for debugging

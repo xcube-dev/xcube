@@ -1,0 +1,131 @@
+<?xml version="1.0" ?>
+<CoverageDescription xmlns="http://www.opengis.net/wcs"
+                     xmlns:gml="http://www.opengis.net/gml"
+                     version="1.0.0">
+    <CoverageOffering>
+        <name>demo.conc_chl</name>
+        <label>Chlorophyll concentration</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo.conc_chl</name>
+                <label>Chlorophyll concentration</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0001</min>
+                                <max>22.4421</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.kd489_stdev</name>
+        <label>kd489_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.kd489_stdev</name>
+                <label>kd489_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>2.7701</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.quality_flags_stdev</name>
+        <label>quality_flags_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.quality_flags_stdev</name>
+                <label>quality_flags_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>1883242496.0000</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+</CoverageDescription>

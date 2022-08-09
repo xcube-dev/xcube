@@ -47,9 +47,8 @@ def get_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     return document.to_xml(indent=4)
 
 
-def get_describe_xml(ctx: WcsContext) -> str:
-    # possible formats are shown on cli with xcube gen --info
-    element = _get_describe_element(ctx)
+def get_describe_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
+    element = _get_describe_element(ctx, coverages)
     document = Document(element)
     return document.to_xml(indent=4)
 
@@ -228,10 +227,11 @@ def _get_capability_element(base_url: str) -> Element:
 
 
 # noinspection HttpUrlsUsage
-def _get_describe_element(ctx: WcsContext) -> Element:
+def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
+        -> Element:
     coverage_elements = []
 
-    band_infos = _extract_band_infos(ctx, True)
+    band_infos = _extract_band_infos(ctx, coverages, True)
     for var_name in band_infos.keys():
         coverage_elements.append(Element('CoverageOffering', elements=[
             Element('name', text=var_name),
@@ -312,8 +312,8 @@ class BandInfo:
         self.max = np.nan
 
 
-def _extract_band_infos(ctx: WcsContext, full: bool = False) \
-        -> Dict[str, BandInfo]:
+def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
+                        full: bool = False) -> Dict[str, BandInfo]:
     band_infos = {}
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
@@ -332,6 +332,9 @@ def _extract_band_infos(ctx: WcsContext, full: bool = False) \
 
         var_names = sorted(ds.data_vars)
         for var_name in var_names:
+            qualified_var_name = f'{ds_name}.{var_name}'
+            if coverages and qualified_var_name not in coverages:
+                continue
             var = ds[var_name]
 
             label = var.long_name if hasattr(var, 'long_name') else var_name
@@ -341,7 +344,7 @@ def _extract_band_infos(ctx: WcsContext, full: bool = False) \
             if not is_spatial_var:
                 continue
 
-            band_info = BandInfo(f'{ds_name}.{var_name}', label, bbox)
+            band_info = BandInfo(qualified_var_name, label, bbox)
             if full:
                 nn_values = var.values[~np.isnan(var.values)]
                 band_info.min = nn_values.min()
