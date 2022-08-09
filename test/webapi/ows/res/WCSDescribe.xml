@@ -3,7 +3,7 @@
                      xmlns:gml="http://www.opengis.net/gml"
                      version="1.0.0">
     <CoverageOffering>
-        <name>c2rcc_flags</name>
+        <name>demo.c2rcc_flags</name>
         <label>C2RCC quality flags</label>
         <lonLatEnvelope>
             <gml:pos>0 50</gml:pos>
@@ -19,7 +19,7 @@
         </domainSet>
         <rangeSet>
             <RangeSet>
-                <name>c2rcc_flags</name>
+                <name>demo.c2rcc_flags</name>
                 <label>C2RCC quality flags</label>
                 <axisDescription>
                     <AxisDescription>
@@ -27,8 +27,8 @@
                         <label>Band</label>
                         <values>
                             <interval>
-                                <min>2147483652,0</min>
-                                <max>2147532813,0</max>
+                                <min>2147483648.0000</min>
+                                <max>2147532813.0000</max>
                             </interval>
                         </values>
                     </AxisDescription>
@@ -36,10 +36,600 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326</requestResponseCRSs> <!-- todo check if dataset really is in WGS84 -->
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr netcdf4 csv</formats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo.conc_chl</name>
+        <label>Chlorophyll concentration</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo.conc_chl</name>
+                <label>Chlorophyll concentration</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0001</min>
+                                <max>22.4421</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo.conc_tsm</name>
+        <label>Total suspended matter dry weight concentration</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo.conc_tsm</name>
+                <label>Total suspended matter dry weight concentration</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0155</min>
+                                <max>166.5728</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo.kd489</name>
+        <label>Irradiance attenuation coefficient at 489 nm</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo.kd489</name>
+                <label>Irradiance attenuation coefficient at 489 nm</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0224</min>
+                                <max>7.0847</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo.quality_flags</name>
+        <label>Classification and quality flags</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo.quality_flags</name>
+                <label>Classification and quality flags</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>8388608.0000</min>
+                                <max>4169138176.0000</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.c2rcc_flags</name>
+        <label>c2rcc_flags</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.c2rcc_flags</name>
+                <label>c2rcc_flags</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>2147483648.0000</min>
+                                <max>2147532813.0000</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.c2rcc_flags_stdev</name>
+        <label>c2rcc_flags_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.c2rcc_flags_stdev</name>
+                <label>c2rcc_flags_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>24576.0000</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.conc_chl</name>
+        <label>conc_chl</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.conc_chl</name>
+                <label>conc_chl</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0001</min>
+                                <max>22.4421</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.conc_chl_stdev</name>
+        <label>conc_chl_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.conc_chl_stdev</name>
+                <label>conc_chl_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>10.3862</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.conc_tsm</name>
+        <label>conc_tsm</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.conc_tsm</name>
+                <label>conc_tsm</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0155</min>
+                                <max>166.5728</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.conc_tsm_stdev</name>
+        <label>conc_tsm_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.conc_tsm_stdev</name>
+                <label>conc_tsm_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>71.6995</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.kd489</name>
+        <label>kd489</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.kd489</name>
+                <label>kd489</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0224</min>
+                                <max>7.0847</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.kd489_stdev</name>
+        <label>kd489_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.kd489_stdev</name>
+                <label>kd489_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>2.7701</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.quality_flags</name>
+        <label>quality_flags</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.quality_flags</name>
+                <label>quality_flags</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>8388608.0000</min>
+                                <max>4169138176.0000</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <name>demo-1w.quality_flags_stdev</name>
+        <label>quality_flags_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.quality_flags_stdev</name>
+                <label>quality_flags_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>1883242496.0000</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>zarr</formats>
+            <formats>netcdf4</formats>
+            <formats>csv</formats>
         </supportedFormats>
     </CoverageOffering>
 </CoverageDescription>

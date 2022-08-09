@@ -73,7 +73,7 @@
     </Capability>
     <ContentMetadata>
         <CoverageOfferingBrief>
-            <name>c2rcc_flags</name>
+            <name>demo.c2rcc_flags</name>
             <label>C2RCC quality flags</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -81,7 +81,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>conc_chl</name>
+            <name>demo.conc_chl</name>
             <label>Chlorophyll concentration</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -89,7 +89,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>conc_tsm</name>
+            <name>demo.conc_tsm</name>
             <label>Total suspended matter dry weight concentration</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -97,7 +97,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>kd489</name>
+            <name>demo.kd489</name>
             <label>Irradiance attenuation coefficient at 489 nm</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -105,7 +105,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>quality_flags</name>
+            <name>demo.quality_flags</name>
             <label>Classification and quality flags</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -113,7 +113,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>c2rcc_flags</name>
+            <name>demo-1w.c2rcc_flags</name>
             <label>c2rcc_flags</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -121,7 +121,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>c2rcc_flags_stdev</name>
+            <name>demo-1w.c2rcc_flags_stdev</name>
             <label>c2rcc_flags_stdev</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -129,7 +129,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>conc_chl</name>
+            <name>demo-1w.conc_chl</name>
             <label>conc_chl</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -137,7 +137,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>conc_chl_stdev</name>
+            <name>demo-1w.conc_chl_stdev</name>
             <label>conc_chl_stdev</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -145,7 +145,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>conc_tsm</name>
+            <name>demo-1w.conc_tsm</name>
             <label>conc_tsm</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -153,7 +153,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>conc_tsm_stdev</name>
+            <name>demo-1w.conc_tsm_stdev</name>
             <label>conc_tsm_stdev</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -161,7 +161,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>kd489</name>
+            <name>demo-1w.kd489</name>
             <label>kd489</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -169,7 +169,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>kd489_stdev</name>
+            <name>demo-1w.kd489_stdev</name>
             <label>kd489_stdev</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -177,7 +177,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>quality_flags</name>
+            <name>demo-1w.quality_flags</name>
             <label>quality_flags</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>
@@ -185,7 +185,7 @@
             </lonLatEnvelope>
         </CoverageOfferingBrief>
         <CoverageOfferingBrief>
-            <name>quality_flags_stdev</name>
+            <name>demo-1w.quality_flags_stdev</name>
             <label>quality_flags_stdev</label>
             <lonLatEnvelope>
                 <gml:pos>0 50</gml:pos>

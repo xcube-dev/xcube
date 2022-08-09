@@ -19,12 +19,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import warnings
+from typing import Dict, List
 
-from typing import List
+import numpy as np
 
+from xcube.constants import EXTENSION_POINT_DATASET_IOS
+from xcube.util.plugin import get_extension_registry
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
-
 from xcube.webapi.xml import Document
 from xcube.webapi.xml import Element
 
@@ -60,15 +62,15 @@ def _get_capabilities_element(ctx: WcsContext,
     content_element = Element('ContentMetadata')
 
     band_infos = _extract_band_infos(ctx)
-    for band_info in band_infos:
+    for var_name in band_infos.keys():
         content_element.add(Element('CoverageOfferingBrief', elements=[
-            Element('name', text=band_info.var_name),
-            Element('label', text=band_info.label),
+            Element('name', text=var_name),
+            Element('label', text=band_infos[var_name].label),
             Element('lonLatEnvelope', elements=[
-                Element('gml:pos', text=f'{band_info.bbox[0]}'
-                                        f' {band_info.bbox[1]}'),
-                Element('gml:pos', text=f'{band_info.bbox[2]}'
-                                        f' {band_info.bbox[3]}')
+                Element('gml:pos', text=f'{band_infos[var_name].bbox[0]}'
+                                        f' {band_infos[var_name].bbox[1]}'),
+                Element('gml:pos', text=f'{band_infos[var_name].bbox[2]}'
+                                        f' {band_infos[var_name].bbox[3]}')
             ])
         ]))
 
@@ -229,48 +231,54 @@ def _get_capability_element(base_url: str) -> Element:
 def _get_describe_element(ctx: WcsContext) -> Element:
     coverage_elements = []
 
-    band_infos = _extract_band_infos(ctx)
-    for band_info in band_infos:
+    band_infos = _extract_band_infos(ctx, True)
+    for var_name in band_infos.keys():
         coverage_elements.append(Element('CoverageOffering', elements=[
-            Element('name', text=band_info.var_name),
-            Element('label', text=band_info.label),
+            Element('name', text=var_name),
+            Element('label', text=band_infos[var_name].label),
             Element('lonLatEnvelope', elements=[
-                Element('gml:pos', text=f'{band_info.bbox[0]} '
-                                        f'{band_info.bbox[1]}'),
-                Element('gml:pos', text=f'{band_info.bbox[2]} '
-                                        f'{band_info.bbox[3]}')
+                Element('gml:pos', text=f'{band_infos[var_name].bbox[0]} '
+                                        f'{band_infos[var_name].bbox[1]}'),
+                Element('gml:pos', text=f'{band_infos[var_name].bbox[2]} '
+                                        f'{band_infos[var_name].bbox[3]}')
             ]),
             Element('domainSet', elements=[
                 Element('spatialDomain', elements=[
                     Element('gml:Envelope', elements=[
-                        Element('gml:pos', text=f'{band_info.bbox[0]} '
-                                                f'{band_info.bbox[1]}'),
-                        Element('gml:pos', text=f'{band_info.bbox[2]} '
-                                                f'{band_info.bbox[3]}')
+                        Element('gml:pos',
+                                text=f'{band_infos[var_name].bbox[0]} '
+                                     f'{band_infos[var_name].bbox[1]}'),
+                        Element('gml:pos',
+                                text=f'{band_infos[var_name].bbox[2]} '
+                                     f'{band_infos[var_name].bbox[3]}')
                     ])
                 ])
             ]),
             Element('rangeSet', elements=[
-                Element('name', text=band_info.var_name),
-                Element('label', text=band_info.label),
-                Element('axisDescription', elements=[
-                    Element('AxisDescription', elements=[
-                        Element('name', text='Band'),
-                        Element('label', text='Band'),
-                        Element('values', elements=[
-                            Element('interval', elements=[
-                                Element('min', text='5'),
-                                Element('max', text='2')
-                            ])
-                        ]),
+                Element('RangeSet', elements=[
+                    Element('name', text=var_name),
+                    Element('label', text=band_infos[var_name].label),
+                    Element('axisDescription', elements=[
+                        Element('AxisDescription', elements=[
+                            Element('name', text='Band'),
+                            Element('label', text='Band'),
+                            Element('values', elements=[
+                                Element('interval', elements=[
+                                    Element('min', text=
+                                    f'{band_infos[var_name].min:0.4f}'),
+                                    Element('max', text=
+                                    f'{band_infos[var_name].max:0.4f}')
+                                ])
+                            ]),
+                        ])
                     ])
                 ])
             ]),
             Element('supportedCRSs', elements=[
-                Element('requestResponseCRSs', text='SomeCRS, fixme')
+                Element('requestResponseCRSs', text='EPSG:4326 EPSG:3857')
             ]),
             Element('supportedFormats', elements=[
-                Element('formats', text='the list of formats')
+                Element('formats', text=f) for f in _get_formats_list()
             ])
         ]))
 
@@ -285,17 +293,28 @@ def _get_describe_element(ctx: WcsContext) -> Element:
     )
 
 
+def _get_formats_list() -> List[str]:
+    dsio_extensions = get_extension_registry().find_extensions(
+        EXTENSION_POINT_DATASET_IOS,
+        lambda e: 'w' in e.metadata.get('modes', set())
+    )
+    return [ext.name for ext in dsio_extensions if not ext.name == 'mem']
+
+
 class BandInfo:
 
     def __init__(self, var_name: str, label: str,
                  bbox: tuple[float, float, float, float]):
-        self.label = label
         self.var_name = var_name
+        self.label = label
         self.bbox = bbox
+        self.min = np.nan
+        self.max = np.nan
 
 
-def _extract_band_infos(ctx: WcsContext) -> List[BandInfo]:
-    band_infos = []
+def _extract_band_infos(ctx: WcsContext, full: bool = False) \
+        -> Dict[str, BandInfo]:
+    band_infos = {}
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
         ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_name)
@@ -322,5 +341,12 @@ def _extract_band_infos(ctx: WcsContext) -> List[BandInfo]:
             if not is_spatial_var:
                 continue
 
-            band_infos.append(BandInfo(var_name, label, bbox))
+            band_info = BandInfo(f'{ds_name}.{var_name}', label, bbox)
+            if full:
+                nn_values = var.values[~np.isnan(var.values)]
+                band_info.min = nn_values.min()
+                band_info.max = nn_values.max()
+
+            band_infos[f'{ds_name}.{var_name}'] = band_info
+
     return band_infos
