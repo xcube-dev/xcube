@@ -27,6 +27,7 @@ import re
 import warnings
 
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
+from xcube.core.gen2 import CubeGenerator
 from xcube.util.plugin import get_extension_registry
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
@@ -104,18 +105,54 @@ def translate_to_generator_request(req: CoverageRequest) -> str:
 
 def get_coverage(req: CoverageRequest, ctx: WcsContext) -> BufferedIOBase:
     from xcube.core.gen import gen
-    _validate_coverage_req(req, ctx)
+   # _validate_coverage_req(req, ctx)
 
-    gen_req = translate_to_generator_request(req)
+   # gen_req = translate_to_generator_request(req)
 
-    input_path = _get_input_path(req, ctx)
-    output_region = _get_output_region(req)
-    output_variable = [(req.coverage[req.coverage.index('.') + 1:], {})]
+   # input_path = _get_input_path(req, ctx)
+   # store_id = _get_input_store_id(req, ctx)
+   # output_region = _get_output_region(req)
+   # output_variable = [(req.coverage[req.coverage.index('.') + 1:], {})]
     #  [('conc_chl', None)]
 
-    from xcube.core.gen2 import CubeGenerator
+    from xcube.core.gen2.local.generator import LocalCubeGenerator
+    from xcube.core.gen2 import CubeGeneratorRequest
+    req = CubeGeneratorRequest.from_dict(
+        {'input_config': {
+            'store_id': 'file',
+            'store_params': {
+                'root': '../../../../examples/serve/demo'
+            },
+            'data_id': 'cube.nc'
+        }, 'cube_config': {
+
+        },
+            "output_config": {
+                "store_id": "memory",
+                "replace": True,
+                "data_id": "mem_cube"
+            }
+        })
+    gen = CubeGenerator.new()
+
+    # cube = LocalCubeGenerator(raise_on_error=True, verbosity=4).generate_cube(request=req)
+    cube = gen.generate_cube(request=req)
+    cube_id = cube.result.data_id
+
+    import xarray as xr
+
+    import xcube.core.store.storepool as sp
+    instance = sp.get_data_store_instance('memory')
+    cube_id = list(instance.store.get_data_ids())[0]
+    cube = instance.store.open_data(cube_id)
+    # take a look at open_params as 2nd arg to open_data
+    check_me_out = instance.store.get_open_data_params_schema(cube_id)
 
 
+
+    #cube2 = xr.open_zarr(cube_id)
+    #cube = xr.open_dataset(cube_id, backend_kwargs={'group': '\\'})
+    print(cube)
 
     dsios = get_extension_registry().find_components(
         EXTENSION_POINT_DATASET_IOS)
@@ -124,6 +161,7 @@ def get_coverage(req: CoverageRequest, ctx: WcsContext) -> BufferedIOBase:
             break
     print(dataset_io)
     return None
+
 
 '''
 
@@ -163,9 +201,22 @@ def _get_input_path(req: CoverageRequest, ctx: WcsContext) -> str:
                 path = dataset_config['Path']
                 break
         store_instance_id = dataset_config['StoreInstanceId']
-        store = ctx.datasets_ctx.get_data_store_pool().\
+        store = ctx.datasets_ctx.get_data_store_pool(). \
             get_store(store_instance_id)
         return store.root + '/' + path
+    raise RuntimeError('Should never come here. Contact the developers.')
+
+
+def _get_input_store_id(req: CoverageRequest, ctx: WcsContext) -> str:
+    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
+        ds_name = dataset_config['Identifier']
+        ds = ctx.datasets_ctx.get_dataset(ds_name)
+
+        var_names = sorted(ds.data_vars)
+        for var_name in var_names:
+            qualified_var_name = f'{ds_name}.{var_name}'
+            if req.coverage == qualified_var_name:
+                return dataset_config['StoreInstanceId']
     raise RuntimeError('Should never come here. Contact the developers.')
 
 

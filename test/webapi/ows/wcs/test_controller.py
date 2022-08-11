@@ -280,7 +280,7 @@ class ControllerTest(unittest.TestCase):
         })
         get_coverage(coverage_request, self.wcs_ctx)
 
-    def test_translate_requests(self):
+    def test_translate_request(self):
         coverage_request = CoverageRequest({
             'COVERAGE': 'demo.conc_chl',
             'CRS': 'EPSG:4326',
