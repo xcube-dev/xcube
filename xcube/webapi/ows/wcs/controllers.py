@@ -19,11 +19,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 from datetime import datetime
+from io import BufferedIOBase
+from typing import Dict, List, Any, Union, Optional, Tuple
+
 import numpy as np
 import re
 import warnings
-
-from typing import Dict, List, Any
 
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.util.plugin import get_extension_registry
@@ -35,7 +36,46 @@ from xcube.webapi.xml import Element
 WCS_VERSION = '1.0.0'
 VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
 
-CoverageRequest = Dict[str, Any]
+
+class CoverageRequest:
+    coverage = None
+    crs = None
+    bbox = None
+    time = None
+    width = None
+    height = None
+    format = None
+    resx = None
+    resy = None
+    interpolation = None
+    parameter = None
+    exceptions = None
+
+    def __init__(self, req: Dict[str, Any]):
+        if 'COVERAGE' in req:
+            self.coverage = req['COVERAGE']
+        if 'CRS' in req:
+            self.crs = req['CRS']
+        if 'BBOX' in req:
+            self.bbox = req['BBOX']
+        if 'TIME' in req:
+            self.time = req['TIME']
+        if 'WIDTH' in req:
+            self.width = req['WIDTH']
+        if 'HEIGHT' in req:
+            self.height = req['HEIGHT']
+        if 'FORMAT' in req:
+            self.format = req['FORMAT']
+        if 'RESX' in req:
+            self.resx = req['RESX']
+        if 'RESY' in req:
+            self.resy = req['RESY']
+        if 'INTERPOLATION' in req:
+            self.interpolation = req['INTERPOLATION']
+        if 'PARAMETER' in req:
+            self.parameter = req['PARAMETER']
+        if 'EXCEPTIONS' in req:
+            self.exceptions = req['EXCEPTIONS']
 
 
 def get_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
@@ -58,47 +98,130 @@ def get_describe_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
     return document.to_xml(indent=4)
 
 
-def validate_coverage_req(req: CoverageRequest, ctx: WcsContext):
-    if 'COVERAGE' in req and is_valid_coverage(req['COVERAGE'], ctx) \
-            and 'CRS' in req and is_valid_crs(req['CRS']) \
-            and (('BBOX' in req and is_valid_bbox(req['BBOX'])) or
-                 ('TIME' in req and is_valid_time(req['TIME']))) \
-            and (is_valid_bbox(req['BBOX']) if 'BBOX' in req else True) \
-            and (is_valid_time(req['TIME']) if 'TIME' in req else True) \
-            and (('WIDTH' in req and 'HEIGHT' in req) or
-                 ('RESX' in req and 'RESY' in req)) \
-            and (('WIDTH' in req and 'RESX' not in req) or
-                 ('WIDTH' in req and 'RESY' not in req) or
-                 ('HEIGHT' in req and 'RESX' not in req) or
-                 ('HEIGHT' in req and 'RESY' not in req) or
-                 ('RESX' in req and 'WIDTH' not in req) or
-                 ('RESX' in req and 'HEIGHT' not in req) or
-                 ('RESY' in req and 'WIDTH' not in req) or
-                 ('RESY' in req and 'HEIGHT' not in req)) \
-            and 'FORMAT' in req and is_valid_format(req['FORMAT']) \
-            and 'PARAMETER' not in req \
-            and 'INTERPOLATION' not in req \
-            and 'EXCEPTIONS' not in req:
+def translate_to_generator_request(req: CoverageRequest) -> str:
+    pass
+
+
+def get_coverage(req: CoverageRequest, ctx: WcsContext) -> BufferedIOBase:
+    from xcube.core.gen import gen
+    _validate_coverage_req(req, ctx)
+
+    gen_req = translate_to_generator_request(req)
+
+    input_path = _get_input_path(req, ctx)
+    output_region = _get_output_region(req)
+    output_variable = [(req.coverage[req.coverage.index('.') + 1:], {})]
+    #  [('conc_chl', None)]
+
+    from xcube.core.gen2 import CubeGenerator
+
+
+
+    dsios = get_extension_registry().find_components(
+        EXTENSION_POINT_DATASET_IOS)
+    for dataset_io in dsios:
+        if dataset_io.name.lower() == 'mem':
+            break
+    print(dataset_io)
+    return None
+
+'''
+
+    # xcube gen only works with time dim of length 1
+    # so need to ask for time constraint in WCS request
+    # then use raster closest in time
+    # or don't do that because it's wrong
+    #  todo - set output dir, will be created
+    gen_status = gen.gen_cube([input_path],
+                              output_region=output_region,
+                              output_variables=output_variable,
+                              output_writer_name='mem'
+                              )
+    print(str(gen_status))
+'''
+
+
+def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
+    if not req.bbox:
+        return None
+
+    output_region = []
+    for v in req.bbox.split(' '):
+        output_region.append(float(v))
+    return tuple(output_region)
+
+
+def _get_input_path(req: CoverageRequest, ctx: WcsContext) -> str:
+    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
+        ds_name = dataset_config['Identifier']
+        ds = ctx.datasets_ctx.get_dataset(ds_name)
+
+        var_names = sorted(ds.data_vars)
+        for var_name in var_names:
+            qualified_var_name = f'{ds_name}.{var_name}'
+            if req.coverage == qualified_var_name:
+                path = dataset_config['Path']
+                break
+        store_instance_id = dataset_config['StoreInstanceId']
+        store = ctx.datasets_ctx.get_data_store_pool().\
+            get_store(store_instance_id)
+        return store.root + '/' + path
+    raise RuntimeError('Should never come here. Contact the developers.')
+
+
+def _validate_coverage_req(req: CoverageRequest, ctx: WcsContext):
+    def _has_no_invalid_bbox() -> bool:
+        if req.bbox:
+            return is_valid_bbox(req.bbox)
+        else:
+            return True
+
+    def _has_no_invalid_time() -> bool:
+        if req.time:
+            return is_valid_time(req.time)
+        else:
+            return True
+
+    if req.coverage and is_valid_coverage(req.coverage, ctx) \
+            and req.crs and is_valid_crs(req.crs) \
+            and ((req.bbox and is_valid_bbox(req.bbox)) or
+                 (req.time and is_valid_time(req.time))) \
+            and _has_no_invalid_bbox \
+            and _has_no_invalid_time() \
+            and ((req.width and req.height) or
+                 (req.resx and req.resy)) \
+            and ((req.width and not req.resx) or
+                 (req.width and not req.resy) or
+                 (req.height and not req.resx) or
+                 (req.height and not req.resy) or
+                 (req.resx and not req.width) or
+                 (req.resx and not req.height) or
+                 (req.resy and not req.width) or
+                 (req.resy and not req.height)) \
+            and req.format and is_valid_format(req.format) \
+            and not req.parameter \
+            and not req.interpolation \
+            and not req.exceptions:
         return
-    elif 'COVERAGE' not in req or not is_valid_coverage(req['COVERAGE'], ctx):
+    elif not req.coverage or not is_valid_coverage(req.coverage, ctx):
         raise ValueError('No valid value for parameter COVERAGE provided. '
                          'COVERAGE must be a variable name prefixed with '
                          'its dataset name. Example: my_dataset.my_var')
-    elif 'PARAMETER' in req:
+    elif req.parameter:
         raise ValueError('PARAMETER not yet supported')
-    elif 'INTERPOLATION' in req:
+    elif req.interpolation:
         raise ValueError('INTERPOLATION not yet supported')
-    elif 'EXCEPTIONS' in req:
+    elif req.exceptions:
         raise ValueError('EXCEPTIONS not yet supported')
-    elif (('WIDTH' in req and 'HEIGHT' not in req) or
-          ('HEIGHT' in req and 'WIDTH' not in req) or
-          ('RESX' in req and 'RESY' not in req) or
-          ('RESY' in req and 'RESX' not in req) or
-          ('WIDTH' in req and 'RESX' in req or 'RESY' in req) or
-          ('HEIGHT' in req and 'RESX' in req or 'RESY' in req)):
+    elif ((req.width and not req.height) or
+          (req.height and not req.width) or
+          (req.resx and not req.resy) or
+          (req.resy and not req.resx) or
+          (req.width and req.resx or req.resy) or
+          (req.height and req.resx or req.resy)):
         raise ValueError('Either both WIDTH and HEIGHT, or both RESX and RESY '
                          'must be provided.')
-    elif 'FORMAT' not in req or not is_valid_format(req['FORMAT']):
+    elif not req.format or not is_valid_format(req.format):
         raise ValueError('FORMAT wrong or missing. Must be one of ' +
                          ', '.join(_get_formats_list()))
     elif True:
