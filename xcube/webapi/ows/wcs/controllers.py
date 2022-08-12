@@ -18,16 +18,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-from datetime import datetime
-from io import BufferedIOBase
-from typing import Dict, List, Any, Union, Optional, Tuple
-
-import numpy as np
 import re
 import warnings
+from datetime import datetime
+from typing import Dict, List, Any, Optional
 
+import numpy as np
+from xarray import Dataset
+
+import xcube.core.store.storepool as sp
 from xcube.constants import EXTENSION_POINT_DATASET_IOS
-from xcube.core.gen2 import CubeGenerator
+from xcube.core.gen2 import CubeGenerator, OutputConfig
+from xcube.core.gen2 import CubeGeneratorRequest
+from xcube.core.gen2.local.writer import CubeWriter
+from xcube.core.gridmapping import GridMapping
 from xcube.util.plugin import get_extension_registry
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
@@ -99,84 +103,64 @@ def get_describe_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
     return document.to_xml(indent=4)
 
 
-def translate_to_generator_request(req: CoverageRequest) -> str:
-    pass
+def translate_to_generator_request(req: CoverageRequest, ctx: WcsContext) \
+        -> CubeGeneratorRequest:
+    data_id = _get_input_data_id(req, ctx)
+    bbox = []
+    for v in req.bbox.split(' '):
+        bbox.append(float(v))
 
-
-def get_coverage(req: CoverageRequest, ctx: WcsContext) -> BufferedIOBase:
-    from xcube.core.gen import gen
-   # _validate_coverage_req(req, ctx)
-
-   # gen_req = translate_to_generator_request(req)
-
-   # input_path = _get_input_path(req, ctx)
-   # store_id = _get_input_store_id(req, ctx)
-   # output_region = _get_output_region(req)
-   # output_variable = [(req.coverage[req.coverage.index('.') + 1:], {})]
-    #  [('conc_chl', None)]
-
-    from xcube.core.gen2.local.generator import LocalCubeGenerator
-    from xcube.core.gen2 import CubeGeneratorRequest
-    req = CubeGeneratorRequest.from_dict(
-        {'input_config': {
-            'store_id': 'file',
-            'store_params': {
-                'root': '../../../../examples/serve/demo'
+    return CubeGeneratorRequest.from_dict(
+        {
+            # todo - put generic data store here
+            'input_config': {
+                'store_id': 'file',
+                'store_params': {
+                    'root': '../../../../examples/serve/demo'
+                },
+                'data_id': f'{data_id}'
             },
-            'data_id': 'cube.nc'
-        }, 'cube_config': {
-
-        },
-            "output_config": {
-                "store_id": "memory",
-                "replace": True,
-                "data_id": "mem_cube"
+            'cube_config': {
+                'variable_names': [f'{req.coverage}'.split('.')[-1]],
+                'crs': f'{req.crs}',
+                'bbox': tuple(bbox)
+            },
+            'output_config': {
+                'store_id': 'memory',
+                'replace': True,
+                'data_id': f'{req.coverage}.zarr',
             }
-        })
+        }
+    )
+
+
+def get_coverage(req: CoverageRequest, ctx: WcsContext) -> Dataset:
+    _validate_coverage_req(req, ctx)
+    gen_req = translate_to_generator_request(req, ctx)
+
     gen = CubeGenerator.new()
 
-    # cube = LocalCubeGenerator(raise_on_error=True, verbosity=4).generate_cube(request=req)
-    cube = gen.generate_cube(request=req)
-    cube_id = cube.result.data_id
+    result = gen.generate_cube(request=gen_req)
+    if not result.status == 'ok':
+        raise ValueError(f'Failed to generate cube: {result.message}')
 
-    import xarray as xr
+    memory_store = sp.get_data_store_instance('memory')
+    cube_id = list(memory_store.store.get_data_ids())[0]
+    cube = memory_store.store.open_data(cube_id)
 
-    import xcube.core.store.storepool as sp
-    instance = sp.get_data_store_instance('memory')
-    cube_id = list(instance.store.get_data_ids())[0]
-    cube = instance.store.open_data(cube_id)
-    # take a look at open_params as 2nd arg to open_data
-    check_me_out = instance.store.get_open_data_params_schema(cube_id)
+    #_write_debug_output(cube)
 
+    return cube
 
 
-    #cube2 = xr.open_zarr(cube_id)
-    #cube = xr.open_dataset(cube_id, backend_kwargs={'group': '\\'})
-    print(cube)
-
-    dsios = get_extension_registry().find_components(
-        EXTENSION_POINT_DATASET_IOS)
-    for dataset_io in dsios:
-        if dataset_io.name.lower() == 'mem':
-            break
-    print(dataset_io)
-    return None
-
-
-'''
-
-    # xcube gen only works with time dim of length 1
-    # so need to ask for time constraint in WCS request
-    # then use raster closest in time
-    # or don't do that because it's wrong
-    #  todo - set output dir, will be created
-    gen_status = gen.gen_cube([input_path],
-                              output_region=output_region,
-                              output_variables=output_variable,
-                              output_writer_name='mem'
-                              )
-    print(str(gen_status))
-'''
+def _write_debug_output(cube):
+    history = str(cube.history[0])
+    del cube.attrs['history']
+    cube['history'] = history
+    cw = CubeWriter(OutputConfig('file',
+                                 writer_id='dataset:netcdf:file',
+                                 data_id='/../../../test_cube.nc'))
+    cw.write_cube(cube, GridMapping.from_dataset(cube))
 
 
 def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
@@ -187,6 +171,19 @@ def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
     for v in req.bbox.split(' '):
         output_region.append(float(v))
     return tuple(output_region)
+
+
+def _get_input_data_id(req: CoverageRequest, ctx: WcsContext) -> str:
+    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
+        ds_name = dataset_config['Identifier']
+        ds = ctx.datasets_ctx.get_dataset(ds_name)
+
+        var_names = sorted(ds.data_vars)
+        for var_name in var_names:
+            qualified_var_name = f'{ds_name}.{var_name}'
+            if req.coverage == qualified_var_name:
+                return dataset_config['Path']
+    raise RuntimeError('Should never come here. Contact the developers.')
 
 
 def _get_input_path(req: CoverageRequest, ctx: WcsContext) -> str:

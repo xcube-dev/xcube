@@ -6,6 +6,7 @@ from lxml import etree
 
 from test.webapi.helpers import get_api_ctx
 from test.webapi.ows import res as test_res
+from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.webapi.ows.wcs import res
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wcs.controllers import get_capabilities_xml, \
@@ -19,6 +20,7 @@ class ControllerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         super().setUp()
+        self.maxDiff = None
         self.wcs_ctx = get_api_ctx('ows.wcs', WcsContext)
 
     def test_get_capabilities(self):
@@ -278,36 +280,52 @@ class ControllerTest(unittest.TestCase):
             'HEIGHT': 200,
             'FORMAT': 'zarr'
         })
-        get_coverage(coverage_request, self.wcs_ctx)
+        cube = get_coverage(coverage_request, self.wcs_ctx)
+        self.assertIsNotNone(cube.coords)
+        self.assertDictEqual(
+            {
+                'time': 5,
+                'lat': 400,
+                'lon': 1200,
+                'bnds': 2
+             },
+            cube.coords.dims.mapping
+        )
+        self.assertTrue('conc_chl' in cube.data_vars.variables.keys())
+        self.assertEqual('demo.conc_chl.zarr', cube.title)
 
     def test_translate_request(self):
+        coverage = 'demo.conc_chl'
         coverage_request = CoverageRequest({
-            'COVERAGE': 'demo.conc_chl',
+            'COVERAGE': f'{coverage}',
             'CRS': 'EPSG:4326',
             'BBOX': '1 51 4 52',
             'WIDTH': 200,
             'HEIGHT': 200,
             'FORMAT': 'zarr'
         })
-        gen_req = translate_to_generator_request(coverage_request)
-        self.assertEqual('request_json = { \
-                            "input_config": { \
-                                "store_id": "file", \
-                                "store_params": { \
-                                    "root": "../../serve/demo" \
-                                }, \
-                                "data_id": "cube.nc" \
-                            }, \
-                            "cube_config": {}, \
-                            "output_config": { \
-                                "store_id": "file", \
-                                "store_params": { \
-                                    "root": "." \
-                                }, \
-                                "replace": True, \
-                                "data_id": "cube.zarr" \
-                            }'
-                         '}', gen_req)
+        gen_req = translate_to_generator_request(coverage_request,
+                                                 self.wcs_ctx)
+        # todo - put generic data store here
+        expected = CubeGeneratorRequest.from_dict(
+            {'input_config': {
+                'store_id': 'file',
+                'store_params': {
+                    'root': '../../../../examples/serve/demo'
+                },
+                'data_id': 'cube-1-250-250.zarr'
+            }, 'cube_config': {
+                'variable_names': ['conc_chl'],
+                'crs': 'EPSG:4326',
+                'bbox': (1, 51, 4, 52)
+            },
+                'output_config': {
+                    'store_id': 'memory',
+                    'replace': True,
+                    'data_id': f'{coverage}.zarr'
+                }
+            })
+        self.assertDictEqual(expected.to_dict(), gen_req.to_dict())
 
     def check_xml(self, actual_xml, expected_xml_resource, xsd):
         self.maxDiff = None
