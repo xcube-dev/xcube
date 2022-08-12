@@ -4,7 +4,7 @@
 
 ### Fixes
 
-* xcube now takes care to avoid indexing timezone-naive variables with
+* xcube now tries to prevent indexing timezone-naive variables with
   timezone-aware indexers, or vice versa.
 
 ## Changes in 0.12.0

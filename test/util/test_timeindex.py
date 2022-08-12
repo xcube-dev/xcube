@@ -8,9 +8,9 @@ from pandas import DatetimeTZDtype
 from xcube.util.timeindex import ensure_time_label_compatible
 
 
-class TimeindexTest(TestCase):
+class TimeIndexTest(TestCase):
     # A DataArray with a datetime64 time dimension -- actually implicitly
-    # timezone-aware per the numpy docs, but treated as timzone-naive by
+    # timezone-aware per the numpy docs, but treated as timezone-naive by
     # pandas and xarray.
     da_datetime64 = xr.DataArray(
         np.arange(1, 4),
@@ -18,8 +18,9 @@ class TimeindexTest(TestCase):
                                    dtype=np.datetime64)),
         dims=['time'])
 
-    # Currently, pd.date_range seems to produce datetime64 co-ordinates, but
-    # may as well test this as a distinct case in case it changes in future.
+    # As of pandas 1.4.3, pd.date_range seems to produce datetime64
+    # co-ordinates, but may as well test this as a distinct case in case it
+    # changes in future.
     da_tznaive = xr.DataArray(
         np.arange(1, 4),
         coords=dict(time=pd.date_range('2000-01-01', '2000-01-03', tz=None)),

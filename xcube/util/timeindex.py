@@ -94,7 +94,7 @@ def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
     if timeval is None:
         return None
 
-    if hasattr(timeval, "tzinfo"):
+    if hasattr(timeval, 'tzinfo'):
         timestamp = timeval
         timeval_tzinfo = timeval.tzinfo
     else:
@@ -102,31 +102,32 @@ def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
             timestamp = pd.Timestamp(timeval)
             timeval_tzinfo = timestamp.tzinfo
         except (TypeError, ValueError):
-            logger.warning("Can't determine indexer timezone, leaving it "
-                           "unmodified.")
+            logger.warning('Can\'t determine indexer timezone, leaving it '
+                           'unmodified.')
             return timeval
 
     if _has_datetime64_time(var):
         # pandas treats all datetime64 arrays as timezone-naive
         array_timezone = None
-    elif hasattr(var.time.values[0], 'tzinfo'):
-        array_timezone = var.time.values[0].tzinfo
+    elif hasattr(var.time[0:1].values[0], 'tzinfo'):
+        array_timezone = var.time[0:1].values[0].tzinfo
     else:
         logger.warning(
-            "Can't determine array timezone, leaving indexer unmodified.")
+            'Can\'t determine array timezone, leaving indexer unmodified.'
+        )
         return timeval
 
     if array_timezone is None and timeval_tzinfo is not None:
         if hasattr(timestamp, 'tz_convert'):
             return timestamp.tz_convert(None)
         else:
-            logger.warning("Indexer lacks tz_convert, leaving unmodified")
+            logger.warning('Indexer lacks tz_convert, leaving unmodified')
             return timeval
     elif array_timezone is not None and timeval_tzinfo is None:
         if hasattr(timestamp, 'tz_localize'):
             return timestamp.tz_localize(array_timezone)
         else:
-            logger.warning("Indexer lacks tz_localize, leaving unmodified")
+            logger.warning('Indexer lacks tz_localize, leaving unmodified')
             return timeval
     else:
         return timeval
