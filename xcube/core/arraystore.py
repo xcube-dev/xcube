@@ -37,9 +37,35 @@ GetData = Callable[[Tuple[int], Tuple[int], "GenericArrayInfo"],
 OnClose = Callable[["GenericArrayInfo"], None]
 
 
+# TODO (forman): clarify interface of a filter and how filters are used
+
 class GenericArrayInfo(dict[str, any]):
     """
     Holds information about a generic array in the ``GenericArrayStore``.
+
+    Although all properties of this class are optional,
+    some of them are mandatory when added to the ``GenericArrayStore``.
+
+    When added the ``GenericArrayStore``, the array *name*
+    and *dims* must always be present. Other mandatory properties depend on
+    the mutually exclusive *data* and *get_data* properties:
+
+    * *get_data* is called for a requested data chunk of an array.
+      It must return a bytes object or a numpy array and is passed
+      the chunk index, the chunk shape, and this array info dictionary.
+      *get_data* requires the following properties to be present too:
+      *name*, *dims*, *dtype*, *shape*.
+      *chunks* is optional and defaults to *shape*.
+    * *data* must be a bytes object or a numpy array.
+      *data* requires the following properties to be present too:
+      *name*, *dims*.
+      *chunks* must be same as *shape* (this will likely change).
+
+    ``GenericArrayStore`` will convert a Numpy array returned
+    by *get_data* or given by *data* into a bytes object.
+    It will also be compressed, if a *compressor* is given.
+    It is important that the array chunks always See also
+    https://zarr.readthedocs.io/en/stable/spec/v2.html#chunks
 
     Note that if the value of a named keyword argument is None,
     it will not be stored.
@@ -48,18 +74,26 @@ class GenericArrayInfo(dict[str, any]):
     :param name: Optional array name
     :param get_data: Optional array data chunk getter.
         Mutually exclusive with *data*.
+        Called for a requested data chunk of an array.
+        Must return a bytes object or a numpy array.
     :param data: Optional array data.
         Mutually exclusive with *get_data*.
+        Must be a bytes object or a numpy array.
     :param dtype: Optional array data type.
         Either a string using syntax of the Zarr spec or a ``numpy.dtype``.
+        For string encoded data types, see
+        https://zarr.readthedocs.io/en/stable/spec/v2.html#data-type-encoding
     :param dims: Optional sequence of dimension names.
     :param shape: Optional sequence of shape sizes for each dimension.
     :param chunks: Optional sequence of chunk sizes for each dimension.
-    :param fill_value: Optional fill value (int or float scalar).
+    :param fill_value: Optional fill value, see
+        https://zarr.readthedocs.io/en/stable/spec/v2.html#fill-value-encoding
     :param compressor: Optional compressor.
         If given, it must be an instance of ``numcodecs.abc.Codec``.
-    :param filters: Optional filters, see Zarr spec.
-    :param order: Optional array endian ordering. Defaults to "C".
+    :param filters: Optional sequence of filters, see
+        https://zarr.readthedocs.io/en/stable/spec/v2.html#filters.
+    :param order: Optional array endian ordering.
+        If given, must be "C" or "F". Defaults to "C".
     :param attrs: Optional array attributes.
         If given, must be JSON-serializable.
     :param on_close: Optional array close handler.
@@ -79,7 +113,7 @@ class GenericArrayInfo(dict[str, any]):
                  chunks: Optional[Sequence[int]] = None,
                  fill_value: Optional[Union[int, float]] = None,
                  compressor: Optional[numcodecs.abc.Codec] = None,
-                 filters=None,
+                 filters: Optional[Sequence[Any]] = None,
                  order: Optional[str] = None,
                  attrs: Optional[Dict[str, Any]] = None,
                  on_close: Optional[OnClose] = None,
@@ -108,7 +142,7 @@ class GenericArrayInfo(dict[str, any]):
 
     def finalize(self) -> "GenericArrayInfo":
         """Normalize and validate array properties and return a valid
-        array info dictionary.
+        array info dictionary to b stored in the `GenericArrayStore`.
         """
         name = self.get("name")
         if not name:
@@ -168,11 +202,11 @@ class GenericArrayInfo(dict[str, any]):
         fill_value = self.get("fill_value")
         if isinstance(fill_value, np.ndarray):
             fill_value = fill_value.item()
-        if fill_value is not None \
-                and not isinstance(fill_value, (int, float)):
+        if not isinstance(fill_value, (type(None), int, float, str)):
             raise TypeError(f"array {name!r}:"
-                            f" fill_value must be an"
+                            f" invalid fill_value type"
                             f" instance of int or float")
+
         order = self.get("order") or "C"
         if order not in ("C", "F"):
             raise ValueError(f"array {name!r}:"
@@ -187,9 +221,9 @@ class GenericArrayInfo(dict[str, any]):
             "dims": tuple(dims),
             "shape": tuple(shape),
             "chunks": tuple(chunks),
-            "compressor": compressor,
             "fill_value": fill_value,
-            "filters": self.get("filters"),
+            "compressor": compressor,
+            "filters": list(self.get("filters") or []),
             "order": order,
             "attrs": dict(self.get("attrs") or {}),
             "data": data,
@@ -209,6 +243,8 @@ class GenericArrayStore(zarr.storage.Store):
     It is designed to serve as a Zarr store for xarray datasets
     that compute their data arrays dynamically.
 
+    See class ``GenericArrayInfo`` for specifying the arrays' properties.
+
     The array data of this store's arrays are either retrieved from
     static (numpy) arrays or from a callable that provides the
     array's data chunks.
@@ -217,6 +253,7 @@ class GenericArrayStore(zarr.storage.Store):
         If given, it must be JSON serializable.
     :param array_defaults: Optional array defaults for
         array properties not passed to ``add_array``.
+        Typically, this will be instance of ``GenericArrayInfo``.
     """
 
     def __init__(
@@ -231,15 +268,20 @@ class GenericArrayStore(zarr.storage.Store):
         self._dim_sizes: Dict[str, int] = {}
         self._array_infos: Dict[str, GenericArrayInfo] = {}
 
-    def add_array(self,
-                  array_info: Union[None, Dict[str, Any]] = None,
-                  **array_info_kwargs) -> None:
+    def add_array(
+            self,
+            array_info: Union[None,
+                              GenericArrayInfo,
+                              Dict[str, Any]] = None,
+            **array_info_kwargs
+    ) -> None:
         """
-        Add a new generic array to this store.
+        Add a new array to this store.
 
         :param array_info: Optional array properties.
-            Usually an instance of ``GenericArrayInfo``.
-        :param array_info_kwargs: Keyword arguments of ``GenericArrayInfo``.
+            Typically, this will be an instance of ``GenericArrayInfo``.
+        :param array_info_kwargs: Keyword arguments form
+            of the properties of ``GenericArrayInfo``.
         """
         effective_array_info = GenericArrayInfo(self._array_defaults or {})
         if array_info:
@@ -453,12 +495,9 @@ class GenericArrayStore(zarr.storage.Store):
     # noinspection PyMethodMayBeStatic
     def _get_array_spec_item(self, array_info):
 
-        compressor = array_info["compressor"]
-        if compressor is not None:
-            compressor = compressor.get_config()
-
+        # JSON-encode fill_value
         fill_value = array_info["fill_value"]
-        if fill_value is not None and isinstance(fill_value, float):
+        if isinstance(fill_value, float):
             if math.isnan(fill_value):
                 fill_value = "NaN"
             elif math.isinf(fill_value):
@@ -467,6 +506,17 @@ class GenericArrayStore(zarr.storage.Store):
                 else:
                     fill_value = "Infinity"
 
+        # JSON-encode compressor
+        compressor = array_info["compressor"]
+        if compressor is not None:
+            compressor = compressor.get_config()
+
+        # JSON-encode filters
+        filters = array_info["filters"]
+        if filters is not None:
+            # TODO (forman): check filters, is this correct?
+            filters = list(f.get_config() for f in filters)
+
         return {
             "zarr_format": 2,
             "dtype": array_info["dtype"],
@@ -474,8 +524,8 @@ class GenericArrayStore(zarr.storage.Store):
             "chunks": list(array_info["chunks"]),
             "fill_value": fill_value,
             "compressor": compressor,
+            "filters": filters,
             "order": array_info["order"],
-            "filters": array_info["filters"],
         }
 
     # noinspection PyMethodMayBeStatic
@@ -490,7 +540,7 @@ class GenericArrayStore(zarr.storage.Store):
     # noinspection PyMethodMayBeStatic
     def _get_array_data_item(self,
                              array_info: Dict[str, Any],
-                             chunk_index: Tuple[int]):
+                             chunk_index: Tuple[int]) -> bytes:
 
         data = array_info["data"]
         chunks = array_info["chunks"]
@@ -512,6 +562,7 @@ class GenericArrayStore(zarr.storage.Store):
             data = data.tobytes(order=order)
             compressor = array_info["compressor"]
             if compressor is not None:
+                # TODO (forman): check filters, how to apply if present?
                 data = compressor.encode(data)
         elif not isinstance(data, bytes):
             key = format_array_chunk_key(array_info["name"],
