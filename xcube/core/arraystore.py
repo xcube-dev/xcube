@@ -27,12 +27,11 @@ from typing import Iterator, Dict, Tuple, KeysView, Any, Callable, \
 from typing import Union
 
 import numcodecs.abc
-import numpy
 import numpy as np
 import zarr.storage
 
 GetData = Callable[[Tuple[int], Tuple[int], "GenericArrayInfo"],
-                   Union[bytes, numpy.ndarray]]
+                   Union[bytes, np.ndarray]]
 
 OnClose = Callable[["GenericArrayInfo"], None]
 
@@ -51,12 +50,12 @@ class GenericArrayInfo(dict[str, any]):
     the mutually exclusive *data* and *get_data* properties:
 
     * *get_data* is called for a requested data chunk of an array.
-      It must return a bytes object or a numpy array and is passed
+      It must return a bytes object or a numpy nd-array and is passed
       the chunk index, the chunk shape, and this array info dictionary.
       *get_data* requires the following properties to be present too:
       *name*, *dims*, *dtype*, *shape*.
       *chunks* is optional and defaults to *shape*.
-    * *data* must be a bytes object or a numpy array.
+    * *data* must be a bytes object or a numpy nd-array.
       *data* requires the following properties to be present too:
       *name*, *dims*.
       *chunks* must be same as *shape* (this will likely change).
@@ -98,6 +97,9 @@ class GenericArrayInfo(dict[str, any]):
         If given, must be JSON-serializable.
     :param on_close: Optional array close handler.
         Called if the store is closed.
+    :param chunk_type: Optional type of the chunk data returned
+        for the array. Can be "bytes" (the default) or "ndarray" for
+        array chunks that are numpy.ndarray instances.
     :param kwargs: Other keyword arguments passed directly to the
         dictionary constructor.
     """
@@ -117,6 +119,7 @@ class GenericArrayInfo(dict[str, any]):
                  order: Optional[str] = None,
                  attrs: Optional[Dict[str, Any]] = None,
                  on_close: Optional[OnClose] = None,
+                 chunk_type: Optional[str] = None,
                  **kwargs):
         array_info = dict(array_info) if array_info is not None else dict()
         array_info.update({
@@ -134,7 +137,8 @@ class GenericArrayInfo(dict[str, any]):
                 attrs=attrs,
                 data=data,
                 get_data=get_data,
-                on_close=on_close
+                on_close=on_close,
+                chunk_type=chunk_type
             ).items()
             if v is not None
         })
@@ -208,9 +212,22 @@ class GenericArrayInfo(dict[str, any]):
                             f" instance of int or float")
 
         order = self.get("order") or "C"
-        if order not in ("C", "F"):
-            raise ValueError(f"array {name!r}:"
-                             f" order must be 'C' or 'F', was {order!r}")
+        allowed_orders = ("C", "F")
+        if order not in allowed_orders:
+            raise ValueError(
+                f"array {name!r}:"
+                f" order must be one of {allowed_orders},"
+                f" was {order!r}"
+            )
+
+        chunk_type = self.get("chunk_type") or "bytes"
+        allowed_chunk_types = ("bytes", "ndarray")
+        if chunk_type not in allowed_chunk_types:
+            raise ValueError(
+                f"array {name!r}:"
+                f" chunk_type must be one of {allowed_chunk_types},"
+                f" was {chunk_type!r}"
+            )
 
         # Note: passing the properties as dictionary
         # will prevent removing them if their value is None,
@@ -229,10 +246,14 @@ class GenericArrayInfo(dict[str, any]):
             "data": data,
             "get_data": get_data,
             "on_close": self.get("on_close"),
+            "chunk_type": chunk_type,
             # Computed properties
             "ndim": len(dims),
             "num_chunks": num_chunks,
         })
+
+
+GenericArrayInfoLike = Union[GenericArrayInfo, Dict[str, Any]]
 
 
 class GenericArrayStore(zarr.storage.Store):
@@ -249,32 +270,31 @@ class GenericArrayStore(zarr.storage.Store):
     static (numpy) arrays or from a callable that provides the
     array's data chunks.
 
+    :param arrays: Arrays to be added.
+        Typically, these will be instances of ``GenericArrayInfo``.
     :param attrs: Optional attributes of the top-level group.
         If given, it must be JSON serializable.
     :param array_defaults: Optional array defaults for
         array properties not passed to ``add_array``.
-        Typically, this will be instance of ``GenericArrayInfo``.
+        Typically, this will be an instance of ``GenericArrayInfo``.
     """
 
     def __init__(
             self,
+            *arrays: GenericArrayInfoLike,
             attrs: Optional[Dict[str, Any]] = None,
-            array_defaults: Union[None,
-                                  GenericArrayInfo,
-                                  Dict[str, Any]] = None
+            array_defaults: Optional[GenericArrayInfoLike] = None
     ):
         self._attrs = dict(attrs) if attrs is not None else {}
         self._array_defaults = array_defaults
         self._dim_sizes: Dict[str, int] = {}
         self._array_infos: Dict[str, GenericArrayInfo] = {}
+        for array_info in arrays:
+            self.add_array(array_info)
 
-    def add_array(
-            self,
-            array_info: Union[None,
-                              GenericArrayInfo,
-                              Dict[str, Any]] = None,
-            **array_info_kwargs
-    ) -> None:
+    def add_array(self,
+                  array_info: Optional[GenericArrayInfoLike] = None,
+                  **array_info_kwargs) -> None:
         """
         Add a new array to this store.
 
@@ -312,7 +332,7 @@ class GenericArrayStore(zarr.storage.Store):
     # Zarr Store implementation
     ##########################################################################
 
-    def is_writeable(self):
+    def is_writeable(self) -> bool:
         """Return False, because arrays in this store are generative."""
         return False
 
@@ -420,13 +440,12 @@ class GenericArrayStore(zarr.storage.Store):
         except KeyError:
             return False
 
-    def __getitem__(self, key: str) -> bytes:
+    def __getitem__(self, key: str) -> Union[bytes, np.ndarray]:
         item = self._get_item(key)
         if isinstance(item, dict):
             return dict_to_bytes(item)
         elif isinstance(item, str):
             return str_to_bytes(item)
-        assert isinstance(item, bytes)
         return item
 
     ##########################################################################
@@ -437,7 +456,7 @@ class GenericArrayStore(zarr.storage.Store):
         raise TypeError(f'{self._class_name} is read-only')
 
     def __delitem__(self, key: str) -> None:
-        raise TypeError(f'{self._class_name} is read-only')
+        self.rmdir(key)
 
     ##########################################################################
     # Helpers
@@ -540,7 +559,8 @@ class GenericArrayStore(zarr.storage.Store):
     # noinspection PyMethodMayBeStatic
     def _get_array_data_item(self,
                              array_info: Dict[str, Any],
-                             chunk_index: Tuple[int]) -> bytes:
+                             chunk_index: Tuple[int]) \
+            -> Union[bytes, np.ndarray]:
 
         data = array_info["data"]
         chunks = array_info["chunks"]
@@ -551,24 +571,34 @@ class GenericArrayStore(zarr.storage.Store):
             chunk_shape = get_chunk_shape(shape, chunks, chunk_index)
             data = get_data(chunk_index, chunk_shape, array_info)
 
+        chunk_type = array_info["chunk_type"]
         if isinstance(data, np.ndarray):
-            if chunks != data.shape:
+            # As of Zarr 2.0, chunk shapes must be all the same
+            if data.shape != chunks:
+                # TODO (forman): allow for auto-padding
                 key = format_array_chunk_key(array_info["name"],
                                              chunk_index)
                 raise ValueError(f"{key}:"
                                  f" data chunk must have shape {chunks},"
                                  f" but was {data.shape}")
-            order = array_info["order"]
-            data = data.tobytes(order=order)
-            compressor = array_info["compressor"]
-            if compressor is not None:
-                # TODO (forman): check filters, how to apply if present?
-                data = compressor.encode(data)
-        elif not isinstance(data, bytes):
+            if chunk_type == "bytes":
+                # Convert to bytes, filter and compress
+                data = ndarray_to_bytes(data,
+                                        array_info["order"],
+                                        array_info["filters"],
+                                        array_info["compressor"])
+
+        # Sanity check
+        if (chunk_type == "bytes"
+            and not isinstance(data, bytes)) \
+                or (chunk_type == "ndarray"
+                    and not isinstance(data, np.ndarray)):
             key = format_array_chunk_key(array_info["name"],
                                          chunk_index)
+            expected_type = "a numpy.ndarray" if chunk_type == "ndarray" \
+                else "of type bytes"
             raise TypeError(f"{key}:"
-                            f" data must be of type bytes,"
+                            f" data must be {expected_type},"
                             f" but was {type(data).__name__}")
 
         return data
@@ -630,9 +660,24 @@ def format_array_chunk_key(array_name: str,
     return f"{array_name}/{chunk_id}"
 
 
-def dict_to_bytes(d: Dict):
+def dict_to_bytes(d: Dict) -> bytes:
     return str_to_bytes(json.dumps(d, indent=2))
 
 
-def str_to_bytes(s: str):
+def str_to_bytes(s: str) -> bytes:
     return bytes(s, encoding='utf-8')
+
+
+def ndarray_to_bytes(data: np.ndarray,
+                     order: str,
+                     filters: Optional[Sequence[Any]],
+                     compressor: Optional[numcodecs.abc.Codec]) -> bytes:
+    data = data.tobytes(order=order)
+    # TODO (forman): check filters, how to apply if present?
+    if filters:
+        raise ValueError("filters are not yet supported")
+    if compressor is not None:
+        data = compressor.encode(data)
+    return data
+
+
