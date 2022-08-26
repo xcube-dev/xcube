@@ -1,13 +1,76 @@
 import unittest
+from typing import Dict, Any
 
 import numpy as np
+import pytest
 import xarray as xr
 
 from xcube.core.arraystore import GenericArrayInfo
 from xcube.core.arraystore import GenericArrayStore
+from xcube.core.arraystore import dict_to_bytes
+from xcube.core.arraystore import ndarray_to_bytes
+from xcube.core.arraystore import str_to_bytes
 
 
-class ZarrStoreTest(unittest.TestCase):
+# noinspection PyMethodMayBeStatic
+class GenericArrayInfoTest(unittest.TestCase):
+    def test_defaults(self):
+        self.assertEqual({},
+                         GenericArrayInfo())
+
+    def test_finalize_raises(self):
+        data = np.linspace(1, 4, 4)
+
+        def get_data(index):
+            return data
+
+        with pytest.raises(ValueError, match="missing array name"):
+            GenericArrayInfo(dims=["x"],
+                             data=data).finalize()
+
+        with pytest.raises(ValueError,
+                           match="array 'x':"
+                                 " either data or get_data must be defined"):
+            GenericArrayInfo(name="x",
+                             dims=["x"]).finalize()
+
+        with pytest.raises(ValueError,
+                           match="array 'x':"
+                                 " data and get_data"
+                                 " cannot be defined together"):
+            GenericArrayInfo(name="x",
+                             dims=["x"],
+                             data=data,
+                             get_data=get_data).finalize()
+
+        with pytest.raises(TypeError,
+                           match="array 'x': get_data must be a callable"):
+            # noinspection PyTypeChecker
+            GenericArrayInfo(name="x",
+                             dims=["x"],
+                             get_data=data).finalize()
+
+        with pytest.raises(ValueError,
+                           match="array 'x': missing dims"):
+            GenericArrayInfo(name="x",
+                             data=data).finalize()
+
+        with pytest.raises(ValueError,
+                           match="array 'x': missing dtype"):
+            GenericArrayInfo(name="x",
+                             dims=["x"],
+                             shape=[4],
+                             get_data=get_data).finalize()
+
+        with pytest.raises(ValueError,
+                           match="array 'x': missing shape"):
+            GenericArrayInfo(name="x",
+                             dims=["x"],
+                             dtype=data.dtype,
+                             get_data=get_data).finalize()
+
+
+class GenericArrayStoreTest(unittest.TestCase):
     @staticmethod
     def new_zarr_store(shape, chunks, get_data) -> GenericArrayStore:
         store = GenericArrayStore(
@@ -36,15 +99,15 @@ class ZarrStoreTest(unittest.TestCase):
         self.chunk_shapes = set()
         self.chunk_indexes = set()
 
-    def get_data(self, chunk_index, chunk_shape, array_info):
+    def get_data(self, chunk_index, chunk_info=None, array_info=None):
+        it, iy, ix = chunk_index
         st, sy, sx = array_info["shape"]
         nt, ny, nx = array_info["chunks"]
-        it, iy, ix = chunk_index
         pt = it * nt
         py = iy * ny
         px = ix * nx
         value = (pt * sy + py) * sx + px
-        self.chunk_shapes.add(chunk_shape)
+        self.chunk_shapes.add(chunk_info["shape"])
         self.chunk_indexes.add(chunk_index)
         return np.full((nt, ny, nx), value, dtype=np.float32)
 
@@ -248,4 +311,61 @@ class ZarrStoreTest(unittest.TestCase):
                  [128., 128., 128., 128., 132., 132., 132., 132.]],
                 dtype=np.float32
             )
+        )
+
+
+class ZarrStoreTest(unittest.TestCase):
+    """This test is used to assert that Zarr stores
+    behave as expected with xarray, because GenericArrayStore
+    expects the behavior tested here.
+    """
+
+    def setUp(self) -> None:
+        self.dtype = np.dtype(np.int16)
+        self.store: Dict[str, Any] = {
+            ".zgroup": dict_to_bytes({
+                "zarr_format": 2,
+            }),
+            ".zattrs": dict_to_bytes({
+            }),
+            "x": str_to_bytes(""),
+            "x/.zarray": dict_to_bytes({
+                "zarr_format": 2,
+                "dtype": self.dtype.str,
+                "shape": [8],
+                "chunks": [4],
+                "order": "C",
+                "compressor": None,
+                "filters": None,
+                "fill_value": None,
+            }),
+            "x/.zattrs": dict_to_bytes({
+                "_ARRAY_DIMENSIONS": ["x"],
+            }),
+        }
+
+    def test_works_with_ndarray_chunks(self):
+        # Here, x's chunks are numpy arrays rather than bytes!
+        self.store.update({
+            "x/0": np.linspace(1, 4, 4, dtype=self.dtype),
+            "x/1": np.linspace(5, 8, 4, dtype=self.dtype),
+        })
+
+        ds = xr.open_zarr(self.store, consolidated=False)
+        self.assertEqual(
+            [1, 2, 3, 4, 5, 6, 7, 8],
+            list(ds.x)
+        )
+
+    def test_works_with_bytes_chunks(self):
+        # Here, x's chunks are numpy arrays rather than bytes!
+        self.store.update({
+            "x/0": ndarray_to_bytes(np.linspace(1, 4, 4, dtype=self.dtype)),
+            "x/1": ndarray_to_bytes(np.linspace(5, 8, 4, dtype=self.dtype)),
+        })
+
+        ds = xr.open_zarr(self.store, consolidated=False)
+        self.assertEqual(
+            [1, 2, 3, 4, 5, 6, 7, 8],
+            list(ds.x)
         )

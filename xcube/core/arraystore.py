@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import inspect
 import itertools
 import json
 import math
@@ -30,10 +31,10 @@ import numcodecs.abc
 import numpy as np
 import zarr.storage
 
-GetData = Callable[[Tuple[int], Tuple[int], "GenericArrayInfo"],
+GetData = Callable[[Tuple[int]],
                    Union[bytes, np.ndarray]]
 
-OnClose = Callable[["GenericArrayInfo"], None]
+OnClose = Callable[[Dict[str, Any]], None]
 
 
 # TODO (forman): clarify interface of a filter and how filters are used
@@ -71,13 +72,15 @@ class GenericArrayInfo(dict[str, any]):
 
     :param array_info: Optional array info dictionary
     :param name: Optional array name
+    :param data: Optional array data.
+        Mutually exclusive with *get_data*.
+        Must be a bytes object or a numpy array.
     :param get_data: Optional array data chunk getter.
         Mutually exclusive with *data*.
         Called for a requested data chunk of an array.
         Must return a bytes object or a numpy array.
-    :param data: Optional array data.
-        Mutually exclusive with *get_data*.
-        Must be a bytes object or a numpy array.
+    :param get_data_params: Optional keyword-arguments passed
+        to *get_data*.
     :param dtype: Optional array data type.
         Either a string using syntax of the Zarr spec or a ``numpy.dtype``.
         For string encoded data types, see
@@ -108,6 +111,7 @@ class GenericArrayInfo(dict[str, any]):
                  array_info: Optional[Dict[str, any]] = None,
                  name: Optional[str] = None,
                  get_data: Optional[GetData] = None,
+                 get_data_params: Optional[Dict[str, Any]] = None,
                  data: Optional[np.ndarray] = None,
                  dtype: Optional[Union[str, np.dtype]] = None,
                  dims: Optional[Union[str, Sequence[str]]] = None,
@@ -137,6 +141,7 @@ class GenericArrayInfo(dict[str, any]):
                 attrs=attrs,
                 data=data,
                 get_data=get_data,
+                get_data_params=get_data_params,
                 on_close=on_close,
                 chunk_type=chunk_type
             ).items()
@@ -154,12 +159,24 @@ class GenericArrayInfo(dict[str, any]):
 
         data = self.get("data")
         get_data = self.get("get_data")
-        if data is not None and get_data is not None:
-            raise ValueError(f"array {name!r}:"
-                             f" data and get_data cannot be defined together")
         if data is None and get_data is None:
             raise ValueError(f"array {name!r}:"
                              f" either data or get_data must be defined")
+        if get_data is not None:
+            if data is not None:
+                raise ValueError(f"array {name!r}:"
+                                 f" data and get_data cannot"
+                                 f" be defined together")
+            if not callable(get_data):
+                raise TypeError(f"array {name!r}:"
+                                f" get_data must be a callable")
+            sig = inspect.signature(get_data)
+            get_data_info = {
+                "has_array_info": "array_info" in sig.parameters,
+                "has_chunk_info": "chunk_info" in sig.parameters,
+            }
+        else:
+            get_data_info = None
 
         dims = self.get("dims")
         dims = [dims] if isinstance(dims, str) else dims
@@ -245,11 +262,13 @@ class GenericArrayInfo(dict[str, any]):
             "attrs": dict(self.get("attrs") or {}),
             "data": data,
             "get_data": get_data,
+            "get_data_params": dict(self.get("get_data_params") or {}),
             "on_close": self.get("on_close"),
             "chunk_type": chunk_type,
             # Computed properties
             "ndim": len(dims),
             "num_chunks": num_chunks,
+            "get_data_info": get_data_info,
         })
 
 
@@ -568,8 +587,21 @@ class GenericArrayStore(zarr.storage.Store):
             get_data = array_info["get_data"]
             assert callable(get_data)
             shape = array_info["shape"]
-            chunk_shape = get_chunk_shape(shape, chunks, chunk_index)
-            data = get_data(chunk_index, chunk_shape, array_info)
+            get_data_params = array_info["get_data_params"]
+            get_data_kwargs = dict(get_data_params)
+            get_data_info = array_info["get_data_info"]
+            if get_data_info["has_chunk_info"]:
+                chunk_shape = get_chunk_shape(shape, chunks, chunk_index)
+                array_slices = get_array_slices(shape, chunks, chunk_index)
+                get_data_kwargs["chunk_info"] = {
+                    "index": chunk_index,
+                    "shape": chunk_shape,
+                    "slices": array_slices,
+                }
+            if get_data_info["has_array_info"]:
+                get_data_kwargs["array_info"] = dict(array_info)
+
+            data = get_data(chunk_index, **get_data_kwargs)
 
         chunk_type = array_info["chunk_type"]
         if isinstance(data, np.ndarray):
@@ -584,9 +616,9 @@ class GenericArrayStore(zarr.storage.Store):
             if chunk_type == "bytes":
                 # Convert to bytes, filter and compress
                 data = ndarray_to_bytes(data,
-                                        array_info["order"],
-                                        array_info["filters"],
-                                        array_info["compressor"])
+                                        order=array_info["order"],
+                                        filters=array_info["filters"],
+                                        compressor=array_info["compressor"])
 
         # Sanity check
         if (chunk_type == "bytes"
@@ -640,8 +672,29 @@ class GenericArrayStore(zarr.storage.Store):
 def get_chunk_shape(shape: Tuple[int],
                     chunks: Tuple[int],
                     chunk_index: Tuple[int]) -> Tuple[int]:
-    return tuple(s % c if ((i + 1) * c > s) else c
-                 for s, c, i in zip(shape, chunks, chunk_index))
+    return tuple(
+        c if (i + 1) * c <= s else s % c
+        for s, c, i in zip(shape, chunks, chunk_index)
+    )
+
+
+def get_array_slices(shape: Tuple[int],
+                     chunks: Tuple[int],
+                     chunk_index: Tuple[int]):
+    return tuple(
+        slice(i * c,
+              i * c + (c if (i + 1) * c <= s else s % c))
+        for s, c, i in zip(shape, chunks, chunk_index)
+    )
+
+
+def get_chunk_padding(shape: Tuple[int],
+                      chunks: Tuple[int],
+                      chunk_index: Tuple[int]):
+    return tuple(
+        (0, 0 if (i + 1) * c <= s else c - s % c)
+        for s, c, i in zip(shape, chunks, chunk_index)
+    )
 
 
 def get_array_chunk_indexes(num_chunks: Tuple[int]) -> Iterator[Tuple[int]]:
@@ -668,16 +721,16 @@ def str_to_bytes(s: str) -> bytes:
     return bytes(s, encoding='utf-8')
 
 
-def ndarray_to_bytes(data: np.ndarray,
-                     order: str,
-                     filters: Optional[Sequence[Any]],
-                     compressor: Optional[numcodecs.abc.Codec]) -> bytes:
-    data = data.tobytes(order=order)
+def ndarray_to_bytes(
+        data: np.ndarray,
+        order: Optional[str] = None,
+        filters: Optional[Sequence[Any]] = None,
+        compressor: Optional[numcodecs.abc.Codec] = None
+) -> bytes:
+    data = data.tobytes(order=order or "C")
     # TODO (forman): check filters, how to apply if present?
     if filters:
         raise ValueError("filters are not yet supported")
     if compressor is not None:
         data = compressor.encode(data)
     return data
-
-
