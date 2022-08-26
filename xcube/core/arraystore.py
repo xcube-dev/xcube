@@ -580,13 +580,14 @@ class GenericArrayStore(zarr.storage.Store):
                              array_info: Dict[str, Any],
                              chunk_index: Tuple[int]) \
             -> Union[bytes, np.ndarray]:
-
+        # Note, here array_info is expected to be "finalized",
+        # that is, validated and normalized
         data = array_info["data"]
+        shape = array_info["shape"]
         chunks = array_info["chunks"]
         if data is None:
             get_data = array_info["get_data"]
             assert callable(get_data)
-            shape = array_info["shape"]
             get_data_params = array_info["get_data_params"]
             get_data_kwargs = dict(get_data_params)
             get_data_info = array_info["get_data_info"]
@@ -605,14 +606,20 @@ class GenericArrayStore(zarr.storage.Store):
 
         chunk_type = array_info["chunk_type"]
         if isinstance(data, np.ndarray):
-            # As of Zarr 2.0, chunk shapes must be all the same
+            # As of Zarr 2.0, all chunks of an array
+            # must have the same shape (= chunks)
             if data.shape != chunks:
-                # TODO (forman): allow for auto-padding
-                key = format_array_chunk_key(array_info["name"],
-                                             chunk_index)
-                raise ValueError(f"{key}:"
-                                 f" data chunk must have shape {chunks},"
-                                 f" but was {data.shape}")
+                padding = get_chunk_padding(shape, chunks, chunk_index)
+                fill_value = array_info["fill_value"]
+                constant_value = fill_value if fill_value is not None else 0
+                data = np.pad(data, padding,
+                              mode="constant",
+                              constant_values=constant_value)
+                # key = format_chunk_key(array_info["name"],
+                #                        chunk_index)
+                # raise ValueError(f"{key}:"
+                #                  f" data chunk must have shape {chunks},"
+                #                  f" but was {data.shape}")
             if chunk_type == "bytes":
                 # Convert to bytes, filter and compress
                 data = ndarray_to_bytes(data,
@@ -625,8 +632,8 @@ class GenericArrayStore(zarr.storage.Store):
             and not isinstance(data, bytes)) \
                 or (chunk_type == "ndarray"
                     and not isinstance(data, np.ndarray)):
-            key = format_array_chunk_key(array_info["name"],
-                                         chunk_index)
+            key = format_chunk_key(array_info["name"],
+                                   chunk_index)
             expected_type = "a numpy.ndarray" if chunk_type == "ndarray" \
                 else "of type bytes"
             raise TypeError(f"{key}:"
@@ -666,21 +673,12 @@ class GenericArrayStore(zarr.storage.Store):
         yield array_name + "/.zattrs"
         array_info = self._array_infos[array_name]
         num_chunks = array_info["num_chunks"]
-        yield from get_array_chunk_keys(array_name, num_chunks)
+        yield from get_chunk_keys(array_name, num_chunks)
 
 
-def get_chunk_shape(shape: Tuple[int],
-                    chunks: Tuple[int],
-                    chunk_index: Tuple[int]) -> Tuple[int]:
-    return tuple(
-        c if (i + 1) * c <= s else s % c
-        for s, c, i in zip(shape, chunks, chunk_index)
-    )
-
-
-def get_array_slices(shape: Tuple[int],
-                     chunks: Tuple[int],
-                     chunk_index: Tuple[int]):
+def get_array_slices(shape: Tuple[int, ...],
+                     chunks: Tuple[int, ...],
+                     chunk_index: Tuple[int, ...]) -> Tuple[slice, ...]:
     return tuple(
         slice(i * c,
               i * c + (c if (i + 1) * c <= s else s % c))
@@ -688,27 +686,37 @@ def get_array_slices(shape: Tuple[int],
     )
 
 
-def get_chunk_padding(shape: Tuple[int],
-                      chunks: Tuple[int],
-                      chunk_index: Tuple[int]):
+def get_chunk_shape(shape: Tuple[int, ...],
+                    chunks: Tuple[int, ...],
+                    chunk_index: Tuple[int, ...]) -> Tuple[int, ...]:
+    return tuple(
+        c if (i + 1) * c <= s else s % c
+        for s, c, i in zip(shape, chunks, chunk_index)
+    )
+
+
+def get_chunk_padding(shape: Tuple[int, ...],
+                      chunks: Tuple[int, ...],
+                      chunk_index: Tuple[int, ...]):
     return tuple(
         (0, 0 if (i + 1) * c <= s else c - s % c)
         for s, c, i in zip(shape, chunks, chunk_index)
     )
 
 
-def get_array_chunk_indexes(num_chunks: Tuple[int]) -> Iterator[Tuple[int]]:
+def get_chunk_indexes(num_chunks: Tuple[int, ...]) \
+        -> Iterator[Tuple[int, ...]]:
     return itertools.product(*tuple(map(range, map(int, num_chunks))))
 
 
-def get_array_chunk_keys(array_name: str,
-                         num_chunks: Tuple[int]) -> Iterator[str]:
-    for chunk_index in get_array_chunk_indexes(num_chunks):
-        yield format_array_chunk_key(array_name, chunk_index)
+def get_chunk_keys(array_name: str,
+                   num_chunks: Tuple[int, ...]) -> Iterator[str]:
+    for chunk_index in get_chunk_indexes(num_chunks):
+        yield format_chunk_key(array_name, chunk_index)
 
 
-def format_array_chunk_key(array_name: str,
-                           chunk_index: Tuple[int]) -> str:
+def format_chunk_key(array_name: str,
+                     chunk_index: Tuple[int, ...]) -> str:
     chunk_id = '.'.join(map(str, chunk_index))
     return f"{array_name}/{chunk_id}"
 

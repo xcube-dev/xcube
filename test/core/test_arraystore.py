@@ -8,6 +8,10 @@ import xarray as xr
 from xcube.core.arraystore import GenericArrayInfo
 from xcube.core.arraystore import GenericArrayStore
 from xcube.core.arraystore import dict_to_bytes
+from xcube.core.arraystore import get_array_slices
+from xcube.core.arraystore import get_chunk_indexes
+from xcube.core.arraystore import get_chunk_padding
+from xcube.core.arraystore import get_chunk_shape
 from xcube.core.arraystore import ndarray_to_bytes
 from xcube.core.arraystore import str_to_bytes
 
@@ -312,6 +316,89 @@ class GenericArrayStoreTest(unittest.TestCase):
                 dtype=np.float32
             )
         )
+
+
+class GenericArrayStoreHelpersTest(unittest.TestCase):
+    def test_get_chunk_indexes(self):
+        self.assertEqual([()],
+                         list(get_chunk_indexes(())))
+        self.assertEqual([(0,), (1,), (2,), (3,)],
+                         list(get_chunk_indexes((4,))))
+        self.assertEqual([(0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 0, 3),
+                          (0, 1, 0), (0, 1, 1), (0, 1, 2), (0, 1, 3),
+                          (0, 2, 0), (0, 2, 1), (0, 2, 2), (0, 2, 3),
+                          (1, 0, 0), (1, 0, 1), (1, 0, 2), (1, 0, 3),
+                          (1, 1, 0), (1, 1, 1), (1, 1, 2), (1, 1, 3),
+                          (1, 2, 0), (1, 2, 1), (1, 2, 2), (1, 2, 3)],
+                         list(get_chunk_indexes((2, 3, 4))))
+
+    def test_get_chunk_shape(self):
+        shape = (3, 6, 12)
+        chunks = (1, 3, 4)
+        self.assertEqual(chunks,
+                         get_chunk_shape(shape,
+                                         chunks,
+                                         (0, 0, 0)))
+        self.assertEqual(chunks,
+                         get_chunk_shape(shape,
+                                         chunks,
+                                         (2, 1, 2)))
+
+        chunks = (1, 4, 8)
+        self.assertEqual(chunks,
+                         get_chunk_shape(shape,
+                                         chunks,
+                                         (0, 0, 0)))
+        self.assertEqual((1, 2, 4),
+                         get_chunk_shape(shape,
+                                         chunks,
+                                         (2, 1, 2)))
+
+    def test_get_array_slices(self):
+        shape = (3, 6, 12)
+        chunks = (1, 3, 4)
+        self.assertEqual((slice(0, 1), slice(0, 3), slice(0, 4)),
+                         get_array_slices(shape,
+                                          chunks,
+                                          (0, 0, 0)))
+        self.assertEqual((slice(2, 3), slice(3, 6), slice(8, 12)),
+                         get_array_slices(shape,
+                                          chunks,
+                                          (2, 1, 2)))
+
+        chunks = (1, 4, 8)
+        self.assertEqual((slice(0, 1), slice(0, 4), slice(0, 8)),
+                         get_array_slices(shape,
+                                          chunks,
+                                          (0, 0, 0)))
+        self.assertEqual((slice(2, 3), slice(4, 6), slice(16, 20)),
+                         get_array_slices(shape,
+                                          chunks,
+                                          (2, 1, 2)))
+
+    def test_get_chunk_padding(self):
+        shape = (3, 6, 12)
+        chunks = (1, 3, 4)
+        self.assertEqual(((0, 0), (0, 0), (0, 0)),
+                         get_chunk_padding(shape,
+                                           chunks,
+                                           (0, 0, 0)))
+        self.assertEqual(((0, 0), (0, 0), (0, 0)),
+                         get_chunk_padding(shape,
+                                           chunks,
+                                           (2, 1, 2)))
+
+        chunks = (1, 4, 8)
+        self.assertEqual(((0, 0), (0, 0), (0, 0)),
+                         get_chunk_padding(shape,
+                                           chunks,
+                                           (0, 0, 0)))
+
+        chunks = (1, 4, 8)
+        self.assertEqual(((0, 0), (0, 2), (0, 4)),
+                         get_chunk_padding(shape,
+                                           chunks,
+                                           (0, 1, 1)))
 
 
 class ZarrStoreTest(unittest.TestCase):
