@@ -241,7 +241,7 @@ class GenericArrayInfoTest(unittest.TestCase):
                              get_data=get_data).finalize()
 
 
-class GenericArrayStoreTest(unittest.TestCase):
+class GenericArrayZarrStoreTest(unittest.TestCase):
     @staticmethod
     def new_zarr_store(shape, chunks, get_data) -> GenericArrayZarrStore:
         store = GenericArrayZarrStore(
@@ -371,7 +371,7 @@ class GenericArrayStoreTest(unittest.TestCase):
                           (2, 1, 1),
                           (2, 2, 0),
                           (2, 2, 1)}, self.chunk_indexes)
-        print(repr(ds.chl.data[0]))
+
         np.testing.assert_array_equal(
             ds.chl.data[0],
             np.array(
@@ -384,7 +384,7 @@ class GenericArrayStoreTest(unittest.TestCase):
                 dtype=np.float32
             )
         )
-        print(repr(ds.chl.data[1]))
+
         np.testing.assert_array_equal(
             ds.chl.data[1],
             np.array(
@@ -397,7 +397,7 @@ class GenericArrayStoreTest(unittest.TestCase):
                 dtype=np.float32
             )
         )
-        print(repr(ds.chl.data[2]))
+
         np.testing.assert_array_equal(
             ds.chl.data[2],
             np.array(
@@ -444,7 +444,7 @@ class GenericArrayStoreTest(unittest.TestCase):
                           (2, 1, 1),
                           (2, 2, 0),
                           (2, 2, 1)}, self.chunk_indexes)
-        print(repr(ds.chl.data[0]))
+
         np.testing.assert_array_equal(
             ds.chl.data[0],
             np.array(
@@ -457,7 +457,7 @@ class GenericArrayStoreTest(unittest.TestCase):
                 dtype=np.float32
             )
         )
-        print(repr(ds.chl.data[1]))
+
         np.testing.assert_array_equal(
             ds.chl.data[1],
             np.array(
@@ -470,7 +470,7 @@ class GenericArrayStoreTest(unittest.TestCase):
                 dtype=np.float32
             )
         )
-        print(repr(ds.chl.data[2]))
+
         np.testing.assert_array_equal(
             ds.chl.data[2],
             np.array(
@@ -485,7 +485,7 @@ class GenericArrayStoreTest(unittest.TestCase):
         )
 
 
-class GenericArrayStoreHelpersTest(unittest.TestCase):
+class GenericArrayZarrStoreHelpersTest(unittest.TestCase):
     def test_get_chunk_indexes(self):
         self.assertEqual([()],
                          list(get_chunk_indexes(())))
@@ -568,7 +568,7 @@ class GenericArrayStoreHelpersTest(unittest.TestCase):
                                            (0, 1, 1)))
 
 
-class ZarrStoreTest(unittest.TestCase):
+class CommonZarrStoreTest(unittest.TestCase):
     """This test is used to assert that Zarr stores
     behave as expected with xarray, because GenericArrayStore
     expects the behavior tested here.
