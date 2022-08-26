@@ -1,3 +1,24 @@
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
 import unittest
 from typing import Dict, Any
 
@@ -5,15 +26,15 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from xcube.core.arraystore import GenericArrayInfo
-from xcube.core.arraystore import GenericArrayStore
-from xcube.core.arraystore import dict_to_bytes
-from xcube.core.arraystore import get_array_slices
-from xcube.core.arraystore import get_chunk_indexes
-from xcube.core.arraystore import get_chunk_padding
-from xcube.core.arraystore import get_chunk_shape
-from xcube.core.arraystore import ndarray_to_bytes
-from xcube.core.arraystore import str_to_bytes
+from xcube.core.zarrstore import GenericArrayInfo
+from xcube.core.zarrstore import GenericArrayZarrStore
+from xcube.core.zarrstore import dict_to_bytes
+from xcube.core.zarrstore import get_array_slices
+from xcube.core.zarrstore import get_chunk_indexes
+from xcube.core.zarrstore import get_chunk_padding
+from xcube.core.zarrstore import get_chunk_shape
+from xcube.core.zarrstore import ndarray_to_bytes
+from xcube.core.zarrstore import str_to_bytes
 
 
 # noinspection PyMethodMayBeStatic
@@ -21,6 +42,152 @@ class GenericArrayInfoTest(unittest.TestCase):
     def test_defaults(self):
         self.assertEqual({},
                          GenericArrayInfo())
+
+    def test_finalize_ok_with_data(self):
+        data = np.linspace(1, 4, 4)
+
+        self.assertEqual({
+            "name": "x",
+            "dtype": "<f8",
+            "dims": ("x",),
+            "shape": (4,),
+            "chunks": (4,),
+            "data": data,
+            "order": "C",
+            "compressor": None,
+            "filters": None,
+            "fill_value": None,
+            "get_data": None,
+            "get_data_info": None,
+            "get_data_params": None,
+            "on_close": None,
+            "chunk_encoding": "bytes",
+            "attrs": None,
+            # Computed
+            "ndim": 1,
+            "num_chunks": (1,),
+        }, GenericArrayInfo(name="x",
+                            dims=["x"],
+                            data=data).finalize())
+
+    def test_finalize_ok_with_get_data(self):
+        shape = (12,)
+        chunks = (5,)
+
+        data = np.linspace(1, 5, 5, dtype=np.uint8)
+
+        # noinspection PyUnusedLocal
+        def get_data_1(chunk_index):
+            return data
+
+        self.assertEqual({
+            "name": "x",
+            "dtype": "|u1",
+            "dims": ("x",),
+            "shape": shape,
+            "chunks": chunks,
+            "data": None,
+            "get_data": get_data_1,
+            "get_data_info": {
+                "has_chunk_info": False,
+                "has_array_info": False
+            },
+            "get_data_params": {},
+            "order": "C",
+            "compressor": None,
+            "filters": None,
+            "fill_value": None,
+            "on_close": None,
+            "chunk_encoding": "ndarray",
+            "attrs": {"units": "degrees"},
+            # Computed
+            "ndim": 1,
+            "num_chunks": (3,),
+        }, GenericArrayInfo(name="x",
+                            dims=["x"],
+                            dtype=data.dtype,
+                            shape=shape,
+                            chunks=chunks,
+                            get_data=get_data_1,
+                            chunk_encoding="ndarray",
+                            attrs={"units": "degrees"}).finalize())
+
+        # noinspection PyUnusedLocal
+        def get_data_2(chunk_index,
+                       array_info=None):
+            return data
+
+        self.assertEqual({
+            "name": "x",
+            "dtype": "|u1",
+            "dims": ("x",),
+            "shape": shape,
+            "chunks": chunks,
+            "data": None,
+            "get_data": get_data_2,
+            "get_data_info": {
+                "has_chunk_info": False,
+                "has_array_info": True
+            },
+            "get_data_params": {},
+            "order": "C",
+            "compressor": None,
+            "filters": None,
+            "fill_value": None,
+            "on_close": None,
+            "chunk_encoding": "ndarray",
+            "attrs": {"units": "degrees"},
+            # Computed
+            "ndim": 1,
+            "num_chunks": (3,),
+        }, GenericArrayInfo(name="x",
+                            dims=["x"],
+                            dtype=data.dtype,
+                            shape=shape,
+                            chunks=chunks,
+                            get_data=get_data_2,
+                            chunk_encoding="ndarray",
+                            attrs={"units": "degrees"}).finalize())
+
+        # noinspection PyUnusedLocal
+        def get_data_3(chunk_index,
+                       chunk_info=None,
+                       array_info=None,
+                       user_data=None):
+            return data
+
+        self.assertEqual({
+            "name": "x",
+            "dtype": "|u1",
+            "dims": ("x",),
+            "shape": shape,
+            "chunks": chunks,
+            "data": None,
+            "get_data": get_data_3,
+            "get_data_info": {
+                "has_chunk_info": True,
+                "has_array_info": True
+            },
+            "get_data_params": {"user_data": 42},
+            "order": "C",
+            "compressor": None,
+            "filters": None,
+            "fill_value": None,
+            "on_close": None,
+            "chunk_encoding": "ndarray",
+            "attrs": {"units": "degrees"},
+            # Computed
+            "ndim": 1,
+            "num_chunks": (3,),
+        }, GenericArrayInfo(name="x",
+                            dims=["x"],
+                            dtype=data.dtype,
+                            shape=shape,
+                            chunks=chunks,
+                            get_data=get_data_3,
+                            get_data_params=dict(user_data=42),
+                            chunk_encoding="ndarray",
+                            attrs={"units": "degrees"}).finalize())
 
     def test_finalize_raises(self):
         data = np.linspace(1, 4, 4)
@@ -76,8 +243,8 @@ class GenericArrayInfoTest(unittest.TestCase):
 
 class GenericArrayStoreTest(unittest.TestCase):
     @staticmethod
-    def new_zarr_store(shape, chunks, get_data) -> GenericArrayStore:
-        store = GenericArrayStore(
+    def new_zarr_store(shape, chunks, get_data) -> GenericArrayZarrStore:
+        store = GenericArrayZarrStore(
             array_defaults=GenericArrayInfo(
                 dims=("time", "y", "x"),
                 shape=shape,
@@ -170,7 +337,7 @@ class GenericArrayStoreTest(unittest.TestCase):
             'chl/2.2.0', 'chl/2.2.1',
         ], store.listdir('chl'))
 
-    def test_zarr_store_not_divisible(self):
+    def test_zarr_store_shape_not_multiple_of_chunks(self):
         shape = 3, 6, 8
         chunks = 1, 2, 5
         store = self.new_zarr_store(shape, chunks,
@@ -244,7 +411,7 @@ class GenericArrayStoreTest(unittest.TestCase):
             )
         )
 
-    def test_zarr_store(self):
+    def test_zarr_store_shape_multiple_of_chunks(self):
         shape = 3, 6, 8
         chunks = 1, 2, 4
         store = self.new_zarr_store(shape, chunks,

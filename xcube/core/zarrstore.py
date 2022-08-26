@@ -37,18 +37,17 @@ GetData = Callable[[Tuple[int]],
 OnClose = Callable[[Dict[str, Any]], None]
 
 
-# TODO (forman): clarify interface of a filter and how filters are used
-
 class GenericArrayInfo(dict[str, any]):
     """
-    Holds information about a generic array in the ``GenericArrayStore``.
+    Holds information about a generic array in the ``GenericArrayZarrStore``.
 
     Although all properties of this class are optional,
-    some of them are mandatory when added to the ``GenericArrayStore``.
+    some of them are mandatory when added to the ``GenericArrayZarrStore``.
 
-    When added the ``GenericArrayStore``, the array *name*
-    and *dims* must always be present. Other mandatory properties depend on
-    the mutually exclusive *data* and *get_data* properties:
+    When added to the store using ``GenericArrayZarrStore.add_array()``, 
+    the array *name* and *dims* must always be present. 
+    Other mandatory properties depend on
+    the *data* and *get_data* properties, which are mutually exclusive:
 
     * *get_data* is called for a requested data chunk of an array.
       It must return a bytes object or a numpy nd-array and is passed
@@ -58,10 +57,9 @@ class GenericArrayInfo(dict[str, any]):
       *chunks* is optional and defaults to *shape*.
     * *data* must be a bytes object or a numpy nd-array.
       *data* requires the following properties to be present too:
-      *name*, *dims*.
-      *chunks* must be same as *shape* (this will likely change).
+      *name*, *dims*. *chunks* must be same as *shape*.
 
-    ``GenericArrayStore`` will convert a Numpy array returned
+    ``GenericArrayZarrStore`` will convert a Numpy array returned
     by *get_data* or given by *data* into a bytes object.
     It will also be compressed, if a *compressor* is given.
     It is important that the array chunks always See also
@@ -100,9 +98,9 @@ class GenericArrayInfo(dict[str, any]):
         If given, must be JSON-serializable.
     :param on_close: Optional array close handler.
         Called if the store is closed.
-    :param chunk_type: Optional type of the chunk data returned
-        for the array. Can be "bytes" (the default) or "ndarray" for
-        array chunks that are numpy.ndarray instances.
+    :param chunk_encoding: Optional encoding type of the chunk
+        data returned for the array. Can be "bytes" (the default)
+        or "ndarray" for array chunks that are numpy.ndarray instances.
     :param kwargs: Other keyword arguments passed directly to the
         dictionary constructor.
     """
@@ -117,13 +115,13 @@ class GenericArrayInfo(dict[str, any]):
                  dims: Optional[Union[str, Sequence[str]]] = None,
                  shape: Optional[Sequence[int]] = None,
                  chunks: Optional[Sequence[int]] = None,
-                 fill_value: Optional[Union[int, float]] = None,
+                 fill_value: Optional[Union[int, float, str]] = None,
                  compressor: Optional[numcodecs.abc.Codec] = None,
-                 filters: Optional[Sequence[Any]] = None,
+                 filters: Optional[Sequence[numcodecs.abc.Codec]] = None,
                  order: Optional[str] = None,
                  attrs: Optional[Dict[str, Any]] = None,
                  on_close: Optional[OnClose] = None,
-                 chunk_type: Optional[str] = None,
+                 chunk_encoding: Optional[str] = None,
                  **kwargs):
         array_info = dict(array_info) if array_info is not None else dict()
         array_info.update({
@@ -143,7 +141,7 @@ class GenericArrayInfo(dict[str, any]):
                 get_data=get_data,
                 get_data_params=get_data_params,
                 on_close=on_close,
-                chunk_type=chunk_type
+                chunk_encoding=chunk_encoding
             ).items()
             if v is not None
         })
@@ -151,7 +149,7 @@ class GenericArrayInfo(dict[str, any]):
 
     def finalize(self) -> "GenericArrayInfo":
         """Normalize and validate array properties and return a valid
-        array info dictionary to b stored in the `GenericArrayStore`.
+        array info dictionary to be stored in the `GenericArrayZarrStore`.
         """
         name = self.get("name")
         if not name:
@@ -175,14 +173,18 @@ class GenericArrayInfo(dict[str, any]):
                 "has_array_info": "array_info" in sig.parameters,
                 "has_chunk_info": "chunk_info" in sig.parameters,
             }
+            get_data_params = dict(self.get("get_data_params") or {})
         else:
             get_data_info = None
+            get_data_params = None
 
         dims = self.get("dims")
         dims = [dims] if isinstance(dims, str) else dims
         if dims is None:
             raise ValueError(f"array {name!r}: missing dims")
+
         ndim = len(dims)
+
         if isinstance(data, np.ndarray):
             # forman: maybe warn if dtype or shape is given,
             #   but does not match data.dtype and data.shape
@@ -213,6 +215,17 @@ class GenericArrayInfo(dict[str, any]):
         num_chunks = tuple(map(lambda x: math.ceil(x[0] / x[1]),
                                zip(shape, chunks)))
 
+        filters = self.get("filters")
+        if filters:
+            filters = list(filters)
+            for f in filters:
+                if not isinstance(f, numcodecs.abc.Codec):
+                    raise TypeError(f"array {name!r}:"
+                                    f" filter items must be an"
+                                    f" instance of numcodecs.abc.Codec")
+        else:
+            filters = None
+
         compressor = self.get("compressor")
         if compressor is not None:
             if not isinstance(compressor, numcodecs.abc.Codec):
@@ -223,10 +236,13 @@ class GenericArrayInfo(dict[str, any]):
         fill_value = self.get("fill_value")
         if isinstance(fill_value, np.ndarray):
             fill_value = fill_value.item()
-        if not isinstance(fill_value, (type(None), int, float, str)):
-            raise TypeError(f"array {name!r}:"
-                            f" invalid fill_value type"
-                            f" instance of int or float")
+        allowed_fill_value_types = (type(None), int, float, str)
+        if not isinstance(fill_value, allowed_fill_value_types):
+            raise TypeError(
+                f"array {name!r}:"
+                f" fill_value type must be one of {allowed_fill_value_types},"
+                f" was {type(fill_value).__name__}"
+            )
 
         order = self.get("order") or "C"
         allowed_orders = ("C", "F")
@@ -237,18 +253,26 @@ class GenericArrayInfo(dict[str, any]):
                 f" was {order!r}"
             )
 
-        chunk_type = self.get("chunk_type") or "bytes"
+        chunk_encoding = self.get("chunk_encoding") or "bytes"
         allowed_chunk_types = ("bytes", "ndarray")
-        if chunk_type not in allowed_chunk_types:
+        if chunk_encoding not in allowed_chunk_types:
             raise ValueError(
                 f"array {name!r}:"
-                f" chunk_type must be one of {allowed_chunk_types},"
-                f" was {chunk_type!r}"
+                f" chunk_encoding must be one of {allowed_chunk_types},"
+                f" was {chunk_encoding!r}"
             )
+
+        attrs = self.get("attrs")
+        if attrs is not None:
+            if not isinstance(attrs, dict):
+                raise TypeError(
+                    f"array {name!r}:"
+                    f" attrs must be dict, was {type(fill_value).__name__}"
+                )
 
         # Note: passing the properties as dictionary
         # will prevent removing them if their value is None,
-        # see ArrayInfo constructor.
+        # see GenericArrayInfo constructor.
         return GenericArrayInfo({
             "name": name,
             "dtype": dtype,
@@ -256,15 +280,15 @@ class GenericArrayInfo(dict[str, any]):
             "shape": tuple(shape),
             "chunks": tuple(chunks),
             "fill_value": fill_value,
+            "filters": filters,
             "compressor": compressor,
-            "filters": list(self.get("filters") or []),
             "order": order,
-            "attrs": dict(self.get("attrs") or {}),
+            "attrs": attrs,
             "data": data,
             "get_data": get_data,
-            "get_data_params": dict(self.get("get_data_params") or {}),
+            "get_data_params": get_data_params,
             "on_close": self.get("on_close"),
-            "chunk_type": chunk_type,
+            "chunk_encoding": chunk_encoding,
             # Computed properties
             "ndim": len(dims),
             "num_chunks": num_chunks,
@@ -275,8 +299,8 @@ class GenericArrayInfo(dict[str, any]):
 GenericArrayInfoLike = Union[GenericArrayInfo, Dict[str, Any]]
 
 
-class GenericArrayStore(zarr.storage.Store):
-    """A Zarr store that maintains generic arrays in a flat top-level
+class GenericArrayZarrStore(zarr.storage.Store):
+    """A Zarr store that maintains generic arrays in a flat, top-level
     hierarchy. The root of the store is a Zarr group
     conforming to the Zarr spec v2.
 
@@ -287,7 +311,7 @@ class GenericArrayStore(zarr.storage.Store):
 
     The array data of this store's arrays are either retrieved from
     static (numpy) arrays or from a callable that provides the
-    array's data chunks.
+    array's data chunks as bytes or numpy arrays.
 
     :param arrays: Arrays to be added.
         Typically, these will be instances of ``GenericArrayInfo``.
@@ -340,6 +364,8 @@ class GenericArrayStore(zarr.storage.Store):
             if old_dim_size is None:
                 self._dim_sizes[name] = dim_size
             elif old_dim_size != dim_size:
+                # Dimensions must have same lengths for all arrays
+                # in this store
                 raise ValueError(f"array {name!r}"
                                  f" defines dimension {dim_name!r}"
                                  f" with size {dim_size},"
@@ -552,7 +578,6 @@ class GenericArrayStore(zarr.storage.Store):
         # JSON-encode filters
         filters = array_info["filters"]
         if filters is not None:
-            # TODO (forman): check filters, is this correct?
             filters = list(f.get_config() for f in filters)
 
         return {
@@ -603,8 +628,8 @@ class GenericArrayStore(zarr.storage.Store):
                 get_data_kwargs["array_info"] = dict(array_info)
 
             data = get_data(chunk_index, **get_data_kwargs)
-
-        chunk_type = array_info["chunk_type"]
+                
+        chunk_encoding = array_info["chunk_encoding"]
         if isinstance(data, np.ndarray):
             # As of Zarr 2.0, all chunks of an array
             # must have the same shape (= chunks)
@@ -620,7 +645,7 @@ class GenericArrayStore(zarr.storage.Store):
                 # raise ValueError(f"{key}:"
                 #                  f" data chunk must have shape {chunks},"
                 #                  f" but was {data.shape}")
-            if chunk_type == "bytes":
+            if chunk_encoding == "bytes":
                 # Convert to bytes, filter and compress
                 data = ndarray_to_bytes(data,
                                         order=array_info["order"],
@@ -628,16 +653,16 @@ class GenericArrayStore(zarr.storage.Store):
                                         compressor=array_info["compressor"])
 
         # Sanity check
-        if (chunk_type == "bytes"
+        if (chunk_encoding == "bytes"
             and not isinstance(data, bytes)) \
-                or (chunk_type == "ndarray"
+                or (chunk_encoding == "ndarray"
                     and not isinstance(data, np.ndarray)):
             key = format_chunk_key(array_info["name"],
                                    chunk_index)
-            expected_type = "a numpy.ndarray" if chunk_type == "ndarray" \
-                else "of type bytes"
+            expected_type = "numpy.ndarray" if chunk_encoding == "ndarray" \
+                else "bytes"
             raise TypeError(f"{key}:"
-                            f" data must be {expected_type},"
+                            f" data must be encoded as {expected_type},"
                             f" but was {type(data).__name__}")
 
         return data
@@ -736,9 +761,9 @@ def ndarray_to_bytes(
         compressor: Optional[numcodecs.abc.Codec] = None
 ) -> bytes:
     data = data.tobytes(order=order or "C")
-    # TODO (forman): check filters, how to apply if present?
     if filters:
-        raise ValueError("filters are not yet supported")
+        for f in filters:
+            data = f.encode(data)
     if compressor is not None:
         data = compressor.encode(data)
     return data
