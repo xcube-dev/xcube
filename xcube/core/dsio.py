@@ -42,7 +42,7 @@ from xcube.core.timeslice import append_time_slice, insert_time_slice, \
 from xcube.core.verify import assert_cube
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
-_DEPRECATION_REASON = 'use xcube.core.store API instead'
+_DEPRECATION_REASON = 'Functionality is redundant. Use xcube.core.store API instead.'
 _DEPRECATION_VERSION = "0.12.1"
 
 
