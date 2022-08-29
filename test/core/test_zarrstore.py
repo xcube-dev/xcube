@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from xcube.core.zarrstore import GenericArrayInfo
+from xcube.core.zarrstore import GenericArray
 from xcube.core.zarrstore import GenericZarrStore
 from xcube.core.zarrstore import dict_to_bytes
 from xcube.core.zarrstore import get_array_slices
@@ -39,10 +39,10 @@ from xcube.core.zarrstore import str_to_bytes
 
 
 # noinspection PyMethodMayBeStatic
-class GenericArrayInfoTest(unittest.TestCase):
+class GenericArrayTest(unittest.TestCase):
     def test_defaults(self):
         self.assertEqual({},
-                         GenericArrayInfo())
+                         GenericArray())
 
     def test_finalize_ok_with_data(self):
         data = np.linspace(1, 4, 4)
@@ -67,9 +67,9 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (1,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            data=data).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        data=data).finalize())
 
     def test_finalize_ok_with_get_data(self):
         shape = (12,)
@@ -104,14 +104,14 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (3,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            dtype=data.dtype,
-                            shape=shape,
-                            chunks=chunks,
-                            get_data=get_data_1,
-                            chunk_encoding="ndarray",
-                            attrs={"units": "degrees"}).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        dtype=data.dtype,
+                        shape=shape,
+                        chunks=chunks,
+                        get_data=get_data_1,
+                        chunk_encoding="ndarray",
+                        attrs={"units": "degrees"}).finalize())
 
         # noinspection PyUnusedLocal
         def get_data_2(chunk_index,
@@ -141,14 +141,14 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (3,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            dtype=data.dtype,
-                            shape=shape,
-                            chunks=chunks,
-                            get_data=get_data_2,
-                            chunk_encoding="ndarray",
-                            attrs={"units": "degrees"}).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        dtype=data.dtype,
+                        shape=shape,
+                        chunks=chunks,
+                        get_data=get_data_2,
+                        chunk_encoding="ndarray",
+                        attrs={"units": "degrees"}).finalize())
 
         # noinspection PyUnusedLocal
         def get_data_3(chunk_index,
@@ -180,15 +180,15 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (3,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            dtype=data.dtype,
-                            shape=shape,
-                            chunks=chunks,
-                            get_data=get_data_3,
-                            get_data_params=dict(user_data=42),
-                            chunk_encoding="ndarray",
-                            attrs={"units": "degrees"}).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        dtype=data.dtype,
+                        shape=shape,
+                        chunks=chunks,
+                        get_data=get_data_3,
+                        get_data_params=dict(user_data=42),
+                        chunk_encoding="ndarray",
+                        attrs={"units": "degrees"}).finalize())
 
     def test_finalize_raises(self):
         data = np.linspace(1, 4, 4)
@@ -198,56 +198,56 @@ class GenericArrayInfoTest(unittest.TestCase):
             return data
 
         with pytest.raises(ValueError, match="missing array name"):
-            GenericArrayInfo(dims=["x"],
-                             data=data).finalize()
+            GenericArray(dims=["x"],
+                         data=data).finalize()
 
         with pytest.raises(ValueError,
                            match="array 'x':"
                                  " either data or get_data must be defined"):
-            GenericArrayInfo(name="x",
-                             dims=["x"]).finalize()
+            GenericArray(name="x",
+                         dims=["x"]).finalize()
 
         with pytest.raises(ValueError,
                            match="array 'x':"
                                  " data and get_data"
                                  " cannot be defined together"):
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             data=data,
-                             get_data=get_data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         data=data,
+                         get_data=get_data).finalize()
 
         with pytest.raises(TypeError,
                            match="array 'x': get_data must be a callable"):
             # noinspection PyTypeChecker
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             get_data=data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         get_data=data).finalize()
 
         with pytest.raises(ValueError,
                            match="array 'x': missing dims"):
-            GenericArrayInfo(name="x",
-                             data=data).finalize()
+            GenericArray(name="x",
+                         data=data).finalize()
 
         with pytest.raises(ValueError,
                            match="array 'x': missing dtype"):
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             shape=[4],
-                             get_data=get_data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         shape=[4],
+                         get_data=get_data).finalize()
 
         with pytest.raises(ValueError,
                            match="array 'x': missing shape"):
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             dtype=data.dtype,
-                             get_data=get_data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=data.dtype,
+                         get_data=get_data).finalize()
 
 
 class GenericZarrStoreTest(unittest.TestCase):
     @staticmethod
     def new_zarr_store(shape, chunks, get_data) -> GenericZarrStore:
         store = GenericZarrStore(
-            array_defaults=GenericArrayInfo(
+            array_defaults=GenericArray(
                 dims=("time", "y", "x"),
                 shape=shape,
                 chunks=chunks
