@@ -58,6 +58,8 @@ from ..datatype import DataType
 from ..datatype import DataTypeLike
 from ..datatype import GEO_DATA_FRAME_TYPE
 from ..datatype import MULTI_LEVEL_DATASET_TYPE
+from ..datatype import MULTI_LEVEL_ZARR_STORE_TYPE
+from ..datatype import ZARR_STORE_TYPE
 from ..descriptor import DataDescriptor
 from ..descriptor import new_data_descriptor
 from ..error import DataStoreError
@@ -67,16 +69,18 @@ from ..store import MutableDataStore
 _DEFAULT_DATA_TYPE = DATASET_TYPE.alias
 _DEFAULT_FORMAT_ID = 'zarr'
 
-_FILENAME_EXT_TO_DATA_TYPE_ALIAS = {
-    '.zarr': DATASET_TYPE.alias,
-    '.levels': MULTI_LEVEL_DATASET_TYPE.alias,
-    '.nc': DATASET_TYPE.alias,
-    '.shp': GEO_DATA_FRAME_TYPE.alias,
-    '.geojson': GEO_DATA_FRAME_TYPE.alias,
-    '.tif': MULTI_LEVEL_DATASET_TYPE.alias,
+_FILENAME_EXT_TO_DATA_TYPE_ALIASES: Dict[str, List[str]] = {
+    '.zarr': [DATASET_TYPE.alias,
+              ZARR_STORE_TYPE.alias],
+    '.levels': [MULTI_LEVEL_DATASET_TYPE.alias,
+                MULTI_LEVEL_ZARR_STORE_TYPE.alias],
+    '.nc': [DATASET_TYPE.alias],
+    '.shp': [GEO_DATA_FRAME_TYPE.alias],
+    '.geojson': [GEO_DATA_FRAME_TYPE.alias],
+    '.tif': [MULTI_LEVEL_DATASET_TYPE.alias],
 }
 
-_FILENAME_EXT_SET = set(_FILENAME_EXT_TO_DATA_TYPE_ALIAS.keys())
+_FILENAME_EXT_SET = set(_FILENAME_EXT_TO_DATA_TYPE_ALIASES.keys())
 
 _FILENAME_EXT_TO_FORMAT = {
     '.zarr': 'zarr',
@@ -187,7 +191,11 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @classmethod
     def get_data_types(cls) -> Tuple[str, ...]:
-        return tuple(set(_FILENAME_EXT_TO_DATA_TYPE_ALIAS.values()))
+        return tuple(set(
+            t
+            for types in _FILENAME_EXT_TO_DATA_TYPE_ALIASES.values()
+            for t in types
+        ))
 
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
         self._assert_valid_data_id(data_id)
@@ -556,14 +564,14 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             -> Optional[Tuple[str, str, str]]:
         assert_given(data_id, 'data_id')
         ext = self._get_filename_ext(data_id)
-        data_type_alias = _FILENAME_EXT_TO_DATA_TYPE_ALIAS.get(ext)
+        data_type_aliases = _FILENAME_EXT_TO_DATA_TYPE_ALIASES.get(ext)
         format_name = _FILENAME_EXT_TO_FORMAT.get(ext)
-        if data_type_alias is None or format is None:
+        if data_type_aliases is None or format is None:
             if require:
                 raise DataStoreError(f'Cannot determine data type for '
                                      f' data resource {data_id!r}')
             return None
-        return data_type_alias, format_name, self.protocol
+        return data_type_aliases[0], format_name, self.protocol
 
     def _get_filename_ext(self, data_path: str) -> str:
         dot_pos = data_path.rfind('.')

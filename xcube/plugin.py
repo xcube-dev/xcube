@@ -90,7 +90,7 @@ _FS_STORAGE_ITEMS = (
     ('memory', 'in-memory filesystem')
 )
 
-_FS_DATA_ACCESSOR_ITEMS = (
+_FS_DATA_ACCESSOR_COMMON_ITEMS = (
     ('dataset', 'netcdf',
      'xarray.Dataset in NetCDF format'),
     ('dataset', 'zarr',
@@ -109,8 +109,14 @@ _FS_DATA_ACCESSOR_ITEMS = (
      'gpd.GeoDataFrame in GeoJSON format'),
 )
 
-_FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
-_FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
+_FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_COMMON_ITEMS + (
+    ('zarrstore', 'zarr',
+     'zarr.storage.Store in Zarr format'),
+    ('mlzarrstore', 'levels',
+     'Dictionary of zarr.storage.Store in Zarr format'),
+)
+
+_FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_COMMON_ITEMS
 
 
 def _register_data_stores(ext_registry: extension.ExtensionRegistry):

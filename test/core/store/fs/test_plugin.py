@@ -60,7 +60,34 @@ class FsDataStoreAndAccessorsPluginTest(unittest.TestCase):
             self.assertParamsSchemaExcludesFsParams(params_schema)
             params_schema = data_store.get_delete_data_params_schema()
             self.assertParamsSchemaExcludesFsParams(params_schema)
-            self.assertTrue(len(data_store.get_data_opener_ids()) >= 4)
+            self.assertEqual(
+                set(f'{s}:{ext.name}' for s in (
+                    'dataset:geotiff',
+                    'dataset:levels',
+                    'dataset:netcdf',
+                    'dataset:zarr',
+                    'mldataset:levels',
+                    'mldataset:geotiff',
+                    'geodataframe:geojson',
+                    'geodataframe:shapefile',
+                    'zarrstore:zarr',
+                    'mlzarrstore:levels',
+                )),
+                set(data_store.get_data_opener_ids())
+            )
+            self.assertEqual(
+                set(f'{s}:{ext.name}' for s in (
+                    'dataset:geotiff',
+                    'dataset:levels',
+                    'dataset:netcdf',
+                    'dataset:zarr',
+                    'geodataframe:geojson',
+                    'geodataframe:shapefile',
+                    'mldataset:geotiff',
+                    'mldataset:levels',
+                )),
+                set(data_store.get_data_writer_ids())
+            )
             self.assertTrue(len(data_store.get_data_writer_ids()) >= 4)
 
     def test_find_data_opener_extensions(self):

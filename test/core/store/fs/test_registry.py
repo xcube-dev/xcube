@@ -328,7 +328,9 @@ class FsDataStoresTestMixin(ABC):
 
         self.assertIsInstance(data_store, MutableDataStore)
 
-        self.assertEqual({'dataset', 'mldataset', 'geodataframe'},
+        self.assertEqual({'dataset', 'mldataset',
+                          'zarrstore', 'mlzarrstore',
+                          'geodataframe'},
                          set(data_store.get_data_types()))
 
         with self.assertRaises(DataStoreError):
