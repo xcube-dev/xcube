@@ -261,7 +261,7 @@ def select_label_subset(dataset: xr.Dataset,
 
     * var: str - name of the current variable.
     * dim: str - value of *dim*.
-    * index: int: value for the current index within dimension *dim*.
+    * index: int - value for the current index within dimension *dim*.
     * label: Optional[xr.DataArray] - value for the current label
       within dimension *dim*.
 
