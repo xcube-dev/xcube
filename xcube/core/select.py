@@ -279,7 +279,7 @@ def select_label_subset(dataset: xr.Dataset,
         For a large number of labels, very complex Dask
         graphs will result (every label is a node)
         whose overhead may compensate the performance gain.
-    :return: A new datasets with labels along *dim*
+    :return: A new dataset with labels along *dim*
         selected by the *predicate*.
         If all labels are selected, *dataset* is returned without change.
     """
