@@ -255,7 +255,7 @@ def select_label_subset(dataset: xr.Dataset,
             ...
     ```
 
-    Here, *slice_array* is a variable's array slice for given label.
+    Here, *slice_array* is a variable's array slice for the given label.
     The argument *slice_info* is a dictionary that contains the
     following keys:
 
