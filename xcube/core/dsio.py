@@ -43,7 +43,7 @@ from xcube.core.verify import assert_cube
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
 _DEPRECATION_REASON = 'use xcube.core.store API instead'
-_DEPRECATION_VERSION = "0.11.3"
+_DEPRECATION_VERSION = "0.12.1"
 
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
