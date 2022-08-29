@@ -28,15 +28,14 @@ DataStores:
   - Identifier: edc
     StoreId: s3
     StoreParams:
-      # root: eurodatacube-scratch/2021-09-09/SERVICE-DEV
-      root: eurodatacube-scratch/2021-09-13/SERVICE-DEV
-      max_depth: 4
+      root: xcube-dcfs/edc-xc-viewer-data
+      max_depth: 1
       storage_options:
         anon: true
         # client_kwargs:
         #  endpoint_url: https://s3.eu-central-1.amazonaws.com
     Datasets:
-      - Path: "*.zarr"
+      - Path: "*2.zarr"
         Style: "default"
         # ChunkCacheSize: 1G
 

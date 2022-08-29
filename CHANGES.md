@@ -1,4 +1,12 @@
-## Changes in 0.11.3 (in development)
+## Changes in 0.12.1 (in development)
+
+### Enhancements
+
+### Fixes
+
+
+
+## Changes in 0.12.0
 
 ### Enhancements
 
@@ -16,6 +24,25 @@
   `"read:dataset:demo_user/*"` and only allow access to datasets
   with resource identifiers having the prefix `demo_user/`.
 
+  With this change, server configuration has changed:     
+  #### Example of OIDC configuration for auth0
+  
+  Please note, there **must be** a trailing slash in the "Authority" URL.
+  
+  ```yaml
+  Authentication:
+    Authority: https://some-demo-service.eu.auth0.com/
+    Audience: https://some-demo-service/api/
+  ```  
+  #### Example of OIDC configuration for Keycloak
+  
+  Please note, **no** trailing slash in the "Authority" URL.
+
+  ```yaml
+  Authentication: 
+    Authority: https://kc.some-demo-service.de/auth/realms/some-kc-realm
+    Audience: some-kc-realm-xc-api
+  ```
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
@@ -50,6 +77,13 @@
   ``` 
   and where `dataset` has different spatial resolutions in x and y, 
   an exception was raised. This is no longer the case. 
+* xcube Server can now also compute spatial 2D datasets from users' 
+  Python code. In former versions, spatio-temporal 3D cubes were enforced.
+
+### Other important changes
+
+* Deprecated all functions and classes defined in `xcube.core.dsio` 
+  in favor of the xcube data store API defined by `xcube.core.store`.
 
 ## Changes in 0.11.2
 
