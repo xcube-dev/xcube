@@ -299,7 +299,7 @@ class GenericArrayInfo(dict[str, any]):
 GenericArrayInfoLike = Union[GenericArrayInfo, Dict[str, Any]]
 
 
-class GenericArrayZarrStore(zarr.storage.Store):
+class GenericZarrStore(zarr.storage.Store):
     """A Zarr store that maintains generic arrays in a flat, top-level
     hierarchy. The root of the store is a Zarr group
     conforming to the Zarr spec v2.
@@ -628,7 +628,7 @@ class GenericArrayZarrStore(zarr.storage.Store):
                 get_data_kwargs["array_info"] = dict(array_info)
 
             data = get_data(chunk_index, **get_data_kwargs)
-                
+
         chunk_encoding = array_info["chunk_encoding"]
         if isinstance(data, np.ndarray):
             # As of Zarr 2.0, all chunks of an array

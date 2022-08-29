@@ -28,7 +28,7 @@ import pytest
 import xarray as xr
 
 from xcube.core.zarrstore import GenericArrayInfo
-from xcube.core.zarrstore import GenericArrayZarrStore
+from xcube.core.zarrstore import GenericZarrStore
 from xcube.core.zarrstore import dict_to_bytes
 from xcube.core.zarrstore import get_array_slices
 from xcube.core.zarrstore import get_chunk_indexes
@@ -243,10 +243,10 @@ class GenericArrayInfoTest(unittest.TestCase):
                              get_data=get_data).finalize()
 
 
-class GenericArrayZarrStoreTest(unittest.TestCase):
+class GenericZarrStoreTest(unittest.TestCase):
     @staticmethod
-    def new_zarr_store(shape, chunks, get_data) -> GenericArrayZarrStore:
-        store = GenericArrayZarrStore(
+    def new_zarr_store(shape, chunks, get_data) -> GenericZarrStore:
+        store = GenericZarrStore(
             array_defaults=GenericArrayInfo(
                 dims=("time", "y", "x"),
                 shape=shape,
@@ -487,7 +487,7 @@ class GenericArrayZarrStoreTest(unittest.TestCase):
         )
 
 
-class GenericArrayZarrStoreHelpersTest(unittest.TestCase):
+class GenericZarrStoreHelpersTest(unittest.TestCase):
     def test_get_chunk_indexes(self):
         self.assertEqual([()],
                          list(get_chunk_indexes(())))
