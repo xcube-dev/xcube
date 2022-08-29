@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import os.path
 import unittest
 from typing import Dict, Any
 
@@ -192,6 +193,7 @@ class GenericArrayInfoTest(unittest.TestCase):
     def test_finalize_raises(self):
         data = np.linspace(1, 4, 4)
 
+        # noinspection PyUnusedLocal
         def get_data(index):
             return data
 
@@ -623,3 +625,46 @@ class CommonZarrStoreTest(unittest.TestCase):
             [1, 2, 3, 4, 5, 6, 7, 8],
             list(ds.x)
         )
+
+
+CMEMS_CREDENTIALS_FILE = "cmems-credentials.json"
+
+
+# noinspection PyPackageRequirements
+@unittest.skipUnless(os.path.exists(CMEMS_CREDENTIALS_FILE),
+                     f"file not found: {CMEMS_CREDENTIALS_FILE}")
+class PydapTest(unittest.TestCase):
+    """We use this test to debug into the details of the
+    pydap implementation."""
+
+    def test_it(self):
+        import json
+
+        with open(CMEMS_CREDENTIALS_FILE) as fp:
+            credentials = json.load(fp)
+            username, password = credentials["username"], credentials[
+                "password"]
+
+        import pydap.client
+        import pydap.cas.get_cookies
+
+        cas_url = 'https://cmems-cas.cls.fr/cas/login'
+        session = pydap.cas.get_cookies.setup_session(
+            cas_url,
+            username,
+            password
+        )
+        session.cookies.set("CASTGC", session.cookies.get_dict()['CASTGC'])
+
+        pyd_dataset = pydap.client.open_url(
+            "https://nrt.cmems-du.eu/thredds/dodsC/"
+            "dataset-bal-analysis-forecast-wav-hourly",
+            session=session,
+            user_charset='utf-8',
+            # retrieve only main arrays and never retrieve coordinate axes
+            output_grid=False,
+        )
+
+        data = pyd_dataset.lon[0:10]
+        data = np.array(data)
+        self.assertIsInstance(data, np.ndarray)
