@@ -60,6 +60,23 @@ class GenericArray(dict[str, any]):
       *data* requires the following properties to be present too:
       *name*, *dims*. *chunks* must be same as *shape*.
 
+    The function *get_data* receives only keyword-arguments which
+    comprises the ones passed by *get_data_params*, if any, and
+    two special ones which may occur in the signature of *get_data*:
+
+    * The keyword argument *chunk_info*, if given, provides a dictionary
+      that holds information about the current chunk:
+      - ``index: tuple[int, ...]`` - the chunk's index
+      - ``shape: tuple[int, ...]`` - the chunk's shape
+      - ``slices: tuple[slice, ...]`` - the chunk's array slices
+
+    * The keyword argument *array_info*, if given, provides a dictionary
+      that holds information about the overall array. It contains
+      all array properties passed to the constructor of ``GenericArray``
+      plus
+      - ``ndim: int`` - number of dimensions
+      - ``num_chunks: tuple[int, ...]`` - number of chunks in every dimension
+
     ``GenericZarrStore`` will convert a Numpy array returned
     by *get_data* or given by *data* into a bytes object.
     It will also be compressed, if a *compressor* is given.
@@ -631,7 +648,7 @@ class GenericZarrStore(zarr.storage.Store):
             if get_data_info["has_array_info"]:
                 get_data_kwargs["array_info"] = dict(array)
 
-            data = get_data(chunk_index, **get_data_kwargs)
+            data = get_data(**get_data_kwargs)
 
         chunk_encoding = array["chunk_encoding"]
         if isinstance(data, np.ndarray):
@@ -771,3 +788,34 @@ def ndarray_to_bytes(
     if compressor is not None:
         data = compressor.encode(data)
     return data
+
+
+import xarray as xr
+
+
+class XarrayZarrStore(GenericZarrStore):
+    def __init__(self, dataset: xr.Dataset):
+        arrays = []
+        for var_name, var in dataset.variables.items():
+            arrays.append(GenericArray(
+                name=str(var_name),
+                dtype=np.dtype(var.dtype).str,
+                dims=[str(dim) for dim in var.dims],
+                shape=var.shape,
+                chunks=[(max(*c) if len(c) > 1 else c[0])
+                        for c in var.chunks] if var.chunks else var.shape,
+                attrs={str(k): v for k, v in var.attrs.items()},
+                # fill_value=,
+                get_data=self.get_data,
+                get_data_params=dict(dataset=dataset),
+                chunk_encoding="bytes"
+            ))
+        super().__init__(*arrays)
+
+    @staticmethod
+    def get_data(dataset=None,
+                 chunk_info=None,
+                 array_info=None) -> np.ndarray:
+        var_name = array_info["name"]
+        array_slices = chunk_info["slices"]
+        return dataset[var_name][array_slices].values

@@ -29,6 +29,7 @@ import xarray as xr
 
 from xcube.core.zarrstore import GenericArray
 from xcube.core.zarrstore import GenericZarrStore
+from xcube.core.zarrstore import XarrayZarrStore
 from xcube.core.zarrstore import dict_to_bytes
 from xcube.core.zarrstore import get_array_slices
 from xcube.core.zarrstore import get_chunk_indexes
@@ -77,8 +78,7 @@ class GenericArrayTest(unittest.TestCase):
 
         data = np.linspace(1, 5, 5, dtype=np.uint8)
 
-        # noinspection PyUnusedLocal
-        def get_data_1(chunk_index):
+        def get_data_1():
             return data
 
         self.assertEqual({
@@ -114,8 +114,7 @@ class GenericArrayTest(unittest.TestCase):
                         attrs={"units": "degrees"}).finalize())
 
         # noinspection PyUnusedLocal
-        def get_data_2(chunk_index,
-                       array_info=None):
+        def get_data_2(array_info=None):
             return data
 
         self.assertEqual({
@@ -151,8 +150,7 @@ class GenericArrayTest(unittest.TestCase):
                         attrs={"units": "degrees"}).finalize())
 
         # noinspection PyUnusedLocal
-        def get_data_3(chunk_index,
-                       chunk_info=None,
+        def get_data_3(chunk_info=None,
                        array_info=None,
                        user_data=None):
             return data
@@ -193,8 +191,7 @@ class GenericArrayTest(unittest.TestCase):
     def test_finalize_raises(self):
         data = np.linspace(1, 4, 4)
 
-        # noinspection PyUnusedLocal
-        def get_data(index):
+        def get_data():
             return data
 
         with pytest.raises(ValueError, match="missing array name"):
@@ -272,7 +269,8 @@ class GenericZarrStoreTest(unittest.TestCase):
         self.chunk_shapes = set()
         self.chunk_indexes = set()
 
-    def get_data(self, chunk_index, chunk_info=None, array_info=None):
+    def get_data(self, chunk_info=None, array_info=None):
+        chunk_index = chunk_info["index"]
         it, iy, ix = chunk_index
         st, sy, sx = array_info["shape"]
         nt, ny, nx = array_info["chunks"]
@@ -668,3 +666,32 @@ class PydapTest(unittest.TestCase):
         data = pyd_dataset.lon[0:10]
         data = np.array(data)
         self.assertIsInstance(data, np.ndarray)
+
+
+class XarrayZarrStoreTest(unittest.TestCase):
+    # noinspection PyMethodMayBeStatic
+    def test_it(self):
+        nx = 20
+        ny = 10
+        nt = 5
+        x = xr.DataArray(np.linspace(0, nx / 10, nx), dims="x")
+        y = xr.DataArray(np.linspace(0, ny / 10, ny), dims="y")
+        time = xr.DataArray(np.linspace(1, nt, nt), dims="time")
+        chl = xr.DataArray(np.linspace(1, nt * ny * nx, nt * ny * nx)
+                           .reshape((nt, ny, nx)),
+                           dims=["time", "y", "x"]).chunk(
+            (1, ny // 2, nx // 2))
+        dataset = xr.Dataset(data_vars=dict(chl=chl),
+                             coords=dict(time=time, y=y, x=x),
+                             attrs=dict(title="Conversion test"))
+
+        zarr_store = XarrayZarrStore(dataset)
+
+        dataset2 = xr.open_zarr(zarr_store)
+
+        xr.testing.assert_equal(dataset, dataset2)
+
+        dataset.load()
+        dataset2.load()
+
+        xr.testing.assert_equal(dataset, dataset2)
