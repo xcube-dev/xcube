@@ -2,8 +2,14 @@
 
 ### Enhancements
 
-### Fixes
+* Added a new 
+  [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
+  implementation 
+  `xcube.core.zarrstore.GenericZarrStore` that comprises 
+  user-defined, generic array definitions. Arrays will compute 
+  their chunks either from a function or a static data array. 
 
+### Fixes
 
 
 ## Changes in 0.12.0

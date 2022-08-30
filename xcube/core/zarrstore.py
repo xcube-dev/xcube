@@ -29,6 +29,7 @@ from typing import Union
 
 import numcodecs.abc
 import numpy as np
+import xarray as xr
 import zarr.storage
 
 GetData = Callable[[Tuple[int]],
@@ -133,7 +134,7 @@ class GenericArray(dict[str, any]):
                  dims: Optional[Union[str, Sequence[str]]] = None,
                  shape: Optional[Sequence[int]] = None,
                  chunks: Optional[Sequence[int]] = None,
-                 fill_value: Optional[Union[int, float, str]] = None,
+                 fill_value: Optional[Union[bool, int, float, str]] = None,
                  compressor: Optional[numcodecs.abc.Codec] = None,
                  filters: Optional[Sequence[numcodecs.abc.Codec]] = None,
                  order: Optional[str] = None,
@@ -224,8 +225,6 @@ class GenericArray(dict[str, any]):
         if len(shape) != ndim:
             raise ValueError(f"array {name!r}:"
                              f" dims and shape must have same length")
-        if chunks is None:
-            raise ValueError(f"array {name!r}: missing chunks")
         if len(chunks) != ndim:
             raise ValueError(f"array {name!r}:"
                              f" dims and chunks must have same length")
@@ -254,11 +253,12 @@ class GenericArray(dict[str, any]):
         fill_value = self.get("fill_value")
         if isinstance(fill_value, np.ndarray):
             fill_value = fill_value.item()
-        allowed_fill_value_types = (type(None), int, float, str)
+        allowed_fill_value_types = (type(None), bool, int, float, str)
         if not isinstance(fill_value, allowed_fill_value_types):
             raise TypeError(
                 f"array {name!r}:"
-                f" fill_value type must be one of {allowed_fill_value_types},"
+                f" fill_value type must be one of"
+                f" {tuple(t.__name__ for t in allowed_fill_value_types)},"
                 f" was {type(fill_value).__name__}"
             )
 
@@ -272,11 +272,11 @@ class GenericArray(dict[str, any]):
             )
 
         chunk_encoding = self.get("chunk_encoding") or "bytes"
-        allowed_chunk_types = ("bytes", "ndarray")
-        if chunk_encoding not in allowed_chunk_types:
+        allowed_chunk_encodings = ("bytes", "ndarray")
+        if chunk_encoding not in allowed_chunk_encodings:
             raise ValueError(
                 f"array {name!r}:"
-                f" chunk_encoding must be one of {allowed_chunk_types},"
+                f" chunk_encoding must be one of {allowed_chunk_encodings},"
                 f" was {chunk_encoding!r}"
             )
 
@@ -285,7 +285,7 @@ class GenericArray(dict[str, any]):
             if not isinstance(attrs, dict):
                 raise TypeError(
                     f"array {name!r}:"
-                    f" attrs must be dict, was {type(fill_value).__name__}"
+                    f" attrs must be dict, was {type(attrs).__name__}"
                 )
 
         # Note: passing the properties as dictionary
@@ -433,7 +433,7 @@ class GenericZarrStore(zarr.storage.Store):
         :param path: The array's name.
         """
         if path not in self._arrays:
-            raise ValueError(f"{path}: can only remove arrays")
+            raise ValueError(f"{path}: can only remove existing arrays")
         array = self._arrays.pop(path)
         dims = array["dims"]
         for i, dim_name in enumerate(dims):
@@ -457,8 +457,8 @@ class GenericZarrStore(zarr.storage.Store):
             raise ValueError(f"can only rename arrays, but {src_path!r}"
                              f" is not an array")
         if dst_path in self._arrays:
-            raise ValueError(f"cannot rename array {src_path!r} into "
-                             f" into {dst_path!r} because it already exists")
+            raise ValueError(f"cannot rename array {src_path!r} into"
+                             f" {dst_path!r} because it already exists")
         if "/" in dst_path:
             raise ValueError(f"cannot rename array {src_path!r}"
                              f" into {dst_path!r}")
@@ -480,14 +480,14 @@ class GenericZarrStore(zarr.storage.Store):
     #     pass
 
     ##########################################################################
-    # Mapping implementation
+    # MutableMapping implementation
     ##########################################################################
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.keys())
 
     def __len__(self) -> int:
-        return len(self.keys())
+        return sum(1 for _ in self.keys())
 
     def __contains__(self, key: str) -> bool:
         if key in (".zmetadata", ".zgroup", ".zattrs"):
@@ -514,12 +514,9 @@ class GenericZarrStore(zarr.storage.Store):
             return str_to_bytes(item)
         return item
 
-    ##########################################################################
-    # MutableMapping implementation
-    ##########################################################################
-
     def __setitem__(self, key: str, value: bytes) -> None:
-        raise TypeError(f'{self._class_name} is read-only')
+        class_name = self.__module__ + '.' + self.__class__.__name__
+        raise TypeError(f'{class_name} is read-only')
 
     def __delitem__(self, key: str) -> None:
         self.rmdir(key)
@@ -527,10 +524,6 @@ class GenericZarrStore(zarr.storage.Store):
     ##########################################################################
     # Helpers
     ##########################################################################
-
-    @property
-    def _class_name(self) -> str:
-        return self.__module__ + '.' + self.__class__.__name__
 
     def _get_item(self, key: str) -> Union[dict, str, bytes]:
         if key == ".zmetadata":
@@ -628,12 +621,15 @@ class GenericZarrStore(zarr.storage.Store):
             -> Union[bytes, np.ndarray]:
         # Note, here array is expected to be "finalized",
         # that is, validated and normalized
-        data = array["data"]
+
         shape = array["shape"]
         chunks = array["chunks"]
+        chunk_shape = None
+
+        data = array["data"]
         if data is None:
             get_data = array["get_data"]
-            assert callable(get_data)
+            assert callable(get_data)  # Has been ensured before
             get_data_params = array["get_data_params"]
             get_data_kwargs = dict(get_data_params)
             get_data_info = array["get_data_info"]
@@ -655,17 +651,25 @@ class GenericZarrStore(zarr.storage.Store):
             # As of Zarr 2.0, all chunks of an array
             # must have the same shape (= chunks)
             if data.shape != chunks:
-                padding = get_chunk_padding(shape, chunks, chunk_index)
-                fill_value = array["fill_value"]
-                constant_value = fill_value if fill_value is not None else 0
-                data = np.pad(data, padding,
-                              mode="constant",
-                              constant_values=constant_value)
-                # key = format_chunk_key(array["name"],
-                #                        chunk_index)
-                # raise ValueError(f"{key}:"
-                #                  f" data chunk must have shape {chunks},"
-                #                  f" but was {data.shape}")
+                # This commonly happens if array shape sizes
+                # are not integer multiple of chunk shape sizes.
+                if chunk_shape is None:
+                    # Compute expected chunk shape.
+                    chunk_shape = get_chunk_shape(shape, chunks, chunk_index)
+                # We will only pad the data if the data shape
+                # corresponds to the expected chunk's shape.
+                if data.shape == chunk_shape:
+                    padding = get_chunk_padding(shape, chunks, chunk_index)
+                    fill_value = array["fill_value"]
+                    data = np.pad(data, padding,
+                                  mode="constant",
+                                  constant_values=fill_value or 0)
+                else:
+                    key = format_chunk_key(array["name"], chunk_index)
+                    raise ValueError(f"{key}:"
+                                     f" data chunk at {chunk_index}"
+                                     f" must have shape {chunk_shape},"
+                                     f" but was {data.shape}")
             if chunk_encoding == "bytes":
                 # Convert to bytes, filter and compress
                 data = ndarray_to_bytes(data,
@@ -703,15 +707,15 @@ class GenericZarrStore(zarr.storage.Store):
         try:
             chunk_index = tuple(map(int, index_id.split('.')))
         except (ValueError, TypeError):
-            raise KeyError(array_name + "/" + index_id)
+            raise KeyError(f"{array_name}/{index_id}")
         array = self._arrays[array_name]
         shape = array["shape"]
         if len(chunk_index) != len(shape):
-            raise KeyError(array_name + "/" + index_id)
+            raise KeyError(f"{array_name}/{index_id}")
         num_chunks = array["num_chunks"]
         for i, n in zip(chunk_index, num_chunks):
             if not (0 <= i < n):
-                raise KeyError(array_name + "/" + index_id)
+                raise KeyError(f"{array_name}/{index_id}")
         return chunk_index
 
     def _get_array_keys(self, array_name: str) -> Iterator[str]:
@@ -790,9 +794,6 @@ def ndarray_to_bytes(
     return data
 
 
-import xarray as xr
-
-
 class XarrayZarrStore(GenericZarrStore):
     def __init__(self, dataset: xr.Dataset):
         arrays = []
@@ -805,7 +806,6 @@ class XarrayZarrStore(GenericZarrStore):
                 chunks=[(max(*c) if len(c) > 1 else c[0])
                         for c in var.chunks] if var.chunks else var.shape,
                 attrs={str(k): v for k, v in var.attrs.items()},
-                # fill_value=,
                 get_data=self.get_data,
                 get_data_params=dict(dataset=dataset),
                 chunk_encoding="bytes"
