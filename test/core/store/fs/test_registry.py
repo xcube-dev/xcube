@@ -1,3 +1,4 @@
+import collections.abc
 import os.path
 import shutil
 import unittest
@@ -7,6 +8,7 @@ from typing import Any, Callable, Dict, Optional, Type, Union
 
 import fsspec
 import numpy as np
+import pytest
 import xarray as xr
 
 import xcube.core.mldataset
@@ -61,7 +63,7 @@ def new_cube_data():
     return cube.chunk(dict(time=1, y=90, x=180))
 
 
-class NewCubeDataTestMixin(unittest.TestCase):
+class NewCubeDataTest(unittest.TestCase):
     path = f'{DATA_PATH}/data.zarr'
 
     @classmethod
@@ -147,7 +149,7 @@ class FsDataStoresTestMixin(ABC):
 
     def _assert_multi_level_dataset_format_supported(
             self,
-            data_store: MutableDataStore
+            data_store: FsDataStore
     ):
         self._assert_dataset_supported(
             data_store,
@@ -173,7 +175,7 @@ class FsDataStoresTestMixin(ABC):
 
     def _assert_multi_level_dataset_format_with_link_supported(
             self,
-            data_store: MutableDataStore
+            data_store: FsDataStore
     ):
         base_dataset = new_cube_data()
         base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
@@ -247,7 +249,7 @@ class FsDataStoresTestMixin(ABC):
 
     def _assert_multi_level_dataset_format_with_tile_size(
             self,
-            data_store: MutableDataStore
+            data_store: FsDataStore
     ):
         base_dataset = new_cube_data()
         base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
@@ -283,7 +285,7 @@ class FsDataStoresTestMixin(ABC):
         data_store.delete_data(base_dataset_id)
 
     def _assert_dataset_format_supported(self,
-                                         data_store: MutableDataStore,
+                                         data_store: FsDataStore,
                                          filename_ext: str):
         self._assert_dataset_supported(data_store,
                                        filename_ext,
@@ -293,7 +295,7 @@ class FsDataStoresTestMixin(ABC):
 
     def _assert_dataset_supported(
             self,
-            data_store: MutableDataStore,
+            data_store: FsDataStore,
             filename_ext: str,
             expected_data_type_alias: str,
             expected_type: Union[Type[xr.Dataset],
@@ -328,13 +330,14 @@ class FsDataStoresTestMixin(ABC):
 
         self.assertIsInstance(data_store, MutableDataStore)
 
-        self.assertEqual({'dataset', 'mldataset',
-                          'zarrstore', 'mlzarrstore',
-                          'geodataframe'},
+        self.assertEqual({'dataset', 'mldataset', 'mapping', 'geodataframe'},
                          set(data_store.get_data_types()))
 
-        with self.assertRaises(DataStoreError):
+        with pytest.raises(DataStoreError,
+                           match=f'Data resource "{data_id}"'
+                                 f' does not exist in store'):
             data_store.get_data_types_for_data(data_id)
+
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertNotIn(data_id, set(data_store.get_data_ids()))
 
@@ -359,6 +362,16 @@ class FsDataStoresTestMixin(ABC):
         if assert_data_ok:
             assert_data_ok(data)
 
+        # All FsDataStores must support the "zarrstore" data type
+        # for their formats such as "zarr", "netcdf", "geotiff".
+        _, dtype, protocol = data_store.guess_accessor_id_parts(data_id)
+        data = data_store.open_data(
+            data_id,
+            opener_id=f"mapping:{dtype}:{protocol}",
+            **open_params
+        )
+        self.assertIsInstance(data, collections.abc.MutableMapping)
+
         try:
             data_store.delete_data(data_id)
         except PermissionError as e:  # May occur on win32 due to fsspec
@@ -371,6 +384,7 @@ class FsDataStoresTestMixin(ABC):
 
 
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
+
     def create_data_store(self) -> FsDataStore:
         root = os.path.join(new_temp_dir(prefix='xcube'), ROOT_DIR)
         self.prepare_fs(fsspec.filesystem('file'), root)
@@ -400,4 +414,3 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
                                  root=root,
                                  max_depth=3,
                                  storage_options=storage_options)
-

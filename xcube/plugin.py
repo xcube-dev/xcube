@@ -110,10 +110,14 @@ _FS_DATA_ACCESSOR_COMMON_ITEMS = (
 )
 
 _FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_COMMON_ITEMS + (
-    ('zarrstore', 'zarr',
-     'zarr.storage.Store in Zarr format'),
-    ('mlzarrstore', 'levels',
-     'Dictionary of zarr.storage.Store in Zarr format'),
+    ('mapping', 'zarr',
+     'Key-value mapping of Zarr datasets'),
+    ('mapping', 'netcdf',
+     'Key-value mapping view from NetCDF datasets'),
+    ('mapping', 'geotiff',
+     'Key-value mapping view from GeoTIFF datasets'),
+    ('mapping', 'levels',
+     'Key-value mapping from Zarr dataset pyramids'),
 )
 
 _FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_COMMON_ITEMS

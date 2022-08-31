@@ -31,14 +31,14 @@ import math
 #
 import unittest
 
-from xcube.core.store.fs.impl.mldataset import FsMultiLevelDataset
+from xcube.core.store.fs.impl.mldataset import FsMultiLevelBase
 
 
-class FsMultiLevelDatasetTest(unittest.TestCase):
+class FsMultiLevelBaseTest(unittest.TestCase):
     def test_compute_size_weights(self):
         size = 2 ** 28
         weighted_sizes = list(map(
-            math.ceil, size * FsMultiLevelDataset.compute_size_weights(5)
+            math.ceil, size * FsMultiLevelBase.compute_size_weights(5)
         ))
         self.assertEqual(
             [201523393,

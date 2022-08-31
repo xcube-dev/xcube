@@ -19,13 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections.abc
 from typing import Sequence, Tuple
 from typing import Type, List
 from typing import Union
 
 import geopandas
 import xarray
-import zarr.storage
+
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonStringSchema
@@ -186,14 +187,9 @@ MULTI_LEVEL_DATASET_TYPE = DataType(
     ['mldataset', 'xcube.MultiLevelDataset']
 )
 
-ZARR_STORE_TYPE = DataType(
-    zarr.storage.Store,
-    ['zarrstore', 'zarr.storage.Store']
-)
-
-MULTI_LEVEL_ZARR_STORE_TYPE = DataType(
-    dict[str, zarr.storage.Store],
-    ['mlzarrstore']
+MAPPING_TYPE = DataType(
+    collections.abc.MutableMapping,
+    ['mapping', 'collections.abc.MutableMapping']
 )
 
 GEO_DATA_FRAME_TYPE = DataType(
@@ -207,8 +203,7 @@ def register_default_data_types():
         ANY_TYPE,
         DATASET_TYPE,
         MULTI_LEVEL_DATASET_TYPE,
-        ZARR_STORE_TYPE,
-        MULTI_LEVEL_ZARR_STORE_TYPE,
+        MAPPING_TYPE,
         GEO_DATA_FRAME_TYPE,
     ]:
         DataType.register_data_type(data_type)

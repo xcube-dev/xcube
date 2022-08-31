@@ -19,8 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections.abc
 from abc import ABC
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 import fsspec
 import rasterio
@@ -43,6 +44,7 @@ from ..accessor import FsDataAccessor
 from ..helpers import is_local_fs
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
+from ...datatype import MAPPING_TYPE
 from ...error import DataStoreError
 
 ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
@@ -147,9 +149,14 @@ class DatasetFsDataAccessor(FsDataAccessor, ABC):
     Opener/writer extension name: "dataset:<format>:<protocol>"
     """
 
+    force_mapping: bool = False
+
     @classmethod
     def get_data_types(cls) -> Tuple[DataType, ...]:
-        return DATASET_TYPE,
+        if cls.force_mapping:
+            return MAPPING_TYPE,
+        else:
+            return DATASET_TYPE,
 
 
 class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
@@ -170,17 +177,24 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def open_data(self,
                   data_id: str,
-                  **open_params) -> xr.Dataset:
+                  **open_params) \
+            -> Union[collections.abc.MutableMapping, xr.Dataset]:
         assert_instance(data_id, str, name='data_id')
+
         fs, root, open_params = self.load_fs(open_params)
         zarr_store = fs.get_mapper(data_id)
+
         cache_size = open_params.pop('cache_size', None)
         if isinstance(cache_size, int) and cache_size > 0:
             zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
+
         log_access = open_params.pop('log_access', None)
         if log_access:
             zarr_store = LoggingStore(zarr_store,
                                       name=f'zarr_store({data_id!r})')
+        if self.force_mapping:
+            return zarr_store
+
         consolidated = open_params.pop('consolidated',
                                        fs.exists(f'{data_id}/.zmetadata'))
         try:
@@ -198,19 +212,28 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         )
 
     def write_data(self,
-                   data: xr.Dataset,
+                   data: Union[collections.abc.MutableMapping, xr.Dataset],
                    data_id: str,
                    replace=False,
                    **write_params) -> str:
-        assert_instance(data, xr.Dataset, name='data')
+        if self.force_mapping:
+            assert_instance(data, collections.abc.MutableMapping, name='data')
+            raise NotImplementedError("writing data of data type 'zarrstore'"
+                                      " is not yet supported")
+        else:
+            assert_instance(data, xr.Dataset, name='data')
         assert_instance(data_id, str, name='data_id')
+
         fs, root, write_params = self.load_fs(write_params)
         zarr_store = fs.get_mapper(data_id, create=True)
+
         log_access = write_params.pop('log_access', None)
         if log_access:
             zarr_store = LoggingStore(zarr_store,
                                       name=f'zarr_store({data_id!r})')
+
         consolidated = write_params.pop('consolidated', True)
+
         try:
             data.to_zarr(zarr_store,
                          mode='w' if replace else None,

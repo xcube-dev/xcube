@@ -25,15 +25,19 @@ import fsspec
 
 from .accessor import FsAccessor
 from .accessor import FsDataAccessor
-from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
-from .impl.dataset import DatasetNetcdfFsDataAccessor
 from .impl.dataset import DatasetGeoTiffFsDataAccessor
+from .impl.dataset import DatasetNetcdfFsDataAccessor
 from .impl.dataset import DatasetZarrFsDataAccessor
 from .impl.fs import FileFsAccessor
 from .impl.fs import MemoryFsAccessor
 from .impl.fs import S3FsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
+from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
+from .impl.mapping import MappingGeoTiffFsDataAccessor
+from .impl.mapping import MappingLevelsFsDataAccessor
+from .impl.mapping import MappingNetcdfFsDataAccessor
+from .impl.mapping import MappingZarrFsDataAccessor
 from .impl.mldataset import MultiLevelDatasetLevelsFsDataAccessor
 from .store import FsDataStore
 from ..assertions import assert_valid_params
@@ -118,13 +122,19 @@ def register_fs_data_accessor_class(
         _FS_DATA_ACCESSOR_CLASSES[key] = fs_data_accessor_class
 
 
-for cls in (DatasetZarrFsDataAccessor,
-            DatasetNetcdfFsDataAccessor,
-            MultiLevelDatasetLevelsFsDataAccessor,
-            GeoDataFrameShapefileFsDataAccessor,
-            GeoDataFrameGeoJsonFsDataAccessor,
-            DatasetGeoTiffFsDataAccessor,
-            MultiLevelDatasetGeoTiffFsDataAccessor):
+for cls in (
+        DatasetZarrFsDataAccessor,
+        DatasetNetcdfFsDataAccessor,
+        DatasetGeoTiffFsDataAccessor,
+        MappingZarrFsDataAccessor,
+        MappingNetcdfFsDataAccessor,
+        MappingGeoTiffFsDataAccessor,
+        MappingLevelsFsDataAccessor,
+        MultiLevelDatasetLevelsFsDataAccessor,
+        MultiLevelDatasetGeoTiffFsDataAccessor,
+        GeoDataFrameShapefileFsDataAccessor,
+        GeoDataFrameGeoJsonFsDataAccessor,
+):
     register_fs_data_accessor_class(cls)
 
 

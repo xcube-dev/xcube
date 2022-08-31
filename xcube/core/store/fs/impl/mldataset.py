@@ -19,9 +19,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections.abc
 import math
 import pathlib
+import threading
 import warnings
+from functools import cached_property
 from typing import Dict, Any, List, Union, Tuple, Optional
 
 import fsspec
@@ -153,6 +156,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 x_name, y_name = grid_mapping.xy_dim_names
                 base_dataset = base_dataset.chunk({x_name: tile_size[0],
                                                    y_name: tile_size[1]})
+                # noinspection PyTypeChecker
                 grid_mapping = grid_mapping.derive(tile_size=tile_size)
             ml_dataset = BaseMultiLevelDataset(base_dataset,
                                                grid_mapping=grid_mapping,
@@ -201,7 +205,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 # Then write relative base dataset path into link file
                 link_path = data_path / f'{index}.link'
                 with fs.open(str(link_path), mode='w') as fp:
-                    fp.write(f'{base_dataset_path}')
+                    fp.write(str(base_dataset_path).replace("\\", "/"))
             else:
                 # Write level "{index}.zarr"
                 level_path = data_path / f'{index}.zarr'
@@ -225,112 +229,49 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         return data_id
 
 
-_MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
+class FsMultiLevelBase:
+    _MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
 
-
-class FsMultiLevelDataset(LazyMultiLevelDataset):
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
                  root: Optional[str],
-                 data_id: str,
-                 **open_params: Dict[str, Any]):
-        super().__init__(ds_id=data_id)
+                 path: str,
+                 lock: Optional[threading.RLock] = None,
+                 **open_params):
         self._fs = fs
-        self._root = root
-        self._path = data_id
+        self._path = path
+        self._root = root  # Not used!
         self._open_params = open_params
         self._path_class = get_fs_path_class(fs)
         self._size_weights: Optional[np.ndarray] = None
+        self._lock = lock or threading.RLock()
+        self._zarr_stores: Dict[int,
+                                Tuple[collections.abc.MutableMapping,
+                                      str]] = {}
 
     @property
-    def size_weights(self) -> np.ndarray:
-        if self._size_weights is None:
-            with self.lock:
-                self._size_weights = self.compute_size_weights(
-                    self.num_levels
-                )
-        return self._size_weights
+    def fs(self) -> fsspec.AbstractFileSystem:
+        return self._fs
 
-    def _get_dataset_lazily(self, index: int, parameters) \
-            -> xr.Dataset:
+    @property
+    def open_params(self) -> Dict[str, Any]:
+        return self._open_params
 
-        open_params = dict(self._open_params)
-
-        cache_size = open_params.pop('cache_size', None)
-
-        fs = self._fs
-
-        ds_path = self._get_path(self._path)
-        link_path = ds_path / f'{index}.link'
-        if fs.isfile(str(link_path)):
-            # If file "{index}.link" exists, we have a link to
-            # a level Zarr and open this instead,
-            with fs.open(str(link_path), 'r') as fp:
-                level_path = self._get_path(fp.read())
-            if not level_path.is_absolute() \
-                    and not level_path.is_relative_to(ds_path):
-                level_path = resolve_path(ds_path / level_path)
-        else:
-            # Nominal "{index}.zarr" must exist
-            level_path = ds_path / f'{index}.zarr'
-
-        consolidated = open_params.pop(
-            'consolidated',
-            fs.exists(str(level_path / '.zmetadata'))
-        )
-
-        level_zarr_store = fs.get_mapper(str(level_path))
-
-        if isinstance(cache_size, int) and cache_size >= _MIN_CACHE_SIZE:
-            # compute cache size for level weighted by
-            # size in pixels for each level
-            cache_size = math.ceil(self.size_weights[index] * cache_size)
-            if cache_size >= _MIN_CACHE_SIZE:
-                level_zarr_store = zarr.LRUStoreCache(level_zarr_store,
-                                                      max_size=cache_size)
-
-        try:
-            return xr.open_zarr(level_zarr_store,
-                                consolidated=consolidated,
-                                **open_params)
-        except ValueError as e:
-            raise DataStoreError(f'Failed to open'
-                                 f' dataset {level_path!r}:'
-                                 f' {e}') from e
-
-    @staticmethod
-    def compute_size_weights(num_levels: int) -> np.ndarray:
-        weights = (2 ** np.arange(0, num_levels, dtype=np.float64)) ** 2
-        return weights[::-1] / np.sum(weights)
-
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        """
-        Retrieve, i.e. read or compute, the tile grid
-        used by the multi-level dataset.
-
-        :return: the dataset for the level at *index*.
-        """
-        tile_grid = self.grid_mapping.tile_grid
-        if tile_grid.num_levels != self.num_levels:
-            raise DataStoreError(f'Detected inconsistent'
-                                 f' number of detail levels,'
-                                 f' expected {tile_grid.num_levels},'
-                                 f' found {self.num_levels}.')
-        return tile_grid
-
-    def _get_num_levels_lazily(self) -> int:
-        levels = self._get_levels()
+    @cached_property
+    def num_levels(self) -> int:
+        levels = self.levels
         num_levels = len(levels)
         expected_levels = list(range(num_levels))
         for level in expected_levels:
             if level != levels[level]:
                 raise DataStoreError(f'Inconsistent'
-                                     f' multi-level dataset {self.ds_id!r},'
+                                     f' multi-level dataset {self._path!r},'
                                      f' expected levels {expected_levels!r}'
                                      f' found {levels!r}')
         return num_levels
 
-    def _get_levels(self) -> List[int]:
+    @cached_property
+    def levels(self) -> List[int]:
         levels = []
         paths = [self._get_path(entry['name'])
                  for entry in self._fs.listdir(self._path, detail=True)]
@@ -348,5 +289,112 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         levels = sorted(levels)
         return levels
 
+    @cached_property
+    def size_weights(self) -> np.ndarray:
+        if self._size_weights is None:
+            with self._lock:
+                self._size_weights = self.compute_size_weights(
+                    self.num_levels
+                )
+        return self._size_weights
+
+    def get_zarr_store(self, level: int) \
+            -> Tuple[collections.abc.MutableMapping, str]:
+        with self._lock:
+            zarr_store_and_path = self._zarr_stores.get(level)
+            if zarr_store_and_path is None:
+                level_path = str(self.get_level_path(level))
+                level_zarr_store = self._fs.get_mapper(level_path)
+                cache_size = self._open_params.get('cache_size')
+                if isinstance(cache_size, int) \
+                        and cache_size >= self._MIN_CACHE_SIZE:
+                    # compute cache size for level weighted by
+                    # size in pixels for each level
+                    cache_size = math.ceil(
+                        self.size_weights[level] * cache_size
+                    )
+                    if cache_size >= self._MIN_CACHE_SIZE:
+                        level_zarr_store = zarr.LRUStoreCache(
+                            level_zarr_store, max_size=cache_size
+                        )
+                zarr_store_and_path = level_zarr_store, level_path
+                self._zarr_stores[level] = zarr_store_and_path
+            return zarr_store_and_path
+
+    def get_level_path(self, index: int) -> pathlib.PurePath:
+        ds_path = self._get_path(self._path)
+        link_path = ds_path / f'{index}.link'
+        if self._fs.isfile(str(link_path)):
+            # If file "{index}.link" exists, we have a link to
+            # a level Zarr and open this instead,
+            with self._fs.open(str(link_path), 'r') as fp:
+                level_path = self._get_path(fp.read())
+            if not level_path.is_absolute() \
+                    and not level_path.is_relative_to(ds_path):
+                level_path = resolve_path(ds_path / level_path)
+        else:
+            # Nominal "{index}.zarr" must exist
+            level_path = ds_path / f'{index}.zarr'
+        return level_path
+
+    @staticmethod
+    def compute_size_weights(num_levels: int) -> np.ndarray:
+        weights = (2 ** np.arange(0, num_levels, dtype=np.float64)) ** 2
+        return weights[::-1] / np.sum(weights)
+
     def _get_path(self, *args) -> pathlib.PurePath:
+        if self._root is not None:
+            return self._path_class(self._root, *args)
         return self._path_class(*args)
+
+
+class FsMultiLevelDataset(LazyMultiLevelDataset):
+    _MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
+
+    def __init__(self,
+                 fs: fsspec.AbstractFileSystem,
+                 root: Optional[str],
+                 data_id: str,
+                 **open_params: Dict[str, Any]):
+        super().__init__(ds_id=data_id)
+        self._base = FsMultiLevelBase(fs,
+                                      root,
+                                      data_id,
+                                      lock=self.lock,
+                                      **open_params)
+
+    def _get_num_levels_lazily(self) -> int:
+        return self._base.num_levels
+
+    def _get_dataset_lazily(self, index: int, parameters) \
+            -> xr.Dataset:
+
+        level_zarr_store, level_path = self._base.get_zarr_store(index)
+
+        open_params = dict(self._base.open_params)
+        open_params.pop("cache_size", None)  # consumed in get_zarr_store()
+        consolidated = open_params.pop('consolidated',
+                                       '.zmetadata' in level_zarr_store)
+        try:
+            return xr.open_zarr(level_zarr_store,
+                                consolidated=consolidated,
+                                **open_params)
+        except ValueError as e:
+            raise DataStoreError(f'Failed to open'
+                                 f' dataset {level_path!r}:'
+                                 f' {e}') from e
+
+    def _get_tile_grid_lazily(self) -> TileGrid:
+        """
+        Retrieve, i.e. read or compute, the tile grid
+        used by the multi-level dataset.
+
+        :return: the dataset for the level at *index*.
+        """
+        tile_grid = self.grid_mapping.tile_grid
+        if tile_grid.num_levels != self.num_levels:
+            raise DataStoreError(f'Detected inconsistent'
+                                 f' number of detail levels,'
+                                 f' expected {tile_grid.num_levels},'
+                                 f' found {self.num_levels}.')
+        return tile_grid

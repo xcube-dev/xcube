@@ -10,6 +10,7 @@ from xcube.core.store.datatype import DATASET_TYPE
 from xcube.core.store.datatype import DataType
 from xcube.core.store.datatype import GEO_DATA_FRAME_TYPE
 from xcube.core.store.datatype import MULTI_LEVEL_DATASET_TYPE
+from xcube.core.store.datatype import MAPPING_TYPE
 from xcube.util.jsonschema import JsonStringSchema
 
 
@@ -126,6 +127,9 @@ class DataTypeTest(unittest.TestCase):
         self.assertTrue(DATASET_TYPE.is_sub_type_of(ANY_TYPE))
         self.assertTrue(DATASET_TYPE.is_sub_type_of(DATASET_TYPE))
         self.assertFalse(DATASET_TYPE.is_sub_type_of(MULTI_LEVEL_DATASET_TYPE))
+        self.assertFalse(MULTI_LEVEL_DATASET_TYPE.is_sub_type_of(DATASET_TYPE))
+        self.assertFalse(MAPPING_TYPE.is_sub_type_of(DATASET_TYPE))
+        self.assertFalse(DATASET_TYPE.is_sub_type_of(MAPPING_TYPE))
 
         a_type = DataType.normalize(A)
         b_type = DataType.normalize(B)
@@ -143,11 +147,14 @@ class DataTypeTest(unittest.TestCase):
     def test_is_super_type_of(self):
         self.assertTrue(ANY_TYPE.is_super_type_of(ANY_TYPE))
         self.assertTrue(ANY_TYPE.is_super_type_of(DATASET_TYPE))
-        self.assertTrue(ANY_TYPE.is_super_type_of(DATASET_TYPE))
+        self.assertTrue(ANY_TYPE.is_super_type_of(MULTI_LEVEL_DATASET_TYPE))
 
         self.assertTrue(ANY_TYPE.is_super_type_of(DATASET_TYPE))
         self.assertTrue(DATASET_TYPE.is_super_type_of(DATASET_TYPE))
         self.assertFalse(MULTI_LEVEL_DATASET_TYPE.is_super_type_of(DATASET_TYPE))
+        self.assertFalse(DATASET_TYPE.is_super_type_of(MULTI_LEVEL_DATASET_TYPE))
+        self.assertFalse(MAPPING_TYPE.is_super_type_of(DATASET_TYPE))
+        self.assertFalse(DATASET_TYPE.is_super_type_of(MAPPING_TYPE))
 
         a_type = DataType.normalize(A)
         b_type = DataType.normalize(B)

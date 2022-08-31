@@ -58,8 +58,7 @@ from ..datatype import DataType
 from ..datatype import DataTypeLike
 from ..datatype import GEO_DATA_FRAME_TYPE
 from ..datatype import MULTI_LEVEL_DATASET_TYPE
-from ..datatype import MULTI_LEVEL_ZARR_STORE_TYPE
-from ..datatype import ZARR_STORE_TYPE
+from ..datatype import MAPPING_TYPE
 from ..descriptor import DataDescriptor
 from ..descriptor import new_data_descriptor
 from ..error import DataStoreError
@@ -71,9 +70,8 @@ _DEFAULT_FORMAT_ID = 'zarr'
 
 _FILENAME_EXT_TO_DATA_TYPE_ALIASES: Dict[str, List[str]] = {
     '.zarr': [DATASET_TYPE.alias,
-              ZARR_STORE_TYPE.alias],
-    '.levels': [MULTI_LEVEL_DATASET_TYPE.alias,
-                MULTI_LEVEL_ZARR_STORE_TYPE.alias],
+              MAPPING_TYPE.alias],
+    '.levels': [MULTI_LEVEL_DATASET_TYPE.alias],
     '.nc': [DATASET_TYPE.alias],
     '.shp': [GEO_DATA_FRAME_TYPE.alias],
     '.geojson': [GEO_DATA_FRAME_TYPE.alias],
@@ -199,7 +197,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
         self._assert_valid_data_id(data_id)
-        data_type_alias, _, _ = self._guess_accessor_id_parts(data_id)
+        data_type_alias, _, _ = self.guess_accessor_id_parts(data_id)
         return data_type_alias,
 
     def get_data_ids(self,
@@ -238,7 +236,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         format_id = None
         storage_id = self.protocol
         if data_id:
-            accessor_id_parts = self._guess_accessor_id_parts(
+            accessor_id_parts = self.guess_accessor_id_parts(
                 data_id, require=False
             )
             if not accessor_id_parts:
@@ -381,7 +379,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         data_type = None
         format_id = None
         if data_id:
-            accessor_id_parts = self._guess_accessor_id_parts(
+            accessor_id_parts = self.guess_accessor_id_parts(
                 data_id, require=False
             )
             if accessor_id_parts:
@@ -433,7 +431,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                            data_type: DataTypeLike,
                            require: bool = False) -> bool:
         data_type = DataType.normalize(data_type)
-        actual_data_type = self._guess_data_type_for_data_id(
+        actual_data_type = self.guess_data_type(
             data_id, require=False
         )
         if actual_data_type is None:
@@ -523,7 +521,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                                   data_id: str = None,
                                   require=True) -> List[Extension]:
         if data_id:
-            accessor_id_parts = self._guess_accessor_id_parts(
+            accessor_id_parts = self.guess_accessor_id_parts(
                 data_id,
                 require=require
             )
@@ -551,16 +549,16 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             return []
         return extensions
 
-    def _guess_data_type_for_data_id(self, data_id: str, require=True) \
+    def guess_data_type(self, data_id: str, require=True) \
             -> Optional[DataType]:
-        accessor_id_parts = self._guess_accessor_id_parts(data_id,
-                                                          require=require)
+        accessor_id_parts = self.guess_accessor_id_parts(data_id,
+                                                         require=require)
         if accessor_id_parts is None:
             return None
         data_type_alias, _, _ = accessor_id_parts
         return DataType.normalize(data_type_alias)
 
-    def _guess_accessor_id_parts(self, data_id: str, require=True) \
+    def guess_accessor_id_parts(self, data_id: str, require=True) \
             -> Optional[Tuple[str, str, str]]:
         assert_given(data_id, 'data_id')
         ext = self._get_filename_ext(data_id)

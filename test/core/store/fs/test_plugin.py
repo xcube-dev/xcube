@@ -70,8 +70,10 @@ class FsDataStoreAndAccessorsPluginTest(unittest.TestCase):
                     'mldataset:geotiff',
                     'geodataframe:geojson',
                     'geodataframe:shapefile',
-                    'zarrstore:zarr',
-                    'mlzarrstore:levels',
+                    'mapping:zarr',
+                    'mapping:geotiff',
+                    'mapping:netcdf',
+                    'mapping:levels',
                 )),
                 set(data_store.get_data_opener_ids())
             )
