@@ -11,6 +11,10 @@
 
 ### Fixes
 
+* The filesystem-based data stores for the "s3", "file", and "memory"
+  protocols can now provide `xr.Dataset` instances from image pyramids
+  formats, i.e. the `levels` and `geotiff` formats.
+
 
 ## Changes in 0.12.0
 

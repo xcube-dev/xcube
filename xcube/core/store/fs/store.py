@@ -67,28 +67,30 @@ from ..store import MutableDataStore
 _DEFAULT_DATA_TYPE = DATASET_TYPE.alias
 _DEFAULT_FORMAT_ID = 'zarr'
 
-_FILENAME_EXT_TO_DATA_TYPE_ALIAS = {
-    '.zarr': DATASET_TYPE.alias,
-    '.levels': MULTI_LEVEL_DATASET_TYPE.alias,
-    '.nc': DATASET_TYPE.alias,
-    '.shp': GEO_DATA_FRAME_TYPE.alias,
-    '.geojson': GEO_DATA_FRAME_TYPE.alias,
-    '.tif': MULTI_LEVEL_DATASET_TYPE.alias,
-}
-
-_FILENAME_EXT_SET = set(_FILENAME_EXT_TO_DATA_TYPE_ALIAS.keys())
+# TODO (forman): The following constants _FILENAME_EXT_TO_DATA_TYPE_ALIASES
+#   and _FILENAME_EXT_TO_FORMAT reflect implicit knowledge about the
+#   implemented accessor extensions. Let every accessor also provide
+#   its allowed file extensions. Then this information can be generated
+#   from all registered accessors.
 
 _FILENAME_EXT_TO_FORMAT = {
     '.zarr': 'zarr',
     '.levels': 'levels',
     '.nc': 'netcdf',
+    '.tif': 'geotiff',
+    '.tiff': 'geotiff',
+    '.geotiff': 'geotiff',
     '.shp': 'shapefile',
     '.geojson': 'geojson',
-    '.tif': 'geotiff',
 }
 
-_FORMAT_TO_FILENAME_EXT = {
-    v: k for k, v in _FILENAME_EXT_TO_FORMAT.items()
+_FORMAT_TO_DATA_TYPE_ALIASES = {
+    'zarr': (DATASET_TYPE.alias,),
+    'netcdf': (DATASET_TYPE.alias,),
+    'levels': (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
+    'geotiff': (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
+    'geojson': (GEO_DATA_FRAME_TYPE.alias,),
+    'shapefile': (GEO_DATA_FRAME_TYPE.alias,),
 }
 
 
@@ -187,12 +189,26 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @classmethod
     def get_data_types(cls) -> Tuple[str, ...]:
-        return tuple(set(_FILENAME_EXT_TO_DATA_TYPE_ALIAS.values()))
+        return tuple(set(
+            data_type
+            for types_tuple in _FORMAT_TO_DATA_TYPE_ALIASES.values()
+            for data_type in types_tuple
+        ))
 
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
         self._assert_valid_data_id(data_id)
-        data_type_alias, _, _ = self._guess_accessor_id_parts(data_id)
-        return data_type_alias,
+        # data_type_alias, _, _ = self._guess_accessor_id_parts(data_id)
+        data_type_alias, format_id, protocol = \
+            self._guess_accessor_id_parts(data_id)
+        data_type_aliases = [data_type_alias]
+        for ext in find_data_opener_extensions(get_data_accessor_predicate(
+            format_id=format_id,
+            storage_id=protocol
+        )):
+            data_type_alias = ext.name.split(':')[0]
+            if data_type_alias not in data_type_aliases:
+                data_type_aliases.append(data_type_alias)
+        return tuple(data_type_aliases)
 
     def get_data_ids(self,
                      data_type: DataTypeLike = None,
@@ -448,16 +464,22 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     @classmethod
     def _ensure_valid_data_id(cls, writer_id: str, data_id: str = None) -> str:
         format_id = writer_id.split(':')[1]
-        extension = _FORMAT_TO_FILENAME_EXT[format_id]
+        first_ext = None
+        for known_ext, known_format_id in _FILENAME_EXT_TO_FORMAT.items():
+            if format_id == known_format_id:
+                if first_ext is None:
+                    first_ext = known_ext
+                if data_id and data_id.endswith(known_ext):
+                    return data_id
+        assert first_ext is not None
         if data_id:
-            if not data_id.endswith(extension):
-                warnings.warn(f'Data resource identifier {data_id!r} is'
-                              f' lacking an expected extension {extension!r}.'
-                              f' It will be written as {format_id!r},'
-                              f' but the store may later have difficulties'
-                              f' identifying the correct data format.')
+            warnings.warn(f'Data resource identifier {data_id!r} is'
+                          f' lacking an expected extension {first_ext!r}.'
+                          f' It will be written as {format_id!r},'
+                          f' but the store may later have difficulties'
+                          f' identifying the correct data format.')
             return data_id
-        return str(uuid.uuid4()) + extension
+        return str(uuid.uuid4()) + first_ext
 
     def _assert_valid_data_id(self, data_id):
         if not self.has_data(data_id):
@@ -556,14 +578,16 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             -> Optional[Tuple[str, str, str]]:
         assert_given(data_id, 'data_id')
         ext = self._get_filename_ext(data_id)
-        data_type_alias = _FILENAME_EXT_TO_DATA_TYPE_ALIAS.get(ext)
-        format_name = _FILENAME_EXT_TO_FORMAT.get(ext)
-        if data_type_alias is None or format is None:
+        data_type_aliases = None
+        format_id = _FILENAME_EXT_TO_FORMAT.get(ext)
+        if format_id is not None:
+            data_type_aliases = _FORMAT_TO_DATA_TYPE_ALIASES.get(format_id)
+        if data_type_aliases is None or format_id is None:
             if require:
                 raise DataStoreError(f'Cannot determine data type for '
                                      f' data resource {data_id!r}')
             return None
-        return data_type_alias, format_name, self.protocol
+        return data_type_aliases[0], format_id, self.protocol
 
     def _get_filename_ext(self, data_path: str) -> str:
         dot_pos = data_path.rfind('.')

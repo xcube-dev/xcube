@@ -169,13 +169,22 @@ class FsDataAccessor(DataOpener,
     """
     Abstract base class for data accessors that
     use an underlying filesystem.
+
+    A ``FsDataAccessor`` is responsible for exactly one data type
+    and one data format.
+
+    Note, for all filesystem based accessors the parameter
+    *data_id* is an absolute path that is build by the store
+    according to ``f"{store.root}/{data_id}"``.
+    The store's root may therefore only be useful to
+    compute the original, relative store's *data_id*.
     """
 
     @classmethod
     @abstractmethod
-    def get_data_types(cls) -> Tuple[DataType, ...]:
+    def get_data_type(cls) -> DataType:
         """
-        Get the supported data types.
+        Get the supported data type.
         """
 
     @classmethod
