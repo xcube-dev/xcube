@@ -91,7 +91,7 @@ class FsAccessor:
         :return: A tuple comprising the filesystem, an optional root path,
             and the modified *params*.
         """
-        params = dict(params)
+        params = dict(params)  # Make a copy, because we will pop
 
         # Filesystem data-stores pass "fs" and "root" kwargs to
         # data opener and writer calls.
@@ -169,6 +169,12 @@ class FsDataAccessor(DataOpener,
     """
     Abstract base class for data accessors that
     use an underlying filesystem.
+
+    Note, for all filesystem based accessors the parameter
+    *data_id* is an absolute path that is build by the store
+    according to ``f"{store.root}/{data_id}"``.
+    The store's root may therefore only be useful to
+    compute the original, relative store's *data_id*.
     """
 
     @classmethod

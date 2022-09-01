@@ -21,13 +21,12 @@
 
 import collections.abc
 import collections.abc
-from typing import Union, Tuple, Optional, Dict, Any
+from typing import Union, Tuple, Dict, Any
 
 import fsspec
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.zarrstore import XarrayZarrStore
 from xcube.util.assertions import assert_instance
 from .dataset import DatasetGeoTiffFsDataAccessor
 from .dataset import DatasetNetcdfFsDataAccessor
@@ -53,23 +52,6 @@ class MappingNetcdfFsDataAccessor(DatasetNetcdfFsDataAccessor):
 
     force_mapping = True
 
-    def open_data(self, data_id: str, **open_params) \
-            -> collections.abc.MutableMapping:
-        dataset = super().open_data(data_id, **open_params)
-        return XarrayZarrStore(dataset)
-
-    def write_data(self,
-                   data: xr.Dataset,
-                   data_id: str,
-                   replace=False,
-                   **write_params) -> str:
-        raise NotImplementedError()
-
-    def delete_data(self,
-                    data_id: str,
-                    **delete_params):
-        raise NotImplementedError()
-
 
 class MappingGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
     """
@@ -77,23 +59,6 @@ class MappingGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
     """
 
     force_mapping = True
-
-    def open_data(self, data_id: str, **open_params) \
-            -> collections.abc.MutableMapping:
-        dataset = super().open_data(data_id, **open_params)
-        return XarrayZarrStore(dataset)
-
-    def write_data(self,
-                   data: xr.Dataset,
-                   data_id: str,
-                   replace=False,
-                   **write_params) -> str:
-        raise NotImplementedError()
-
-    def delete_data(self,
-                    data_id: str,
-                    **delete_params):
-        raise NotImplementedError()
 
 
 class MappingLevelsFsDataAccessor(
@@ -107,11 +72,11 @@ class MappingLevelsFsDataAccessor(
     def get_data_types(cls) -> Tuple[DataType, ...]:
         return MAPPING_TYPE,
 
-    def open_data(self, data_id: str, **open_params) \
+    def open_data(self, path: str, **open_params) \
             -> collections.abc.Mapping:
-        assert_instance(data_id, str, name='data_id')
+        assert_instance(path, str, name='path')
         fs, root, open_params = self.load_fs(open_params)
-        return FsMultiLevelZarrStore(fs, root, data_id, **open_params)
+        return FsMultiLevelZarrStore(fs, path, **open_params)
 
     def write_data(self,
                    data: Union[xr.Dataset, MultiLevelDataset],
@@ -126,12 +91,10 @@ class MappingLevelsFsDataAccessor(
 class FsMultiLevelZarrStore(collections.abc.MutableMapping[str, bytes]):
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
-                 root: Optional[str],
-                 data_id: str,
+                 path: str,
                  **open_params: Dict[str, Any]):
         self._base = FsMultiLevelBase(fs,
-                                      root,
-                                      data_id,
+                                      path,
                                       lock=None,
                                       **open_params)
 

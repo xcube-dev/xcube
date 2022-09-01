@@ -31,6 +31,7 @@ import xarray as xr
 import zarr
 
 from xcube.core.chunkstore import LoggingStore
+from xcube.core.zarrstore import XarrayZarrStore
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
@@ -176,7 +177,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
         )
 
     def open_data(self,
-                  data_id: str,
+                  data_id: str,  # Remember, this is an absolute path!
                   **open_params) \
             -> Union[collections.abc.MutableMapping, xr.Dataset]:
         assert_instance(data_id, str, name='data_id')
@@ -196,7 +197,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
             return zarr_store
 
         consolidated = open_params.pop('consolidated',
-                                       fs.exists(f'{data_id}/.zmetadata'))
+                                       '.zmetadata' in zarr_store)
         try:
             return xr.open_zarr(zarr_store,
                                 consolidated=consolidated,
@@ -284,7 +285,8 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def open_data(self,
                   data_id: str,
-                  **open_params) -> xr.Dataset:
+                  **open_params) -> Union[xr.Dataset,
+                                          collections.abc.MutableMapping]:
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
 
@@ -300,7 +302,10 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
             _, file_path = new_temp_file(suffix='.nc')
             fs.get_file(data_id, file_path)
         engine = open_params.pop('engine', 'netcdf4')
-        return xr.open_dataset(file_path, engine=engine, **open_params)
+        dataset = xr.open_dataset(file_path, engine=engine, **open_params)
+        if self.force_mapping:
+            return XarrayZarrStore(dataset)
+        return dataset
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         return self.add_storage_options_to_params_schema(
@@ -357,7 +362,7 @@ GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 
 # new class for Geotiff
-class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
+class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     """
     Opener/writer extension name: "dataset:tiff:<protocol>"
     """
@@ -372,7 +377,8 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     def open_data(self,
                   data_id: str,
-                  **open_params) -> xr.Dataset:
+                  **open_params) -> Union[xr.Dataset,
+                                          collections.abc.MutableMapping]:
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
 
@@ -386,8 +392,11 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
             file_path = protocol + "://" + data_id
         tile_size = open_params.get("tile_size", (512, 512))
         overview_level = open_params.get("overview_level", None)
-        return self.open_dataset(fs, file_path, tile_size,
-                                 overview_level=overview_level)
+        dataset = self.open_dataset(fs, file_path, tile_size,
+                                    overview_level=overview_level)
+        if self.force_mapping:
+            return XarrayZarrStore(dataset)
+        return dataset
 
     @classmethod
     def create_env_session(cls, fs):

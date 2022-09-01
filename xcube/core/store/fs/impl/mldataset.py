@@ -70,10 +70,12 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
     def get_format_id(cls) -> str:
         return 'levels'
 
-    def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
+    def open_data(self,
+                  data_id: str,  # Remember, this is an absolute path!
+                  **open_params) -> MultiLevelDataset:
         assert_instance(data_id, str, name='data_id')
-        fs, root, open_params = self.load_fs(open_params)
-        return FsMultiLevelDataset(fs, root, data_id, **open_params)
+        fs, _, open_params = self.load_fs(open_params)
+        return FsMultiLevelDataset(fs, data_id, **open_params)
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         schema = super().get_write_data_params_schema()  # creates deep copy
@@ -128,7 +130,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
 
     def write_data(self,
                    data: Union[xr.Dataset, MultiLevelDataset],
-                   data_id: str,
+                   data_id: str,  # Remember, this is an absolute path!
                    replace: bool = False,
                    **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
@@ -234,13 +236,11 @@ class FsMultiLevelBase:
 
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
-                 root: Optional[str],
                  path: str,
                  lock: Optional[threading.RLock] = None,
                  **open_params):
         self._fs = fs
         self._path = path
-        self._root = root  # Not used!
         self._open_params = open_params
         self._path_class = get_fs_path_class(fs)
         self._size_weights: Optional[np.ndarray] = None
@@ -343,8 +343,6 @@ class FsMultiLevelBase:
         return weights[::-1] / np.sum(weights)
 
     def _get_path(self, *args) -> pathlib.PurePath:
-        if self._root is not None:
-            return self._path_class(self._root, *args)
         return self._path_class(*args)
 
 
@@ -353,13 +351,11 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
-                 root: Optional[str],
-                 data_id: str,
+                 path: str,
                  **open_params: Dict[str, Any]):
-        super().__init__(ds_id=data_id)
+        super().__init__(ds_id=path)
         self._base = FsMultiLevelBase(fs,
-                                      root,
-                                      data_id,
+                                      path,
                                       lock=self.lock,
                                       **open_params)
 
