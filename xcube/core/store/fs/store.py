@@ -197,7 +197,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
         self._assert_valid_data_id(data_id)
-        # data_type_alias, _, _ = self._guess_accessor_id_parts(data_id)
         data_type_alias, format_id, protocol = \
             self._guess_accessor_id_parts(data_id)
         data_type_aliases = [data_type_alias]
@@ -466,6 +465,9 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         format_id = writer_id.split(':')[1]
         first_ext = None
         for known_ext, known_format_id in _FILENAME_EXT_TO_FORMAT.items():
+            # Note, there may be multiple common file extensions
+            # for a given data format_id, e.g. .tif, .tiff, .geotiff.
+            # Must try them all:
             if format_id == known_format_id:
                 if first_ext is None:
                     first_ext = known_ext
