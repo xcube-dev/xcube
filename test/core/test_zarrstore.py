@@ -19,7 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os.path
 import unittest
 from typing import Dict, Any
 
@@ -29,7 +28,6 @@ import xarray as xr
 
 from xcube.core.zarrstore import GenericArray
 from xcube.core.zarrstore import GenericZarrStore
-from xcube.core.zarrstore import XarrayZarrStore
 from xcube.core.zarrstore import dict_to_bytes
 from xcube.core.zarrstore import get_array_slices
 from xcube.core.zarrstore import get_chunk_indexes
@@ -903,75 +901,3 @@ class CommonZarrStoreTest(unittest.TestCase):
             [1, 2, 3, 4, 5, 6, 7, 8],
             list(ds.x)
         )
-
-
-CMEMS_CREDENTIALS_FILE = "cmems-credentials.json"
-
-
-# noinspection PyPackageRequirements
-@unittest.skipUnless(os.path.exists(CMEMS_CREDENTIALS_FILE),
-                     f"file not found: {CMEMS_CREDENTIALS_FILE}")
-class PydapTest(unittest.TestCase):
-    """We use this test to debug into the details of the
-    pydap implementation."""
-
-    def test_it(self):
-        import json
-
-        with open(CMEMS_CREDENTIALS_FILE) as fp:
-            credentials = json.load(fp)
-            username, password = credentials["username"], credentials[
-                "password"]
-
-        import pydap.client
-        import pydap.cas.get_cookies
-
-        cas_url = 'https://cmems-cas.cls.fr/cas/login'
-        session = pydap.cas.get_cookies.setup_session(
-            cas_url,
-            username,
-            password
-        )
-        session.cookies.set("CASTGC", session.cookies.get_dict()['CASTGC'])
-
-        pyd_dataset = pydap.client.open_url(
-            "https://nrt.cmems-du.eu/thredds/dodsC/"
-            "dataset-bal-analysis-forecast-wav-hourly",
-            session=session,
-            user_charset='utf-8',
-            # retrieve only main arrays and never retrieve coordinate axes
-            output_grid=False,
-        )
-
-        data = pyd_dataset.lon[0:10]
-        data = np.array(data)
-        self.assertIsInstance(data, np.ndarray)
-
-
-class XarrayZarrStoreTest(unittest.TestCase):
-    # noinspection PyMethodMayBeStatic
-    def test_it(self):
-        nx = 20
-        ny = 10
-        nt = 5
-        x = xr.DataArray(np.linspace(0, nx / 10, nx), dims="x")
-        y = xr.DataArray(np.linspace(0, ny / 10, ny), dims="y")
-        time = xr.DataArray(np.linspace(1, nt, nt), dims="time")
-        chl = xr.DataArray(np.linspace(1, nt * ny * nx, nt * ny * nx)
-                           .reshape((nt, ny, nx)),
-                           dims=["time", "y", "x"]).chunk(
-            (1, ny // 2, nx // 2))
-        dataset = xr.Dataset(data_vars=dict(chl=chl),
-                             coords=dict(time=time, y=y, x=x),
-                             attrs=dict(title="Conversion test"))
-
-        zarr_store = XarrayZarrStore(dataset)
-
-        dataset2 = xr.open_zarr(zarr_store)
-
-        xr.testing.assert_equal(dataset, dataset2)
-
-        dataset.load()
-        dataset2.load()
-
-        xr.testing.assert_equal(dataset, dataset2)
