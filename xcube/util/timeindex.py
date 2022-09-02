@@ -38,24 +38,24 @@ logger = logging.getLogger('xcube')
 def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
                                  labels: Dict[str, Any],
                                  time_name: str = 'time') -> Dict[str, Any]:
-    """Ensure that labels[time_name] is compatible with var
+    """Ensure that *labels[time_name]* is compatible with *var*
 
-    This function returns either the passed-in labels object, or a copy of
-    it with a modified value for labels[time_name].
+    This function returns either the passed-in *labels* object, or a copy of
+    it with a modified value for *labels[time_name]*.
 
-    The parameter `time_name` specifies the name of the variable representing
-    time, and defaults to `'time'`.
+    The parameter *time_name* specifies the name of the variable representing
+    time, and defaults to ``'time'``.
 
-    If there is no `time_name` key in the labels dictionary or if there is no
-    `time_name` dimension in the var array, the original labels are returned.
+    If there is no *time_name* key in the labels dictionary or if there is no
+    *time_name* dimension in the var array, the original labels are returned.
 
-    If there is a `time_name` key in the labels dictionary and a `time_name`
+    If there is a *time_name* key in the labels dictionary and a *time_name*
     dimension in the var array, they are checked for compatibility. If they
     are compatible, the original labels are returned. If not, an altered
     labels dictionary is returned, in which the time key has been modified to
-    be compatible with the type of the `time_name` dimension in the var array.
+    be compatible with the type of the *time_name* dimension in the var array.
 
-    See the documentation for `ensure_time_index_compatible` for details on
+    See the documentation for *ensure_time_index_compatible* for details on
     the compatibility check.
     """
 
@@ -68,13 +68,14 @@ def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
 
 
 def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
-                                 timeval: Any, time_name: str = 'time') -> Any:
-    """Ensure that timeval is a valid time indexer for var
+                                 time_value: Any,
+                                 time_name: str = 'time') -> Any:
+    """Ensure that *time_value* is a valid time indexer for *var*
 
-    It is expected that the value of timeval will be a valid timestamp (i.e.
-    a valid input to pandas.Timestamp.__init__), or a slice in which the
-    start and stop fields are valid timestamps. For a slice, the start and
-    stop fields are processed separately, and their modified values (if
+    It is expected that the value of *time_value* will be a valid timestamp
+    (i.e. a valid input to pandas.Timestamp.__init__), or a slice in which
+    the start and stop fields are valid timestamps. For a slice, the start
+    and stop fields are processed separately, and their modified values (if
     required) are returned as the start and stop fields of a new slice. The
     step field is included unchanged in the new slice.
 
@@ -85,14 +86,14 @@ def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
     the original indexer is returned.
     """
     
-    if isinstance(timeval, slice):
+    if isinstance(time_value, slice):
         # process start and stop separately, and pass step through unchanged
         return slice(
-            _ensure_timestamp_compatible(var, timeval.start, time_name),
-            _ensure_timestamp_compatible(var, timeval.stop, time_name),
-            timeval.step)
+            _ensure_timestamp_compatible(var, time_value.start, time_name),
+            _ensure_timestamp_compatible(var, time_value.stop, time_name),
+            time_value.step)
     else:
-        return _ensure_timestamp_compatible(var, timeval, time_name)
+        return _ensure_timestamp_compatible(var, time_value, time_name)
 
 
 def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
@@ -102,11 +103,11 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
 
     if hasattr(time_value, 'tzinfo'):
         timestamp = time_value
-        timeval_tzinfo = time_value.tzinfo
+        time_value_tzinfo = time_value.tzinfo
     else:
         try:
             timestamp = pd.Timestamp(time_value)
-            timeval_tzinfo = timestamp.tzinfo
+            time_value_tzinfo = timestamp.tzinfo
         except (TypeError, ValueError):
             logger.warning('Can\'t determine indexer timezone, leaving it '
                            'unmodified.')
@@ -123,13 +124,13 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         )
         return time_value
 
-    if array_timezone is None and timeval_tzinfo is not None:
+    if array_timezone is None and time_value_tzinfo is not None:
         if hasattr(timestamp, 'tz_convert'):
             return timestamp.tz_convert(None)
         else:
             logger.warning('Indexer lacks tz_convert, leaving unmodified')
             return time_value
-    elif array_timezone is not None and timeval_tzinfo is None:
+    elif array_timezone is not None and time_value_tzinfo is None:
         if hasattr(timestamp, 'tz_localize'):
             return timestamp.tz_localize(array_timezone)
         else:
@@ -140,11 +141,11 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
 
 
 def _has_datetime64_time(var: xr.DataArray, time_name) -> bool:
-    """Report whether `var`'s time dimension has type `datetime64`
+    """Report whether *var*'s time dimension has type ``datetime64``
 
-    `time_name` specifies the name of the time dimension.
+    *time_name* specifies the name of the time dimension.
 
-    It is assumed that a `time_name` key is present in var.dims."""
+    It is assumed that a *time_name* key is present in var.dims."""
     return hasattr(var[time_name], 'dtype') \
            and hasattr(var[time_name].dtype, 'type') \
            and var[time_name].dtype.type is np.datetime64
