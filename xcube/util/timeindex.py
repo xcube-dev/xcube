@@ -114,32 +114,45 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
             timestamp = pd.Timestamp(time_value)
             time_value_tzinfo = timestamp.tzinfo
         except (TypeError, ValueError):
-            logger.warning('Can\'t determine indexer timezone, leaving it '
+            logger.warning('Can\'t determine indexer timezone; leaving it '
                            'unmodified.')
             return time_value
 
     if _has_datetime64_time(var, time_name):
         # pandas treats all datetime64 arrays as timezone-naive
         array_timezone = None
-    elif hasattr(var.time[0:1].values[0], 'tzinfo'):
-        array_timezone = var.time[0:1].values[0].tzinfo
     else:
-        logger.warning(
-            'Can\'t determine array timezone, leaving indexer unmodified.'
-        )
-        return time_value
+        # Check whether the time dimension has ``tzinfo``.
+        # The expression for first_time_value is non-intuitive, but necessary.
+        # If we use ``first_time_value = var.time[0].values``, the indexing
+        # operation on ``time`` makes xarray cast it to a np.datetime64 (!),
+        # so we can't use it to check the attributes of the original type.
+        # If we use ``first_time_value = var.time.values[0]`` we get the
+        # correct type, but in the case of a Dask array we unnecessarily load
+        # the entire array into memory just to get one element. Fortunately,
+        # slice indexing doesn't trigger xarray's datetime64 casting behaviour,
+        # so we take a singleton slice and then get the values from it,
+        # which ensures both correctness and efficiency.
+        first_time_value = var.time[0:1].values[0]
+        if hasattr(first_time_value, 'tzinfo'):
+            array_timezone = first_time_value.tzinfo
+        else:
+            logger.warning(
+                'Can\'t determine array timezone; leaving indexer unmodified.'
+            )
+            return time_value
 
     if array_timezone is None and time_value_tzinfo is not None:
         if hasattr(timestamp, 'tz_convert'):
             return timestamp.tz_convert(None)
         else:
-            logger.warning('Indexer lacks tz_convert, leaving unmodified')
+            logger.warning('Indexer lacks tz_convert; leaving it unmodified.')
             return time_value
     elif array_timezone is not None and time_value_tzinfo is None:
         if hasattr(timestamp, 'tz_localize'):
             return timestamp.tz_localize(array_timezone)
         else:
-            logger.warning('Indexer lacks tz_localize, leaving unmodified')
+            logger.warning('Indexer lacks tz_localize; leaving it unmodified.')
             return time_value
     else:
         return time_value
