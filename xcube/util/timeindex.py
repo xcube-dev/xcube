@@ -84,6 +84,11 @@ def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
     the indexer is timezone-naive, or vice versa, a new indexer is returned
     whose timezone-awareness corresponds to that of the variable. Otherwise
     the original indexer is returned.
+
+    Purpose: xarray throws an error if one attempts to index a timezone-aware
+    variable with a timezone-naive indexer, or vice versa. This function can
+    be called before indexing to align the indexer's timezone-awareness with
+    that of the variable, thus avoiding the error from xarray.
     """
     
     if isinstance(time_value, slice):
