@@ -2,10 +2,17 @@
 
 ### Enhancements
 
-### Fixes
+* Added a new 
+  [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
+  implementation 
+  `xcube.core.zarrstore.GenericZarrStore` that comprises 
+  user-defined, generic array definitions. Arrays will compute 
+  their chunks either from a function or a static data array. 
 
 * xcube now tries to prevent indexing timezone-naive variables with
   timezone-aware indexers, or vice versa.
+
+### Fixes
 
 ## Changes in 0.12.0
 
@@ -80,6 +87,11 @@
   an exception was raised. This is no longer the case. 
 * xcube Server can now also compute spatial 2D datasets from users' 
   Python code. In former versions, spatio-temporal 3D cubes were enforced.
+
+### Other important changes
+
+* Deprecated all functions and classes defined in `xcube.core.dsio` 
+  in favor of the xcube data store API defined by `xcube.core.store`.
 
 ## Changes in 0.11.2
 
