@@ -9,6 +9,8 @@ from xcube.util.timeindex import ensure_time_label_compatible
 
 
 class TimeIndexTest(TestCase):
+    nonstandard_time_dimension_name = 'a_nonstandard_time_dimension_name'
+
     # A DataArray with a datetime64 time dimension -- actually implicitly
     # timezone-aware per the numpy docs, but treated as timezone-naive by
     # pandas and xarray.
@@ -17,6 +19,12 @@ class TimeIndexTest(TestCase):
         coords=dict(time=np.arange('2000-01-01', '2000-01-04',
                                    dtype=np.datetime64)),
         dims=['time'])
+
+    da_datetime64_nonstandard_name = xr.DataArray(
+        np.arange(1, 4),
+        coords={nonstandard_time_dimension_name:
+                    np.arange('2000-01-01', '2000-01-04', dtype=np.datetime64)},
+        dims=[nonstandard_time_dimension_name])
 
     # As of pandas 1.4.3, pd.date_range seems to produce datetime64
     # co-ordinates, but may as well test this as a distinct case in case it
@@ -43,10 +51,14 @@ class TimeIndexTest(TestCase):
                          ensure_time_label_compatible(self.da_datetime64,
                                                       self.labels_tznaive))
 
-    def test_tzaware_array_tzaware_indexer(self):
-        self.assertEqual(self.labels_tzaware,
-                         ensure_time_label_compatible(self.da_tzaware,
-                                                      self.labels_tzaware))
+    def test_dt64_array_tznaive_indexer_nonstandard_name(self):
+        self.assertEqual(
+            self.labels_tznaive,
+            ensure_time_label_compatible(
+                self.da_datetime64_nonstandard_name,
+                self.labels_tznaive,
+                self.nonstandard_time_dimension_name
+            ))
 
     def test_dt64_array_tzaware_indexer(self):
         self.assertTrue(

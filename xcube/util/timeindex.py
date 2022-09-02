@@ -36,34 +36,39 @@ logger = logging.getLogger('xcube')
 
 
 def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
-                                 labels: Dict[str, Any]) -> Dict[str, Any]:
-    """Ensure that labels['time'] is compatible with var
+                                 labels: Dict[str, Any],
+                                 time_name: str = 'time') -> Dict[str, Any]:
+    """Ensure that labels[time_name] is compatible with var
 
     This function returns either the passed-in labels object, or a copy of
-    it with a modified value for labels['time'].
+    it with a modified value for labels[time_name].
 
-    If there is no 'time' key in the labels dictionary or if there is no
-    'time' dimension in the var array, the original labels are returned.
+    The parameter `time_name` specifies the name of the variable representing
+    time, and defaults to `'time'`.
 
-    If there is a 'time' key in the labels dictionary and a 'time' dimension
-    in the var array, they are checked for compatibility. If they are
-    compatible, the original labels are returned. If not, an altered labels
-    dictionary is returned, in which the time key has been modified to be
-    compatible with the type of the 'time' dimension in the var array.
+    If there is no `time_name` key in the labels dictionary or if there is no
+    `time_name` dimension in the var array, the original labels are returned.
+
+    If there is a `time_name` key in the labels dictionary and a `time_name`
+    dimension in the var array, they are checked for compatibility. If they
+    are compatible, the original labels are returned. If not, an altered
+    labels dictionary is returned, in which the time key has been modified to
+    be compatible with the type of the `time_name` dimension in the var array.
 
     See the documentation for `ensure_time_index_compatible` for details on
     the compatibility check.
     """
 
-    if 'time' in labels and 'time' in var.dims:
+    if time_name in labels and time_name in var.dims:
         return dict(labels,
-                    time=ensure_time_index_compatible(var, labels['time']))
+                    time=ensure_time_index_compatible(var, labels[time_name],
+                                                      time_name))
     else:
         return labels
 
 
 def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
-                                 timeval: Any) -> Any:
+                                 timeval: Any, time_name: str = 'time') -> Any:
     """Ensure that timeval is a valid time indexer for var
 
     It is expected that the value of timeval will be a valid timestamp (i.e.
@@ -83,30 +88,31 @@ def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
     if isinstance(timeval, slice):
         # process start and stop separately, and pass step through unchanged
         return slice(
-            _ensure_timestamp_compatible(var, timeval.start),
-            _ensure_timestamp_compatible(var, timeval.stop),
+            _ensure_timestamp_compatible(var, timeval.start, time_name),
+            _ensure_timestamp_compatible(var, timeval.stop, time_name),
             timeval.step)
     else:
-        return _ensure_timestamp_compatible(var, timeval)
+        return _ensure_timestamp_compatible(var, timeval, time_name)
 
 
-def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
-    if timeval is None:
+def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
+                                 time_name: str):
+    if time_value is None:
         return None
 
-    if hasattr(timeval, 'tzinfo'):
-        timestamp = timeval
-        timeval_tzinfo = timeval.tzinfo
+    if hasattr(time_value, 'tzinfo'):
+        timestamp = time_value
+        timeval_tzinfo = time_value.tzinfo
     else:
         try:
-            timestamp = pd.Timestamp(timeval)
+            timestamp = pd.Timestamp(time_value)
             timeval_tzinfo = timestamp.tzinfo
         except (TypeError, ValueError):
             logger.warning('Can\'t determine indexer timezone, leaving it '
                            'unmodified.')
-            return timeval
+            return time_value
 
-    if _has_datetime64_time(var):
+    if _has_datetime64_time(var, time_name):
         # pandas treats all datetime64 arrays as timezone-naive
         array_timezone = None
     elif hasattr(var.time[0:1].values[0], 'tzinfo'):
@@ -115,28 +121,30 @@ def _ensure_timestamp_compatible(var: xr.DataArray, timeval: Any):
         logger.warning(
             'Can\'t determine array timezone, leaving indexer unmodified.'
         )
-        return timeval
+        return time_value
 
     if array_timezone is None and timeval_tzinfo is not None:
         if hasattr(timestamp, 'tz_convert'):
             return timestamp.tz_convert(None)
         else:
             logger.warning('Indexer lacks tz_convert, leaving unmodified')
-            return timeval
+            return time_value
     elif array_timezone is not None and timeval_tzinfo is None:
         if hasattr(timestamp, 'tz_localize'):
             return timestamp.tz_localize(array_timezone)
         else:
             logger.warning('Indexer lacks tz_localize, leaving unmodified')
-            return timeval
+            return time_value
     else:
-        return timeval
+        return time_value
 
 
-def _has_datetime64_time(var: xr.DataArray) -> bool:
-    """Report whether var's time dimension has type datetime64
+def _has_datetime64_time(var: xr.DataArray, time_name) -> bool:
+    """Report whether `var`'s time dimension has type `datetime64`
 
-    Assumes that a 'time' key is present in var.dims."""
-    return hasattr(var['time'], 'dtype') \
-           and hasattr(var['time'].dtype, 'type') \
-           and var['time'].dtype.type is np.datetime64
+    `time_name` specifies the name of the time dimension.
+
+    It is assumed that a `time_name` key is present in var.dims."""
+    return hasattr(var[time_name], 'dtype') \
+           and hasattr(var[time_name].dtype, 'type') \
+           and var[time_name].dtype.type is np.datetime64
