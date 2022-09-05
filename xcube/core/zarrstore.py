@@ -358,20 +358,20 @@ class GenericZarrStore(zarr.storage.Store):
 
     def add_array(self,
                   array: Optional[GenericArrayLike] = None,
-                  **array_info_kwargs) -> None:
+                  **array_kwargs) -> None:
         """
         Add a new array to this store.
 
         :param array: Optional array properties.
             Typically, this will be an instance of ``GenericArray``.
-        :param array_info_kwargs: Keyword arguments form
-            of the properties of ``GenericArray``.
+        :param array_kwargs: Keyword arguments form
+            for the properties of ``GenericArray``.
         """
         effective_array = GenericArray(self._array_defaults or {})
         if array:
-            effective_array.update(**array)
-        if array_info_kwargs:
-            effective_array.update(**array_info_kwargs)
+            effective_array.update(array)
+        if array_kwargs:
+            effective_array.update(array_kwargs)
         effective_array = effective_array.finalize()
 
         name = effective_array["name"]
@@ -521,7 +521,58 @@ class GenericZarrStore(zarr.storage.Store):
     def __delitem__(self, key: str) -> None:
         self.rmdir(key)
 
+    ########################################################################
+    # Utilities
     ##########################################################################
+
+    @classmethod
+    def from_dataset(cls,
+                     dataset: xr.Dataset,
+                     array_defaults: Optional[GenericArrayLike] = None) \
+            -> "GenericZarrStore":
+        """Create a Zarr store for given *dataset*.
+        to the *dataset*'s attributes.
+        The following *array_defaults* properties can be provided
+        (other properties are prescribed by the *dataset*):
+
+        * ``fill_value``- defaults to None
+        * ``compressor``- defaults to None
+        * ``filters``- defaults to None
+        * ``order``- defaults to "C"
+        * ``chunk_encoding`` - defaults to "bytes"
+
+        :param dataset: The dataset
+        :param array_defaults: Array default values.
+        :return: A new Zarr store instance.
+        """
+
+        def _get_dataset_data(ds=None,
+                              chunk_info=None,
+                              array_info=None) -> np.ndarray:
+            array_name = array_info["name"]
+            chunk_slices = chunk_info["slices"]
+            return ds[array_name][chunk_slices].values
+
+        arrays = []
+        for var_name, var in dataset.variables.items():
+            arrays.append(GenericArray(
+                name=str(var_name),
+                dtype=np.dtype(var.dtype).str,
+                dims=[str(dim) for dim in var.dims],
+                shape=var.shape,
+                chunks=[(max(*c) if len(c) > 1 else c[0])
+                        for c in var.chunks] if var.chunks else var.shape,
+                attrs={str(k): v for k, v in var.attrs.items()},
+                get_data=_get_dataset_data,
+                get_data_params=dict(ds=dataset),
+            ))
+
+        attrs = {str(k): v for k, v in dataset.attrs.items()}
+        return GenericZarrStore(*arrays,
+                                attrs=attrs,
+                                array_defaults=array_defaults)
+
+    ########################################################################
     # Helpers
     ##########################################################################
 
@@ -792,30 +843,3 @@ def ndarray_to_bytes(
     if compressor is not None:
         data = compressor.encode(data)
     return data
-
-
-class XarrayZarrStore(GenericZarrStore):
-    def __init__(self, dataset: xr.Dataset):
-        arrays = []
-        for var_name, var in dataset.variables.items():
-            arrays.append(GenericArray(
-                name=str(var_name),
-                dtype=np.dtype(var.dtype).str,
-                dims=[str(dim) for dim in var.dims],
-                shape=var.shape,
-                chunks=[(max(*c) if len(c) > 1 else c[0])
-                        for c in var.chunks] if var.chunks else var.shape,
-                attrs={str(k): v for k, v in var.attrs.items()},
-                get_data=self.get_data,
-                get_data_params=dict(dataset=dataset),
-                chunk_encoding="bytes"
-            ))
-        super().__init__(*arrays)
-
-    @staticmethod
-    def get_data(dataset=None,
-                 chunk_info=None,
-                 array_info=None) -> np.ndarray:
-        var_name = array_info["name"]
-        array_slices = chunk_info["slices"]
-        return dataset[var_name][array_slices].values

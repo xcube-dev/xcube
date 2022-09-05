@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
+import collections.abc
 import unittest
 from typing import Dict, Any
 
@@ -869,12 +869,27 @@ class CommonZarrStoreTest(unittest.TestCase):
                 "order": "C",
                 "compressor": None,
                 "filters": None,
-                "fill_value": None,
+                "fill_value": 7,
             }),
             "x/.zattrs": dict_to_bytes({
                 "_ARRAY_DIMENSIONS": ["x"],
             }),
+            "x/0": ndarray_to_bytes(np.linspace(1, 4, 4, dtype=self.dtype)),
+            "x/1": ndarray_to_bytes(np.linspace(5, 8, 4, dtype=self.dtype)),
         }
+
+    def test_works_with_bytes_chunks(self):
+        ds = xr.open_zarr(self.store, consolidated=False, decode_cf=False)
+        self.assertEqual(
+            [1, 2, 3, 4, 5, 6, 7, 8],
+            list(ds.x.values)
+        )
+
+        ds = xr.open_zarr(self.store, consolidated=False, decode_cf=True)
+        np.testing.assert_array_equal(
+            np.array([1., 2., 3., 4., 5., 6., float('nan'), 8.]),
+            ds.x.values
+        )
 
     def test_works_with_ndarray_chunks(self):
         # Here, x's chunks are numpy arrays rather than bytes!
@@ -883,21 +898,8 @@ class CommonZarrStoreTest(unittest.TestCase):
             "x/1": np.linspace(5, 8, 4, dtype=self.dtype),
         })
 
-        ds = xr.open_zarr(self.store, consolidated=False)
+        ds = xr.open_zarr(self.store, consolidated=False, decode_cf=False)
         self.assertEqual(
             [1, 2, 3, 4, 5, 6, 7, 8],
-            list(ds.x)
-        )
-
-    def test_works_with_bytes_chunks(self):
-        # Here, x's chunks are numpy arrays rather than bytes!
-        self.store.update({
-            "x/0": ndarray_to_bytes(np.linspace(1, 4, 4, dtype=self.dtype)),
-            "x/1": ndarray_to_bytes(np.linspace(5, 8, 4, dtype=self.dtype)),
-        })
-
-        ds = xr.open_zarr(self.store, consolidated=False)
-        self.assertEqual(
-            [1, 2, 3, 4, 5, 6, 7, 8],
-            list(ds.x)
+            list(ds.x.values)
         )

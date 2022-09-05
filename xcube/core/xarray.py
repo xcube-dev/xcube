@@ -1,3 +1,4 @@
+import collections.abc
 import threading
 from typing import Dict, List, Mapping, Any, Union, Sequence, Optional
 
@@ -22,6 +23,8 @@ from xcube.core.schema import CubeSchema, get_cube_schema
 from xcube.core.select import select_variables_subset
 from xcube.core.vars2dim import vars_to_dim
 from xcube.core.verify import verify_cube
+from xcube.core.zarrstore import GenericZarrStore
+from xcube.util.assertions import assert_instance
 
 
 @xr.register_dataset_accessor('xcube')
@@ -49,6 +52,7 @@ class DatasetAccessor:
         self._dataset: xr.Dataset = dataset
         self._cube_subset: Optional[xr.Dataset] = None
         self._grid_mapping: Optional[GridMapping] = None
+        self._zarr_store: Optional[collections.abc.MutableMapping] = None
         self._lock = threading.RLock()
 
     @property
@@ -71,6 +75,25 @@ class DatasetAccessor:
             with self._lock:
                 self._init_cube_subset()
         return self._grid_mapping
+
+    @property
+    def zarr_store(self) -> collections.abc.MutableMapping:
+        if self._zarr_store is None:
+            with self._lock:
+                self._zarr_store = GenericZarrStore.from_dataset(
+                    self._dataset
+                )
+        return self._zarr_store
+
+    @zarr_store.setter
+    def zarr_store(self,
+                   zarr_store: Optional[collections.abc.MutableMapping]) \
+            -> None:
+        if zarr_store is not None:
+            assert_instance(zarr_store,
+                            collections.abc.MutableMapping,
+                            name='zarr_store')
+        self._zarr_store = zarr_store
 
     def _init_cube_subset(self):
         try:
