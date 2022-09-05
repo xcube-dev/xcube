@@ -1,3 +1,4 @@
+import collections.abc
 import os.path
 import shutil
 import unittest
@@ -244,6 +245,10 @@ class FsDataStoresTestMixin(ABC):
                              dataset.var_b.encoding.get('_FillValue'))
             self.assertEqual(None,
                              dataset.var_c.encoding.get('_FillValue'))
+
+            self.assertTrue(hasattr(dataset, 'zarr_store'))
+            self.assertIsInstance(dataset.zarr_store(),
+                                  collections.abc.MutableMapping)
 
     def _assert_multi_level_dataset_format_with_tile_size(
             self,

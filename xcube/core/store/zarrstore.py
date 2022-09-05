@@ -1,16 +1,16 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
-#
+# Copyright (c) 2022 by the xcube development team and contributors
+# 
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
 # to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense,
 # and/or sell copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following conditions:
-#
+# 
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+# 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,10 +19,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import collections.abc
 import inspect
 import itertools
 import json
 import math
+import threading
 from typing import Iterator, Dict, Tuple, KeysView, Any, Callable, \
     Optional, List, Sequence
 from typing import Union
@@ -31,6 +33,8 @@ import numcodecs.abc
 import numpy as np
 import xarray as xr
 import zarr.storage
+
+from xcube.util.assertions import assert_instance
 
 GetData = Callable[[Tuple[int]],
                    Union[bytes, np.ndarray]]
@@ -206,7 +210,7 @@ class GenericArray(dict[str, any]):
 
         if isinstance(data, np.ndarray):
             # forman: maybe warn if dtype or shape is given,
-            #   but does not match data.dtype and data.shape
+            #  but does not match data.dtype and data.shape
             dtype = str(data.dtype.str)
             shape = data.shape
             chunks = data.shape
@@ -477,7 +481,7 @@ class GenericZarrStore(zarr.storage.Store):
     # actual computation of arrays.
     #
     # def getsize(self, key: str) -> int:
-    #     pass
+    #    pass
 
     ##########################################################################
     # MutableMapping implementation
@@ -843,3 +847,34 @@ def ndarray_to_bytes(
     if compressor is not None:
         data = compressor.encode(data)
     return data
+
+
+@xr.register_dataset_accessor('zarr_store')
+class DatasetZarrStoreProperty:
+    """Represents a new xarray dataset property ``zarr_store``."""
+
+    def __init__(self, dataset: xr.Dataset):
+        self._dataset = dataset
+        self._zarr_store: Optional[collections.abc.MutableMapping] = None
+        self._lock = threading.RLock()
+
+    def __call__(self) -> collections.abc.MutableMapping:
+        if self._zarr_store is None:
+            # Double-checked locking pattern
+            with self._lock:
+                if self._zarr_store is None:
+                    self._zarr_store = GenericZarrStore.from_dataset(
+                        self._dataset
+                    )
+        return self._zarr_store
+
+    def set(self, zarr_store: collections.abc.MutableMapping) -> None:
+        assert_instance(zarr_store,
+                        collections.abc.MutableMapping,
+                        name='zarr_store')
+        with self._lock:
+            self._zarr_store = zarr_store
+
+    def reset(self) -> None:
+        with self._lock:
+            self._zarr_store = None

@@ -51,6 +51,10 @@ from ...datatype import DATASET_TYPE
 from ...datatype import DataType
 from ...datatype import MULTI_LEVEL_DATASET_TYPE
 from ...error import DataStoreError
+# Note, we need the following reference to register the
+# xarray property accessor
+# noinspection PyUnresolvedReferences
+from ...zarrstore import DatasetZarrStoreProperty
 
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
@@ -201,14 +205,14 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 # Then write relative base dataset path into link file
                 link_path = data_path / f'{index}.link'
                 with fs.open(str(link_path), mode='w') as fp:
-                    fp.write(f'{base_dataset_path}')
+                    fp.write(base_dataset_path.as_posix())
             else:
                 # Write level "{index}.zarr"
                 level_path = data_path / f'{index}.zarr'
-                zarr_store = fs.get_mapper(str(level_path), create=True)
+                level_zarr_store = fs.get_mapper(str(level_path), create=True)
                 try:
                     level_dataset.to_zarr(
-                        zarr_store,
+                        level_zarr_store,
                         mode='w' if replace else None,
                         consolidated=consolidated,
                         **write_params
@@ -218,8 +222,9 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                     raise DataStoreError(f'Failed to write'
                                          f' dataset {data_id}: {e}') from e
                 if use_saved_levels:
-                    level_dataset = xr.open_zarr(zarr_store,
+                    level_dataset = xr.open_zarr(level_zarr_store,
                                                  consolidated=consolidated)
+                    level_dataset.zarr_store.set(level_zarr_store)
                     ml_dataset.set_dataset(index, level_dataset)
 
         return data_id
@@ -290,13 +295,15 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                                                       max_size=cache_size)
 
         try:
-            return xr.open_zarr(level_zarr_store,
-                                consolidated=consolidated,
-                                **open_params)
+            level_dataset = xr.open_zarr(level_zarr_store,
+                                         consolidated=consolidated,
+                                         **open_params)
         except ValueError as e:
             raise DataStoreError(f'Failed to open'
                                  f' dataset {level_path!r}:'
                                  f' {e}') from e
+        level_dataset.zarr_store.set(level_zarr_store)
+        return level_dataset
 
     @staticmethod
     def compute_size_weights(num_levels: int) -> np.ndarray:

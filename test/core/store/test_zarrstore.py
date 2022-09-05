@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import collections.abc
+
 import unittest
 from typing import Dict, Any
 
@@ -26,15 +26,16 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from xcube.core.zarrstore import GenericArray
-from xcube.core.zarrstore import GenericZarrStore
-from xcube.core.zarrstore import dict_to_bytes
-from xcube.core.zarrstore import get_array_slices
-from xcube.core.zarrstore import get_chunk_indexes
-from xcube.core.zarrstore import get_chunk_padding
-from xcube.core.zarrstore import get_chunk_shape
-from xcube.core.zarrstore import ndarray_to_bytes
-from xcube.core.zarrstore import str_to_bytes
+from xcube.core.store.zarrstore import DatasetZarrStoreProperty
+from xcube.core.store.zarrstore import GenericArray
+from xcube.core.store.zarrstore import GenericZarrStore
+from xcube.core.store.zarrstore import dict_to_bytes
+from xcube.core.store.zarrstore import get_array_slices
+from xcube.core.store.zarrstore import get_chunk_indexes
+from xcube.core.store.zarrstore import get_chunk_padding
+from xcube.core.store.zarrstore import get_chunk_shape
+from xcube.core.store.zarrstore import ndarray_to_bytes
+from xcube.core.store.zarrstore import str_to_bytes
 
 
 # noinspection PyMethodMayBeStatic
@@ -606,7 +607,7 @@ class GenericZarrStoreTest(unittest.TestCase):
     def test_store_override_setitem(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         with pytest.raises(TypeError,
-                           match="xcube.core.zarrstore.GenericZarrStore"
+                           match="xcube.core.store.zarrstore.GenericZarrStore"
                                  " is read-only"):
             store["tsm/0.0.0"] = np.zeros((1, 2, 4)).tobytes()
 
@@ -762,6 +763,22 @@ class GenericZarrStoreTest(unittest.TestCase):
             )
         )
 
+    def test_from_dataset(self):
+        store1 = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        dataset1: xr.Dataset = xr.open_zarr(store1)
+
+        store2 = GenericZarrStore.from_dataset(dataset1)
+        self.assertIsInstance(store2, GenericZarrStore)
+        self.assertIsNot(store2, store1)
+
+        dataset2: xr.Dataset = xr.open_zarr(store2)
+
+        xr.testing.assert_equal(dataset2, dataset1)
+
+        dataset1.load()
+        dataset2.load()
+        xr.testing.assert_equal(dataset2, dataset1)
+
 
 class GenericZarrStoreHelpersTest(unittest.TestCase):
     def test_get_chunk_indexes(self):
@@ -903,3 +920,42 @@ class CommonZarrStoreTest(unittest.TestCase):
             [1, 2, 3, 4, 5, 6, 7, 8],
             list(ds.x.values)
         )
+
+
+class DatasetZarrStoreAccessorTest(unittest.TestCase):
+    def test_zarr_store_accessor_present(self):
+        dataset = xr.Dataset()
+        self.assertIsNotNone(dataset.zarr_store)
+        self.assertIsInstance(dataset.zarr_store, DatasetZarrStoreProperty)
+
+    def test_zarr_store_accessor_default(self):
+        dataset = xr.Dataset()
+        self.assertIsInstance(dataset.zarr_store(), GenericZarrStore)
+        self.assertIs(dataset.zarr_store(),
+                      dataset.zarr_store())
+
+    def test_zarr_store_accessor_set(self):
+        dataset = xr.Dataset()
+        zarr_store = dict()
+        dataset.zarr_store.set(zarr_store)
+        self.assertIs(zarr_store, dataset.zarr_store())
+        self.assertIs(dataset.zarr_store(),
+                      dataset.zarr_store())
+
+    def test_zarr_store_accessor_reset(self):
+        dataset = xr.Dataset()
+        zarr_store = dict()
+        dataset.zarr_store.set(zarr_store)
+        dataset.zarr_store.reset()
+        self.assertIsInstance(dataset.zarr_store(), GenericZarrStore)
+        self.assertIs(dataset.zarr_store(),
+                      dataset.zarr_store())
+
+    # noinspection PyMethodMayBeStatic
+    def test_zarr_store_type_check(self):
+        dataset = xr.Dataset()
+        with pytest.raises(TypeError,
+                           match="zarr_store must be an instance of"
+                                 " <class 'collections.abc.MutableMapping'>,"
+                                 " was <class 'int'>"):
+            dataset.zarr_store.set(42)
