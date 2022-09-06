@@ -25,7 +25,7 @@ import itertools
 import json
 import math
 import threading
-from typing import Iterator, Dict, Tuple, KeysView, Any, Callable, \
+from typing import Iterator, Dict, Tuple, Any, Callable, \
     Optional, List, Sequence
 from typing import Union
 
@@ -34,7 +34,7 @@ import numpy as np
 import xarray as xr
 import zarr.storage
 
-from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_instance, assert_true
 
 GetData = Callable[[Tuple[int]],
                    Union[bytes, np.ndarray]]
@@ -406,29 +406,20 @@ class GenericZarrStore(zarr.storage.Store):
         """Return False, because arrays in this store are generative."""
         return False
 
-    def keys(self) -> KeysView[str]:
-        """Get an iterator of all keys in this store."""
-        yield ".zmetadata"
-        yield ".zgroup"
-        yield ".zattrs"
-        for array_name in self._arrays.keys():
-            yield array_name
-            yield from self._get_array_keys(array_name)
-
     def listdir(self, path: str = "") -> List[str]:
         """List a store path.
         :param path: The path.
-        :return: List of directory entries.
+        :return: List of sorted directory entries.
         """
         if path == "":
-            return [
+            return sorted([
                 ".zmetadata",
                 ".zgroup",
                 ".zattrs",
                 *self._arrays.keys()
-            ]
+            ])
         elif "/" not in path:
-            return list(self._get_array_keys(path))
+            return sorted(self._get_array_keys(path))
         raise ValueError(f"{path} is not a directory")
 
     def rmdir(self, path: str = "") -> None:
@@ -488,15 +479,18 @@ class GenericZarrStore(zarr.storage.Store):
     ##########################################################################
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self.keys())
+        """Get an iterator of all keys in this store."""
+        yield ".zmetadata"
+        yield ".zgroup"
+        yield ".zattrs"
+        for array_name in self._arrays.keys():
+            yield from self._get_array_keys(array_name)
 
     def __len__(self) -> int:
-        return sum(1 for _ in self.keys())
+        return sum(1 for _ in iter(self))
 
     def __contains__(self, key: str) -> bool:
         if key in (".zmetadata", ".zgroup", ".zattrs"):
-            return True
-        if key in self._arrays:
             return True
         try:
             array_name, value_id = self._parse_array_key(key)
@@ -587,8 +581,6 @@ class GenericZarrStore(zarr.storage.Store):
             return self._get_group_item()
         if key == ".zattrs":
             return self._get_attrs_item()
-        if key in self._arrays:
-            return ""
 
         array_name, value_id = self._parse_array_key(key)
         array = self._arrays[array_name]
@@ -811,7 +803,10 @@ def get_chunk_padding(shape: Tuple[int, ...],
 
 def get_chunk_indexes(num_chunks: Tuple[int, ...]) \
         -> Iterator[Tuple[int, ...]]:
-    return itertools.product(*tuple(map(range, map(int, num_chunks))))
+    if not num_chunks:
+        yield 0,
+    else:
+        yield from itertools.product(*tuple(map(range, map(int, num_chunks))))
 
 
 def get_chunk_keys(array_name: str,
@@ -878,3 +873,67 @@ class DatasetZarrStoreProperty:
     def reset(self) -> None:
         with self._lock:
             self._zarr_store = None
+
+
+class CachingZarrStore(zarr.storage.Store):
+    def __init__(self,
+                 slow_store: collections.abc.MutableMapping,
+                 fast_store: collections.abc.MutableMapping):
+        if hasattr(slow_store, "listdir"):
+            assert_true(hasattr(fast_store, "listdir"),
+                        message='fast_store is lacking listdir() operation')
+            self.listdir = self._listdir
+
+        if hasattr(slow_store, "rmdir"):
+            assert_true(hasattr(fast_store, "rmdir"),
+                        message='fast_store is lacking rmdir() operation')
+            self.rmdir = self._rmdir
+
+        if hasattr(slow_store, "rename"):
+            assert_true(hasattr(fast_store, "rename"),
+                        message='fast_store is lacking rename() operation')
+            self.rename = self._rename
+
+        self._slow_store = slow_store
+        self._fast_store = fast_store
+
+    def _listdir(self, path: str = "") -> List[str]:
+        # noinspection PyUnresolvedReferences
+        return self._slow_store.listdir(path=path)
+
+    def _rmdir(self, path: str = "") -> None:
+        # noinspection PyUnresolvedReferences
+        self._slow_store.rmdir(path=path)
+        # noinspection PyUnresolvedReferences
+        self._fast_store.rmdir(pth=path)
+
+    def _rename(self, src_path: str, dst_path: str) -> None:
+        # noinspection PyUnresolvedReferences
+        self._slow_store.rename(src_path, dst_path)
+        # noinspection PyUnresolvedReferences
+        self._fast_store.rename(src_path, dst_path)
+
+    def __len__(self) -> int:
+        return len(self._slow_store)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._slow_store)
+
+    def __getitem__(self, key: str) -> bytes:
+        if key in self._fast_store:
+            return self._fast_store[key]
+        value = self._slow_store[key]
+        # noinspection PyBroadException
+        try:
+            self._fast_store[key] = value
+        except BaseException:
+            pass
+        return value
+
+    def __setitem__(self, key: str, value: bytes) -> None:
+        self._slow_store[key] = value
+        self._fast_store[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self._slow_store[key]
+        del self._fast_store[key]

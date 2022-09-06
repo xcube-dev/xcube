@@ -18,9 +18,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
+import collections.abc
 import unittest
-from typing import Dict, Any
+from typing import Dict, Any, Iterator, List
 
 import numpy as np
 import pytest
@@ -35,7 +35,6 @@ from xcube.core.store.zarrstore import get_chunk_indexes
 from xcube.core.store.zarrstore import get_chunk_padding
 from xcube.core.store.zarrstore import get_chunk_shape
 from xcube.core.store.zarrstore import ndarray_to_bytes
-from xcube.core.store.zarrstore import str_to_bytes
 
 
 # noinspection PyMethodMayBeStatic
@@ -396,6 +395,9 @@ class GenericZarrStoreTest(unittest.TestCase):
                         dtype=np.dtype(np.float32).str,
                         get_data=get_data)
 
+        store.add_array(name="spatial_ref", dims=(),
+                        data=np.array(0))
+
         return store
 
     def setUp(self) -> None:
@@ -450,13 +452,13 @@ class GenericZarrStoreTest(unittest.TestCase):
             '.zmetadata',
             '.zgroup',
             '.zattrs',
-            'x', 'x/.zarray', 'x/.zattrs',
+            'x/.zarray', 'x/.zattrs',
             'x/0',
-            'y', 'y/.zarray', 'y/.zattrs',
+            'y/.zarray', 'y/.zattrs',
             'y/0',
-            'time', 'time/.zarray', 'time/.zattrs',
+            'time/.zarray', 'time/.zattrs',
             'time/0',
-            'chl', 'chl/.zarray', 'chl/.zattrs',
+            'chl/.zarray', 'chl/.zattrs',
             'chl/0.0.0', 'chl/0.0.1',
             'chl/0.1.0', 'chl/0.1.1',
             'chl/0.2.0', 'chl/0.2.1',
@@ -466,11 +468,14 @@ class GenericZarrStoreTest(unittest.TestCase):
             'chl/2.0.0', 'chl/2.0.1',
             'chl/2.1.0', 'chl/2.1.1',
             'chl/2.2.0', 'chl/2.2.1',
+            'spatial_ref/0',
+            'spatial_ref/.zarray',
+            'spatial_ref/.zattrs',
         }, set(store.keys()))
 
     def test_store_override_listdir(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
-        self.assertEqual([
+        self.assertEqual({
             '.zmetadata',
             '.zgroup',
             '.zattrs',
@@ -478,7 +483,8 @@ class GenericZarrStoreTest(unittest.TestCase):
             'y',
             'time',
             'chl',
-        ], store.listdir(''))
+            'spatial_ref',
+        }, set(store.listdir('')))
 
         self.assertEqual([
             'time/.zarray',
@@ -502,14 +508,18 @@ class GenericZarrStoreTest(unittest.TestCase):
     def test_store_override_rmdir(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         store.rmdir("chl")
-        self.assertEqual([
-            '.zmetadata',
-            '.zgroup',
-            '.zattrs',
-            'x',
-            'y',
-            'time',
-        ], store.listdir(""))
+        self.assertEqual(
+            [
+                '.zattrs',
+                '.zgroup',
+                '.zmetadata',
+                'spatial_ref',
+                'time',
+                'x',
+                'y'
+            ],
+            store.listdir("")
+        )
 
         # Also remove dimension sizes from object
         store.rmdir("x")
@@ -523,15 +533,19 @@ class GenericZarrStoreTest(unittest.TestCase):
     def test_store_override_rename(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         store.rename("chl", "chl_old")
-        self.assertEqual([
-            '.zmetadata',
-            '.zgroup',
-            '.zattrs',
-            'x',
-            'y',
-            'time',
-            'chl_old',
-        ], store.listdir(""))
+        self.assertEqual(
+            [
+                '.zattrs',
+                '.zgroup',
+                '.zmetadata',
+                'chl_old',
+                'spatial_ref',
+                'time',
+                'x',
+                'y'
+            ],
+            store.listdir("")
+        )
 
         with pytest.raises(ValueError,
                            match="can only rename arrays,"
@@ -575,9 +589,7 @@ class GenericZarrStoreTest(unittest.TestCase):
 
     def test_store_override_len(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
-        self.assertEqual(3  # 3 top-level items
-                         + 3 * 4  # 3 x coordinate array items
-                         + 3 + 3 * 3 * 2,  # 1 x "chl" data array items
+        self.assertEqual(len(list(store.keys())),
                          len(store))
 
     def test_store_override_contains(self):
@@ -585,7 +597,7 @@ class GenericZarrStoreTest(unittest.TestCase):
         self.assertTrue(".zmetadata" in store)
         self.assertTrue(".zattrs" in store)
         self.assertTrue(".zgroup" in store)
-        self.assertTrue("x" in store)
+        self.assertFalse("x" in store)
         self.assertTrue("x/.zarray" in store)
         self.assertTrue("x/.zattrs" in store)
         self.assertTrue("x/0" in store)
@@ -596,13 +608,12 @@ class GenericZarrStoreTest(unittest.TestCase):
     def test_store_override_getitem(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         self.assertIsInstance(store[".zattrs"], bytes)
-        self.assertIsInstance(store["x"], bytes)
         self.assertIsInstance(store["x/.zarray"], bytes)
         self.assertIsInstance(store["x/0"], bytes)
 
-        with pytest.raises(KeyError, match="a"):
+        with pytest.raises(KeyError, match="x"):
             # noinspection PyUnusedLocal
-            a = store["a"]
+            a = store["x"]
 
     def test_store_override_setitem(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
@@ -625,7 +636,7 @@ class GenericZarrStoreTest(unittest.TestCase):
         ds = xr.open_zarr(store)
 
         self.assertEqual({'x', 'y', 'time'}, set(ds.coords))
-        self.assertEqual({'chl'}, set(ds.data_vars))
+        self.assertEqual({'spatial_ref', 'chl'}, set(ds.data_vars))
 
         self.assertEqual(np.float32, ds.chl.dtype)
         self.assertEqual(shape, ds.chl.shape)
@@ -699,7 +710,7 @@ class GenericZarrStoreTest(unittest.TestCase):
         ds = xr.open_zarr(store)
 
         self.assertEqual({'x', 'y', 'time'}, set(ds.coords))
-        self.assertEqual({'chl'}, set(ds.data_vars))
+        self.assertEqual({'spatial_ref', 'chl'}, set(ds.data_vars))
 
         self.assertEqual(np.float32, ds.chl.dtype)
         self.assertEqual(shape, ds.chl.shape)
@@ -782,7 +793,7 @@ class GenericZarrStoreTest(unittest.TestCase):
 
 class GenericZarrStoreHelpersTest(unittest.TestCase):
     def test_get_chunk_indexes(self):
-        self.assertEqual([()],
+        self.assertEqual([(0,)],
                          list(get_chunk_indexes(())))
         self.assertEqual([(0,), (1,), (2,), (3,)],
                          list(get_chunk_indexes((4,))))
@@ -863,6 +874,74 @@ class GenericZarrStoreHelpersTest(unittest.TestCase):
                                            (0, 1, 1)))
 
 
+import zarr.storage
+import s3fs
+
+
+class PrintingStore(zarr.storage.Store):
+
+    def __init__(self, store: collections.abc.MutableMapping):
+        self._store = store
+        if hasattr(self._store, "listdir"):
+            self.listdir = self._listdir
+        if hasattr(self._store, "getsize"):
+            self.getsize = self._getsize
+
+    def _listdir(self, path: str = "") -> List[str]:
+        print(f"listdir({path!r})", flush=True)
+        return self._store.listdir(path=path)
+
+    def _getsize(self, key: str) -> int:
+        print(f"getsize({key!r})", flush=True)
+        return self._store.getsize(key)
+
+    def keys(self):
+        print("keys()", flush=True)
+        return self._store.keys()
+
+    def __setitem__(self, key: str, value: bytes) -> None:
+        print(f"__setitem__({key!r}, {type(value).__name__})", flush=True)
+        self._store.__setitem__(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        print(f"__delitem__({key!r})", flush=True)
+        self._store.__delitem__(key)
+
+    def __getitem__(self, key: str) -> bytes:
+        print(f"__getitem__({key!r})", flush=True)
+        return self._store.__getitem__(key)
+
+    def __len__(self) -> int:
+        print("__len__()", flush=True)
+        return self._store.__len__()
+
+    def __iter__(self) -> Iterator[str]:
+        print("__iter__()", flush=True)
+        return self._store.__iter__()
+
+
+class S3ZarrStoreTest(unittest.TestCase):
+    def test_it(self):
+        s3 = s3fs.S3FileSystem()
+        zarr_store = s3.get_mapper("xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr/")
+        zarr_store = PrintingStore(zarr_store)
+
+        print(zarr_store.listdir(""))
+
+        print(80 * "=")
+        dataset = xr.open_zarr(zarr_store)
+        self.assertIsInstance(dataset, xr.Dataset)
+
+        print(dataset.attrs)
+        print(dict(dataset.dims))
+        print(list(dataset.coords))
+        print(list(dataset.data_vars))
+
+        print(80 * "=")
+        print(dataset.conc_chl)
+        # print(80 * "=")
+
+
 class CommonZarrStoreTest(unittest.TestCase):
     """This test is used to assert that Zarr stores
     behave as expected with xarray, because GenericArrayStore
@@ -877,7 +956,6 @@ class CommonZarrStoreTest(unittest.TestCase):
             }),
             ".zattrs": dict_to_bytes({
             }),
-            "x": str_to_bytes(""),
             "x/.zarray": dict_to_bytes({
                 "zarr_format": 2,
                 "dtype": self.dtype.str,
