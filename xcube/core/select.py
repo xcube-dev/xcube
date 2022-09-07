@@ -26,6 +26,7 @@ from typing import Union
 
 import cftime
 import dask.array as da
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -267,6 +268,22 @@ def select_label_subset(dataset: xr.Dataset,
 
     Note, the value of "label" will be None, if *dataset*
     does not contain a 1D-coordinate variable named *dim*.
+
+    The following example selects only time labels
+    from a 3-D (time, y, x) cube where the 2-D (y, x) images
+    of variable "CHL" comprises more than 50% valid values:
+
+    ```
+    >>> chl_data = np.random.random((5, 10, 20))
+    >>> chl_data = np.where(chl_data > 0.5, chl_data, np.nan)
+    >>> ds = xr.Dataset({"CHL": (["time", "y", "x"], chl_data)})
+    >>>
+    >>> def is_valid_slice(slice_array, slice_label):
+    >>>     return np.sum(np.isnan(slice_array)) / slice_array.size <= 0.5
+    >>>
+    >>> ds_subset = select_label_subset(ds, "time",
+    >>>                                 predicate={"CHL": is_valid_slice})
+    ```
 
     :param dataset: The dataset.
     :param dim: The name of the dimension
