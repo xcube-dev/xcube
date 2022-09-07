@@ -470,31 +470,6 @@ class DatasetsContext(ResourcesContext):
             raise ApiError.NotFound(f'Dataset "{ds_id}" not found')
         return dataset_config
 
-    def get_s3_bucket_mapping(self):
-        s3_bucket_mapping = {}
-        for dataset_config in self.get_dataset_configs():
-            ds_id = dataset_config.get('Identifier')
-            protocol = FS_TYPE_TO_PROTOCOL.get(
-                dataset_config.get('FileSystem', 'file')
-            )
-            if protocol == 'file':
-                store_instance_id = dataset_config.get('StoreInstanceId')
-                if store_instance_id:
-                    data_store_pool = self.get_data_store_pool()
-                    store_root = data_store_pool.get_store_config(
-                        store_instance_id). \
-                        store_params.get('root')
-                    data_id = dataset_config.get('Path')
-                    local_path = os.path.join(store_root, data_id)
-                else:
-                    local_path = self.get_config_path(dataset_config,
-                                                      f'dataset configuration'
-                                                      f' {ds_id!r}')
-                local_path = os.path.normpath(local_path)
-                if os.path.isdir(local_path):
-                    s3_bucket_mapping[ds_id] = local_path
-        return s3_bucket_mapping
-
     def get_rgb_color_mapping(
             self,
             ds_id: str,

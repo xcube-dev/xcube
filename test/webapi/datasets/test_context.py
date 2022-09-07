@@ -162,16 +162,6 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
 
-    def test_get_s3_bucket_mapping(self):
-        ctx = get_datasets_ctx()
-        bucket_mapping = ctx.get_s3_bucket_mapping()
-        self.assertEqual(['demo'],
-                         list(bucket_mapping.keys()))
-        path = bucket_mapping['demo']
-        self.assertTrue(os.path.isabs(path))
-        self.assertTrue(path.replace('\\', '/').endswith(
-            'examples/serve/demo/cube-1-250-250.zarr'))
-
     def test_get_color_mapping(self):
         ctx = get_datasets_ctx()
         cm = ctx.get_color_mapping('demo', 'conc_chl')
