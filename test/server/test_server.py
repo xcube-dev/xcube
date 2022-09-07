@@ -133,32 +133,32 @@ class ServerTest(unittest.TestCase):
             },
             extension_registry=extension_registry
         )
-        self.assertIsInstance(server.config_schema, JsonObjectSchema)
         self.assertEqual(
             {
                 'type': 'object',
+                'additionalProperties': True,
+                'required': ['data_stores'],
                 'properties': {
                     'address': {
                         'type': 'string',
-                        'default': '0.0.0.0'
+                        'default': '0.0.0.0',
+                        'title': 'Server address.',
                     },
-                    'port': {
-                        'type': 'integer',
-                        'default': 8080
-                    },
-                    'base_dir': {'type': 'string'},
-                    'trace_perf': {'type': 'boolean'},
                     'api_spec': {
                         'type': 'object',
+                        'title': 'API specification',
+                        'additionalProperties': False,
+                        'description': 'selected = (includes | ALL) - '
+                                       '(excludes | NONE)',
                         'properties': {
-                            'includes': {
+                            'excludes': {
                                 'type': 'array',
                                 'items': {
                                     'type': 'string',
                                     'minLength': 1,
                                 },
                             },
-                            'excludes': {
+                            'includes': {
                                 'type': 'array',
                                 'items': {
                                     'type': 'string',
@@ -166,21 +166,44 @@ class ServerTest(unittest.TestCase):
                                 },
                             }
                         },
-                        'additionalProperties': False
+                    },
+                    'base_dir': {
+                        'type': 'string',
+                        'title': 'Base directory used to resolve relative '
+                                 'local paths.',
                     },
                     'data_stores': {
                         'type': 'array',
-                        'items': {
-                            'type': 'object',
-                            'additionalProperties': True,
-                        }
+                        'items': {'additionalProperties': True,
+                                  'type': 'object'},
                     },
+                    'port': {
+                        'type': 'integer',
+                        'title': 'Server port.',
+                        'default': 8080,
+                    },
+                    'static_routes': {
+                        'type': 'array',
+                        'title': 'Static content routes',
+                        'items': {
+                            'type': 'array',
+                            'items': [{'minLength': 1,
+                                       'title': 'URL path',
+                                       'type': 'string'},
+                                      {'minLength': 1,
+                                       'title': 'Local path',
+                                       'type': 'string'}],
+                        },
+                    },
+                    'trace_perf': {
+                        'type': 'boolean',
+                        'title': 'Output performance measures',
+                    }
                 },
-                'required': ['data_stores'],
-                'additionalProperties': True,
             },
             server.config_schema.to_dict()
         )
+        self.assertIsInstance(server.config_schema, JsonObjectSchema)
 
     def test_config_schema_must_be_object(self):
         extension_registry = mock_extension_registry([
