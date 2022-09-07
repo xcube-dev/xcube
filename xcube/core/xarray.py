@@ -1,3 +1,4 @@
+import collections.abc
 import threading
 from typing import Dict, List, Mapping, Any, Union, Sequence, Optional
 
@@ -49,6 +50,7 @@ class DatasetAccessor:
         self._dataset: xr.Dataset = dataset
         self._cube_subset: Optional[xr.Dataset] = None
         self._grid_mapping: Optional[GridMapping] = None
+        self._zarr_store: Optional[collections.abc.MutableMapping] = None
         self._lock = threading.RLock()
 
     @property

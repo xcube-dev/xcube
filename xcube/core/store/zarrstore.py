@@ -1,16 +1,16 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
-#
+# Copyright (c) 2022 by the xcube development team and contributors
+# 
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
 # to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense,
 # and/or sell copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following conditions:
-#
+# 
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#
+# 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,11 +19,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import collections.abc
 import inspect
 import itertools
 import json
 import math
-from typing import Iterator, Dict, Tuple, KeysView, Any, Callable, \
+import threading
+import warnings
+from typing import Iterator, Dict, Tuple, Any, Callable, \
     Optional, List, Sequence
 from typing import Union
 
@@ -31,6 +34,8 @@ import numcodecs.abc
 import numpy as np
 import xarray as xr
 import zarr.storage
+
+from xcube.util.assertions import assert_instance, assert_true
 
 GetData = Callable[[Tuple[int]],
                    Union[bytes, np.ndarray]]
@@ -206,7 +211,7 @@ class GenericArray(dict[str, any]):
 
         if isinstance(data, np.ndarray):
             # forman: maybe warn if dtype or shape is given,
-            #   but does not match data.dtype and data.shape
+            #  but does not match data.dtype and data.shape
             dtype = str(data.dtype.str)
             shape = data.shape
             chunks = data.shape
@@ -358,20 +363,20 @@ class GenericZarrStore(zarr.storage.Store):
 
     def add_array(self,
                   array: Optional[GenericArrayLike] = None,
-                  **array_info_kwargs) -> None:
+                  **array_kwargs) -> None:
         """
         Add a new array to this store.
 
         :param array: Optional array properties.
             Typically, this will be an instance of ``GenericArray``.
-        :param array_info_kwargs: Keyword arguments form
-            of the properties of ``GenericArray``.
+        :param array_kwargs: Keyword arguments form
+            for the properties of ``GenericArray``.
         """
         effective_array = GenericArray(self._array_defaults or {})
         if array:
-            effective_array.update(**array)
-        if array_info_kwargs:
-            effective_array.update(**array_info_kwargs)
+            effective_array.update(array)
+        if array_kwargs:
+            effective_array.update(array_kwargs)
         effective_array = effective_array.finalize()
 
         name = effective_array["name"]
@@ -402,29 +407,20 @@ class GenericZarrStore(zarr.storage.Store):
         """Return False, because arrays in this store are generative."""
         return False
 
-    def keys(self) -> KeysView[str]:
-        """Get an iterator of all keys in this store."""
-        yield ".zmetadata"
-        yield ".zgroup"
-        yield ".zattrs"
-        for array_name in self._arrays.keys():
-            yield array_name
-            yield from self._get_array_keys(array_name)
-
     def listdir(self, path: str = "") -> List[str]:
         """List a store path.
         :param path: The path.
-        :return: List of directory entries.
+        :return: List of sorted directory entries.
         """
         if path == "":
-            return [
+            return sorted([
                 ".zmetadata",
                 ".zgroup",
                 ".zattrs",
                 *self._arrays.keys()
-            ]
+            ])
         elif "/" not in path:
-            return list(self._get_array_keys(path))
+            return sorted(self._get_array_keys(path))
         raise ValueError(f"{path} is not a directory")
 
     def rmdir(self, path: str = "") -> None:
@@ -477,22 +473,25 @@ class GenericZarrStore(zarr.storage.Store):
     # actual computation of arrays.
     #
     # def getsize(self, key: str) -> int:
-    #     pass
+    #    pass
 
     ##########################################################################
     # MutableMapping implementation
     ##########################################################################
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self.keys())
+        """Get an iterator of all keys in this store."""
+        yield ".zmetadata"
+        yield ".zgroup"
+        yield ".zattrs"
+        for array_name in self._arrays.keys():
+            yield from self._get_array_keys(array_name)
 
     def __len__(self) -> int:
-        return sum(1 for _ in self.keys())
+        return sum(1 for _ in iter(self))
 
     def __contains__(self, key: str) -> bool:
         if key in (".zmetadata", ".zgroup", ".zattrs"):
-            return True
-        if key in self._arrays:
             return True
         try:
             array_name, value_id = self._parse_array_key(key)
@@ -521,7 +520,58 @@ class GenericZarrStore(zarr.storage.Store):
     def __delitem__(self, key: str) -> None:
         self.rmdir(key)
 
+    ########################################################################
+    # Utilities
     ##########################################################################
+
+    @classmethod
+    def from_dataset(cls,
+                     dataset: xr.Dataset,
+                     array_defaults: Optional[GenericArrayLike] = None) \
+            -> "GenericZarrStore":
+        """Create a Zarr store for given *dataset*.
+        to the *dataset*'s attributes.
+        The following *array_defaults* properties can be provided
+        (other properties are prescribed by the *dataset*):
+
+        * ``fill_value``- defaults to None
+        * ``compressor``- defaults to None
+        * ``filters``- defaults to None
+        * ``order``- defaults to "C"
+        * ``chunk_encoding`` - defaults to "bytes"
+
+        :param dataset: The dataset
+        :param array_defaults: Array default values.
+        :return: A new Zarr store instance.
+        """
+
+        def _get_dataset_data(ds=None,
+                              chunk_info=None,
+                              array_info=None) -> np.ndarray:
+            array_name = array_info["name"]
+            chunk_slices = chunk_info["slices"]
+            return ds[array_name][chunk_slices].values
+
+        arrays = []
+        for var_name, var in dataset.variables.items():
+            arrays.append(GenericArray(
+                name=str(var_name),
+                dtype=np.dtype(var.dtype).str,
+                dims=[str(dim) for dim in var.dims],
+                shape=var.shape,
+                chunks=[(max(*c) if len(c) > 1 else c[0])
+                        for c in var.chunks] if var.chunks else var.shape,
+                attrs={str(k): v for k, v in var.attrs.items()},
+                get_data=_get_dataset_data,
+                get_data_params=dict(ds=dataset),
+            ))
+
+        attrs = {str(k): v for k, v in dataset.attrs.items()}
+        return GenericZarrStore(*arrays,
+                                attrs=attrs,
+                                array_defaults=array_defaults)
+
+    ########################################################################
     # Helpers
     ##########################################################################
 
@@ -532,8 +582,6 @@ class GenericZarrStore(zarr.storage.Store):
             return self._get_group_item()
         if key == ".zattrs":
             return self._get_attrs_item()
-        if key in self._arrays:
-            return ""
 
         array_name, value_id = self._parse_array_key(key)
         array = self._arrays[array_name]
@@ -756,7 +804,10 @@ def get_chunk_padding(shape: Tuple[int, ...],
 
 def get_chunk_indexes(num_chunks: Tuple[int, ...]) \
         -> Iterator[Tuple[int, ...]]:
-    return itertools.product(*tuple(map(range, map(int, num_chunks))))
+    if not num_chunks:
+        yield 0,
+    else:
+        yield from itertools.product(*tuple(map(range, map(int, num_chunks))))
 
 
 def get_chunk_keys(array_name: str,
@@ -794,28 +845,128 @@ def ndarray_to_bytes(
     return data
 
 
-class XarrayZarrStore(GenericZarrStore):
-    def __init__(self, dataset: xr.Dataset):
-        arrays = []
-        for var_name, var in dataset.variables.items():
-            arrays.append(GenericArray(
-                name=str(var_name),
-                dtype=np.dtype(var.dtype).str,
-                dims=[str(dim) for dim in var.dims],
-                shape=var.shape,
-                chunks=[(max(*c) if len(c) > 1 else c[0])
-                        for c in var.chunks] if var.chunks else var.shape,
-                attrs={str(k): v for k, v in var.attrs.items()},
-                get_data=self.get_data,
-                get_data_params=dict(dataset=dataset),
-                chunk_encoding="bytes"
-            ))
-        super().__init__(*arrays)
+@xr.register_dataset_accessor('zarr_store')
+class DatasetZarrStoreProperty:
+    """Represents a new xarray dataset property ``zarr_store``."""
 
-    @staticmethod
-    def get_data(dataset=None,
-                 chunk_info=None,
-                 array_info=None) -> np.ndarray:
-        var_name = array_info["name"]
-        array_slices = chunk_info["slices"]
-        return dataset[var_name][array_slices].values
+    def __init__(self, dataset: xr.Dataset):
+        self._dataset = dataset
+        self._zarr_store: Optional[collections.abc.MutableMapping] = None
+        self._lock = threading.RLock()
+
+    def __call__(self) -> collections.abc.MutableMapping:
+        if self._zarr_store is None:
+            # Double-checked locking pattern
+            with self._lock:
+                if self._zarr_store is None:
+                    self._zarr_store = GenericZarrStore.from_dataset(
+                        self._dataset
+                    )
+        return self._zarr_store
+
+    def set(self, zarr_store: collections.abc.MutableMapping) -> None:
+        assert_instance(zarr_store,
+                        collections.abc.MutableMapping,
+                        name='zarr_store')
+        with self._lock:
+            self._zarr_store = zarr_store
+
+    def reset(self) -> None:
+        with self._lock:
+            self._zarr_store = None
+
+
+class CachedZarrStore(zarr.storage.Store):
+    """A read-only Zarr store that is faster than
+    *store* because it uses a writable *cache* store.
+
+    The *cache* store is assumed to
+    read values for a given key much faster than *store*.
+
+    Note that iterating keys and containment checks are performed
+    on *store* only.
+
+    :param store: A Zarr store that is known
+        to be slow in reading values.
+    :param cache: A writable Zarr store that can
+        read values faster than *store*.
+    """
+
+    _readable = True  # Because the base class is readable
+    _listable = True  # Because the base class is listable
+    _writeable = False  # Because this is not yet supported
+    _erasable = False  # Because this is not yet supported
+
+    def __init__(self,
+                 store: collections.abc.MutableMapping,
+                 cache: collections.abc.MutableMapping):
+        assert_instance(store, collections.abc.MutableMapping, name="store")
+        assert_instance(cache, collections.abc.MutableMapping, name="cache")
+        if not isinstance(store, zarr.storage.BaseStore):
+            store = zarr.storage.KVStore(store)
+        if not isinstance(cache, zarr.storage.BaseStore):
+            cache = zarr.storage.KVStore(cache)
+        assert_true(store.is_readable(), message='store must be readable')
+        assert_true(cache.is_readable(), message='cache must be readable')
+        assert_true(cache.is_writeable(), message='cache must be writable')
+        self._store = store
+        self._cache = cache
+        self._implement_op('listdir')
+        self._implement_op('getsize')
+
+    @property
+    def store(self) -> zarr.storage.BaseStore:
+        return self._store
+
+    @property
+    def cache(self) -> zarr.storage.BaseStore:
+        return self._cache
+
+    def _implement_op(self, op: str):
+        if hasattr(self._store, op):
+            assert hasattr(self, "_" + op)
+            setattr(self, op, getattr(self, "_" + op))
+
+    def _listdir(self, path: str = "") -> List[str]:
+        # noinspection PyUnresolvedReferences
+        return self._store.listdir(path=path)
+
+    def _getsize(self, path: str) -> None:
+        # noinspection PyBroadException
+        try:
+            # noinspection PyUnresolvedReferences
+            size = self._cache.getsize(path)
+        except BaseException:
+            size = -1
+        if size < 0:
+            # noinspection PyUnresolvedReferences
+            size = self._store.getsize(path)
+        return size
+
+    def __len__(self) -> int:
+        return len(self._store)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._store)
+
+    def __contains__(self, key: str):
+        return key in self._store
+
+    def __getitem__(self, key: str) -> bytes:
+        try:
+            return self._cache[key]
+        except KeyError:
+            pass
+        value = self._store[key]
+        # noinspection PyBroadException
+        try:
+            self._cache[key] = value
+        except BaseException as e:
+            warnings.warn(f"cache write failed for key {key!r}: {e}")
+        return value
+
+    def __setitem__(self, key: str, value: bytes) -> None:
+        raise NotImplementedError()
+
+    def __delitem__(self, key: str) -> None:
+        raise NotImplementedError()

@@ -44,6 +44,10 @@ from ..helpers import is_local_fs
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
 from ...error import DataStoreError
+# Note, we need the following reference to register the
+# xarray property accessor
+# noinspection PyUnresolvedReferences
+from ...zarrstore import DatasetZarrStoreProperty
 
 ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -184,12 +188,13 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         consolidated = open_params.pop('consolidated',
                                        fs.exists(f'{data_id}/.zmetadata'))
         try:
-            return xr.open_zarr(zarr_store,
-                                consolidated=consolidated,
-                                **open_params)
+            dataset = xr.open_zarr(zarr_store, consolidated=consolidated,
+                                   **open_params)
         except ValueError as e:
             raise DataStoreError(f'Failed to open'
                                  f' dataset {data_id!r}: {e}') from e
+        dataset.zarr_store.set(zarr_store)
+        return dataset
 
     # noinspection PyMethodMayBeStatic
     def get_write_data_params_schema(self) -> JsonObjectSchema:

@@ -1,14 +1,16 @@
 import unittest
 
+import pytest
 import xarray as xr
 
 from test.sampledata import new_test_dataset
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 from xcube.core.xarray import DatasetAccessor
+from xcube.core.store.zarrstore import GenericZarrStore
 
 
-class XCubeDatasetAccessorTest(unittest.TestCase):
+class DatasetAccessorTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_init(self):
         DatasetAccessor(xr.Dataset())
