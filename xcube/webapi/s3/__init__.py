@@ -21,3 +21,4 @@
 
 # noinspection PyUnresolvedReferences
 from .routes import api
+from .routes_new import api as _
