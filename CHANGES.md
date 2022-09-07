@@ -1,3 +1,11 @@
+## Changes in 0.13.0 (in development)
+
+### Enhancements
+
+* xcube Server has been rewritten almost from scratch.
+
+
+
 ## Changes in 0.12.1 (in development)
 
 ### Enhancements
