@@ -1002,8 +1002,8 @@ class CommonS3ZarrStoreTest(S3Test):
             )
         )
 
-        s3.mkdir("xcube-test")
-        s3.mkdir("xcube-test/cube.zarr")
+        if not s3.exists("xcube-test/cube.zarr"):
+            s3.mkdirs("xcube-test/cube.zarr")
         zarr_store = s3.get_mapper("xcube-test/cube.zarr")
         cube.to_zarr(zarr_store)
 
@@ -1025,7 +1025,7 @@ class CommonS3ZarrStoreTest(S3Test):
             if not r.startswith("__getitem__"):
                 self.fail(f"Unexpected store call: {r}")
 
-        zarr_store.reset_records()
+        zarr_store.records = []
         # noinspection PyUnusedLocal
         values = dataset.conc_chl.isel(time=0).values
 
