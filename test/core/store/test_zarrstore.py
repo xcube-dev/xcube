@@ -28,6 +28,8 @@ import s3fs
 import xarray as xr
 import zarr.storage
 
+from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
+from xcube.core.new import new_cube
 from xcube.core.store.zarrstore import DatasetZarrStoreProperty
 from xcube.core.store.zarrstore import GenericArray
 from xcube.core.store.zarrstore import GenericZarrStore
@@ -927,34 +929,6 @@ class PrintingStore(zarr.storage.Store):
         return self.store.__iter__()
 
 
-class CommonS3ZarrStoreTest(unittest.TestCase):
-    def test_it(self):
-        s3 = s3fs.S3FileSystem()
-        zarr_store = s3.get_mapper("xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr/")
-        zarr_store = PrintingStore(zarr_store)
-
-        dataset = xr.open_zarr(zarr_store)
-        self.assertIsInstance(dataset, xr.Dataset)
-
-        # print(zarr_store.records)
-
-        self.assertIn("__getitem__('.zmetadata')", zarr_store.records)
-        self.assertIn("__getitem__('lon/0')", zarr_store.records)
-        self.assertIn("__getitem__('lat/0')", zarr_store.records)
-        self.assertIn("__getitem__('time/0')", zarr_store.records)
-
-        for r in zarr_store.records:
-            if not r.startswith("__getitem__"):
-                self.fail(f"Unexpected store call: {r}")
-
-        zarr_store.reset_records()
-        # noinspection PyUnusedLocal
-        values = dataset.conc_chl.isel(time=0).values
-        for r in zarr_store.records:
-            if not r.startswith("__getitem__"):
-                self.fail(f"Unexpected store call: {r}")
-
-
 class CommonZarrStoreTest(unittest.TestCase):
     """This test is used to assert that Zarr stores
     behave as expected with xarray, because GenericArrayStore
@@ -1011,6 +985,56 @@ class CommonZarrStoreTest(unittest.TestCase):
             [1, 2, 3, 4, 5, 6, 7, 8],
             list(ds.x.values)
         )
+
+
+class CommonS3ZarrStoreTest(S3Test):
+    """This test is used to assert that the s3fs Zarr store
+    behaves as expected with xarray.
+    """
+
+    def test_it(self):
+        cube = new_cube(variables=dict(conc_chl=0.5)).chunk(
+            dict(time=1, lat=90, lon=90)
+        )
+
+        s3 = s3fs.S3FileSystem(
+            anon=False,
+            client_kwargs=dict(
+                endpoint_url=MOTO_SERVER_ENDPOINT_URL,
+            )
+        )
+
+        s3.mkdir("xcube-test")
+        s3.mkdir("xcube-test/cube.zarr")
+        zarr_store = s3.get_mapper("xcube-test/cube.zarr")
+        cube.to_zarr(zarr_store)
+
+        zarr_store = s3.get_mapper("xcube-test/cube.zarr")
+        zarr_store = PrintingStore(zarr_store)
+
+        dataset = xr.open_zarr(zarr_store)
+        self.assertIsInstance(dataset, xr.Dataset)
+
+        # print(zarr_store.records)
+
+        self.assertIn("__getitem__('.zmetadata')", zarr_store.records)
+        self.assertIn("__getitem__('lon/0')", zarr_store.records)
+        self.assertIn("__getitem__('lat/0')", zarr_store.records)
+        self.assertIn("__getitem__('time/0')", zarr_store.records)
+
+        # Assert that Zarr used __getitem__ only
+        for r in zarr_store.records:
+            if not r.startswith("__getitem__"):
+                self.fail(f"Unexpected store call: {r}")
+
+        zarr_store.reset_records()
+        # noinspection PyUnusedLocal
+        values = dataset.conc_chl.isel(time=0).values
+
+        # Assert that Zarr used __getitem__ only
+        for r in zarr_store.records:
+            if not r.startswith("__getitem__"):
+                self.fail(f"Unexpected store call: {r}")
 
 
 class DatasetZarrStoreAccessorTest(unittest.TestCase):
