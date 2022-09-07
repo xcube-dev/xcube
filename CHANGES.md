@@ -9,6 +9,10 @@
   user-defined, generic array definitions. Arrays will compute 
   their chunks either from a function or a static data array. 
 
+* Added a new function `xcube.core.select.select_label_subset()` that 
+  is used to select dataset labels along a given dimension using
+  user-defined predicate functions.
+
 ### Fixes
 
 * The filesystem-based data stores for the "s3", "file", and "memory"
@@ -72,10 +76,6 @@
   may now have user-defined identifiers. In case the path does not unambiguously 
   define a dataset (because it contains wildcards), providing a 
   user-defined identifier will raise an error. 
-
-* Added a new function `xcube.core.select.select_label_subset()` that 
-  is used to select dataset labels along a given dimension using
-  user-defined predicate functions.
 
 ### Fixes
 
