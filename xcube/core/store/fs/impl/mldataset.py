@@ -59,13 +59,12 @@ from ...zarrstore import DatasetZarrStoreProperty
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
     """
-    Opener/writer extension name: "mldataset:levels:<protocol>"
-    and "dataset:levels:<protocol>"
+    Opener/writer extension name "mldataset:levels:<protocol>".
     """
 
     @classmethod
-    def get_data_types(cls) -> Tuple[DataType, ...]:
-        return MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE
+    def get_data_type(cls) -> DataType:
+        return MULTI_LEVEL_DATASET_TYPE
 
     @classmethod
     def get_format_id(cls) -> str:
@@ -128,10 +127,21 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         return schema
 
     def write_data(self,
-                   data: Union[xr.Dataset, MultiLevelDataset],
+                   data: MultiLevelDataset,
                    data_id: str,
                    replace: bool = False,
                    **write_params) -> str:
+        assert_instance(data, MultiLevelDataset, name='data')
+        return self.write_generic_data(data,
+                                       data_id,
+                                       replace=replace,
+                                       **write_params)
+
+    def write_generic_data(self,
+                           data: Union[xr.Dataset, MultiLevelDataset],
+                           data_id: str,
+                           replace: bool = False,
+                           **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
         assert_instance(data_id, str, name='data_id')
         tile_size = write_params.pop('tile_size', None)
@@ -157,6 +167,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 x_name, y_name = grid_mapping.xy_dim_names
                 base_dataset = base_dataset.chunk({x_name: tile_size[0],
                                                    y_name: tile_size[1]})
+                # noinspection PyTypeChecker
                 grid_mapping = grid_mapping.derive(tile_size=tile_size)
             ml_dataset = BaseMultiLevelDataset(base_dataset,
                                                grid_mapping=grid_mapping,
@@ -230,10 +241,34 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         return data_id
 
 
-_MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
+class DatasetLevelsFsDataAccessor(MultiLevelDatasetLevelsFsDataAccessor):
+    """
+    Opener/writer extension name "dataset:levels:<protocol>".
+    """
+
+    @classmethod
+    def get_data_type(cls) -> DataType:
+        return DATASET_TYPE
+
+    def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+        ml_dataset = super().open_data(data_id, **open_params)
+        return ml_dataset.get_dataset(0)
+
+    def write_data(self,
+                   data: xr.Dataset,
+                   data_id: str,
+                   replace: bool = False,
+                   **write_params) -> str:
+        assert_instance(data, xr.Dataset, name='data')
+        return self.write_generic_data(data,
+                                       data_id,
+                                       replace=replace,
+                                       **write_params)
 
 
 class FsMultiLevelDataset(LazyMultiLevelDataset):
+    _MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
+
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
                  root: Optional[str],
@@ -279,18 +314,17 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             # Nominal "{index}.zarr" must exist
             level_path = ds_path / f'{index}.zarr'
 
-        consolidated = open_params.pop(
-            'consolidated',
-            fs.exists(str(level_path / '.zmetadata'))
-        )
-
         level_zarr_store = fs.get_mapper(str(level_path))
 
-        if isinstance(cache_size, int) and cache_size >= _MIN_CACHE_SIZE:
+        consolidated = open_params.pop('consolidated',
+                                       '.zmetadata' in level_zarr_store)
+
+        if isinstance(cache_size, int) \
+                and cache_size >= self._MIN_CACHE_SIZE:
             # compute cache size for level weighted by
             # size in pixels for each level
             cache_size = math.ceil(self.size_weights[index] * cache_size)
-            if cache_size >= _MIN_CACHE_SIZE:
+            if cache_size >= self._MIN_CACHE_SIZE:
                 level_zarr_store = zarr.LRUStoreCache(level_zarr_store,
                                                       max_size=cache_size)
 
