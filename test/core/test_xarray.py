@@ -7,7 +7,7 @@ from test.sampledata import new_test_dataset
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 from xcube.core.xarray import DatasetAccessor
-from xcube.core.zarrstore import GenericZarrStore
+from xcube.core.store.zarrstore import GenericZarrStore
 
 
 class DatasetAccessorTest(unittest.TestCase):
