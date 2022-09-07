@@ -23,8 +23,6 @@ from xcube.core.schema import CubeSchema, get_cube_schema
 from xcube.core.select import select_variables_subset
 from xcube.core.vars2dim import vars_to_dim
 from xcube.core.verify import verify_cube
-from xcube.core.zarrstore import GenericZarrStore
-from xcube.util.assertions import assert_instance
 
 
 @xr.register_dataset_accessor('xcube')
@@ -75,25 +73,6 @@ class DatasetAccessor:
             with self._lock:
                 self._init_cube_subset()
         return self._grid_mapping
-
-    @property
-    def zarr_store(self) -> collections.abc.MutableMapping:
-        if self._zarr_store is None:
-            with self._lock:
-                self._zarr_store = GenericZarrStore.from_dataset(
-                    self._dataset
-                )
-        return self._zarr_store
-
-    @zarr_store.setter
-    def zarr_store(self,
-                   zarr_store: Optional[collections.abc.MutableMapping]) \
-            -> None:
-        if zarr_store is not None:
-            assert_instance(zarr_store,
-                            collections.abc.MutableMapping,
-                            name='zarr_store')
-        self._zarr_store = zarr_store
 
     def _init_cube_subset(self):
         try:

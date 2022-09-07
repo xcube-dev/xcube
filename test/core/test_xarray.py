@@ -36,33 +36,6 @@ class DatasetAccessorTest(unittest.TestCase):
         self.assertIs(None, dataset.xcube.gm)
         self.assertIs(dataset, dataset.xcube.non_cube)
 
-    def test_zarr_store(self):
-        dataset = xr.Dataset()
-
-        # Default value
-        self.assertIsInstance(dataset.xcube.zarr_store, GenericZarrStore)
-        self.assertIs(dataset.xcube.zarr_store,
-                      dataset.xcube.zarr_store)
-
-        # Allow setting it to new instance
-        zarr_store = dict()
-        dataset.xcube.zarr_store = zarr_store
-        self.assertIs(zarr_store, dataset.xcube.zarr_store)
-        self.assertIs(dataset.xcube.zarr_store,
-                      dataset.xcube.zarr_store)
-
-        # Allow unsetting it
-        dataset.xcube.zarr_store = None
-        self.assertIsInstance(dataset.xcube.zarr_store, GenericZarrStore)
-        self.assertIs(dataset.xcube.zarr_store,
-                      dataset.xcube.zarr_store)
-
-        with pytest.raises(TypeError,
-                           match="zarr_store must be an instance of"
-                                 " <class 'collections.abc.MutableMapping'>,"
-                                 " was <class 'int'>"):
-            dataset.xcube.zarr_store = 42
-
     ########################################################################
     # Testing old API from here on.
     #
