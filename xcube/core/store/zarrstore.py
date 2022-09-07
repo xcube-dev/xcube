@@ -25,6 +25,7 @@ import itertools
 import json
 import math
 import threading
+import warnings
 from typing import Iterator, Dict, Tuple, Any, Callable, \
     Optional, List, Sequence
 from typing import Union
@@ -875,65 +876,97 @@ class DatasetZarrStoreProperty:
             self._zarr_store = None
 
 
-class CachingZarrStore(zarr.storage.Store):
+class CachedZarrStore(zarr.storage.Store):
+    """A read-only Zarr store that is faster than
+    *store* because it uses a writable *cache* store.
+
+    The *cache* store is assumed to
+    read values for a given key much faster than *store*.
+
+    Note that iterating keys and containment checks are performed
+    on *store* only.
+
+    :param store: A Zarr store that is known
+        to be slow in reading values.
+    :param cache: A writable Zarr store that can
+        read values faster than *store*.
+    """
+
+    _readable = True  # Because the base class is readable
+    _listable = True  # Because the base class is listable
+    _writeable = False  # Because this is not yet supported
+    _erasable = False  # Because this is not yet supported
+
     def __init__(self,
-                 slow_store: collections.abc.MutableMapping,
-                 fast_store: collections.abc.MutableMapping):
-        if hasattr(slow_store, "listdir"):
-            assert_true(hasattr(fast_store, "listdir"),
-                        message='fast_store is lacking listdir() operation')
-            self.listdir = self._listdir
+                 store: collections.abc.MutableMapping,
+                 cache: collections.abc.MutableMapping):
+        assert_instance(store, collections.abc.MutableMapping, name="store")
+        assert_instance(cache, collections.abc.MutableMapping, name="cache")
+        if not isinstance(store, zarr.storage.BaseStore):
+            store = zarr.storage.KVStore(store)
+        if not isinstance(cache, zarr.storage.BaseStore):
+            cache = zarr.storage.KVStore(cache)
+        assert_true(store.is_readable(), message='store must be readable')
+        assert_true(cache.is_readable(), message='cache must be readable')
+        assert_true(cache.is_writeable(), message='cache must be writable')
+        self._store = store
+        self._cache = cache
+        self._implement_op('listdir')
+        self._implement_op('getsize')
 
-        if hasattr(slow_store, "rmdir"):
-            assert_true(hasattr(fast_store, "rmdir"),
-                        message='fast_store is lacking rmdir() operation')
-            self.rmdir = self._rmdir
+    @property
+    def store(self) -> zarr.storage.BaseStore:
+        return self._store
 
-        if hasattr(slow_store, "rename"):
-            assert_true(hasattr(fast_store, "rename"),
-                        message='fast_store is lacking rename() operation')
-            self.rename = self._rename
+    @property
+    def cache(self) -> zarr.storage.BaseStore:
+        return self._cache
 
-        self._slow_store = slow_store
-        self._fast_store = fast_store
+    def _implement_op(self, op: str):
+        if hasattr(self._store, op):
+            assert hasattr(self, "_" + op)
+            setattr(self, op, getattr(self, "_" + op))
 
     def _listdir(self, path: str = "") -> List[str]:
         # noinspection PyUnresolvedReferences
-        return self._slow_store.listdir(path=path)
+        return self._store.listdir(path=path)
 
-    def _rmdir(self, path: str = "") -> None:
-        # noinspection PyUnresolvedReferences
-        self._slow_store.rmdir(path=path)
-        # noinspection PyUnresolvedReferences
-        self._fast_store.rmdir(pth=path)
-
-    def _rename(self, src_path: str, dst_path: str) -> None:
-        # noinspection PyUnresolvedReferences
-        self._slow_store.rename(src_path, dst_path)
-        # noinspection PyUnresolvedReferences
-        self._fast_store.rename(src_path, dst_path)
-
-    def __len__(self) -> int:
-        return len(self._slow_store)
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._slow_store)
-
-    def __getitem__(self, key: str) -> bytes:
-        if key in self._fast_store:
-            return self._fast_store[key]
-        value = self._slow_store[key]
+    def _getsize(self, path: str) -> None:
         # noinspection PyBroadException
         try:
-            self._fast_store[key] = value
+            # noinspection PyUnresolvedReferences
+            size = self._cache.getsize(path)
         except BaseException:
+            size = -1
+        if size < 0:
+            # noinspection PyUnresolvedReferences
+            size = self._store.getsize(path)
+        return size
+
+    def __len__(self) -> int:
+        return len(self._store)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._store)
+
+    def __contains__(self, key: str):
+        return key in self._store
+
+    def __getitem__(self, key: str) -> bytes:
+        try:
+            return self._cache[key]
+        except KeyError:
             pass
+        value = self._store[key]
+        # noinspection PyBroadException
+        try:
+            self._cache[key] = value
+        except BaseException as e:
+            warnings.warn(f"cache write failed for key {key!r}: {e}")
         return value
 
     def __setitem__(self, key: str, value: bytes) -> None:
-        self._slow_store[key] = value
-        self._fast_store[key] = value
+        raise NotImplementedError()
 
     def __delitem__(self, key: str) -> None:
-        del self._slow_store[key]
-        del self._fast_store[key]
+        raise NotImplementedError()
