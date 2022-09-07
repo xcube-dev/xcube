@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from abc import abstractmethod, ABC
+from abc import abstractmethod
 from typing import Tuple, Optional
 
 import geopandas as gpd
@@ -34,14 +34,14 @@ from ...datatype import DataType
 from ...datatype import GEO_DATA_FRAME_TYPE
 
 
-class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
+class GeoDataFrameFsDataAccessor(FsDataAccessor):
     """
     Extension name: "geodataframe:<format_id>:<protocol>"
     """
 
     @classmethod
-    def get_data_types(cls) -> Tuple[DataType, ...]:
-        return GEO_DATA_FRAME_TYPE,
+    def get_data_type(cls) -> DataType:
+        return GEO_DATA_FRAME_TYPE
 
     @classmethod
     @abstractmethod
@@ -98,7 +98,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor, ABC):
         return data_id
 
 
-class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
+class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor):
     """
     Extension name: "geodataframe:shapefile:<protocol>"
     """
@@ -112,7 +112,7 @@ class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
         return 'ESRI Shapefile'
 
 
-class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor, ABC):
+class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor):
     """
     Extension name: "geodataframe:geojson:<protocol>"
     """

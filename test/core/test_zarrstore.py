@@ -19,7 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os.path
 import unittest
 from typing import Dict, Any
 
@@ -27,8 +26,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from xcube.core.zarrstore import GenericArrayInfo
-from xcube.core.zarrstore import GenericArrayZarrStore
+from xcube.core.zarrstore import GenericArray
+from xcube.core.zarrstore import GenericZarrStore
 from xcube.core.zarrstore import dict_to_bytes
 from xcube.core.zarrstore import get_array_slices
 from xcube.core.zarrstore import get_chunk_indexes
@@ -39,10 +38,44 @@ from xcube.core.zarrstore import str_to_bytes
 
 
 # noinspection PyMethodMayBeStatic
-class GenericArrayInfoTest(unittest.TestCase):
+class GenericArrayTest(unittest.TestCase):
+    data = np.linspace(1, 4, 4)
+
+    def get_data(self):
+        return self.data
+
     def test_defaults(self):
         self.assertEqual({},
-                         GenericArrayInfo())
+                         GenericArray())
+
+    def test_finalize_converts_fill_value(self):
+        data = np.linspace(1, 4, 4, dtype=np.uint16)
+
+        # noinspection PyTypeChecker
+        self.assertEqual({
+            "name": "x",
+            "dtype": "<u2",
+            "dims": ("x",),
+            "shape": (4,),
+            "chunks": (4,),
+            "data": data,
+            "order": "C",
+            "compressor": None,
+            "filters": None,
+            "fill_value": 0,
+            "get_data": None,
+            "get_data_info": None,
+            "get_data_params": None,
+            "on_close": None,
+            "chunk_encoding": "bytes",
+            "attrs": None,
+            # Computed
+            "ndim": 1,
+            "num_chunks": (1,),
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        data=data,
+                        fill_value=np.array(0)).finalize())
 
     def test_finalize_ok_with_data(self):
         data = np.linspace(1, 4, 4)
@@ -67,9 +100,9 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (1,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            data=data).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        data=data).finalize())
 
     def test_finalize_ok_with_get_data(self):
         shape = (12,)
@@ -77,8 +110,7 @@ class GenericArrayInfoTest(unittest.TestCase):
 
         data = np.linspace(1, 5, 5, dtype=np.uint8)
 
-        # noinspection PyUnusedLocal
-        def get_data_1(chunk_index):
+        def get_data_1():
             return data
 
         self.assertEqual({
@@ -104,18 +136,17 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (3,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            dtype=data.dtype,
-                            shape=shape,
-                            chunks=chunks,
-                            get_data=get_data_1,
-                            chunk_encoding="ndarray",
-                            attrs={"units": "degrees"}).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        dtype=data.dtype,
+                        shape=shape,
+                        chunks=chunks,
+                        get_data=get_data_1,
+                        chunk_encoding="ndarray",
+                        attrs={"units": "degrees"}).finalize())
 
         # noinspection PyUnusedLocal
-        def get_data_2(chunk_index,
-                       array_info=None):
+        def get_data_2(array_info=None):
             return data
 
         self.assertEqual({
@@ -141,18 +172,17 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (3,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            dtype=data.dtype,
-                            shape=shape,
-                            chunks=chunks,
-                            get_data=get_data_2,
-                            chunk_encoding="ndarray",
-                            attrs={"units": "degrees"}).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        dtype=data.dtype,
+                        shape=shape,
+                        chunks=chunks,
+                        get_data=get_data_2,
+                        chunk_encoding="ndarray",
+                        attrs={"units": "degrees"}).finalize())
 
         # noinspection PyUnusedLocal
-        def get_data_3(chunk_index,
-                       chunk_info=None,
+        def get_data_3(chunk_info=None,
                        array_info=None,
                        user_data=None):
             return data
@@ -180,74 +210,173 @@ class GenericArrayInfoTest(unittest.TestCase):
             # Computed
             "ndim": 1,
             "num_chunks": (3,),
-        }, GenericArrayInfo(name="x",
-                            dims=["x"],
-                            dtype=data.dtype,
-                            shape=shape,
-                            chunks=chunks,
-                            get_data=get_data_3,
-                            get_data_params=dict(user_data=42),
-                            chunk_encoding="ndarray",
-                            attrs={"units": "degrees"}).finalize())
+        }, GenericArray(name="x",
+                        dims=["x"],
+                        dtype=data.dtype,
+                        shape=shape,
+                        chunks=chunks,
+                        get_data=get_data_3,
+                        get_data_params=dict(user_data=42),
+                        chunk_encoding="ndarray",
+                        attrs={"units": "degrees"}).finalize())
 
-    def test_finalize_raises(self):
-        data = np.linspace(1, 4, 4)
-
-        # noinspection PyUnusedLocal
-        def get_data(index):
-            return data
-
+    def test_finalize_validates_name(self):
         with pytest.raises(ValueError, match="missing array name"):
-            GenericArrayInfo(dims=["x"],
-                             data=data).finalize()
+            GenericArray(dims=["x"],
+                         data=self.data).finalize()
 
+    def test_finalize_validates_data_get_data(self):
         with pytest.raises(ValueError,
                            match="array 'x':"
                                  " either data or get_data must be defined"):
-            GenericArrayInfo(name="x",
-                             dims=["x"]).finalize()
+            GenericArray(name="x",
+                         dims=["x"]).finalize()
 
         with pytest.raises(ValueError,
                            match="array 'x':"
                                  " data and get_data"
                                  " cannot be defined together"):
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             data=data,
-                             get_data=get_data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         data=self.data,
+                         get_data=self.get_data).finalize()
 
         with pytest.raises(TypeError,
                            match="array 'x': get_data must be a callable"):
             # noinspection PyTypeChecker
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             get_data=data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         get_data=self.data).finalize()
 
+    def test_finalize_validates_dims(self):
         with pytest.raises(ValueError,
                            match="array 'x': missing dims"):
-            GenericArrayInfo(name="x",
-                             data=data).finalize()
+            GenericArray(name="x",
+                         data=self.data).finalize()
 
+    def test_finalize_validates_dtype(self):
         with pytest.raises(ValueError,
                            match="array 'x': missing dtype"):
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             shape=[4],
-                             get_data=get_data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         shape=[4],
+                         get_data=self.get_data).finalize()
 
+    def test_finalize_validates_shape(self):
         with pytest.raises(ValueError,
                            match="array 'x': missing shape"):
-            GenericArrayInfo(name="x",
-                             dims=["x"],
-                             dtype=data.dtype,
-                             get_data=get_data).finalize()
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         get_data=self.get_data).finalize()
+
+        with pytest.raises(ValueError,
+                           match="array 'x':"
+                                 " dims and shape must have same length"):
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[200, 300],
+                         get_data=self.get_data).finalize()
+
+    def test_finalize_validates_chunks(self):
+        with pytest.raises(ValueError,
+                           match="array 'x':"
+                                 " dims and chunks must have same length"):
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[300],
+                         chunks=[20, 30],
+                         get_data=self.get_data).finalize()
+
+    def test_finalize_validates_filters(self):
+        with pytest.raises(TypeError,
+                           match="array 'x':"
+                                 " filter items must be an instance"
+                                 " of numcodecs.abc.Codec"):
+            # noinspection PyTypeChecker
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[300],
+                         chunks=[30],
+                         filters=["identity"],
+                         get_data=self.get_data).finalize()
+
+    def test_finalize_validates_compressor(self):
+        with pytest.raises(TypeError,
+                           match="array 'x':"
+                                 " compressor must be an instance"
+                                 " of numcodecs.abc.Codec"):
+            # noinspection PyTypeChecker
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[300],
+                         chunks=[30],
+                         compressor="blosc",
+                         get_data=self.get_data).finalize()
+
+    def test_finalize_validates_fill_value(self):
+        with pytest.raises(TypeError,
+                           match="array 'x':"
+                                 " fill_value type must be one of"
+                                 " \\('NoneType', 'bool', 'int',"
+                                 " 'float', 'str'\\), was bytes"):
+            # noinspection PyTypeChecker
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[300],
+                         chunks=[30],
+                         fill_value=b'0123',
+                         get_data=self.get_data).finalize()
+
+    def test_finalize_validates_order(self):
+        with pytest.raises(ValueError,
+                           match="array 'x':"
+                                 " order must be one of \\('C', 'F'\\),"
+                                 " was 'D'"):
+            # noinspection PyTypeChecker
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[300],
+                         chunks=[30],
+                         order="D",
+                         get_data=self.get_data).finalize()
+
+    def test_finalize_validates_chunk_encoding(self):
+        with pytest.raises(ValueError,
+                           match="array 'x':"
+                                 " chunk_encoding must be one of"
+                                 " \\('bytes', 'ndarray'\\), was 'strings'"):
+            # noinspection PyTypeChecker
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[300],
+                         get_data=self.get_data,
+                         chunk_encoding="strings").finalize()
+
+    def test_finalize_validates_attrs(self):
+        with pytest.raises(TypeError,
+                           match="array 'x': attrs must be dict, was str"):
+            # noinspection PyTypeChecker
+            GenericArray(name="x",
+                         dims=["x"],
+                         dtype=self.data.dtype,
+                         shape=[300],
+                         get_data=self.get_data,
+                         attrs="title=x Axis").finalize()
 
 
-class GenericArrayZarrStoreTest(unittest.TestCase):
+class GenericZarrStoreTest(unittest.TestCase):
     @staticmethod
-    def new_zarr_store(shape, chunks, get_data) -> GenericArrayZarrStore:
-        store = GenericArrayZarrStore(
-            array_defaults=GenericArrayInfo(
+    def new_zarr_store(shape, chunks, get_data) -> GenericZarrStore:
+        store = GenericZarrStore(
+            array_defaults=GenericArray(
                 dims=("time", "y", "x"),
                 shape=shape,
                 chunks=chunks
@@ -272,7 +401,8 @@ class GenericArrayZarrStoreTest(unittest.TestCase):
         self.chunk_shapes = set()
         self.chunk_indexes = set()
 
-    def get_data(self, chunk_index, chunk_info=None, array_info=None):
+    def get_data(self, chunk_info=None, array_info=None):
+        chunk_index = chunk_info["index"]
         it, iy, ix = chunk_index
         st, sy, sx = array_info["shape"]
         nt, ny, nx = array_info["chunks"]
@@ -284,7 +414,36 @@ class GenericArrayZarrStoreTest(unittest.TestCase):
         self.chunk_indexes.add(chunk_index)
         return np.full((nt, ny, nx), value, dtype=np.float32)
 
-    def test_keys(self):
+    def test_add_array_validates_name(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+
+        tsm = np.zeros((3, 6, 8))
+        with pytest.raises(ValueError,
+                           match="array 'chl' is already defined"):
+            store.add_array(name="chl",
+                            dims=["time", "y", "x"],
+                            data=tsm)
+
+    def test_add_array_validates_dim_sizes(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+
+        tsm = np.zeros((3, 10, 8))
+        with pytest.raises(ValueError,
+                           match="array 'tsm' defines"
+                                 " dimension 'y' with size 10,"
+                                 " but existing size is 6"):
+            store.add_array(name="tsm",
+                            dims=["time", "y", "x"],
+                            data=tsm)
+
+    def test_store_override_flags(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        self.assertEqual(True, store.is_listable())
+        self.assertEqual(True, store.is_readable())
+        self.assertEqual(True, store.is_erasable())
+        self.assertEqual(False, store.is_writeable())
+
+    def test_store_override_keys(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         self.assertEqual({
             '.zmetadata',
@@ -308,7 +467,7 @@ class GenericArrayZarrStoreTest(unittest.TestCase):
             'chl/2.2.0', 'chl/2.2.1',
         }, set(store.keys()))
 
-    def test_listdir(self):
+    def test_store_override_listdir(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         self.assertEqual([
             '.zmetadata',
@@ -338,6 +497,123 @@ class GenericArrayZarrStoreTest(unittest.TestCase):
             'chl/2.1.0', 'chl/2.1.1',
             'chl/2.2.0', 'chl/2.2.1',
         ], store.listdir('chl'))
+
+    def test_store_override_rmdir(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        store.rmdir("chl")
+        self.assertEqual([
+            '.zmetadata',
+            '.zgroup',
+            '.zattrs',
+            'x',
+            'y',
+            'time',
+        ], store.listdir(""))
+
+        # Also remove dimension sizes from object
+        store.rmdir("x")
+        store.rmdir("y")
+        store.rmdir("time")
+
+        with pytest.raises(ValueError,
+                           match="chl: can only remove existing arrays"):
+            store.rmdir("chl")
+
+    def test_store_override_rename(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        store.rename("chl", "chl_old")
+        self.assertEqual([
+            '.zmetadata',
+            '.zgroup',
+            '.zattrs',
+            'x',
+            'y',
+            'time',
+            'chl_old',
+        ], store.listdir(""))
+
+        with pytest.raises(ValueError,
+                           match="can only rename arrays,"
+                                 " but 'tsm' is not an array"):
+            store.rename("tsm", "tsm_new")
+
+        with pytest.raises(ValueError,
+                           match="cannot rename array"
+                                 " 'chl_old' into 'x'"
+                                 " because it already exists"):
+            store.rename("chl_old", "x")
+
+        with pytest.raises(ValueError,
+                           match="cannot rename array 'chl_old'"
+                                 " into 'chl/0'"):
+            store.rename("chl_old", "chl/0")
+
+    def test_store_override_close(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+
+        _array_info = None
+
+        def handle_close(array_info):
+            nonlocal _array_info
+            _array_info = array_info
+
+        tsm = np.zeros((3, 6, 8))
+        store.add_array(name="tsm",
+                        dims=["time", "y", "x"],
+                        data=tsm,
+                        on_close=handle_close)
+
+        store.close()
+        self.assertIsInstance(_array_info, dict)
+        self.assertEqual("tsm", _array_info.get("name"))
+
+    def test_store_override_iter(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        self.assertEqual(set(iter(store.keys())),
+                         set(iter(store)))
+
+    def test_store_override_len(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        self.assertEqual(3  # 3 top-level items
+                         + 3 * 4  # 3 x coordinate array items
+                         + 3 + 3 * 3 * 2,  # 1 x "chl" data array items
+                         len(store))
+
+    def test_store_override_contains(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        self.assertTrue(".zmetadata" in store)
+        self.assertTrue(".zattrs" in store)
+        self.assertTrue(".zgroup" in store)
+        self.assertTrue("x" in store)
+        self.assertTrue("x/.zarray" in store)
+        self.assertTrue("x/.zattrs" in store)
+        self.assertTrue("x/0" in store)
+        self.assertFalse("a" in store)
+        self.assertFalse("a/0" in store)
+        self.assertFalse("x/a" in store)
+
+    def test_store_override_getitem(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        self.assertIsInstance(store[".zattrs"], bytes)
+        self.assertIsInstance(store["x"], bytes)
+        self.assertIsInstance(store["x/.zarray"], bytes)
+        self.assertIsInstance(store["x/0"], bytes)
+
+        with pytest.raises(KeyError, match="a"):
+            # noinspection PyUnusedLocal
+            a = store["a"]
+
+    def test_store_override_setitem(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        with pytest.raises(TypeError,
+                           match="xcube.core.zarrstore.GenericZarrStore"
+                                 " is read-only"):
+            store["tsm/0.0.0"] = np.zeros((1, 2, 4)).tobytes()
+
+    def test_store_override_delitem(self):
+        store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        del store["x"]
+        self.assertFalse("x" in store)
 
     def test_zarr_store_shape_not_multiple_of_chunks(self):
         shape = 3, 6, 8
@@ -487,7 +763,7 @@ class GenericArrayZarrStoreTest(unittest.TestCase):
         )
 
 
-class GenericArrayZarrStoreHelpersTest(unittest.TestCase):
+class GenericZarrStoreHelpersTest(unittest.TestCase):
     def test_get_chunk_indexes(self):
         self.assertEqual([()],
                          list(get_chunk_indexes(())))
@@ -625,46 +901,3 @@ class CommonZarrStoreTest(unittest.TestCase):
             [1, 2, 3, 4, 5, 6, 7, 8],
             list(ds.x)
         )
-
-
-CMEMS_CREDENTIALS_FILE = "cmems-credentials.json"
-
-
-# noinspection PyPackageRequirements
-@unittest.skipUnless(os.path.exists(CMEMS_CREDENTIALS_FILE),
-                     f"file not found: {CMEMS_CREDENTIALS_FILE}")
-class PydapTest(unittest.TestCase):
-    """We use this test to debug into the details of the
-    pydap implementation."""
-
-    def test_it(self):
-        import json
-
-        with open(CMEMS_CREDENTIALS_FILE) as fp:
-            credentials = json.load(fp)
-            username, password = credentials["username"], credentials[
-                "password"]
-
-        import pydap.client
-        import pydap.cas.get_cookies
-
-        cas_url = 'https://cmems-cas.cls.fr/cas/login'
-        session = pydap.cas.get_cookies.setup_session(
-            cas_url,
-            username,
-            password
-        )
-        session.cookies.set("CASTGC", session.cookies.get_dict()['CASTGC'])
-
-        pyd_dataset = pydap.client.open_url(
-            "https://nrt.cmems-du.eu/thredds/dodsC/"
-            "dataset-bal-analysis-forecast-wav-hourly",
-            session=session,
-            user_charset='utf-8',
-            # retrieve only main arrays and never retrieve coordinate axes
-            output_grid=False,
-        )
-
-        data = pyd_dataset.lon[0:10]
-        data = np.array(data)
-        self.assertIsInstance(data, np.ndarray)

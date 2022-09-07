@@ -3,10 +3,11 @@ import shutil
 import unittest
 import warnings
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 import fsspec
 import numpy as np
+import pytest
 import xarray as xr
 
 import xcube.core.mldataset
@@ -137,34 +138,61 @@ class FsDataStoresTestMixin(ABC):
 
     def test_dataset_zarr(self):
         data_store = self.create_data_store()
-        self._assert_dataset_format_supported(data_store, '.zarr')
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext='.zarr',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'dataset'},
+            expected_return_type=xr.Dataset,
+            expected_descriptor_type=DatasetDescriptor
+        )
 
     def test_dataset_netcdf(self):
         data_store = self.create_data_store()
-        self._assert_dataset_format_supported(data_store, '.nc')
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext='.nc',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'dataset'},
+            expected_return_type=xr.Dataset,
+            expected_descriptor_type=DatasetDescriptor
+        )
+
+    def test_dataset_levels(self):
+        data_store = self.create_data_store()
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext='.levels',
+            requested_dtype_alias='dataset',
+            expected_dtype_aliases={'mldataset', 'dataset'},
+            expected_return_type=xr.Dataset,
+            expected_descriptor_type=None
+        )
 
     # TODO: add assertGeoDataFrameSupport
 
     def _assert_multi_level_dataset_format_supported(
             self,
-            data_store: MutableDataStore
+            data_store: FsDataStore
     ):
         self._assert_dataset_supported(
             data_store,
-            '.levels',
-            'mldataset',
-            MultiLevelDataset,
-            MultiLevelDatasetDescriptor,
+            filename_ext='.levels',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'mldataset', 'dataset'},
+            expected_return_type=MultiLevelDataset,
+            expected_descriptor_type=MultiLevelDatasetDescriptor,
             assert_data_ok=self._assert_multi_level_dataset_data_ok
         )
 
         # Test that use_saved_levels works
         self._assert_dataset_supported(
             data_store,
-            '.levels',
-            'mldataset',
-            MultiLevelDataset,
-            MultiLevelDatasetDescriptor,
+            filename_ext='.levels',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'mldataset', 'dataset'},
+            expected_return_type=MultiLevelDataset,
+            expected_descriptor_type=MultiLevelDatasetDescriptor,
             write_params=dict(
                 use_saved_levels=True,
             ),
@@ -173,7 +201,7 @@ class FsDataStoresTestMixin(ABC):
 
     def _assert_multi_level_dataset_format_with_link_supported(
             self,
-            data_store: MutableDataStore
+            data_store: FsDataStore
     ):
         base_dataset = new_cube_data()
         base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
@@ -182,10 +210,11 @@ class FsDataStoresTestMixin(ABC):
         # Test that base_dataset_id works
         self._assert_dataset_supported(
             data_store,
-            '.levels',
-            'mldataset',
-            MultiLevelDataset,
-            MultiLevelDatasetDescriptor,
+            filename_ext='.levels',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'mldataset', 'dataset'},
+            expected_return_type=MultiLevelDataset,
+            expected_descriptor_type=MultiLevelDatasetDescriptor,
             write_params=dict(
                 base_dataset_id=base_dataset_id,
             ),
@@ -195,10 +224,11 @@ class FsDataStoresTestMixin(ABC):
         # Test that base_dataset_id + use_saved_levels works
         self._assert_dataset_supported(
             data_store,
-            '.levels',
-            'mldataset',
-            MultiLevelDataset,
-            MultiLevelDatasetDescriptor,
+            filename_ext='.levels',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'mldataset', 'dataset'},
+            expected_return_type=MultiLevelDataset,
+            expected_descriptor_type=MultiLevelDatasetDescriptor,
             write_params=dict(
                 base_dataset_id=base_dataset_id,
                 use_saved_levels=True,
@@ -247,61 +277,53 @@ class FsDataStoresTestMixin(ABC):
 
     def _assert_multi_level_dataset_format_with_tile_size(
             self,
-            data_store: MutableDataStore
+            data_store: FsDataStore
     ):
         base_dataset = new_cube_data()
         base_dataset_id = f'{DATA_PATH}/base-ds.zarr'
         data_store.write_data(base_dataset, base_dataset_id)
 
         # Test that base_dataset_id works
-        self._assert_dataset_supported(data_store,
-                                       '.levels',
-                                       'mldataset',
-                                       MultiLevelDataset,
-                                       MultiLevelDatasetDescriptor,
-                                       open_params=dict(
-                                           cache_size=2 ** 20,
-                                       ),
-                                       write_params=dict(
-                                           tile_size=90,
-                                       ))
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext='.levels',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'mldataset', 'dataset'},
+            expected_return_type=MultiLevelDataset,
+            expected_descriptor_type=MultiLevelDatasetDescriptor,
+            open_params=dict(cache_size=2 ** 20),
+            write_params=dict(tile_size=90)
+        )
 
         # Test that base_dataset_id + use_saved_levels works
-        self._assert_dataset_supported(data_store,
-                                       '.levels',
-                                       'mldataset',
-                                       MultiLevelDataset,
-                                       MultiLevelDatasetDescriptor,
-                                       open_params=dict(
-                                           cache_size=2 ** 20,
-                                       ),
-                                       write_params=dict(
-                                           tile_size=90,
-                                           use_saved_levels=True,
-                                       ))
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext='.levels',
+            requested_dtype_alias=None,
+            expected_dtype_aliases={'mldataset', 'dataset'},
+            expected_return_type=MultiLevelDataset,
+            expected_descriptor_type=MultiLevelDatasetDescriptor,
+            open_params=dict(cache_size=2 ** 20),
+            write_params=dict(
+                tile_size=90,
+                use_saved_levels=True,
+            )
+        )
 
         data_store.delete_data(base_dataset_id)
 
-    def _assert_dataset_format_supported(self,
-                                         data_store: MutableDataStore,
-                                         filename_ext: str):
-        self._assert_dataset_supported(data_store,
-                                       filename_ext,
-                                       'dataset',
-                                       xr.Dataset,
-                                       DatasetDescriptor)
-
     def _assert_dataset_supported(
             self,
-            data_store: MutableDataStore,
+            data_store: FsDataStore,
             filename_ext: str,
-            expected_data_type_alias: str,
-            expected_type: Union[Type[xr.Dataset],
-                                 Type[MultiLevelDataset]],
-            expected_descriptor_type: Union[
+            requested_dtype_alias: Optional[str],
+            expected_dtype_aliases: Set[str],
+            expected_return_type: Union[Type[xr.Dataset],
+                                        Type[MultiLevelDataset]],
+            expected_descriptor_type: Optional[Union[
                 Type[DatasetDescriptor],
                 Type[MultiLevelDatasetDescriptor]
-            ],
+            ]] = None,
             write_params: Optional[Dict[str, Any]] = None,
             open_params: Optional[Dict[str, Any]] = None,
             assert_data_ok: Optional[Callable[[Any], Any]] = None
@@ -314,7 +336,7 @@ class FsDataStoresTestMixin(ABC):
         :param filename_ext: Filename extension that identifies
             a supported dataset format.
         :param expected_data_type_alias: The expected data type alias.
-        :param expected_type: The expected data type.
+        :param expected_return_type: The expected data type.
         :param expected_descriptor_type: The expected data descriptor type.
         :param write_params: Optional write parameters
         :param open_params: Optional open parameters
@@ -331,7 +353,9 @@ class FsDataStoresTestMixin(ABC):
         self.assertEqual({'dataset', 'mldataset', 'geodataframe'},
                          set(data_store.get_data_types()))
 
-        with self.assertRaises(DataStoreError):
+        with pytest.raises(DataStoreError,
+                           match=f'Data resource "{data_id}"'
+                                 f' does not exist in store'):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertNotIn(data_id, set(data_store.get_data_ids()))
@@ -340,21 +364,33 @@ class FsDataStoresTestMixin(ABC):
         written_data_id = data_store.write_data(data, data_id, **write_params)
         self.assertEqual(data_id, written_data_id)
 
-        self.assertEqual({expected_data_type_alias},
+        self.assertEqual(expected_dtype_aliases,
                          set(data_store.get_data_types_for_data(data_id)))
         self.assertEqual(True, data_store.has_data(data_id))
         self.assertIn(data_id, set(data_store.get_data_ids()))
 
-        data_descriptors = list(data_store.search_data(
-            data_type=expected_type)
-        )
-        self.assertEqual(1, len(data_descriptors))
-        self.assertIsInstance(data_descriptors[0], DataDescriptor)
-        self.assertIsInstance(data_descriptors[0], expected_descriptor_type)
+        if expected_descriptor_type is not None:
+            data_descriptors = list(data_store.search_data(
+                data_type=expected_return_type)
+            )
+            self.assertEqual(1, len(data_descriptors))
+            self.assertIsInstance(data_descriptors[0],
+                                  DataDescriptor)
+            self.assertIsInstance(data_descriptors[0],
+                                  expected_descriptor_type)
 
-        data = data_store.open_data(data_id, **open_params)
-        self.assertIsInstance(data, expected_type)
-        if assert_data_ok:
+        if requested_dtype_alias:
+            # noinspection PyProtectedMember
+            _, format_name, protocol = \
+                data_store._guess_accessor_id_parts(data_id)
+            opener_id = f'{requested_dtype_alias}:{format_name}:{protocol}'
+        else:
+            opener_id = None
+        data = data_store.open_data(data_id,
+                                    opener_id=opener_id,
+                                    **open_params)
+        self.assertIsInstance(data, expected_return_type)
+        if assert_data_ok is not None:
             assert_data_ok(data)
 
         try:
@@ -362,7 +398,9 @@ class FsDataStoresTestMixin(ABC):
         except PermissionError as e:  # May occur on win32 due to fsspec
             warnings.warn(f'{e}')
             return
-        with self.assertRaises(DataStoreError):
+        with pytest.raises(DataStoreError,
+                           match=f'Data resource "{data_id}"'
+                                 f' does not exist in store'):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertNotIn(data_id, set(data_store.get_data_ids()))

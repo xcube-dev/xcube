@@ -19,7 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from abc import ABC
 from typing import Optional, Tuple, Dict, Any
 
 import fsspec
@@ -28,15 +27,14 @@ import xarray as xr
 
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataType
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
-from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
+from .dataset import DatasetGeoTiffFsDataAccessor
 
 
 class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
@@ -108,15 +106,15 @@ MULTI_LEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 )
 
 
-class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor, ABC):
+# noinspection PyAbstractClass
+class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
     """
     Opener/writer extension name: "mldataset:geotiff:<protocol>"
-    and "dataset:geotiff:<protocol>"
     """
 
     @classmethod
-    def get_data_types(cls) -> Tuple[DataType, ...]:
-        return MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE
+    def get_data_type(cls) -> DataType:
+        return MULTI_LEVEL_DATASET_TYPE
 
     def get_open_data_params_schema(self,
                                     data_id: str = None) -> JsonObjectSchema:

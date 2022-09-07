@@ -2,8 +2,22 @@
 
 ### Enhancements
 
+* Added a new 
+  [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
+  implementation 
+  `xcube.core.zarrstore.GenericZarrStore` that comprises 
+  user-defined, generic array definitions. Arrays will compute 
+  their chunks either from a function or a static data array. 
+
+* Added a new function `xcube.core.select.select_label_subset()` that 
+  is used to select dataset labels along a given dimension using
+  user-defined predicate functions.
+
 ### Fixes
 
+* The filesystem-based data stores for the "s3", "file", and "memory"
+  protocols can now provide `xr.Dataset` instances from image pyramids
+  formats, i.e. the `levels` and `geotiff` formats.
 
 
 ## Changes in 0.12.0

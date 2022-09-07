@@ -29,6 +29,7 @@ from typing import Union
 
 import numcodecs.abc
 import numpy as np
+import xarray as xr
 import zarr.storage
 
 GetData = Callable[[Tuple[int]],
@@ -37,14 +38,15 @@ GetData = Callable[[Tuple[int]],
 OnClose = Callable[[Dict[str, Any]], None]
 
 
-class GenericArrayInfo(dict[str, any]):
+class GenericArray(dict[str, any]):
     """
-    Holds information about a generic array in the ``GenericArrayZarrStore``.
+    Represent a generic array in the ``GenericZarrStore`` as 
+    dictionary of properties.
 
     Although all properties of this class are optional,
-    some of them are mandatory when added to the ``GenericArrayZarrStore``.
+    some of them are mandatory when added to the ``GenericZarrStore``.
 
-    When added to the store using ``GenericArrayZarrStore.add_array()``, 
+    When added to the store using ``GenericZarrStore.add_array()``, 
     the array *name* and *dims* must always be present. 
     Other mandatory properties depend on
     the *data* and *get_data* properties, which are mutually exclusive:
@@ -59,7 +61,24 @@ class GenericArrayInfo(dict[str, any]):
       *data* requires the following properties to be present too:
       *name*, *dims*. *chunks* must be same as *shape*.
 
-    ``GenericArrayZarrStore`` will convert a Numpy array returned
+    The function *get_data* receives only keyword-arguments which
+    comprises the ones passed by *get_data_params*, if any, and
+    two special ones which may occur in the signature of *get_data*:
+
+    * The keyword argument *chunk_info*, if given, provides a dictionary
+      that holds information about the current chunk:
+      - ``index: tuple[int, ...]`` - the chunk's index
+      - ``shape: tuple[int, ...]`` - the chunk's shape
+      - ``slices: tuple[slice, ...]`` - the chunk's array slices
+
+    * The keyword argument *array_info*, if given, provides a dictionary
+      that holds information about the overall array. It contains
+      all array properties passed to the constructor of ``GenericArray``
+      plus
+      - ``ndim: int`` - number of dimensions
+      - ``num_chunks: tuple[int, ...]`` - number of chunks in every dimension
+
+    ``GenericZarrStore`` will convert a Numpy array returned
     by *get_data* or given by *data* into a bytes object.
     It will also be compressed, if a *compressor* is given.
     It is important that the array chunks always See also
@@ -68,7 +87,7 @@ class GenericArrayInfo(dict[str, any]):
     Note that if the value of a named keyword argument is None,
     it will not be stored.
 
-    :param array_info: Optional array info dictionary
+    :param array: Optional array info dictionary
     :param name: Optional array name
     :param data: Optional array data.
         Mutually exclusive with *get_data*.
@@ -106,7 +125,7 @@ class GenericArrayInfo(dict[str, any]):
     """
 
     def __init__(self,
-                 array_info: Optional[Dict[str, any]] = None,
+                 array: Optional[Dict[str, any]] = None,
                  name: Optional[str] = None,
                  get_data: Optional[GetData] = None,
                  get_data_params: Optional[Dict[str, Any]] = None,
@@ -115,7 +134,7 @@ class GenericArrayInfo(dict[str, any]):
                  dims: Optional[Union[str, Sequence[str]]] = None,
                  shape: Optional[Sequence[int]] = None,
                  chunks: Optional[Sequence[int]] = None,
-                 fill_value: Optional[Union[int, float, str]] = None,
+                 fill_value: Optional[Union[bool, int, float, str]] = None,
                  compressor: Optional[numcodecs.abc.Codec] = None,
                  filters: Optional[Sequence[numcodecs.abc.Codec]] = None,
                  order: Optional[str] = None,
@@ -123,8 +142,8 @@ class GenericArrayInfo(dict[str, any]):
                  on_close: Optional[OnClose] = None,
                  chunk_encoding: Optional[str] = None,
                  **kwargs):
-        array_info = dict(array_info) if array_info is not None else dict()
-        array_info.update({
+        array = dict(array) if array is not None else dict()
+        array.update({
             k: v
             for k, v in dict(
                 name=name,
@@ -145,11 +164,11 @@ class GenericArrayInfo(dict[str, any]):
             ).items()
             if v is not None
         })
-        super().__init__(array_info, **kwargs)
+        super().__init__(array, **kwargs)
 
-    def finalize(self) -> "GenericArrayInfo":
+    def finalize(self) -> "GenericArray":
         """Normalize and validate array properties and return a valid
-        array info dictionary to be stored in the `GenericArrayZarrStore`.
+        array info dictionary to be stored in the `GenericZarrStore`.
         """
         name = self.get("name")
         if not name:
@@ -206,8 +225,6 @@ class GenericArrayInfo(dict[str, any]):
         if len(shape) != ndim:
             raise ValueError(f"array {name!r}:"
                              f" dims and shape must have same length")
-        if chunks is None:
-            raise ValueError(f"array {name!r}: missing chunks")
         if len(chunks) != ndim:
             raise ValueError(f"array {name!r}:"
                              f" dims and chunks must have same length")
@@ -236,11 +253,12 @@ class GenericArrayInfo(dict[str, any]):
         fill_value = self.get("fill_value")
         if isinstance(fill_value, np.ndarray):
             fill_value = fill_value.item()
-        allowed_fill_value_types = (type(None), int, float, str)
+        allowed_fill_value_types = (type(None), bool, int, float, str)
         if not isinstance(fill_value, allowed_fill_value_types):
             raise TypeError(
                 f"array {name!r}:"
-                f" fill_value type must be one of {allowed_fill_value_types},"
+                f" fill_value type must be one of"
+                f" {tuple(t.__name__ for t in allowed_fill_value_types)},"
                 f" was {type(fill_value).__name__}"
             )
 
@@ -254,11 +272,11 @@ class GenericArrayInfo(dict[str, any]):
             )
 
         chunk_encoding = self.get("chunk_encoding") or "bytes"
-        allowed_chunk_types = ("bytes", "ndarray")
-        if chunk_encoding not in allowed_chunk_types:
+        allowed_chunk_encodings = ("bytes", "ndarray")
+        if chunk_encoding not in allowed_chunk_encodings:
             raise ValueError(
                 f"array {name!r}:"
-                f" chunk_encoding must be one of {allowed_chunk_types},"
+                f" chunk_encoding must be one of {allowed_chunk_encodings},"
                 f" was {chunk_encoding!r}"
             )
 
@@ -267,13 +285,13 @@ class GenericArrayInfo(dict[str, any]):
             if not isinstance(attrs, dict):
                 raise TypeError(
                     f"array {name!r}:"
-                    f" attrs must be dict, was {type(fill_value).__name__}"
+                    f" attrs must be dict, was {type(attrs).__name__}"
                 )
 
         # Note: passing the properties as dictionary
         # will prevent removing them if their value is None,
-        # see GenericArrayInfo constructor.
-        return GenericArrayInfo({
+        # see GenericArray constructor.
+        return GenericArray({
             "name": name,
             "dtype": dtype,
             "dims": tuple(dims),
@@ -296,10 +314,10 @@ class GenericArrayInfo(dict[str, any]):
         })
 
 
-GenericArrayInfoLike = Union[GenericArrayInfo, Dict[str, Any]]
+GenericArrayLike = Union[GenericArray, Dict[str, Any]]
 
 
-class GenericArrayZarrStore(zarr.storage.Store):
+class GenericZarrStore(zarr.storage.Store):
     """A Zarr store that maintains generic arrays in a flat, top-level
     hierarchy. The root of the store is a Zarr group
     conforming to the Zarr spec v2.
@@ -307,58 +325,61 @@ class GenericArrayZarrStore(zarr.storage.Store):
     It is designed to serve as a Zarr store for xarray datasets
     that compute their data arrays dynamically.
 
-    See class ``GenericArrayInfo`` for specifying the arrays' properties.
+    See class ``GenericArray`` for specifying the arrays' properties.
 
     The array data of this store's arrays are either retrieved from
     static (numpy) arrays or from a callable that provides the
     array's data chunks as bytes or numpy arrays.
 
     :param arrays: Arrays to be added.
-        Typically, these will be instances of ``GenericArrayInfo``.
+        Typically, these will be instances of ``GenericArray``.
     :param attrs: Optional attributes of the top-level group.
         If given, it must be JSON serializable.
     :param array_defaults: Optional array defaults for
         array properties not passed to ``add_array``.
-        Typically, this will be an instance of ``GenericArrayInfo``.
+        Typically, this will be an instance of ``GenericArray``.
     """
+
+    # Shortcut for GenericArray
+    Array = GenericArray
 
     def __init__(
             self,
-            *arrays: GenericArrayInfoLike,
+            *arrays: GenericArrayLike,
             attrs: Optional[Dict[str, Any]] = None,
-            array_defaults: Optional[GenericArrayInfoLike] = None
+            array_defaults: Optional[GenericArrayLike] = None
     ):
         self._attrs = dict(attrs) if attrs is not None else {}
         self._array_defaults = array_defaults
         self._dim_sizes: Dict[str, int] = {}
-        self._array_infos: Dict[str, GenericArrayInfo] = {}
-        for array_info in arrays:
-            self.add_array(array_info)
+        self._arrays: Dict[str, GenericArray] = {}
+        for array in arrays:
+            self.add_array(array)
 
     def add_array(self,
-                  array_info: Optional[GenericArrayInfoLike] = None,
+                  array: Optional[GenericArrayLike] = None,
                   **array_info_kwargs) -> None:
         """
         Add a new array to this store.
 
-        :param array_info: Optional array properties.
-            Typically, this will be an instance of ``GenericArrayInfo``.
+        :param array: Optional array properties.
+            Typically, this will be an instance of ``GenericArray``.
         :param array_info_kwargs: Keyword arguments form
-            of the properties of ``GenericArrayInfo``.
+            of the properties of ``GenericArray``.
         """
-        effective_array_info = GenericArrayInfo(self._array_defaults or {})
-        if array_info:
-            effective_array_info.update(**array_info)
+        effective_array = GenericArray(self._array_defaults or {})
+        if array:
+            effective_array.update(**array)
         if array_info_kwargs:
-            effective_array_info.update(**array_info_kwargs)
-        effective_array_info = effective_array_info.finalize()
+            effective_array.update(**array_info_kwargs)
+        effective_array = effective_array.finalize()
 
-        name = effective_array_info["name"]
-        if name in self._array_infos:
+        name = effective_array["name"]
+        if name in self._arrays:
             raise ValueError(f"array {name!r} is already defined")
 
-        dims = effective_array_info["dims"]
-        shape = effective_array_info["shape"]
+        dims = effective_array["dims"]
+        shape = effective_array["shape"]
         for dim_name, dim_size in zip(dims, shape):
             old_dim_size = self._dim_sizes.get(dim_name)
             if old_dim_size is None:
@@ -371,7 +392,7 @@ class GenericArrayZarrStore(zarr.storage.Store):
                                  f" with size {dim_size},"
                                  f" but existing size is {old_dim_size}")
 
-        self._array_infos[name] = effective_array_info
+        self._arrays[name] = effective_array
 
     ##########################################################################
     # Zarr Store implementation
@@ -386,7 +407,7 @@ class GenericArrayZarrStore(zarr.storage.Store):
         yield ".zmetadata"
         yield ".zgroup"
         yield ".zattrs"
-        for array_name, array_info in self._array_infos.items():
+        for array_name in self._arrays.keys():
             yield array_name
             yield from self._get_array_keys(array_name)
 
@@ -400,7 +421,7 @@ class GenericArrayZarrStore(zarr.storage.Store):
                 ".zmetadata",
                 ".zgroup",
                 ".zattrs",
-                *self._array_infos.keys()
+                *self._arrays.keys()
             ]
         elif "/" not in path:
             return list(self._get_array_keys(path))
@@ -411,14 +432,14 @@ class GenericArrayZarrStore(zarr.storage.Store):
         This implementation can remove entire arrays only.
         :param path: The array's name.
         """
-        if path not in self._array_infos:
-            raise ValueError(f"{path}: can only remove arrays")
-        array_info = self._array_infos.pop(path)
-        dims = array_info["dims"]
+        if path not in self._arrays:
+            raise ValueError(f"{path}: can only remove existing arrays")
+        array = self._arrays.pop(path)
+        dims = array["dims"]
         for i, dim_name in enumerate(dims):
             dim_used = False
-            for array_name, array_info in self._array_infos.items():
-                if dim_name in array_info["dims"]:
+            for array_name, array in self._arrays.items():
+                if dim_name in array["dims"]:
                     dim_used = True
                     break
             if not dim_used:
@@ -431,26 +452,26 @@ class GenericArrayZarrStore(zarr.storage.Store):
         :param src_path: Source array name.
         :param dst_path: Target array name.
         """
-        array_info = self._array_infos.get(src_path)
-        if array_info is None:
+        array = self._arrays.get(src_path)
+        if array is None:
             raise ValueError(f"can only rename arrays, but {src_path!r}"
                              f" is not an array")
-        if dst_path in self._array_infos:
-            raise ValueError(f"cannot rename array {src_path!r} into "
-                             f" into {dst_path!r} because it already exists")
+        if dst_path in self._arrays:
+            raise ValueError(f"cannot rename array {src_path!r} into"
+                             f" {dst_path!r} because it already exists")
         if "/" in dst_path:
             raise ValueError(f"cannot rename array {src_path!r}"
                              f" into {dst_path!r}")
-        array_info["name"] = dst_path
-        self._array_infos[dst_path] = array_info
-        del self._array_infos[src_path]
+        array["name"] = dst_path
+        self._arrays[dst_path] = array
+        del self._arrays[src_path]
 
     def close(self) -> None:
         """Calls the "on_close" handlers, if any, of arrays."""
-        for array_info in self._array_infos.values():
-            on_close = array_info.get("on_close")
+        for array in self._arrays.values():
+            on_close = array.get("on_close")
             if on_close is not None:
-                on_close(array_info)
+                on_close(array)
 
     # Note, getsize is not implemented by intention as it requires
     # actual computation of arrays.
@@ -459,19 +480,19 @@ class GenericArrayZarrStore(zarr.storage.Store):
     #     pass
 
     ##########################################################################
-    # Mapping implementation
+    # MutableMapping implementation
     ##########################################################################
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.keys())
 
     def __len__(self) -> int:
-        return len(self.keys())
+        return sum(1 for _ in self.keys())
 
     def __contains__(self, key: str) -> bool:
         if key in (".zmetadata", ".zgroup", ".zattrs"):
             return True
-        if key in self._array_infos:
+        if key in self._arrays:
             return True
         try:
             array_name, value_id = self._parse_array_key(key)
@@ -493,12 +514,9 @@ class GenericArrayZarrStore(zarr.storage.Store):
             return str_to_bytes(item)
         return item
 
-    ##########################################################################
-    # MutableMapping implementation
-    ##########################################################################
-
     def __setitem__(self, key: str, value: bytes) -> None:
-        raise TypeError(f'{self._class_name} is read-only')
+        class_name = self.__module__ + '.' + self.__class__.__name__
+        raise TypeError(f'{class_name} is read-only')
 
     def __delitem__(self, key: str) -> None:
         self.rmdir(key)
@@ -507,10 +525,6 @@ class GenericArrayZarrStore(zarr.storage.Store):
     # Helpers
     ##########################################################################
 
-    @property
-    def _class_name(self) -> str:
-        return self.__module__ + '.' + self.__class__.__name__
-
     def _get_item(self, key: str) -> Union[dict, str, bytes]:
         if key == ".zmetadata":
             return self._get_metadata_item()
@@ -518,26 +532,26 @@ class GenericArrayZarrStore(zarr.storage.Store):
             return self._get_group_item()
         if key == ".zattrs":
             return self._get_attrs_item()
-        if key in self._array_infos:
+        if key in self._arrays:
             return ""
 
         array_name, value_id = self._parse_array_key(key)
-        array_info = self._array_infos[array_name]
+        array = self._arrays[array_name]
 
         if value_id == '.zarray':
-            return self._get_array_spec_item(array_info)
+            return self._get_array_spec_item(array)
         if value_id == '.zattrs':
-            return self._get_array_attrs_item(array_info)
+            return self._get_array_attrs_item(array)
 
         chunk_index = self._get_array_chunk_index(array_name, value_id)
-        return self._get_array_data_item(array_info, chunk_index)
+        return self._get_array_data_item(array, chunk_index)
 
     def _get_metadata_item(self):
         metadata = {
             ".zgroup": self._get_item(".zgroup"),
             ".zattrs": self._get_item(".zattrs"),
         }
-        for array_name in self._array_infos.keys():
+        for array_name in self._arrays.keys():
             key = array_name + "/.zarray"
             metadata[key] = self._get_item(key)
             key = array_name + "/.zattrs"
@@ -557,10 +571,10 @@ class GenericArrayZarrStore(zarr.storage.Store):
         return self._attrs or {}
 
     # noinspection PyMethodMayBeStatic
-    def _get_array_spec_item(self, array_info):
+    def _get_array_spec_item(self, array: GenericArray):
 
         # JSON-encode fill_value
-        fill_value = array_info["fill_value"]
+        fill_value = array["fill_value"]
         if isinstance(fill_value, float):
             if math.isnan(fill_value):
                 fill_value = "NaN"
@@ -571,30 +585,30 @@ class GenericArrayZarrStore(zarr.storage.Store):
                     fill_value = "Infinity"
 
         # JSON-encode compressor
-        compressor = array_info["compressor"]
+        compressor = array["compressor"]
         if compressor is not None:
             compressor = compressor.get_config()
 
         # JSON-encode filters
-        filters = array_info["filters"]
+        filters = array["filters"]
         if filters is not None:
             filters = list(f.get_config() for f in filters)
 
         return {
             "zarr_format": 2,
-            "dtype": array_info["dtype"],
-            "shape": list(array_info["shape"]),
-            "chunks": list(array_info["chunks"]),
+            "dtype": array["dtype"],
+            "shape": list(array["shape"]),
+            "chunks": list(array["chunks"]),
             "fill_value": fill_value,
             "compressor": compressor,
             "filters": filters,
-            "order": array_info["order"],
+            "order": array["order"],
         }
 
     # noinspection PyMethodMayBeStatic
-    def _get_array_attrs_item(self, array_info):
-        dims = array_info["dims"]
-        attrs = array_info["attrs"]
+    def _get_array_attrs_item(self, array: GenericArray):
+        dims = array["dims"]
+        attrs = array["attrs"]
         return {
             "_ARRAY_DIMENSIONS": dims,
             **(attrs or {})
@@ -602,20 +616,23 @@ class GenericArrayZarrStore(zarr.storage.Store):
 
     # noinspection PyMethodMayBeStatic
     def _get_array_data_item(self,
-                             array_info: Dict[str, Any],
+                             array: Dict[str, Any],
                              chunk_index: Tuple[int]) \
             -> Union[bytes, np.ndarray]:
-        # Note, here array_info is expected to be "finalized",
+        # Note, here array is expected to be "finalized",
         # that is, validated and normalized
-        data = array_info["data"]
-        shape = array_info["shape"]
-        chunks = array_info["chunks"]
+
+        shape = array["shape"]
+        chunks = array["chunks"]
+        chunk_shape = None
+
+        data = array["data"]
         if data is None:
-            get_data = array_info["get_data"]
-            assert callable(get_data)
-            get_data_params = array_info["get_data_params"]
+            get_data = array["get_data"]
+            assert callable(get_data)  # Has been ensured before
+            get_data_params = array["get_data_params"]
             get_data_kwargs = dict(get_data_params)
-            get_data_info = array_info["get_data_info"]
+            get_data_info = array["get_data_info"]
             if get_data_info["has_chunk_info"]:
                 chunk_shape = get_chunk_shape(shape, chunks, chunk_index)
                 array_slices = get_array_slices(shape, chunks, chunk_index)
@@ -625,39 +642,47 @@ class GenericArrayZarrStore(zarr.storage.Store):
                     "slices": array_slices,
                 }
             if get_data_info["has_array_info"]:
-                get_data_kwargs["array_info"] = dict(array_info)
+                get_data_kwargs["array_info"] = dict(array)
 
-            data = get_data(chunk_index, **get_data_kwargs)
-                
-        chunk_encoding = array_info["chunk_encoding"]
+            data = get_data(**get_data_kwargs)
+
+        chunk_encoding = array["chunk_encoding"]
         if isinstance(data, np.ndarray):
             # As of Zarr 2.0, all chunks of an array
             # must have the same shape (= chunks)
             if data.shape != chunks:
-                padding = get_chunk_padding(shape, chunks, chunk_index)
-                fill_value = array_info["fill_value"]
-                constant_value = fill_value if fill_value is not None else 0
-                data = np.pad(data, padding,
-                              mode="constant",
-                              constant_values=constant_value)
-                # key = format_chunk_key(array_info["name"],
-                #                        chunk_index)
-                # raise ValueError(f"{key}:"
-                #                  f" data chunk must have shape {chunks},"
-                #                  f" but was {data.shape}")
+                # This commonly happens if array shape sizes
+                # are not integer multiple of chunk shape sizes.
+                if chunk_shape is None:
+                    # Compute expected chunk shape.
+                    chunk_shape = get_chunk_shape(shape, chunks, chunk_index)
+                # We will only pad the data if the data shape
+                # corresponds to the expected chunk's shape.
+                if data.shape == chunk_shape:
+                    padding = get_chunk_padding(shape, chunks, chunk_index)
+                    fill_value = array["fill_value"]
+                    data = np.pad(data, padding,
+                                  mode="constant",
+                                  constant_values=fill_value or 0)
+                else:
+                    key = format_chunk_key(array["name"], chunk_index)
+                    raise ValueError(f"{key}:"
+                                     f" data chunk at {chunk_index}"
+                                     f" must have shape {chunk_shape},"
+                                     f" but was {data.shape}")
             if chunk_encoding == "bytes":
                 # Convert to bytes, filter and compress
                 data = ndarray_to_bytes(data,
-                                        order=array_info["order"],
-                                        filters=array_info["filters"],
-                                        compressor=array_info["compressor"])
+                                        order=array["order"],
+                                        filters=array["filters"],
+                                        compressor=array["compressor"])
 
         # Sanity check
         if (chunk_encoding == "bytes"
             and not isinstance(data, bytes)) \
                 or (chunk_encoding == "ndarray"
                     and not isinstance(data, np.ndarray)):
-            key = format_chunk_key(array_info["name"],
+            key = format_chunk_key(array["name"],
                                    chunk_index)
             expected_type = "numpy.ndarray" if chunk_encoding == "ndarray" \
                 else "bytes"
@@ -672,7 +697,7 @@ class GenericArrayZarrStore(zarr.storage.Store):
         if len(array_name_and_value_id) != 2:
             raise KeyError(key)
         array_name, value_id = array_name_and_value_id
-        if array_name not in self._array_infos:
+        if array_name not in self._arrays:
             raise KeyError(key)
         return array_name, value_id
 
@@ -682,22 +707,22 @@ class GenericArrayZarrStore(zarr.storage.Store):
         try:
             chunk_index = tuple(map(int, index_id.split('.')))
         except (ValueError, TypeError):
-            raise KeyError(array_name + "/" + index_id)
-        array_info = self._array_infos[array_name]
-        shape = array_info["shape"]
+            raise KeyError(f"{array_name}/{index_id}")
+        array = self._arrays[array_name]
+        shape = array["shape"]
         if len(chunk_index) != len(shape):
-            raise KeyError(array_name + "/" + index_id)
-        num_chunks = array_info["num_chunks"]
+            raise KeyError(f"{array_name}/{index_id}")
+        num_chunks = array["num_chunks"]
         for i, n in zip(chunk_index, num_chunks):
             if not (0 <= i < n):
-                raise KeyError(array_name + "/" + index_id)
+                raise KeyError(f"{array_name}/{index_id}")
         return chunk_index
 
     def _get_array_keys(self, array_name: str) -> Iterator[str]:
         yield array_name + "/.zarray"
         yield array_name + "/.zattrs"
-        array_info = self._array_infos[array_name]
-        num_chunks = array_info["num_chunks"]
+        array = self._arrays[array_name]
+        num_chunks = array["num_chunks"]
         yield from get_chunk_keys(array_name, num_chunks)
 
 
@@ -767,3 +792,30 @@ def ndarray_to_bytes(
     if compressor is not None:
         data = compressor.encode(data)
     return data
+
+
+class XarrayZarrStore(GenericZarrStore):
+    def __init__(self, dataset: xr.Dataset):
+        arrays = []
+        for var_name, var in dataset.variables.items():
+            arrays.append(GenericArray(
+                name=str(var_name),
+                dtype=np.dtype(var.dtype).str,
+                dims=[str(dim) for dim in var.dims],
+                shape=var.shape,
+                chunks=[(max(*c) if len(c) > 1 else c[0])
+                        for c in var.chunks] if var.chunks else var.shape,
+                attrs={str(k): v for k, v in var.attrs.items()},
+                get_data=self.get_data,
+                get_data_params=dict(dataset=dataset),
+                chunk_encoding="bytes"
+            ))
+        super().__init__(*arrays)
+
+    @staticmethod
+    def get_data(dataset=None,
+                 chunk_info=None,
+                 array_info=None) -> np.ndarray:
+        var_name = array_info["name"]
+        array_slices = chunk_info["slices"]
+        return dataset[var_name][array_slices].values
