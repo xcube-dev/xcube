@@ -29,8 +29,13 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import ApiError
 
 
-class S3Mapping(collections.abc.Mapping):
-    """Represents a key-value mapping for the S3 API emulation.
+class ObjectStorage(collections.abc.Mapping):
+    """Represents the emulated object storage for the S3 API.
+
+    Keys are strings and expected to have format
+
+    * "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
+    * "{dataset_id}/{*path}" for other datasets.
 
     :param datasets: Mapping from dataset Identifier
         to (multi-level) datasets.
@@ -64,20 +69,40 @@ class S3Mapping(collections.abc.Mapping):
         """Overridden to avoid a call to __getitem__(),
         which will load data, but we want this to happen
         for direct __getitem__() calls only."""
-        zarr_store, item_key = self._parse_key(key)
+        try:
+            zarr_store, item_key = self._parse_key(key)
+        except (KeyError, ApiError.NotFound):
+            # Parsing failed, must be invalid key
+            return False
+        # Now check item_key
         return item_key in zarr_store
 
     def __getitem__(self, key: str) -> bytes:
+        """Get bytes object for *key*."""
         zarr_store, item_key = self._parse_key(key)
-        return zarr_store[item_key]
+        value = zarr_store[item_key]
+        if not isinstance(value, bytes):
+            raise RuntimeError(
+                f"Zarr store of type {type(zarr_store).__name__}"
+                f" must return type bytes for key {key!r},"
+                f" but was {type(value).__name__}"
+            )
+        return value
 
     def _parse_key(self, key: str) -> Tuple[zarr.storage.BaseStore, str]:
+        """Parses a given *key* which is expected to have format
+        "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
+        "{dataset_id}/{*path}" for other datasets.
+        """
         try:
             dataset_id, item_key = key.split("/", maxsplit=1)
         except ValueError:
             raise KeyError(key)
 
-        dataset = self.datasets[dataset_id]
+        try:
+            dataset = self.datasets[dataset_id]
+        except ApiError as e:
+            raise KeyError(key) from e
 
         if isinstance(dataset, MultiLevelDataset):
             try:

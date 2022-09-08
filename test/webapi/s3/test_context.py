@@ -29,7 +29,7 @@ from test.webapi.helpers import get_api_ctx
 from xcube.server.api import ServerConfig, ApiError
 from xcube.webapi.datasets.context import DatasetsContext
 from xcube.webapi.s3.context import S3Context
-from xcube.webapi.s3.s3mapping import S3Mapping
+from xcube.webapi.s3.objectstorage import ObjectStorage
 
 
 def get_s3_ctx(
@@ -43,7 +43,7 @@ class S3ContextTest(unittest.TestCase):
     def test_ctx_ok(self):
         ctx = get_s3_ctx()
         self.assertIsInstance(ctx.datasets_ctx, DatasetsContext)
-        self.assertIsInstance(ctx.s3_mapping, S3Mapping)
+        self.assertIsInstance(ctx.object_storage, ObjectStorage)
 
     def test_s3_mapping(self):
         ctx = get_s3_ctx()
@@ -57,12 +57,12 @@ class S3ContextTest(unittest.TestCase):
                           'demo/0.zarr/lat_bnds/.zattrs',
                           'demo/0.zarr/lat_bnds/0.0',
                           'demo/0.zarr/lon/.zarray'],
-                         list(ctx.s3_mapping.keys())[0:10])
+                         list(ctx.object_storage.keys())[0:10])
 
-        self.assertTrue('demo/0.zarr/lat/.zarray' in ctx.s3_mapping)
-        self.assertTrue('demo/0.zarr/lat_bnds/0.0' in ctx.s3_mapping)
+        self.assertTrue('demo/0.zarr/lat/.zarray' in ctx.object_storage)
+        self.assertTrue('demo/0.zarr/lat_bnds/0.0' in ctx.object_storage)
         with pytest.raises(ApiError.NotFound):
-            self.assertTrue('demi/0.zarr/lat_bnds/0.0' not in ctx.s3_mapping)
+            self.assertTrue('demi/0.zarr/lat_bnds/0.0' not in ctx.object_storage)
 
     def test_get_s3_bucket_mapping(self):
         ctx = get_s3_ctx()

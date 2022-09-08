@@ -19,114 +19,68 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os.path
-import pathlib
+import datetime
+import hashlib
+import time
 from typing import Optional
 
-from xcube.constants import LOG
-from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
-from xcube.webapi.s3.s3util import (
-    dict_to_xml,
-    list_s3_bucket_v1,
-    list_bucket_result_to_xml,
-    list_s3_bucket_v2,
-    mtime_to_str,
-    str_to_etag)
-from .context import S3Context
 from .api import api
-
-_LOG_S3BUCKET_HANDLER = False
+from .context import S3Context
 
 
 @api.route('/s3/{datasetId}/{*path}')
 class GetS3BucketObjectHandler(ApiHandler[S3Context]):
+    _TIME = time.time()
+
     # noinspection PyPep8Naming
     @api.operation(operationId='getS3ObjectMetadata_New',
                    summary='Get the metadata for a dataset S3 object.')
     async def head(self, datasetId: str, path: Optional[str]):
-        self.ctx.get_s3_bucket_mapping()
-        path = path or ""
-        key, local_path = self._get_key_and_local_path(datasetId, path)
-        if _LOG_S3BUCKET_HANDLER:
-            LOG.info(f'HEAD: key={key!r}, local_path={local_path!r}')
-        if local_path is None or not local_path.exists():
+        key = f"{datasetId}/{path}"
+        try:
+            value = self.ctx.object_storage[key]
+        except KeyError:
             await self._key_not_found(key)
             return
-        self.response.set_header('ETag', str_to_etag(str(local_path)))
-        self.response.set_header('Last-Modified',
-                                 mtime_to_str(local_path.stat().st_mtime))
-        if local_path.is_file():
-            self.response.set_header('Content-Length',
-                                     str(local_path.stat().st_size))
-        else:
-            self.response.set_header('Content-Length', '0')
+
+        e_tag = hashlib.md5(value).hexdigest()
+        last_modified = datetime.datetime.utcfromtimestamp(self._TIME)
+        content_length = len(value)
+
+        self.response.set_header('ETag', f'"{e_tag}"')
+        self.response.set_header('Last-Modified', str(last_modified))
+        self.response.set_header('Content-Length', str(content_length))
         await self.response.finish()
 
     # noinspection PyPep8Naming
-    @api.operation(operationId='getS3ObjectData',
+    @api.operation(operationId='getS3ObjectData_New',
                    summary='Get the data for a dataset S3 object.')
     async def get(self, datasetId: str, path: Optional[str]):
-        path = path or ""
-        key, local_path = self._get_key_and_local_path(datasetId, path)
-        if _LOG_S3BUCKET_HANDLER:
-            LOG.info(f'GET: key={key!r}, local_path={local_path!r}')
-        if local_path is None or not local_path.exists():
+        key = f"{datasetId}/{path}"
+        try:
+            value = self.ctx.object_storage[key]
+        except KeyError:
             await self._key_not_found(key)
             return
-        self.response.set_header('ETag', str_to_etag(str(local_path)))
-        self.response.set_header('Last-Modified',
-                                 mtime_to_str(local_path.stat().st_mtime))
+
+        e_tag = hashlib.md5(value).hexdigest()
+        last_modified = datetime.datetime.utcfromtimestamp(self._TIME)
+        content_length = len(value)
+
+        self.response.set_header('ETag', f'"{e_tag}"')
+        self.response.set_header('Last-Modified', str(last_modified))
+        self.response.set_header('Content-Length', str(content_length))
         self.response.set_header('Content-Type', 'binary/octet-stream')
-        if local_path.is_file():
-            self.response.set_header('Content-Length',
-                                     str(local_path.stat().st_size))
-            chunk_size = 1024 * 1024
-            with open(str(local_path), 'rb') as fp:
-                while True:
-                    chunk = fp.read(chunk_size)
-                    if len(chunk) == 0:
-                        break
-                    await self.response.finish(chunk)
-        else:
-            self.response.set_header('Content-Length', '0')
-            await self.response.finish()
+        await self.response.finish(value)
 
     def _key_not_found(self, key: str):
         self.response.set_header('Content-Type', 'application/xml')
         self.response.set_status(404)
-        return self.response.finish(dict_to_xml(
-            'Error',
-            dict(Code='NoSuchKey',
-                 Message='The specified key does not exist.',
-                 Key=key))
+        return self.response.finish(
+            f"<Error>"
+            f"  <Code>NoSuchKey</Code>"
+            f"  <Message>The specified key does not exist.</Message>"
+            f"  <Key>{key}</Key>"
+            f"</Error>"
         )
-
-    def _get_key_and_local_path(self, ds_id: str, path: str):
-        dataset_config = self.ctx.datasets_ctx.get_dataset_config(ds_id)
-        file_system = dataset_config.get('FileSystem', 'file')
-        required_file_systems = ['file', 'local']
-        if file_system not in required_file_systems:
-            required_file_system_string = " or ".join(required_file_systems)
-            raise ApiError.BadRequest(
-                f'AWS S3 data access: currently,'
-                f' only datasets in file systems'
-                f' {required_file_system_string!r} are supported,'
-                f' but dataset'
-                f' {ds_id!r} uses file system {file_system!r}')
-
-        key = f'{ds_id}/{path}'
-
-        # validate path
-        if path and '..' in path.split('/'):
-            raise ApiError.BadRequest(
-                f'AWS S3 data access: received illegal key {key!r}'
-            )
-
-        bucket_mapping = self.ctx.get_s3_bucket_mapping()
-        local_path = bucket_mapping.get(ds_id)
-        local_path = os.path.join(local_path, path)
-
-        local_path = os.path.normpath(local_path)
-
-        return key, pathlib.Path(local_path)
