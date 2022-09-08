@@ -49,29 +49,42 @@ class DatasetsMapping(collections.abc.Mapping):
         assert_instance(s3_mode, str, name="s3_mode")
         self._datasets_ctx = datasets_ctx
         self._s3_mode = s3_mode
+        self._s3_names = self._get_s3_names(datasets_ctx, s3_mode)
+
+    @staticmethod
+    def _get_s3_names(datasets_ctx: DatasetsContext,
+                      s3_mode: str):
+        s3_names = {}
+        for c in datasets_ctx.get_dataset_configs():
+            ds_id: str = c["Identifier"]
+            s3_name = ds_id
+            if s3_mode == S3_MODE_ML_DATASET:
+                if not s3_name.endswith(".levels"):
+                    s3_name += ".levels"
+            else:
+                if not s3_name.endswith(".zarr"):
+                    s3_name += ".zarr"
+            s3_names[s3_name] = ds_id
+        return s3_names
 
     def __len__(self) -> int:
-        return len(self._datasets_ctx.get_dataset_configs())
+        return len(self._s3_names)
 
     def __iter__(self) -> Iterator[str]:
-        return iter(c["Identifier"]
-                    for c in self._datasets_ctx.get_dataset_configs())
+        return iter(self._s3_names)
 
-    def __contains__(self, dataset_id: str) -> bool:
+    def __contains__(self, s3_name: str) -> bool:
         """Check if *dataset_id* is a valid dataset.
         Overridden to avoid a call to __getitem__(),
         which will open the dataset (or raise ApiError!),
         but we want this to happen for direct __getitem__()
         calls only."""
-        dataset_configs = self._datasets_ctx.get_dataset_configs()
-        dataset_config = self._datasets_ctx.find_dataset_config(
-            dataset_configs, dataset_id
-        )
-        return dataset_config is not None
+        return s3_name in self._s3_names
 
-    def __getitem__(self, dataset_id: str) \
+    def __getitem__(self, s3_name: str) \
             -> Union[xr.Dataset, MultiLevelDataset]:
         """Get or open the dataset given by *dataset_id*."""
+        dataset_id = self._s3_names[s3_name]
         # Will raise ApiError
         if self._s3_mode == S3_MODE_ML_DATASET:
             return self._datasets_ctx.get_ml_dataset(dataset_id)

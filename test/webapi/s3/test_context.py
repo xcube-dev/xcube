@@ -47,23 +47,23 @@ class S3ContextTest(unittest.TestCase):
 
     def test_s3_mapping(self):
         ctx = get_s3_ctx()
-        self.assertEqual(['demo/0.zarr/.zmetadata',
-                          'demo/0.zarr/.zgroup',
-                          'demo/0.zarr/.zattrs',
-                          'demo/0.zarr/lat/.zarray',
-                          'demo/0.zarr/lat/.zattrs',
-                          'demo/0.zarr/lat/0',
-                          'demo/0.zarr/lat_bnds/.zarray',
-                          'demo/0.zarr/lat_bnds/.zattrs',
-                          'demo/0.zarr/lat_bnds/0.0',
-                          'demo/0.zarr/lon/.zarray'],
+        self.assertEqual(['demo.zarr/.zmetadata',
+                          'demo.zarr/.zgroup',
+                          'demo.zarr/.zattrs',
+                          'demo.zarr/lat/.zarray',
+                          'demo.zarr/lat/.zattrs',
+                          'demo.zarr/lat/0',
+                          'demo.zarr/lat_bnds/.zarray',
+                          'demo.zarr/lat_bnds/.zattrs',
+                          'demo.zarr/lat_bnds/0.0',
+                          'demo.zarr/lon/.zarray'],
                          list(ctx.object_storage.keys())[0:10])
 
-        self.assertTrue('demo/0.zarr/lat/.zarray' in ctx.object_storage)
-        self.assertTrue('demo/0.zarr/lat_bnds/0.0' in ctx.object_storage)
-        with pytest.raises(ApiError.NotFound):
-            self.assertTrue('demi/0.zarr/lat_bnds/0.0' not in ctx.object_storage)
+        self.assertTrue('demo.zarr/lat/.zarray' in ctx.object_storage)
+        self.assertTrue('demo.zarr/lat_bnds/0.0' in ctx.object_storage)
+        self.assertTrue('demi.zarr/lat_bnds/0.0' not in ctx.object_storage)
 
+    # TODO (forman): remove!
     def test_get_s3_bucket_mapping(self):
         ctx = get_s3_ctx()
         bucket_mapping = ctx.get_s3_bucket_mapping()

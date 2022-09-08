@@ -33,32 +33,32 @@ class S3RoutesNewTest(RoutesTestCase):
         self._assert_fetch_head_s3_object(method='GET')
 
     def _assert_fetch_head_s3_object(self, method):
-        # response = self.fetch('/s3/demo', method=method)
+        # response = self.fetch('/s3/demo.zarr', method=method)
         # self.assertResponseOK(response)
-        # response = self.fetch('/s3/demo/', method=method)
+        # response = self.fetch('/s3/demo.zarr/', method=method)
         # self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/.zattrs', method=method)
+        response = self.fetch('/s3/demo.zarr/.zattrs', method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/.zgroup', method=method)
+        response = self.fetch('/s3/demo.zarr/.zgroup', method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/.zarray', method=method)
+        response = self.fetch('/s3/demo.zarr/.zarray', method=method)
         self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3/demo/time/.zattrs', method=method)
+        response = self.fetch('/s3/demo.zarr/time/.zattrs', method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/time/.zarray', method=method)
+        response = self.fetch('/s3/demo.zarr/time/.zarray', method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/time/.zgroup', method=method)
+        response = self.fetch('/s3/demo.zarr/time/.zgroup', method=method)
         self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3/demo/time/0', method=method)
+        response = self.fetch('/s3/demo.zarr/time/0', method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/conc_chl/.zattrs',
+        response = self.fetch('/s3/demo.zarr/conc_chl/.zattrs',
                               method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/conc_chl/.zarray',
+        response = self.fetch('/s3/demo.zarr/conc_chl/.zarray',
                               method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3/demo/conc_chl/.zgroup',
+        response = self.fetch('/s3/demo.zarr/conc_chl/.zgroup',
                               method=method)
         self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3/demo/conc_chl/3.2.4', method=method)
+        response = self.fetch('/s3/demo.zarr/conc_chl/3.2.4', method=method)
         self.assertResponseOK(response)
