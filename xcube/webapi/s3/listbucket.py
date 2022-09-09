@@ -19,30 +19,33 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import collections.abc
 import datetime
 import hashlib
 import time
-from typing import Dict, Any, List, Mapping
+from typing import Dict, Any, List, Mapping, Optional
+
+from xcube.util.assertions import assert_instance
 
 _CONTENT_LENGTH_DUMMY = -1
 _LAST_MODIFIED_DUMMY = str(datetime.datetime.utcfromtimestamp(time.time()))
 
 
 def list_s3_bucket_v2(object_storage: Mapping[str, bytes],
-                      bucket_name: str = None,
-                      delimiter: str = None,
-                      prefix: str = None,
-                      max_keys: int = None,
-                      start_after: str = None,
-                      continuation_token: str = None,
-                      storage_class: str = None,
-                      last_modified: str = None) -> Dict:
+                      name: Optional[str] = None,
+                      delimiter: Optional[str] = None,
+                      prefix: Optional[str] = None,
+                      max_keys: Optional[str] = None,
+                      start_after: Optional[str] = None,
+                      continuation_token: Optional[str] = None,
+                      storage_class: Optional[str] = None,
+                      last_modified: Optional[str] = None) -> Dict:
     """Implements AWS GET Bucket (List Objects) Version 2
     (https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html)
     for the local filesystem.
 
     :param object_storage: mapping from path-like keys to byte-objects.
-    :param bucket_name: The bucket name, defaults to "s3bucket"
+    :param name: The bucket name.
     :param delimiter: A delimiter is a character you use to group keys.
         If you specify a prefix, all of the keys that contain the same string
         between the prefix and the first occurrence of the delimiter after
@@ -88,7 +91,11 @@ def list_s3_bucket_v2(object_storage: Mapping[str, bytes],
     :return: A dictionary that represents the contents of a
         "ListBucketResult". Refer to AWS docs for details.
     """
-    bucket_name = bucket_name or 's3'
+    assert_instance(object_storage,
+                    collections.abc.Mapping,
+                    name="object_storage")
+    assert_instance(name, str, name="name")
+
     max_keys = max_keys or 1000
     start_after = None if continuation_token else start_after
     storage_class = storage_class or 'STANDARD'
@@ -136,13 +143,13 @@ def list_s3_bucket_v2(object_storage: Mapping[str, bytes],
             Key=key,
             Size=_CONTENT_LENGTH_DUMMY,
             LastModified=last_modified or _LAST_MODIFIED_DUMMY,
-            ETag=str_to_etag(key),
+            ETag=_str_to_e_tag(key),
             StorageClass=storage_class
         )
         contents_list.append(item)
 
     list_bucket_result: Dict[str, Any] = dict(
-        Name=bucket_name,
+        Name=name,
         Prefix=prefix,
         StartAfter=start_after,
         MaxKeys=max_keys,
@@ -167,7 +174,7 @@ def list_s3_bucket_v2(object_storage: Mapping[str, bytes],
 
 
 def list_s3_bucket_v1(object_storage: Mapping[str, bytes],
-                      bucket_name: str = None,
+                      name: str = None,
                       delimiter: str = None,
                       prefix: str = None,
                       max_keys: int = None,
@@ -179,7 +186,7 @@ def list_s3_bucket_v1(object_storage: Mapping[str, bytes],
     for the local filesystem.
 
     :param object_storage: mapping from path-like keys to byte-objects.
-    :param bucket_name: The bucket name, defaults to "s3bucket"
+    :param name: The bucket name, defaults to "s3bucket"
     :param delimiter: A delimiter is a character you use to group keys.
         If you specify a prefix, all of the keys that contain the same string
         between the prefix and the first occurrence of the delimiter after
@@ -215,7 +222,11 @@ def list_s3_bucket_v1(object_storage: Mapping[str, bytes],
     :return: A dictionary that represents the contents of
         a "ListBucketResult". Refer to AWS docs for details.
     """
-    bucket_name = bucket_name or 's3'
+    assert_instance(object_storage,
+                    collections.abc.Mapping,
+                    name="object_storage")
+    assert_instance(name, str, name="name")
+
     max_keys = max_keys or 1000
     storage_class = storage_class or 'STANDARD'
 
@@ -255,13 +266,13 @@ def list_s3_bucket_v1(object_storage: Mapping[str, bytes],
             Key=key,
             Size=_CONTENT_LENGTH_DUMMY,
             LastModified=last_modified or _LAST_MODIFIED_DUMMY,
-            ETag=str_to_etag(key),
+            ETag=_str_to_e_tag(key),
             StorageClass=storage_class
         )
         contents_list.append(item)
 
     list_bucket_result: Dict[str, Any] = dict(
-        Name=bucket_name,
+        Name=name,
         Prefix=prefix,
         Marker=marker,
         MaxKeys=max_keys,
@@ -337,9 +348,5 @@ def _value_to_text(value) -> str:
     return str(value)
 
 
-def mtime_to_str(mtime) -> str:
-    return str(datetime.datetime.fromtimestamp(mtime))
-
-
-def str_to_etag(s) -> str:
+def _str_to_e_tag(s) -> str:
     return '"' + hashlib.md5(bytes(s, encoding='utf-8')).hexdigest() + '"'

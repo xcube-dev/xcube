@@ -25,7 +25,6 @@ from typing import Union, Iterator
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from .config import S3_MODE_ML_DATASET
 from ..datasets.context import DatasetsContext
 from ...util.assertions import assert_instance
 
@@ -39,26 +38,28 @@ class DatasetsMapping(collections.abc.Mapping):
     class:DatasetsContext compatible with the mapping argument for
     class:EmulatedObjectStorage.
 
-    :param datasets_ctx: The datasets context
+    :param datasets_ctx: The datasets' context
+    :param is_multi_level: Whether this is a multi-level datasets
+        object storage
     """
 
     def __init__(self,
                  datasets_ctx: DatasetsContext,
-                 s3_mode: str):
+                 is_multi_level: bool = False):
         assert_instance(datasets_ctx, DatasetsContext, name="datasets_ctx")
-        assert_instance(s3_mode, str, name="s3_mode")
+        assert_instance(is_multi_level, bool, name="is_multi_level")
         self._datasets_ctx = datasets_ctx
-        self._s3_mode = s3_mode
-        self._s3_names = self._get_s3_names(datasets_ctx, s3_mode)
+        self._is_multi_level = is_multi_level
+        self._s3_names = self._get_s3_names(datasets_ctx, is_multi_level)
 
     @staticmethod
     def _get_s3_names(datasets_ctx: DatasetsContext,
-                      s3_mode: str):
+                      is_multi_level: bool):
         s3_names = {}
         for c in datasets_ctx.get_dataset_configs():
             ds_id: str = c["Identifier"]
             s3_name = ds_id
-            if s3_mode == S3_MODE_ML_DATASET:
+            if is_multi_level:
                 if not s3_name.endswith(".levels"):
                     s3_name += ".levels"
             else:
@@ -86,7 +87,7 @@ class DatasetsMapping(collections.abc.Mapping):
         """Get or open the dataset given by *dataset_id*."""
         dataset_id = self._s3_names[s3_name]
         # Will raise ApiError
-        if self._s3_mode == S3_MODE_ML_DATASET:
+        if self._is_multi_level:
             return self._datasets_ctx.get_ml_dataset(dataset_id)
         else:
             return self._datasets_ctx.get_dataset(dataset_id)
