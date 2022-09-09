@@ -1,15 +1,15 @@
 # The MIT License (MIT)
-# Copyright (c) 2021-2022 by the xcube development team and contributors
+# Copyright (c) 2021-2022 by the xcube team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -20,16 +20,18 @@
 # SOFTWARE.
 
 import warnings
-from typing import Collection, Optional, Tuple
+from collections.abc import Mapping
+from typing import Collection, Optional, Tuple, Callable, Dict, Any, List
 from typing import Union
 
 import cftime
+import dask.array as da
+import numpy as np
 import pandas as pd
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_given
-
 from xcube.util.timeindex import ensure_time_index_compatible
 
 Bbox = Tuple[float, float, float, float]
@@ -218,3 +220,147 @@ def select_temporal_subset(dataset: xr.Dataset,
         time_slice = ensure_time_index_compatible(dataset,
                                                   slice(time_1, time_2))
         return dataset.sel({time_name or 'time': time_slice})
+
+
+_PREDICATE_SIGNATURE = "predicate(" \
+                       "slice_array: xr.DataArray, " \
+                       "slice_info: Dict" \
+                       ") -> bool"
+
+Predicate = Callable[
+    [
+        xr.DataArray,
+        Dict[str, Any]
+    ],
+    bool
+]
+
+
+def select_label_subset(dataset: xr.Dataset,
+                        dim: str,
+                        predicate: Union[Predicate,
+                                         Mapping[str, Predicate]],
+                        use_dask: bool = False):
+    """Select the labels in *dataset* along a given dimension *dim*
+    using a predicate function *predicate* that is called for
+    all variable slices for a current label.
+
+    The *predicate* can also be provided as a mapping
+    from variable names to dedicated predicate functions.
+
+    The predicate function is called for all *dim* labels in *dataset*
+    and for every variable that contains *dim*.
+
+    If *predicate* returns False for any given label,
+    that label will be dropped from dimension *dim*.
+
+    Predicate functions are defined as follows:
+
+    ```python
+        def predicate(slice_array: xr.DataArray, slice_info: Dict) -> bool:
+            ...
+    ```
+
+    Here, *slice_array* is a variable's array slice for the given label.
+    The argument *slice_info* is a dictionary that contains the
+    following keys:
+
+    * var: str - name of the current variable.
+    * dim: str - value of *dim*.
+    * index: int - value for the current index within dimension *dim*.
+    * label: Optional[xr.DataArray] - value for the current label
+      within dimension *dim*.
+
+    Note, the value of "label" will be None, if *dataset*
+    does not contain a 1D-coordinate variable named *dim*.
+
+    The following example selects only time labels
+    from a 3-D (time, y, x) cube where the 2-D (y, x) images
+    of variable "CHL" comprises more than 50% valid values:
+
+    ```
+    >>> chl_data = np.random.random((5, 10, 20))
+    >>> chl_data = np.where(chl_data > 0.5, chl_data, np.nan)
+    >>> ds = xr.Dataset({"CHL": (["time", "y", "x"], chl_data)})
+    >>>
+    >>> def is_valid_slice(slice_array, slice_label):
+    >>>     return np.sum(np.isnan(slice_array)) / slice_array.size <= 0.5
+    >>>
+    >>> ds_subset = select_label_subset(ds, "time",
+    >>>                                 predicate={"CHL": is_valid_slice})
+    ```
+
+    :param dataset: The dataset.
+    :param dim: The name of the dimension
+        from which to select the labels.
+    :param predicate: The predicate function
+        or a mapping from variable names
+        to variable-specific predicate functions.
+    :param use_dask: Whether to use a Dask graph that will
+        compute the validity of labels in parallel.
+        For a large number of labels, very complex Dask
+        graphs will result (every label is a node)
+        whose overhead may compensate the performance gain.
+    :return: A new dataset with labels along *dim*
+        selected by the *predicate*.
+        If all labels are selected, *dataset* is returned without change.
+    """
+    if callable(predicate):
+        predicate_lookup = {var_name: predicate
+                            for var_name, var in dataset.data_vars.items()
+                            if dim in var.dims}
+    elif isinstance(predicate, Mapping):
+        predicate_lookup = predicate
+        for var_name, var_predicate in predicate_lookup.items():
+            if not callable(var_predicate):
+                raise TypeError(f'predicate for variable {var_name!r}'
+                                f' must be callable with'
+                                f' signature {_PREDICATE_SIGNATURE}')
+    else:
+        raise TypeError(f'predicate'
+                        f' must be callable with'
+                        f' signature {_PREDICATE_SIGNATURE}')
+
+    num_labels = dataset.dims[dim]
+
+    valid_mask = [_is_label_valid(dataset, predicate_lookup, dim, index)
+                  for index in range(num_labels)]
+
+    if use_dask:
+        valid_mask = da.stack(valid_mask).compute()
+
+    dropped_indexes = [i for i in range(num_labels) if not valid_mask[i]]
+    if not dropped_indexes:
+        return dataset
+
+    return dataset.drop_isel({dim: dropped_indexes})
+
+
+def _is_label_valid(dataset: xr.Dataset,
+                    predicate_lookup: Mapping[str, Predicate],
+                    dim: str,
+                    index: int) -> da.Array:
+    label = dataset[dim][index] if dim in dataset else None
+    results: List[da.Array] = []
+    for var_name, var in dataset.data_vars.items():
+        if dim in var.dims:
+            predicate = predicate_lookup.get(var_name)
+            if predicate is not None:
+                slice_array = var.isel({dim: index})
+                slice_info = dict(var=var_name,
+                                  dim=dim,
+                                  index=index,
+                                  label=label)
+                result = predicate(slice_array, slice_info)
+                if isinstance(result, xr.DataArray):
+                    result = result.data
+                if isinstance(result, da.Array):
+                    results.append(result)
+                else:
+                    results.append(da.from_array(result))
+    if len(results) == 0:
+        return da.from_array(True)
+    elif len(results) == 1:
+        return results[0]
+    else:
+        return da.all(da.stack(results))
