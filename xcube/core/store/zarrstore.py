@@ -37,8 +37,7 @@ import zarr.storage
 
 from xcube.util.assertions import assert_instance, assert_true
 
-GetData = Callable[[Tuple[int]],
-                   Union[bytes, np.ndarray]]
+GetData = Callable[[], Union[bytes, np.ndarray]]
 
 OnClose = Callable[[Dict[str, Any]], None]
 
