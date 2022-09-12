@@ -18,28 +18,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import collections.abc
 import unittest
-from typing import Dict, Any, Iterator, List
+from typing import Dict, Any
 
 import numpy as np
 import pytest
 import s3fs
 import xarray as xr
-import zarr.storage
 
-from test.s3test import S3Test, MOTO_SERVER_ENDPOINT_URL
+from test.s3test import MOTO_SERVER_ENDPOINT_URL
+from test.s3test import S3Test
 from xcube.core.new import new_cube
-from xcube.core.store.zarrstore import DatasetZarrStoreProperty, \
-    CachedZarrStore
-from xcube.core.store.zarrstore import GenericArray
-from xcube.core.store.zarrstore import GenericZarrStore
-from xcube.core.store.zarrstore import dict_to_bytes
-from xcube.core.store.zarrstore import get_array_slices
-from xcube.core.store.zarrstore import get_chunk_indexes
-from xcube.core.store.zarrstore import get_chunk_padding
-from xcube.core.store.zarrstore import get_chunk_shape
-from xcube.core.store.zarrstore import ndarray_to_bytes
+from xcube.core.zarrstore.diagnostic import DiagnosticZarrStore
+from xcube.core.zarrstore.generic import GenericArray
+from xcube.core.zarrstore.generic import GenericZarrStore
+from xcube.core.zarrstore.generic import dict_to_bytes
+from xcube.core.zarrstore.generic import get_array_slices
+from xcube.core.zarrstore.generic import get_chunk_indexes
+from xcube.core.zarrstore.generic import get_chunk_padding
+from xcube.core.zarrstore.generic import get_chunk_shape
+from xcube.core.zarrstore.generic import ndarray_to_bytes
 
 
 # noinspection PyMethodMayBeStatic
@@ -622,9 +620,11 @@ class GenericZarrStoreTest(unittest.TestCase):
 
     def test_store_override_setitem(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
-        with pytest.raises(TypeError,
-                           match="xcube.core.store.zarrstore.GenericZarrStore"
-                                 " is read-only"):
+        with pytest.raises(
+                TypeError,
+                match="xcube.core.zarrstore.generic.GenericZarrStore"
+                      " is read-only"
+        ):
             store["tsm/0.0.0"] = np.zeros((1, 2, 4)).tobytes()
 
     def test_store_override_delitem(self):
@@ -879,54 +879,6 @@ class GenericZarrStoreHelpersTest(unittest.TestCase):
                                            (0, 1, 1)))
 
 
-class DiagnosticZarrStore(zarr.storage.Store):
-
-    def __init__(self, store: collections.abc.MutableMapping):
-        self.store = store
-        self.records: List[str] = []
-        if hasattr(self.store, "listdir"):
-            self.listdir = self._listdir
-        if hasattr(self.store, "getsize"):
-            self.getsize = self._getsize
-
-    def _add_record(self, record: str):
-        self.records.append(record)
-
-    def _listdir(self, path: str = "") -> List[str]:
-        self._add_record(f"listdir({path!r})")
-        # noinspection PyUnresolvedReferences
-        return self.store.listdir(path=path)
-
-    def _getsize(self, key: str) -> int:
-        self._add_record(f"getsize({key!r})")
-        # noinspection PyUnresolvedReferences
-        return self.store.getsize(key)
-
-    def keys(self):
-        self._add_record("keys()")
-        return self.store.keys()
-
-    def __setitem__(self, key: str, value: bytes) -> None:
-        self._add_record(f"__setitem__({key!r}, {type(value).__name__})")
-        self.store.__setitem__(key, value)
-
-    def __delitem__(self, key: str) -> None:
-        self._add_record(f"__delitem__({key!r})")
-        self.store.__delitem__(key)
-
-    def __getitem__(self, key: str) -> bytes:
-        self._add_record(f"__getitem__({key!r})")
-        return self.store.__getitem__(key)
-
-    def __len__(self) -> int:
-        self._add_record("__len__()")
-        return self.store.__len__()
-
-    def __iter__(self) -> Iterator[str]:
-        self._add_record("__iter__()")
-        return self.store.__iter__()
-
-
 class CommonZarrStoreTest(unittest.TestCase):
     """This test is used to assert that Zarr stores
     behave as expected with xarray, because GenericArrayStore
@@ -1025,7 +977,7 @@ class CommonS3ZarrStoreTest(S3Test):
             if not r.startswith("__getitem__"):
                 self.fail(f"Unexpected store call: {r}")
 
-        zarr_store.reset_records()
+        zarr_store.records = []
         # noinspection PyUnusedLocal
         values = dataset.conc_chl.isel(time=0).values
 
@@ -1033,107 +985,3 @@ class CommonS3ZarrStoreTest(S3Test):
         for r in zarr_store.records:
             if not r.startswith("__getitem__"):
                 self.fail(f"Unexpected store call: {r}")
-
-
-class DatasetZarrStoreAccessorTest(unittest.TestCase):
-    def test_zarr_store_accessor_present(self):
-        dataset = xr.Dataset()
-        self.assertIsNotNone(dataset.zarr_store)
-        self.assertIsInstance(dataset.zarr_store, DatasetZarrStoreProperty)
-
-    def test_zarr_store_accessor_default(self):
-        dataset = xr.Dataset()
-        self.assertIsInstance(dataset.zarr_store(), GenericZarrStore)
-        self.assertIs(dataset.zarr_store(),
-                      dataset.zarr_store())
-
-    def test_zarr_store_accessor_set(self):
-        dataset = xr.Dataset()
-        zarr_store = dict()
-        dataset.zarr_store.set(zarr_store)
-        self.assertIs(zarr_store, dataset.zarr_store())
-        self.assertIs(dataset.zarr_store(),
-                      dataset.zarr_store())
-
-    def test_zarr_store_accessor_reset(self):
-        dataset = xr.Dataset()
-        zarr_store = dict()
-        dataset.zarr_store.set(zarr_store)
-        dataset.zarr_store.reset()
-        self.assertIsInstance(dataset.zarr_store(), GenericZarrStore)
-        self.assertIs(dataset.zarr_store(),
-                      dataset.zarr_store())
-
-    # noinspection PyMethodMayBeStatic
-    def test_zarr_store_type_check(self):
-        dataset = xr.Dataset()
-        with pytest.raises(TypeError,
-                           match="zarr_store must be an instance of"
-                                 " <class 'collections.abc.MutableMapping'>,"
-                                 " was <class 'int'>"):
-            dataset.zarr_store.set(42)
-
-
-class CachedZarrStoreTest(unittest.TestCase):
-
-    def get_store(self) -> CachedZarrStore:
-        self.store = {
-            "chl/.zarray": b"",
-            "chl/.zattrs": b"",
-            "chl/0.0.0": b"",
-            "chl/0.0.1": b"",
-            "chl/0.1.0": b"",
-            "chl/0.1.1": b"",
-        }
-        self.cache = DiagnosticZarrStore({})
-        return CachedZarrStore(self.store, self.cache)
-
-    def test_props(self):
-        store = self.get_store()
-        self.assertIsInstance(store.store, zarr.storage.BaseStore)
-        self.assertIsInstance(store.cache, zarr.storage.BaseStore)
-
-    def test_getitem(self):
-        store = self.get_store()
-
-        self.assertEqual(b"", store["chl/0.1.1"])
-        self.assertEqual(["__getitem__('chl/0.1.1')",
-                          "__setitem__('chl/0.1.1', bytes)"],
-                         self.cache.records)
-        self.assertIn("chl/0.1.1", self.store)
-        self.assertIn("chl/0.1.1", self.cache)
-
-        self.cache.records = []
-        self.assertEqual(b"", store["chl/0.1.1"])
-        self.assertEqual(["__getitem__('chl/0.1.1')"],
-                         self.cache.records)
-
-    def test_len(self):
-        store = self.get_store()
-        self.assertEqual(6, len(store))
-
-    def test_iter(self):
-        store = self.get_store()
-        self.assertEqual(['chl/.zarray',
-                          'chl/.zattrs',
-                          'chl/0.0.0',
-                          'chl/0.0.1',
-                          'chl/0.1.0',
-                          'chl/0.1.1'],
-                         list(iter(store)))
-
-    def test_contains(self):
-        store = self.get_store()
-        self.assertIn('chl/.zarray', store)
-        self.assertNotIn('chl', store)
-
-    def test_setitem(self):
-        store = self.get_store()
-        with pytest.raises(NotImplementedError):
-            store['chl/0.0.1'] = b""
-
-    def test_delitem(self):
-        store = self.get_store()
-        with pytest.raises(NotImplementedError):
-            del store['chl/0.0.1']
-

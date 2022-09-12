@@ -30,6 +30,10 @@ import xarray as xr
 import zarr
 
 from xcube.core.chunkstore import LoggingStore
+# Note, we need the following reference to register the
+# xarray property accessor
+# noinspection PyUnresolvedReferences
+from xcube.core.zarrstore import DatasetZarrStoreProperty
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
@@ -44,10 +48,6 @@ from ..helpers import is_local_fs
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
 from ...error import DataStoreError
-# Note, we need the following reference to register the
-# xarray property accessor
-# noinspection PyUnresolvedReferences
-from ...zarrstore import DatasetZarrStoreProperty
 
 ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
