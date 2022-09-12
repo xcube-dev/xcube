@@ -25,4 +25,4 @@ from .generic import GenericArray
 from .generic import GenericArrayLike
 from .generic import GenericZarrStore
 from .logging import LoggingZarrStore
-from .xraccessor import DatasetZarrStoreProperty
+from .xraccessor import DatasetZarrStoreHolder

@@ -25,37 +25,37 @@ import pytest
 import xarray as xr
 
 from xcube.core.zarrstore.generic import GenericZarrStore
-from xcube.core.zarrstore.xraccessor import DatasetZarrStoreProperty
+from xcube.core.zarrstore.xraccessor import DatasetZarrStoreHolder
 
 
-class DatasetZarrStorePropertyTest(unittest.TestCase):
-    def test_zarr_store_accessor_present(self):
+class DatasetZarrStoreHolderTest(unittest.TestCase):
+    def test_zarr_store_holder_present(self):
         dataset = xr.Dataset()
         self.assertIsNotNone(dataset.zarr_store)
-        self.assertIsInstance(dataset.zarr_store, DatasetZarrStoreProperty)
+        self.assertIsInstance(dataset.zarr_store, DatasetZarrStoreHolder)
 
-    def test_zarr_store_accessor_default(self):
+    def test_zarr_store_holder_default(self):
         dataset = xr.Dataset()
-        self.assertIsInstance(dataset.zarr_store(), GenericZarrStore)
-        self.assertIs(dataset.zarr_store(),
-                      dataset.zarr_store())
+        self.assertIsInstance(dataset.zarr_store.get(), GenericZarrStore)
+        self.assertIs(dataset.zarr_store.get(),
+                      dataset.zarr_store.get())
 
-    def test_zarr_store_accessor_set(self):
+    def test_zarr_store_holder_set(self):
         dataset = xr.Dataset()
         zarr_store = dict()
         dataset.zarr_store.set(zarr_store)
-        self.assertIs(zarr_store, dataset.zarr_store())
-        self.assertIs(dataset.zarr_store(),
-                      dataset.zarr_store())
+        self.assertIs(zarr_store, dataset.zarr_store.get())
+        self.assertIs(dataset.zarr_store.get(),
+                      dataset.zarr_store.get())
 
-    def test_zarr_store_accessor_reset(self):
+    def test_zarr_store_holder_reset(self):
         dataset = xr.Dataset()
         zarr_store = dict()
         dataset.zarr_store.set(zarr_store)
         dataset.zarr_store.reset()
-        self.assertIsInstance(dataset.zarr_store(), GenericZarrStore)
-        self.assertIs(dataset.zarr_store(),
-                      dataset.zarr_store())
+        self.assertIsInstance(dataset.zarr_store.get(), GenericZarrStore)
+        self.assertIs(dataset.zarr_store.get(),
+                      dataset.zarr_store.get())
 
     # noinspection PyMethodMayBeStatic
     def test_zarr_store_type_check(self):

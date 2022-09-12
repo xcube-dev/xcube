@@ -32,7 +32,7 @@ import zarr
 # Note, we need the following reference to register the
 # xarray property accessor
 # noinspection PyUnresolvedReferences
-from xcube.core.zarrstore import DatasetZarrStoreProperty
+from xcube.core.zarrstore import DatasetZarrStoreHolder
 from xcube.core.zarrstore import LoggingZarrStore
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true

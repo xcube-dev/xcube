@@ -246,15 +246,15 @@ class FsDataStoresTestMixin(ABC):
     def _assert_zarr_store_direct_ok(self, dataset):
         self.assertIsInstance(dataset, xr.Dataset)
         self.assertTrue(hasattr(dataset, 'zarr_store'))
-        self.assertIsInstance(dataset.zarr_store(),
+        self.assertIsInstance(dataset.zarr_store.get(),
                               collections.abc.MutableMapping)
-        self.assertNotIsInstance(dataset.zarr_store(),
+        self.assertNotIsInstance(dataset.zarr_store.get(),
                                  GenericZarrStore)
 
     def _assert_zarr_store_generic_ok(self, dataset):
         self.assertIsInstance(dataset, xr.Dataset)
         self.assertTrue(hasattr(dataset, 'zarr_store'))
-        self.assertIsInstance(dataset.zarr_store(),
+        self.assertIsInstance(dataset.zarr_store.get(),
                               GenericZarrStore)
 
     def _assert_multi_level_dataset_data_ok(self, ml_dataset):
@@ -294,8 +294,10 @@ class FsDataStoresTestMixin(ABC):
                              dataset.var_c.encoding.get('_FillValue'))
 
             self.assertTrue(hasattr(dataset, 'zarr_store'))
-            self.assertIsInstance(dataset.zarr_store(),
+            self.assertIsInstance(dataset.zarr_store.get(),
                                   collections.abc.MutableMapping)
+            self.assertNotIsInstance(dataset.zarr_store.get(),
+                                     GenericZarrStore)
 
     def _assert_multi_level_dataset_format_with_tile_size(
             self,

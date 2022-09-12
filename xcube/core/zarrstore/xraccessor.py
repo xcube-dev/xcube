@@ -21,15 +21,17 @@
 
 import collections.abc
 import threading
+import warnings
 from typing import Optional
 
 import xarray as xr
 
+from xcube.constants import LOG
 from xcube.util.assertions import assert_instance
 
 
 @xr.register_dataset_accessor('zarr_store')
-class DatasetZarrStoreProperty:
+class DatasetZarrStoreHolder:
     """Represents a xarray dataset property ``zarr_store``.
 
     It is used to permanently associate a dataset with its
@@ -61,7 +63,7 @@ class DatasetZarrStoreProperty:
         self._zarr_store: Optional[collections.abc.MutableMapping] = None
         self._lock = threading.RLock()
 
-    def __call__(self) -> collections.abc.MutableMapping:
+    def get(self) -> collections.abc.MutableMapping:
         """Get the Zarr store of a dataset.
         If no Zarr store has been set, the method will use
         ``GenericZarrStore.from_dataset()`` to create and set
@@ -77,6 +79,10 @@ class DatasetZarrStoreProperty:
                     self._zarr_store = GenericZarrStore.from_dataset(
                         self._dataset
                     )
+                    source = self._dataset.encoding.get("source", "?")
+                    LOG.warning(f"dataset {source!r} is assigned a"
+                                f" GenericZarrStore which may introduce"
+                                f" performance penalties")
         return self._zarr_store
 
     def set(self, zarr_store: collections.abc.MutableMapping) -> None:

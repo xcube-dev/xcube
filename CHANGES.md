@@ -18,6 +18,13 @@
   In turn, the classes of module `xcube.core.chunkstore` have been
   deprecated.
 
+* Added a xarray dataset accessor 
+  `xcube.core.zarrstore.DatasetZarrStoreHolder` that enhances instances of
+  `xarray.Dataset` by a new property `zarr_store`. It holds a Zarr store
+  instance that represents the datasets as a key-value mapping.
+  This prepares later versions of xcube Server for publishing all datasets
+  via an emulated S3 API.
+
 * Added a new function `xcube.core.select.select_label_subset()` that 
   is used to select dataset labels along a given dimension using
   user-defined predicate functions.
