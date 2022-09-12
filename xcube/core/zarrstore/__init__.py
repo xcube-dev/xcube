@@ -24,5 +24,5 @@ from .diagnostic import DiagnosticZarrStore
 from .generic import GenericArray
 from .generic import GenericArrayLike
 from .generic import GenericZarrStore
+from .holder import ZarrStoreHolder
 from .logging import LoggingZarrStore
-from .xraccessor import DatasetZarrStoreHolder

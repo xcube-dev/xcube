@@ -31,7 +31,7 @@ from xcube.util.assertions import assert_instance
 
 
 @xr.register_dataset_accessor('zarr_store')
-class DatasetZarrStoreHolder:
+class ZarrStoreHolder:
     """Represents a xarray dataset property ``zarr_store``.
 
     It is used to permanently associate a dataset with its

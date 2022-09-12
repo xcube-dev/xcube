@@ -25,14 +25,14 @@ import pytest
 import xarray as xr
 
 from xcube.core.zarrstore.generic import GenericZarrStore
-from xcube.core.zarrstore.xraccessor import DatasetZarrStoreHolder
+from xcube.core.zarrstore.holder import ZarrStoreHolder
 
 
-class DatasetZarrStoreHolderTest(unittest.TestCase):
+class ZarrStoreHolderTest(unittest.TestCase):
     def test_zarr_store_holder_present(self):
         dataset = xr.Dataset()
         self.assertIsNotNone(dataset.zarr_store)
-        self.assertIsInstance(dataset.zarr_store, DatasetZarrStoreHolder)
+        self.assertIsInstance(dataset.zarr_store, ZarrStoreHolder)
 
     def test_zarr_store_holder_default(self):
         dataset = xr.Dataset()
