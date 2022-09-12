@@ -2,7 +2,7 @@
 
 ### Enhancements
 
-* Added a new package `xcube.core.zarrstore` that export a number
+* Added a new package `xcube.core.zarrstore` that exports a number
   of useful 
   [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
   implementations: 
