@@ -22,7 +22,7 @@
 import math
 import pathlib
 import warnings
-from typing import Dict, Any, List, Union, Tuple, Optional
+from typing import Dict, Any, List, Union, Optional
 
 import fsspec
 import numpy as np
@@ -34,6 +34,10 @@ from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.subsampling import AGG_METHODS
+# Note, we need the following reference to register the
+# xarray property accessor
+# noinspection PyUnresolvedReferences
+from xcube.core.zarrstore import DatasetZarrStoreProperty
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -231,6 +235,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 if use_saved_levels:
                     level_dataset = xr.open_zarr(zarr_store,
                                                  consolidated=consolidated)
+                    level_dataset.zarr_store.set(zarr_store)
                     ml_dataset.set_dataset(index, level_dataset)
 
         return data_id
@@ -324,13 +329,16 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                                                       max_size=cache_size)
 
         try:
-            return xr.open_zarr(level_zarr_store,
-                                consolidated=consolidated,
-                                **open_params)
+            level_dataset = xr.open_zarr(level_zarr_store,
+                                         consolidated=consolidated,
+                                         **open_params)
         except ValueError as e:
             raise DataStoreError(f'Failed to open'
                                  f' dataset {level_path!r}:'
                                  f' {e}') from e
+
+        level_dataset.zarr_store.set(level_zarr_store)
+        return level_dataset
 
     @staticmethod
     def compute_size_weights(num_levels: int) -> np.ndarray:

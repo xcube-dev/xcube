@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -24,17 +24,21 @@ from typing import Dict, Any
 
 import numpy as np
 import pytest
+import s3fs
 import xarray as xr
 
-from xcube.core.zarrstore import GenericArray
-from xcube.core.zarrstore import GenericZarrStore
-from xcube.core.zarrstore import dict_to_bytes
-from xcube.core.zarrstore import get_array_slices
-from xcube.core.zarrstore import get_chunk_indexes
-from xcube.core.zarrstore import get_chunk_padding
-from xcube.core.zarrstore import get_chunk_shape
-from xcube.core.zarrstore import ndarray_to_bytes
-from xcube.core.zarrstore import str_to_bytes
+from test.s3test import MOTO_SERVER_ENDPOINT_URL
+from test.s3test import S3Test
+from xcube.core.new import new_cube
+from xcube.core.zarrstore.diagnostic import DiagnosticZarrStore
+from xcube.core.zarrstore.generic import GenericArray
+from xcube.core.zarrstore.generic import GenericZarrStore
+from xcube.core.zarrstore.generic import dict_to_bytes
+from xcube.core.zarrstore.generic import get_array_slices
+from xcube.core.zarrstore.generic import get_chunk_indexes
+from xcube.core.zarrstore.generic import get_chunk_padding
+from xcube.core.zarrstore.generic import get_chunk_shape
+from xcube.core.zarrstore.generic import ndarray_to_bytes
 
 
 # noinspection PyMethodMayBeStatic
@@ -395,6 +399,9 @@ class GenericZarrStoreTest(unittest.TestCase):
                         dtype=np.dtype(np.float32).str,
                         get_data=get_data)
 
+        store.add_array(name="spatial_ref", dims=(),
+                        data=np.array(0))
+
         return store
 
     def setUp(self) -> None:
@@ -449,13 +456,13 @@ class GenericZarrStoreTest(unittest.TestCase):
             '.zmetadata',
             '.zgroup',
             '.zattrs',
-            'x', 'x/.zarray', 'x/.zattrs',
+            'x/.zarray', 'x/.zattrs',
             'x/0',
-            'y', 'y/.zarray', 'y/.zattrs',
+            'y/.zarray', 'y/.zattrs',
             'y/0',
-            'time', 'time/.zarray', 'time/.zattrs',
+            'time/.zarray', 'time/.zattrs',
             'time/0',
-            'chl', 'chl/.zarray', 'chl/.zattrs',
+            'chl/.zarray', 'chl/.zattrs',
             'chl/0.0.0', 'chl/0.0.1',
             'chl/0.1.0', 'chl/0.1.1',
             'chl/0.2.0', 'chl/0.2.1',
@@ -465,11 +472,14 @@ class GenericZarrStoreTest(unittest.TestCase):
             'chl/2.0.0', 'chl/2.0.1',
             'chl/2.1.0', 'chl/2.1.1',
             'chl/2.2.0', 'chl/2.2.1',
+            'spatial_ref/0',
+            'spatial_ref/.zarray',
+            'spatial_ref/.zattrs',
         }, set(store.keys()))
 
     def test_store_override_listdir(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
-        self.assertEqual([
+        self.assertEqual({
             '.zmetadata',
             '.zgroup',
             '.zattrs',
@@ -477,7 +487,8 @@ class GenericZarrStoreTest(unittest.TestCase):
             'y',
             'time',
             'chl',
-        ], store.listdir(''))
+            'spatial_ref',
+        }, set(store.listdir('')))
 
         self.assertEqual([
             'time/.zarray',
@@ -501,14 +512,18 @@ class GenericZarrStoreTest(unittest.TestCase):
     def test_store_override_rmdir(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         store.rmdir("chl")
-        self.assertEqual([
-            '.zmetadata',
-            '.zgroup',
-            '.zattrs',
-            'x',
-            'y',
-            'time',
-        ], store.listdir(""))
+        self.assertEqual(
+            [
+                '.zattrs',
+                '.zgroup',
+                '.zmetadata',
+                'spatial_ref',
+                'time',
+                'x',
+                'y'
+            ],
+            store.listdir("")
+        )
 
         # Also remove dimension sizes from object
         store.rmdir("x")
@@ -522,15 +537,19 @@ class GenericZarrStoreTest(unittest.TestCase):
     def test_store_override_rename(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         store.rename("chl", "chl_old")
-        self.assertEqual([
-            '.zmetadata',
-            '.zgroup',
-            '.zattrs',
-            'x',
-            'y',
-            'time',
-            'chl_old',
-        ], store.listdir(""))
+        self.assertEqual(
+            [
+                '.zattrs',
+                '.zgroup',
+                '.zmetadata',
+                'chl_old',
+                'spatial_ref',
+                'time',
+                'x',
+                'y'
+            ],
+            store.listdir("")
+        )
 
         with pytest.raises(ValueError,
                            match="can only rename arrays,"
@@ -574,9 +593,7 @@ class GenericZarrStoreTest(unittest.TestCase):
 
     def test_store_override_len(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
-        self.assertEqual(3  # 3 top-level items
-                         + 3 * 4  # 3 x coordinate array items
-                         + 3 + 3 * 3 * 2,  # 1 x "chl" data array items
+        self.assertEqual(len(list(store.keys())),
                          len(store))
 
     def test_store_override_contains(self):
@@ -584,7 +601,7 @@ class GenericZarrStoreTest(unittest.TestCase):
         self.assertTrue(".zmetadata" in store)
         self.assertTrue(".zattrs" in store)
         self.assertTrue(".zgroup" in store)
-        self.assertTrue("x" in store)
+        self.assertFalse("x" in store)
         self.assertTrue("x/.zarray" in store)
         self.assertTrue("x/.zattrs" in store)
         self.assertTrue("x/0" in store)
@@ -595,19 +612,20 @@ class GenericZarrStoreTest(unittest.TestCase):
     def test_store_override_getitem(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         self.assertIsInstance(store[".zattrs"], bytes)
-        self.assertIsInstance(store["x"], bytes)
         self.assertIsInstance(store["x/.zarray"], bytes)
         self.assertIsInstance(store["x/0"], bytes)
 
-        with pytest.raises(KeyError, match="a"):
+        with pytest.raises(KeyError, match="x"):
             # noinspection PyUnusedLocal
-            a = store["a"]
+            a = store["x"]
 
     def test_store_override_setitem(self):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
-        with pytest.raises(TypeError,
-                           match="xcube.core.zarrstore.GenericZarrStore"
-                                 " is read-only"):
+        with pytest.raises(
+                TypeError,
+                match="xcube.core.zarrstore.generic.GenericZarrStore"
+                      " is read-only"
+        ):
             store["tsm/0.0.0"] = np.zeros((1, 2, 4)).tobytes()
 
     def test_store_override_delitem(self):
@@ -624,7 +642,7 @@ class GenericZarrStoreTest(unittest.TestCase):
         ds = xr.open_zarr(store)
 
         self.assertEqual({'x', 'y', 'time'}, set(ds.coords))
-        self.assertEqual({'chl'}, set(ds.data_vars))
+        self.assertEqual({'spatial_ref', 'chl'}, set(ds.data_vars))
 
         self.assertEqual(np.float32, ds.chl.dtype)
         self.assertEqual(shape, ds.chl.shape)
@@ -698,7 +716,7 @@ class GenericZarrStoreTest(unittest.TestCase):
         ds = xr.open_zarr(store)
 
         self.assertEqual({'x', 'y', 'time'}, set(ds.coords))
-        self.assertEqual({'chl'}, set(ds.data_vars))
+        self.assertEqual({'spatial_ref', 'chl'}, set(ds.data_vars))
 
         self.assertEqual(np.float32, ds.chl.dtype)
         self.assertEqual(shape, ds.chl.shape)
@@ -762,10 +780,26 @@ class GenericZarrStoreTest(unittest.TestCase):
             )
         )
 
+    def test_from_dataset(self):
+        store1 = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
+        dataset1: xr.Dataset = xr.open_zarr(store1)
+
+        store2 = GenericZarrStore.from_dataset(dataset1)
+        self.assertIsInstance(store2, GenericZarrStore)
+        self.assertIsNot(store2, store1)
+
+        dataset2: xr.Dataset = xr.open_zarr(store2)
+
+        xr.testing.assert_equal(dataset2, dataset1)
+
+        dataset1.load()
+        dataset2.load()
+        xr.testing.assert_equal(dataset2, dataset1)
+
 
 class GenericZarrStoreHelpersTest(unittest.TestCase):
     def test_get_chunk_indexes(self):
-        self.assertEqual([()],
+        self.assertEqual([(0,)],
                          list(get_chunk_indexes(())))
         self.assertEqual([(0,), (1,), (2,), (3,)],
                          list(get_chunk_indexes((4,))))
@@ -860,7 +894,6 @@ class CommonZarrStoreTest(unittest.TestCase):
             }),
             ".zattrs": dict_to_bytes({
             }),
-            "x": str_to_bytes(""),
             "x/.zarray": dict_to_bytes({
                 "zarr_format": 2,
                 "dtype": self.dtype.str,
@@ -869,12 +902,27 @@ class CommonZarrStoreTest(unittest.TestCase):
                 "order": "C",
                 "compressor": None,
                 "filters": None,
-                "fill_value": None,
+                "fill_value": 7,
             }),
             "x/.zattrs": dict_to_bytes({
                 "_ARRAY_DIMENSIONS": ["x"],
             }),
+            "x/0": ndarray_to_bytes(np.linspace(1, 4, 4, dtype=self.dtype)),
+            "x/1": ndarray_to_bytes(np.linspace(5, 8, 4, dtype=self.dtype)),
         }
+
+    def test_works_with_bytes_chunks(self):
+        ds = xr.open_zarr(self.store, consolidated=False, decode_cf=False)
+        self.assertEqual(
+            [1, 2, 3, 4, 5, 6, 7, 8],
+            list(ds.x.values)
+        )
+
+        ds = xr.open_zarr(self.store, consolidated=False, decode_cf=True)
+        np.testing.assert_array_equal(
+            np.array([1., 2., 3., 4., 5., 6., float('nan'), 8.]),
+            ds.x.values
+        )
 
     def test_works_with_ndarray_chunks(self):
         # Here, x's chunks are numpy arrays rather than bytes!
@@ -883,21 +931,58 @@ class CommonZarrStoreTest(unittest.TestCase):
             "x/1": np.linspace(5, 8, 4, dtype=self.dtype),
         })
 
-        ds = xr.open_zarr(self.store, consolidated=False)
+        ds = xr.open_zarr(self.store, consolidated=False, decode_cf=False)
         self.assertEqual(
             [1, 2, 3, 4, 5, 6, 7, 8],
-            list(ds.x)
+            list(ds.x.values)
         )
 
-    def test_works_with_bytes_chunks(self):
-        # Here, x's chunks are numpy arrays rather than bytes!
-        self.store.update({
-            "x/0": ndarray_to_bytes(np.linspace(1, 4, 4, dtype=self.dtype)),
-            "x/1": ndarray_to_bytes(np.linspace(5, 8, 4, dtype=self.dtype)),
-        })
 
-        ds = xr.open_zarr(self.store, consolidated=False)
-        self.assertEqual(
-            [1, 2, 3, 4, 5, 6, 7, 8],
-            list(ds.x)
+class CommonS3ZarrStoreTest(S3Test):
+    """This test is used to assert that the s3fs Zarr store
+    behaves as expected with xarray.
+    """
+
+    def test_it(self):
+        cube = new_cube(variables=dict(conc_chl=0.5)).chunk(
+            dict(time=1, lat=90, lon=90)
         )
+
+        s3 = s3fs.S3FileSystem(
+            anon=False,
+            client_kwargs=dict(
+                endpoint_url=MOTO_SERVER_ENDPOINT_URL,
+            )
+        )
+
+        s3.mkdir("xcube-test")
+        s3.mkdir("xcube-test/cube.zarr")
+        zarr_store = s3.get_mapper("xcube-test/cube.zarr")
+        cube.to_zarr(zarr_store)
+
+        zarr_store = s3.get_mapper("xcube-test/cube.zarr")
+        zarr_store = DiagnosticZarrStore(zarr_store)
+
+        dataset = xr.open_zarr(zarr_store)
+        self.assertIsInstance(dataset, xr.Dataset)
+
+        # print(zarr_store.records)
+
+        self.assertIn("__getitem__('.zmetadata')", zarr_store.records)
+        self.assertIn("__getitem__('lon/0')", zarr_store.records)
+        self.assertIn("__getitem__('lat/0')", zarr_store.records)
+        self.assertIn("__getitem__('time/0')", zarr_store.records)
+
+        # Assert that Zarr used __getitem__ only
+        for r in zarr_store.records:
+            if not r.startswith("__getitem__"):
+                self.fail(f"Unexpected store call: {r}")
+
+        zarr_store.records = []
+        # noinspection PyUnusedLocal
+        values = dataset.conc_chl.isel(time=0).values
+
+        # Assert that Zarr used __getitem__ only
+        for r in zarr_store.records:
+            if not r.startswith("__getitem__"):
+                self.fail(f"Unexpected store call: {r}")

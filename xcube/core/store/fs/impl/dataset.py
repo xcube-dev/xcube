@@ -29,7 +29,11 @@ import s3fs
 import xarray as xr
 import zarr
 
-from xcube.core.chunkstore import LoggingStore
+# Note, we need the following reference to register the
+# xarray property accessor
+# noinspection PyUnresolvedReferences
+from xcube.core.zarrstore import DatasetZarrStoreProperty
+from xcube.core.zarrstore import LoggingZarrStore
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonArraySchema
@@ -179,17 +183,20 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
             zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
         log_access = open_params.pop('log_access', None)
         if log_access:
-            zarr_store = LoggingStore(zarr_store,
-                                      name=f'zarr_store({data_id!r})')
+            zarr_store = LoggingZarrStore(zarr_store,
+                                          name=f'zarr_store({data_id!r})')
         consolidated = open_params.pop('consolidated',
                                        fs.exists(f'{data_id}/.zmetadata'))
         try:
-            return xr.open_zarr(zarr_store,
-                                consolidated=consolidated,
-                                **open_params)
+            dataset = xr.open_zarr(zarr_store,
+                                   consolidated=consolidated,
+                                   **open_params)
         except ValueError as e:
             raise DataStoreError(f'Failed to open'
                                  f' dataset {data_id!r}: {e}') from e
+
+        dataset.zarr_store.set(zarr_store)
+        return dataset
 
     # noinspection PyMethodMayBeStatic
     def get_write_data_params_schema(self) -> JsonObjectSchema:
@@ -208,8 +215,8 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         zarr_store = fs.get_mapper(data_id, create=True)
         log_access = write_params.pop('log_access', None)
         if log_access:
-            zarr_store = LoggingStore(zarr_store,
-                                      name=f'zarr_store({data_id!r})')
+            zarr_store = LoggingZarrStore(zarr_store,
+                                          name=f'zarr_store({data_id!r})')
         consolidated = write_params.pop('consolidated', True)
         try:
             data.to_zarr(zarr_store,

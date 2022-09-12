@@ -2,12 +2,21 @@
 
 ### Enhancements
 
-* Added a new 
+* Added a new package `xcube.core.zarrstore` that export a number
+  of useful 
   [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
-  implementation 
-  `xcube.core.zarrstore.GenericZarrStore` that comprises 
-  user-defined, generic array definitions. Arrays will compute 
-  their chunks either from a function or a static data array. 
+  implementations: 
+  * `xcube.core.zarrstore.GenericZarrStore` comprises 
+    user-defined, generic array definitions. Arrays will compute 
+    their chunks either from a function or a static data array. 
+  * `xcube.core.zarrstore.LoggingZarrStore` is used to log 
+    Zarr store access performance and therefore useful for 
+    runtime optimisation and debugging. 
+  * `xcube.core.zarrstore.DiagnosticZarrStore` is used for testing
+    Zarr store implementations. 
+  
+  In turn, the classes of module `xcube.core.chunkstore` have been
+  deprecated.
 
 * Added a new function `xcube.core.select.select_label_subset()` that 
   is used to select dataset labels along a given dimension using
