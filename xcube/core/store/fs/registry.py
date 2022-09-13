@@ -25,15 +25,16 @@ import fsspec
 
 from .accessor import FsAccessor
 from .accessor import FsDataAccessor
-from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
-from .impl.dataset import DatasetNetcdfFsDataAccessor
 from .impl.dataset import DatasetGeoTiffFsDataAccessor
+from .impl.dataset import DatasetNetcdfFsDataAccessor
 from .impl.dataset import DatasetZarrFsDataAccessor
 from .impl.fs import FileFsAccessor
 from .impl.fs import MemoryFsAccessor
 from .impl.fs import S3FsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
+from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
+from .impl.mldataset import DatasetLevelsFsDataAccessor
 from .impl.mldataset import MultiLevelDatasetLevelsFsDataAccessor
 from .store import FsDataStore
 from ..assertions import assert_valid_params
@@ -112,19 +113,22 @@ def register_fs_data_accessor_class(
     :param fs_data_accessor_class: an abstract class
         that extends :class:FsDataAccessor.
     """
+    data_type = fs_data_accessor_class.get_data_type()
     format_id = fs_data_accessor_class.get_format_id()
-    for data_type in fs_data_accessor_class.get_data_types():
-        key = f'{data_type}:{format_id}'
-        _FS_DATA_ACCESSOR_CLASSES[key] = fs_data_accessor_class
+    key = f'{data_type.alias}:{format_id}'
+    _FS_DATA_ACCESSOR_CLASSES[key] = fs_data_accessor_class
 
 
-for cls in (DatasetZarrFsDataAccessor,
-            DatasetNetcdfFsDataAccessor,
-            MultiLevelDatasetLevelsFsDataAccessor,
-            GeoDataFrameShapefileFsDataAccessor,
-            GeoDataFrameGeoJsonFsDataAccessor,
-            DatasetGeoTiffFsDataAccessor,
-            MultiLevelDatasetGeoTiffFsDataAccessor):
+for cls in (
+        DatasetZarrFsDataAccessor,
+        DatasetNetcdfFsDataAccessor,
+        DatasetGeoTiffFsDataAccessor,
+        DatasetLevelsFsDataAccessor,
+        MultiLevelDatasetGeoTiffFsDataAccessor,
+        MultiLevelDatasetLevelsFsDataAccessor,
+        GeoDataFrameShapefileFsDataAccessor,
+        GeoDataFrameGeoJsonFsDataAccessor,
+):
     register_fs_data_accessor_class(cls)
 
 
@@ -153,7 +157,7 @@ def get_fs_data_accessor_class(protocol: str,
     class FsDataAccessorClass(fs_accessor_class, data_accessor_class):
         pass
 
-    # Should we set set __name_ and __doc__ properties here?
+    # Should we set __name_ and __doc__ properties here?
 
     return FsDataAccessorClass
 

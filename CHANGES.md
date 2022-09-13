@@ -1,4 +1,34 @@
-## Changes in 0.11.3 (in development)
+## Changes in 0.13.0 (in development)
+
+### Enhancements
+
+* xcube Server has been rewritten almost from scratch.
+
+
+
+## Changes in 0.12.1 (in development)
+
+### Enhancements
+
+* Added a new 
+  [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
+  implementation 
+  `xcube.core.zarrstore.GenericZarrStore` that comprises 
+  user-defined, generic array definitions. Arrays will compute 
+  their chunks either from a function or a static data array. 
+
+* Added a new function `xcube.core.select.select_label_subset()` that 
+  is used to select dataset labels along a given dimension using
+  user-defined predicate functions.
+
+### Fixes
+
+* The filesystem-based data stores for the "s3", "file", and "memory"
+  protocols can now provide `xr.Dataset` instances from image pyramids
+  formats, i.e. the `levels` and `geotiff` formats.
+
+
+## Changes in 0.12.0
 
 ### Enhancements
 
@@ -16,6 +46,25 @@
   `"read:dataset:demo_user/*"` and only allow access to datasets
   with resource identifiers having the prefix `demo_user/`.
 
+  With this change, server configuration has changed:     
+  #### Example of OIDC configuration for auth0
+  
+  Please note, there **must be** a trailing slash in the "Authority" URL.
+  
+  ```yaml
+  Authentication:
+    Authority: https://some-demo-service.eu.auth0.com/
+    Audience: https://some-demo-service/api/
+  ```  
+  #### Example of OIDC configuration for Keycloak
+  
+  Please note, **no** trailing slash in the "Authority" URL.
+
+  ```yaml
+  Authentication: 
+    Authority: https://kc.some-demo-service.de/auth/realms/some-kc-realm
+    Audience: some-kc-realm-xc-api
+  ```
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
@@ -50,6 +99,13 @@
   ``` 
   and where `dataset` has different spatial resolutions in x and y, 
   an exception was raised. This is no longer the case. 
+* xcube Server can now also compute spatial 2D datasets from users' 
+  Python code. In former versions, spatio-temporal 3D cubes were enforced.
+
+### Other important changes
+
+* Deprecated all functions and classes defined in `xcube.core.dsio` 
+  in favor of the xcube data store API defined by `xcube.core.store`.
 
 ## Changes in 0.11.2
 

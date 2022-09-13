@@ -74,7 +74,7 @@ from xcube.webapi.defaults import (
     SERVER_DESCRIPTION
 )
 from xcube.webapi.errors import ServiceBadRequestError
-from xcube.webapi.s3util import (
+from xcube.webapi.s3.s3util import (
     dict_to_xml,
     list_s3_bucket_v1,
     list_bucket_result_to_xml,

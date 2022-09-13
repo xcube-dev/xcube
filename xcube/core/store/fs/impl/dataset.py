@@ -148,11 +148,11 @@ class DatasetFsDataAccessor(FsDataAccessor, ABC):
     """
 
     @classmethod
-    def get_data_types(cls) -> Tuple[DataType, ...]:
-        return DATASET_TYPE,
+    def get_data_type(cls) -> DataType:
+        return DATASET_TYPE
 
 
-class DatasetZarrFsDataAccessor(DatasetFsDataAccessor, ABC):
+class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
     """
     Opener/writer extension name: "dataset:zarr:<protocol>"
     """
@@ -244,7 +244,7 @@ NETCDF_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 )
 
 
-class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor, ABC):
+class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
     """
     Opener/writer extension name: "dataset:netcdf:<protocol>"
     """
@@ -333,10 +333,9 @@ GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 )
 
 
-# new class for Geotiff
-class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor, ABC):
+class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     """
-    Opener/writer extension name: "dataset:tiff:<protocol>"
+    Opener/writer extension name: "dataset:geotiff:<protocol>"
     """
 
     @classmethod
