@@ -22,7 +22,7 @@
 import math
 import pathlib
 import warnings
-from typing import Dict, Any, List, Union, Tuple, Optional
+from typing import Dict, Any, List, Union, Optional
 
 import fsspec
 import numpy as np
@@ -34,6 +34,10 @@ from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.subsampling import AGG_METHODS
+# Note, we need the following reference to register the
+# xarray property accessor
+# noinspection PyUnresolvedReferences
+from xcube.core.zarrstore import ZarrStoreHolder
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -51,10 +55,6 @@ from ...datatype import DATASET_TYPE
 from ...datatype import DataType
 from ...datatype import MULTI_LEVEL_DATASET_TYPE
 from ...error import DataStoreError
-# Note, we need the following reference to register the
-# xarray property accessor
-# noinspection PyUnresolvedReferences
-from ...zarrstore import DatasetZarrStoreProperty
 
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
@@ -336,6 +336,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             raise DataStoreError(f'Failed to open'
                                  f' dataset {level_path!r}:'
                                  f' {e}') from e
+
         level_dataset.zarr_store.set(level_zarr_store)
         return level_dataset
 

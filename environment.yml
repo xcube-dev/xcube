@@ -42,8 +42,8 @@ dependencies:
   - tornado >=6.0
   - urllib3 >=1.26
   - werkzeug < 2.2
-  - xarray >=0.19
-  - zarr >=2.8
+  - xarray >=2022.6
+  - zarr >=2.11
   # Required by Coiled
   # These are very likely transitive deps anyway
   - lz4

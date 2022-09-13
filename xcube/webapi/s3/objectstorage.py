@@ -56,12 +56,12 @@ class ObjectStorage(collections.abc.Mapping):
             if isinstance(dataset, MultiLevelDataset):
                 for level in range(dataset.num_levels):
                     level_dataset = dataset.get_dataset(level)
-                    zarr_store = level_dataset.zarr_store()
+                    zarr_store = level_dataset.zarr_store.get()
                     for k in zarr_store.keys():
                         yield f"{dataset_id}/{level}.zarr/{k}"
 
             else:
-                zarr_store = dataset.zarr_store()
+                zarr_store = dataset.zarr_store.get()
                 for k in zarr_store.keys():
                     yield f"{dataset_id}/{k}"
 
@@ -114,8 +114,8 @@ class ObjectStorage(collections.abc.Mapping):
             if not (0 <= level < dataset.num_levels):
                 raise KeyError(key)
             level_dataset = dataset.get_dataset(level)
-            zarr_store = level_dataset.zarr_store()
+            zarr_store = level_dataset.zarr_store.get()
         else:
-            zarr_store = dataset.zarr_store()
+            zarr_store = dataset.zarr_store.get()
 
         return zarr_store, item_key
