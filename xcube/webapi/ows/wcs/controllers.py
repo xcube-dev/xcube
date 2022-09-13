@@ -245,7 +245,7 @@ def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
                  or (req.resx and not req.width)
                  or (req.resx and not req.height)
                  or (req.resy and not req.width)
-                 or(req.resy and not req.height)) \
+                 or (req.resy and not req.height)) \
             and req.format and _is_valid_format(req.format) \
             and not req.parameter \
             and not req.interpolation \
@@ -481,7 +481,6 @@ def _get_capability_element(base_url: str) -> Element:
     ])
 
 
-# noinspection HttpUrlsUsage
 def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
         -> Element:
     coverage_elements = []
@@ -507,7 +506,10 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                                 text=f'{band_infos[var_name].bbox[2]} '
                                      f'{band_infos[var_name].bbox[3]}')
                     ])
-                ])
+                ]),
+                Element('temporalDomain', elements=[
+                    Element('gml:timePosition', text=time_step)
+                    for time_step in band_infos[var_name].time_steps])
             ]),
             Element('rangeSet', elements=[
                 Element('RangeSet', elements=[
@@ -559,12 +561,14 @@ def _get_formats_list() -> List[str]:
 class BandInfo:
 
     def __init__(self, var_name: str, label: str,
-                 bbox: tuple[float, float, float, float]):
+                 bbox: tuple[float, float, float, float],
+                 time_steps: list[str]):
         self.var_name = var_name
         self.label = label
         self.bbox = bbox
         self.min = np.nan
         self.max = np.nan
+        self.time_steps = time_steps
 
 
 def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
@@ -599,7 +603,12 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
             if not is_spatial_var:
                 continue
 
-            band_info = BandInfo(qualified_var_name, label, bbox)
+            is_temporal_var = var.ndim >= 3
+            time_steps = None
+            if is_temporal_var:
+                time_steps = [str(d) for d in var.time.values]
+
+            band_info = BandInfo(qualified_var_name, label, bbox, time_steps)
             if full:
                 nn_values = var.values[~np.isnan(var.values)]
                 band_info.min = nn_values.min()
