@@ -1,3 +1,4 @@
+import collections.abc
 import os.path
 import shutil
 import unittest
@@ -23,6 +24,7 @@ from xcube.core.store import MultiLevelDatasetDescriptor
 from xcube.core.store import MutableDataStore
 from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
+from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
 from xcube.util.tilegrid import TileGrid
 
@@ -144,7 +146,8 @@ class FsDataStoresTestMixin(ABC):
             requested_dtype_alias=None,
             expected_dtype_aliases={'dataset'},
             expected_return_type=xr.Dataset,
-            expected_descriptor_type=DatasetDescriptor
+            expected_descriptor_type=DatasetDescriptor,
+            assert_data_ok=self._assert_zarr_store_direct_ok
         )
 
     def test_dataset_netcdf(self):
@@ -155,7 +158,8 @@ class FsDataStoresTestMixin(ABC):
             requested_dtype_alias=None,
             expected_dtype_aliases={'dataset'},
             expected_return_type=xr.Dataset,
-            expected_descriptor_type=DatasetDescriptor
+            expected_descriptor_type=DatasetDescriptor,
+            assert_data_ok=self._assert_zarr_store_generic_ok
         )
 
     def test_dataset_levels(self):
@@ -166,7 +170,8 @@ class FsDataStoresTestMixin(ABC):
             requested_dtype_alias='dataset',
             expected_dtype_aliases={'mldataset', 'dataset'},
             expected_return_type=xr.Dataset,
-            expected_descriptor_type=None
+            expected_descriptor_type=None,
+            assert_data_ok=self._assert_zarr_store_direct_ok
         )
 
     # TODO: add assertGeoDataFrameSupport
@@ -238,10 +243,23 @@ class FsDataStoresTestMixin(ABC):
 
         data_store.delete_data(base_dataset_id)
 
-    def _assert_multi_level_dataset_data_ok(
-            self,
-            ml_dataset: xcube.core.mldataset.MultiLevelDataset
-    ):
+    def _assert_zarr_store_direct_ok(self, dataset):
+        self.assertIsInstance(dataset, xr.Dataset)
+        self.assertTrue(hasattr(dataset, 'zarr_store'))
+        self.assertIsInstance(dataset.zarr_store.get(),
+                              collections.abc.MutableMapping)
+        self.assertNotIsInstance(dataset.zarr_store.get(),
+                                 GenericZarrStore)
+
+    def _assert_zarr_store_generic_ok(self, dataset):
+        self.assertIsInstance(dataset, xr.Dataset)
+        self.assertTrue(hasattr(dataset, 'zarr_store'))
+        self.assertIsInstance(dataset.zarr_store.get(),
+                              GenericZarrStore)
+
+    def _assert_multi_level_dataset_data_ok(self, ml_dataset):
+        self.assertIsInstance(ml_dataset,
+                              xcube.core.mldataset.MultiLevelDataset)
         self.assertEqual(2, ml_dataset.num_levels)
         self.assertIsInstance(ml_dataset.tile_grid, TileGrid)
         self.assertIsInstance(ml_dataset.grid_mapping, GridMapping)
@@ -274,6 +292,12 @@ class FsDataStoresTestMixin(ABC):
                              dataset.var_b.encoding.get('_FillValue'))
             self.assertEqual(None,
                              dataset.var_c.encoding.get('_FillValue'))
+
+            self.assertTrue(hasattr(dataset, 'zarr_store'))
+            self.assertIsInstance(dataset.zarr_store.get(),
+                                  collections.abc.MutableMapping)
+            self.assertNotIsInstance(dataset.zarr_store.get(),
+                                     GenericZarrStore)
 
     def _assert_multi_level_dataset_format_with_tile_size(
             self,
@@ -436,4 +460,3 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
                                  root=root,
                                  max_depth=3,
                                  storage_options=storage_options)
-
