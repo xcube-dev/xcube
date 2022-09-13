@@ -27,6 +27,6 @@ api = Api(
     'meta',
     description='Server information and maintenance operations',
     config_schema=CONFIG_SCHEMA,
-    required_apis=['_auth'],
+    required_apis=['auth'],
     create_ctx=MetaContext
 )

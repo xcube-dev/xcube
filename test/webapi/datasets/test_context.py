@@ -121,10 +121,8 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertIn('test~cube-1-250-250.levels', ids)
 
     def test_get_dataset_configs_with_duplicate_ids_from_stores(self):
-        ctx = get_datasets_ctx('config-datastores-double-ids.yml')
-
         with self.assertRaises(ApiError.InvalidServerConfig) as sce:
-            ctx.get_dataset_configs_from_stores(ctx.get_data_store_pool())
+            ctx = get_datasets_ctx('config-datastores-double-ids.yml')
         self.assertEqual('HTTP status 580:'
                          ' User-defined identifiers can only be assigned to '
                          'datasets with non-wildcard paths.',

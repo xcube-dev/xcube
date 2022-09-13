@@ -30,7 +30,7 @@ from xcube.server.api import Context
 from xcube.server.api import ServerConfigObject
 from xcube.util.perf import measure_time_cm
 from xcube.version import version
-from xcube.webapi._auth import AuthContext
+from xcube.webapi.auth import AuthContext
 from xcube.webapi.errors import ServiceError
 
 
@@ -39,7 +39,7 @@ class ResourcesContext(ApiContext):
     def __init__(self, server_ctx: Context):
         super().__init__(server_ctx)
         # noinspection PyTypeChecker
-        self._auth_ctx: AuthContext = server_ctx.get_api_ctx("_auth")
+        self._auth_ctx: AuthContext = server_ctx.get_api_ctx("auth")
         assert isinstance(self._auth_ctx, AuthContext)
         self._base_dir = os.path.abspath(self.config.get("base_dir", "."))
         self._prefix = normalize_prefix(self.config.get("prefix", ""))

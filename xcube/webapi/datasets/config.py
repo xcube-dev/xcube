@@ -78,6 +78,7 @@ COMMON_DATASET_PROPERTIES = dict(
 DATASET_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
         Identifier=IdentifierSchema,
+        StoreInstanceId=IdentifierSchema,  # will be set by server
         Path=PathSchema,
         FileSystem=FileSystemSchema,
         Anonymous=BooleanSchema,
