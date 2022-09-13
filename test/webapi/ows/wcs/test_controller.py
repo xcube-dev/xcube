@@ -24,9 +24,8 @@ class ControllerTest(unittest.TestCase):
         self.wcs_ctx = get_api_ctx('ows.wcs', WcsContext)
 
     def test_get_capabilities(self):
-        actual_xml = get_capabilities_xml(
-            self.wcs_ctx, 'https://xcube.brockmann-consult.de/wcs/kvp'
-        )
+        actual_xml = get_capabilities_xml(self.wcs_ctx,
+                                          'https://xcube.brockmann-consult.de/wcs/kvp')
 
         self.check_xml(actual_xml, 'WCSCapabilities.xml',
                        'wcsCapabilities.xsd')
@@ -46,17 +45,17 @@ class ControllerTest(unittest.TestCase):
 
     def test_validate_coverage_request(self):
         # request is fine
-        _validate_coverage_req(CoverageRequest({
+        _validate_coverage_req(self.wcs_ctx, CoverageRequest({
             'COVERAGE': 'demo.conc_chl',
             'CRS': 'EPSG:4326',
             'BBOX': '1 51 4 52',
             'WIDTH': 200,
             'HEIGHT': 200,
             'FORMAT': 'zarr'
-        }), self.wcs_ctx)
+        }))
 
         # TIME given in addition to BBOX -> fine
-        _validate_coverage_req(CoverageRequest({
+        _validate_coverage_req(self.wcs_ctx, CoverageRequest({
             'COVERAGE': 'demo.conc_chl',
             'CRS': 'EPSG:4326',
             'BBOX': '1 51 4 52',
@@ -64,17 +63,17 @@ class ControllerTest(unittest.TestCase):
             'WIDTH': 200,
             'HEIGHT': 200,
             'FORMAT': 'zarr'
-        }), self.wcs_ctx)
+        }))
 
         # COVERAGE is missing -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'CRS': 'EPSG:4326',
                 'BBOX': '1 51 4 52',
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('No valid value for parameter COVERAGE provided. '
@@ -84,14 +83,14 @@ class ControllerTest(unittest.TestCase):
 
         # COVERAGE is given but not found -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'invalid_coverage!',
                 'CRS': 'EPSG:4326',
                 'BBOX': '1 51 4 52',
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('No valid value for parameter COVERAGE provided. '
@@ -100,25 +99,25 @@ class ControllerTest(unittest.TestCase):
                              str(e))
 
         # TIME is used instead of BBOX -> fine
-        _validate_coverage_req(CoverageRequest({
+        _validate_coverage_req(self.wcs_ctx, CoverageRequest({
             'COVERAGE': 'demo.conc_chl',
             'CRS': 'EPSG:4326',
             'TIME': '2020-01-28',
             'WIDTH': 200,
             'HEIGHT': 200,
             'FORMAT': 'zarr'
-        }), self.wcs_ctx)
+        }))
 
         # use invalid TIME format -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'CRS': 'EPSG:4326',
                 'TIME': '20201208',
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('TIME value must be given in the format'
@@ -127,18 +126,18 @@ class ControllerTest(unittest.TestCase):
                              str(e))
 
         # RESX and RESY are given instead of W/H -> fine
-        _validate_coverage_req(CoverageRequest({
+        _validate_coverage_req(self.wcs_ctx, CoverageRequest({
             'COVERAGE': 'demo.conc_chl',
             'CRS': 'EPSG:4326',
             'TIME': '2020-01-28',
             'RESX': 23.56,
             'RESY': 23.56,
             'FORMAT': 'zarr'
-        }), self.wcs_ctx)
+        }))
 
         # PARAMETER is given -> expect a failure (not yet supported)
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'PARAMETER': 'I expect nothing from using this parameter',
                 'CRS': 'EPSG:4326',
@@ -146,21 +145,21 @@ class ControllerTest(unittest.TestCase):
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('PARAMETER not yet supported', str(e))
 
         # BBOX is given in wrong format -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'CRS': 'EPSG:4326',
                 'BBOX': '-10,3,-5,4',
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('BBOX must be given as `minx miny maxx maxy`',
@@ -168,14 +167,14 @@ class ControllerTest(unittest.TestCase):
 
         # WIDTH, but not HEIGHT is given -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'CRS': 'EPSG:4326',
                 'BBOX': '-10 3 -5 4',
                 'WIDTH': 200,
                 'RESY': 156.45,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('Either both WIDTH and HEIGHT, or both RESX and '
@@ -183,13 +182,13 @@ class ControllerTest(unittest.TestCase):
 
         # HEIGHT, but not WIDTH is given -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'CRS': 'EPSG:4326',
                 'BBOX': '-10 3 -5 4',
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('Either both WIDTH and HEIGHT, or both RESX and '
@@ -197,7 +196,7 @@ class ControllerTest(unittest.TestCase):
 
         # WIDTH and HEIGHT and RESX and RESY are given -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'CRS': 'EPSG:4326',
                 'BBOX': '-10 3 -5 4',
@@ -206,7 +205,7 @@ class ControllerTest(unittest.TestCase):
                 'RESX': 200,
                 'RESY': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('Either both WIDTH and HEIGHT, or both RESX and '
@@ -214,7 +213,7 @@ class ControllerTest(unittest.TestCase):
 
         # INTERPOLATION is given -> expect a failure (not yet supported)
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'INTERPOLATION': 'Farest Neighbor',
                 'CRS': 'EPSG:4326',
@@ -222,14 +221,14 @@ class ControllerTest(unittest.TestCase):
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('INTERPOLATION not yet supported', str(e))
 
         # EXCEPTIONS is given -> expect a failure (not yet supported)
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'EXCEPTIONS': 'exceptions',
                 'CRS': 'EPSG:4326',
@@ -237,20 +236,20 @@ class ControllerTest(unittest.TestCase):
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'zarr'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('EXCEPTIONS not yet supported', str(e))
 
         # FORMAT is missing -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'CRS': 'EPSG:4326',
                 'TIME': '2020-12-08',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('FORMAT wrong or missing. Must be one of zarr, '
@@ -258,14 +257,14 @@ class ControllerTest(unittest.TestCase):
 
         # FORMAT is invalid -> expect a failure
         try:
-            _validate_coverage_req(CoverageRequest({
+            _validate_coverage_req(self.wcs_ctx, CoverageRequest({
                 'COVERAGE': 'demo.conc_chl',
                 'CRS': 'EPSG:4326',
                 'TIME': '2020-12-08',
                 'WIDTH': 200,
                 'HEIGHT': 200,
                 'FORMAT': 'MettCDF'
-            }), self.wcs_ctx)
+            }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('FORMAT wrong or missing. Must be one of zarr, '
@@ -280,7 +279,7 @@ class ControllerTest(unittest.TestCase):
             'HEIGHT': 200,
             'FORMAT': 'zarr'
         })
-        cube = get_coverage(coverage_request, self.wcs_ctx)
+        cube = get_coverage(self.wcs_ctx, coverage_request)
         self.assertIsNotNone(cube.coords)
         self.assertDictEqual(
             {
@@ -304,8 +303,8 @@ class ControllerTest(unittest.TestCase):
             'HEIGHT': 200,
             'FORMAT': 'zarr'
         })
-        gen_req = translate_to_generator_request(coverage_request,
-                                                 self.wcs_ctx)
+        gen_req = translate_to_generator_request(self.wcs_ctx,
+                                                 coverage_request)
         # todo - put generic data store here
         expected = CubeGeneratorRequest.from_dict(
             {'input_config': {

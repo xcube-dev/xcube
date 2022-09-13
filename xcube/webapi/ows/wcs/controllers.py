@@ -103,9 +103,9 @@ def get_describe_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
     return document.to_xml(indent=4)
 
 
-def translate_to_generator_request(req: CoverageRequest, ctx: WcsContext) \
+def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
         -> CubeGeneratorRequest:
-    data_id = _get_input_data_id(req, ctx)
+    data_id = _get_input_data_id(ctx, req)
     bbox = []
     for v in req.bbox.split(' '):
         bbox.append(float(v))
@@ -134,9 +134,9 @@ def translate_to_generator_request(req: CoverageRequest, ctx: WcsContext) \
     )
 
 
-def get_coverage(req: CoverageRequest, ctx: WcsContext) -> Dataset:
-    _validate_coverage_req(req, ctx)
-    gen_req = translate_to_generator_request(req, ctx)
+def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
+    _validate_coverage_req(ctx, req)
+    gen_req = translate_to_generator_request(ctx, req)
 
     gen = CubeGenerator.new()
 
@@ -148,7 +148,7 @@ def get_coverage(req: CoverageRequest, ctx: WcsContext) -> Dataset:
     cube_id = list(memory_store.store.get_data_ids())[0]
     cube = memory_store.store.open_data(cube_id)
 
-    #_write_debug_output(cube)
+    # _write_debug_output(cube)
 
     return cube
 
@@ -173,7 +173,7 @@ def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
     return tuple(output_region)
 
 
-def _get_input_data_id(req: CoverageRequest, ctx: WcsContext) -> str:
+def _get_input_data_id(ctx: WcsContext, req: CoverageRequest) -> str:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
         ds = ctx.datasets_ctx.get_dataset(ds_name)
@@ -186,7 +186,7 @@ def _get_input_data_id(req: CoverageRequest, ctx: WcsContext) -> str:
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
-def _get_input_path(req: CoverageRequest, ctx: WcsContext) -> str:
+def _get_input_path(ctx: WcsContext, req: CoverageRequest) -> str:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
         ds = ctx.datasets_ctx.get_dataset(ds_name)
@@ -204,7 +204,7 @@ def _get_input_path(req: CoverageRequest, ctx: WcsContext) -> str:
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
-def _get_input_store_id(req: CoverageRequest, ctx: WcsContext) -> str:
+def _get_input_store_id(ctx: WcsContext, req: CoverageRequest) -> str:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
         ds = ctx.datasets_ctx.get_dataset(ds_name)
@@ -217,41 +217,41 @@ def _get_input_store_id(req: CoverageRequest, ctx: WcsContext) -> str:
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
-def _validate_coverage_req(req: CoverageRequest, ctx: WcsContext):
+def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
     def _has_no_invalid_bbox() -> bool:
         if req.bbox:
-            return is_valid_bbox(req.bbox)
+            return _is_valid_bbox(req.bbox)
         else:
             return True
 
     def _has_no_invalid_time() -> bool:
         if req.time:
-            return is_valid_time(req.time)
+            return _is_valid_time(req.time)
         else:
             return True
 
-    if req.coverage and is_valid_coverage(req.coverage, ctx) \
-            and req.crs and is_valid_crs(req.crs) \
-            and ((req.bbox and is_valid_bbox(req.bbox)) or
-                 (req.time and is_valid_time(req.time))) \
+    if req.coverage and _is_valid_coverage(ctx, req.coverage) \
+            and req.crs and _is_valid_crs(req.crs) \
+            and ((req.bbox and _is_valid_bbox(req.bbox))
+                 or (req.time and _is_valid_time(req.time))) \
             and _has_no_invalid_bbox \
             and _has_no_invalid_time() \
-            and ((req.width and req.height) or
-                 (req.resx and req.resy)) \
-            and ((req.width and not req.resx) or
-                 (req.width and not req.resy) or
-                 (req.height and not req.resx) or
-                 (req.height and not req.resy) or
-                 (req.resx and not req.width) or
-                 (req.resx and not req.height) or
-                 (req.resy and not req.width) or
-                 (req.resy and not req.height)) \
-            and req.format and is_valid_format(req.format) \
+            and ((req.width and req.height)
+                 or (req.resx and req.resy)) \
+            and ((req.width and not req.resx)
+                 or (req.width and not req.resy)
+                 or (req.height and not req.resx)
+                 or (req.height and not req.resy)
+                 or (req.resx and not req.width)
+                 or (req.resx and not req.height)
+                 or (req.resy and not req.width)
+                 or(req.resy and not req.height)) \
+            and req.format and _is_valid_format(req.format) \
             and not req.parameter \
             and not req.interpolation \
             and not req.exceptions:
         return
-    elif not req.coverage or not is_valid_coverage(req.coverage, ctx):
+    elif not req.coverage or not _is_valid_coverage(ctx, req.coverage):
         raise ValueError('No valid value for parameter COVERAGE provided. '
                          'COVERAGE must be a variable name prefixed with '
                          'its dataset name. Example: my_dataset.my_var')
@@ -261,44 +261,44 @@ def _validate_coverage_req(req: CoverageRequest, ctx: WcsContext):
         raise ValueError('INTERPOLATION not yet supported')
     elif req.exceptions:
         raise ValueError('EXCEPTIONS not yet supported')
-    elif ((req.width and not req.height) or
-          (req.height and not req.width) or
-          (req.resx and not req.resy) or
-          (req.resy and not req.resx) or
-          (req.width and req.resx or req.resy) or
-          (req.height and req.resx or req.resy)):
+    elif ((req.width and not req.height)
+          or (req.height and not req.width)
+          or (req.resx and not req.resy)
+          or (req.resy and not req.resx)
+          or (req.width and req.resx or req.resy)
+          or (req.height and req.resx or req.resy)):
         raise ValueError('Either both WIDTH and HEIGHT, or both RESX and RESY '
                          'must be provided.')
-    elif not req.format or not is_valid_format(req.format):
+    elif not req.format or not _is_valid_format(req.format):
         raise ValueError('FORMAT wrong or missing. Must be one of ' +
                          ', '.join(_get_formats_list()))
     elif True:
         raise ValueError('Reason unclear, fix me')
 
 
-def is_valid_coverage(coverage: str, ctx: WcsContext) -> bool:
+def _is_valid_coverage(ctx: WcsContext, coverage: str) -> bool:
     band_infos = _extract_band_infos(ctx, [coverage])
     if band_infos:
         return True
     return False
 
 
-def is_valid_crs(crs: str) -> bool:
+def _is_valid_crs(crs: str) -> bool:
     return crs in VALID_CRS_LIST
 
 
-def is_valid_bbox(bbox: str) -> bool:
+def _is_valid_bbox(bbox: str) -> bool:
     bbox_regex = re.compile(r'-?\d{1,3} -?\d{1,2} -?\d{1,3} -?\d{1,2}')
     if not bbox_regex.match(bbox):
         raise ValueError('BBOX must be given as `minx miny maxx maxy`')
     return True
 
 
-def is_valid_format(format_req: str) -> bool:
+def _is_valid_format(format_req: str) -> bool:
     return format_req in _get_formats_list()
 
 
-def is_valid_time(time: str) -> bool:
+def _is_valid_time(time: str) -> bool:
     try:
         datetime.fromisoformat(time)
     except ValueError:

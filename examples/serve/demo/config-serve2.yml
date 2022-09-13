@@ -15,9 +15,3 @@ DataStores:
         Style: "default"
       - Path: "*.levels"
         Style: "default"
-
-#  - store_id: s3
-#    store_params:
-#      root: xcube-examples
-#    datasets:
-#      - data_id: OLCI-SNS-RAW-CUBE-2.zarr
