@@ -23,12 +23,12 @@ import base64
 import io
 import os
 import re
-from threading import Lock
+from functools import cached_property
+from typing import Dict, Tuple, List, Optional, Set
 
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.colors
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
@@ -41,185 +41,273 @@ except ImportError:
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+
 # Have colormaps separated into categories:
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
 # colormaps for ocean:
 # (taken from https://matplotlib.org/cmocean/)
 
-_CMAPS = (('Perceptually Uniform Sequential',
-           'For many applications, a perceptually uniform colormap is the best choice - '
-           'one in which equal steps in data are perceived as equal steps in the color space',
-           ('viridis', 'inferno', 'plasma', 'magma')),
-          ('Sequential 1',
-           'These colormaps are approximately monochromatic colormaps varying smoothly '
-           'between two color tones - usually from low saturation (e.g. white) to high '
-           'saturation (e.g. a bright blue). Sequential colormaps are ideal for '
-           'representing most scientific data since they show a clear progression from '
-           'low-to-high values.',
-           ('Blues', 'BuGn', 'BuPu',
-            'GnBu', 'Greens', 'Greys', 'Oranges', 'OrRd',
-            'PuBu', 'PuBuGn', 'PuRd', 'Purples', 'RdPu',
-            'Reds', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd')),
-          ('Sequential 2',
-           'Many of the values from the Sequential 2 plots are monotonically increasing.',
-           ('afmhot', 'autumn', 'bone', 'cool',
-            'copper', 'gist_heat', 'hot',
-            'pink', 'spring', 'summer', 'winter')),
-          ('Diverging',
-           'These colormaps have a median value (usually light in color) and vary '
-           'smoothly to two different color tones at high and low values. Diverging '
-           'colormaps are ideal when your data has a median value that is significant '
-           '(e.g.  0, such that positive and negative values are represented by '
-           'different colors of the colormap).',
-           ('BrBG', 'bwr', 'coolwarm', 'PiYG', 'PRGn', 'PuOr',
-            'RdBu', 'RdGy', 'RdYlBu', 'RdYlGn', 'Spectral',
-            'seismic')),
-          ('Qualitative',
-           'These colormaps vary rapidly in color. Qualitative colormaps are useful for '
-           'choosing a set of discrete colors.',
-           ('Accent', 'Dark2', 'Paired', 'Pastel1',
-            'Pastel2', 'Set1', 'Set2', 'Set3')),
-          ('Ocean',
-           'Colormaps for commonly-used oceanographic variables. ',
-           ('thermal', 'haline', 'solar', 'ice',
-            'oxy', 'deep', 'dense', 'algae',
-            'matter', 'turbid', 'speed', 'amp', 'tempo',
-            'phase', 'balance', 'delta', 'curl')),
-          ('Miscellaneous',
-           'Colormaps that don\'t fit into the categories above.',
-           ('gist_earth', 'terrain', 'ocean', 'gist_stern',
-            'brg', 'CMRmap', 'cubehelix',
-            'gnuplot', 'gnuplot2', 'gist_ncar',
-            'nipy_spectral', 'jet', 'rainbow',
-            'gist_rainbow', 'hsv', 'flag', 'prism')),
-          ('Custom SNAP Colormaps',
-           'Custom SNAP colormaps derived from a .cpd file. ',
-           ()))
 
-_CBARS_LOADED = False
-_LOCK = Lock()
+class ColormapCategory:
+    def __init__(self,
+                 name: str,
+                 desc: str,
+                 cmap_names: Optional[Set[str]] = None):
+        self.name = name
+        self.desc = desc
+        self.cmap_names = cmap_names
 
 
-def get_cmap(cmap_name: str, default_cmap_name='viridis', num_colors: int = None):
-    """
-    Get color mapping for color bar name *cmap_name*.
+PERCEPTUALLY_UNIFORM_SEQUENTIAL = ColormapCategory(
+    'Perceptually Uniform Sequential',
+    'For many applications, a perceptually uniform colormap'
+    ' is the best choice - one in which equal steps in data are'
+    ' perceived as equal steps in the color space',
+    {'viridis', 'inferno', 'plasma', 'magma'}
+)
 
-    If *num_colors* is a positive integer,
-    a resampled mapping will be returned that contains *num_colors* color entries.
+SEQUENTIAL_1 = ColormapCategory(
+    'Sequential 1',
+    'These colormaps are approximately monochromatic colormaps varying'
+    ' smoothly between two color tones - usually from low saturation'
+    ' (e.g. white) to high saturation (e.g. a bright blue).'
+    ' Sequential colormaps are ideal for representing most scientific'
+    ' data since they show a clear progression from'
+    ' low-to-high values.',
+    {'Blues', 'BuGn', 'BuPu',
+     'GnBu', 'Greens', 'Greys', 'Oranges', 'OrRd',
+     'PuBu', 'PuBuGn', 'PuRd', 'Purples', 'RdPu',
+     'Reds', 'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd'}
+)
 
-    If *cmap_name* is not defined, *default_cmap_name* is used.
-    If *default_cmap_name* is undefined too, a ValueError is raised.
+SEQUENTIAL_2 = ColormapCategory(
+    'Sequential 2',
+    'Many of the values from the Sequential 2 plots are monotonically'
+    ' increasing.',
+    {'afmhot', 'autumn', 'bone', 'cool',
+     'copper', 'gist_heat', 'hot',
+     'pink', 'spring', 'summer', 'winter'}
+)
 
-    Otherwise, a tuple (actual_cmap_name, cmap) is returned.
+DIVERGING = ColormapCategory(
+    'Diverging',
+    'These colormaps have a median value (usually light in color) and vary'
+    ' smoothly to two different color tones at high and low values.'
+    ' Diverging colormaps are ideal when your data has a median value'
+    ' that is significant (e.g.  0, such that positive and negative'
+    ' values are represented by different colors of the colormap).',
+    {'BrBG', 'bwr', 'coolwarm', 'PiYG', 'PRGn', 'PuOr',
+     'RdBu', 'RdGy', 'RdYlBu', 'RdYlGn', 'Spectral',
+     'seismic'}
+)
+QUALITATIVE = ColormapCategory(
+    'Qualitative',
+    'These colormaps vary rapidly in color.'
+    ' Qualitative colormaps are useful for choosing'
+    ' a set of discrete colors.',
+    {'Accent', 'Dark2', 'Paired', 'Pastel1',
+     'Pastel2', 'Set1', 'Set2', 'Set3'}
+)
 
-    :param cmap_name: Color bar name.
-    :param num_colors: Number of colours in returned color mapping.
-    :param default_cmap_name: Default color bar name.
-    :return: A tuple (actual_cmap_name, cmap).
-    """
-    ensure_cmaps_loaded()
-    try:
-        cmap = cm.get_cmap(cmap_name, num_colors)
-    except ValueError as e:
-        LOG.warning(str(e))
-        LOG.warning(f'Color map name {cmap_name!r} undefined, falling back to {default_cmap_name!r}')
-        cmap_name = default_cmap_name
-        cmap = cm.get_cmap(cmap_name, num_colors)
-    return cmap_name, cmap
+UNCATEGORIZED = ColormapCategory(
+    'Uncategorized',
+    'Colormaps that don\'t fit into the categories above'
+    ' or haven\'t been categorized yet.'
+)
+
+OCEAN = ColormapCategory(
+    'Ocean',
+    'Colormaps for commonly-used oceanographic variables'
+    ' (from module cmocean.cm).'
+)
+
+CUSTOM = ColormapCategory(
+    'Custom Colormaps',
+    'Custom colormaps, e.g. loaded from SNAP *.cpd files.',
+)
+
+_CATEGORIES: Dict[str, ColormapCategory] = {
+    c.name: c
+    for c in (
+        PERCEPTUALLY_UNIFORM_SEQUENTIAL,
+        SEQUENTIAL_1,
+        SEQUENTIAL_2,
+        DIVERGING,
+        QUALITATIVE,
+        UNCATEGORIZED,
+        OCEAN,
+        CUSTOM,
+    )
+}
+
+_CMAP_NAME_TO_CAT = {
+    cm_name: cat
+    for cat in _CATEGORIES.values()
+    if cat.cmap_names
+    for cm_name in cat.cmap_names
+}
 
 
-def get_cmaps():
-    """
-    Return a JSON-serializable tuple containing records of the form:
-     (<cmap-category>, <cmap-category-description>, <cmap-tuples>),
-    where <cmap-tuples> is a tuple containing records of the form (<cmap-name>, <cbar-png-bytes>), and where
-    <cbar-png-bytes> are encoded PNG images of size 256 x 2 pixels,
-    :return: all known matplotlib color maps
-    """
+class Colormap:
+    def __init__(self,
+                 cat_name: str,
+                 cmap_name: str,
+                 cmap: matplotlib.colors.Colormap,
+                 cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
+                 cmap_reverse: Optional[matplotlib.colors.Colormap] = None):
+        self._cat_name = cat_name
+        self._cmap_name = cmap_name
+        self._cmap = cmap
+        self._cmap_alpha = cmap_alpha
+        self._cmap_reverse = cmap_reverse
+        self._cmap_png_base64: Optional[str] = None
 
-    global _CMAPS
-    ensure_cmaps_loaded()
-    return _CMAPS
+    @property
+    def cat_name(self) -> str:
+        return self._cat_name
+
+    @property
+    def cmap_name(self) -> str:
+        return self._cmap_name    \
+
+    @property
+    def cmap(self) -> matplotlib.colors.Colormap:
+        return self._cmap
+
+    @cached_property
+    def cmap_alpha(self) -> matplotlib.colors.Colormap:
+        if self._cmap_alpha is None:
+            self._cmap_alpha = _get_alpha_cmap(self.cmap)
+        return self._cmap_alpha
+
+    @cached_property
+    def cmap_reverse(self) -> matplotlib.colors.Colormap:
+        if self._cmap_reverse is None:
+            self._cmap_reverse = self.cmap.reversed(
+                name=self._cmap_name + "_r"
+            )
+        return self._cmap_reverse
+
+    @cached_property
+    def cmap_png_base64(self) -> str:
+        if self._cmap_png_base64 is None:
+            self._cmap_png_base64 = _get_cmap_png_base64(self.cmap)
+        return self._cmap_png_base64
 
 
-def ensure_cmaps_loaded():
-    """
-    Loads all color maps from matplotlib and registers additional ones, if not done before.
-    """
-    from xcube.webapi.service import SNAP_CPD_LIST
-    global _CBARS_LOADED, _CMAPS
-    if not _CBARS_LOADED:
-        _LOCK.acquire()
-        if not _CBARS_LOADED:
+# def get_cmap(cmap_name: str,
+#              default_cmap_name: str = 'viridis',
+#              num_colors: Optional[int] = None) -> CategorizedColormaps:
 
-            new_cmaps = []
-            for cmap_category, cmap_description, cmap_names in _CMAPS:
-                if cmap_category == 'Ocean' and ocm is None:
+class CategorizedColormaps:
+    def __init__(self):
+        pass
+
+    def _load(self):
+        categories: Dict[str, ColormapCategory] = {}
+        cmaps: Dict[str, Colormap] = {}
+
+        # Add standard Matplotlib colormaps
+        for cm_name, cmap in matplotlib.colormaps.items():
+            template_category = _CMAP_NAME_TO_CAT.get(cm_name)
+            if template_category is None:
+                template_category = UNCATEGORIZED
+
+            category = categories.get(template_category.name)
+            if category is None:
+                category = ColormapCategory(template_category.name,
+                                            template_category.desc,
+                                            set())
+
+                categories[template_category.name] = category
+
+            category.cmap_names.add(cm_name)
+            cmaps[cm_name] = Colormap(category.name, cm_name, cmap)
+
+        # Add Ocean colormaps, if any
+        if ocm is not None:
+            ocean_cat_template = OCEAN
+            ocean_cat_desc = _CAT_NAME_TO_DESC[ocean_cat_name]
+            ocean_cm_names = [k for k in ocm.__dict__.keys()
+                              if isinstance(getattr(ocm, k),
+                                            matplotlib.colors.Colormap)
+                              and not k.endswith("_r")]
+            categories[ocean_cat_name] = ocean_cat_desc, ocean_cm_names
+
+        # Add custom colormaps, if any
+        if custom_cmaps:
+            custom_cat_name = CUSTOM[0]
+            custom_cat_desc = _CAT_NAME_TO_DESC[ocean_cat_name]
+            custom_cmap_names = []
+            for custom_cmap in custom_cmaps:
+                if not os.path.isfile(custom_cmap):
+                    LOG.error(f"Missing custom colormap file:"
+                              f" {custom_cmaps}")
                     continue
-                cbar_list = []
-                # TODO: fix hack for SNAP color palettes, see #661
-                if cmap_category == 'Custom SNAP Colormaps':
-                    cmap_names = _check_if_exists(SNAP_CPD_LIST)
-                for cmap_name in cmap_names:
-                    try:
-                        if '.cpd' in cmap_name:
-                            cmap = _get_custom_colormap(cmap_name)
-                            cm.register_cmap(cmap=cmap)
-                        elif cmap_category == 'Ocean':
-                            cmap = getattr(ocm, cmap_name)
-                            cm.register_cmap(cmap=cmap)
-                        else:
-                            cmap = cm.get_cmap(cmap_name)
-                    except ValueError:
-                        LOG.warning('Detected invalid colormap "%s"' % cmap_name)
-                        continue
-                    # Add extra colormaps with alpha gradient
-                    # see http://matplotlib.org/api/colors_api.html
-                    if type(cmap) == matplotlib.colors.LinearSegmentedColormap:
-                        new_name = cmap.name + '_alpha'
-                        new_segmentdata = dict(cmap._segmentdata)
-                        # let alpha increase from 0.0 to 0.5
-                        new_segmentdata['alpha'] = ((0.0, 0.0, 0.0),
-                                                    (0.5, 1.0, 1.0),
-                                                    (1.0, 1.0, 1.0))
-                        new_cmap = matplotlib.colors.LinearSegmentedColormap(new_name, new_segmentdata)
-                        cm.register_cmap(cmap=new_cmap)
-                    elif type(cmap) == matplotlib.colors.ListedColormap:
-                        new_name = cmap.name + '_alpha'
-                        new_colors = list(cmap.colors)
-                        a_slope = 2.0 / cmap.N
-                        a = 0
-                        for i in range(len(new_colors)):
-                            new_color = new_colors[i]
-                            if not isinstance(new_color, str):
-                                if len(new_color) == 3:
-                                    r, g, b = new_color
-                                    new_colors[i] = r, g, b, a
-                                elif len(new_color) == 4:
-                                    r, g, b, a_old = new_color
-                                    new_colors[i] = r, g, b, min(a, a_old)
-                            a += a_slope
-                            if a > 1.0:
-                                a = 1.0
-                        new_cmap = matplotlib.colors.ListedColormap(new_colors, name=new_name)
-                        cm.register_cmap(cmap=new_cmap)
-                    else:
-                        new_name = cmap.name + '_alpha' if hasattr(cmap, 'name') else 'unknown'
-                        LOG.warning('Could not create colormap "{}" because "{}" is of unknown type {}'
-                                    .format(new_name, cmap.name, type(cmap)))
+                try:
+                    cmap = _load_snap_colormap(custom_cmap)
+                except ValueError as e:
+                    LOG.warning(f'Detected invalid custom colormap'
+                                f' {custom_cmap!r}: {e}',
+                                exc_info=True)
+                custom_cmap_names.append(cmap)
+                cbar_list.append((cmap_name, _get_cmap_png_base64(cmap)))
 
-                    cbar_list.append((cmap_name, _get_cbar_png_bytes(cmap)))
-                    cbar_list.append((new_name, _get_cbar_png_bytes(new_cmap)))
+                cbar_list.append((cmap_name, _get_cmap_png_base64(cmap)))
+                cbar_list.append((new_name, _get_cmap_png_base64(new_cmap)))
 
-                new_cmaps.append((cmap_category, cmap_description, tuple(cbar_list)))
-            _CMAPS = tuple(new_cmaps)
-            _CBARS_LOADED = True
-            # import pprint
-            # pprint.pprint(_CMAPS)
-        _LOCK.release()
+            new_cmaps.append(
+                (cmap_category, cmap_description, tuple(cbar_list)))
+
+        return new_cmaps
 
 
-def _get_cbar_png_bytes(cmap):
+def _get_alpha_cmap(cmap: matplotlib.colors.Colormap) \
+        -> Optional[matplotlib.colors.Colormap]:
+    """Add extra colormaps with alpha gradient.
+    See http://matplotlib.org/api/colors_api.html
+    """
+    cmap_name = cmap.name + '_alpha' \
+        if hasattr(cmap, 'name') else 'unknown'
+
+    if isinstance(cmap, matplotlib.colors.LinearSegmentedColormap):
+        new_segmentdata = dict(cmap._segmentdata)
+        # let alpha increase from 0.0 to 0.5
+        new_segmentdata['alpha'] = ((0.0, 0.0, 0.0),
+                                    (0.5, 1.0, 1.0),
+                                    (1.0, 1.0, 1.0))
+        return matplotlib.colors.LinearSegmentedColormap(
+            cmap_name, new_segmentdata
+        )
+
+    if isinstance(cmap, matplotlib.colors.ListedColormap):
+        new_colors = list(cmap.colors)
+        a_slope = 2.0 / cmap.N
+        a = 0
+        for i in range(len(new_colors)):
+            new_color = new_colors[i]
+            if not isinstance(new_color, str):
+                if len(new_color) == 3:
+                    r, g, b = new_color
+                    new_colors[i] = r, g, b, a
+                elif len(new_color) == 4:
+                    r, g, b, a_old = new_color
+                    new_colors[i] = r, g, b, min(a, a_old)
+            a += a_slope
+            if a > 1.0:
+                a = 1.0
+        return matplotlib.colors.ListedColormap(
+            new_colors, name=cmap_name
+        )
+
+    LOG.warning(
+        f'Could not create alpha colormap for cmap of type {type(cmap)}'
+    )
+
+    return None
+
+
+def _get_cmap_png_base64(cmap: matplotlib.colors.Colormap) -> str:
     gradient = np.linspace(0, 1, 256)
     gradient = np.vstack((gradient, gradient))
     image_data = cmap(gradient, bytes=True)
@@ -240,19 +328,69 @@ def _get_cbar_png_bytes(cmap):
     return cbar_png_bytes
 
 
-def _get_custom_colormap(colortext):
-    try:
-        colors = _get_color(colortext)
-        values = get_tick_val_col(colortext)
-        if colors is None or values is None:
-            return
-        norm = plt.Normalize(min(values), max(values))
-        tuples = list(zip(map(norm, values), colors))
-        cmap = matplotlib.colors.LinearSegmentedColormap.from_list(colortext, tuples)
-    except FileNotFoundError:
-        LOG.warning('No such file or directory: "%s"' % colortext)
-        return
-    return cmap
+def _load_snap_colormap(cpd_file_path: str):
+    points, log_scaled = _parse_snap_cpd_file(cpd_file_path)
+    samples = [sample for sample, _ in points]
+    # Uncomment, as soon as we know how to deal with this:
+    # if log_scaled:
+    #     norm = matplotlib.colors.LogNorm(min(samples), max(samples))
+    # else:
+    #     norm = matplotlib.colors.Normalize(min(samples), max(samples))
+    norm = matplotlib.colors.Normalize(min(samples), max(samples))
+    colors = list(zip(map(norm, samples),
+                      ['#%02x%02x%02x' % color for _, color in points]))
+    cpd_name, _ = os.path.splitext(os.path.basename(cpd_file_path))
+    return matplotlib.colors.LinearSegmentedColormap.from_list(
+        cpd_name, colors
+    )
+
+
+Sample = float
+Color = Tuple[int, int, int]
+Palette = List[Tuple[Sample, Color]]
+LogScaled = bool
+
+
+def _parse_snap_cpd_file(cpd_file_path: str) \
+        -> Tuple[Palette, LogScaled]:
+    with open(cpd_file_path, "r") as f:
+
+        illegal_format_msg = f"Illegal SNAP *.cpd format: {cpd_file_path}"
+
+        entries: Dict[str, str] = dict()
+        for line in f.readlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                try:
+                    k, v = line.split("=", maxsplit=1)
+                except ValueError:
+                    raise ValueError(illegal_format_msg)
+                entries[k.strip()] = v.strip()
+
+        for keyword in ("autoDistribute", "isLogScaled"):
+            if keyword in entries:
+                LOG.warning(f"Unrecognized keyword {keyword!r}"
+                            f" in SNAP *.cpd file {cpd_file_path}")
+
+        # Uncomment, as soon as we know how to deal with this:
+        # log_scaled = entries.get("isLogScaled") == "true"
+        log_scaled = False
+
+        try:
+            num_points = int(entries.get("numPoints"))
+        except ValueError:
+            raise ValueError(illegal_format_msg)
+
+        points = []
+        for i in range(num_points):
+            try:
+                r, g, b = map(int, entries.get(f"color{i}", "").split(","))
+                sample = float(entries.get(f"sample{i}"))
+            except ValueError:
+                raise ValueError(illegal_format_msg)
+            points.append((sample, (r, g, b)))
+
+        return points, log_scaled
 
 
 def _get_color(colortext):
@@ -262,7 +400,8 @@ def _get_color(colortext):
     if any('color' in line for line in lines):
         for line in lines:
             if "color" in line:
-                r, g, b = (((re.split(r'\W+', line, 1)[1:])[0].strip()).split(','))
+                r, g, b = (
+                    ((re.split(r'\W+', line, 1)[1:])[0].strip()).split(','))
                 hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
                 c.append(hex_col)
     else:

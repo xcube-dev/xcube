@@ -32,20 +32,24 @@ import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
-from xcube.core.geom import get_dataset_bounds, get_dataset_geometry
+from xcube.core.geom import get_dataset_bounds
+from xcube.core.geom import get_dataset_geometry
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.store import DataStoreError
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.server.api import ApiError
-from xcube.util.cmaps import get_cmaps, get_cmap, get_norm
+from xcube.util.cmaps import get_cmap
+from xcube.util.cmaps import get_cmaps
+from xcube.util.cmaps import get_norm
 from .authutil import READ_ALL_DATASETS_SCOPE
 from .authutil import READ_ALL_VARIABLES_SCOPE
 from .authutil import assert_scopes
 from .authutil import check_scopes
 from .context import DatasetConfig
 from .context import DatasetsContext
-from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
+from ..defaults import DEFAULT_CMAP_HEIGHT
+from ..defaults import DEFAULT_CMAP_WIDTH
 from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
 
@@ -486,7 +490,7 @@ def get_color_bars(ctx: DatasetsContext,
                     '<html lang="en">\n' + \
                     '<head>' + \
                     '<meta charset="UTF-8">' + \
-                    '<title>xcube server color maps</title>' + \
+                    '<title>xcube Server Colormaps</title>' + \
                     '</head>\n' + \
                     '<body style="padding: 0.2em">\n'
         html_body = ''
@@ -508,7 +512,7 @@ def get_color_bars(ctx: DatasetsContext,
             html_body += '    </table>\n'
         return html_head + html_body + html_foot
     raise ApiError.BadRequest(
-        f'Format {mime_type!r} not supported for color bars'
+        f'Format {mime_type!r} not supported for colormaps'
     )
 
 
