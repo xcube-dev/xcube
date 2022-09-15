@@ -34,6 +34,8 @@
 
 * Added new class `xcube.util.jsonencoder.NumpyJSONEncoder` that 
   is used to serialize numpy-like scalar values to JSON.
+  The new encoder is required because `xcube io dump` was broken 
+  due to the updated env.
 
 ### Fixes
 
