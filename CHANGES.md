@@ -28,6 +28,13 @@
   is used to select dataset labels along a given dimension using
   user-defined predicate functions.
 
+* The xcube Python environment is now requiring 
+  `xarray >= 2022.6` and `zarr >= 2.11` to ensure sparse 
+  Zarr datasets can be written using `dataset.to_zarr(store)`. (#688)
+
+* Added new class `xcube.util.jsonencoder.NumpyJSONEncoder` that 
+  is used to serialize numpy-like scalar values to JSON.
+
 ### Fixes
 
 * The filesystem-based data stores for the "s3", "file", and "memory"
