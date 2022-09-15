@@ -39,9 +39,6 @@ from xcube.core.store import DataStoreError
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.server.api import ApiError
-from xcube.util.cmaps import get_cmap
-from xcube.util.cmaps import get_cmaps
-from xcube.util.cmaps import get_norm
 from .authutil import READ_ALL_DATASETS_SCOPE
 from .authutil import READ_ALL_VARIABLES_SCOPE
 from .authutil import assert_scopes
@@ -482,7 +479,7 @@ def get_dataset_coordinates(ctx: DatasetsContext,
 # noinspection PyUnusedLocal
 def get_color_bars(ctx: DatasetsContext,
                    mime_type: str) -> str:
-    cmaps = get_cmaps()
+    cmaps = ctx.colormap_registry.to_json()
     if mime_type == 'application/json':
         return json.dumps(cmaps, indent=2)
     elif mime_type == 'text/html':
@@ -504,8 +501,10 @@ def get_color_bars(ctx: DatasetsContext,
                 cmap_name, cmap_data = cmap_bar
                 cmap_image = f'<img src="data:image/png;base64,{cmap_data}"' \
                              f' width="100%%"' \
-                             f' height="32"/>'
-                name_cell = f'<td style="width: 5em">{cmap_name}:</td>'
+                             f' height="24"/>'
+                name_cell = f'<td style="width: 5em">' \
+                            f'<code>{cmap_name}</code>' \
+                            f'</td>'
                 image_cell = f'<td style="width: 40em">{cmap_image}</td>'
                 row = f'<tr>{name_cell}{image_cell}</tr>\n'
                 html_body += f'        {row}\n'
@@ -582,8 +581,12 @@ def get_legend(ctx: DatasetsContext,
     except (ValueError, TypeError):
         raise ApiError.BadRequest("Invalid color legend parameter(s)")
 
+    cmap_name, cmap = ctx.colormap_registry.get_cmap(cmap_name)
+    colormap = ctx.colormap_registry.colormaps.get(cmap_name)
+    assert colormap is not None
+
     try:
-        _, cmap = get_cmap(cmap_name)
+        _, cmap = ctx.colormap_registry.get_cmap(cmap_name)
     except ValueError:
         raise ApiError.NotFound(f"Colormap {cmap_name!r} not found")
 

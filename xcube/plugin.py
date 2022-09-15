@@ -197,7 +197,6 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'rectify',
         'resample',
         'serve',
-        'tile',
         'vars2dim',
         'verify',
         'versions',

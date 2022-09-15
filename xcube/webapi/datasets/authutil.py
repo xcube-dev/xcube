@@ -23,7 +23,6 @@ import fnmatch
 from typing import Optional, Set
 
 from xcube.server.api import ApiError
-from xcube.webapi.errors import ServiceAuthError
 
 READ_ALL_DATASETS_SCOPE = 'read:dataset:*'
 READ_ALL_VARIABLES_SCOPE = 'read:variable:*'

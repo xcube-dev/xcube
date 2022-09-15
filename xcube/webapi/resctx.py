@@ -26,12 +26,12 @@ from typing import Any, Dict, List, Optional
 
 from xcube.constants import LOG
 from xcube.server.api import ApiContext
+from xcube.server.api import ApiError
 from xcube.server.api import Context
 from xcube.server.api import ServerConfigObject
 from xcube.util.perf import measure_time_cm
 from xcube.version import version
 from xcube.webapi.auth import AuthContext
-from xcube.webapi.errors import ServiceError
 
 
 class ResourcesContext(ApiContext):
@@ -107,8 +107,9 @@ class ResourcesContext(ApiContext):
                         is_url: bool = False) -> str:
         path = config.get(path_entry_name)
         if not path:
-            raise ServiceError(
-                f"Missing entry {path_entry_name!r} in {config_name}")
+            raise ApiError.InternalServerError(
+                f"Missing entry {path_entry_name!r} in {config_name}"
+            )
         if not is_url and not os.path.isabs(path):
             path = os.path.join(self._base_dir, path)
         return path

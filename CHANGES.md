@@ -4,7 +4,27 @@
 
 * xcube Server has been rewritten almost from scratch.
 
+* xcube Server's colormap management has been improved in several ways:
+  - Colormaps are no longer managed globally. E.g., on server configuration 
+    change, new custom colormaps are reloaded from files. 
+  - Colormaps are loaded dynamically from underlying 
+    matplotlib and cmocean registries and custom SNAP color palette files. 
+    That means, latest matplotlib colormaps are now always available. (#661)
+  - The module `xcube.util.cmaps` has been redesigned and now offers
+    three new classes for colormap management:
+    * `Colormap` - a colormap 
+    * `ColormapCategory` - represents a colormap category
+    * `ColormapRegistry` - manages colormaps and their categories
+  
+### Other
 
+* Deprecated CLI `xcube tile` has been removed.
+* Deprecated modules and their references have finally been removed:
+  - `xcube.core.tilegrid`
+  - `xcube.core.tiledimage`
+* The following functions have been deprecated:
+  - `xcube.util.cmaps.get_cmap()`
+  - `xcube.util.cmaps.get_cmaps()`
 
 ## Changes in 0.12.1 (in development)
 

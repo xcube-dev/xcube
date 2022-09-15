@@ -341,6 +341,55 @@ def compute_rgba_tile(
         return var_tile_rgba
 
 
+def get_var_cmap_params(var: xr.DataArray,
+                        cmap_name: Optional[str],
+                        cmap_range: Tuple[Optional[float], Optional[float]],
+                        valid_range: Optional[Tuple[float, float]]) \
+        -> Tuple[str, Tuple[float, float]]:
+    if cmap_name is None:
+        cmap_name = var.attrs.get('color_bar_name')
+        if cmap_name is None:
+            cmap_name = DEFAULT_CMAP_NAME
+    cmap_vmin, cmap_vmax = cmap_range
+    if cmap_vmin is None:
+        cmap_vmin = var.attrs.get('color_value_min')
+        if cmap_vmin is None and valid_range is not None:
+            cmap_vmin = valid_range[0]
+        if cmap_vmin is None:
+            cmap_vmin = DEFAULT_VALUE_RANGE[0]
+    if cmap_vmax is None:
+        cmap_vmax = var.attrs.get('color_value_max')
+        if cmap_vmax is None and valid_range is not None:
+            cmap_vmax = valid_range[1]
+        if cmap_vmax is None:
+            cmap_vmax = DEFAULT_VALUE_RANGE[1]
+    return cmap_name, (cmap_vmin, cmap_vmax)
+
+
+def get_var_valid_range(var: xr.DataArray) -> Optional[Tuple[float, float]]:
+    valid_min = None
+    valid_max = None
+    valid_range = var.attrs.get('valid_range')
+    if valid_range:
+        try:
+            valid_min, valid_max = map(float, valid_range)
+        except (TypeError, ValueError):
+            pass
+    if valid_min is None:
+        valid_min = var.attrs.get('valid_min')
+    if valid_max is None:
+        valid_max = var.attrs.get('valid_max')
+    if valid_min is None and valid_max is None:
+        valid_range = None
+    elif valid_min is not None and valid_max is not None:
+        valid_range = valid_min, valid_max
+    elif valid_min is None:
+        valid_range = -np.inf, valid_max
+    else:
+        valid_range = valid_min, +np.inf
+    return valid_range
+
+
 def _get_variable(ds_name,
                   dataset,
                   variable_name,

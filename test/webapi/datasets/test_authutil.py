@@ -22,7 +22,8 @@
 import unittest
 
 from xcube.server.api import ApiError
-from xcube.webapi.datasets.authutil import check_scopes, assert_scopes
+from xcube.webapi.datasets.authutil import assert_scopes
+from xcube.webapi.datasets.authutil import check_scopes
 
 
 class DatasetScopesTest(unittest.TestCase):

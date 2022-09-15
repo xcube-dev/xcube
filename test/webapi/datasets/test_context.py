@@ -160,6 +160,21 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
 
+    def test_get_color_mappings(self):
+        ctx = get_datasets_ctx()
+        color_mapping = ctx.get_color_mappings('demo-1w')
+        self.assertEqual(
+            {
+                'conc_chl': {'ColorBar': 'plasma',
+                             'ValueRange': [0.0, 24.0]},
+                'conc_tsm': {'ColorBar': 'PuBuGn',
+                             'ValueRange': [0.0, 100.0]},
+                'kd489': {'ColorBar': 'jet',
+                          'ValueRange': [0.0, 6.0]}
+            },
+            color_mapping
+        )
+
     def test_get_color_mapping(self):
         ctx = get_datasets_ctx()
         cm = ctx.get_color_mapping('demo', 'conc_chl')
@@ -185,25 +200,6 @@ class DatasetsContextTest(unittest.TestCase):
         rgb_cm = ctx.get_rgb_color_mapping('demo-rgb')
         self.assertEqual((['conc_chl', 'conc_tsm', 'kd489'],
                           [(0.0, 24.0), (0.0, 100.0), (0.0, 6.0)]), rgb_cm)
-
-    def test_get_style(self):
-        ctx = get_datasets_ctx()
-        style = ctx.get_style('demo-1w')
-        self.assertEqual(
-            {
-                'Identifier': 'default',
-                'ColorMappings': {'conc_chl': {'ColorBar': 'plasma',
-                                               'ValueRange': [0.0,
-                                                              24.0]},
-                                  'conc_tsm': {'ColorBar': 'PuBuGn',
-                                               'ValueRange': [0.0,
-                                                              100.0]},
-                                  'kd489': {'ColorBar': 'jet',
-                                            'ValueRange': [0.0,
-                                                           6.0]}}
-            },
-            style
-        )
 
     def test_get_other_store_params_than_root(self):
         ctx = get_datasets_ctx()

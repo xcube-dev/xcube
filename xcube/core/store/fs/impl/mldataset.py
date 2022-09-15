@@ -46,7 +46,6 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.tilegrid import TileGrid
 from xcube.util.types import normalize_scalar_or_pair
 from .dataset import DatasetZarrFsDataAccessor
 from ..helpers import get_fs_path_class
@@ -344,21 +343,6 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
     def compute_size_weights(num_levels: int) -> np.ndarray:
         weights = (2 ** np.arange(0, num_levels, dtype=np.float64)) ** 2
         return weights[::-1] / np.sum(weights)
-
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        """
-        Retrieve, i.e. read or compute, the tile grid
-        used by the multi-level dataset.
-
-        :return: the dataset for the level at *index*.
-        """
-        tile_grid = self.grid_mapping.tile_grid
-        if tile_grid.num_levels != self.num_levels:
-            raise DataStoreError(f'Detected inconsistent'
-                                 f' number of detail levels,'
-                                 f' expected {tile_grid.num_levels},'
-                                 f' found {self.num_levels}.')
-        return tile_grid
 
     def _get_num_levels_lazily(self) -> int:
         levels = self._get_levels()

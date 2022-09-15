@@ -152,7 +152,7 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
             get_color_bars(get_datasets_ctx(), 'text/xml')
         self.assertEqual(400, cm.exception.status_code)
         self.assertEqual("HTTP status 400:"
-                         " Format 'text/xml' not supported for color bars",
+                         " Format 'text/xml' not supported for colormaps",
                          f'{cm.exception}')
 
     def test_dataset_with_details_and_rgb_schema(self):
