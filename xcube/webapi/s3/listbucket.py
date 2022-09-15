@@ -109,7 +109,7 @@ def list_s3_bucket_v2(object_storage: Mapping[str, bytes],
 
     token = 0
 
-    for key in iter(object_storage):
+    for key in sorted(object_storage.keys()):
 
         token += 1
 
@@ -237,7 +237,7 @@ def list_s3_bucket_v1(object_storage: Mapping[str, bytes],
     common_prefixes_list = []
     common_prefixes_set = set()
 
-    for key in iter(object_storage):
+    for key in sorted(object_storage.keys()):
 
         if len(contents_list) == max_keys:
             is_truncated = True
