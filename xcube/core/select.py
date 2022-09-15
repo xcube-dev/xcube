@@ -209,7 +209,8 @@ def select_temporal_subset(dataset: xr.Dataset,
             time_2 += pd.Timedelta('1D')
     try:
         time_slice = ensure_time_index_compatible(dataset,
-                                                  slice(time_1, time_2))
+                                                  slice(time_1, time_2),
+                                                  time_name)
         return dataset.sel({time_name or 'time': time_slice})
     except TypeError:
         calendar = dataset.time.encoding.get('calendar')
@@ -218,7 +219,8 @@ def select_temporal_subset(dataset: xr.Dataset,
         time_2 = cftime.datetime(time_2.year, time_2.month, time_2.day,
                                  calendar=calendar)
         time_slice = ensure_time_index_compatible(dataset,
-                                                  slice(time_1, time_2))
+                                                  slice(time_1, time_2),
+                                                  time_name)
         return dataset.sel({time_name or 'time': time_slice})
 
 

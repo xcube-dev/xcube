@@ -90,7 +90,7 @@ def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
     be called before indexing to align the indexer's timezone-awareness with
     that of the variable, thus avoiding the error from xarray.
     """
-    
+
     if isinstance(time_value, slice):
         # process start and stop separately, and pass step through unchanged
         return slice(
