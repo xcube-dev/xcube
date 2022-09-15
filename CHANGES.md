@@ -3,6 +3,34 @@
 ### Enhancements
 
 * xcube Server has been rewritten almost from scratch.
+  
+  - Introduced a new endpoint `${server_url}/s3/{bucket}` that emulates
+    and AWS S3 object storage for the published datasets.
+    The `bucket` name can be either:
+    * `datasets` - publishes all datasets in Zarr format.
+    * `pyramids` - publishes all datasets in a multi-level `levels`
+      format (multi-resolution N-D images)
+      that comprises level datasets in Zarr format.
+    
+    With the new S3 endpoints in place, xcube Server instances can be used
+    as xcube data stores as follows:
+    
+    ```python
+    store = new_data_store(
+        "s3", 
+        root="datasets",   # bucket "datasets", use also "pyramids"
+        max_depth=2,       # optional, but we may have nested datasets
+        storage_options=dict(
+            anon=True,
+            client_kwargs=dict(
+                endpoint_url='http://localhost:8080/s3' 
+            )
+        )
+    )
+    ```
+
+  - The limited `s3bucket` endpoints are no longer available and are 
+    replaced by `s3` endpoints. 
 
 * xcube Server's colormap management has been improved in several ways:
   - Colormaps are no longer managed globally. E.g., on server configuration 
@@ -56,7 +84,7 @@
 
     In turn, the classes of module `xcube.core.chunkstore` have been
     deprecated.
-
+    
 * Added a new function `xcube.core.select.select_label_subset()` that 
   is used to select dataset labels along a given dimension using
   user-defined predicate functions.
