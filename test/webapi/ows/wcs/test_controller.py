@@ -9,10 +9,10 @@ from test.webapi.ows import res as test_res
 from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.webapi.ows.wcs import res
 from xcube.webapi.ows.wcs.context import WcsContext
-from xcube.webapi.ows.wcs.controllers import get_capabilities_xml, \
+from xcube.webapi.ows.wcs.controllers import get_wcs_capabilities_xml, \
     _validate_coverage_req, CoverageRequest, get_coverage, \
     translate_to_generator_request
-from xcube.webapi.ows.wcs.controllers import get_describe_xml
+from xcube.webapi.ows.wcs.controllers import get_describe_coverage_xml
 
 
 # noinspection PyMethodMayBeStatic
@@ -24,19 +24,19 @@ class ControllerTest(unittest.TestCase):
         self.wcs_ctx = get_api_ctx('ows.wcs', WcsContext)
 
     def test_get_capabilities(self):
-        actual_xml = get_capabilities_xml(self.wcs_ctx,
+        actual_xml = get_wcs_capabilities_xml(self.wcs_ctx,
                                           'https://xcube.brockmann-consult.de/wcs/kvp')
 
         self.check_xml(actual_xml, 'WCSCapabilities.xml',
                        'wcsCapabilities.xsd')
 
     def test_describe_coverage(self):
-        actual_xml = get_describe_xml(self.wcs_ctx)
+        actual_xml = get_describe_coverage_xml(self.wcs_ctx)
         self.check_xml(actual_xml, 'WCSDescribe.xml', 'wcsDescribe.xsd')
 
     def test_describe_coverage_subset(self):
-        actual_xml = get_describe_xml(self.wcs_ctx,
-                                      [
+        actual_xml = get_describe_coverage_xml(self.wcs_ctx,
+                                               [
                                           'demo-1w.quality_flags_stdev',
                                           'demo-1w.kd489_stdev',
                                           'demo.conc_chl'

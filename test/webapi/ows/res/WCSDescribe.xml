@@ -17,15 +17,15 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-16T10:09:21.834255872
+                <gml:timePosition>2017-01-16T10:09:21Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-25T09:35:51.060063488
+                <gml:timePosition>2017-01-25T09:35:51Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-26T10:50:16.686192896
+                <gml:timePosition>2017-01-26T10:50:16Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-28T09:58:11.350386176
+                <gml:timePosition>2017-01-28T09:58:11Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-30T10:46:33.836892416
+                <gml:timePosition>2017-01-30T10:46:33Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -71,15 +71,15 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-16T10:09:21.834255872
+                <gml:timePosition>2017-01-16T10:09:21Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-25T09:35:51.060063488
+                <gml:timePosition>2017-01-25T09:35:51Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-26T10:50:16.686192896
+                <gml:timePosition>2017-01-26T10:50:16Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-28T09:58:11.350386176
+                <gml:timePosition>2017-01-28T09:58:11Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-30T10:46:33.836892416
+                <gml:timePosition>2017-01-30T10:46:33Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -125,15 +125,15 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-16T10:09:21.834255872
+                <gml:timePosition>2017-01-16T10:09:21Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-25T09:35:51.060063488
+                <gml:timePosition>2017-01-25T09:35:51Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-26T10:50:16.686192896
+                <gml:timePosition>2017-01-26T10:50:16Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-28T09:58:11.350386176
+                <gml:timePosition>2017-01-28T09:58:11Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-30T10:46:33.836892416
+                <gml:timePosition>2017-01-30T10:46:33Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -179,15 +179,15 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-16T10:09:21.834255872
+                <gml:timePosition>2017-01-16T10:09:21Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-25T09:35:51.060063488
+                <gml:timePosition>2017-01-25T09:35:51Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-26T10:50:16.686192896
+                <gml:timePosition>2017-01-26T10:50:16Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-28T09:58:11.350386176
+                <gml:timePosition>2017-01-28T09:58:11Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-30T10:46:33.836892416
+                <gml:timePosition>2017-01-30T10:46:33Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -233,15 +233,15 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-16T10:09:21.834255872
+                <gml:timePosition>2017-01-16T10:09:21Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-25T09:35:51.060063488
+                <gml:timePosition>2017-01-25T09:35:51Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-26T10:50:16.686192896
+                <gml:timePosition>2017-01-26T10:50:16Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-28T09:58:11.350386176
+                <gml:timePosition>2017-01-28T09:58:11Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-30T10:46:33.836892416
+                <gml:timePosition>2017-01-30T10:46:33Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -287,11 +287,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -337,11 +337,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -387,11 +387,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -437,11 +437,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -487,11 +487,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -537,11 +537,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -587,11 +587,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -637,11 +637,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -687,11 +687,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>
@@ -737,11 +737,11 @@
                 </gml:Envelope>
             </spatialDomain>
             <temporalDomain>
-                <gml:timePosition>2017-01-22T00:00:00.000000000
+                <gml:timePosition>2017-01-22T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-01-29T00:00:00.000000000
+                <gml:timePosition>2017-01-29T00:00:00Z
                 </gml:timePosition>
-                <gml:timePosition>2017-02-05T00:00:00.000000000
+                <gml:timePosition>2017-02-05T00:00:00Z
                 </gml:timePosition>
             </temporalDomain>
         </domainSet>

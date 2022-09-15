@@ -83,7 +83,7 @@ class CoverageRequest:
             self.exceptions = req['EXCEPTIONS']
 
 
-def get_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
+def get_wcs_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     """
     Get WCSCapabilities.xml according to
     https://schemas.opengis.net/wcs/1.0.0/.
@@ -97,7 +97,7 @@ def get_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     return document.to_xml(indent=4)
 
 
-def get_describe_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
+def get_describe_coverage_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
     element = _get_describe_element(ctx, coverages)
     document = Document(element)
     return document.to_xml(indent=4)
@@ -488,6 +488,7 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
     band_infos = _extract_band_infos(ctx, coverages, True)
     for var_name in band_infos.keys():
         coverage_elements.append(Element('CoverageOffering', elements=[
+            Element('description', text=band_infos[var_name].label),
             Element('name', text=var_name),
             Element('label', text=band_infos[var_name].label),
             Element('lonLatEnvelope', elements=[
@@ -495,6 +496,9 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                                         f'{band_infos[var_name].bbox[1]}'),
                 Element('gml:pos', text=f'{band_infos[var_name].bbox[2]} '
                                         f'{band_infos[var_name].bbox[3]}')
+            ]),
+            Element('keywords', elements=[
+                Element('keyword', text='grid')
             ]),
             Element('domainSet', elements=[
                 Element('spatialDomain', elements=[
@@ -606,7 +610,7 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
             is_temporal_var = var.ndim >= 3
             time_steps = None
             if is_temporal_var:
-                time_steps = [str(d) for d in var.time.values]
+                time_steps = [f'{str(d)[:19]}Z' for d in var.time.values]
 
             band_info = BandInfo(qualified_var_name, label, bbox, time_steps)
             if full:

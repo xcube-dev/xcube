@@ -3,12 +3,16 @@
                      xmlns:gml="http://www.opengis.net/gml"
                      version="1.0.0">
     <CoverageOffering>
+        <description>Chlorophyll concentration</description>
         <name>demo.conc_chl</name>
         <label>Chlorophyll concentration</label>
         <lonLatEnvelope>
             <gml:pos>0 50</gml:pos>
             <gml:pos>5 52.5</gml:pos>
         </lonLatEnvelope>
+        <keywords>
+            <keyword>grid</keyword>
+        </keywords>
         <domainSet>
             <spatialDomain>
                 <gml:Envelope>
@@ -16,6 +20,18 @@
                     <gml:pos>5 52.5</gml:pos>
                 </gml:Envelope>
             </spatialDomain>
+            <temporalDomain>
+                <gml:timePosition>2017-01-16T10:09:21Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-25T09:35:51Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-26T10:50:16Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-28T09:58:11Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-30T10:46:33Z
+                </gml:timePosition>
+            </temporalDomain>
         </domainSet>
         <rangeSet>
             <RangeSet>
@@ -45,12 +61,16 @@
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>kd489_stdev</description>
         <name>demo-1w.kd489_stdev</name>
         <label>kd489_stdev</label>
         <lonLatEnvelope>
             <gml:pos>0 50</gml:pos>
             <gml:pos>5 52.5</gml:pos>
         </lonLatEnvelope>
+        <keywords>
+            <keyword>grid</keyword>
+        </keywords>
         <domainSet>
             <spatialDomain>
                 <gml:Envelope>
@@ -58,6 +78,14 @@
                     <gml:pos>5 52.5</gml:pos>
                 </gml:Envelope>
             </spatialDomain>
+            <temporalDomain>
+                <gml:timePosition>2017-01-22T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-29T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-02-05T00:00:00Z
+                </gml:timePosition>
+            </temporalDomain>
         </domainSet>
         <rangeSet>
             <RangeSet>
@@ -87,12 +115,16 @@
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>quality_flags_stdev</description>
         <name>demo-1w.quality_flags_stdev</name>
         <label>quality_flags_stdev</label>
         <lonLatEnvelope>
             <gml:pos>0 50</gml:pos>
             <gml:pos>5 52.5</gml:pos>
         </lonLatEnvelope>
+        <keywords>
+            <keyword>grid</keyword>
+        </keywords>
         <domainSet>
             <spatialDomain>
                 <gml:Envelope>
@@ -100,6 +132,14 @@
                     <gml:pos>5 52.5</gml:pos>
                 </gml:Envelope>
             </spatialDomain>
+            <temporalDomain>
+                <gml:timePosition>2017-01-22T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-29T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-02-05T00:00:00Z
+                </gml:timePosition>
+            </temporalDomain>
         </domainSet>
         <rangeSet>
             <RangeSet>
