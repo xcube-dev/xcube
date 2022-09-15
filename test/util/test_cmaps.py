@@ -7,9 +7,37 @@ from xcube.util.cmaps import Colormap
 from xcube.util.cmaps import ColormapCategory
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import DEFAULT_CMAP_NAME
+from xcube.util.cmaps import ensure_cmaps_loaded
+from xcube.util.cmaps import get_cmap
+from xcube.util.cmaps import get_cmaps
 from xcube.util.cmaps import load_snap_cpd_colormap
 
 registry = ColormapRegistry()
+
+
+class DeprecatedApiTest(TestCase):
+    def test_get_cmap(self):
+        cm_name, cmap = get_cmap("bone")
+        self.assertEqual("bone", cm_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+        cm_name, cmap = get_cmap("bonex")
+        self.assertEqual("viridis", cm_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+        cm_name, cmap = get_cmap("bone", num_colors=512)
+        self.assertEqual("bone", cm_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+    def test_get_cmaps(self):
+        cmaps = get_cmaps()
+        self.assertIsInstance(cmaps, list)
+        self.assertEqual(8, len(cmaps))
+        self.assertIs(cmaps, get_cmaps())
+
+    # noinspection PyMethodMayBeStatic
+    def test_ensure_cmaps_loaded(self):
+        ensure_cmaps_loaded()
 
 
 class ColormapRegistryTest(TestCase):
@@ -36,6 +64,26 @@ class ColormapRegistryTest(TestCase):
         with self.assertRaises(ValueError):
             self.registry.get_cmap('PLASMA',
                                    default_cm_name='MAGMA')
+
+    def test_get_cmap_alpha(self):
+        cmap_name, cmap = self.registry.get_cmap('plasma_alpha')
+        self.assertEqual('plasma', cmap_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+    def test_get_cmap_reversed(self):
+        cmap_name, cmap = self.registry.get_cmap('plasma_r')
+        self.assertEqual('plasma', cmap_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+    def test_get_cmap_reversed_alpha(self):
+        cmap_name, cmap = self.registry.get_cmap('plasma_r_alpha')
+        self.assertEqual('plasma', cmap_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+    def test_get_cmap_num_colors(self):
+        cmap_name, cmap = self.registry.get_cmap('plasma', num_colors=32)
+        self.assertEqual('plasma', cmap_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_categories(self):
         categories = self.registry.categories
@@ -81,7 +129,7 @@ class ColormapRegistryTest(TestCase):
     def test_to_json(self):
         obj = self.registry.to_json()
         self.assertIsInstance(obj, list)
-        self.assertEqual(7, len(obj))
+        self.assertEqual(8, len(obj))
         for entry in obj:
             self.assertIsInstance(entry, list)
             self.assertEqual(3, len(entry))

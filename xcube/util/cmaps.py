@@ -292,7 +292,7 @@ class ColormapRegistry:
         assert_instance(cm_name, str, name="cm_name")
         assert_instance(default_cm_name, str, name="default_cm_name")
         if num_colors is not None:
-            assert_instance(default_cm_name, int, name="num_colors")
+            assert_instance(num_colors, int, name="num_colors")
 
         cm_name, reverse, alpha = parse_cm_name(cm_name)
 
