@@ -31,6 +31,20 @@
 
     In turn, the classes of module `xcube.core.chunkstore` have been
     deprecated.
+    
+    The usage of S3 API is as follows, max_depth is optional but must be used if the server is configured with the parameter. 
+    ```python
+    store = new_data_store("s3", 
+                           root="datasets", 
+                           max_depth= 2,
+                           storage_options=dict(
+                               anon=True,
+                               client_kwargs=dict(
+                                   endpoint_url='http://localhost:8080/s3' 
+                               )
+                           )
+                          )
+    ```
 
 * Added a new function `xcube.core.select.select_label_subset()` that 
   is used to select dataset labels along a given dimension using
