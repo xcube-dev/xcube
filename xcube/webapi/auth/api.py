@@ -20,13 +20,12 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
-from .config import CONFIG_SCHEMA
-from .context import DatasetsContext
+from .config import AuthConfig
+from .context import AuthContext
 
 api = Api(
-    'datasets',
-    description='xcube Datasets API',
-    config_schema=CONFIG_SCHEMA,
-    required_apis=['auth', 'places'],
-    create_ctx=DatasetsContext
+    'auth',
+    description='xcube Auth API',
+    config_schema=AuthConfig.get_schema(),
+    create_ctx=AuthContext,
 )

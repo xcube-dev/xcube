@@ -25,7 +25,7 @@ import pytest
 
 from xcube.server.api import ApiError
 # noinspection PyProtectedMember
-from xcube.webapi._auth.config import AuthConfig
+from xcube.webapi.auth.config import AuthConfig
 
 
 class AuthContextTest(unittest.TestCase):

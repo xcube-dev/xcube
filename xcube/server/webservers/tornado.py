@@ -64,7 +64,7 @@ class TornadoFramework(Framework):
                  io_loop: Optional[tornado.ioloop.IOLoop] = None):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
-        self.configure_logger()
+        self.configure_logging()
 
     @property
     def config_schema(self) -> Optional[JsonObjectSchema]:
@@ -189,17 +189,26 @@ class TornadoFramework(Framework):
         )
 
     @staticmethod
-    def configure_logger():
-        # Configure Tornado logger to use configured root handlers.
-        # For some reason, Tornado's log records will not arrive at
-        # the root logger.
-        tornado_logger = logging.getLogger('tornado')
-        for h in list(tornado_logger.handlers):
-            tornado_logger.removeHandler(h)
-            h.close()
-        for h in list(logging.root.handlers):
-            tornado_logger.addHandler(h)
-        tornado_logger.setLevel(logging.root.level)
+    def configure_logging():
+        # Configure Tornado loggers to use root handlers, so we
+        # have a single log level and format. Root handlers are
+        # assumed to be already configured by xcube CLI.
+        for logger_name in [
+            'tornado',
+            'tornado.access',
+            'tornado.application',
+            'tornado.general'
+        ]:
+            log = logging.getLogger(logger_name)
+            # Remove Tornado's own handlers
+            for h in list(log.handlers):
+                log.removeHandler(h)
+                h.close()
+            # Add root handlers configured by xcube CLI
+            for h in list(logging.root.handlers):
+                log.addHandler(h)
+            # Use common log level
+            log.setLevel(logging.root.level)
 
     @staticmethod
     def path_to_pattern(path: str):

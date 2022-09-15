@@ -121,10 +121,8 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertIn('test~cube-1-250-250.levels', ids)
 
     def test_get_dataset_configs_with_duplicate_ids_from_stores(self):
-        ctx = get_datasets_ctx('config-datastores-double-ids.yml')
-
         with self.assertRaises(ApiError.InvalidServerConfig) as sce:
-            ctx.get_dataset_configs_from_stores(ctx.get_data_store_pool())
+            ctx = get_datasets_ctx('config-datastores-double-ids.yml')
         self.assertEqual('HTTP status 580:'
                          ' User-defined identifiers can only be assigned to '
                          'datasets with non-wildcard paths.',
@@ -161,16 +159,6 @@ class DatasetsContextTest(unittest.TestCase):
         ]))
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
-
-    def test_get_s3_bucket_mapping(self):
-        ctx = get_datasets_ctx()
-        bucket_mapping = ctx.get_s3_bucket_mapping()
-        self.assertEqual(['demo'],
-                         list(bucket_mapping.keys()))
-        path = bucket_mapping['demo']
-        self.assertTrue(os.path.isabs(path))
-        self.assertTrue(path.replace('\\', '/').endswith(
-            'examples/serve/demo/cube-1-250-250.zarr'))
 
     def test_get_color_mapping(self):
         ctx = get_datasets_ctx()

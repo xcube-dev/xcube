@@ -204,7 +204,6 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
 
         # Experimental + Hidden
         'io',
-        'serve2',
     ]
 
     for cli_command_name in cli_command_names:
@@ -221,7 +220,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     """
     server_api_names = [
         'meta',
-        '_auth',
+        'auth',
         'places',
         'styles',
         'datasets',

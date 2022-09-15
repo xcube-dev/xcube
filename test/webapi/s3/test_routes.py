@@ -19,59 +19,52 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import urllib3.response
-
 from ..helpers import RoutesTestCase
 
 
-class S3RoutesTest(RoutesTestCase):
+class S3RoutesNewTest(RoutesTestCase):
 
-    def test_fetch_list_s3bucket(self):
-        response = self.fetch('/s3bucket')
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket?delimiter=%2F')
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket?delimiter=%2F&prefix=demo%2F')
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket?delimiter=%2F&list-type=2')
-        self.assertResponseOK(response)
-        response = self.fetch(
-            '/s3bucket?delimiter=%2F&prefix=demo%2F&list-type=2')
-        self.assertResponseOK(response)
+    def test_fetch_head_s3_object(self):
+        self._assert_fetch_s3_object(method='HEAD')
 
-    def test_fetch_head_s3bucket_object(self):
-        self._assert_fetch_head_s3bucket_object(method='HEAD')
+    def test_fetch_get_s3_object(self):
+        self._assert_fetch_s3_object(method='GET')
 
-    def test_fetch_get_s3bucket_object(self):
-        self._assert_fetch_head_s3bucket_object(method='GET')
-
-    def _assert_fetch_head_s3bucket_object(self, method):
-        response = self.fetch('/s3bucket/demo', method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/', method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/.zattrs', method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/.zgroup', method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/.zarray', method=method)
-        self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3bucket/demo/time/.zattrs', method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/time/.zarray', method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/time/.zgroup', method=method)
-        self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3bucket/demo/time/0', method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/conc_chl/.zattrs',
+    def _assert_fetch_s3_object(self, method):
+        # response = self.fetch('/s3/datasets/demo.zarr', method=method)
+        # self.assertResponseOK(response)
+        # response = self.fetch('/s3/datasets/demo.zarr/', method=method)
+        # self.assertResponseOK(response)
+        response = self.fetch('/s3/datasets/demo.zarr/.zattrs',
                               method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/conc_chl/.zarray',
+        response = self.fetch('/s3/datasets/demo.zarr/.zgroup',
                               method=method)
         self.assertResponseOK(response)
-        response = self.fetch('/s3bucket/demo/conc_chl/.zgroup',
+        response = self.fetch('/s3/datasets/demo.zarr/.zarray',
                               method=method)
         self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3bucket/demo/conc_chl/3.2.4', method=method)
+        response = self.fetch('/s3/datasets/demo.zarr/time/.zattrs',
+                              method=method)
+        self.assertResponseOK(response)
+        response = self.fetch('/s3/datasets/demo.zarr/time/.zarray',
+                              method=method)
+        self.assertResponseOK(response)
+        response = self.fetch('/s3/datasets/demo.zarr/time/.zgroup',
+                              method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch('/s3/datasets/demo.zarr/time/0',
+                              method=method)
+        self.assertResponseOK(response)
+        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/.zattrs',
+                              method=method)
+        self.assertResponseOK(response)
+        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/.zarray',
+                              method=method)
+        self.assertResponseOK(response)
+        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/.zgroup',
+                              method=method)
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/3.2.4',
+                              method=method)
         self.assertResponseOK(response)

@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -19,13 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import Api
-from .config import AuthConfig
-from .context import AuthContext
-
-api = Api(
-    '_auth',
-    description='xcube Auth API',
-    config_schema=AuthConfig.get_schema(),
-    create_ctx=AuthContext,
-)
+from .cached import CachedZarrStore
+from .diagnostic import DiagnosticZarrStore
+from .generic import GenericArray
+from .generic import GenericArrayLike
+from .generic import GenericZarrStore
+from .holder import ZarrStoreHolder
+from .logging import LoggingZarrStore

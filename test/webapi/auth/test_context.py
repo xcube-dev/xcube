@@ -31,15 +31,15 @@ from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
 # noinspection PyProtectedMember
 # noinspection PyProtectedMember
-from xcube.webapi._auth.config import AuthConfig
-from xcube.webapi._auth.context import AuthContext
+from xcube.webapi.auth.config import AuthConfig
+from xcube.webapi.auth.context import AuthContext
 
 XCUBE_TEST_CLIENT_ID = os.environ.get('XCUBE_TEST_CLIENT_ID')
 XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
 
 
 def get_auth_ctx(config: ServerConfig) -> AuthContext:
-    return get_api_ctx("_auth", AuthContext, config)
+    return get_api_ctx("auth", AuthContext, config)
 
 
 class AuthContextPropsTest2(unittest.TestCase):
