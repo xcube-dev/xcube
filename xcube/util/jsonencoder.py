@@ -25,7 +25,7 @@ import numpy as np
 
 
 class NumpyJSONEncoder(json.JSONEncoder):
-    """A JSON encoder that converty numpy-like
+    """A JSON encoder that converts numpy-like
     scalars into corresponding serializable Python objects.
     """
 
