@@ -109,5 +109,5 @@ def _convert_default(obj: Any) -> Any:
                 return str(obj)
         else:
             return [_convert_default(item) for item in obj]
-    # We may handle other non-sJSON-serializable datatypes here
+    # We may handle other non-JSON-serializable datatypes here
     return obj
