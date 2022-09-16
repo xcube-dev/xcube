@@ -72,7 +72,7 @@ def to_json_value(obj: Any) -> JsonValue:
             return t(obj)
 
     if obj_type is dict:
-        converted_obj = {k: to_json_value(v) for k, v in obj.items()}
+        converted_obj = {_key(k): to_json_value(v) for k, v in obj.items()}
         if any(converted_obj[k] is not obj[k] for k in obj.keys()):
             return converted_obj
         else:
@@ -86,14 +86,22 @@ def to_json_value(obj: Any) -> JsonValue:
             return obj
 
     try:
-        return {k: to_json_value(v) for k, v in obj.items()}
+        return {_key(k): to_json_value(v) for k, v in obj.items()}
     except AttributeError:
         try:
             return [to_json_value(item) for item in obj]
         except TypeError:
             # Same as json.JSONEncoder.default(self, obj)
-            raise TypeError(f'Object of type {obj.__class__.__name__} '
-                            f'is not JSON serializable')
+            raise TypeError(f'Object of type'
+                            f' {obj.__class__.__name__}'
+                            f' is not JSON serializable')
+
+
+def _key(key: Any) -> str:
+    if not isinstance(key, str):
+        raise TypeError(f'Property names of JSON objects must be strings,'
+                        f' but got {key.__class__.__name__}')
+    return key
 
 
 def _convert_default(obj: Any) -> Any:

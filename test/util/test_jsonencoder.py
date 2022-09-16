@@ -124,6 +124,11 @@ class ToJsonValueTest(unittest.TestCase):
         self.assertEqual(dict(a=EXPECTED_OUTPUT, b=EXPECTED_OUTPUT),
                          to_json_value(input_dict))
 
+        with pytest.raises(TypeError,
+                           match='Property names of JSON objects'
+                                 ' must be strings, but got bool'):
+            to_json_value({True: 13})
+
     def test_list(self):
         input_list = [PY_INPUT, PY_INPUT]
         self.assertIs(input_list,
