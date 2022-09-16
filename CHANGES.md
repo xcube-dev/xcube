@@ -64,6 +64,18 @@
   is used to select dataset labels along a given dimension using
   user-defined predicate functions.
 
+* The xcube Python environment is now requiring 
+  `xarray >= 2022.6` and `zarr >= 2.11` to ensure sparse 
+  Zarr datasets can be written using `dataset.to_zarr(store)`. (#688)
+
+* Added new module `xcube.util.jsonencoder` that offers the class 
+  `NumpyJSONEncoder` used to serialize numpy-like scalar values to JSON. 
+  It also offers the function `to_json_value()` to convert Python objects 
+  into JSON-serializable versions. The new functionality is required 
+  to ensure dataset attributes that are JSON-serializable. For example,
+  the latest version of the `rioxarray` package generates a `_FillValue` 
+  attribute with datatype `np.uint8`. 
+
 ### Fixes
 
 * The filesystem-based data stores for the "s3", "file", and "memory"
