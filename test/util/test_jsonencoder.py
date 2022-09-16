@@ -59,15 +59,7 @@ INPUT = {
     **NP_INPUT,
 }
 
-EXPECTED_PY_OUTPUT = {
-    'py_bool': True,
-    'py_int': 11,
-    'py_float': 12.3,
-    'py_str': 'Hallo',
-    'py_null': None,
-    'py_list': [1, 2, 3],
-    'py_dict': {'x': 'A', 'y': 'B'},
-}
+EXPECTED_PY_OUTPUT = {**PY_INPUT}
 
 EXPECTED_NP_OUTPUT = {
     'np_bool': bool(np.bool(True)),
