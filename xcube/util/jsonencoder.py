@@ -50,7 +50,7 @@ _PRIMITIVE_JSON_TYPES = {
 }
 
 
-def to_json_value(obj: Any) -> Union[Any, JsonValue]:
+def to_json_value(obj: Any) -> JsonValue:
     """Convert *obj* into a JSON-serializable object.
 
     :param obj: A Python object.
