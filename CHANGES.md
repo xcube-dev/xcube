@@ -32,13 +32,13 @@
   `xarray >= 2022.6` and `zarr >= 2.11` to ensure sparse 
   Zarr datasets can be written using `dataset.to_zarr(store)`. (#688)
 
-* Added new module `xcube.util.jsonencoder` that 
-  offers class `NumpyJSONEncoder` that  used to serialize 
-  numpy-like scalar values to JSON. It also offers the function 
-  `to_json_value()` to convert Python objects into JSON-serializable 
-  versions. The new functionality is required to ensure dataset
-  attributes that are JSON-serializable. For example, latest
-  `rioxarray` generates a `_FillValue` attribute with datatype `np.uint8`. 
+* Added new module `xcube.util.jsonencoder` that offers the class 
+  `NumpyJSONEncoder` used to serialize numpy-like scalar values to JSON. 
+  It also offers the function `to_json_value()` to convert Python objects 
+  into JSON-serializable versions. The new functionality is required 
+  to ensure dataset attributes that are JSON-serializable. For example,
+  the latest version of the `rioxarray` package generates a `_FillValue` 
+  attribute with datatype `np.uint8`. 
 
 ### Fixes
 
