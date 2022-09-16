@@ -20,26 +20,94 @@
 # DEALINGS IN THE SOFTWARE.
 
 import json
+from typing import Any, Union, List, Dict
 
 import numpy as np
 
+JsonArray = List["JsonValue"]
+JsonObject = Dict[str, "JsonValue"]
+JsonValue = Union[None, bool, int, float, str, JsonArray, JsonObject]
+
 
 class NumpyJSONEncoder(json.JSONEncoder):
-    """A JSON encoder that converty numpy-like
+    """A JSON encoder that converts numpy-like
     scalars into corresponding serializable Python objects.
     """
 
-    def default(self, obj):
-        if hasattr(obj, 'dtype') and hasattr(obj, 'ndim'):
-            if obj.ndim == 0:
-                # For time being just handle scalars.
-                if np.issubdtype(obj.dtype, np.bool):
-                    return bool(obj)
-                if np.issubdtype(obj.dtype, np.integer):
-                    return int(obj)
-                elif np.issubdtype(obj.dtype, np.floating):
-                    return float(obj)
-                else:
-                    return str(obj)
-            # We may add serialization for N-D arrays here.
+    def default(self, obj: Any) -> JsonValue:
+        converted_obj = _convert_default(obj)
+        if converted_obj is not obj:
+            return converted_obj
         return json.JSONEncoder.default(self, obj)
+
+
+_PRIMITIVE_JSON_TYPES = {
+    type(None),
+    bool,
+    int,
+    float,
+    str
+}
+
+
+def to_json_value(obj: Any) -> JsonValue:
+    """Convert *obj* into a JSON-serializable object.
+
+    :param obj: A Python object.
+    :return: A JSON-serializable version of *obj*, or *obj*
+        if *obj* is already JSON-serializable.
+    :raises TypeError: If *obj* cannot be made JSON-serializable
+    """
+    converted_obj = _convert_default(obj)
+    if converted_obj is not obj:
+        return converted_obj
+
+    obj_type = type(obj)
+
+    if obj_type in _PRIMITIVE_JSON_TYPES:
+        return obj
+
+    for t in _PRIMITIVE_JSON_TYPES:
+        if isinstance(obj, t):
+            return t(obj)
+
+    if obj_type is dict:
+        converted_obj = {k: to_json_value(v) for k, v in obj.items()}
+        if any(converted_obj[k] is not obj[k] for k in obj.keys()):
+            return converted_obj
+        else:
+            return obj
+
+    if obj_type is list:
+        converted_obj = [to_json_value(item) for item in obj]
+        if any(o1 is not o2 for o1, o2 in zip(converted_obj, obj)):
+            return converted_obj
+        else:
+            return obj
+
+    try:
+        return {k: to_json_value(v) for k, v in obj.items()}
+    except AttributeError:
+        try:
+            return [to_json_value(item) for item in obj]
+        except TypeError:
+            # Same as json.JSONEncoder.default(self, obj)
+            raise TypeError(f'Object of type {obj.__class__.__name__} '
+                            f'is not JSON serializable')
+
+
+def _convert_default(obj: Any) -> Any:
+    if hasattr(obj, 'dtype') and hasattr(obj, 'ndim'):
+        if obj.ndim == 0:
+            if np.issubdtype(obj.dtype, np.bool):
+                return bool(obj)
+            elif np.issubdtype(obj.dtype, np.integer):
+                return int(obj)
+            elif np.issubdtype(obj.dtype, np.floating):
+                return float(obj)
+            elif np.issubdtype(obj.dtype, np.str):
+                return str(obj)
+        else:
+            return [_convert_default(item) for item in obj]
+    # We may handle other non-JSON-serializable datatypes here
+    return obj

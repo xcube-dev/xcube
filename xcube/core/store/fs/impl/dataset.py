@@ -36,7 +36,7 @@ from xcube.core.zarrstore import LoggingZarrStore
 from xcube.core.zarrstore import ZarrStoreHolder
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from xcube.util.jsonencoder import NumpyJSONEncoder
+from xcube.util.jsonencoder import to_json_value
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
 from xcube.util.jsonschema import JsonIntegerSchema
@@ -468,11 +468,6 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
 
     @classmethod
     def _sanitize_dataset_attrs(cls, dataset):
-        attrs_encoder = NumpyJSONEncoder()
-
-        def convert_attrs(attrs):
-            return {k: attrs_encoder.default(v) for k, v in attrs.items()}
-
-        dataset.attrs.update(convert_attrs(dataset.attrs))
+        dataset.attrs.update(to_json_value(dataset.attrs))
         for var in dataset.variables.values():
-            var.attrs.update(convert_attrs(var.attrs))
+            var.attrs.update(to_json_value(var.attrs))
