@@ -38,9 +38,9 @@
   - Colormaps are loaded dynamically from underlying 
     matplotlib and cmocean registries, and custom SNAP color palette files. 
     That means, latest matplotlib colormaps are now always available. (#687)
-  - Colormaps can now be reversed (name prefix `"_r"`), 
-    can have alpha blending (name prefix `"_alpha"`),
-    or both (name prefix `"_r_alpha"`).
+  - Colormaps can now be reversed (name suffix `"_r"`), 
+    can have alpha blending (name suffix `"_alpha"`),
+    or both (name suffix `"_r_alpha"`).
   - Loading of custom colormaps from SNAP `*.cpd` has been rewritten.
     Now also the `isLogScaled` property of the colormap is recognized. (#661)
   - The module `xcube.util.cmaps` has been redesigned and now offers

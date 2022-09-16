@@ -489,13 +489,13 @@ def get_color_bars(ctx: DatasetsContext,
                     '<meta charset="UTF-8">' + \
                     '<title>xcube Server Colormaps</title>' + \
                     '</head>\n' + \
-                    '<body style="padding: 0.2em">\n'
+                    '<body style="padding: 0.2em; font-family: sans-serif">\n'
         html_body = ''
         html_foot = '</body>\n' \
                     '</html>\n'
         for cmap_cat, cmap_desc, cmap_bars in cmaps:
             html_body += '    <h2>%s</h2>\n' % cmap_cat
-            html_body += '    <p><i>%s</i></p>\n' % cmap_desc
+            html_body += '    <p>%s</p>\n' % cmap_desc
             html_body += '    <table style=border: 0">\n'
             for cmap_bar in cmap_bars:
                 cmap_name, cmap_data = cmap_bar

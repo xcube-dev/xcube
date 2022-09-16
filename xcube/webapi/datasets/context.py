@@ -536,29 +536,36 @@ class DatasetsContext(ResourcesContext):
             style_id = style["Identifier"]
             color_mappings = dict(style["ColorMappings"])
             for var_name, color_mapping in color_mappings.items():
-                custom_cmap_path = color_mapping.get("ColorFile")
-                if custom_cmap_path is not None:
-                    custom_colormap = custom_colormaps.get(custom_cmap_path)
-                    if custom_colormap is None:
-                        if not os.path.isfile(custom_cmap_path):
-                            LOG.error(f"Missing custom colormap file:"
-                                      f" {custom_cmap_path}")
-                            continue
-                        try:
-                            custom_colormap = load_snap_cpd_colormap(
-                                custom_cmap_path
-                            )
-                        except ValueError as e:
-                            LOG.warning(f'Detected invalid custom colormap'
-                                        f' {custom_cmap_path!r}: {e}',
-                                        exc_info=True)
-                            continue
-                        custom_colormaps[custom_cmap_path] = custom_colormap
-                        color_mappings[var_name] = {
-                            "ColorBar": custom_colormap.cm_name,
-                            "ValueRange": (custom_colormap.norm.vmin,
-                                           custom_colormap.norm.vmax)
-                        }
+                if "ColorFile" not in color_mapping:
+                    continue
+                custom_cmap_path = self.get_config_path(
+                    color_mapping,
+                    "ColorMappings",
+                    path_entry_name="ColorFile"
+                )
+                custom_colormap = custom_colormaps.get(custom_cmap_path)
+                if custom_colormap is not None:
+                    continue
+                if not os.path.isfile(custom_cmap_path):
+                    LOG.error(f"Missing custom colormap file:"
+                              f" {custom_cmap_path}")
+                    continue
+                try:
+                    custom_colormap = load_snap_cpd_colormap(
+                        custom_cmap_path
+                    )
+                    LOG.info(f'Loaded custom colormap {custom_cmap_path!r}')
+                except ValueError as e:
+                    LOG.warning(f'Detected invalid custom colormap'
+                                f' {custom_cmap_path!r}: {e}',
+                                exc_info=True)
+                    continue
+                custom_colormaps[custom_cmap_path] = custom_colormap
+                color_mappings[var_name] = {
+                    "ColorBar": custom_colormap.cm_name,
+                    "ValueRange": (custom_colormap.norm.vmin,
+                                   custom_colormap.norm.vmax)
+                }
             cm_styles[style_id] = color_mappings
 
         return cm_styles, ColormapRegistry(*custom_colormaps.values())

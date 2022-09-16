@@ -23,7 +23,7 @@
 import base64
 import io
 import os
-import re
+from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Dict, Tuple, List, Optional
 
@@ -249,7 +249,33 @@ class Colormap:
         return self._norm
 
 
-class ColormapRegistry:
+class ColormapProvider(ABC):
+    @abstractmethod
+    def get_cmap(self,
+                 cm_name: str,
+                 num_colors: Optional[int] = None) \
+            -> Tuple[str, matplotlib.colors.Colormap]:
+        """Get a colormap for the given *cm_name*.
+
+        If *cm_name* is not available, the method may choose another
+        colormap and return its name.
+
+        A colormap provider may support colormaps that are
+
+        * reversed (*cm_name* with suffix `"_r"`),
+        * have alpha blending (*cm_name* with suffix `"_alpha"`),
+        * both (*cm_name* with suffix `"_r_alpha"`).
+
+        :param cm_name: Colormap name.
+        :param num_colors: Optional number of colors, that is,
+            the resolution of the colormap gradient.
+        :return: A tuple comprising the base name
+            of *cm_name* after striping any suffixes, and
+            the colormap as an instance of ``matplotlib.colors.Colormap``.
+        """
+
+
+class ColormapRegistry(ColormapProvider):
     def __init__(self, *colormaps: Colormap):
         self._categories: Dict[str, ColormapCategory] = {}
         self._colormaps: Dict[str, Colormap] = {}
@@ -286,11 +312,9 @@ class ColormapRegistry:
 
     def get_cmap(self,
                  cm_name: str,
-                 default_cm_name: str = DEFAULT_CMAP_NAME,
                  num_colors: Optional[int] = None) \
             -> Tuple[str, matplotlib.colors.Colormap]:
         assert_instance(cm_name, str, name="cm_name")
-        assert_instance(default_cm_name, str, name="default_cm_name")
         if num_colors is not None:
             assert_instance(num_colors, int, name="num_colors")
 
@@ -298,9 +322,7 @@ class ColormapRegistry:
 
         colormap = self._colormaps.get(cm_name)
         if colormap is None:
-            assert_in(default_cm_name, self._colormaps,
-                      name="default_cm_name")
-            cm_name = default_cm_name
+            cm_name = DEFAULT_CMAP_NAME
             colormap = self._colormaps[cm_name]
 
         if reverse and alpha:
@@ -514,7 +536,7 @@ def _parse_snap_cpd_file(cpd_file_path: str) \
         for keyword in ("autoDistribute", "isLogScaled"):
             if keyword in entries:
                 LOG.warning(f"Unrecognized keyword {keyword!r}"
-                            f" in SNAP *.cpd file {cpd_file_path}")
+                            f" in custom colormap {cpd_file_path}")
 
         # Uncomment, as soon as we know how to deal with this:
         # log_scaled = entries.get("isLogScaled") == "true"
@@ -535,46 +557,6 @@ def _parse_snap_cpd_file(cpd_file_path: str) \
             points.append((sample, (r, g, b)))
 
         return points, log_scaled
-
-
-def _get_color(colortext):
-    f = open(colortext, "r")
-    lines = f.readlines()
-    c = []
-    if any('color' in line for line in lines):
-        for line in lines:
-            if "color" in line:
-                r, g, b = (
-                    ((re.split(r'\W+', line, 1)[1:])[0].strip()).split(','))
-                hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
-                c.append(hex_col)
-    else:
-        LOG.warning('Keyword "color" not found. SNAP .cpd file invalid.')
-        return
-    f.close()
-    return c
-
-
-def get_tick_val_col(colortext):
-    f = open(colortext, "r")
-    lines = f.readlines()
-    values = []
-    if any('sample' in line for line in lines):
-        for line in lines:
-            if "sample" in line:
-                value = ((re.split(r'\W+', line, 1)[1:])[0].strip())
-                values.append(float(value))
-    else:
-        LOG.warning('Keyword "sample" not found. SNAP .cpd file invalid.')
-        return
-    f.close()
-    return values
-
-
-def get_norm(colortext):
-    values = get_tick_val_col(colortext)
-    norm = matplotlib.colors.LogNorm(min(values), max(values))
-    return norm, values
 
 
 ############################################################################
@@ -624,12 +606,11 @@ def get_cmap(cmap_name: str,
 
     :param cmap_name: Color bar name.
     :param num_colors: Number of colours in returned color mapping.
-    :param default_cmap_name: Default color bar name.
+    :param default_cmap_name: Default color bar name. (Ignored)
     :return: A tuple (actual_cmap_name, cmap).
     """
     registry = _get_registry()
     return registry.get_cmap(cmap_name,
-                             default_cm_name=default_cmap_name,
                              num_colors=num_colors)
 
 

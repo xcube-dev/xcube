@@ -33,12 +33,13 @@ from .mldataset import MultiLevelDataset
 from .tilingscheme import DEFAULT_CRS_NAME
 from .tilingscheme import DEFAULT_TILE_SIZE
 from .tilingscheme import TilingScheme
-from ..constants import LOG
-from ..util.assertions import assert_in
-from ..util.assertions import assert_instance
-from ..util.assertions import assert_true
-from ..util.perf import measure_time_cm
-from ..util.projcache import ProjCache
+from xcube.constants import LOG
+from xcube.util.cmaps import ColormapProvider
+from xcube.util.assertions import assert_in
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
+from xcube.util.perf import measure_time_cm
+from xcube.util.projcache import ProjCache
 
 DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
@@ -54,6 +55,7 @@ def compute_rgba_tile(
         tile_x: int,
         tile_y: int,
         tile_z: int,
+        cmap_provider: ColormapProvider,
         crs_name: str = DEFAULT_CRS_NAME,
         tile_size: int = DEFAULT_TILE_SIZE,
         cmap_name: str = None,
@@ -62,7 +64,7 @@ def compute_rgba_tile(
         non_spatial_labels: Optional[Dict[str, Any]] = None,
         format: str = DEFAULT_FORMAT,
         tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
-        trace_perf: bool = False
+        trace_perf: bool = False,
 ) -> Union[bytes, np.ndarray]:
     """Compute an RGBA image tile from *variable_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -102,6 +104,7 @@ def compute_rgba_tile(
     :param tile_x: Tile X coordinate
     :param tile_y: Tile Y coordinate
     :param tile_z:  Tile Z coordinate
+    :param cmap_provider: Provider for colormaps.
     :param crs_name: Spatial tile coordinate reference system.
         Must be a geographical CRS, such as "EPSG:4326", or
         web mercator, i.e. "EPSG:3857". Defaults to "CRS84".
@@ -322,7 +325,7 @@ def compute_rgba_tile(
     with measure_time('Encoding tile as RGBA image'):
         if len(var_tiles) == 1:
             var_tile_norm = var_tiles[0]
-            cm = matplotlib.cm.get_cmap(cmap_name or DEFAULT_CMAP_NAME)
+            _, cm = cmap_provider.get_cmap(cmap_name)
             var_tile_rgba = cm(var_tile_norm)
             var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
         else:

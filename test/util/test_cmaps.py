@@ -54,17 +54,6 @@ class ColormapRegistryTest(TestCase):
         self.assertEqual(DEFAULT_CMAP_NAME, cmap_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
-        cmap_name, cmap = self.registry.get_cmap(
-            'PLASMA',
-            default_cm_name='magma'
-        )
-        self.assertEqual('magma', cmap_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
-
-        with self.assertRaises(ValueError):
-            self.registry.get_cmap('PLASMA',
-                                   default_cm_name='MAGMA')
-
     def test_get_cmap_alpha(self):
         cmap_name, cmap = self.registry.get_cmap('plasma_alpha')
         self.assertEqual('plasma', cmap_name)
