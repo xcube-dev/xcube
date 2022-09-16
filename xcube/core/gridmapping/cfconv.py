@@ -276,9 +276,19 @@ def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
     bounds_vars = set()
     for k in dataset.variables:
         var = dataset[k]
+
+        # Bounds variable as recommended through CF conventions
         bounds_k = var.attrs.get('bounds')
         if bounds_k is not None and bounds_k in dataset:
             bounds_vars.add(bounds_k)
+
+        # Bounds variable by naming convention,
+        # e.g. "lon_bnds" or "lat_bounds"
+        k_splits = str(k).rsplit("_", maxsplit=1)
+        if len(k_splits) == 2:
+            k_base, k_suffix = k_splits
+            if k_suffix in ('bnds', 'bounds') and k_base in dataset:
+                bounds_vars.add(k)
 
     potential_coord_vars = []
 
