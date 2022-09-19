@@ -20,7 +20,7 @@ class ColormapProviderMock(ColormapProvider):
     def get_cmap(self,
                  cm_name: str,
                  num_colors: Optional[int] = None):
-        return matplotlib.cm.get_cmap(cm_name, lut=num_colors)
+        return cm_name, matplotlib.cm.get_cmap(cm_name, lut=num_colors)
 
 
 CMAP_PROVIDER = ColormapProviderMock()
