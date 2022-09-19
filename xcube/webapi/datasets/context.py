@@ -244,8 +244,7 @@ class DatasetsContext(ResourcesContext):
         assignable_dataset_configs = [
             dc for dc in dataset_configs
             if 'StoreInstanceId' not in dc
-               and dc.get('FileSystem', 'file')
-               in NON_MEMORY_FILE_SYSTEMS
+               and dc.get('FileSystem', 'file') in NON_MEMORY_FILE_SYSTEMS
         ]
         # split into sub-lists according to file system and
         # non-root store params
@@ -307,7 +306,8 @@ class DatasetsContext(ResourcesContext):
                 # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
                     store_id=fs_protocol,
-                    store_params=store_params_for_root)
+                    store_params=store_params_for_root
+                )
                 store_instance_id = data_store_pool. \
                     get_store_instance_id(data_store_config)
                 if not store_instance_id:
@@ -478,6 +478,10 @@ class DatasetsContext(ResourcesContext):
             dataset_configs + cls.get_dataset_configs_from_stores(
                 data_store_pool
             )
+        # Allow dataset_configs to be writable, because
+        # _maybe_assign_store_instance_ids() will change
+        # entries:
+        dataset_configs = [dict(c) for c in dataset_configs]
         cls._maybe_assign_store_instance_ids(dataset_configs,
                                              data_store_pool,
                                              config.get('base_dir'))

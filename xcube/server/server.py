@@ -84,7 +84,6 @@ class Server(AsyncExecution):
             config: ServerConfig,
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
-        config = FrozenDict.deep(config)
         apis = self.load_apis(config,
                               extension_registry=extension_registry)
         for api in apis:
@@ -453,7 +452,7 @@ class ServerContext(Context):
                  server: Server,
                  config: ServerConfig):
         self._server = server
-        self._config = config
+        self._config = FrozenDict.deep(config)
         self._api_contexts: Dict[str, Context] = dict()
 
     @property

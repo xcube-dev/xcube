@@ -20,98 +20,95 @@
 # DEALINGS IN THE SOFTWARE.
 
 import collections.abc
-from typing import (Generic, TypeVar, Tuple, Any,
-                    Mapping, Optional, Iterable, List)
+from typing import Generic, TypeVar, Tuple, Any, Iterable
 
 K = TypeVar('K')
 V = TypeVar('V')
+
+_DICT_IS_READONLY = 'dict is read-only'
+_LIST_IS_READONLY = 'list is read-only'
 
 
 class FrozenDict(Generic[K, V], dict[K, V]):
 
     @classmethod
-    def deep(cls, other: dict) -> "FrozenDict":
+    def deep(cls, other: collections.abc.Mapping) -> "FrozenDict":
         return FrozenDict({key: freeze_value(value)
                            for key, value in other.items()})
 
     def clear(self) -> None:
-        raise self.__forbidden()
+        raise TypeError(_DICT_IS_READONLY)
+
+    def pop(self, *args, **kwargs) -> V:
+        raise TypeError(_DICT_IS_READONLY)
 
     def popitem(self) -> Tuple[K, V]:
-        raise self.__forbidden()
+        raise TypeError(_DICT_IS_READONLY)
 
-    def update(self, mapping: Mapping[K, V], **kwargs: V) -> None:
-        raise self.__forbidden()
+    def update(self, *args, **kwargs) -> None:
+        raise TypeError(_DICT_IS_READONLY)
 
     def __setitem__(self, key: K, value: V) -> None:
-        raise self.__forbidden(f'key {key!r}')
+        raise TypeError(_DICT_IS_READONLY)
 
     def __delitem__(self, key: K) -> None:
-        raise self.__forbidden(f'key {key!r}')
-
-    def pop(self, key: K) -> V:
-        raise self.__forbidden(f'key {key!r}')
+        raise TypeError(_DICT_IS_READONLY)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        raise self.__forbidden(f'attribute {name!r}')
+        raise TypeError(_DICT_IS_READONLY)
 
     def __delattr__(self, name: str) -> None:
-        raise self.__forbidden(f'attribute {name!r}')
-
-    def __forbidden(self, msg: Optional[str] = None):
-        return TypeError('dict is read-only' + (': ' + msg if msg else ''))
+        raise TypeError(_DICT_IS_READONLY)
 
 
 class FrozenList(Generic[V], list[V]):
 
     @classmethod
-    def deep(cls, other: List[V]) -> "FrozenList":
+    def deep(cls, other: collections.abc.Sequence[V]) -> "FrozenList":
         return FrozenList([freeze_value(item) for item in other])
 
     def append(self, element: V):
-        raise self.__forbidden()
-
-    def clear(self):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def extend(self, elements: Iterable[V]):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
+
+    def clear(self):
+        raise TypeError(_LIST_IS_READONLY)
 
     def insert(self, index: int, elements: Iterable[V]):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def pop(self, *args, **kwargs):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def remove(self, value: V):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def reverse(self):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def sort(self, *args, **kwargs):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def __iadd__(self, arg: Any):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def __imul__(self, arg: Any):
-        raise self.__forbidden()
+        raise TypeError(_LIST_IS_READONLY)
 
     def __setitem__(self, index: int, value: V):
-        raise self.__forbidden(f'index {index}')
+        raise TypeError(_LIST_IS_READONLY)
 
-    def __forbidden(self, msg: Optional[str] = None):
-        return TypeError('list is read-only' + (': ' + msg if msg else ''))
+
+_PRIMITIVES = type(None), bool, int, float, complex, str
 
 
 def freeze_value(value: Any) -> Any:
-    if isinstance(value, dict):
-        return FrozenDict.deep(value)
+    if isinstance(value, _PRIMITIVES):
+        return value
     if isinstance(value, collections.abc.Mapping):
-        return FrozenDict.deep(dict(value))
-    if isinstance(value, list):
+        return FrozenDict.deep(value)
+    if isinstance(value, collections.abc.Sequence):
         return FrozenList.deep(value)
-    if isinstance(value, (tuple, set)):
-        return FrozenList(list(value))
     return value
