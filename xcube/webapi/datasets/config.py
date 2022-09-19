@@ -129,7 +129,7 @@ ValueRangeSchema = JsonArraySchema(items=[
     JsonNumberSchema()
 ])
 
-COLOR_MAPPING_SCHEMA = JsonObjectSchema(
+COLOR_MAPPING_EXPLICIT_SCHEMA = JsonObjectSchema(
     properties=dict(
         ColorBar=StringSchema,
         ValueRange=ValueRangeSchema
@@ -140,6 +140,21 @@ COLOR_MAPPING_SCHEMA = JsonObjectSchema(
     ],
     additional_properties=False
 )
+
+COLOR_MAPPING_BY_PATH_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        ColorFile=StringSchema,
+    ),
+    required=[
+        "ColorFile",
+    ],
+    additional_properties=False
+)
+
+COLOR_MAPPING_SCHEMA = JsonComplexSchema(one_of=[
+    COLOR_MAPPING_EXPLICIT_SCHEMA,
+    COLOR_MAPPING_BY_PATH_SCHEMA,
+])
 
 CHANNEL_MAPPING_SCHEMA = JsonObjectSchema(
     properties=dict(

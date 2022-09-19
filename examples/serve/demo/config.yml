@@ -143,8 +143,7 @@ Styles:
         ColorBar: "plasma"
         ValueRange: [0., 24.]
       conc_tsm:
-        ColorBar: "PuBuGn"
-        ValueRange: [0., 100.]
+        ColorFile: "cc_tsm.cpd"
       kd489:
         ColorBar: "jet"
         ValueRange: [0., 6.]

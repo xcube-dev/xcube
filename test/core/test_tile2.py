@@ -1,5 +1,7 @@
 import unittest
+from typing import Optional, Tuple
 
+import matplotlib.colors
 import numpy as np
 import pyproj
 import xarray as xr
@@ -9,6 +11,19 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.tile import compute_rgba_tile
 from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
 from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
+from xcube.util.cmaps import ColormapProvider
+import matplotlib.cm
+
+
+class ColormapProviderMock(ColormapProvider):
+
+    def get_cmap(self,
+                 cm_name: str,
+                 num_colors: Optional[int] = None):
+        return matplotlib.cm.get_cmap(cm_name, lut=num_colors)
+
+
+CMAP_PROVIDER = ColormapProviderMock()
 
 
 class Tile2Test(unittest.TestCase):
@@ -79,7 +94,8 @@ class Tile2Test(unittest.TestCase):
         args = [
             ml_ds,
             'var_a',
-            0, 0, 0
+            0, 0, 0,
+            CMAP_PROVIDER
         ]
         kwargs = dict(
             crs_name=crs_name,
@@ -141,7 +157,8 @@ class Tile2Test(unittest.TestCase):
         args = [
             ml_ds,
             ('var_a', 'var_b', 'var_c'),
-            0, 0, 0
+            0, 0, 0,
+            CMAP_PROVIDER
         ]
         kwargs = dict(
             crs_name=crs_name,

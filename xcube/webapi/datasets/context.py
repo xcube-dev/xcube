@@ -49,7 +49,8 @@ from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
 from xcube.server.api import ServerConfigObject
 from xcube.util.cache import parse_mem_size
-from xcube.util.cmaps import get_cmap
+from xcube.util.cmaps import ColormapRegistry
+from xcube.util.cmaps import load_snap_cpd_colormap
 from xcube.webapi.places import PlacesContext
 from xcube.webapi.resctx import ResourcesContext
 
@@ -92,6 +93,7 @@ class DatasetsContext(ResourcesContext):
         self._dataset_configs: Optional[List[DatasetConfig]] = None
         self._dataset_cache = dict()
         self._data_store_pool = DataStorePool()
+        self._cm_styles, self._colormap_registry = self._get_cm_styles()
 
     def on_dispose(self):
         with self.rlock:
@@ -125,6 +127,10 @@ class DatasetsContext(ResourcesContext):
     @cached_property
     def required_scopes(self) -> List[str]:
         return self.access_control.get('RequiredScopes', [])
+
+    @property
+    def colormap_registry(self) -> ColormapRegistry:
+        return self._colormap_registry
 
     def get_required_dataset_scopes(
             self,
@@ -187,7 +193,8 @@ class DatasetsContext(ResourcesContext):
             for var_name in expected_var_names:
                 if var_name not in dataset:
                     raise ApiError.NotFound(
-                        f'Variable "{var_name}" not found in dataset "{ds_id}"'
+                        f'Variable "{var_name}" not found'
+                        f' in dataset "{ds_id}"'
                     )
         return dataset
 
@@ -234,14 +241,15 @@ class DatasetsContext(ResourcesContext):
                     self._set_up_data_store_pool_and_dataset_configs()
         return self._dataset_configs
 
-    def _maybe_assign_store_instance_ids(self, data_store_pool: DataStorePool):
+    def _maybe_assign_store_instance_ids(self,
+                                         data_store_pool: DataStorePool):
         assignable_dataset_configs = [
             dc for dc in self._dataset_configs
             if 'StoreInstanceId' not in dc
                and dc.get('FileSystem', 'file')
                in NON_MEMORY_FILE_SYSTEMS
         ]
-        # split into sublists according to file system and
+        # split into sub-lists according to file system and
         # non-root store params
         config_lists = []
         for config in assignable_dataset_configs:
@@ -289,8 +297,10 @@ class DatasetsContext(ResourcesContext):
                 if root.endswith("/") or root.endswith("\\"):
                     root = root[:-1]
                 abs_root = root
-                # For local file systems: Determine absolute root from base dir
-                fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system, file_system)
+                # For local file systems:
+                # Determine absolute root from base dir
+                fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system,
+                                                      file_system)
                 if fs_protocol == 'file' and not os.path.isabs(abs_root):
                     abs_root = os.path.join(self.base_dir, abs_root)
                     abs_root = os.path.normpath(abs_root)
@@ -507,7 +517,7 @@ class DatasetsContext(ResourcesContext):
                     cmap_name = color_mapping.get('ColorFile', cmap_name)
                 else:
                     cmap_name = color_mapping.get('ColorBar', cmap_name)
-                    cmap_name, _ = get_cmap(cmap_name)
+                    cmap_name, _ = self._colormap_registry.get_cmap(cmap_name)
 
         cmap_range = cmap_vmin, cmap_vmax
         if cmap_name is not None and None not in cmap_range:
@@ -519,22 +529,52 @@ class DatasetsContext(ResourcesContext):
         valid_range = get_var_valid_range(var)
         return get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
 
-    def get_style(self, ds_id: str):
-        dataset_config = self.get_dataset_config(ds_id)
-        style_name = dataset_config.get('Style', 'default')
-        styles = self.config.get('Styles')
-        if styles:
-            for style in styles:
-                if style_name == style['Identifier']:
-                    return style
-        return None
+    def _get_cm_styles(self) -> Tuple[Dict[str, Any], ColormapRegistry]:
+        custom_colormaps = {}
+        cm_styles = {}
+        for style in self.config.get("Styles", []):
+            style_id = style["Identifier"]
+            color_mappings = dict(style["ColorMappings"])
+            for var_name, color_mapping in color_mappings.items():
+                if "ColorFile" not in color_mapping:
+                    continue
+                custom_cmap_path = self.get_config_path(
+                    color_mapping,
+                    "ColorMappings",
+                    path_entry_name="ColorFile"
+                )
+                custom_colormap = custom_colormaps.get(custom_cmap_path)
+                if custom_colormap is not None:
+                    continue
+                if not os.path.isfile(custom_cmap_path):
+                    LOG.error(f"Missing custom colormap file:"
+                              f" {custom_cmap_path}")
+                    continue
+                try:
+                    custom_colormap = load_snap_cpd_colormap(
+                        custom_cmap_path
+                    )
+                    LOG.info(f'Loaded custom colormap {custom_cmap_path!r}')
+                except ValueError as e:
+                    LOG.warning(f'Detected invalid custom colormap'
+                                f' {custom_cmap_path!r}: {e}',
+                                exc_info=True)
+                    continue
+                custom_colormaps[custom_cmap_path] = custom_colormap
+                color_mappings[var_name] = {
+                    "ColorBar": custom_colormap.cm_name,
+                    "ValueRange": (custom_colormap.norm.vmin,
+                                   custom_colormap.norm.vmax)
+                }
+            cm_styles[style_id] = color_mappings
+
+        return cm_styles, ColormapRegistry(*custom_colormaps.values())
 
     def get_color_mappings(self, ds_id: str) \
             -> Optional[Dict[str, Dict[str, Any]]]:
-        style = self.get_style(ds_id)
-        if style:
-            return style.get('ColorMappings')
-        return None
+        dataset_config = self.get_dataset_config(ds_id)
+        style_id = dataset_config.get('Style', 'default')
+        return self._cm_styles.get(style_id, {})
 
     def _get_dataset_entry(self, ds_id: str) \
             -> Tuple[MultiLevelDataset, ServerConfig]:
@@ -653,7 +693,8 @@ class DatasetsContext(ResourcesContext):
 
         for place_group in place_groups:
             place_group_id = place_group_id_prefix + place_group["id"]
-            self.places_ctx.set_cached_place_group(place_group_id, place_group)
+            self.places_ctx.set_cached_place_group(place_group_id,
+                                                   place_group)
 
         return place_groups
 
@@ -766,7 +807,9 @@ class DatasetsContext(ResourcesContext):
             try:
                 cache_size = parse_mem_size(cache_size)
             except ValueError:
-                raise ApiError.InvalidServerConfig(f'Invalid {cache_size_key}')
+                raise ApiError.InvalidServerConfig(
+                    f'Invalid {cache_size_key}'
+                )
         elif not isinstance(cache_size, int) or cache_size < 0:
             raise ApiError.InvalidServerConfig(f'Invalid {cache_size_key}')
         return cache_size
@@ -782,7 +825,9 @@ def _open_ml_dataset_from_python_code(
     callable_name = dataset_config.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_config.get('InputDatasets', [])
     input_parameters = dataset_config.get('InputParameters', {})
-    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_config)
+    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(
+        dataset_config
+    )
     if chunk_cache_capacity:
         warnings.warn(
             'chunk cache size is not effective for'

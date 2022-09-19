@@ -1,0 +1,22 @@
+#SNAP Colour Palette Definition File
+#Thu Apr 17 15:23:34 CEST 2014
+autoDistribute=false
+color0=0,0,128
+color1=51,102,255
+color2=153,204,255
+color3=204,255,255
+color4=238,178,0
+color5=243,112,24
+color6=255,0,0
+color7=204,0,0
+color8=153,51,0
+numPoints=9
+sample0=0.0672554675129238
+sample1=0.1425089837907478
+sample2=0.301965196467768
+sample3=0.65
+sample4=1.35
+sample5=3.0
+sample6=7.0
+sample7=15.0
+sample8=30.0
