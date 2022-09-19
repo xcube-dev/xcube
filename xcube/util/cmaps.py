@@ -33,8 +33,8 @@ import numpy as np
 from PIL import Image
 from deprecated import deprecated
 
-from util.assertions import assert_in, assert_instance
 from xcube.constants import LOG
+from xcube.util.assertions import assert_instance
 
 try:
     # noinspection PyPackageRequirements
@@ -585,6 +585,7 @@ def get_cmaps() -> List:
     return _REGISTRY_JSON
 
 
+# noinspection PyUnusedLocal
 @deprecated(reason="Colormaps in xcube are no longer managed globally. Use"
                    " xcube.util.cmaps.ColormapRegistry.get_cmap() instead.",
             version="0.13.0")
