@@ -45,6 +45,7 @@ from .api import ServerConfig
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
 from .framework import Framework
+from ..util.frozen import FrozenDict
 
 
 class Server(AsyncExecution):
@@ -83,6 +84,7 @@ class Server(AsyncExecution):
             config: ServerConfig,
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
+        config = FrozenDict.deep(config)
         apis = self.load_apis(config,
                               extension_registry=extension_registry)
         for api in apis:
