@@ -1,5 +1,6 @@
+import collections.abc
 import os
-from typing import Dict, Any
+from typing import Any, Mapping
 from typing import Optional, Type, TypeVar
 from typing import Union
 
@@ -7,7 +8,6 @@ import yaml
 
 from test.server.mocks import MockFramework
 from xcube.server.api import Context
-from xcube.server.api import ServerConfig
 from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.server.testing import ServerTestCase
@@ -21,7 +21,7 @@ T = TypeVar('T', bound=Context)
 
 
 def get_server(
-        server_config: Optional[Union[str, ServerConfig]] = None,
+        server_config: Optional[Union[str, Mapping[str, Any]]] = None,
         framework: Optional[Framework] = None,
         extension_registry: Optional[ExtensionRegistry] = None
 ) -> Server:
@@ -30,7 +30,7 @@ def get_server(
 
     This function is used for testing API contexts and controllers.
 
-    :param server_config: Server configuration string or dictionary.
+    :param server_config: Server configuration string or mapping.
         If it is just a filename, it is resolved against test resource
         directory "${project}/test/webapi/res/test".
         If it is a relative path, it is resolved against the current
@@ -56,7 +56,7 @@ def get_server(
             assert isinstance(server_config, dict)
             server_config["base_dir"] = base_dir
     else:
-        assert isinstance(server_config, dict)
+        assert isinstance(server_config, collections.abc.Mapping)
 
     framework = framework or MockFramework()
     extension_registry = extension_registry or get_extension_registry()
@@ -65,11 +65,13 @@ def get_server(
                   extension_registry=extension_registry)
 
 
-def get_api_ctx(api_name: str,
-                api_ctx_cls: Type[T],
-                server_config: Optional[Union[str, ServerConfig]] = None,
-                framework: Optional[Framework] = None,
-                extension_registry: Optional[ExtensionRegistry] = None) -> T:
+def get_api_ctx(
+        api_name: str,
+        api_ctx_cls: Type[T],
+        server_config: Optional[Union[str, Mapping[str, Any]]] = None,
+        framework: Optional[Framework] = None,
+        extension_registry: Optional[ExtensionRegistry] = None
+) -> T:
     """Get the API context object for the given
     API name *api_name*,
     API context class *api_ctx_cls*,
@@ -127,7 +129,7 @@ class RoutesTestCase(ServerTestCase):
         """
         return f'{get_res_test_dir()}/{self.get_config_filename()}'
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> Mapping[str, Any]:
         """Get configuration.
         Default impl. uses ``self.get_config_path()`` to load
         configuration from YAML file.

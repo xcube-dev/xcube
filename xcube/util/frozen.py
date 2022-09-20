@@ -20,7 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 
 import collections.abc
-from typing import Generic, TypeVar, Tuple, Any, Iterable
+from abc import abstractmethod, ABC
+from typing import Generic, TypeVar, Tuple, Any, Iterable, Dict, List
 
 K = TypeVar('K')
 V = TypeVar('V')
@@ -29,12 +30,37 @@ _DICT_IS_READONLY = 'dict is read-only'
 _LIST_IS_READONLY = 'list is read-only'
 
 
-class FrozenDict(Generic[K, V], dict[K, V]):
+class Frozen(ABC):
+    """A frozen, that is, an immutable object."""
 
     @classmethod
-    def deep(cls, other: collections.abc.Mapping) -> "FrozenDict":
+    @abstractmethod
+    def freeze(cls, obj: Any) -> "Frozen":
+        """Deeply freeze object *obj*, i.e.,
+        return an immutable version of it.
+        """
+
+    @abstractmethod
+    def defrost(self) -> Any:
+        """Deeply defrost this frozen object, i.e.,
+        return its mutable counterpart.
+        """
+
+
+class FrozenDict(dict[K, V], Frozen, Generic[K, V]):
+    """A frozen version of a standard ``dict``."""
+
+    @classmethod
+    def freeze(cls, other: collections.abc.Mapping) -> "FrozenDict":
         return FrozenDict({key: freeze_value(value)
                            for key, value in other.items()})
+
+    def defrost(self) -> Dict[K, V]:
+        return {key: defrost_value(value)
+                for key, value in self.items()}
+
+    ###########################################################
+    # dict overrides
 
     def clear(self) -> None:
         raise TypeError(_DICT_IS_READONLY)
@@ -61,11 +87,18 @@ class FrozenDict(Generic[K, V], dict[K, V]):
         raise TypeError(_DICT_IS_READONLY)
 
 
-class FrozenList(Generic[V], list[V]):
+class FrozenList(list[V], Frozen, Generic[V]):
+    """A frozen version of a standard ``list``."""
 
     @classmethod
-    def deep(cls, other: collections.abc.Sequence[V]) -> "FrozenList":
-        return FrozenList([freeze_value(item) for item in other])
+    def freeze(cls, other: collections.abc.Sequence[V]) -> "FrozenList":
+        return FrozenList(freeze_value(item) for item in other)
+
+    def defrost(self) -> List[V]:
+        return [defrost_value(item) for item in self]
+
+    ###########################################################
+    # list overrides
 
     def append(self, element: V):
         raise TypeError(_LIST_IS_READONLY)
@@ -101,14 +134,27 @@ class FrozenList(Generic[V], list[V]):
         raise TypeError(_LIST_IS_READONLY)
 
 
-_PRIMITIVES = type(None), bool, int, float, complex, str
+# Standard Python immutables
+_IMMUTABLES = type(None), bool, int, float, complex, str, bytes
 
 
 def freeze_value(value: Any) -> Any:
-    if isinstance(value, _PRIMITIVES):
+    """Freeze given *value*, that is, return a deeply
+    immutable version of it."""
+    # Note, _IMMUTABLES also includes str and bytes which are
+    # both a collections.abc.Sequence.
+    if isinstance(value, _IMMUTABLES):
         return value
     if isinstance(value, collections.abc.Mapping):
-        return FrozenDict.deep(value)
+        return FrozenDict.freeze(value)
     if isinstance(value, collections.abc.Sequence):
-        return FrozenList.deep(value)
+        return FrozenList.freeze(value)
+    return value
+
+
+def defrost_value(value: Any) -> Any:
+    """Defrost given *value*, that is, return a deeply
+    mutable version of it."""
+    if isinstance(value, Frozen):
+        return value.defrost()
     return value

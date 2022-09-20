@@ -26,7 +26,8 @@ import os
 import os.path
 import warnings
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
+from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, \
+    Set, Mapping
 
 import numpy as np
 import pandas as pd
@@ -47,7 +48,6 @@ from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
-from xcube.server.api import ServerConfigObject
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_snap_cpd_colormap
@@ -75,7 +75,7 @@ MultiLevelDatasetOpener = Callable[
     MultiLevelDataset
 ]
 
-DatasetConfig = ServerConfigObject
+DatasetConfig = Mapping[str, Any]
 
 
 class DatasetsContext(ResourcesContext):
@@ -92,7 +92,7 @@ class DatasetsContext(ResourcesContext):
         # contains tuples of form (MultiLevelDataset, dataset_config)
         self._dataset_cache = dict()
         self._data_store_pool, self._dataset_configs = \
-            self._process_dataset_configs(self.config)
+            self._process_dataset_configs(self.config, self.base_dir)
         self._cm_styles, self._colormap_registry = self._get_cm_styles()
 
     def on_dispose(self):
@@ -355,7 +355,7 @@ class DatasetsContext(ResourcesContext):
             cls,
             data_store_pool: DataStorePool
     ) -> List[DatasetConfig]:
-        all_dataset_configs: List[ServerConfig] = []
+        all_dataset_configs: List[DatasetConfig] = []
         for store_instance_id in data_store_pool.store_instance_ids:
             LOG.info(f'Scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
@@ -458,8 +458,11 @@ class DatasetsContext(ResourcesContext):
         return self._data_store_pool
 
     @classmethod
-    def _process_dataset_configs(cls, config: ServerConfig) -> \
-            Tuple[DataStorePool, List[Dict[str, Any]]]:
+    def _process_dataset_configs(
+            cls,
+            config: ServerConfig,
+            base_dir: str
+    ) -> Tuple[DataStorePool, List[Dict[str, Any]]]:
         data_store_configs = config.get('DataStores', [])
         dataset_configs = config.get('Datasets', [])
 
@@ -484,7 +487,7 @@ class DatasetsContext(ResourcesContext):
         dataset_configs = [dict(c) for c in dataset_configs]
         cls._maybe_assign_store_instance_ids(dataset_configs,
                                              data_store_pool,
-                                             config.get('base_dir'))
+                                             base_dir)
         return data_store_pool, dataset_configs
 
     def get_rgb_color_mapping(
@@ -603,7 +606,7 @@ class DatasetsContext(ResourcesContext):
         ml_dataset = self._open_ml_dataset(dataset_config)
         return ml_dataset, dataset_config
 
-    def _open_ml_dataset(self, dataset_config: ServerConfig) \
+    def _open_ml_dataset(self, dataset_config: DatasetConfig) \
             -> MultiLevelDataset:
         ds_id: str = dataset_config.get('Identifier')
         store_instance_id = dataset_config.get('StoreInstanceId')
@@ -795,7 +798,7 @@ class DatasetsContext(ResourcesContext):
     @classmethod
     def get_chunk_cache_capacity(
             cls,
-            config: ServerConfigObject,
+            config: Mapping[str, Any],
             cache_size_key: str
     ) -> Optional[int]:
         cache_size = config.get(cache_size_key, None)

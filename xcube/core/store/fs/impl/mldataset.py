@@ -164,6 +164,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 )
                 grid_mapping = GridMapping.from_dataset(base_dataset)
                 x_name, y_name = grid_mapping.xy_dim_names
+                # noinspection PyTypeChecker
                 base_dataset = base_dataset.chunk({x_name: tile_size[0],
                                                    y_name: tile_size[1]})
                 # noinspection PyTypeChecker

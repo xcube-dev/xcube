@@ -29,6 +29,7 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import Context
 from xcube.server.api import ApiError
 from xcube.server.server import ServerContext
+from xcube.util.frozen import FrozenDict
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
 from .mocks import MockFramework
@@ -196,7 +197,8 @@ class ApiContextTest(unittest.TestCase):
         config = {}
         server_ctx = ServerContext(mock_server(), config)
         api_ctx = ApiContext(server_ctx)
-        self.assertIs(config, api_ctx.config)
+        self.assertIsInstance(api_ctx.config, FrozenDict)
+        self.assertEqual(config, api_ctx.config)
         self.assertEqual((), api_ctx.apis)
         self.assertIsInstance(api_ctx.open_api_doc, dict)
 
@@ -241,7 +243,8 @@ class ApiHandlerTest(unittest.TestCase):
         self.assertIs(self.request, handler.request)
         self.assertIs(self.response, handler.response)
         self.assertIsInstance(handler.ctx, self.DatasetsContext)
-        self.assertIs(self.config, handler.ctx.config)
+        self.assertIsInstance(handler.ctx.config, FrozenDict)
+        self.assertEqual(self.config, handler.ctx.config)
 
     def test_default_methods(self):
         handler = self.handler

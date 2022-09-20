@@ -19,8 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# TODO (forman): xcube Server NG: rename this module into "serve"
-
 
 import json
 from typing import List, Optional, Dict, Tuple, Callable
@@ -180,7 +178,7 @@ def exec_command(server, command):
         output_fn(server.ctx.open_api_doc)
 
     def show_config():
-        output_fn(server.ctx.config)
+        output_fn(server.ctx.config.defrost())
 
     def show_config_schema():
         output_fn(server.config_schema.to_dict())

@@ -377,9 +377,10 @@ class TornadoApiRequest(ApiRequest):
     def get_query_args(self,
                        name: str,
                        type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
-        if not self.query or name not in self.query:
+        name_lc = name.lower() if self._is_query_lower_case else name
+        if not self.query or name_lc not in self.query:
             return []
-        values = self.query[name]
+        values = self.query[name_lc]
         if type is not None and type is not str:
             assert_true(callable(type), 'type must be callable')
             try:
