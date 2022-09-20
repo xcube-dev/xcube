@@ -21,8 +21,8 @@
 
 import unittest
 
-from xcube.webapi.xml import Document
-from xcube.webapi.xml import Element
+from xcube.webapi.common.xml import Document
+from xcube.webapi.common.xml import Element
 
 
 class XmlTest(unittest.TestCase):

@@ -45,8 +45,6 @@ from .authutil import assert_scopes
 from .authutil import check_scopes
 from .context import DatasetConfig
 from .context import DatasetsContext
-from ..defaults import DEFAULT_CMAP_HEIGHT
-from ..defaults import DEFAULT_CMAP_WIDTH
 from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
 
@@ -576,8 +574,8 @@ def get_legend(ctx: DatasetsContext,
         cmap_name = params.get('cbar', params.get('cmap', default_cmap_cbar))
         cmap_vmin = float(params.get('vmin', str(default_cmap_vmin)))
         cmap_vmax = float(params.get('vmax', str(default_cmap_vmax)))
-        cmap_w = int(params.get('width', str(DEFAULT_CMAP_WIDTH)))
-        cmap_h = int(params.get('height', str(DEFAULT_CMAP_HEIGHT)))
+        cmap_w = int(params.get('width', '256'))
+        cmap_h = int(params.get('height', '16'))
     except (ValueError, TypeError):
         raise ApiError.BadRequest("Invalid color legend parameter(s)")
 

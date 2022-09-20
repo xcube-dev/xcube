@@ -52,7 +52,7 @@ from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_snap_cpd_colormap
 from xcube.webapi.places import PlacesContext
-from xcube.webapi.resctx import ResourcesContext
+from xcube.webapi.common.context import ResourcesContext
 
 COMPUTE_DATASET = 'compute_dataset'
 COMPUTE_VARIABLES = 'compute_variables'
