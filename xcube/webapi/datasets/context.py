@@ -26,7 +26,8 @@ import os
 import os.path
 import warnings
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
+from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, \
+    Set, Mapping
 
 import numpy as np
 import pandas as pd
@@ -47,7 +48,6 @@ from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
-from xcube.server.api import ServerConfigObject
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_snap_cpd_colormap
@@ -75,7 +75,7 @@ MultiLevelDatasetOpener = Callable[
     MultiLevelDataset
 ]
 
-DatasetConfig = ServerConfigObject
+DatasetConfig = Mapping[str, Any]
 
 
 class DatasetsContext(ResourcesContext):
@@ -90,9 +90,9 @@ class DatasetsContext(ResourcesContext):
         self._ml_dataset_openers = ml_dataset_openers
         # cache for all dataset configs
         # contains tuples of form (MultiLevelDataset, dataset_config)
-        self._dataset_configs: Optional[List[DatasetConfig]] = None
         self._dataset_cache = dict()
-        self._data_store_pool = DataStorePool()
+        self._data_store_pool, self._dataset_configs = \
+            self._process_dataset_configs(self.config, self.base_dir)
         self._cm_styles, self._colormap_registry = self._get_cm_styles()
 
     def on_dispose(self):
@@ -234,26 +234,23 @@ class DatasetsContext(ResourcesContext):
             )
         return dataset[var_name]
 
-    def get_dataset_configs(self) -> List[DatasetConfig]:
-        if self._dataset_configs is None:
-            with self.rlock:
-                if self._dataset_configs is None:
-                    self._set_up_data_store_pool_and_dataset_configs()
-        return self._dataset_configs
-
-    def _maybe_assign_store_instance_ids(self,
-                                         data_store_pool: DataStorePool):
+    @classmethod
+    def _maybe_assign_store_instance_ids(
+            cls,
+            dataset_configs: List[Dict[str, Any]],
+            data_store_pool: DataStorePool,
+            base_dir: str
+    ) -> None:
         assignable_dataset_configs = [
-            dc for dc in self._dataset_configs
+            dc for dc in dataset_configs
             if 'StoreInstanceId' not in dc
-               and dc.get('FileSystem', 'file')
-               in NON_MEMORY_FILE_SYSTEMS
+               and dc.get('FileSystem', 'file') in NON_MEMORY_FILE_SYSTEMS
         ]
         # split into sub-lists according to file system and
         # non-root store params
         config_lists = []
         for config in assignable_dataset_configs:
-            store_params = self._get_other_store_params_than_root(config)
+            store_params = cls._get_other_store_params_than_root(config)
             file_system = config.get('FileSystem', 'file')
             appended = False
             for config_list in config_lists:
@@ -302,14 +299,15 @@ class DatasetsContext(ResourcesContext):
                 fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system,
                                                       file_system)
                 if fs_protocol == 'file' and not os.path.isabs(abs_root):
-                    abs_root = os.path.join(self.base_dir, abs_root)
+                    abs_root = os.path.join(base_dir, abs_root)
                     abs_root = os.path.normpath(abs_root)
                 store_params_for_root = store_params.copy()
                 store_params_for_root['root'] = abs_root
                 # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
                     store_id=fs_protocol,
-                    store_params=store_params_for_root)
+                    store_params=store_params_for_root
+                )
                 store_instance_id = data_store_pool. \
                     get_store_instance_id(data_store_config)
                 if not store_instance_id:
@@ -357,7 +355,7 @@ class DatasetsContext(ResourcesContext):
             cls,
             data_store_pool: DataStorePool
     ) -> List[DatasetConfig]:
-        all_dataset_configs: List[ServerConfig] = []
+        all_dataset_configs: List[DatasetConfig] = []
         for store_instance_id in data_store_pool.store_instance_ids:
             LOG.info(f'Scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
@@ -441,20 +439,34 @@ class DatasetsContext(ResourcesContext):
         # noinspection PyTypeChecker
         return dataset_metadata
 
+    def get_dataset_config(self, ds_id: str) -> DatasetConfig:
+        dataset_configs = self.get_dataset_configs()
+        dataset_config = next(
+            (dsd for dsd in dataset_configs if dsd['Identifier'] == ds_id),
+            None
+        )
+        if dataset_config is None:
+            raise ApiError.NotFound(f'Dataset "{ds_id}" not found')
+        return dataset_config
+
+    def get_dataset_configs(self) -> List[DatasetConfig]:
+        assert self._dataset_configs is not None
+        return self._dataset_configs
+
     def get_data_store_pool(self) -> DataStorePool:
-        if self._data_store_pool.is_empty:
-            with self.rlock:
-                if self._data_store_pool.is_empty:
-                    self._set_up_data_store_pool_and_dataset_configs()
+        assert self._data_store_pool is not None
         return self._data_store_pool
 
-    def _set_up_data_store_pool_and_dataset_configs(self):
-        data_store_configs = self.config.get('DataStores', [])
-        if not isinstance(data_store_configs, list):
-            raise ApiError.InvalidServerConfig('DataStores must be a list')
-        dataset_configs = self.config.get('Datasets', [])
-        if not isinstance(dataset_configs, list):
-            raise ApiError.InvalidServerConfig('Datasets must be a list')
+    @classmethod
+    def _process_dataset_configs(
+            cls,
+            config: ServerConfig,
+            base_dir: str
+    ) -> Tuple[DataStorePool, List[Dict[str, Any]]]:
+        data_store_configs = config.get('DataStores', [])
+        dataset_configs = config.get('Datasets', [])
+
+        data_store_pool = DataStorePool()
         for data_store_config_dict in data_store_configs:
             store_instance_id = data_store_config_dict.get('Identifier')
             store_id = data_store_config_dict.get('StoreId')
@@ -463,22 +475,20 @@ class DatasetsContext(ResourcesContext):
             store_config = DataStoreConfig(store_id,
                                            store_params=store_params,
                                            user_data=store_dataset_configs)
-            self._data_store_pool.add_store_config(store_instance_id,
-                                                   store_config)
-        self._dataset_configs = \
-            dataset_configs + self.get_dataset_configs_from_stores(
-                self._data_store_pool
+            data_store_pool.add_store_config(store_instance_id,
+                                             store_config)
+        dataset_configs = \
+            dataset_configs + cls.get_dataset_configs_from_stores(
+                data_store_pool
             )
-        self._maybe_assign_store_instance_ids(self._data_store_pool)
-
-    def get_dataset_config(self, ds_id: str) -> DatasetConfig:
-        dataset_configs = self.get_dataset_configs()
-        dataset_config = self.find_dataset_config(
-            dataset_configs, ds_id
-        )
-        if dataset_config is None:
-            raise ApiError.NotFound(f'Dataset "{ds_id}" not found')
-        return dataset_config
+        # Allow dataset_configs to be writable, because
+        # _maybe_assign_store_instance_ids() will change
+        # entries:
+        dataset_configs = [dict(c) for c in dataset_configs]
+        cls._maybe_assign_store_instance_ids(dataset_configs,
+                                             data_store_pool,
+                                             base_dir)
+        return data_store_pool, dataset_configs
 
     def get_rgb_color_mapping(
             self,
@@ -596,7 +606,7 @@ class DatasetsContext(ResourcesContext):
         ml_dataset = self._open_ml_dataset(dataset_config)
         return ml_dataset, dataset_config
 
-    def _open_ml_dataset(self, dataset_config: ServerConfig) \
+    def _open_ml_dataset(self, dataset_config: DatasetConfig) \
             -> MultiLevelDataset:
         ds_id: str = dataset_config.get('Identifier')
         store_instance_id = dataset_config.get('StoreInstanceId')
@@ -772,15 +782,6 @@ class DatasetsContext(ResourcesContext):
                 ) from e
         return var_indexers
 
-    @classmethod
-    def find_dataset_config(cls,
-                            dataset_configs: List[DatasetConfig],
-                            ds_name: str) -> Optional[DatasetConfig]:
-        # Note: can be optimized by dict/key lookup
-        return next(
-            (dsd for dsd in dataset_configs if dsd['Identifier'] == ds_name),
-            None)
-
     def get_dataset_chunk_cache_capacity(
             self,
             dataset_config: DatasetConfig
@@ -797,7 +798,7 @@ class DatasetsContext(ResourcesContext):
     @classmethod
     def get_chunk_cache_capacity(
             cls,
-            config: ServerConfigObject,
+            config: Mapping[str, Any],
             cache_size_key: str
     ) -> Optional[int]:
         cache_size = config.get(cache_size_key, None)

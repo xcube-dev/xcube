@@ -585,6 +585,10 @@ def get_legend(ctx: DatasetsContext,
     colormap = ctx.colormap_registry.colormaps.get(cmap_name)
     assert colormap is not None
 
+    norm = colormap.norm
+    if norm is None:
+        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+
     try:
         _, cmap = ctx.colormap_registry.get_cmap(cmap_name)
     except ValueError:
@@ -592,15 +596,9 @@ def get_legend(ctx: DatasetsContext,
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
-    if '.cpd' in cmap_name:
-        norm, ticks = get_norm(cmap_name)
-    else:
-        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
-        ticks = None
-
     image_legend = matplotlib.colorbar.ColorbarBase(ax1,
                                                     format='%.1f',
-                                                    ticks=ticks,
+                                                    ticks=None,
                                                     cmap=cmap,
                                                     norm=norm,
                                                     orientation='vertical')

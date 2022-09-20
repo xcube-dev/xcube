@@ -19,8 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# TODO (forman): xcube Server NG: rename this module into "auth"
-
 
 from .api import api
 from .context import AuthContext

@@ -22,13 +22,12 @@
 import os
 import os.path
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Mapping
 
 from xcube.constants import LOG
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiError
 from xcube.server.api import Context
-from xcube.server.api import ServerConfigObject
 from xcube.util.perf import measure_time_cm
 from xcube.version import version
 from xcube.webapi.auth import AuthContext
@@ -101,7 +100,7 @@ class ResourcesContext(ApiContext):
             return base_url + '/' + path_comp
 
     def get_config_path(self,
-                        config: ServerConfigObject,
+                        config: Mapping[str, Any],
                         config_name: str,
                         path_entry_name: str = 'Path',
                         is_url: bool = False) -> str:

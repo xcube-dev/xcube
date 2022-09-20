@@ -33,7 +33,6 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
-from xcube.server.api import ServerConfig
 from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
@@ -46,7 +45,7 @@ ApiSpecs = Sequence[ApiSpec]
 
 
 def mock_server(framework: Optional[Framework] = None,
-                config: Optional[ServerConfig] = None,
+                config: Optional[Mapping[str, Any]] = None,
                 api_specs: Optional[ApiSpecs] = None) -> Server:
     return Server(
         framework or MockFramework(),
@@ -166,6 +165,8 @@ class MockApiRequest(ApiRequest):
     def json(self) -> JSON:
         return {}
 
+    def make_query_lower_case(self):
+        pass
 
 
 class MockApiResponse(ApiResponse):

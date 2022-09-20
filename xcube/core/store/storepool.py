@@ -1,29 +1,26 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
-import json
 import os.path
-from typing import Any, Dict, Optional, List, Union
-
-import yaml
+from typing import Any, Dict, Optional, List, Union, Mapping
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
@@ -119,7 +116,7 @@ class DataStoreConfig:
 
     def __init__(self,
                  store_id: str,
-                 store_params: Dict[str, Any] = None,
+                 store_params: Mapping[str, Any] = None,
                  title: str = None,
                  description: str = None,
                  user_data: Any = None):
@@ -267,15 +264,15 @@ class DataStorePool:
                               store_config: DataStoreConfig,
                               strict_check: bool = False) -> Optional[str]:
         assert_instance(store_config, DataStoreConfig, 'store_config')
-        for id, instance in self._instances.items():
+        for store_instance_id, instance in self._instances.items():
             if strict_check:
                 if instance.store_config == store_config:
-                    return id
+                    return store_instance_id
             else:
-                if instance.store_config.store_id == store_config.store_id and \
-                    instance.store_config.store_params == \
-                        store_config.store_params:
-                    return id
+                if instance.store_config.store_id == store_config.store_id \
+                        and instance.store_config.store_params \
+                        == store_config.store_params:
+                    return store_instance_id
         return None
 
     def has_store_config(self, store_config: DataStoreConfig) -> bool:

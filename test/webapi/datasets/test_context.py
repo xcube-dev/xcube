@@ -21,7 +21,7 @@
 
 import os.path
 import unittest
-from typing import Union
+from typing import Union, Mapping, Any
 
 import xarray as xr
 
@@ -30,12 +30,11 @@ from test.webapi.helpers import get_server
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import ApiError
 from xcube.server.api import Context
-from xcube.server.api import ServerConfig
 from xcube.webapi.datasets.context import DatasetsContext
 
 
 def get_datasets_ctx(
-        server_config: Union[str, ServerConfig] = "config.yml"
+        server_config: Union[str, Mapping[str, Any]] = "config.yml"
 ) -> DatasetsContext:
     return get_api_ctx("datasets", DatasetsContext, server_config)
 
@@ -153,10 +152,12 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertIn('demo2', ctx.dataset_cache)
 
-        ctx = get_datasets_ctx(dict(Datasets=[
-            dict(Identifier='demo2',
-                 Path="examples/serve/demo/cube.nc"),
-        ]))
+        ctx = get_datasets_ctx(dict(
+            Datasets=[
+                dict(Identifier='demo2',
+                     Path="examples/serve/demo/cube.nc"),
+            ]
+        ))
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
 

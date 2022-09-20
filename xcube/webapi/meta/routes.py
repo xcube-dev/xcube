@@ -108,12 +108,16 @@ class MaintenanceUpdateHandler(ApiHandler[MetaContext]):
                    summary='Force server update,'
                            ' updates configuration, and'
                            ' resets all resource caches.')
-    def get(self):
+    async def get(self):
         LOG.warning("Forcing server update...")
-        self.ctx.call_later(0,
-                            self.ctx.server_ctx.server.update,
-                            self.ctx.config)
-        self.response.write(dict(status="OK"))
+        # self.ctx.call_later(0,
+        #                     self.ctx.server_ctx.server.update,
+        #                     self.ctx.config)
+        # self.ctx.server_ctx.server.update(self.ctx.config)
+        await self.ctx.run_in_executor(None,
+                                       self.ctx.server_ctx.server.update,
+                                       self.ctx.config)
+        return self.response.finish(dict(status="OK"))
 
 
 @api.route("/maintenance/kill")

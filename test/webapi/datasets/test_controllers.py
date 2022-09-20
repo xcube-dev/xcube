@@ -22,7 +22,7 @@
 
 import os.path
 import unittest
-from typing import Any, Optional, Dict, Union
+from typing import Any, Optional
 
 from test.webapi.helpers import get_api_ctx
 from xcube.core.new import new_cube
@@ -32,8 +32,8 @@ from xcube.webapi.datasets.controllers import find_dataset_places
 from xcube.webapi.datasets.controllers import get_color_bars
 from xcube.webapi.datasets.controllers import get_dataset
 from xcube.webapi.datasets.controllers import get_datasets
-from xcube.webapi.datasets.controllers import get_time_chunk_size
 from xcube.webapi.datasets.controllers import get_legend
+from xcube.webapi.datasets.controllers import get_time_chunk_size
 
 
 def get_datasets_ctx(server_config=None) -> DatasetsContext:
@@ -167,7 +167,8 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
                 'varNames': ['conc_chl', 'conc_tsm', 'kd489'],
                 'normRanges': [(0.0, 24.0), (0.0, 100.0),
                                (0.0, 6.0)],
-                'tileUrl': 'http://test/datasets/demo-rgb/vars/rgb/tiles2/{z}/{y}/{x}',
+                'tileUrl': 'http://test/datasets/demo-rgb/vars/rgb/'
+                           'tiles2/{z}/{y}/{x}',
                 'tileLevelMin': 7,
                 'tileLevelMax': 9,
             },
