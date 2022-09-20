@@ -50,9 +50,9 @@ from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
-from xcube.util.cmaps import load_snap_cpd_colormap
-from xcube.webapi.places import PlacesContext
+from xcube.util.cmaps import load_custom_colormap
 from xcube.webapi.common.context import ResourcesContext
+from xcube.webapi.places import PlacesContext
 
 COMPUTE_DATASET = 'compute_dataset'
 COMPUTE_VARIABLES = 'compute_variables'
@@ -521,13 +521,10 @@ class DatasetsContext(ResourcesContext):
         if color_mappings:
             color_mapping = color_mappings.get(var_name)
             if color_mapping:
+                assert 'ColorFile' not in color_mapping
+                cmap_name = color_mapping.get('ColorBar')
                 cmap_vmin, cmap_vmax = color_mapping.get('ValueRange',
                                                          (None, None))
-                if color_mapping.get('ColorFile') is not None:
-                    cmap_name = color_mapping.get('ColorFile', cmap_name)
-                else:
-                    cmap_name = color_mapping.get('ColorBar', cmap_name)
-                    cmap_name, _ = self._colormap_registry.get_cmap(cmap_name)
 
         cmap_range = cmap_vmin, cmap_vmax
         if cmap_name is not None and None not in cmap_range:
@@ -544,9 +541,10 @@ class DatasetsContext(ResourcesContext):
         cm_styles = {}
         for style in self.config.get("Styles", []):
             style_id = style["Identifier"]
-            color_mappings = dict(style["ColorMappings"])
-            for var_name, color_mapping in color_mappings.items():
+            color_mappings = dict()
+            for var_name, color_mapping in style["ColorMappings"].items():
                 if "ColorFile" not in color_mapping:
+                    color_mappings[var_name] = dict(color_mapping)
                     continue
                 custom_cmap_path = self.get_config_path(
                     color_mapping,
@@ -554,28 +552,17 @@ class DatasetsContext(ResourcesContext):
                     path_entry_name="ColorFile"
                 )
                 custom_colormap = custom_colormaps.get(custom_cmap_path)
-                if custom_colormap is not None:
-                    continue
-                if not os.path.isfile(custom_cmap_path):
-                    LOG.error(f"Missing custom colormap file:"
-                              f" {custom_cmap_path}")
-                    continue
-                try:
-                    custom_colormap = load_snap_cpd_colormap(
+                if custom_colormap is None:
+                    custom_colormap = load_custom_colormap(
                         custom_cmap_path
                     )
-                    LOG.info(f'Loaded custom colormap {custom_cmap_path!r}')
-                except ValueError as e:
-                    LOG.warning(f'Detected invalid custom colormap'
-                                f' {custom_cmap_path!r}: {e}',
-                                exc_info=True)
-                    continue
-                custom_colormaps[custom_cmap_path] = custom_colormap
-                color_mappings[var_name] = {
-                    "ColorBar": custom_colormap.cm_name,
-                    "ValueRange": (custom_colormap.norm.vmin,
-                                   custom_colormap.norm.vmax)
-                }
+                    custom_colormaps[custom_cmap_path] = custom_colormap
+                if custom_colormap is not None:
+                    color_mappings[var_name] = {
+                        "ColorBar": custom_colormap.cm_name,
+                        "ValueRange": (custom_colormap.norm.vmin,
+                                       custom_colormap.norm.vmax)
+                    }
             cm_styles[style_id] = color_mappings
 
         return cm_styles, ColormapRegistry(*custom_colormaps.values())
