@@ -135,10 +135,7 @@ COLOR_MAPPING_EXPLICIT_SCHEMA = JsonObjectSchema(
         ColorBar=STRING_SCHEMA,
         ValueRange=VALUE_RANGE_SCHEMA
     ),
-    required=[
-        "ValueRange",
-        "ColorBar"
-    ],
+    required=[],
     additional_properties=False
 )
 
