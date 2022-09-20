@@ -29,6 +29,7 @@ from xcube.server.api import ApiContext
 from xcube.server.api import Context
 from xcube.server.server import Server
 from xcube.server.server import ServerContext
+from xcube.util.frozen import FrozenDict
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
@@ -397,7 +398,8 @@ class ServerContextTest(unittest.TestCase):
         server = mock_server()
         config = {}
         server_ctx = ServerContext(server, config)
-        self.assertIs(config, server_ctx.config)
+        self.assertIsInstance(server_ctx.config, FrozenDict)
+        self.assertEqual(config, server_ctx.config)
         self.assertEqual((), server_ctx.apis)
         self.assertIsInstance(server_ctx.open_api_doc, dict)
 
@@ -456,8 +458,10 @@ class ServerContextTest(unittest.TestCase):
         self.assertIs(server_ctx, api1_ctx.server_ctx)
         self.assertIs(server_ctx, api2_ctx.server_ctx)
 
-        self.assertIs(config, api1_ctx.config)
-        self.assertIs(config, api2_ctx.config)
+        self.assertIsInstance(api1_ctx.config, FrozenDict)
+        self.assertIsInstance(api2_ctx.config, FrozenDict)
+        self.assertEqual(config, api1_ctx.config)
+        self.assertEqual(config, api2_ctx.config)
 
         api21_ctx = api2_ctx.get_api_ctx("datasets")
         self.assertIsInstance(api21_ctx, self.DatasetsContext)

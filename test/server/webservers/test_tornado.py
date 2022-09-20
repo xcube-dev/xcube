@@ -20,8 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Sequence, Optional, Callable, Any, Awaitable, Union, Tuple, \
-    Type, Dict
+from typing import (Sequence, Optional, Callable, Any,
+                    Awaitable, Union, Tuple, Type, Dict)
 
 import pytest
 import tornado.httputil
@@ -216,6 +216,21 @@ class TornadoApiRequestTest(unittest.TestCase):
         self.assertEqual([True],
                          request.get_query_args('details', type=bool))
 
+    def test_get_query_args_case_insensitive(self):
+        tr = tornado.httputil.HTTPServerRequest(
+            method='GET',
+            host='localhost:8080',
+            uri='/datasets?details=1',
+        )
+        request = TornadoApiRequest(tr)
+        request.make_query_lower_case()
+        self.assertEqual(['1'],
+                         request.get_query_args('details'))
+        self.assertEqual(['1'],
+                         request.get_query_args('DETAILS'))
+        self.assertEqual(['1'],
+                         request.get_query_args('Details'))
+
     def test_get_query_args_invalid_type(self):
         tr = tornado.httputil.HTTPServerRequest(
             method='GET',
@@ -313,9 +328,11 @@ class MockIOLoop:
     def stop(self):
         self.stop_count += 1
 
+    # noinspection PyUnusedLocal
     def call_later(self, *args, **kwargs):
         self.call_later_count += 1
 
+    # noinspection PyUnusedLocal
     def run_in_executor(self, *args, **kwargs):
         self.run_in_executor_count += 1
 
@@ -325,9 +342,11 @@ class MockApplication:
         self.handlers = []
         self.listen_count = 0
 
+    # noinspection PyUnusedLocal
     def add_handlers(self, domain: str, handlers: Sequence):
         self.handlers.extend(handlers)
 
+    # noinspection PyUnusedLocal
     def listen(self, *args, **kwargs):
         self.listen_count += 1
 

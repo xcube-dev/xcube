@@ -28,15 +28,12 @@ from typing import Any, Tuple, Optional, Union, Mapping
 import numpy as np
 import pyproj
 import xarray as xr
-from deprecated import deprecated
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
-from xcube.util.tilegrid import ImageTileGrid
-from xcube.util.tilegrid import TileGrid
 from .helpers import AffineTransformMatrix
 from .helpers import Number
 from .helpers import _assert_valid_xy_coords
@@ -782,19 +779,3 @@ class GridMapping(abc.ABC):
             f'* size: {self.size}',
             f'* tile_size: {self.tile_size}',
         ])
-
-    @property
-    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
-    def tile_grid(self) -> TileGrid:
-        # we allow up to 1% dev
-        assert_true(math.isclose(self.x_res,
-                                 self.y_res,
-                                 rel_tol=0.01),
-                    message='spatial resolutions must be'
-                            ' same in both directions')
-        return ImageTileGrid(image_size=self.size,
-                             tile_size=self.tile_size or (512, 512),
-                             crs=self.crs,
-                             xy_res=self.x_res,
-                             xy_min=(self.x_min, self.y_min),
-                             is_j_axis_up=self.is_j_axis_up)

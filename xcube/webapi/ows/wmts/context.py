@@ -21,7 +21,7 @@
 
 
 from xcube.server.api import Context
-from xcube.webapi.resctx import ResourcesContext
+from xcube.webapi.common.context import ResourcesContext
 from ...datasets.context import DatasetsContext
 from ...tiles.context import TilesContext
 

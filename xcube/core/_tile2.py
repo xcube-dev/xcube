@@ -33,12 +33,13 @@ from .mldataset import MultiLevelDataset
 from .tilingscheme import DEFAULT_CRS_NAME
 from .tilingscheme import DEFAULT_TILE_SIZE
 from .tilingscheme import TilingScheme
-from ..constants import LOG
-from ..util.assertions import assert_in
-from ..util.assertions import assert_instance
-from ..util.assertions import assert_true
-from ..util.perf import measure_time_cm
-from ..util.projcache import ProjCache
+from xcube.constants import LOG
+from xcube.util.cmaps import ColormapProvider
+from xcube.util.assertions import assert_in
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
+from xcube.util.perf import measure_time_cm
+from xcube.util.projcache import ProjCache
 
 DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
@@ -54,6 +55,7 @@ def compute_rgba_tile(
         tile_x: int,
         tile_y: int,
         tile_z: int,
+        cmap_provider: ColormapProvider,
         crs_name: str = DEFAULT_CRS_NAME,
         tile_size: int = DEFAULT_TILE_SIZE,
         cmap_name: str = None,
@@ -62,7 +64,7 @@ def compute_rgba_tile(
         non_spatial_labels: Optional[Dict[str, Any]] = None,
         format: str = DEFAULT_FORMAT,
         tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
-        trace_perf: bool = False
+        trace_perf: bool = False,
 ) -> Union[bytes, np.ndarray]:
     """Compute an RGBA image tile from *variable_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -102,6 +104,7 @@ def compute_rgba_tile(
     :param tile_x: Tile X coordinate
     :param tile_y: Tile Y coordinate
     :param tile_z:  Tile Z coordinate
+    :param cmap_provider: Provider for colormaps.
     :param crs_name: Spatial tile coordinate reference system.
         Must be a geographical CRS, such as "EPSG:4326", or
         web mercator, i.e. "EPSG:3857". Defaults to "CRS84".
@@ -322,7 +325,7 @@ def compute_rgba_tile(
     with measure_time('Encoding tile as RGBA image'):
         if len(var_tiles) == 1:
             var_tile_norm = var_tiles[0]
-            cm = matplotlib.cm.get_cmap(cmap_name or DEFAULT_CMAP_NAME)
+            _, cm = cmap_provider.get_cmap(cmap_name)
             var_tile_rgba = cm(var_tile_norm)
             var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
         else:
@@ -339,6 +342,55 @@ def compute_rgba_tile(
             return _encode_rgba_as_png(var_tile_rgba)
     else:
         return var_tile_rgba
+
+
+def get_var_cmap_params(var: xr.DataArray,
+                        cmap_name: Optional[str],
+                        cmap_range: Tuple[Optional[float], Optional[float]],
+                        valid_range: Optional[Tuple[float, float]]) \
+        -> Tuple[str, Tuple[float, float]]:
+    if cmap_name is None:
+        cmap_name = var.attrs.get('color_bar_name')
+        if cmap_name is None:
+            cmap_name = DEFAULT_CMAP_NAME
+    cmap_vmin, cmap_vmax = cmap_range
+    if cmap_vmin is None:
+        cmap_vmin = var.attrs.get('color_value_min')
+        if cmap_vmin is None and valid_range is not None:
+            cmap_vmin = valid_range[0]
+        if cmap_vmin is None:
+            cmap_vmin = DEFAULT_VALUE_RANGE[0]
+    if cmap_vmax is None:
+        cmap_vmax = var.attrs.get('color_value_max')
+        if cmap_vmax is None and valid_range is not None:
+            cmap_vmax = valid_range[1]
+        if cmap_vmax is None:
+            cmap_vmax = DEFAULT_VALUE_RANGE[1]
+    return cmap_name, (cmap_vmin, cmap_vmax)
+
+
+def get_var_valid_range(var: xr.DataArray) -> Optional[Tuple[float, float]]:
+    valid_min = None
+    valid_max = None
+    valid_range = var.attrs.get('valid_range')
+    if valid_range:
+        try:
+            valid_min, valid_max = map(float, valid_range)
+        except (TypeError, ValueError):
+            pass
+    if valid_min is None:
+        valid_min = var.attrs.get('valid_min')
+    if valid_max is None:
+        valid_max = var.attrs.get('valid_max')
+    if valid_min is None and valid_max is None:
+        valid_range = None
+    elif valid_min is not None and valid_max is not None:
+        valid_range = valid_min, valid_max
+    elif valid_min is None:
+        valid_range = -np.inf, valid_max
+    else:
+        valid_range = valid_min, +np.inf
+    return valid_range
 
 
 def _get_variable(ds_name,

@@ -3,23 +3,103 @@
 ### Enhancements
 
 * xcube Server has been rewritten almost from scratch.
+  
+  - Introduced a new endpoint `${server_url}/s3/{bucket}` that emulates
+    and AWS S3 object storage for the published datasets.
+    The `bucket` name can be either:
+    * `datasets` - publishes all datasets in Zarr format.
+    * `pyramids` - publishes all datasets in a multi-level `levels`
+      format (multi-resolution N-D images)
+      that comprises level datasets in Zarr format.
+    
+    With the new S3 endpoints in place, xcube Server instances can be used
+    as xcube data stores as follows:
+    
+    ```python
+    store = new_data_store(
+        "s3", 
+        root="datasets",   # bucket "datasets", use also "pyramids"
+        max_depth=2,       # optional, but we may have nested datasets
+        storage_options=dict(
+            anon=True,
+            client_kwargs=dict(
+                endpoint_url='http://localhost:8080/s3' 
+            )
+        )
+    )
+    ```
 
+  - The limited `s3bucket` endpoints are no longer available and are 
+    replaced by `s3` endpoints. 
 
+* xcube Server's colormap management has been improved in several ways:
+  - Colormaps are no longer managed globally. E.g., on server configuration 
+    change, new custom colormaps are reloaded from files. 
+  - Colormaps are loaded dynamically from underlying 
+    matplotlib and cmocean registries, and custom SNAP color palette files. 
+    That means, latest matplotlib colormaps are now always available. (#687)
+  - Colormaps can now be reversed (name suffix `"_r"`), 
+    can have alpha blending (name suffix `"_alpha"`),
+    or both (name suffix `"_r_alpha"`).
+  - Loading of custom colormaps from SNAP `*.cpd` has been rewritten.
+    Now also the `isLogScaled` property of the colormap is recognized. (#661)
+  - The module `xcube.util.cmaps` has been redesigned and now offers
+    three new classes for colormap management:
+    * `Colormap` - a colormap 
+    * `ColormapCategory` - represents a colormap category
+    * `ColormapRegistry` - manages colormaps and their categories
+  
+### Other
+
+* Deprecated CLI `xcube tile` has been removed.
+* Deprecated modules and their references have finally been removed:
+  - `xcube.core.tilegrid`
+  - `xcube.core.tiledimage`
+* The following functions have been deprecated:
+  - `xcube.util.cmaps.get_cmap()`
+  - `xcube.util.cmaps.get_cmaps()`
 
 ## Changes in 0.12.1 (in development)
 
 ### Enhancements
 
-* Added a new 
+* Added a new package `xcube.core.zarrstore` that exports a number
+  of useful 
   [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
-  implementation 
-  `xcube.core.zarrstore.GenericZarrStore` that comprises 
-  user-defined, generic array definitions. Arrays will compute 
-  their chunks either from a function or a static data array. 
+  implementations and Zarr store utilities: 
+  * `xcube.core.zarrstore.GenericZarrStore` comprises 
+    user-defined, generic array definitions. Arrays will compute 
+    their chunks either from a function or a static data array. 
+  * `xcube.core.zarrstore.LoggingZarrStore` is used to log 
+    Zarr store access performance and therefore useful for 
+    runtime optimisation and debugging. 
+  * `xcube.core.zarrstore.DiagnosticZarrStore` is used for testing
+    Zarr store implementations. 
+  * Added a xarray dataset accessor 
+    `xcube.core.zarrstore.ZarrStoreHolder` that enhances instances of
+    `xarray.Dataset` by a new property `zarr_store`. It holds a Zarr store
+    instance that represents the datasets as a key-value mapping.
+    This will prepare later versions of xcube Server for publishing all 
+    datasets via an emulated S3 API.
 
+    In turn, the classes of module `xcube.core.chunkstore` have been
+    deprecated.
+    
 * Added a new function `xcube.core.select.select_label_subset()` that 
   is used to select dataset labels along a given dimension using
   user-defined predicate functions.
+
+* The xcube Python environment is now requiring 
+  `xarray >= 2022.6` and `zarr >= 2.11` to ensure sparse 
+  Zarr datasets can be written using `dataset.to_zarr(store)`. (#688)
+
+* Added new module `xcube.util.jsonencoder` that offers the class 
+  `NumpyJSONEncoder` used to serialize numpy-like scalar values to JSON. 
+  It also offers the function `to_json_value()` to convert Python objects 
+  into JSON-serializable versions. The new functionality is required 
+  to ensure dataset attributes that are JSON-serializable. For example,
+  the latest version of the `rioxarray` package generates a `_FillValue` 
+  attribute with datatype `np.uint8`. 
 
 ### Fixes
 

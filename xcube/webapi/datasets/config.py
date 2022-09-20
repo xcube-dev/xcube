@@ -20,29 +20,35 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonComplexSchema
-from xcube.webapi.config import BooleanSchema
-from xcube.webapi.config import BoundingBoxSchema
-from xcube.webapi.config import ChunkSizeSchema
-from xcube.webapi.config import FileSystemSchema
-from xcube.webapi.config import IdentifierSchema
-from xcube.webapi.config import PathSchema
-from xcube.webapi.config import StringSchema
-from xcube.webapi.config import UrlSchema
+from xcube.webapi.common.schemas import BOOLEAN_SCHEMA
+from xcube.webapi.common.schemas import BOUNDING_BOX_SCHEMA
+from xcube.webapi.common.schemas import CHUNK_SIZE_SCHEMA
+from xcube.webapi.common.schemas import FILE_SYSTEM_SCHEMA
+from xcube.webapi.common.schemas import IDENTIFIER_SCHEMA
+from xcube.webapi.common.schemas import PATH_SCHEMA
+from xcube.webapi.common.schemas import STRING_SCHEMA
+from xcube.webapi.common.schemas import URI_SCHEMA
 from ..places.config import PLACE_GROUP_SCHEMA
 
+ATTRIBUTION_SCHEMA = JsonComplexSchema(
+    one_of=[
+        STRING_SCHEMA,
+        JsonArraySchema(items=STRING_SCHEMA),
+    ]
+)
 
-AttributionSchema = JsonComplexSchema(one_of=[
-            StringSchema,
-            JsonArraySchema(items=StringSchema),
-        ])
+VALUE_RANGE_SCHEMA = JsonArraySchema(items=[
+    JsonNumberSchema(),
+    JsonNumberSchema()
+])
 
 AUGMENTATION_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Path=PathSchema,
-        Function=IdentifierSchema,
+        Path=PATH_SCHEMA,
+        Function=IDENTIFIER_SCHEMA,
         InputParameters=JsonObjectSchema(
             additional_properties=True,
         ),
@@ -56,35 +62,36 @@ AUGMENTATION_SCHEMA = JsonObjectSchema(
 
 ACCESS_CONTROL_SCHEMA = JsonObjectSchema(
     properties=dict(
-        IsSubstitute=BooleanSchema,
-        RequiredScopes=JsonArraySchema(items=IdentifierSchema)
+        IsSubstitute=BOOLEAN_SCHEMA,
+        RequiredScopes=JsonArraySchema(items=IDENTIFIER_SCHEMA)
     ),
     additional_properties=False,
 )
 
 COMMON_DATASET_PROPERTIES = dict(
-    Title=StringSchema,
-    TimeSeriesDataset=IdentifierSchema,
-    BoundingBox=BoundingBoxSchema,
-    ChunkCacheSize=ChunkSizeSchema,
+    Title=STRING_SCHEMA,
+    TimeSeriesDataset=IDENTIFIER_SCHEMA,
+    BoundingBox=BOUNDING_BOX_SCHEMA,
+    ChunkCacheSize=CHUNK_SIZE_SCHEMA,
     Augmentation=AUGMENTATION_SCHEMA,
-    Style=IdentifierSchema,
-    Hidden=BooleanSchema,
+    Style=IDENTIFIER_SCHEMA,
+    Hidden=BOOLEAN_SCHEMA,
     AccessControl=ACCESS_CONTROL_SCHEMA,
     PlaceGroups=JsonArraySchema(items=PLACE_GROUP_SCHEMA),
-    Attribution=AttributionSchema
+    Attribution=ATTRIBUTION_SCHEMA
 )
 
 DATASET_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Identifier=IdentifierSchema,
-        Path=PathSchema,
-        FileSystem=FileSystemSchema,
-        Anonymous=BooleanSchema,
-        Endpoint=UrlSchema,
-        Region=IdentifierSchema,
-        Function=IdentifierSchema,
-        InputDatasets=JsonArraySchema(items=IdentifierSchema),
+        Identifier=IDENTIFIER_SCHEMA,
+        StoreInstanceId=IDENTIFIER_SCHEMA,  # will be set by server
+        Path=PATH_SCHEMA,
+        FileSystem=FILE_SYSTEM_SCHEMA,
+        Anonymous=BOOLEAN_SCHEMA,
+        Endpoint=URI_SCHEMA,
+        Region=IDENTIFIER_SCHEMA,
+        Function=IDENTIFIER_SCHEMA,
+        InputDatasets=JsonArraySchema(items=IDENTIFIER_SCHEMA),
         InputParameters=JsonObjectSchema(additional_properties=True),
         **COMMON_DATASET_PROPERTIES,
     ),
@@ -100,9 +107,9 @@ DATA_STORE_DATASET_SCHEMA = JsonObjectSchema(
         'Path'
     ],
     properties=dict(
-        Identifier=IdentifierSchema,
-        Path=PathSchema,
-        StoreInstanceId=IdentifierSchema,  # will be set by server
+        Identifier=IDENTIFIER_SCHEMA,
+        Path=PATH_SCHEMA,
+        StoreInstanceId=IDENTIFIER_SCHEMA,  # will be set by server
         StoreOpenParams=JsonObjectSchema(additional_properties=True),
         **COMMON_DATASET_PROPERTIES
     ),
@@ -111,8 +118,8 @@ DATA_STORE_DATASET_SCHEMA = JsonObjectSchema(
 
 DATA_STORE_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Identifier=IdentifierSchema,
-        StoreId=IdentifierSchema,
+        Identifier=IDENTIFIER_SCHEMA,
+        StoreId=IDENTIFIER_SCHEMA,
         StoreParams=JsonObjectSchema(additional_properties=True),
         Datasets=JsonArraySchema(items=DATA_STORE_DATASET_SCHEMA),
     ),
@@ -123,15 +130,10 @@ DATA_STORE_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
-ValueRangeSchema = JsonArraySchema(items=[
-    JsonNumberSchema(),
-    JsonNumberSchema()
-])
-
-COLOR_MAPPING_SCHEMA = JsonObjectSchema(
+COLOR_MAPPING_EXPLICIT_SCHEMA = JsonObjectSchema(
     properties=dict(
-        ColorBar=StringSchema,
-        ValueRange=ValueRangeSchema
+        ColorBar=STRING_SCHEMA,
+        ValueRange=VALUE_RANGE_SCHEMA
     ),
     required=[
         "ValueRange",
@@ -140,13 +142,28 @@ COLOR_MAPPING_SCHEMA = JsonObjectSchema(
     additional_properties=False
 )
 
+COLOR_MAPPING_BY_PATH_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        ColorFile=STRING_SCHEMA,
+    ),
+    required=[
+        "ColorFile",
+    ],
+    additional_properties=False
+)
+
+COLOR_MAPPING_SCHEMA = JsonComplexSchema(one_of=[
+    COLOR_MAPPING_EXPLICIT_SCHEMA,
+    COLOR_MAPPING_BY_PATH_SCHEMA,
+])
+
 CHANNEL_MAPPING_SCHEMA = JsonObjectSchema(
     properties=dict(
         ValueRange=JsonArraySchema(items=[
             JsonNumberSchema(),
             JsonNumberSchema()
         ]),
-        Variable=StringSchema
+        Variable=STRING_SCHEMA
     ),
     required=[
         "ValueRange",
@@ -171,7 +188,7 @@ RGB_MAPPING_SCHEMA = JsonObjectSchema(
 
 STYLE_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Identifier=StringSchema,
+        Identifier=STRING_SCHEMA,
         ColorMappings=JsonObjectSchema(
             properties=dict(
                 rgb=RGB_MAPPING_SCHEMA
@@ -192,9 +209,9 @@ SERVICE_PROVIDER_SCHEMA = JsonObjectSchema(
 
 CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
-        DatasetAttribution=AttributionSchema,
+        DatasetAttribution=ATTRIBUTION_SCHEMA,
         AccessControl=ACCESS_CONTROL_SCHEMA,
-        DatasetChunkCacheSize=ChunkSizeSchema,
+        DatasetChunkCacheSize=CHUNK_SIZE_SCHEMA,
         Datasets=JsonArraySchema(items=DATASET_CONFIG_SCHEMA),
         DataStores=JsonArraySchema(items=DATA_STORE_SCHEMA),
         Styles=JsonArraySchema(items=STYLE_SCHEMA),

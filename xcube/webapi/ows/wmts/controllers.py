@@ -34,8 +34,8 @@ from xcube.core.tilingscheme import EARTH_CIRCUMFERENCE_WGS84
 from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
-from xcube.webapi.xml import Document
-from xcube.webapi.xml import Element
+from xcube.webapi.common.xml import Document
+from xcube.webapi.common.xml import Element
 from .context import WmtsContext
 
 WMTS_VERSION = '1.0.0'
