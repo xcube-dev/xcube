@@ -18,29 +18,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import re
 import warnings
-from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 import numpy as np
 from xarray import Dataset
 
 import xcube.core.store.storepool as sp
-from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.core.gen2 import CubeGenerator, OutputConfig
 from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.core.gen2.local.writer import CubeWriter
 from xcube.core.gridmapping import GridMapping
-from xcube.util.plugin import get_extension_registry
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
-from xcube.webapi.xml import Document
-from xcube.webapi.xml import Element
+from xcube.webapi.common.xml import Document
+from xcube.webapi.common.xml import Element
 
 WCS_VERSION = '1.0.0'
 VALID_CRS_LIST = ['EPSG:4326']
-#VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
+# VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
 
 
 class CoverageRequest:
@@ -98,7 +94,8 @@ def get_wcs_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     return document.to_xml(indent=4)
 
 
-def get_describe_coverage_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
+def get_describe_coverage_xml(ctx: WcsContext,
+                              coverages: List[str] = None) -> str:
     element = _get_describe_element(ctx, coverages)
     document = Document(element)
     return document.to_xml(indent=4)
@@ -314,9 +311,10 @@ def _is_valid_format(format_req: str) -> bool:
 
 
 def _is_valid_time(time: str) -> bool:
-    # todo - change so that it works with qgis
+    # todo - change validation so that it makes sense but works with QGIS
     try:
-        datetime.fromisoformat(time)
+        pass
+        # datetime.fromisoformat(time)
     except ValueError:
         raise ValueError('TIME value must be given in the format'
                          '\'YYYY-MM-DD[*HH[:MM[:SS[.mmm[mmm]]]]'
@@ -551,7 +549,7 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
             Element('supportedCRSs', elements=[
                 Element('requestResponseCRSs', text='EPSG:4326')
                 # todo - find out why this does not work with qgis
-                #Element('requestResponseCRSs', text=','.join(VALID_CRS_LIST))
+                # Element('requestResponseCRSs', text=','.join(VALID_CRS_LIST))
             ]),
             Element('supportedFormats', elements=[
                 Element('formats', text=f) for f in _get_formats_list()
@@ -570,11 +568,16 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
 
 
 def _get_formats_list() -> List[str]:
-    formats = get_extension_registry().find_extensions(
-        EXTENSION_POINT_DATASET_IOS,
-        lambda e: 'w' in e.metadata.get('modes', set())
-    )
-    return [ext.name for ext in formats if not ext.name == 'mem']
+    # formats = get_extension_registry().find_extensions(
+    #     EXTENSION_POINT_DATASET_IOS,
+    #     lambda e: 'w' in e.metadata.get('modes', set())
+    # )
+    # return [ext.name for ext in formats if not ext.name == 'mem'
+    #                                        or not ext.name == 'zarr']
+
+    # the code above is correct, but QGIS and WCS only support GeoTIFF or
+    # NetCDF, so we simply return these.
+    return ['GeoTIFF', 'NetCDF4']
 
 
 class BandInfo:

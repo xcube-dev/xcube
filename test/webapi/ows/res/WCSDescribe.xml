@@ -52,9 +52,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -107,9 +106,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -162,9 +160,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -217,9 +214,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -272,9 +268,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -323,9 +318,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -374,9 +368,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -425,9 +418,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -476,9 +468,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -527,9 +518,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -578,9 +568,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -629,9 +618,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -680,9 +668,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -731,9 +718,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -782,9 +768,8 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>GeoTIFF</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
 </CoverageDescription>

@@ -51,7 +51,7 @@ class ControllerTest(unittest.TestCase):
             'BBOX': '1,51,4,52',
             'WIDTH': 200,
             'HEIGHT': 200,
-            'FORMAT': 'zarr'
+            'FORMAT': 'NetCDF4'
         }))
 
         # TIME given in addition to BBOX -> fine
@@ -62,7 +62,7 @@ class ControllerTest(unittest.TestCase):
             'TIME': '2017-01-28 20:23:55.123456',
             'WIDTH': 200,
             'HEIGHT': 200,
-            'FORMAT': 'zarr'
+            'FORMAT': 'NetCDF4'
         }))
 
         # COVERAGE is missing -> expect a failure
@@ -72,7 +72,7 @@ class ControllerTest(unittest.TestCase):
                 'BBOX': '1,51,4,52',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -89,7 +89,7 @@ class ControllerTest(unittest.TestCase):
                 'BBOX': '1,51,4,52',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -105,7 +105,7 @@ class ControllerTest(unittest.TestCase):
             'TIME': '2020-01-28',
             'WIDTH': 200,
             'HEIGHT': 200,
-            'FORMAT': 'zarr'
+            'FORMAT': 'NetCDF4'
         }))
 
         # use invalid TIME format -> expect a failure
@@ -116,9 +116,10 @@ class ControllerTest(unittest.TestCase):
                 'TIME': '20201208',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
-            self.fail('Classified invalid request as valid.')
+            # todo - validate time in controllers.py (see todo), test here
+            # self.fail('Classified invalid request as valid.')
         except ValueError as e:
             self.assertEqual('TIME value must be given in the format'
                              '\'YYYY-MM-DD[*HH[:MM[:SS[.mmm[mmm]]]]'
@@ -132,7 +133,7 @@ class ControllerTest(unittest.TestCase):
             'TIME': '2020-01-28',
             'RESX': 23.56,
             'RESY': 23.56,
-            'FORMAT': 'zarr'
+            'FORMAT': 'NetCDF4'
         }))
 
         # PARAMETER is given -> expect a failure (not yet supported)
@@ -144,7 +145,7 @@ class ControllerTest(unittest.TestCase):
                 'TIME': '2020-12-08',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -158,7 +159,7 @@ class ControllerTest(unittest.TestCase):
                 'BBOX': '-10 3 -5 4',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -173,7 +174,7 @@ class ControllerTest(unittest.TestCase):
                 'BBOX': '1,51,4,52',
                 'WIDTH': 200,
                 'RESY': 156.45,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -187,7 +188,7 @@ class ControllerTest(unittest.TestCase):
                 'CRS': 'EPSG:4326',
                 'BBOX': '1,51,4,52',
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -204,7 +205,7 @@ class ControllerTest(unittest.TestCase):
                 'HEIGHT': 200,
                 'RESX': 200,
                 'RESY': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -220,7 +221,7 @@ class ControllerTest(unittest.TestCase):
                 'TIME': '2020-12-08',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -235,7 +236,7 @@ class ControllerTest(unittest.TestCase):
                 'TIME': '2020-12-08',
                 'WIDTH': 200,
                 'HEIGHT': 200,
-                'FORMAT': 'zarr'
+                'FORMAT': 'NetCDF4'
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
@@ -252,8 +253,8 @@ class ControllerTest(unittest.TestCase):
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
-            self.assertEqual('FORMAT wrong or missing. Must be one of zarr, '
-                             'netcdf4, csv. Was: None', str(e))
+            self.assertEqual('FORMAT wrong or missing. Must be one of GeoTIFF,'
+                             ' NetCDF4. Was: None', str(e))
 
         # FORMAT is invalid -> expect a failure
         try:
@@ -267,8 +268,8 @@ class ControllerTest(unittest.TestCase):
             }))
             self.fail('Classified invalid request as valid.')
         except ValueError as e:
-            self.assertEqual('FORMAT wrong or missing. Must be one of zarr, '
-                             'netcdf4, csv. Was: MettCDF', str(e))
+            self.assertEqual('FORMAT wrong or missing. Must be one of GeoTIFF, '
+                             'NetCDF4. Was: MettCDF', str(e))
 
     def test_get_coverage(self):
         coverage_request = CoverageRequest({
@@ -277,7 +278,7 @@ class ControllerTest(unittest.TestCase):
             'BBOX': '1,51,4,52',
             'WIDTH': 200,
             'HEIGHT': 200,
-            'FORMAT': 'zarr'
+            'FORMAT': 'GeoTIFF'
         })
         cube = get_coverage(self.wcs_ctx, coverage_request)
         self.assertIsNotNone(cube.coords)
