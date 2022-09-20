@@ -146,8 +146,8 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     if not result.status == 'ok':
         raise ValueError(f'Failed to generate cube: {result.message}')
 
+    cube_id = result.result.data_id
     memory_store = sp.get_data_store_instance('memory')
-    cube_id = list(memory_store.store.get_data_ids())[0]
     cube = memory_store.store.open_data(cube_id)
 
     # _write_debug_output(cube)
@@ -575,8 +575,8 @@ def _get_formats_list() -> List[str]:
     # return [ext.name for ext in formats if not ext.name == 'mem'
     #                                        or not ext.name == 'zarr']
 
-    # the code above is correct, but QGIS and WCS only support GeoTIFF or
-    # NetCDF, so we simply return these.
+    # the code above is correct, but the combination of QGIS and WCS only
+    # supports GeoTIFF or NetCDF, so we simply return these.
     return ['GeoTIFF', 'NetCDF4']
 
 

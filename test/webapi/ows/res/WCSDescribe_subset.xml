@@ -52,7 +52,7 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>GeoTIFF</formats>
+            <formats>geotiff</formats>
             <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
@@ -102,7 +102,7 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>GeoTIFF</formats>
+            <formats>geotiff</formats>
             <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
@@ -152,7 +152,7 @@
             <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>GeoTIFF</formats>
+            <formats>geotiff</formats>
             <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
