@@ -116,6 +116,7 @@ class FsAccessor:
         if storage_options is not None:
             assert_instance(storage_options, dict,
                             name=STORAGE_OPTIONS_PARAM_NAME)
+            storage_options = dict(storage_options)
 
         # Note, by default, filesystem data stores are writable and hence
         # SHALL NOT cache any directory listings!

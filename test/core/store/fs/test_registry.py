@@ -26,7 +26,6 @@ from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
-from xcube.util.tilegrid import TileGrid
 
 ROOT_DIR = 'xcube'
 DATA_PATH = 'testing/data'
@@ -261,7 +260,6 @@ class FsDataStoresTestMixin(ABC):
         self.assertIsInstance(ml_dataset,
                               xcube.core.mldataset.MultiLevelDataset)
         self.assertEqual(2, ml_dataset.num_levels)
-        self.assertIsInstance(ml_dataset.tile_grid, TileGrid)
         self.assertIsInstance(ml_dataset.grid_mapping, GridMapping)
         self.assertIsInstance(ml_dataset.base_dataset, xr.Dataset)
         self.assertIsInstance(ml_dataset.ds_id, str)

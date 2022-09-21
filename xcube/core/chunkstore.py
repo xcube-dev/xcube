@@ -42,7 +42,7 @@ from xcube.util.assertions import assert_instance
 GetChunk = Callable[['ChunkStore', str, Tuple[int, ...]], bytes]
 
 
-@deprecated(reason="This class shall no longer used."
+@deprecated(reason="This class shall no longer be used."
                    " If similar functionality is needed,"
                    " use xcube.core.zarrstore.GenericZarrStore",
             version="0.12.1")

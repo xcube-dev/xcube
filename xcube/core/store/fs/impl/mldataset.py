@@ -46,7 +46,6 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.tilegrid import TileGrid
 from xcube.util.types import normalize_scalar_or_pair
 from .dataset import DatasetZarrFsDataAccessor
 from ..helpers import get_fs_path_class
@@ -165,6 +164,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 )
                 grid_mapping = GridMapping.from_dataset(base_dataset)
                 x_name, y_name = grid_mapping.xy_dim_names
+                # noinspection PyTypeChecker
                 base_dataset = base_dataset.chunk({x_name: tile_size[0],
                                                    y_name: tile_size[1]})
                 # noinspection PyTypeChecker
@@ -216,14 +216,14 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 # Then write relative base dataset path into link file
                 link_path = data_path / f'{index}.link'
                 with fs.open(str(link_path), mode='w') as fp:
-                    fp.write(f'{base_dataset_path}')
+                    fp.write(base_dataset_path.as_posix())
             else:
                 # Write level "{index}.zarr"
                 level_path = data_path / f'{index}.zarr'
-                zarr_store = fs.get_mapper(str(level_path), create=True)
+                level_zarr_store = fs.get_mapper(str(level_path), create=True)
                 try:
                     level_dataset.to_zarr(
-                        zarr_store,
+                        level_zarr_store,
                         mode='w' if replace else None,
                         consolidated=consolidated,
                         **write_params
@@ -233,9 +233,9 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                     raise DataStoreError(f'Failed to write'
                                          f' dataset {data_id}: {e}') from e
                 if use_saved_levels:
-                    level_dataset = xr.open_zarr(zarr_store,
+                    level_dataset = xr.open_zarr(level_zarr_store,
                                                  consolidated=consolidated)
-                    level_dataset.zarr_store.set(zarr_store)
+                    level_dataset.zarr_store.set(level_zarr_store)
                     ml_dataset.set_dataset(index, level_dataset)
 
         return data_id
@@ -344,21 +344,6 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
     def compute_size_weights(num_levels: int) -> np.ndarray:
         weights = (2 ** np.arange(0, num_levels, dtype=np.float64)) ** 2
         return weights[::-1] / np.sum(weights)
-
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        """
-        Retrieve, i.e. read or compute, the tile grid
-        used by the multi-level dataset.
-
-        :return: the dataset for the level at *index*.
-        """
-        tile_grid = self.grid_mapping.tile_grid
-        if tile_grid.num_levels != self.num_levels:
-            raise DataStoreError(f'Detected inconsistent'
-                                 f' number of detail levels,'
-                                 f' expected {tile_grid.num_levels},'
-                                 f' found {self.num_levels}.')
-        return tile_grid
 
     def _get_num_levels_lazily(self) -> int:
         levels = self._get_levels()
