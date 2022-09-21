@@ -79,7 +79,6 @@ class CubeSubsetter(CubeTransformer):
                 gm = GridMapping.from_dataset(
                     cube,
                     crs=gm.crs,
-                    xy_var_names=gm.xy_var_names,
                 )
                 # Consume spatial properties
                 cube_config = cube_config.drop_props(['bbox',
