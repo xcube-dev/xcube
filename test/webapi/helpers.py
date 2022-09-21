@@ -32,7 +32,7 @@ def get_server(
 
     :param server_config: Server configuration string or mapping.
         If it is just a filename, it is resolved against test resource
-        directory "${project}/test/webapi/res/test".
+        directory "${project}/test/webapi/res".
         If it is a relative path, it is resolved against the current
         working directory (not recommended).
         Defaults to ``'config.yml'``.
@@ -83,7 +83,7 @@ def get_api_ctx(
     :param api_ctx_cls: The API context class
     :param server_config: Server configuration string or dictionary.
         If it is just a filename, it is resolved against test resource
-        directory "${project}/test/webapi/res/test".
+        directory "${project}/test/webapi/res".
         If it is a relative path, it is resolved against the current
         working directory (not recommended).
         Defaults to ``'config.yml'``.
@@ -102,8 +102,7 @@ def get_api_ctx(
 
 
 def get_res_test_dir() -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__),
-                                         'res', 'test'))
+    return os.path.normpath(os.path.join(os.path.dirname(__file__), 'res'))
 
 
 def get_res_demo_dir() -> str:
