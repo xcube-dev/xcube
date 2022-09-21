@@ -105,12 +105,6 @@ def get_res_test_dir() -> str:
     return os.path.normpath(os.path.join(os.path.dirname(__file__), 'res'))
 
 
-def get_res_demo_dir() -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__),
-                                         '..', '..',
-                                         'xcube', 'webapi', 'res', 'demo'))
-
-
 class RoutesTestCase(ServerTestCase):
     """Base class for xcube Server API tests."""
 

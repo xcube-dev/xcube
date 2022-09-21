@@ -125,7 +125,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
 
         ml_ds2 = ComputedMultiLevelDataset(
             os.path.join(os.path.dirname(__file__),
-                         "..", "webapi", "res", "test", "script.py"),
+                         "..", "webapi", "res", "script.py"),
             "compute_dataset",
             ["ml_ds1"],
             input_ml_dataset_getter,
