@@ -26,7 +26,6 @@ import xarray as xr
 
 from xcube.core.new import new_cube
 from xcube.core.subsampling import find_agg_method
-from xcube.core.subsampling import get_dataset_subsampling_slices
 from xcube.core.subsampling import subsample_dataset
 
 
@@ -54,20 +53,6 @@ class SubsampleDatasetTest(unittest.TestCase):
                                 variables=dict(var_1=test_data_1,
                                                var_2=test_data_2))
 
-    def test_get_dataset_subsampling_slices(self):
-        slices = get_dataset_subsampling_slices(self.dataset,
-                                                step=2)
-        self.assertEqual(
-            {
-                'var_1': (slice(None, None, None),
-                          slice(None, None, 2),
-                          slice(None, None, 2)),
-                'var_2': (slice(None, None, None),
-                          slice(None, None, 2),
-                          slice(None, None, 2))
-            },
-            slices
-        )
 
     def test_subsample_dataset_none(self):
         subsampled_dataset = subsample_dataset(self.dataset,
