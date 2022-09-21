@@ -20,60 +20,47 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Union
+
+import xarray
 
 from test.webapi.helpers import get_api_ctx
-from xcube.server.api import ServerConfig
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.webapi.datasets.context import DatasetsContext
-from xcube.webapi.s3.context import S3Context
 from xcube.webapi.s3.dsmapping import DatasetsMapping
 
 
-def get_datasets_ctx(server_config=None) -> DatasetsContext:
+def get_datasets_ctx(
+        server_config='config-datastores.yml'
+) -> DatasetsContext:
     return get_api_ctx("datasets", DatasetsContext, server_config)
 
 
 class S3ContextTest(unittest.TestCase):
 
-    def test_ctx_ok(self):
+    def test_datasets_as_zarr(self):
+        datasets_ctx = get_datasets_ctx()
+        mapping = DatasetsMapping(datasets_ctx, is_multi_level=False)
+
+        expected_s3_names = {'test~cube-1-250-250.zarr',
+                             'Cube-T5.zarr',
+                             'Cube-T1.zarr'}
+
+        self.assertEqual(len(expected_s3_names), len(mapping))
+        self.assertEqual(expected_s3_names, set(mapping))
+        for name in expected_s3_names:
+            self.assertTrue(name in mapping)
+            self.assertIsInstance(mapping[name], xarray.Dataset)
+
+    def test_datasets_as_levels(self):
         datasets_ctx = get_datasets_ctx()
         mapping = DatasetsMapping(datasets_ctx, is_multi_level=True)
 
+        expected_s3_names = {'test~cube-1-250-250.levels',
+                             'Cube-T5.levels',
+                             'Cube-T1.levels'}
 
-    def test_datasets_bucket(self):
-        ctx = get_s3_ctx()
-        bucket = ctx.get_bucket("datasets")
-        self.assertEqual(['demo.zarr/.zmetadata',
-                          'demo.zarr/.zgroup',
-                          'demo.zarr/.zattrs',
-                          'demo.zarr/lat/.zarray',
-                          'demo.zarr/lat/.zattrs',
-                          'demo.zarr/lat/0',
-                          'demo.zarr/lat_bnds/.zarray',
-                          'demo.zarr/lat_bnds/.zattrs',
-                          'demo.zarr/lat_bnds/0.0',
-                          'demo.zarr/lon/.zarray'],
-                         list(bucket.keys())[0:10])
-
-        self.assertTrue('demo.zarr/lat/.zarray' in bucket)
-        self.assertTrue('demo.zarr/lat_bnds/0.0' in bucket)
-        self.assertTrue('demi.zarr/lat_bnds/0.0' not in bucket)
-
-    def test_pyramids_bucket(self):
-        ctx = get_s3_ctx()
-        bucket = ctx.get_bucket("pyramids")
-        self.assertEqual(['demo.levels/0.zarr/.zmetadata',
-                          'demo.levels/0.zarr/.zgroup',
-                          'demo.levels/0.zarr/.zattrs',
-                          'demo.levels/0.zarr/lat/.zarray',
-                          'demo.levels/0.zarr/lat/.zattrs',
-                          'demo.levels/0.zarr/lat/0',
-                          'demo.levels/0.zarr/lat_bnds/.zarray',
-                          'demo.levels/0.zarr/lat_bnds/.zattrs',
-                          'demo.levels/0.zarr/lat_bnds/0.0',
-                          'demo.levels/0.zarr/lon/.zarray'],
-                         list(bucket.keys())[0:10])
-
-        self.assertTrue('demo.levels/0.zarr/lat/.zarray' in bucket)
-        self.assertTrue('demo.levels/0.zarr/lat_bnds/0.0' in bucket)
-        self.assertTrue('demi.levels/0.zarr/lat_bnds/0.0' not in bucket)
+        self.assertEqual(len(expected_s3_names), len(mapping))
+        self.assertEqual(expected_s3_names, set(mapping))
+        for name in expected_s3_names:
+            self.assertTrue(name in mapping)
+            self.assertIsInstance(mapping[name], MultiLevelDataset)

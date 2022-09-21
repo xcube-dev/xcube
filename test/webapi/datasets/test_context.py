@@ -115,9 +115,10 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertIsNotNone(dataset_configs_from_stores)
         self.assertEqual(3, len(dataset_configs_from_stores))
         ids = [config['Identifier'] for config in dataset_configs_from_stores]
-        self.assertIn('Cube 1', ids)
-        self.assertIn('Cube 5', ids)
-        self.assertIn('test~cube-1-250-250.levels', ids)
+        self.assertEqual({'test~cube-1-250-250.levels',
+                          'Cube-T5.zarr',
+                          'Cube-T1.zarr'},
+                         set(ids))
 
     def test_get_dataset_configs_with_duplicate_ids_from_stores(self):
         with self.assertRaises(ApiError.InvalidServerConfig) as sce:

@@ -45,6 +45,7 @@ class TempTest(unittest.TestCase):
         self.assertTrue(os.path.isabs(file_path))
 
     def test_remove_dir_later(self):
-        os.mkdir('__test__')
+        if not os.path.isdir('__test__'):
+            os.mkdir('__test__')
         dir_path = remove_dir_later('__test__')
         self.assertTrue(os.path.isabs(dir_path))
