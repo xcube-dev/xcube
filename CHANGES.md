@@ -59,7 +59,7 @@
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
 
-## Changes in 0.12.1 (in development)
+## Changes in 0.12.1 
 
 ### Enhancements
 
