@@ -239,7 +239,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
             if var_name in cube:
                 cube = cube.drop_vars(var_name)
         # Select desired time slice
-        cube = cube.sel(time=time)
+        cube = cube.sel(time=time, method='nearest')
         # Make the slice truly 2-D
         cube = cube.reduce(dask.array.squeeze, dim='time')
         return cube
