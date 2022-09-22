@@ -95,8 +95,7 @@ def rectify_dataset(source_ds: xr.Dataset,
         does not intersect with *dataset*.
     """
     if source_gm is None:
-        source_gm = GridMapping.from_dataset(source_ds,
-                                             xy_var_names=xy_var_names)
+        source_gm = GridMapping.from_dataset(source_ds)
 
     src_attrs = dict(source_ds.attrs)
 

@@ -131,8 +131,7 @@ def select_spatial_subset(dataset: xr.Dataset,
 
     grid_mapping = grid_mapping or geo_coding
     if grid_mapping is None:
-        grid_mapping = GridMapping.from_dataset(dataset,
-                                                xy_var_names=xy_names)
+        grid_mapping = GridMapping.from_dataset(dataset)
     x_name, y_name = grid_mapping.xy_var_names
     x = dataset[x_name]
     y = dataset[y_name]

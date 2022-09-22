@@ -52,12 +52,21 @@
 ### Other
 
 * Deprecated CLI `xcube tile` has been removed.
-* Deprecated modules and their references have finally been removed:
-  - `xcube.core.tilegrid`
+* Deprecated modules, classes, methods, and functions
+  have finally been removed:
+  - `xcube.core.geom.get_geometry_mask()`
+  - `xcube.core.mldataset.FileStorageMultiLevelDataset`
+  - `xcube.core.mldataset.open_ml_dataset()`
+  - `xcube.core.mldataset.open_ml_dataset_from_local_fs()`
+  - `xcube.core.mldataset.open_ml_dataset_from_object_storage()`
+  - `xcube.core.subsampling.get_dataset_subsampling_slices()`
   - `xcube.core.tiledimage`
-* The following functions have been deprecated:
+  - `xcube.core.tilegrid`
+* The following classes, methods, and functions have been deprecated:
+  - `xcube.core.xarray.DatasetAccessor.levels()`
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
+
 
 ## Changes in 0.12.1 
 
