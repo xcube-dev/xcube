@@ -19,14 +19,25 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import Api
-from .config import CONFIG_SCHEMA
-from .context import WcsContext
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonObjectSchema
+from ...common.schemas import IDENTIFIER_SCHEMA
+from ...common.schemas import STRING_SCHEMA
 
-api = Api(
-    'ows.wcs',
-    description='xcube OGC WCS API',
-    required_apis=['datasets'],
-    config_schema=CONFIG_SCHEMA,
-    create_ctx=WcsContext
+WCS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Name=IDENTIFIER_SCHEMA,
+        Description=STRING_SCHEMA,
+        Label=STRING_SCHEMA,
+        Keywords=JsonArraySchema(items=STRING_SCHEMA),
+    ),
+    required=['Name'],
+    additional_properties=False
+)
+
+CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        WebCoverageService=WCS_SCHEMA,
+    ),
+    additional_properties=True
 )

@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import warnings
 from typing import Dict, List, Any, Optional
 
@@ -25,17 +26,20 @@ import numpy as np
 from xarray import Dataset
 
 import xcube.core.store.storepool as sp
-from xcube.core.gen2 import CubeGenerator, OutputConfig
+from xcube.core.gen2 import CubeGenerator
 from xcube.core.gen2 import CubeGeneratorRequest
+from xcube.core.gen2 import OutputConfig
 from xcube.core.gen2.local.writer import CubeWriter
 from xcube.core.gridmapping import GridMapping
-from xcube.webapi.ows.wcs.context import WcsContext
-from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
 from xcube.webapi.common.xml import Document
 from xcube.webapi.common.xml import Element
+from xcube.webapi.ows.wcs.context import WcsContext
+from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
 
 WCS_VERSION = '1.0.0'
 VALID_CRS_LIST = ['EPSG:4326']
+
+
 # VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
 
 
