@@ -363,9 +363,10 @@ def _get_capabilities_element(ctx: WcsContext,
 
 
 def _get_service_element(ctx: WcsContext) -> Element:
-    service_provider = ctx.config.get('ServiceProvider')
+    service_provider = ctx.config.get('ServiceProvider', {})
+    wcs_metadata = ctx.config.get('WebCoverageService', {})
 
-    def _get_value(path):
+    def _get_sp_value(path):
         v = None
         node = service_provider
         for k in path:
@@ -376,75 +377,77 @@ def _get_service_element(ctx: WcsContext) -> Element:
         return str(v) if v is not None else ''
 
     def _get_individual_name():
-        individual_name = _get_value(['ServiceContact', 'IndividualName'])
+        individual_name = _get_sp_value(['ServiceContact', 'IndividualName'])
         individual_name = tuple(individual_name.split(' ').__reversed__())
         return '{}, {}'.format(*individual_name)
 
     element = Element('Service', elements=[
         Element('description',
-                text=_get_value(['WCS-description'])),
+                text=wcs_metadata.get('Description',
+                                      'xcube WCS 1.0 API')),
         Element('name',
-                text=_get_value(['WCS-name'])),
+                text=wcs_metadata.get('Name', 'xcube WCS')),
         Element('label',
-                text=_get_value(['WCS-label'])),
+                text=wcs_metadata.get('Label', 'xcube WCS')),
         Element('keywords', elements=[
-            Element('keyword', text=k) for k in service_provider['keywords']
+            Element('keyword', text=k) for k in wcs_metadata.get('Keywords',
+                                                                 [])
         ]),
         Element('responsibleParty', elements=[
             Element('individualName',
                     text=_get_individual_name()),
             Element('organisationName',
-                    text=_get_value(['ProviderName'])),
+                    text=_get_sp_value(['ProviderName'])),
             Element('positionName',
-                    text=_get_value(['ServiceContact',
+                    text=_get_sp_value(['ServiceContact',
                                      'PositionName'])),
             Element('contactInfo', elements=[
                 Element('phone', elements=[
                     Element('voice',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Phone',
                                              'Voice'])),
                     Element('facsimile',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Phone',
                                              'Facsimile'])),
                 ]),
                 Element('address', elements=[
                     Element('deliveryPoint',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'DeliveryPoint'])),
                     Element('city',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'City'])),
                     Element('administrativeArea',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'AdministrativeArea'])),
                     Element('postalCode',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'PostalCode'])),
                     Element('country',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'Country'])),
                     Element('electronicMailAddress',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'ElectronicMailAddress'])),
                 ]),
                 Element('onlineResource', attrs={
-                    'xlink:href': _get_value(['ProviderSite'])})
+                    'xlink:href': _get_sp_value(['ProviderSite'])})
             ]),
         ]),
         Element('fees', text='NONE'),
