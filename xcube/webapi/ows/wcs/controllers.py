@@ -575,16 +575,10 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
 
 
 def _get_formats_list() -> List[str]:
-    # formats = get_extension_registry().find_extensions(
-    #     EXTENSION_POINT_DATASET_IOS,
-    #     lambda e: 'w' in e.metadata.get('modes', set())
-    # )
-    # return [ext.name for ext in formats if not ext.name == 'mem'
-    #                                        or not ext.name == 'zarr']
-
-    # the code above is correct, but the combination of QGIS and WCS only
-    # supports GeoTIFF or NetCDF, so we simply return these.
-    return ['GeoTIFF', 'NetCDF4']
+    # We only support GeoTIFF or NetCDF, because
+    # 1. QGIS understands them
+    # 2. response can be a single file
+    return ['geotiff', 'netcdf4']
 
 
 class BandInfo:
@@ -626,6 +620,7 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
             var = ds[var_name]
 
             label = var.long_name if hasattr(var, 'long_name') else var_name
+            label += f' (from {ds_name})'
             is_spatial_var = var.ndim >= 2 \
                              and var.dims[-1] == x_name \
                              and var.dims[-2] == y_name
