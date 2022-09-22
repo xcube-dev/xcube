@@ -12,17 +12,17 @@
       format (multi-resolution N-D images)
       that comprises level datasets in Zarr format.
     
-    Datasets published through the S3 endpoint are slightly 
+    Datasets published through the S3 API are slightly 
     renamed for clarity. For bucket `s3://pyramids`:
-    - if a dataset id has suffix `.levels`, it remains;
-    - if a dataset id has suffix `.zarr`, it will be replaced by 
+    - if a dataset identifier has suffix `.levels`, the identifier remains;
+    - if a dataset identifier has suffix `.zarr`, it will be replaced by 
       `.levels` only if such a dataset doesn't exist;
-    - otherwise, the suffix `.levels` is appended.
+    - otherwise, the suffix `.levels` is appended to the identifier.
     For bucket `s3://datasets` the opposite is true:
-    - if a dataset id has suffix `.zarr`, it remains;
-    - if a dataset id has suffix `.levels`, it will be replaced by 
+    - if a dataset identifier has suffix `.zarr`, the identifier remains;
+    - if a dataset identifier has suffix `.levels`, it will be replaced by 
       `.zarr` only if such a dataset doesn't exist;
-    - otherwise, the suffix `.zarr` is appended.
+    - otherwise, the suffix `.zarr` is appended to the identifier.
 
     With the new S3 endpoints in place, xcube Server instances can be used
     as xcube data stores as follows:
