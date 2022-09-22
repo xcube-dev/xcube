@@ -4,14 +4,26 @@
 
 * xcube Server has been rewritten almost from scratch.
   
-  - Introduced a new endpoint `${server_url}/s3/{bucket}` that emulates
+  - Introduced a new endpoint `${server_url}/s3` that emulates
     and AWS S3 object storage for the published datasets.
     The `bucket` name can be either:
-    * `datasets` - publishes all datasets in Zarr format.
-    * `pyramids` - publishes all datasets in a multi-level `levels`
+    * `s3://datasets` - publishes all datasets in Zarr format.
+    * `s3://pyramids` - publishes all datasets in a multi-level `levels`
       format (multi-resolution N-D images)
       that comprises level datasets in Zarr format.
     
+    Datasets published through the S3 endpoint are slightly 
+    renamed for clarity. For bucket `s3://pyramids`:
+    - if a dataset id has suffix `.levels`, it remains;
+    - if a dataset id has suffix `.zarr`, it will be replaced by 
+      `.levels` only if such a dataset doesn't exist;
+    - otherwise, the suffix `.levels` is appended.
+    For bucket `s3://datasets` the opposite is true:
+    - if a dataset id has suffix `.zarr`, it remains;
+    - if a dataset id has suffix `.levels`, it will be replaced by 
+      `.zarr` only if such a dataset doesn't exist;
+    - otherwise, the suffix `.zarr` is appended.
+
     With the new S3 endpoints in place, xcube Server instances can be used
     as xcube data stores as follows:
     
