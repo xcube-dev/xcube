@@ -12,7 +12,6 @@ from xcube.core.geom import clip_dataset_by_geometry
 from xcube.core.geom import convert_geometry
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.geom import get_dataset_geometry
-from xcube.core.geom import get_geometry_mask
 from xcube.core.geom import is_dataset_y_axis_inverted
 from xcube.core.geom import is_lon_lat_dataset
 from xcube.core.geom import mask_dataset_by_geometry
@@ -373,82 +372,6 @@ class DatasetGeometryTest(unittest.TestCase):
             ' 101.25 -33.75, -33.75 -33.75))'
         )
         self.assertTrue(actual.difference(expected).is_empty)
-
-
-class GetGeometryMaskTest(unittest.TestCase):
-    # noinspection PyMethodMayBeStatic
-    def test_get_geometry_mask(self):
-        w = 16
-        h = 8
-        res = 1.0
-        lon_min = 0
-        lat_min = 0
-        lon_max = lon_min + w * res
-        lat_max = lat_min + h * res
-
-        triangle = shapely.geometry.Polygon(((lon_min, lat_min),
-                                             (lon_max, lat_min),
-                                             (lon_max, lat_max),
-                                             (lon_min, lat_min)))
-
-        actual_mask = get_geometry_mask(w, h, triangle, lon_min,
-                                        lat_min, res, all_touched=True)
-        expected_mask = np.array(
-            [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-             [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-             [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-             [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-             [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]], dtype=np.byte
-        )
-        np.testing.assert_array_almost_equal(expected_mask,
-                                             actual_mask.astype('byte'))
-
-        actual_mask = get_geometry_mask(w, h, triangle, lon_min,
-                                        lat_min, res, all_touched=False)
-        expected_mask = np.array(
-            [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
-             [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-             [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-             [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-             [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]], dtype=np.byte
-        )
-        np.testing.assert_array_almost_equal(expected_mask,
-                                             actual_mask.astype('byte'))
-
-        smaller_triangle = triangle.buffer(-1.5 * res)
-        actual_mask = get_geometry_mask(w, h, smaller_triangle, lon_min,
-                                        lat_min, res, all_touched=True)
-        expected_mask = np.array(
-            [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], dtype=np.byte
-        )
-        np.testing.assert_array_almost_equal(expected_mask, actual_mask)
-
-        actual_mask = get_geometry_mask(w, h, smaller_triangle, lon_min,
-                                        lat_min, res, all_touched=False)
-        expected_mask = np.array(
-            [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], dtype=np.byte
-        )
-        np.testing.assert_array_almost_equal(expected_mask, actual_mask)
 
 
 class GetDatasetGeometryTest(unittest.TestCase):

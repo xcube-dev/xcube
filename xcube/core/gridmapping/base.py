@@ -28,15 +28,12 @@ from typing import Any, Tuple, Optional, Union, Mapping
 import numpy as np
 import pyproj
 import xarray as xr
-from deprecated import deprecated
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
-from xcube.util.tilegrid import ImageTileGrid
-from xcube.util.tilegrid import TileGrid
 from .helpers import AffineTransformMatrix
 from .helpers import Number
 from .helpers import _assert_valid_xy_coords
@@ -646,7 +643,6 @@ class GridMapping(abc.ABC):
                      dataset: xr.Dataset,
                      *,
                      crs: Union[str, pyproj.crs.CRS] = None,
-                     xy_var_names: Tuple[str, str] = None,
                      tile_size: Union[int, Tuple[int, int]] = None,
                      prefer_is_regular: bool = True,
                      prefer_crs: Union[str, pyproj.crs.CRS] = None,
@@ -657,9 +653,6 @@ class GridMapping(abc.ABC):
 
         :param dataset: The dataset.
         :param crs: Optional spatial coordinate reference system.
-        :param xy_var_names: Optional tuple of the x- and
-            y-coordinate variables in *dataset*.
-            Deprecated since xcube 0.10.1.
         :param tile_size: Optional tile size
         :param prefer_is_regular: Whether to prefer a regular
             grid mapping if multiple found. Default is True.
@@ -676,7 +669,6 @@ class GridMapping(abc.ABC):
         return new_grid_mapping_from_dataset(
             dataset=dataset,
             crs=crs,
-            xy_var_names=xy_var_names,
             tile_size=tile_size,
             prefer_is_regular=prefer_is_regular,
             prefer_crs=prefer_crs,
@@ -782,19 +774,3 @@ class GridMapping(abc.ABC):
             f'* size: {self.size}',
             f'* tile_size: {self.tile_size}',
         ])
-
-    @property
-    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
-    def tile_grid(self) -> TileGrid:
-        # we allow up to 1% dev
-        assert_true(math.isclose(self.x_res,
-                                 self.y_res,
-                                 rel_tol=0.01),
-                    message='spatial resolutions must be'
-                            ' same in both directions')
-        return ImageTileGrid(image_size=self.size,
-                             tile_size=self.tile_size or (512, 512),
-                             crs=self.crs,
-                             xy_res=self.x_res,
-                             xy_min=(self.x_min, self.y_min),
-                             is_j_axis_up=self.is_j_axis_up)

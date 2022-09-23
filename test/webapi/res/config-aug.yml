@@ -1,0 +1,11 @@
+Datasets:
+  - Identifier: demo-aug
+    Title: xcube-server Demonstration L2C Cube with augmentation
+    Path: ../../../examples/serve/demo/cube-1-250-250.zarr
+    Style: default
+    Augmentation:
+      Path: script.py
+      Function: compute_variables
+      InputParameters:
+        factor_chl: 0.2
+        factor_tsm: 0.7

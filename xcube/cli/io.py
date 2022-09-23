@@ -370,7 +370,9 @@ def dump(output_file_path: Optional[str],
 
         with open(output_file_path, 'w') as fp:
             if output_format == 'json':
-                json.dump(dict(stores=store_list), fp, indent=2)
+                from xcube.util.jsonencoder import NumpyJSONEncoder
+                json.dump(dict(stores=store_list), fp, indent=2,
+                          cls=NumpyJSONEncoder)
             else:
                 yaml.dump(dict(stores=store_list), fp, indent=2)
 
