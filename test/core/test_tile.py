@@ -5,7 +5,6 @@ import pandas as pd
 import xarray as xr
 
 # noinspection PyProtectedMember
-from xcube.core.tile import _ensure_time_compatible
 from xcube.core.tile import get_var_valid_range
 from xcube.core.tile import parse_non_spatial_labels
 
