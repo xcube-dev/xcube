@@ -556,11 +556,22 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
             Element('supportedCRSs', elements=[
                 Element('requestResponseCRSs', text='EPSG:4326')
                 # todo - find out why this does not work with qgis
-                # Element('requestResponseCRSs', text=','.join(VALID_CRS_LIST))
+                # Element('requestResponseCRSs',
+                #         text=','.join(VALID_CRS_LIST))
             ]),
             Element('supportedFormats', elements=[
                 Element('formats', text=f) for f in _get_formats_list()
-            ])
+            ]),
+            Element('supportedInterpolations',
+                    attrs=dict(default='nearest neighbor'),
+                    elements=[
+                        # Respect BBOX only
+                        Element('interpolationMethod',
+                                text='none'),
+                        # Respect BBOX and WIDTH,HEIGHT or RESX,RESY
+                        Element('interpolationMethod',
+                                text='nearest neighbor'),
+                    ]),
         ]))
 
     return Element(
@@ -578,7 +589,7 @@ def _get_formats_list() -> List[str]:
     # We only support GeoTIFF or NetCDF, because
     # 1. QGIS understands them
     # 2. response can be a single file
-    return ['geotiff', 'netcdf4']
+    return ['geotiff', 'netcdf']
 
 
 class BandInfo:
