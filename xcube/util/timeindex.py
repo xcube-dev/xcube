@@ -25,7 +25,7 @@ The utilities in this module check and, where necessary, modify time indexers
 to ensure that they are compatible with the variables they are indexing.
 """
 
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, Hashable
 
 import numpy as np
 import pandas as pd
@@ -36,8 +36,9 @@ logger = logging.getLogger('xcube')
 
 
 def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
-                                 labels: Dict[str, Any],
-                                 time_name: str = 'time') -> Dict[str, Any]:
+                                 labels: Dict[Hashable, Any],
+                                 time_name: Hashable = 'time')\
+        -> Dict[Hashable, Any]:
     """Ensure that *labels[time_name]* is compatible with *var*
 
     This function returns either the passed-in *labels* object, or a copy of
@@ -59,17 +60,21 @@ def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
     the compatibility check.
     """
 
+    # We use Hashable rather than str as the type annotation for the name
+    # of the time variable in order to accommodate the return type of
+    # _tile2._get_non_spatial_labels.
     if time_name in labels and time_name in var.dims:
-        return dict(labels,
-                    time=ensure_time_index_compatible(var, labels[time_name],
-                                                      time_name))
+        new_labels = labels.copy()
+        new_labels[time_name] = \
+            ensure_time_index_compatible(var, labels[time_name], time_name)
+        return new_labels
     else:
         return labels
 
 
 def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
                                  time_value: Any,
-                                 time_name: str = 'time') -> Any:
+                                 time_name: Hashable = 'time') -> Any:
     """Ensure that *time_value* is a valid time indexer for *var*
 
     It is expected that the value of *time_value* will be a valid timestamp
@@ -102,7 +107,7 @@ def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
 
 
 def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
-                                 time_name: str):
+                                 time_name: Hashable):
     if time_value is None:
         return None
 
