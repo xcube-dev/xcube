@@ -40,6 +40,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.perf import measure_time_cm
 from xcube.util.projcache import ProjCache
+from ..util.timeindex import ensure_time_label_compatible
 
 DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
@@ -410,7 +411,9 @@ def _get_variable(ds_name,
                                                  non_spatial_labels,
                                                  logger)
     if non_spatial_labels:
-        variable = variable.sel(**non_spatial_labels, method='nearest')
+        non_spatial_labels_safe = \
+            ensure_time_label_compatible(variable, non_spatial_labels)
+        variable = variable.sel(**non_spatial_labels_safe, method='nearest')
     return variable
 
 
