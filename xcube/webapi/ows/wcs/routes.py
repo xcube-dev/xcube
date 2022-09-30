@@ -146,7 +146,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
         self.response.set_header('Content-Type',
                                  'application/octet-stream')
 
-        if file_format == 'netcdf4':
+        if file_format == 'netcdf':
             temp_file_path = await self.ctx.run_in_executor(
                 None, self._write_netcdf, cube
             )
@@ -239,10 +239,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
             if var_name in cube:
                 cube = cube.drop_vars(var_name)
         # Select desired time slice
-        cube = cube.sel(time=time, method='nearest')
-        # Make the slice truly 2-D
-        cube = cube.reduce(dask.array.squeeze, dim='time')
-        return cube
+        return cube.sel(time=time, method='nearest')
 
 
 def _query_to_dict(request):
