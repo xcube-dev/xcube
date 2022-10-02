@@ -20,11 +20,13 @@
 # DEALINGS IN THE SOFTWARE.
 
 import math
+import sys
 
 import numpy as np
 import pandas as pd
 
-from xcube.server.api import ApiHandler, ApiError
+from xcube.server.api import ApiError
+from xcube.server.api import ApiHandler
 from .api import api
 from .context import VolumesContext
 
@@ -121,27 +123,35 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
                 f'Variable must be 3-D, got {var.ndim}-D'
             )
 
+        # TODO (forman): allow for any dtype
         values = var.astype(dtype=np.float32).values
-        if ml_dataset.grid_mapping.is_j_axis_up:
+        if not ml_dataset.grid_mapping.is_j_axis_up:
             values = values[:, ::-1, :]
         values = np.where(np.isnan(values), 0.0, values)
         data = values.tobytes(order='C')
 
         size_z, size_y, size_x = var.shape
 
+        # TODO (forman): find more suitable normalisation
+        scale_x = scale_y = 100. / max(size_x, size_y)
+        scale_z = 50. / size_z
+
         block_size = 1024 * 1024
         num_blocks = math.ceil(len(data) / block_size)
 
         nrrd_header = (
             "NRRD0004\n"
-            "# NRRD 4 Format, "
-            "see http://teem.sourceforge.net/nrrd/format.html\n"
-            "type: float\n"
+            "# NRRD 4 Format\n"
+            "# see http://teem.sourceforge.net/nrrd/format.html\n"
+            "type: float\n"  # TODO (forman): allow for any dtype
             "dimension: 3\n"
-            f"sizes: {size_x} {size_y} {size_z}\n"
-            "encoding: raw\n"
-            "endian: little\n"
-            "space directions: (0.1,0,0) (0,0.1,0) (0,0,10)\n"
+            "sizes:"
+            f" {size_x} {size_y} {size_z}\n"
+            "encoding: raw\n"  # TODO (forman): allow for gzip
+            "endian:"
+            f" {sys.byteorder}\n"
+            "space directions:"
+            f" ({scale_x},0,0) (0,{scale_y},0) (0,0,{scale_z})\n"
             "space origin: (0,0,0)\n"
             "\n"
         )
