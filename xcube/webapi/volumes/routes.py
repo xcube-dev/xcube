@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import math
 
 import numpy as np
@@ -101,6 +102,8 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
 
         from xcube.core.select import select_subset
 
+        ml_dataset = self.ctx.datasets_ctx.get_ml_dataset(datasetId)
+
         dataset = self.ctx.datasets_ctx.get_dataset(
             datasetId,
             expected_var_names=[varName]
@@ -119,6 +122,8 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
             )
 
         values = var.astype(dtype=np.float32).values
+        if ml_dataset.grid_mapping.is_j_axis_up:
+            values = values[:, ::-1, :]
         values = np.where(np.isnan(values), 0.0, values)
         data = values.tobytes(order='C')
 
