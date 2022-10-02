@@ -67,7 +67,6 @@ class TornadoFramework(Framework):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
         self._server: Optional[tornado.web.HTTPServer] = None
-        self.configure_signals()
         self.configure_logging()
 
     @property
@@ -164,9 +163,13 @@ class TornadoFramework(Framework):
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
 
+        self.configure_signals()
+
         self.io_loop.start()
 
     def stop(self, ctx: Context):
+        if self._server is not None:
+            self._server.stop()
         self.io_loop.stop()
 
     def call_later(self,
@@ -194,20 +197,9 @@ class TornadoFramework(Framework):
             *args
         )
 
-    def shutdown(self):
-        LOG.info('Shutting down...')
-        # noinspection PyBroadException
-        try:
-            if self._server is not None:
-                self._server.stop()
-            self.io_loop.stop()
-        except Exception as e:
-            LOG.error(f'Shutdown failed: {e}', exc_info=True)
-            sys.exit(1)
-
     def configure_signals(self):
         def sig_handler(signum, frame):
-            self.io_loop.add_callback_from_signal(self.shutdown)
+            self.io_loop.add_callback_from_signal(self.stop)
 
         signal.signal(signal.SIGTERM, sig_handler)
         signal.signal(signal.SIGINT, sig_handler)
