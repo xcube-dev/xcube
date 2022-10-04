@@ -79,6 +79,11 @@
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
 
+* A new function `compute_tiles()` has been 
+  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
+* Added method `get_level_for_resolution(xy_res)` to 
+  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
+
 
 ## Changes in 0.12.1 
 

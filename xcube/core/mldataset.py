@@ -23,6 +23,7 @@ import math
 import threading
 import uuid
 from abc import abstractmethod, ABCMeta
+from functools import cached_property
 from typing import Sequence, Any, Dict, Callable, Mapping, Optional, Tuple
 
 import xarray as xr
@@ -40,6 +41,7 @@ from xcube.core.tilingscheme import get_num_levels
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.perf import measure_time
+from xcube.util.types import ScalarOrPair, normalize_scalar_or_pair
 
 _DEPRECATED_OPEN_ML_DATASET = ('Use xcube data store framework'
                                ' to open multi-level datasets.')
@@ -90,7 +92,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         :return: the number of pyramid levels.
         """
 
-    @property
+    @cached_property
     def resolutions(self) -> Sequence[Tuple[float, float]]:
         """
         :return: the x,y resolutions for each level given in the
@@ -101,7 +103,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         return [(x_res_0 * (1 << level), y_res_0 * (1 << level))
                 for level in range(self.num_levels)]
 
-    @property
+    @cached_property
     def avg_resolutions(self) -> Sequence[float]:
         """
         :return: the average x,y resolutions for each level given in the
@@ -161,6 +163,20 @@ class MultiLevelDataset(metaclass=ABCMeta):
         )
         return tiling_scheme.derive(min_level=min_level,
                                     max_level=max_level)
+
+    def get_level_for_resolution(self, xy_res: ScalarOrPair[float]) -> int:
+        """
+        Get the index of the level that best represents the given resolution.
+
+        :param xy_res: the resolution in x- and y-direction
+        :return: a level ranging from 0 to self.num_levels - 1
+        """
+        given_x_res, given_y_res = normalize_scalar_or_pair(xy_res,
+                                                            item_type=float)
+        for level, (x_res, y_res) in enumerate(self.resolutions):
+            if x_res > given_x_res and y_res > given_y_res:
+                return max(0, level - 1)
+        return self.num_levels - 1
 
 
 class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
