@@ -56,7 +56,7 @@ ValueRange = Tuple[float, float]
 def compute_tiles(
         ml_dataset: MultiLevelDataset,
         variable_names: Union[str, Sequence[str]],
-        tile_bbox: Union[float, float, float, float],
+        tile_bbox: Tuple[float, float, float, float],
         tile_crs: Union[str, pyproj.CRS] = DEFAULT_CRS_NAME,
         tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
         level: int = 0,

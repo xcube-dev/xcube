@@ -41,7 +41,8 @@ from xcube.core.tilingscheme import get_num_levels
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.perf import measure_time
-from xcube.util.types import ScalarOrPair, normalize_scalar_or_pair
+from xcube.util.types import ScalarOrPair
+from xcube.util.types import normalize_scalar_or_pair
 
 _DEPRECATED_OPEN_ML_DATASET = ('Use xcube data store framework'
                                ' to open multi-level datasets.')
