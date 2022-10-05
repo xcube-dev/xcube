@@ -467,9 +467,10 @@ Styles [optional]
 -----------------
 
 
-Within the *Styles* section colorbars may be defined which should be used initially for a certain variable of a dataset,
-as well as the value ranges.
-For xcube viewer version 0.3.0 or higher the colorbars and the value ranges may be adjusted by the user
+Within the *Styles* section, colorbars may be defined which should
+be used initially for a certain variable of a dataset,
+as well as the value ranges. For xcube viewer version 0.3.0 or
+higher the colorbars and the value ranges may be adjusted by the user
 within the xcube viewer.
 
 .. code:: yaml
@@ -497,12 +498,26 @@ within the xcube viewer.
               Variable: kd489
               ValueRange: [0., 6.]
 
-The *ColorMapping* may be specified for each variable of the datasets to be served.
-If not specified, the server uses a default colorbar as well as a default value range.
+The *ColorMapping* may be specified for each variable of the
+datasets to be served. If not specified, xcube server will try
+to extract default values from attributes of dataset variables.
+The default value ranges are determined by:
 
-*rgb* may be used to generate an RGB-Image on-the-fly within xcube viewer. This may be done if  the dataset contains
-variables which represent the bands red, green and blue, they may be combined to an RGB-Image. Or three variables
-of the dataset may be combined to an RGB-Image, as shown in the configuration above.
+* xcube-specific variable attributes
+  ``color_value_min`` and ``color_value_max``;
+* The CF variable attributes ``valid_min``, ``valid_max``
+  or ``valid_range``.
+* Or otherwise, the value range ``[0, 1]`` is assumed.
+
+The colorbar name can be set using the
+
+* xcube-specific variable attribute ``color_bar_name``;
+* Otherwise, the default colorbar name will be ``"viridis"``.
+
+The special name *rgb* may be used to generate an RGB-image
+from any other three dataset variables used for the individual
+*Red*, *Green* and *Blue* channels of the resulting image.
+An example is shown in the configuration above.
 
 .. _example:
 
