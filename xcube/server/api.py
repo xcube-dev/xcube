@@ -608,7 +608,12 @@ class ApiHandler(Generic[ServerContextT], ABC):
         raise ApiError.MethodNotAllowed("method DELETE not allowed")
 
     def options(self, *args, **kwargs):
-        raise ApiError.MethodNotAllowed("method OPTIONS not allowed")
+        # Warning, naive implementation:
+        # By default, we allow for pre-flight OPTIONS requests.
+        # We could improve by returning 204 only for methods that
+        # are effectively implemented by clients.
+        self.response.set_status(204)
+        self.response.finish()
 
 
 class ApiRoute:
