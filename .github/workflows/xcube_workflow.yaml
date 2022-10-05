@@ -134,27 +134,6 @@ jobs:
           head values-dev.yaml
           head values-stage.yaml
           head values-prod.yaml
-            # Update the xcube viewer app version tag in k8s-configs/xcube-viewer-app
-      - name: set-version-tag-xcube-viewer-app
-        uses: bc-org/gha-update-application-version-tags@main
-        with:
-          app: xcube
-          phase: ${{ steps.deployment-phase.outputs.phase }}
-          delimiter: ' '
-          tag: ${{ steps.deployment-phase.outputs.tag }}
-          hash: ${{ steps.get-hash.outputs.hash }}
-          working-directory: ./k8s/xcube-viewer-app/xcube-api
-          prefix: values-*
-      # Check results
-      - name: cat-result
-        working-directory: ./k8s/xcube-viewer-app/xcube-api
-        run: |
-          echo "----------------DEV-------------------"
-          head values-*-dev.yaml
-          echo "----------------STAGE-----------------"
-          head values-*-stage.yaml
-          echo "----------------PROD------------------"
-          head values-*-prod.yaml
       - name: Pushes to another repository
         # Don't run if run locally and should be ignored
         if: ${{ steps.deployment-phase.outputs.phase != 'ignore' && !env.ACT }}
