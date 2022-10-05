@@ -47,8 +47,10 @@ def find_time_slice(store: Union[str, MutableMapping],
     """
     try:
         cube = xr.open_zarr(store)
-    except ValueError:
-        # ValueError raised if cube store does not exist
+    except (FileNotFoundError, ValueError):
+        # FileNotFoundError is raised as by Zarr since 2.13,
+        # before GroupNotFoundError (extends ValueError) was raised.
+        # Keep ValueError for backward compatibility.
         try:
             cube = xr.open_dataset(store)
         except (FileNotFoundError, ValueError):
