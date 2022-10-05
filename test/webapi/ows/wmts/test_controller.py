@@ -60,9 +60,9 @@ class WmtsControllerTest(unittest.TestCase):
                                                'http://bibo',
                                                tms_id=WMTS_CRS84_TMS_ID)
         # Do not delete, useful for debugging
-        print(80 * '=')
-        print(actual_xml)
-        print(80 * '=')
+        # print(80 * '=')
+        # print(actual_xml)
+        # print(80 * '=')
         self.assertEqual(expected_xml, actual_xml)
 
     def test_get_wmts_capabilities_xml_web_mercator(self):
@@ -73,9 +73,9 @@ class WmtsControllerTest(unittest.TestCase):
                                                'http://bibo',
                                                WMTS_WEB_MERCATOR_TMS_ID)
         # Do not delete, useful for debugging
-        print(80 * '=')
-        print(actual_xml)
-        print(80 * '=')
+        # print(80 * '=')
+        # print(actual_xml)
+        # print(80 * '=')
         self.assertEqual(expected_xml, actual_xml)
 
 

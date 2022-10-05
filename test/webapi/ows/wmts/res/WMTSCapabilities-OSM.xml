@@ -225,7 +225,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.c2rcc_flags</ows:Identifier>
-      <ows:Title>demo-1w/c2rcc_flags</ows:Title>
+      <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -252,7 +252,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.c2rcc_flags_stdev</ows:Identifier>
-      <ows:Title>demo-1w/c2rcc_flags_stdev</ows:Title>
+      <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -279,7 +279,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.conc_chl</ows:Identifier>
-      <ows:Title>demo-1w/conc_chl</ows:Title>
+      <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -306,7 +306,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.conc_chl_stdev</ows:Identifier>
-      <ows:Title>demo-1w/conc_chl_stdev</ows:Title>
+      <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -333,7 +333,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.conc_tsm</ows:Identifier>
-      <ows:Title>demo-1w/conc_tsm</ows:Title>
+      <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -360,7 +360,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.conc_tsm_stdev</ows:Identifier>
-      <ows:Title>demo-1w/conc_tsm_stdev</ows:Title>
+      <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -387,7 +387,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.kd489</ows:Identifier>
-      <ows:Title>demo-1w/kd489</ows:Title>
+      <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -414,7 +414,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.kd489_stdev</ows:Identifier>
-      <ows:Title>demo-1w/kd489_stdev</ows:Title>
+      <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -441,7 +441,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.quality_flags</ows:Identifier>
-      <ows:Title>demo-1w/quality_flags</ows:Title>
+      <ows:Title>demo-1w/Classification and quality flags</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -468,7 +468,7 @@
     </Layer>
     <Layer>
       <ows:Identifier>demo-1w.quality_flags_stdev</ows:Identifier>
-      <ows:Title>demo-1w/quality_flags_stdev</ows:Title>
+      <ows:Title>demo-1w/Classification and quality flags</ows:Title>
       <ows:Abstract/>
       <ows:WGS84BoundingBox>
         <ows:LowerCorner>0 50</ows:LowerCorner>
@@ -573,61 +573,61 @@
       <ows:Abstract/>
       <Theme>
         <ows:Identifier>demo-1w.c2rcc_flags</ows:Identifier>
-        <ows:Title>demo-1w/c2rcc_flags</ows:Title>
+        <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.c2rcc_flags</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.c2rcc_flags_stdev</ows:Identifier>
-        <ows:Title>demo-1w/c2rcc_flags_stdev</ows:Title>
+        <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.c2rcc_flags_stdev</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.conc_chl</ows:Identifier>
-        <ows:Title>demo-1w/conc_chl</ows:Title>
+        <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.conc_chl</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.conc_chl_stdev</ows:Identifier>
-        <ows:Title>demo-1w/conc_chl_stdev</ows:Title>
+        <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.conc_chl_stdev</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.conc_tsm</ows:Identifier>
-        <ows:Title>demo-1w/conc_tsm</ows:Title>
+        <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.conc_tsm</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.conc_tsm_stdev</ows:Identifier>
-        <ows:Title>demo-1w/conc_tsm_stdev</ows:Title>
+        <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.conc_tsm_stdev</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.kd489</ows:Identifier>
-        <ows:Title>demo-1w/kd489</ows:Title>
+        <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.kd489</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.kd489_stdev</ows:Identifier>
-        <ows:Title>demo-1w/kd489_stdev</ows:Title>
+        <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.kd489_stdev</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.quality_flags</ows:Identifier>
-        <ows:Title>demo-1w/quality_flags</ows:Title>
+        <ows:Title>demo-1w/Classification and quality flags</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.quality_flags</LayerRef>
       </Theme>
       <Theme>
         <ows:Identifier>demo-1w.quality_flags_stdev</ows:Identifier>
-        <ows:Title>demo-1w/quality_flags_stdev</ows:Title>
+        <ows:Title>demo-1w/Classification and quality flags</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.quality_flags_stdev</LayerRef>
       </Theme>
