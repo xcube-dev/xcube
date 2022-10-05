@@ -79,6 +79,8 @@
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
 
+* Fixed problem with `xcube gen` raising `FileNotFoundError` 
+  with Zarr >= 2.13.
 
 ## Changes in 0.12.1 
 
