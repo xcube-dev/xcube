@@ -84,6 +84,8 @@
 * Added method `get_level_for_resolution(xy_res)` to 
   abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
 
+* Fixed problem with `xcube gen` raising `FileNotFoundError` 
+  with Zarr >= 2.13.
 
 ## Changes in 0.12.1 
 
