@@ -1,3 +1,5 @@
+## Changes in 0.13.0.dev2 (in development)
+
 ## Changes in 0.13.0.dev1
 
 ### Intermediate dev changes (remove from CHANGES.md in 0.13.0 release)
