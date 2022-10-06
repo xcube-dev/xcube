@@ -63,6 +63,7 @@ version = None
 with open('xcube/version.py') as f:
     exec(f.read())
 
+# noinspection PyTypeChecker
 setup(
     name="xcube",
     version=version,
@@ -71,6 +72,7 @@ setup(
     license='MIT',
     author='xcube Development Team',
     packages=packages,
+    package_data={'xcube.webapi.meta': ['res/openapi.html']},
     entry_points={
         'console_scripts': [
             # xcube's CLI

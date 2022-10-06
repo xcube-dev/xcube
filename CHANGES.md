@@ -1,4 +1,10 @@
-## Changes in 0.13.0 (in development)
+## Changes in 0.13.0.dev1 (in development)
+
+### Intermediate dev changes (remove from CHANGES.md in 0.13.0 release)
+
+* Include package data `xcube/webapi/meta/res/openapi.html`.
+
+## Changes in 0.13.0.dev0
 
 ### Enhancements
 
