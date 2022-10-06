@@ -23,12 +23,12 @@ import json
 import os
 import types
 import unittest
+from typing import Mapping, Any
 
 import requests
 
 from test.webapi.helpers import get_api_ctx
 from xcube.server.api import ApiError
-from xcube.server.api import ServerConfig
 # noinspection PyProtectedMember
 # noinspection PyProtectedMember
 from xcube.webapi.auth.config import AuthConfig
@@ -38,7 +38,7 @@ XCUBE_TEST_CLIENT_ID = os.environ.get('XCUBE_TEST_CLIENT_ID')
 XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
 
 
-def get_auth_ctx(config: ServerConfig) -> AuthContext:
+def get_auth_ctx(config: Mapping[str, Any]) -> AuthContext:
     return get_api_ctx("auth", AuthContext, config)
 
 
