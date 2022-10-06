@@ -40,10 +40,14 @@ class FlaskFramework(Framework):
     def config_schema(self) -> Optional[JsonObjectSchema]:
         return None
 
-    def add_static_routes(self, static_routes: Sequence[Tuple[str, str]]):
+    def add_static_routes(self,
+                          static_routes: Sequence[Tuple[str, str]],
+                          url_prefix: str):
         raise NotImplementedError()
 
-    def add_routes(self, routes: Sequence[ApiRoute]):
+    def add_routes(self,
+                   routes: Sequence[ApiRoute],
+                   url_prefix: str):
         raise NotImplementedError()
 
     def update(self, ctx: Context):

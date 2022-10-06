@@ -32,9 +32,13 @@ class TornadoFrameworkTest(unittest.TestCase):
     def test_config_schema(self):
         self.assertEqual(None, self.framework.config_schema)
 
+    def test_add_static_routes(self):
+        with self.assertRaises(NotImplementedError):
+            self.framework.add_static_routes([], '')
+
     def test_add_routes(self):
         with self.assertRaises(NotImplementedError):
-            self.framework.add_routes([])
+            self.framework.add_routes([], '')
 
     def test_start(self):
         with self.assertRaises(NotImplementedError):
