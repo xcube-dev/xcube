@@ -269,10 +269,10 @@ class ApiHandlerTest(unittest.TestCase):
         self.assertEqual('HTTP status 405: method DELETE not allowed',
                          f'{cm.exception}')
 
-        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
-            handler.options()
-        self.assertEqual('HTTP status 405: method OPTIONS not allowed',
-                         f'{cm.exception}')
+    def test_default_options_method(self):
+        handler = self.handler
+        # Should not raise
+        handler.options()
 
 
 class ApiRequestTest(unittest.TestCase):

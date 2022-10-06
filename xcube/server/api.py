@@ -610,8 +610,11 @@ class ApiHandler(Generic[ServerContextT], ABC):
     def options(self, *args, **kwargs):
         # Warning, naive implementation:
         # By default, we allow for pre-flight OPTIONS requests.
-        # We could improve by returning 204 only for methods that
-        # are effectively implemented by clients.
+        # We could improve by returning 204 only for the method given by
+        # header "Access-Control-Request-Method", which effectively
+        # has an implementation in a client's ApiHandler.
+        # For more, see
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/OPTIONS
         self.response.set_status(204)
         self.response.finish()
 
