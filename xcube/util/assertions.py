@@ -19,8 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Any, Union, Tuple, Type, Container
 import warnings
+from typing import Any, Union, Tuple, Type, Container
 
 _DEFAULT_NAME = 'value'
 
@@ -29,7 +29,7 @@ def assert_not_none(value: Any, name: str = None,
                     exception_type: Type[Exception] = ValueError):
     """
     Assert *value* is not None.
-    Otherwise raise *exception_type*.
+    Otherwise, raise *exception_type*.
 
     :param value: The value to test.
     :param name: Name of a variable that holds *value*.
@@ -44,7 +44,7 @@ def assert_given(value: Any,
                  exception_type: Type[Exception] = ValueError):
     """
     Assert *value* is not False when converted into a Boolean value.
-    Otherwise raise *exception_type*.
+    Otherwise, raise *exception_type*.
 
     :param value: The value to test.
     :param name: Name of a variable that holds *value*.
@@ -60,7 +60,7 @@ def assert_instance(value: Any,
                     exception_type: Type[Exception] = TypeError):
     """
     Assert *value* is an instance of data type *dtype*.
-    Otherwise raise *exception_type*.
+    Otherwise, raise *exception_type*.
 
     :param value: The value to test.
     :param dtype: A type or tuple of types.
@@ -73,13 +73,32 @@ def assert_instance(value: Any,
                              f'{dtype}, was {type(value)}')
 
 
+def assert_subclass(value: Any,
+                    cls: Union[Type, Tuple[Type, ...]],
+                    name: str = None,
+                    exception_type: Type[Exception] = TypeError):
+    """
+    Assert *value* is a subclass of class *cls*.
+    Otherwise, raise *exception_type*.
+
+    :param value: The value to test.
+    :param cls: A class or tuple of classes.
+    :param name: Name of a variable that holds *value*.
+    :param exception_type: The exception type. Default is ```TypeError```.
+    """
+    if not issubclass(value, cls):
+        raise exception_type(f'{name or _DEFAULT_NAME} '
+                             f'must be a subclass of '
+                             f'{cls}, was {value}')
+
+
 def assert_in(value: Any,
               container: Container,
               name: str = None,
               exception_type: Type[Exception] = ValueError):
     """
     Assert *value* is a member of *container*.
-    Otherwise raise *exception_type*.
+    Otherwise, raise *exception_type*.
 
     :param value: The value to test for membership.
     :param container: The container.
@@ -96,7 +115,7 @@ def assert_true(value: Any,
                 exception_type: Type[Exception] = ValueError):
     """
     Assert *value* is true after conversion into a Boolean value.
-    Otherwise raise *exception_type*.
+    Otherwise, raise *exception_type*.
 
     :param value: The value to test.
     :param message: The error message used if the assertion fails.
@@ -111,7 +130,7 @@ def assert_false(value: Any,
                  exception_type: Type[Exception] = ValueError):
     """
     Assert *value* is false after conversion into a Boolean value.
-    Otherwise raise *exception_type*.
+    Otherwise, raise *exception_type*.
 
     :param value: The value to test.
     :param message: The error message used if the assertion fails.

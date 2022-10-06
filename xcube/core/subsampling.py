@@ -175,38 +175,6 @@ def find_agg_method(agg_methods: AggMethods,
 _FULL_SLICE = slice(None, None, None)
 
 
-@deprecated(version='0.10.3', reason='no longer in use')
-def get_dataset_subsampling_slices(
-        dataset: xr.Dataset,
-        step: int,
-        xy_dim_names: Optional[Tuple[str, str]] = None
-) -> Dict[Hashable, Optional[Tuple[slice, ...]]]:
-    """
-    Compute subsampling slices for variables in *dataset*.
-    Only data variables with spatial dimensions given by
-    *xy_dim_names* are considered.
-
-    :param dataset: the dataset providing the variables
-    :param step: the integer subsampling step
-    :param xy_dim_names: the spatial dimension names
-    """
-    assert_instance(dataset, xr.Dataset, name='dataset')
-    assert_instance(step, int, name='step')
-    slices_dict: Dict[Tuple[Hashable, ...], Tuple[slice, ...]] = dict()
-    vars_dict: Dict[Hashable, Optional[Tuple[slice, ...]]] = dict()
-    for var_name, var in dataset.data_vars.items():
-        var_index = slices_dict.get(var.dims)
-        if var_index is None:
-            var_index = get_variable_subsampling_slices(
-                var, step, xy_dim_names=xy_dim_names
-            )
-            if var_index is not None:
-                slices_dict[var.dims] = var_index
-        if var_index is not None:
-            vars_dict[var_name] = var_index
-    return vars_dict
-
-
 def get_variable_subsampling_slices(
         variable: xr.DataArray,
         step: int,

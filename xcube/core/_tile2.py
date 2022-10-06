@@ -22,7 +22,6 @@
 import io
 import logging
 import math
-import warnings
 from typing import Optional, Tuple, Dict, Any, Hashable, Union, Sequence
 
 import PIL
@@ -34,12 +33,13 @@ from .mldataset import MultiLevelDataset
 from .tilingscheme import DEFAULT_CRS_NAME
 from .tilingscheme import DEFAULT_TILE_SIZE
 from .tilingscheme import TilingScheme
-from ..constants import LOG
-from ..util.assertions import assert_in
-from ..util.assertions import assert_instance
-from ..util.assertions import assert_true
-from ..util.perf import measure_time_cm
-from ..util.projcache import ProjCache
+from xcube.constants import LOG
+from xcube.util.cmaps import ColormapProvider
+from xcube.util.assertions import assert_in
+from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
+from xcube.util.perf import measure_time_cm
+from xcube.util.projcache import ProjCache
 
 DEFAULT_VALUE_RANGE = (0., 1.)
 DEFAULT_CMAP_NAME = 'bone'
@@ -55,6 +55,7 @@ def compute_rgba_tile(
         tile_x: int,
         tile_y: int,
         tile_z: int,
+        cmap_provider: ColormapProvider,
         crs_name: str = DEFAULT_CRS_NAME,
         tile_size: int = DEFAULT_TILE_SIZE,
         cmap_name: str = None,
@@ -63,7 +64,7 @@ def compute_rgba_tile(
         non_spatial_labels: Optional[Dict[str, Any]] = None,
         format: str = DEFAULT_FORMAT,
         tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
-        trace_perf: bool = False
+        trace_perf: bool = False,
 ) -> Union[bytes, np.ndarray]:
     """Compute an RGBA image tile from *variable_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -103,6 +104,7 @@ def compute_rgba_tile(
     :param tile_x: Tile X coordinate
     :param tile_y: Tile Y coordinate
     :param tile_z:  Tile Z coordinate
+    :param cmap_provider: Provider for colormaps.
     :param crs_name: Spatial tile coordinate reference system.
         Must be a geographical CRS, such as "EPSG:4326", or
         web mercator, i.e. "EPSG:3857". Defaults to "CRS84".
@@ -176,10 +178,15 @@ def compute_rgba_tile(
 
         tile_bbox = tiling_scheme.get_tile_extent(tile_x, tile_y, tile_z)
         if tile_bbox is None:
-            raise TileRequestException.new(
-                'tile indices out of tile grid bounds',
-                logger=logger
-            )
+            # Whether to raise or not
+            # could be made a configuration option.
+            #
+            # raise TileRequestException.new(
+            #     'Tile indices out of tile grid bounds',
+            #     logger=logger
+            # )
+            return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
+
         tile_x_min, tile_y_min, tile_x_max, tile_y_max = tile_bbox
 
         tile_res = (tile_x_max - tile_x_min) / (tile_size - 1)
@@ -228,8 +235,8 @@ def compute_rgba_tile(
                               np.nanmax(ds_y_w), np.nanmax(ds_y_e)])
         if np.isnan(ds_x_min) or np.isnan(ds_y_min) \
                 or np.isnan(ds_y_max) or np.isnan(ds_y_max):
-            raise TileNotFoundException.new(
-                'tile bounds NaN after map projection',
+            raise TileNotFoundException(
+                'Tile bounds NaN after map projection',
                 logger=logger
             )
 
@@ -318,7 +325,7 @@ def compute_rgba_tile(
     with measure_time('Encoding tile as RGBA image'):
         if len(var_tiles) == 1:
             var_tile_norm = var_tiles[0]
-            cm = matplotlib.cm.get_cmap(cmap_name or DEFAULT_CMAP_NAME)
+            _, cm = cmap_provider.get_cmap(cmap_name)
             var_tile_rgba = cm(var_tile_norm)
             var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
         else:
@@ -337,15 +344,64 @@ def compute_rgba_tile(
         return var_tile_rgba
 
 
+def get_var_cmap_params(var: xr.DataArray,
+                        cmap_name: Optional[str],
+                        cmap_range: Tuple[Optional[float], Optional[float]],
+                        valid_range: Optional[Tuple[float, float]]) \
+        -> Tuple[str, Tuple[float, float]]:
+    if cmap_name is None:
+        cmap_name = var.attrs.get('color_bar_name')
+        if cmap_name is None:
+            cmap_name = DEFAULT_CMAP_NAME
+    cmap_vmin, cmap_vmax = cmap_range
+    if cmap_vmin is None:
+        cmap_vmin = var.attrs.get('color_value_min')
+        if cmap_vmin is None and valid_range is not None:
+            cmap_vmin = valid_range[0]
+        if cmap_vmin is None:
+            cmap_vmin = DEFAULT_VALUE_RANGE[0]
+    if cmap_vmax is None:
+        cmap_vmax = var.attrs.get('color_value_max')
+        if cmap_vmax is None and valid_range is not None:
+            cmap_vmax = valid_range[1]
+        if cmap_vmax is None:
+            cmap_vmax = DEFAULT_VALUE_RANGE[1]
+    return cmap_name, (cmap_vmin, cmap_vmax)
+
+
+def get_var_valid_range(var: xr.DataArray) -> Optional[Tuple[float, float]]:
+    valid_min = None
+    valid_max = None
+    valid_range = var.attrs.get('valid_range')
+    if valid_range:
+        try:
+            valid_min, valid_max = map(float, valid_range)
+        except (TypeError, ValueError):
+            pass
+    if valid_min is None:
+        valid_min = var.attrs.get('valid_min')
+    if valid_max is None:
+        valid_max = var.attrs.get('valid_max')
+    if valid_min is None and valid_max is None:
+        valid_range = None
+    elif valid_min is not None and valid_max is not None:
+        valid_range = valid_min, valid_max
+    elif valid_min is None:
+        valid_range = -np.inf, valid_max
+    else:
+        valid_range = valid_min, +np.inf
+    return valid_range
+
+
 def _get_variable(ds_name,
                   dataset,
                   variable_name,
                   non_spatial_labels,
                   logger):
     if variable_name not in dataset:
-        raise TileNotFoundException.new(
-            f'variable {variable_name!r}'
-            f' not found in {ds_name!r}',
+        raise TileNotFoundException(
+            f'Variable {variable_name!r}'
+            f' not found in dataset {ds_name!r}',
             logger=logger
         )
     variable = dataset[variable_name]
@@ -359,13 +415,12 @@ def _get_variable(ds_name,
 
 
 class TileException(Exception):
-    @classmethod
-    def new(cls,
-            message: str,
-            logger: Optional[logging.Logger] = None) -> 'TileException':
+    def __init__(self,
+                 message: str,
+                 logger: Optional[logging.Logger] = None):
+        super().__init__(message)
         if logger is not None:
             logger.warning(message)
-        return cls(message)
 
 
 class TileNotFoundException(TileException):
@@ -401,9 +456,14 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
                             variable: xr.DataArray,
                             labels: Optional[Dict[str, Any]],
                             logger: logging.Logger) -> Dict[Hashable, Any]:
+    labels = labels if labels is not None else {}
+
     new_labels = {}
+    # assuming last two dims are spatial: [..., y, x]
+    assert variable.ndim >= 2
     non_spatial_dims = variable.dims[0:-2]
     if not non_spatial_dims:
+        #  Ignore any extra labels passed.
         return new_labels
 
     for dim in non_spatial_dims:
@@ -415,26 +475,32 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
         except KeyError:
             continue
 
-        if labels and dim in labels:
-            label = labels[str(dim)]
-            try:
-                label = np.array(label).astype(coord_var.dtype)
-            except (TypeError, ValueError) as e:
-                msg = (f'illegal label {label!r} for dimension {dim!r},'
-                       f' using first label instead (error: {e})')
-                if logger:
-                    logger.warning(msg)
-                else:
-                    warnings.warn(msg)
-                label = coord_var[0].values
-        else:
-            msg = (f'missing label for dimension {dim!r},'
-                   f' using first label instead')
+        dim_name = str(dim)
+
+        label = labels.get(dim_name)
+        if label is None:
             if logger:
-                logger.warning(msg)
-            else:
-                warnings.warn(msg)
+                logger.debug((f'missing label for dimension {dim!r},'
+                              f' using first label instead'))
             label = coord_var[0].values
+
+        elif isinstance(label, str):
+            if '/' in label:
+                # In case of WMTS tile requests the tame range labels
+                # from WMTS dimensions may be passed.
+                label = label.split('/', maxsplit=1)[0]
+
+            if label.lower() == 'first':
+                label = coord_var[0].values
+            elif label.lower() in ('last', 'current'):
+                label = coord_var[-1].values
+            else:
+                try:
+                    label = np.array(label).astype(coord_var.dtype)
+                except (TypeError, ValueError) as e:
+                    raise TileRequestException(
+                        f'Illegal label {label!r} for dimension {dim!r}'
+                    ) from e
 
         new_labels[dim] = label
 

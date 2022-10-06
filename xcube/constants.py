@@ -41,6 +41,10 @@ EXTENSION_POINT_DATA_STORES = 'xcube.core.store'
 EXTENSION_POINT_DATA_OPENERS = 'xcube.core.store.opener'
 #: The extension point identifier for data writers
 EXTENSION_POINT_DATA_WRITERS = 'xcube.core.store.writer'
+#: The extension point identifier for server APIs
+EXTENSION_POINT_SERVER_APIS = 'xcube.server.api'
+#: The extension point identifier for server frameworks such as Tornado
+EXTENSION_POINT_SERVER_FRAMEWORKS = 'xcube.server.framework'
 
 GLOBAL_GEO_EXTENT = -180., -90., 180., 90.
 
@@ -119,3 +123,10 @@ XCUBE_LOG_FORMAT = '%(levelname)s: %(message)s'
 # xcube logger
 LOG = logging.getLogger('xcube')
 LOG.setLevel(DEFAULT_XCUBE_LOG_LEVEL)
+
+DEFAULT_SERVER_FRAMEWORK = "tornado"
+DEFAULT_SERVER_PORT = 8080
+DEFAULT_SERVER_ADDRESS = "0.0.0.0"
+
+DEFAULT_COLOR_MAP_NAME = "viridis"
+DEFAULT_COLOR_MAP_VALUE_RANGE = (0., 1.)

@@ -1,4 +1,4 @@
-.. _`xcube viewer demo`: https://xcube-viewer.s3.eu-central-1.amazonaws.com/index.html
+.. _`xcube viewer demo`: https://bc-viewer.brockmann-consult.de/
 .. _`xcube-viewer`: https://github.com/dcs4cop/xcube-viewer
 .. _`DCS4COP Demo viewer`: https://eodatabee-viewer.brockmann-consult.de
 .. _`README`: https://github.com/dcs4cop/xcube-viewer/blob/master/README.md
@@ -15,10 +15,8 @@ The xcube viewer app is a simple, single-page web application to be used with th
 Demo
 ====
 
-To test the viewer app, you can use the `xcube viewer demo`_.
-When you open the page a message "cannot reach server" will appear. This is normal as the demo is configured to
-run with an xcube server started locally on default port 8080, see :doc:`webapi`. Hence, you can either run an xcube
-server instance locally then reload the viewer page, or configure the viewer with an an existing xcube server.
+To test the viewer app, you can use the `xcube viewer demo`_. This is our Brockmann Consult Demo xcube viewer.
+Via the viewer's settings it is possible to change the xcube server url which is used for displaying data.
 To do so open the viewer's settings panels, select "Server". A "Select Server" panel is opened, click the "+"
 button to add a new server. Here are two demo servers that you may add for testing:
 
@@ -31,7 +29,7 @@ button to add a new server. Here are two demo servers that you may add for testi
 Functionality
 =============
 
-The xcube viewer functionality is described exemplary using the `DCS4COP Demo viewer`_.
+The xcube viewer functionality is described exemplary using the `xcube viewer demo`_.
 The viewer visualizes data from the xcube datasets on top of a basemap.
 For zooming use the buttons in the top right corner of the map window or the zooming function of your
 computer mouse. A scale for the map is located in the lower right corner and in the
@@ -51,6 +49,12 @@ If more than one variable is available within a selected xcube dataset, you may 
 `Variable`.
 
 .. image:: _static/images/viewer/screenshot_variables.png
+  :width: 800
+
+To see metadata for a dataset click on the `info`-icon on the right-hand side. Besides the dataset metadata you will
+see the metadata for the selected variable.
+
+.. image:: _static/images/viewer/screenshot_dataset_info.png
   :width: 800
 
 To obtain a time series set a point marker on the map and then select the `graph`-icon next to the `Variables` drop-down
@@ -104,26 +108,36 @@ view and to left of it is an icon which sets the time series back to the whole t
 
 To adjust the default settings select the `Settings`-icon on the very top right corner.
 There you have the possibility to change the server url, in order to view data which is available via a different server.
-You can choose a different language - if available - as well as set your preferences of displaying data and graph of the time series.
-
-On the very bottom of the `Settings` pop-up window you can see information about the viewer and server version.
+You can choose a different language - if available - as well as set your preferences of displaying data and graph of
+the time series.
 
 .. image:: _static/images/viewer/screenshot_settings.png
   :width: 800
 
-Furthermore, if you would like to change the value ranges of the displayed variable you can do it by clicking into the area of the
-legend where the value ticks are located.
+To see the map settings please scroll down in the settings window. There you can adjust the base map, switch the
+displayed projection between `Geographic` and `Mercator`. You can also choose to turn image smoothing on and to
+view the dataset boundaries.
+
+On the very bottom of the `Settings` pop-up window you can see information about the viewer and server version.
+
+.. image:: _static/images/viewer/screenshot_map_settings.png
+  :width: 800
+
+Back to the general view, if you would like to change the value ranges of the displayed variable you can do it by
+clicking into the area of the legend where the value ticks are located or you can enter the desired values in the
+`Minimum` and/or `Maximum` text field.
 
 .. image:: _static/images/viewer/screenshot_value_ranges.png
   :width: 800
 
-You can change the color mapping as well by clicking into the color range of the legend.
+You can change the color mapping as well by clicking into the color range of the legend. There you can also decide to
+hide lower values and it is possible to adjust the opacity.
 
 .. image:: _static/images/viewer/screenshot_colormap.png
   :width: 800
 
-The xcube viewer app is constantly evolving and enhancements are added, therefore please be aware that the above described features
-may not always be completely up-to-date.
+The xcube viewer app is constantly evolving and enhancements are added, therefore please be aware that the above
+described features may not always be completely up-to-date.
 
 Build and Deploy
 ================

@@ -22,7 +22,7 @@
 import math
 import pathlib
 import warnings
-from typing import Dict, Any, List, Union, Tuple, Optional
+from typing import Dict, Any, List, Union, Optional
 
 import fsspec
 import numpy as np
@@ -34,6 +34,10 @@ from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.subsampling import AGG_METHODS
+# Note, we need the following reference to register the
+# xarray property accessor
+# noinspection PyUnresolvedReferences
+from xcube.core.zarrstore import ZarrStoreHolder
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -42,7 +46,6 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.tilegrid import TileGrid
 from xcube.util.types import normalize_scalar_or_pair
 from .dataset import DatasetZarrFsDataAccessor
 from ..helpers import get_fs_path_class
@@ -55,13 +58,12 @@ from ...error import DataStoreError
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
     """
-    Opener/writer extension name: "mldataset:levels:<protocol>"
-    and "dataset:levels:<protocol>"
+    Opener/writer extension name "mldataset:levels:<protocol>".
     """
 
     @classmethod
-    def get_data_types(cls) -> Tuple[DataType, ...]:
-        return MULTI_LEVEL_DATASET_TYPE, DATASET_TYPE
+    def get_data_type(cls) -> DataType:
+        return MULTI_LEVEL_DATASET_TYPE
 
     @classmethod
     def get_format_id(cls) -> str:
@@ -124,10 +126,21 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         return schema
 
     def write_data(self,
-                   data: Union[xr.Dataset, MultiLevelDataset],
+                   data: MultiLevelDataset,
                    data_id: str,
                    replace: bool = False,
                    **write_params) -> str:
+        assert_instance(data, MultiLevelDataset, name='data')
+        return self.write_generic_data(data,
+                                       data_id,
+                                       replace=replace,
+                                       **write_params)
+
+    def write_generic_data(self,
+                           data: Union[xr.Dataset, MultiLevelDataset],
+                           data_id: str,
+                           replace: bool = False,
+                           **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
         assert_instance(data_id, str, name='data_id')
         tile_size = write_params.pop('tile_size', None)
@@ -151,8 +164,10 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 )
                 grid_mapping = GridMapping.from_dataset(base_dataset)
                 x_name, y_name = grid_mapping.xy_dim_names
+                # noinspection PyTypeChecker
                 base_dataset = base_dataset.chunk({x_name: tile_size[0],
                                                    y_name: tile_size[1]})
+                # noinspection PyTypeChecker
                 grid_mapping = grid_mapping.derive(tile_size=tile_size)
             ml_dataset = BaseMultiLevelDataset(base_dataset,
                                                grid_mapping=grid_mapping,
@@ -167,7 +182,6 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             ml_dataset = BaseMultiLevelDataset(
                 ml_dataset.get_dataset(0),
                 grid_mapping=ml_dataset.grid_mapping,
-                tile_grid=ml_dataset.tile_grid,
                 agg_methods=agg_methods
             )
 
@@ -202,14 +216,14 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 # Then write relative base dataset path into link file
                 link_path = data_path / f'{index}.link'
                 with fs.open(str(link_path), mode='w') as fp:
-                    fp.write(f'{base_dataset_path}')
+                    fp.write(base_dataset_path.as_posix())
             else:
                 # Write level "{index}.zarr"
                 level_path = data_path / f'{index}.zarr'
-                zarr_store = fs.get_mapper(str(level_path), create=True)
+                level_zarr_store = fs.get_mapper(str(level_path), create=True)
                 try:
                     level_dataset.to_zarr(
-                        zarr_store,
+                        level_zarr_store,
                         mode='w' if replace else None,
                         consolidated=consolidated,
                         **write_params
@@ -219,17 +233,42 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                     raise DataStoreError(f'Failed to write'
                                          f' dataset {data_id}: {e}') from e
                 if use_saved_levels:
-                    level_dataset = xr.open_zarr(zarr_store,
+                    level_dataset = xr.open_zarr(level_zarr_store,
                                                  consolidated=consolidated)
+                    level_dataset.zarr_store.set(level_zarr_store)
                     ml_dataset.set_dataset(index, level_dataset)
 
         return data_id
 
 
-_MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
+class DatasetLevelsFsDataAccessor(MultiLevelDatasetLevelsFsDataAccessor):
+    """
+    Opener/writer extension name "dataset:levels:<protocol>".
+    """
+
+    @classmethod
+    def get_data_type(cls) -> DataType:
+        return DATASET_TYPE
+
+    def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+        ml_dataset = super().open_data(data_id, **open_params)
+        return ml_dataset.get_dataset(0)
+
+    def write_data(self,
+                   data: xr.Dataset,
+                   data_id: str,
+                   replace: bool = False,
+                   **write_params) -> str:
+        assert_instance(data, xr.Dataset, name='data')
+        return self.write_generic_data(data,
+                                       data_id,
+                                       replace=replace,
+                                       **write_params)
 
 
 class FsMultiLevelDataset(LazyMultiLevelDataset):
+    _MIN_CACHE_SIZE = 1024 * 1024  # 1 MiB
+
     def __init__(self,
                  fs: fsspec.AbstractFileSystem,
                  root: Optional[str],
@@ -275,49 +314,36 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             # Nominal "{index}.zarr" must exist
             level_path = ds_path / f'{index}.zarr'
 
-        consolidated = open_params.pop(
-            'consolidated',
-            fs.exists(str(level_path / '.zmetadata'))
-        )
-
         level_zarr_store = fs.get_mapper(str(level_path))
 
-        if isinstance(cache_size, int) and cache_size >= _MIN_CACHE_SIZE:
+        consolidated = open_params.pop('consolidated',
+                                       '.zmetadata' in level_zarr_store)
+
+        if isinstance(cache_size, int) \
+                and cache_size >= self._MIN_CACHE_SIZE:
             # compute cache size for level weighted by
             # size in pixels for each level
             cache_size = math.ceil(self.size_weights[index] * cache_size)
-            if cache_size >= _MIN_CACHE_SIZE:
+            if cache_size >= self._MIN_CACHE_SIZE:
                 level_zarr_store = zarr.LRUStoreCache(level_zarr_store,
                                                       max_size=cache_size)
 
         try:
-            return xr.open_zarr(level_zarr_store,
-                                consolidated=consolidated,
-                                **open_params)
+            level_dataset = xr.open_zarr(level_zarr_store,
+                                         consolidated=consolidated,
+                                         **open_params)
         except ValueError as e:
             raise DataStoreError(f'Failed to open'
                                  f' dataset {level_path!r}:'
                                  f' {e}') from e
 
+        level_dataset.zarr_store.set(level_zarr_store)
+        return level_dataset
+
     @staticmethod
     def compute_size_weights(num_levels: int) -> np.ndarray:
         weights = (2 ** np.arange(0, num_levels, dtype=np.float64)) ** 2
         return weights[::-1] / np.sum(weights)
-
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        """
-        Retrieve, i.e. read or compute, the tile grid
-        used by the multi-level dataset.
-
-        :return: the dataset for the level at *index*.
-        """
-        tile_grid = self.grid_mapping.tile_grid
-        if tile_grid.num_levels != self.num_levels:
-            raise DataStoreError(f'Detected inconsistent'
-                                 f' number of detail levels,'
-                                 f' expected {tile_grid.num_levels},'
-                                 f' found {self.num_levels}.')
-        return tile_grid
 
     def _get_num_levels_lazily(self) -> int:
         levels = self._get_levels()

@@ -1,215 +1,200 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
-import warnings
-from typing import List
+
+import json
+from typing import List, Optional, Dict, Tuple, Callable
 
 import click
+import yaml
 
-from xcube.constants import LOG
 from xcube.cli.common import (cli_option_quiet,
                               cli_option_verbosity,
                               configure_cli_output)
-from xcube.webapi.defaults import (DEFAULT_PORT,
-                                   DEFAULT_ADDRESS,
-                                   DEFAULT_UPDATE_PERIOD,
-                                   DEFAULT_TILE_CACHE_SIZE,
-                                   DEFAULT_TILE_COMP_MODE)
-
-__author__ = "Norman Fomferra (Brockmann Consult GmbH)"
-
-VIEWER_ENV_VAR = 'XCUBE_VIEWER_PATH'
-CONFIG_ENV_VAR = 'XCUBE_SERVE_CONFIG_FILE'
-BASE_ENV_VAR = 'XCUBE_SERVE_BASE_DIR'
+from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
+                             DEFAULT_SERVER_PORT,
+                             DEFAULT_SERVER_ADDRESS)
 
 
 @click.command(name='serve')
-@click.argument('cube', nargs=-1)
-@click.option('--address', '-A', metavar='ADDRESS', default=DEFAULT_ADDRESS,
-              help=f'Service address. Defaults to {DEFAULT_ADDRESS!r}.')
-@click.option('--port', '-P', metavar='PORT', default=DEFAULT_PORT, type=int,
-              help=f'Port number where the service will listen on. Defaults to {DEFAULT_PORT}.')
-@click.option('--prefix', metavar='PREFIX',
-              help='Service URL prefix. May contain template patterns such as "${version}" or "${name}". '
-                   'For example "${name}/api/${version}". Will be used to prefix all API operation routes '
-                   'and in any URLs returned by the service.')
-@click.option('--revprefix', 'reverse_prefix', metavar='REVPREFIX',
-              help='Service reverse URL prefix. May contain template patterns such as "${version}" or "${name}". '
-                   'For example "${name}/api/${version}". Defaults to PREFIX, if any. Will be used only in URLs '
-                   'returned by the service e.g. the tile URLs returned by the WMTS service.')
-@click.option('--update', '-u', 'update_period', metavar='PERIOD', type=float,
-              default=DEFAULT_UPDATE_PERIOD,
-              help='Service will update after given seconds of inactivity. Zero or a negative value will '
-                   'disable update checks. '
-                   f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
-@click.option('--styles', '-S', metavar='STYLES', default=None,
-              help='Color mapping styles for variables. '
-                   'Used only, if one or more CUBE arguments are provided and CONFIG is not given. '
-                   'Comma-separated list with elements of the form '
-                   '<var>=(<vmin>,<vmax>) or <var>=(<vmin>,<vmax>,"<cmap>")')
-@click.option('--config', '-c', 'config_file', metavar='CONFIG', default=None,
-              help='Use datasets configuration file CONFIG. '
-                   'Cannot be used if CUBES are provided. '
-                   'If not given and also CUBES are not provided, '
-                   f'the configuration may be given by environment variable {CONFIG_ENV_VAR}.')
-@click.option('--base-dir', '-b', 'base_dir', metavar='BASE_DIR', default=None,
-              help='Base directory used to resolve relative dataset paths in CONFIG '
-                   'and relative CUBES paths. '
-                   f'Defaults to value of environment variable {BASE_ENV_VAR}, if given, '
-                   'otherwise defaults to the parent directory of CONFIG.')
-@click.option('--tilecache', 'tile_cache_size', metavar='SIZE', default=DEFAULT_TILE_CACHE_SIZE,
-              help=f'In-memory tile cache size in bytes. '
-                   f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
-                   f'Defaults to {DEFAULT_TILE_CACHE_SIZE!r}. '
-                   f'The special value {"OFF"!r} disables tile caching.')
-@click.option('--tilemode', 'tile_comp_mode', metavar='MODE', default=None, type=int,
-              help='Tile computation mode. '
-                   'This is an internal option used to switch between different tile '
-                   f'computation implementations. Defaults to {DEFAULT_TILE_COMP_MODE!r}.')
-@click.option('--show', '-s', is_flag=True,
-              help=f"Run viewer app. Requires setting the environment variable {VIEWER_ENV_VAR} "
-                   f"to a valid xcube-viewer deployment or build directory. "
-                   f"Refer to https://github.com/dcs4cop/xcube-viewer for more information.")
+@click.option('--framework', 'framework_name',
+              metavar='FRAMEWORK', default=DEFAULT_SERVER_FRAMEWORK,
+              type=click.Choice(["tornado", "flask"]),
+              help=f'Web server framework.'
+                   f' Defaults to "{DEFAULT_SERVER_FRAMEWORK}"')
+@click.option('--port', '-p',
+              metavar='PORT', default=None, type=int,
+              help=f'Service port number.'
+                   f' Defaults to {DEFAULT_SERVER_PORT}')
+@click.option('--address', '-a',
+              metavar='ADDRESS', default=None,
+              help=f'Service address.'
+                   f' Defaults to "{DEFAULT_SERVER_ADDRESS}".')
+@click.option('--config', '-c', 'config_paths',
+              metavar='CONFIG', default=None, multiple=True,
+              help='Configuration YAML or JSON file. '
+                   ' If multiple are passed,'
+                   ' they will be merged in order.')
+@click.option('--base-dir', 'base_dir',
+              metavar='BASE_DIR', default=None,
+              help='Directory used to resolve relative paths'
+                   ' in CONFIG files. Defaults to the parent directory'
+                   ' of (last) CONFIG file.')
+@click.option('--prefix', 'url_prefix',
+              metavar='PREFIX', default=None,
+              help='Prefix to be used for all endpoint URLs.')
+@click.option('--traceperf', 'trace_perf', is_flag=True, default=None,
+              help='Whether to output extra performance logs.')
+@click.option('--update-after', 'update_after',
+              metavar='TIME', type=float, default=None,
+              help='Check for server configuration updates every'
+                   ' TIME seconds.')
+@click.option('--stop-after', 'stop_after',
+              metavar='TIME', type=float, default=None,
+              help='Unconditionally stop service after TIME seconds.')
 @cli_option_quiet
 @cli_option_verbosity
-@click.option('--traceperf', 'trace_perf', is_flag=True,
-              help="Log extra performance diagnostics"
-                   " using log level DEBUG.")
-@click.option('--aws-prof', 'aws_prof', metavar='PROFILE',
-              help="To publish remote CUBEs, use AWS credentials from section "
-                   "[PROFILE] found in ~/.aws/credentials.")
-@click.option('--aws-env', 'aws_env', is_flag=True,
-              help="To publish remote CUBEs, use AWS credentials from environment "
-                   "variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
-def serve(cube: List[str],
-          address: str,
+@click.argument('command', metavar='[COMMAND]', nargs=-1)
+def serve(framework_name: str,
           port: int,
-          prefix: str,
-          reverse_prefix: str,
-          update_period: float,
-          styles: str,
-          config_file: str,
-          base_dir: str,
-          tile_cache_size: str,
-          tile_comp_mode: int,
-          show: bool,
+          address: str,
+          config_paths: List[str],
+          base_dir: Optional[str],
+          url_prefix: Optional[str],
+          trace_perf: Optional[bool],
+          update_after: Optional[float],
+          stop_after: Optional[float],
           quiet: bool,
           verbosity: int,
-          trace_perf: bool,
-          aws_prof: str,
-          aws_env: bool):
+          command: List[str]):
     """
-    Serve data cubes via web service.
+    Run the xcube Server.
 
-    Serves data cubes by a RESTful API and a OGC WMTS 1.0 RESTful and KVP interface.
-    The RESTful API documentation can be found at https://app.swaggerhub.com/apis/bcdev/xcube-server.
+    The optional COMMAND is one of
+
+    \b
+    list apis            lists the APIs provided by the server
+    show openapi         outputs the OpenAPI document representing this server
+    show config          outputs the effective server configuration
+    show configschema    outputs the JSON Schema for the server configuration
+
+    The show-commands may be suffixed by yaml or json
+    forcing the respective output format. The default format is yaml.
+
+    If COMMAND is provided, the server will not start.
     """
+    from xcube.server.framework import get_framework_class
+    from xcube.server.helpers import ConfigChangeObserver
+    from xcube.server.server import Server
+    from xcube.util.config import load_configs
 
     configure_cli_output(quiet=quiet, verbosity=verbosity)
 
-    from xcube.cli.common import parse_cli_kwargs
-    import os.path
+    config = load_configs(*config_paths) if config_paths else {}
 
-    if config_file and cube:
-        raise click.ClickException("CONFIG and CUBES cannot be used at the same time.")
-    if not config_file and not cube:
-        config_file = os.environ.get(CONFIG_ENV_VAR)
-    if styles:
-        styles = parse_cli_kwargs(styles, "STYLES")
-    if (aws_prof or aws_env) and not cube:
+    if port is not None:
+        config["port"] = port
+    if address is not None:
+        config["address"] = address
+
+    if base_dir is not None:
+        config["base_dir"] = base_dir
+    elif "base_dir" not in config and config_paths:
+        import os.path
+        config["base_dir"] = os.path.abspath(
+            os.path.dirname(config_paths[-1]))
+
+    if url_prefix is not None:
+        config["url_prefix"] = url_prefix
+
+    if trace_perf is not None:
+        config["trace_perf"] = trace_perf
+
+    framework = get_framework_class(framework_name)()
+    server = Server(framework, config)
+
+    if command:
+        return exec_command(server, command)
+
+    if update_after is not None:
+        change_observer = ConfigChangeObserver(server,
+                                               config_paths,
+                                               update_after)
+        server.call_later(update_after, change_observer.check)
+
+    if stop_after is not None:
+        server.call_later(stop_after, server.stop)
+
+    server.start()
+
+
+def exec_command(server, command):
+    def to_yaml(obj):
+        yaml.safe_dump(obj, sys.stdout, indent=2)
+
+    def to_json(obj):
+        json.dump(obj, sys.stdout, indent=2)
+
+    available_formats = {
+        'yaml': to_yaml,
+        'json': to_json
+    }
+
+    format_name = 'yaml'
+    import sys
+    if len(command) == 3:
+        format_name = command[2]
+        command = command[:2]
+    if format_name.lower() not in available_formats:
         raise click.ClickException(
-            "AWS credentials are only valid in combination with given CUBE argument(s).")
-    if config_file and not os.path.isfile(config_file):
+            f'Invalid format {format_name}.'
+            f' Must be one of {", ".join(available_formats.keys())}.'
+        )
+    output_fn = available_formats[format_name.lower()]
+
+    def list_apis():
+        for api in server.apis:
+            print(f'{api.name} - {api.description}')
+
+    def show_open_api():
+        output_fn(server.ctx.open_api_doc)
+
+    def show_config():
+        output_fn(server.ctx.config.defrost())
+
+    def show_config_schema():
+        output_fn(server.config_schema.to_dict())
+
+    available_commands: Dict[Tuple[str, ...], Callable[[], None]] = {
+        ("list", "apis"): list_apis,
+        ("show", "openapi"): show_open_api,
+        ("show", "config"): show_config,
+        ("show", "configschema"): show_config_schema,
+    }
+
+    command_fn = available_commands.get(tuple(c.lower() for c in command))
+    if command_fn is None:
         raise click.ClickException(
-            f"Configuration file not found: {config_file}")
-
-    base_dir = base_dir or os.environ.get(BASE_ENV_VAR,
-                                          config_file and os.path.dirname(
-                                              config_file)) or '.'
-    if not os.path.isdir(base_dir):
-        raise click.ClickException(f"Base directory not found: {base_dir}")
-
-    from xcube.version import version
-    from xcube.webapi.defaults import SERVER_NAME, SERVER_DESCRIPTION
-    LOG.info(f'{SERVER_NAME}: {SERVER_DESCRIPTION}, version {version}')
-
-    if show:
-        _run_viewer()
-
-    from xcube.webapi.app import new_application
-    application = new_application(route_prefix=prefix, base_dir=base_dir)
-
-    from xcube.webapi.service import Service
-    service = Service(application,
-                      prefix=reverse_prefix or prefix,
-                      port=port,
-                      address=address,
-                      cube_paths=cube,
-                      styles=styles,
-                      config_file=config_file,
-                      base_dir=base_dir,
-                      tile_cache_size=tile_cache_size,
-                      tile_comp_mode=tile_comp_mode,
-                      update_period=update_period,
-                      trace_perf=trace_perf,
-                      aws_prof=aws_prof,
-                      aws_env=aws_env)
-    service.start()
-
-    return 0
-
-
-def _run_viewer():
-    import subprocess
-    import threading
-    import webbrowser
-    import os
-
-    viewer_dir = os.environ.get(VIEWER_ENV_VAR)
-
-    if viewer_dir is None:
-        raise click.UsageError('Option "--show": '
-                               f"In order to run the viewer, "
-                               f"set environment variable {VIEWER_ENV_VAR} "
-                               f"to a valid xcube-viewer deployment or build directory.")
-
-    if not os.path.isdir(viewer_dir):
-        raise click.UsageError('Option "--show": '
-                               f"Viewer path set by environment variable {VIEWER_ENV_VAR} "
-                               f"must be a directory: " + viewer_dir)
-
-    def _run():
-        LOG.info("Starting web server...")
-        with subprocess.Popen(['python', '-m', 'http.server', '--directory', viewer_dir],
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE):
-            LOG.info("Opening viewer...")
-            webbrowser.open("http://localhost:8000/index.html")
-
-    threading.Thread(target=_run, name="xcube-viewer-runner").start()
-
-
-def main(args=None):
-    serve.main(args=args)
-
-
-if __name__ == '__main__':
-    main()
+            f'Invalid command {" ".join(command)}. '
+            f'Possible commands are '
+            f'{", ".join(" ".join(k) for k in available_commands.keys())}.'
+        )
+    return command_fn()

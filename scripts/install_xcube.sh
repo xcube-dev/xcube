@@ -29,7 +29,11 @@ elif [[ $INSTALL_MODE == "release" ]]; then
 
   cd "${PACKAGE}"-"${PACKAGE_VERSION}" || exit
 
+# xcubes python version should not be changed by the plugins
+  sed -i "s/- python/#- python/g" environment.yml || exit
+# xcubes version should not be changed by the plugins
   sed -i "s/- xcube/#- xcube/g" environment.yml || exit
+
   cat environment.yml
   source activate xcube && mamba env update -n xcube
   source activate xcube && pip install .

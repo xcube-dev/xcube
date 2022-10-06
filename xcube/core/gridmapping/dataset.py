@@ -36,7 +36,6 @@ def new_grid_mapping_from_dataset(
         dataset: xr.Dataset,
         *,
         crs: Union[str, pyproj.crs.CRS] = None,
-        xy_var_names: Tuple[str, str] = None,
         tile_size: Union[int, Tuple[str, str]] = None,
         prefer_crs: Union[str, pyproj.crs.CRS] = None,
         prefer_is_regular: bool = None,
@@ -54,10 +53,6 @@ def new_grid_mapping_from_dataset(
         prefer_crs = _normalize_crs(prefer_crs)
     else:
         prefer_crs = crs
-    if xy_var_names:
-        warnings.warn('Argument "xy_var_names" is deprecated since '
-                      'xcube 0.10.1 and will be ignored.',
-                      category=DeprecationWarning)
 
     grid_mapping_proxies = get_dataset_grid_mapping_proxies(
         dataset,
@@ -83,10 +78,17 @@ def new_grid_mapping_from_dataset(
                 if gm.crs == prefer_crs \
                         and gm.is_regular == prefer_is_regular:
                     return gm
+            for gm in grid_mappings:
+                if gm.crs.is_geographic and prefer_crs.is_geographic \
+                        and gm.is_regular == prefer_is_regular:
+                    return gm
 
         if prefer_crs is not None:
             for gm in grid_mappings:
                 if gm.crs == prefer_crs:
+                    return gm
+            for gm in grid_mappings:
+                if gm.crs.is_geographic and prefer_crs.is_geographic:
                     return gm
 
         if prefer_is_regular is not None:

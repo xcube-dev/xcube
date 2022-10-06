@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:ows="http://www.opengis.net/ows/1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0.0/wmtsGetCapabilities_response.xsd" version="1.0.0">
+  <ows:ServiceIdentification>
+    <ows:Title>xcube WMTS</ows:Title>
+    <ows:Abstract>Web Map Tile Service (WMTS) for xcube-conformant data cubes</ows:Abstract>
+    <ows:Keywords>
+      <ows:Keyword>tile</ows:Keyword>
+      <ows:Keyword>tile matrix set</ows:Keyword>
+      <ows:Keyword>map</ows:Keyword>
+    </ows:Keywords>
+    <ows:ServiceType>OGC WMTS</ows:ServiceType>
+    <ows:ServiceTypeVersion>1.0.0</ows:ServiceTypeVersion>
+    <ows:Fees>none</ows:Fees>
+    <ows:AccessConstraints>none</ows:AccessConstraints>
+  </ows:ServiceIdentification>
+  <ows:ServiceProvider>
+    <ows:ProviderName>Brockmann Consult GmbH</ows:ProviderName>
+    <ows:ProviderSite xlink:href="https://www.brockmann-consult.de"/>
+    <ows:ServiceContact>
+      <ows:IndividualName>Norman Fomferra</ows:IndividualName>
+      <ows:PositionName>Senior Software Engineer</ows:PositionName>
+      <ows:ContactInfo>
+        <ows:Phone>
+          <ows:Voice>+49 4152 889 303</ows:Voice>
+          <ows:Facsimile>+49 4152 889 330</ows:Facsimile>
+        </ows:Phone>
+        <ows:Address>
+          <ows:DeliveryPoint>HZG / GITZ</ows:DeliveryPoint>
+          <ows:City>Geesthacht</ows:City>
+          <ows:AdministrativeArea>Herzogtum Lauenburg</ows:AdministrativeArea>
+          <ows:PostalCode>21502</ows:PostalCode>
+          <ows:Country>Germany</ows:Country>
+          <ows:ElectronicMailAddress>norman.fomferra@brockmann-consult.de</ows:ElectronicMailAddress>
+        </ows:Address>
+      </ows:ContactInfo>
+    </ows:ServiceContact>
+  </ows:ServiceProvider>
+  <ows:OperationsMetadata>
+    <ows:Operation name="GetCapabilities">
+      <ows:DCP>
+        <ows:HTTP>
+          <ows:Get xlink:href="http://bibo/wmts/kvp?">
+            <ows:Constraint name="GetEncoding">
+              <ows:AllowedValues>
+                <ows:Value>KVP</ows:Value>
+              </ows:AllowedValues>
+            </ows:Constraint>
+          </ows:Get>
+          <ows:Get xlink:href="http://bibo/wmts/1.0.0/WorldCRS84Quad/WMTSCapabilities.xml">
+            <ows:Constraint name="GetEncoding">
+              <ows:AllowedValues>
+                <ows:Value>REST</ows:Value>
+              </ows:AllowedValues>
+            </ows:Constraint>
+          </ows:Get>
+        </ows:HTTP>
+      </ows:DCP>
+    </ows:Operation>
+    <ows:Operation name="GetTile">
+      <ows:DCP>
+        <ows:HTTP>
+          <ows:Get xlink:href="http://bibo/wmts/kvp?">
+            <ows:Constraint name="GetEncoding">
+              <ows:AllowedValues>
+                <ows:Value>KVP</ows:Value>
+              </ows:AllowedValues>
+            </ows:Constraint>
+          </ows:Get>
+          <ows:Get xlink:href="http://bibo/wmts/1.0.0/">
+            <ows:Constraint name="GetEncoding">
+              <ows:AllowedValues>
+                <ows:Value>REST</ows:Value>
+              </ows:AllowedValues>
+            </ows:Constraint>
+          </ows:Get>
+        </ows:HTTP>
+      </ows:DCP>
+    </ows:Operation>
+  </ows:OperationsMetadata>
+  <Contents>
+    <Layer>
+      <ows:Identifier>demo.c2rcc_flags</ows:Identifier>
+      <ows:Title>demo/C2RCC quality flags</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/c2rcc_flags/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+        <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+        <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+        <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+        <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo.conc_chl</ows:Identifier>
+      <ows:Title>demo/Chlorophyll concentration</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/conc_chl/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+        <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+        <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+        <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+        <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo.conc_tsm</ows:Identifier>
+      <ows:Title>demo/Total suspended matter dry weight concentration</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/conc_tsm/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+        <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+        <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+        <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+        <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo.kd489</ows:Identifier>
+      <ows:Title>demo/Irradiance attenuation coefficient at 489 nm</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/kd489/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+        <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+        <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+        <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+        <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo.quality_flags</ows:Identifier>
+      <ows:Title>demo/Classification and quality flags</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo/quality_flags/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+        <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+        <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+        <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+        <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.c2rcc_flags</ows:Identifier>
+      <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/c2rcc_flags/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.c2rcc_flags_stdev</ows:Identifier>
+      <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/c2rcc_flags_stdev/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.conc_chl</ows:Identifier>
+      <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_chl/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.conc_chl_stdev</ows:Identifier>
+      <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_chl_stdev/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.conc_tsm</ows:Identifier>
+      <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_tsm/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.conc_tsm_stdev</ows:Identifier>
+      <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/conc_tsm_stdev/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.kd489</ows:Identifier>
+      <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/kd489/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.kd489_stdev</ows:Identifier>
+      <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/kd489_stdev/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.quality_flags</ows:Identifier>
+      <ows:Title>demo-1w/Classification and quality flags</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/quality_flags/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <Layer>
+      <ows:Identifier>demo-1w.quality_flags_stdev</ows:Identifier>
+      <ows:Title>demo-1w/Classification and quality flags</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldCRS84Quad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-1w/quality_flags_stdev/WorldCRS84Quad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-22T00:00:00.000000000</Value>
+        <Value>2017-01-29T00:00:00.000000000</Value>
+        <Value>2017-02-05T00:00:00.000000000</Value>
+      </Dimension>
+    </Layer>
+    <TileMatrixSet>
+      <ows:Identifier>WorldCRS84Quad</ows:Identifier>
+      <ows:Title>CRS84 for the World</ows:Title>
+      <ows:SupportedCRS>urn:ogc:def:crs:OGC:1.3:CRS84</ows:SupportedCRS>
+      <ows:BoundingBox crs="urn:ogc:def:crs:OGC:1.3:CRS84">
+        <ows:LowerCorner>-180 -90</ows:LowerCorner>
+        <ows:UpperCorner>180 90</ows:UpperCorner>
+      </ows:BoundingBox>
+      <WellKnownScaleSet>urn:ogc:def:wkss:OGC:1.0:GoogleCRS84Quad</WellKnownScaleSet>
+      <TileMatrix>
+        <ows:Identifier>7</ows:Identifier>
+        <ScaleDenominator>2183915.093862179</ScaleDenominator>
+        <TopLeftCorner>-180 90</TopLeftCorner>
+        <TileWidth>256</TileWidth>
+        <TileHeight>256</TileHeight>
+        <MatrixWidth>256</MatrixWidth>
+        <MatrixHeight>128</MatrixHeight>
+      </TileMatrix>
+      <TileMatrix>
+        <ows:Identifier>8</ows:Identifier>
+        <ScaleDenominator>1091957.5469310896</ScaleDenominator>
+        <TopLeftCorner>-180 90</TopLeftCorner>
+        <TileWidth>256</TileWidth>
+        <TileHeight>256</TileHeight>
+        <MatrixWidth>512</MatrixWidth>
+        <MatrixHeight>256</MatrixHeight>
+      </TileMatrix>
+      <TileMatrix>
+        <ows:Identifier>9</ows:Identifier>
+        <ScaleDenominator>545978.7734655448</ScaleDenominator>
+        <TopLeftCorner>-180 90</TopLeftCorner>
+        <TileWidth>256</TileWidth>
+        <TileHeight>256</TileHeight>
+        <MatrixWidth>1024</MatrixWidth>
+        <MatrixHeight>512</MatrixHeight>
+      </TileMatrix>
+    </TileMatrixSet>
+  </Contents>
+  <Themes>
+    <Theme>
+      <ows:Identifier>demo</ows:Identifier>
+      <ows:Title>xcube-server Demonstration L2C Cube</ows:Title>
+      <ows:Abstract/>
+      <Theme>
+        <ows:Identifier>demo.c2rcc_flags</ows:Identifier>
+        <ows:Title>demo/C2RCC quality flags</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo.c2rcc_flags</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo.conc_chl</ows:Identifier>
+        <ows:Title>demo/Chlorophyll concentration</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo.conc_chl</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo.conc_tsm</ows:Identifier>
+        <ows:Title>demo/Total suspended matter dry weight concentration</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo.conc_tsm</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo.kd489</ows:Identifier>
+        <ows:Title>demo/Irradiance attenuation coefficient at 489 nm</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo.kd489</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo.quality_flags</ows:Identifier>
+        <ows:Title>demo/Classification and quality flags</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo.quality_flags</LayerRef>
+      </Theme>
+    </Theme>
+    <Theme>
+      <ows:Identifier>demo-1w</ows:Identifier>
+      <ows:Title>xcube-server Demonstration L3 Cube</ows:Title>
+      <ows:Abstract/>
+      <Theme>
+        <ows:Identifier>demo-1w.c2rcc_flags</ows:Identifier>
+        <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.c2rcc_flags</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.c2rcc_flags_stdev</ows:Identifier>
+        <ows:Title>demo-1w/C2RCC quality flags</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.c2rcc_flags_stdev</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.conc_chl</ows:Identifier>
+        <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.conc_chl</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.conc_chl_stdev</ows:Identifier>
+        <ows:Title>demo-1w/Chlorophyll concentration</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.conc_chl_stdev</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.conc_tsm</ows:Identifier>
+        <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.conc_tsm</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.conc_tsm_stdev</ows:Identifier>
+        <ows:Title>demo-1w/Total suspended matter dry weight concentration</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.conc_tsm_stdev</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.kd489</ows:Identifier>
+        <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.kd489</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.kd489_stdev</ows:Identifier>
+        <ows:Title>demo-1w/Irradiance attenuation coefficient at 489 nm</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.kd489_stdev</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.quality_flags</ows:Identifier>
+        <ows:Title>demo-1w/Classification and quality flags</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.quality_flags</LayerRef>
+      </Theme>
+      <Theme>
+        <ows:Identifier>demo-1w.quality_flags_stdev</ows:Identifier>
+        <ows:Title>demo-1w/Classification and quality flags</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-1w.quality_flags_stdev</LayerRef>
+      </Theme>
+    </Theme>
+  </Themes>
+  <ServiceMetadataURL xlink:href="http://bibo/wmts/1.0.0/WorldCRS84Quad/WMTSCapabilities.xml"/>
+</Capabilities>

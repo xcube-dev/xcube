@@ -1,0 +1,30 @@
+Datasets:
+  - Identifier: demo-rgb
+    Title: xcube-server Demonstration L2C Cube with augmentation
+    Path: ../../../examples/serve/demo/cube-1-250-250.zarr
+    Style: standard
+
+
+Styles:
+  - Identifier: standard
+    ColorMappings:
+      rgb:
+        Red:
+          Variable: conc_chl
+          ValueRange: [0., 24.]
+        Green:
+          Variable: conc_tsm
+          ValueRange: [0., 100.]
+        Blue:
+          Variable: kd489
+          ValueRange: [0., 6.]
+      conc_chl:
+        ColorBar: plasma
+        ValueRange: [0., 24.]
+      conc_tsm:
+        ColorBar: PuBuGn
+        ValueRange: [0., 100.]
+      kd489:
+        ColorBar: jet
+        ValueRange: [0., 6.]
+

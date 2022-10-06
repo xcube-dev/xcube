@@ -2,11 +2,13 @@ import itertools
 import json
 import math
 import unittest
-from collections.abc import MutableMapping
-from typing import Dict, KeysView, Iterator, Sequence, Any
+from collections.abc import MutableMapping, Mapping
+from typing import Dict, KeysView, Iterator, Sequence, Any, Callable, \
+    Union
 
 import cftime
 import numpy as np
+import pytest
 import xarray as xr
 
 from test.sampledata import create_highroc_dataset
@@ -16,6 +18,7 @@ from xcube.core.select import select_spatial_subset
 from xcube.core.select import select_subset
 from xcube.core.select import select_temporal_subset
 from xcube.core.select import select_variables_subset
+from xcube.core.select import select_label_subset
 
 
 class SelectVariablesSubsetTest(unittest.TestCase):
@@ -200,7 +203,8 @@ class SelectSubsetTest(unittest.TestCase):
         self.assertIn('conc_chl', ds)
         self.assertEqual(('time', 'lat', 'lon'), ds.conc_chl.dims)
         self.assertEqual((5, 64800, 129600), ds.conc_chl.shape)
-        self.assertEqual((5 * (1,), 100 * (648,), 100 * (1296,)), ds.conc_chl.chunks)
+        self.assertEqual((5 * (1,), 100 * (648,), 100 * (1296,)),
+                         ds.conc_chl.chunks)
         return ds
 
     def _assert_large_dataset_subset(self, ds_subset):
@@ -209,7 +213,151 @@ class SelectSubsetTest(unittest.TestCase):
         self.assertIn('conc_chl', ds_subset)
         self.assertEqual(('time', 'lat', 'lon'), ds_subset.conc_chl.dims)
         self.assertEqual((5, 900, 1800), ds_subset.conc_chl.shape)
-        self.assertEqual(((1, 1, 1, 1, 1), (648, 252), (1296, 504)), ds_subset.conc_chl.chunks)
+        self.assertEqual(((1, 1, 1, 1, 1), (648, 252), (1296, 504)),
+                         ds_subset.conc_chl.chunks)
+
+
+class SelectLabelSubsetTest(unittest.TestCase):
+    def test_predicate_callback(self):
+        ds = xr.Dataset(
+            {
+                "a": (["time", "y", "x"], np.zeros((3, 4, 8))),
+                "b": (["time", "y", "x"], np.ones((3, 4, 8))),
+                "time": (["time"], [2020, 2021, 2022])
+            }
+        )
+
+        actual_count = 0
+
+        def predicate(slice_array, slice_info):
+            nonlocal actual_count
+            actual_count += 1
+            self.assertIsInstance(slice_array, xr.DataArray)
+            self.assertIsInstance(slice_info, dict)
+            self.assertIn(slice_info.get('var'), ("a", "b"))
+            self.assertIsInstance(slice_info.get('index'), int)
+            self.assertIsInstance(slice_info.get('label'), xr.DataArray)
+            self.assertEqual("time", slice_info.get('dim'))
+            return True
+
+        select_label_subset(ds, "time", predicate)
+        self.assertEqual(3 * 2, actual_count)
+
+    def test_no_change(self):
+        self._test_no_change(use_dask=False)
+        self._test_no_change(use_dask=True)
+
+    def _test_no_change(self, use_dask: bool):
+        ds = xr.Dataset(
+            {
+                "a": (["time", "y", "x"], np.zeros((3, 4, 8))),
+                "b": (["time", "y", "x"], np.ones((3, 4, 8))),
+                "time": (["time"], [2020, 2021, 2022])
+            }
+        )
+
+        # noinspection PyUnusedLocal
+        def predicate(slice_array, slice_info):
+            return True
+
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
+        self.assertIs(ds, result)
+        self.assertEqual({"a", "b", "time"}, set(result.variables.keys()))
+        self.assertEqual({'time': 3, 'y': 4, 'x': 8}, result.dims)
+
+    def test_select_by_slice_info(self):
+        self._test_select_by_slice_info(use_dask=False)
+        self._test_select_by_slice_info(use_dask=True)
+
+    def _test_select_by_slice_info(self, use_dask: bool):
+        ds = xr.Dataset(
+            {
+                "a": (["time", "y", "x"], np.zeros((3, 4, 8))),
+                "b": (["time", "y", "x"], np.ones((3, 4, 8))),
+                "time": (["time"], [2020, 2021, 2022])
+            }
+        )
+
+        # noinspection PyUnusedLocal
+        def predicate(slice_array, slice_info):
+            return slice_info.get('label') == 2022
+
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
+        self.assertIsInstance(result, xr.Dataset)
+        self.assertEqual({'time': 1, 'y': 4, 'x': 8}, result.dims)
+        self.assertEqual([2022], list(result.time))
+
+        # noinspection PyUnusedLocal
+        def predicate(slice_array, slice_info):
+            return slice_info.get('label') in (2020, 2022)
+
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
+        self.assertIsInstance(result, xr.Dataset)
+        self.assertEqual({'time': 2, 'y': 4, 'x': 8}, result.dims)
+        self.assertEqual([2020, 2022], list(result.time))
+
+    def test_select_by_slice_array(self):
+        self._test_select_by_slice_array(use_dask=False)
+        self._test_select_by_slice_array(use_dask=True)
+
+    def _test_select_by_slice_array(self, use_dask: bool):
+        ds = xr.Dataset(
+            {
+                "a": (["time", "y", "x"], np.stack([np.full((4, 8), 1),
+                                                    np.full((4, 8), 2),
+                                                    np.full((4, 8), 3)])),
+                "b": (["time", "y", "x"], np.stack([np.full((4, 8), 1),
+                                                    np.full((4, 8), 2),
+                                                    np.full((4, 8), 3)])),
+                "time": (["time"], [2020, 2021, 2022])
+            }
+        )
+
+        # noinspection PyUnusedLocal
+        def predicate(slice_array, slice_info):
+            return not np.all(slice_array == 2)
+
+        result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
+        self.assertIsInstance(result, xr.Dataset)
+        self.assertEqual({'time': 2, 'y': 4, 'x': 8}, result.dims)
+        self.assertEqual([2020, 2022], list(result.time))
+
+        # noinspection PyUnusedLocal
+        def predicate_a(slice_array, slice_info):
+            return not np.all(slice_array == 2)
+
+        # noinspection PyUnusedLocal
+        def predicate_b(slice_array, slice_info):
+            return not np.all(slice_array == 2)
+
+        result = select_label_subset(ds, "time",
+                                     dict(a=predicate_a, b=predicate_b),
+                                     use_dask=use_dask)
+        self.assertIsInstance(result, xr.Dataset)
+        self.assertEqual({'time': 2, 'y': 4, 'x': 8}, result.dims)
+        self.assertEqual([2020, 2022], list(result.time))
+
+    # noinspection PyMethodMayBeStatic
+    def test_invalid_call(self):
+        ds = xr.Dataset(
+            {
+                "a": (["time", "y", "x"], np.zeros((3, 4, 8))),
+                "b": (["time", "y", "x"], np.ones((3, 4, 8))),
+                "time": (["time"], [2020, 2021, 2022])
+            }
+        )
+
+        with pytest.raises(TypeError,
+                           match="predicate for variable 'a'"
+                                 " must be callable with signature"):
+            # noinspection PyTypeChecker
+            select_label_subset(ds, "time", dict(a=137))
+
+        with pytest.raises(TypeError,
+                           match="predicate"
+                                 " must be callable with signature"):
+            # noinspection PyTypeChecker
+            select_label_subset(ds, "time", 137)
 
 
 def new_virtual_dataset(lon_size: int = 360,

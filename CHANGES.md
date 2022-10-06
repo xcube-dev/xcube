@@ -1,7 +1,173 @@
-## Changes in 0.11.3 (in development)
+## Changes in 0.13.0 (in development)
 
 ### Enhancements
 
+* xcube Server has been rewritten almost from scratch.
+  
+  - Introduced a new endpoint `${server_url}/s3` that emulates
+    and AWS S3 object storage for the published datasets.
+    The `bucket` name can be either:
+    * `s3://datasets` - publishes all datasets in Zarr format.
+    * `s3://pyramids` - publishes all datasets in a multi-level `levels`
+      format (multi-resolution N-D images)
+      that comprises level datasets in Zarr format.
+    
+    Datasets published through the S3 API are slightly 
+    renamed for clarity. For bucket `s3://pyramids`:
+    - if a dataset identifier has suffix `.levels`, the identifier remains;
+    - if a dataset identifier has suffix `.zarr`, it will be replaced by 
+      `.levels` only if such a dataset doesn't exist;
+    - otherwise, the suffix `.levels` is appended to the identifier.
+    For bucket `s3://datasets` the opposite is true:
+    - if a dataset identifier has suffix `.zarr`, the identifier remains;
+    - if a dataset identifier has suffix `.levels`, it will be replaced by 
+      `.zarr` only if such a dataset doesn't exist;
+    - otherwise, the suffix `.zarr` is appended to the identifier.
+
+    With the new S3 endpoints in place, xcube Server instances can be used
+    as xcube data stores as follows:
+    
+    ```python
+    store = new_data_store(
+        "s3", 
+        root="datasets",   # bucket "datasets", use also "pyramids"
+        max_depth=2,       # optional, but we may have nested datasets
+        storage_options=dict(
+            anon=True,
+            client_kwargs=dict(
+                endpoint_url='http://localhost:8080/s3' 
+            )
+        )
+    )
+    ```
+
+  - The limited `s3bucket` endpoints are no longer available and are 
+    replaced by `s3` endpoints. 
+
+* xcube Server's colormap management has been improved in several ways:
+  - Colormaps are no longer managed globally. E.g., on server configuration 
+    change, new custom colormaps are reloaded from files. 
+  - Colormaps are loaded dynamically from underlying 
+    matplotlib and cmocean registries, and custom SNAP color palette files. 
+    That means, latest matplotlib colormaps are now always available. (#687)
+  - Colormaps can now be reversed (name suffix `"_r"`), 
+    can have alpha blending (name suffix `"_alpha"`),
+    or both (name suffix `"_r_alpha"`).
+  - Loading of custom colormaps from SNAP `*.cpd` has been rewritten.
+    Now also the `isLogScaled` property of the colormap is recognized. (#661)
+  - The module `xcube.util.cmaps` has been redesigned and now offers
+    three new classes for colormap management:
+    * `Colormap` - a colormap 
+    * `ColormapCategory` - represents a colormap category
+    * `ColormapRegistry` - manages colormaps and their categories
+  
+### Other
+
+* Deprecated CLI `xcube tile` has been removed.
+* Deprecated modules, classes, methods, and functions
+  have finally been removed:
+  - `xcube.core.geom.get_geometry_mask()`
+  - `xcube.core.mldataset.FileStorageMultiLevelDataset`
+  - `xcube.core.mldataset.open_ml_dataset()`
+  - `xcube.core.mldataset.open_ml_dataset_from_local_fs()`
+  - `xcube.core.mldataset.open_ml_dataset_from_object_storage()`
+  - `xcube.core.subsampling.get_dataset_subsampling_slices()`
+  - `xcube.core.tiledimage`
+  - `xcube.core.tilegrid`
+* The following classes, methods, and functions have been deprecated:
+  - `xcube.core.xarray.DatasetAccessor.levels()`
+  - `xcube.util.cmaps.get_cmap()`
+  - `xcube.util.cmaps.get_cmaps()`
+
+* Fixed problem with `xcube gen` raising `FileNotFoundError` 
+  with Zarr >= 2.13.
+
+## Changes in 0.12.1 
+
+### Enhancements
+
+* Added a new package `xcube.core.zarrstore` that exports a number
+  of useful 
+  [Zarr store](https://zarr.readthedocs.io/en/stable/api/storage.html) 
+  implementations and Zarr store utilities: 
+  * `xcube.core.zarrstore.GenericZarrStore` comprises 
+    user-defined, generic array definitions. Arrays will compute 
+    their chunks either from a function or a static data array. 
+  * `xcube.core.zarrstore.LoggingZarrStore` is used to log 
+    Zarr store access performance and therefore useful for 
+    runtime optimisation and debugging. 
+  * `xcube.core.zarrstore.DiagnosticZarrStore` is used for testing
+    Zarr store implementations. 
+  * Added a xarray dataset accessor 
+    `xcube.core.zarrstore.ZarrStoreHolder` that enhances instances of
+    `xarray.Dataset` by a new property `zarr_store`. It holds a Zarr store
+    instance that represents the datasets as a key-value mapping.
+    This will prepare later versions of xcube Server for publishing all 
+    datasets via an emulated S3 API.
+
+    In turn, the classes of module `xcube.core.chunkstore` have been
+    deprecated.
+    
+* Added a new function `xcube.core.select.select_label_subset()` that 
+  is used to select dataset labels along a given dimension using
+  user-defined predicate functions.
+
+* The xcube Python environment is now requiring 
+  `xarray >= 2022.6` and `zarr >= 2.11` to ensure sparse 
+  Zarr datasets can be written using `dataset.to_zarr(store)`. (#688)
+
+* Added new module `xcube.util.jsonencoder` that offers the class 
+  `NumpyJSONEncoder` used to serialize numpy-like scalar values to JSON. 
+  It also offers the function `to_json_value()` to convert Python objects 
+  into JSON-serializable versions. The new functionality is required 
+  to ensure dataset attributes that are JSON-serializable. For example,
+  the latest version of the `rioxarray` package generates a `_FillValue` 
+  attribute with datatype `np.uint8`. 
+
+### Fixes
+
+* The filesystem-based data stores for the "s3", "file", and "memory"
+  protocols can now provide `xr.Dataset` instances from image pyramids
+  formats, i.e. the `levels` and `geotiff` formats.
+
+
+## Changes in 0.12.0
+
+### Enhancements
+
+* Allow xcube Server to work with any OIDC-compliant auth service such as
+  Auth0, Keycloak, or Google. Permissions of the form 
+  `"read:dataset:\<dataset\>"` and `"read:variable:\<dataset\>"` can now be
+  passed by two id token claims: 
+  - `permissions` must be a JSON list of permissions;
+  - `scope` must be a space-separated character string of permissions.
+
+  It is now also possible to include id token claim values into the 
+  permissions as template variables. For example, if the currently
+  authenticated user is `demo_user`, the permission 
+  `"read:dataset:$username/*"` will effectively be
+  `"read:dataset:demo_user/*"` and only allow access to datasets
+  with resource identifiers having the prefix `demo_user/`.
+
+  With this change, server configuration has changed:     
+  #### Example of OIDC configuration for auth0
+  
+  Please note, there **must be** a trailing slash in the "Authority" URL.
+  
+  ```yaml
+  Authentication:
+    Authority: https://some-demo-service.eu.auth0.com/
+    Audience: https://some-demo-service/api/
+  ```  
+  #### Example of OIDC configuration for Keycloak
+  
+  Please note, **no** trailing slash in the "Authority" URL.
+
+  ```yaml
+  Authentication: 
+    Authority: https://kc.some-demo-service.de/auth/realms/some-kc-realm
+    Audience: some-kc-realm-xc-api
+  ```
 * Filesystem-based data stores like "file" and "s3" support reading 
   GeoTIFF and Cloud Optimized GeoTIFF (COG). (#489) 
 
@@ -16,11 +182,33 @@
   supported by [fsspec](https://filesystem-spec.readthedocs.io/en/latest/) 
   including the protocols "s3" and "file". It also allows patching
   xcube multi-level datasets (`*.levels` format).
+  
+* In the configuration for `xcube server`, datasets defined in `DataStores` 
+  may now have user-defined identifiers. In case the path does not unambiguously 
+  define a dataset (because it contains wildcards), providing a 
+  user-defined identifier will raise an error. 
 
 ### Fixes
 
+* xcube Server did not find any grid mapping if a grid mapping variable
+  (e.g. spatial_ref or crs) encodes a geographic CRS
+  (CF grid mapping name "latitude_longitude") and the related geographical 
+  1-D coordinates were named "x" and "y". (#706) 
 * Fixed typo in metadata of demo cubes in `examples/serve/demo`. 
   Demo cubes now all have consolidated metadata.
+* When writing multi-level datasets with file data stores, i.e.,
+  ```python
+  store.write_data(dataset, data_id="test.levels", use_saved_levels=True)
+  ``` 
+  and where `dataset` has different spatial resolutions in x and y, 
+  an exception was raised. This is no longer the case. 
+* xcube Server can now also compute spatial 2D datasets from users' 
+  Python code. In former versions, spatio-temporal 3D cubes were enforced.
+
+### Other important changes
+
+* Deprecated all functions and classes defined in `xcube.core.dsio` 
+  in favor of the xcube data store API defined by `xcube.core.store`.
 
 ## Changes in 0.11.2
 

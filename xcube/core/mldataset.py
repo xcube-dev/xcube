@@ -20,38 +20,26 @@
 # SOFTWARE.
 
 import math
-import os
 import threading
 import uuid
 from abc import abstractmethod, ABCMeta
 from typing import Sequence, Any, Dict, Callable, Mapping, Optional, Tuple
 
-import s3fs
 import xarray as xr
-import zarr
-from deprecated import deprecated
 
 from xcube.constants import FORMAT_NAME_LEVELS
-from xcube.constants import FORMAT_NAME_NETCDF4
 from xcube.constants import FORMAT_NAME_SCRIPT
-from xcube.constants import FORMAT_NAME_ZARR
-from xcube.constants import LOG
 from xcube.core.dsio import guess_dataset_format
-from xcube.core.dsio import is_s3_url
-from xcube.core.dsio import parse_s3_fs_and_root
-from xcube.core.dsio import write_cube
 from xcube.core.gridmapping import GridMapping
 from xcube.core.schema import rechunk_cube
 from xcube.core.subsampling import AggMethods
 from xcube.core.subsampling import assert_valid_agg_methods
 from xcube.core.subsampling import subsample_dataset
-from xcube.core.tilingscheme import get_num_levels
 from xcube.core.tilingscheme import TilingScheme
-from xcube.core.verify import assert_cube
+from xcube.core.tilingscheme import get_num_levels
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.perf import measure_time
-from xcube.util.tilegrid import TileGrid
 
 _DEPRECATED_OPEN_ML_DATASET = ('Use xcube data store framework'
                                ' to open multi-level datasets.')
@@ -93,14 +81,6 @@ class MultiLevelDataset(metaclass=ABCMeta):
     def grid_mapping(self) -> GridMapping:
         """
         :return: the CF-conformal grid mapping
-        """
-
-    @property
-    @abstractmethod
-    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
-    def tile_grid(self) -> TileGrid:
-        """
-        :return: the tile grid.
         """
 
     @property
@@ -164,11 +144,11 @@ class MultiLevelDataset(metaclass=ABCMeta):
     def apply(self,
               function: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
               kwargs: Dict[str, Any] = None,
-              tile_grid: TileGrid = None,
               ds_id: str = None) -> 'MultiLevelDataset':
         """ Apply function to all level datasets and return a new multi-level dataset."""
-        return MappedMultiLevelDataset(self, function, tile_grid=tile_grid,
-                                       ds_id=ds_id, mapper_params=kwargs)
+        return MappedMultiLevelDataset(self, function,
+                                       ds_id=ds_id,
+                                       mapper_params=kwargs)
 
     def derive_tiling_scheme(self, tiling_scheme: TilingScheme):
         """
@@ -199,18 +179,14 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def __init__(self,
                  grid_mapping: Optional[GridMapping] = None,
                  num_levels: Optional[int] = None,
-                 tile_grid: Optional[TileGrid] = None,
                  ds_id: Optional[str] = None,
                  parameters: Optional[Mapping[str, Any]] = None):
         if grid_mapping is not None:
             assert_instance(grid_mapping, GridMapping, name='grid_mapping')
-        if tile_grid is not None:
-            assert_instance(tile_grid, TileGrid, name='tile_grid')
         if ds_id is not None:
             assert_instance(ds_id, str, name='ds_id')
         self._grid_mapping = grid_mapping
         self._num_levels = num_levels
-        self._tile_grid = tile_grid
         self._ds_id = ds_id
         self._level_datasets: Dict[int, xr.Dataset] = {}
         self._parameters = parameters or {}
@@ -241,14 +217,6 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             with self._lock:
                 self._num_levels = self._get_num_levels_lazily()
         return self._num_levels
-
-    @property
-    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
-    def tile_grid(self) -> TileGrid:
-        if self._tile_grid is None:
-            with self._lock:
-                self._tile_grid = self._get_tile_grid_lazily()
-        return self._tile_grid
 
     @property
     def lock(self) -> threading.RLock:
@@ -315,16 +283,6 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         """
         return GridMapping.from_dataset(self.get_dataset(0))
 
-    @deprecated(version='0.11.0', reason='do not use, wrong relationship')
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        """
-        Retrieve, i.e. read or compute, the tile grid used by
-        the multi-level dataset.
-
-        :return: the dataset for the level at *index*.
-        """
-        return self.grid_mapping.tile_grid
-
     def close(self):
         with self._lock:
             for dataset in self._level_datasets.values():
@@ -346,14 +304,12 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
 
     def __init__(self,
                  ml_datasets: Sequence[MultiLevelDataset],
-                 tile_grid: TileGrid = None,
                  ds_id: str = None,
                  combiner_function: Callable = None,
                  combiner_params: Dict[str, Any] = None):
         if not ml_datasets or len(ml_datasets) < 2:
             raise ValueError('ml_datasets must have at least two elements')
-        super().__init__(tile_grid=tile_grid,
-                         ds_id=ds_id,
+        super().__init__(ds_id=ds_id,
                          parameters=combiner_params)
         self._ml_datasets = ml_datasets
         self._combiner_function = combiner_function or xr.merge
@@ -377,10 +333,9 @@ class MappedMultiLevelDataset(LazyMultiLevelDataset):
                  ml_dataset: MultiLevelDataset,
                  mapper_function: Callable[
                      [xr.Dataset, Dict[str, Any]], xr.Dataset],
-                 tile_grid: TileGrid = None,
                  ds_id: str = None,
                  mapper_params: Dict[str, Any] = None):
-        super().__init__(tile_grid=tile_grid, ds_id=ds_id,
+        super().__init__(ds_id=ds_id,
                          parameters=mapper_params)
         self._ml_dataset = ml_dataset
         self._mapper_function = mapper_function
@@ -400,206 +355,6 @@ class MappedMultiLevelDataset(LazyMultiLevelDataset):
 class IdentityMultiLevelDataset(MappedMultiLevelDataset):
     def __init__(self, ml_dataset: MultiLevelDataset, ds_id: str = None):
         super().__init__(ml_dataset, lambda ds: ds, ds_id=ds_id)
-
-
-@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
-class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
-    """
-    A stored multi-level dataset whose level datasets are lazily read from storage location.
-
-    :param dir_path: The directory containing the level datasets.
-    :param zarr_kwargs: Keyword arguments accepted by the ``xarray.open_zarr()`` function.
-    :param ds_id: Optional dataset identifier.
-    """
-
-    def __init__(self,
-                 dir_path: str,
-                 ds_id: str = None,
-                 zarr_kwargs: Dict[str, Any] = None,
-                 exception_type: type = ValueError):
-        file_paths = os.listdir(dir_path)
-        level_paths = {}
-        num_levels = -1
-        for filename in file_paths:
-            file_path = os.path.join(dir_path, filename)
-            basename, ext = os.path.splitext(filename)
-            if basename.isdigit():
-                index = int(basename)
-                num_levels = max(num_levels, index + 1)
-                if os.path.isfile(file_path) and ext == ".link":
-                    level_paths[index] = (ext, file_path)
-                elif os.path.isdir(file_path) and ext == ".zarr":
-                    level_paths[index] = (ext, file_path)
-
-        if num_levels != len(level_paths):
-            raise exception_type(f"Inconsistent levels directory:"
-                                 f" expected {num_levels} but found {len(level_paths)} entries:"
-                                 f" {dir_path}")
-
-        super().__init__(num_levels=num_levels,
-                         ds_id=ds_id,
-                         parameters=zarr_kwargs)
-        self._dir_path = dir_path
-        self._level_paths = level_paths
-
-    def _get_num_levels_lazily(self) -> int:
-        assert self._num_levels is not None
-        return self._num_levels
-
-    def _get_dataset_lazily(self, index: int,
-                            parameters: Dict[str, Any]) -> xr.Dataset:
-        """
-        Read the dataset for the level at given *index*.
-
-        :param index: the level index
-        :param parameters: keyword arguments passed to xr.open_zarr()
-        :return: the dataset for the level at *index*.
-        """
-        ext, level_path = self._level_paths[index]
-        if ext == ".link":
-            with open(level_path, "r") as fp:
-                level_path = fp.read()
-                # if file_path is a relative path, resolve it against the levels directory
-                if not os.path.isabs(level_path):
-                    base_dir = os.path.dirname(self._dir_path)
-                    level_path = os.path.join(base_dir, level_path)
-        with measure_time(
-                tag=f"Opened local dataset {level_path} for level {index}"):
-            return assert_cube(xr.open_zarr(level_path, **parameters),
-                               name=level_path)
-
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        """
-        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
-
-        :return: the dataset for the level at *index*.
-        """
-        tile_grid = self.grid_mapping.tile_grid
-        if tile_grid.num_levels != self._num_levels:
-            raise ValueError(f'Detected inconsistent'
-                             f' number of detail levels,'
-                             f' expected {tile_grid.num_levels},'
-                             f' found {self._num_levels}.')
-        return tile_grid
-
-
-@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
-class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
-    """
-    A multi-level dataset whose level datasets are lazily read from object storage locations.
-
-    :param dir_path: The directory containing the level datasets.
-    :param zarr_kwargs: Keyword arguments accepted by the ``xarray.open_zarr()`` function.
-    :param ds_id: Optional dataset identifier.
-    """
-
-    def __init__(self,
-                 s3_file_system: s3fs.S3FileSystem,
-                 dir_path: str,
-                 zarr_kwargs: Dict[str, Any] = None,
-                 ds_id: str = None,
-                 chunk_cache_capacity: int = None,
-                 exception_type: type = ValueError):
-
-        level_paths = {}
-        entries = s3_file_system.ls(dir_path, detail=False)
-        for entry in entries:
-            level_dir = entry.split("/")[-1]
-            basename, ext = os.path.splitext(level_dir)
-            if basename.isdigit():
-                level = int(basename)
-                if entry.endswith(".zarr") and s3_file_system.isdir(entry):
-                    level_paths[level] = (ext, dir_path + "/" + level_dir)
-                elif entry.endswith(".link") and s3_file_system.isfile(entry):
-                    level_paths[level] = (ext, dir_path + "/" + level_dir)
-
-        num_levels = len(level_paths)
-        # Consistency check
-        for level in range(num_levels):
-            if level not in level_paths:
-                raise exception_type(
-                    f"Invalid multi-level dataset {ds_id!r}: missing level {level} in {dir_path}")
-
-        super().__init__(num_levels=num_levels,
-                         ds_id=ds_id,
-                         parameters=zarr_kwargs)
-        self._s3_file_system = s3_file_system
-        self._dir_path = dir_path
-        self._level_paths = level_paths
-
-        self._chunk_cache_capacities = None
-        if chunk_cache_capacity:
-            weights = []
-            weight_sum = 0
-            for level in range(num_levels):
-                weight = 2 ** (num_levels - 1 - level)
-                weight *= weight
-                weight_sum += weight
-                weights.append(weight)
-            self._chunk_cache_capacities = [
-                round(chunk_cache_capacity * weight / weight_sum)
-                for weight in weights]
-
-    @property
-    def num_levels(self) -> int:
-        return self._num_levels
-
-    def _get_num_levels_lazily(self) -> int:
-        raise RuntimeError('should not come here')
-
-    def get_chunk_cache_capacity(self, index: int) -> Optional[int]:
-        """
-        Get the chunk cache capacity for given level.
-
-        :param index: The level index.
-        :return: The chunk cache capacity for given level or None.
-        """
-        return self._chunk_cache_capacities[
-            index] if self._chunk_cache_capacities else None
-
-    def _get_dataset_lazily(self, index: int,
-                            parameters: Dict[str, Any]) -> xr.Dataset:
-        """
-        Read the dataset for the level at given *index*.
-
-        :param index: the level index
-        :param parameters: keyword arguments passed to xr.open_zarr()
-        :return: the dataset for the level at *index*.
-        """
-        ext, level_path = self._level_paths[index]
-        if ext == ".link":
-            with self._s3_file_system.open(level_path, "w") as fp:
-                level_path = fp.read()
-                # if file_path is a relative path, resolve it against the levels directory
-                if not os.path.isabs(level_path):
-                    base_dir = os.path.dirname(self._dir_path)
-                    level_path = os.path.join(base_dir, level_path)
-        store = s3fs.S3Map(root=level_path, s3=self._s3_file_system,
-                           check=False)
-        max_size = self.get_chunk_cache_capacity(index)
-        if max_size:
-            store = zarr.LRUStoreCache(store, max_size=max_size)
-        with measure_time(
-                tag=f"Opened remote dataset {level_path} for level {index}"):
-            consolidated = self._s3_file_system.exists(
-                f'{level_path}/.zmetadata')
-            return assert_cube(
-                xr.open_zarr(store, consolidated=consolidated, **parameters),
-                name=level_path)
-
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        """
-        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
-
-        :return: the dataset for the level at *index*.
-        """
-        tile_grid = self.grid_mapping.tile_grid
-        if tile_grid.num_levels != self._num_levels:
-            raise ValueError(f'Detected inconsistent'
-                             f' number of detail levels,'
-                             f' expected {tile_grid.num_levels},'
-                             f' found {self._num_levels}.')
-        return tile_grid
 
 
 class BaseMultiLevelDataset(LazyMultiLevelDataset):
@@ -624,7 +379,6 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                  base_dataset: xr.Dataset,
                  grid_mapping: Optional[GridMapping] = None,
                  num_levels: Optional[int] = None,
-                 tile_grid: Optional[TileGrid] = None,
                  agg_methods: AggMethods = 'first',
                  ds_id: Optional[str] = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
@@ -640,7 +394,6 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         self._base_dataset = base_dataset
         super().__init__(grid_mapping=grid_mapping,
                          num_levels=num_levels,
-                         tile_grid=tile_grid,
                          ds_id=ds_id)
 
     def _get_num_levels_lazily(self) -> int:
@@ -749,10 +502,6 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         ds_0 = self._input_ml_dataset_getter(self._input_ml_dataset_ids[0])
         return ds_0.num_levels
 
-    def _get_tile_grid_lazily(self) -> TileGrid:
-        ds_0 = self._input_ml_dataset_getter(self._input_ml_dataset_ids[0])
-        return ds_0.tile_grid
-
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         input_datasets = [self._input_ml_dataset_getter(ds_id).get_dataset(index)
                           for ds_id in self._input_ml_dataset_ids]
@@ -766,7 +515,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
             raise self._exception_type(f"Failed to compute in-memory dataset {self.ds_id!r} at level {index} "
                                        f"from function {self._callable_name!r}: "
                                        f"expected an xarray.Dataset but got {type(computed_value)}")
-        return assert_cube(computed_value, name=self.ds_id)
+        return computed_value
 
 
 def guess_ml_dataset_format(path: str) -> str:
@@ -781,104 +530,6 @@ def guess_ml_dataset_format(path: str) -> str:
     if path.endswith('.py'):
         return FORMAT_NAME_SCRIPT
     return guess_dataset_format(path)
-
-
-# Note: only used by the "xcube tile" CLI impl.
-@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
-def open_ml_dataset(path: str,
-                    ds_id: str = None,
-                    exception_type: type = ValueError,
-                    **kwargs) -> MultiLevelDataset:
-    """
-    Open a multi-level dataset.
-
-    :param path: dataset path
-    :param ds_id: Optional dataset ID, if not given, a new UUID will be generated.
-    :param exception_type: The type of exception to be thrown, defaults to ValueError
-    :param kwargs: format specific parameters, e.g, "endpoint_url", "region_name"
-    :return: a multi-level dataset
-    """
-    if not path:
-        raise ValueError('path must be given')
-    if is_s3_url(path):
-        return open_ml_dataset_from_object_storage(path, ds_id=ds_id,
-                                                   exception_type=exception_type,
-                                                   **kwargs)
-    elif path.endswith('.py'):
-        return open_ml_dataset_from_python_code(path, ds_id=ds_id,
-                                                exception_type=exception_type,
-                                                **kwargs)
-    else:
-        return open_ml_dataset_from_local_fs(path, ds_id=ds_id,
-                                             exception_type=exception_type,
-                                             **kwargs)
-
-
-# Note: only used by open_ml_dataset()
-# noinspection PyUnusedLocal
-@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
-def open_ml_dataset_from_object_storage(path: str,
-                                        data_format: str = None,
-                                        ds_id: str = None,
-                                        exception_type: type = ValueError,
-                                        s3_kwargs: Mapping[str, Any] = None,
-                                        s3_client_kwargs: Mapping[
-                                            str, Any] = None,
-                                        chunk_cache_capacity: int = None,
-                                        **kwargs) -> MultiLevelDataset:
-    data_format = data_format or guess_ml_dataset_format(path)
-
-    s3, root = parse_s3_fs_and_root(path,
-                                    s3_kwargs=s3_kwargs,
-                                    s3_client_kwargs=s3_client_kwargs,
-                                    mode='r')
-
-    if data_format == FORMAT_NAME_ZARR:
-        store = s3fs.S3Map(root=root, s3=s3, check=False)
-        if chunk_cache_capacity:
-            store = zarr.LRUStoreCache(store, max_size=chunk_cache_capacity)
-        with measure_time(tag=f"Opened remote zarr dataset {path}"):
-            consolidated = s3.exists(f'{root}/.zmetadata')
-            ds = assert_cube(
-                xr.open_zarr(store, consolidated=consolidated, **kwargs))
-        return BaseMultiLevelDataset(ds, ds_id=ds_id)
-    elif data_format == FORMAT_NAME_LEVELS:
-        with measure_time(tag=f"Opened remote levels dataset {path}"):
-            return ObjectStorageMultiLevelDataset(s3,
-                                                  root,
-                                                  zarr_kwargs=kwargs,
-                                                  ds_id=ds_id,
-                                                  chunk_cache_capacity=chunk_cache_capacity,
-                                                  exception_type=exception_type)
-
-    raise exception_type(
-        f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
-
-
-# Note: only used by open_ml_dataset()
-@deprecated(version='0.10.2', reason=_DEPRECATED_OPEN_ML_DATASET)
-def open_ml_dataset_from_local_fs(path: str,
-                                  data_format: str = None,
-                                  ds_id: str = None,
-                                  exception_type: type = ValueError,
-                                  **kwargs) -> MultiLevelDataset:
-    data_format = data_format or guess_ml_dataset_format(path)
-
-    if data_format == FORMAT_NAME_NETCDF4:
-        with measure_time(tag=f"Opened local NetCDF dataset {path}"):
-            ds = assert_cube(xr.open_dataset(path, **kwargs))
-            return BaseMultiLevelDataset(ds, ds_id=ds_id)
-    elif data_format == FORMAT_NAME_ZARR:
-        with measure_time(tag=f"Opened local zarr dataset {path}"):
-            ds = assert_cube(xr.open_zarr(path, **kwargs))
-            return BaseMultiLevelDataset(ds, ds_id=ds_id)
-    elif data_format == FORMAT_NAME_LEVELS:
-        with measure_time(tag=f"Opened local levels dataset {path}"):
-            return FileStorageMultiLevelDataset(path, ds_id=ds_id,
-                                                zarr_kwargs=kwargs)
-
-    raise exception_type(
-        f'Unrecognized multi-level dataset format {data_format!r} for path {path!r}')
 
 
 def open_ml_dataset_from_python_code(script_path: str,
@@ -919,26 +570,3 @@ def augment_ml_dataset(ml_dataset: MultiLevelDataset,
                                            ds_id=f'aug-{aug_id}',
                                            exception_type=exception_type)
         return CombinedMultiLevelDataset([ml_dataset, aug_ds], ds_id=orig_id)
-
-
-# Note: only used by unit-tests
-@deprecated(version='0.10.2', reason=_DEPRECATED_WRITE_ML_DATASET)
-def write_levels(ml_dataset: MultiLevelDataset,
-                 levels_path: str,
-                 s3_kwargs: Dict[str, Any] = None,
-                 s3_client_kwargs: Dict[str, Any] = None):
-    """
-    Deprecated. Used only in xcube tests.
-    """
-    tile_w, tile_h = ml_dataset.tile_grid.tile_size
-    chunks = dict(time=1, lat=tile_h, lon=tile_w)
-    for level in range(ml_dataset.num_levels):
-        level_dataset = ml_dataset.get_dataset(level)
-        level_dataset = level_dataset.chunk(chunks)
-        LOG.info(f'writing level {level + 1}...')
-        write_cube(level_dataset,
-                   f'{levels_path}/{level}.zarr',
-                   'zarr',
-                   s3_kwargs=s3_kwargs,
-                   s3_client_kwargs=s3_client_kwargs)
-        LOG.info(f'written level {level + 1}')

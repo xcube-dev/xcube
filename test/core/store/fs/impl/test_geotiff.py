@@ -25,9 +25,11 @@ import unittest
 import fsspec
 import rasterio as rio
 import rioxarray
+import s3fs
 import xarray
 import xarray as xr
 
+from test.s3test import S3Test
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.geotiff import GeoTIFFMultiLevelDataset
 from xcube.core.store.fs.impl.geotiff import \
@@ -186,6 +188,27 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         self.assertEqual("geotiff", data_accessor.get_format_id())
         dataset = data_accessor.open_data(data_id=tiff_path,
                                           fs=fs, root=None,
+                                          tile_size=[256, 256],
+                                          overview_level=None)
+        self.assertIsInstance(dataset, xarray.Dataset)
+
+
+class ObjectStorageMultiLevelDatasetTest(S3Test):
+    """
+    A Test class to test opening a cog file from AWS S3
+    """
+
+    def test_s3_fs(self):
+        region_name = 'eu-central-1'
+        s3 = s3fs.S3FileSystem(region_name=region_name, anon=True)
+        data_id = "xcube-examples/sample-cog.tif"
+        ml_dataset = GeoTIFFMultiLevelDataset(s3, None, data_id)
+        self.assertEqual(3, ml_dataset.num_levels)
+        self.assertEqual((343, 343), ml_dataset.get_dataset(0).band_1.shape)
+        dataset_path = "xcube-examples/sample-geotiff.tif"
+        data_accessor = DatasetGeoTiffFsDataAccessor()
+        dataset = data_accessor.open_data(data_id=dataset_path,
+                                          fs=s3, root=None,
                                           tile_size=[256, 256],
                                           overview_level=None)
         self.assertIsInstance(dataset, xarray.Dataset)
