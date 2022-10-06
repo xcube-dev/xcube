@@ -58,10 +58,10 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
               help='Directory used to resolve relative paths'
                    ' in CONFIG files. Defaults to the parent directory'
                    ' of (last) CONFIG file.')
-@click.option('--prefix',
+@click.option('--prefix', 'url_prefix',
               metavar='PREFIX', default=None,
               help='Prefix to be used for all endpoint URLs.')
-@click.option('--traceperf', is_flag=True, default=None,
+@click.option('--traceperf', 'trace_perf', is_flag=True, default=None,
               help='Whether to output extra performance logs.')
 @click.option('--update-after', 'update_after',
               metavar='TIME', type=float, default=None,
@@ -78,8 +78,8 @@ def serve(framework_name: str,
           address: str,
           config_paths: List[str],
           base_dir: Optional[str],
-          prefix: Optional[str],
-          traceperf: Optional[bool],
+          url_prefix: Optional[str],
+          trace_perf: Optional[bool],
           update_after: Optional[float],
           stop_after: Optional[float],
           quiet: bool,
@@ -122,11 +122,11 @@ def serve(framework_name: str,
         config["base_dir"] = os.path.abspath(
             os.path.dirname(config_paths[-1]))
 
-    if prefix is not None:
-        config["prefix"] = prefix
+    if url_prefix is not None:
+        config["url_prefix"] = url_prefix
 
-    if traceperf is not None:
-        config["trace_perf"] = traceperf
+    if trace_perf is not None:
+        config["trace_perf"] = trace_perf
 
     framework = get_framework_class(framework_name)()
     server = Server(framework, config)

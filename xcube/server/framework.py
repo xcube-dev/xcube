@@ -43,12 +43,26 @@ class Framework(AsyncExecution, abc.ABC):
         indicates that configuration is not possible."""
 
     @abc.abstractmethod
-    def add_static_routes(self, routes: Sequence[Tuple[str, str]]):
-        """Adds the given static routes to this web server."""
+    def add_static_routes(self,
+                          routes: Sequence[Tuple[str, str]],
+                          url_prefix: str):
+        """
+        Adds the given static routes to this web server.
+
+        :param routes: The static routes to be added.
+        :param url_prefix: URL prefix, may be an empty string.
+        """
 
     @abc.abstractmethod
-    def add_routes(self, routes: Sequence[ApiRoute]):
-        """Adds the given routes to this web server."""
+    def add_routes(self,
+                   routes: Sequence[ApiRoute],
+                   url_prefix: str):
+        """
+        Adds the given routes to this web server.
+
+        :param routes: The routes to be added.
+        :param url_prefix: URL prefix, may be an empty string.
+        """
 
     @abc.abstractmethod
     def update(self, ctx: Context):
