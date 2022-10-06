@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+from typing import Mapping, Any
 
 from xcube.constants import DEFAULT_SERVER_ADDRESS
 from xcube.constants import DEFAULT_SERVER_PORT
@@ -39,6 +40,9 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
         ),
         base_dir=JsonStringSchema(
             title='Base directory used to resolve relative local paths.',
+        ),
+        url_prefix=JsonStringSchema(
+            title='Prefix to be prepended to all URL route paths.',
         ),
         trace_perf=JsonBooleanSchema(
             title='Output performance measures',
@@ -75,3 +79,24 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
     # validation would fail if additional_properties=False.
     additional_properties=True,
 )
+
+
+def get_url_prefix(config: Mapping[str, Any]) -> str:
+    """
+    Get the sanitized URL prefix so, if given, it starts with
+    a leading slash and ends without one.
+
+    :param config: Server configuration.
+    :return: Sanitized URL prefix, may be an empty string.
+    """
+    url_prefix = (config.get('url_prefix') or '').strip()
+    while url_prefix.startswith('//'):
+        url_prefix = url_prefix[1:]
+    while url_prefix.endswith('/'):
+        url_prefix = url_prefix[:-1]
+    if url_prefix == '':
+        return ''
+    elif url_prefix.startswith('/'):
+        return url_prefix
+    else:
+        return '/' + url_prefix
