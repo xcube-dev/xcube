@@ -1,8 +1,12 @@
-## Changes in 0.13.0.dev2 (in development)
+## Changes in 0.13.0.dev2
+
+### Intermediate changes
+
+* Fixed unit test w.r.t. change in 0.13.0.dev1
 
 ## Changes in 0.13.0.dev1
 
-### Intermediate dev changes (remove from CHANGES.md in 0.13.0 release)
+### Intermediate changes
 
 * Include package data `xcube/webapi/meta/res/openapi.html`.
 
