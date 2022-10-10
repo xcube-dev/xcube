@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import pkgutil
 import sys
 from string import Template
@@ -45,8 +46,8 @@ class OpenApiHtmlHandler(ApiHandler):
         summary='Show API documentation'
     )
     def get(self):
-        html_template = pkgutil.get_data('xcube.webapi.meta.res',
-                                         'openapi.html').decode('utf-8')
+        html_template = pkgutil.get_data('xcube.webapi.meta',
+                                         'res/openapi.html').decode('utf-8')
         self.response.finish(Template(html_template).substitute(
             open_api_url=self.request.url_for_path('openapi.json')
         ))
