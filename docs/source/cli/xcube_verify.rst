@@ -14,9 +14,9 @@ Perform cube verification.
 ::
 
     Usage: xcube verify [OPTIONS] CUBE
-    
+
       Perform cube verification.
-    
+
       The tool verifies that CUBE
       * defines the dimensions "time", "lat", "lon";
       * has corresponding "time", "lat", "lon" coordinate variables and that they
@@ -25,10 +25,12 @@ Perform cube verification.
         variables, if any;
       * has any data variables and that they are valid, e.g. min. 3-D, all have
         same dimensions, have at least dimensions "time", "lat", "lon".
-    
+      * spatial coordinates and their corresponding bounds (if exist) are equidistant
+         and monotonically increasing or decreasing.
+
       If INPUT is a valid xcube dataset, the tool returns exit code 0. Otherwise a
       violation report is written to stdout and the tool returns exit code 3.
-    
+
     Options:
       --help  Show this message and exit.
 
