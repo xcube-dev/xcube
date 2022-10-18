@@ -16,7 +16,7 @@ The following data is used by the demo configuration `config.yml`:
 
 * `cube-1-250-250.zarr`: Zarr version of `cube.nc`.
 
-* `cube-5-100-200.zarr`: Time-chunked version of version of `cube.nc`.
+* `cube-5-100-200.zarr`: Time-chunked version of `cube.nc`.
 
 * `cube-1-250-250.levels`: Multi-level/multi-resolution (image pyramid) 
   version of `cube.nc`.
