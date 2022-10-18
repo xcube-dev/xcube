@@ -1,81 +1,109 @@
-DatasetAttribution:
-  - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
-  - "© by EU H2020 CyanoAlert project"
-
 DatasetChunkCacheSize: 100M
 
 DataStores:
 
-#  - Identifier: file
-#    StoreId: file
-#    StoreParams:
-#      root: .
-#    Datasets:
-#      - Identifier: "*.zarr"
-#        Style: "default"
-
-#  - Identifier: esacci
-#    StoreId: s3
-#    StoreParams:
-#      root: esacci
-#        anon: true
-#        client_kwargs:
-#          endpoint_url: https://cci-ke-o.s3-ext.jc.rl.ac.uk:8443
-#    Datasets:
-#      - Identifier: "*.zarr"
-#        Style: "default"
-
-  - Identifier: edc
-    StoreId: s3
+  - Identifier: sentinelhub
+    StoreId: sentinelhub
     StoreParams:
-      root: xcube-dcfs/edc-xc-viewer-data
-      max_depth: 1
-      storage_options:
-        anon: true
-        # client_kwargs:
-        #  endpoint_url: https://s3.eu-central-1.amazonaws.com
+      # Pass here or as env vars SH_CLIENT_ID, SH_CLIENT_SECRET
+      # client_id: xxx
+      # client_secret: yyy
+      num_retries: 20
+      retry_backoff_max: 50      # milliseconds
+      retry_backoff_base: 1.01
     Datasets:
-      - Path: "*2.zarr"
-        Style: "default"
-        # ChunkCacheSize: 1G
+      - Identifier: S2L2A
+        Path: S2L2A
+        Title: S2 L2A Hamburg
+        Style: S2L2A
+        StoreOpenParams:
+          variable_names: null  # = all bands
+          bbox: [9.7, 53.4, 10.2, 53.7]
+          spatial_res: 0.00018
+          time_range: ['2020-08-10','2020-08-20']
+          time_period: 1D
+          tile_size: [512, 512]
+          max_cache_size: 16777216
+        Attribution: "© by Synergise Inc. and ESA"
 
-PlaceGroups:
-  - Identifier: inside-cube
-    Title: Points inside the cube
-    Path: "places/inside-cube.geojson"
-    Join:
-      Property: "ID"
-      Path: "places/inside-cube-media.geojson"
-    PropertyMapping:
-      image: "${base_url}/images/inside-cube/${image}"
-  - Identifier: outside-cube
-    Title: Points outside the cube
-    Path: "places/outside-cube.geojson"
-    PropertyMapping:
-      image: "${base_url}/images/outside-cube/${ID}.jpg"
+  - Identifier: cmems
+    StoreId: cmems
+    #StoreParams:
+      # Pass here or as env vars CMEMS_USER, CMEMS_PASSWORD
+      # cmems_user: xxx
+      # cmems_user_password: yyy
+    Datasets:
+      - Identifier: dataset-bal-analysis-forecast-wav-hourly
+        Path: dataset-bal-analysis-forecast-wav-hourly
+        Title: CMEMS BAL Forecast
+        Style: S2L2A
+        StoreOpenParams:
+          variable_names: ['VHM0']
+          bbox: [9, 53, 20, 62]
+          time_range: ['2022-01-01','2022-01-05']
+        Attribution: "© by EU Copernicus Programme"
 
 Styles:
-  - Identifier: default
+  - Identifier: S2L2A
     ColorMappings:
-      conc_chl:
-        ColorBar: "plasma"
-        ValueRange: [0., 24.]
-      conc_tsm:
-        ColorBar: "PuBuGn"
-        ValueRange: [0., 100.]
-      kd489:
-        ColorBar: "jet"
-        ValueRange: [0., 6.]
+      B01:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B01:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B01:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B02:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B03:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B04:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B05:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B06:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B07:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B08:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B8A:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B09:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B10:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B11:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      B12:
+        ColorBar: "bone"
+        ValueRange: [0., 0.25]
+      SCL:
+        ColorBar: "bone"
+        ValueRange: [ 0, 255 ]
       rgb:
         Red:
-          Variable: conc_chl
-          ValueRange: [0., 24.]
+          Variable: B04
+          ValueRange: [0., 0.25]
         Green:
-          Variable: conc_tsm
-          ValueRange: [0., 100.]
+          Variable: B06
+          ValueRange: [0., 0.25]
         Blue:
-          Variable: kd489
-          ValueRange: [0., 6.]
+          Variable: B08
+          ValueRange: [0., 0.25]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
