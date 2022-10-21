@@ -39,6 +39,7 @@ dependencies:
   - scipy >=1.6.0
   - setuptools >=41.0
   - shapely >=1.6
+  - tiledb <=2.11.3  # temporary workaround for bug in 2.12.0; see Issue 755
   - tornado >=6.0
   - urllib3 >=1.26
   - werkzeug <2.2  # >=2.2 slows down S3 tests (deps: moto->flask->werkzeug)
