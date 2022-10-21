@@ -10,6 +10,9 @@
 
 * Fixed unit test w.r.t. change in 0.13.0.dev1
 
+* xcube now tries to prevent indexing timezone-naive variables with
+  timezone-aware indexers, or vice versa.
+
 ## Changes in 0.13.0.dev1
 
 ### Intermediate changes
@@ -96,7 +99,6 @@
   - `xcube.core.xarray.DatasetAccessor.levels()`
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
-
 * Fixed problem with `xcube gen` raising `FileNotFoundError` 
   with Zarr >= 2.13.
 
@@ -147,7 +149,6 @@
 * The filesystem-based data stores for the "s3", "file", and "memory"
   protocols can now provide `xr.Dataset` instances from image pyramids
   formats, i.e. the `levels` and `geotiff` formats.
-
 
 ## Changes in 0.12.0
 
