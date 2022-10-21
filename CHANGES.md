@@ -1,3 +1,9 @@
+## Changes in 0.13.0.dev3
+
+### Intermediate changes
+
+* Removed outdated example resources from `examples/serve/demo`.
+
 ## Changes in 0.13.0.dev2
 
 ### Intermediate changes
