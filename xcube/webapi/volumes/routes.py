@@ -139,7 +139,7 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
 
         # TODO (forman): find more suitable normalisation
         scale_x = scale_y = 100. / max(size_x, size_y)
-        scale_z = 50. / size_z
+        scale_z = 100. / size_z
 
         block_size = 1024 * 1024
         num_blocks = math.ceil(len(data) / block_size)
