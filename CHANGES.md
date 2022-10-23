@@ -2,6 +2,8 @@
 
 ### Intermediate changes
 
+* Added experimental API `volumes` to xcube Server.
+  It is used by xcube Viewer to render 3-D volumes.
 * Removed outdated example resources from `examples/serve/demo`.
 * Account for different spatial resolutions in x and y in 
   `xcube.core.geom.get_dataset_bounds()`.
