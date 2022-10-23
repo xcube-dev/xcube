@@ -113,7 +113,10 @@ def _update_dataset_attrs(dataset: xr.Dataset,
                 coord_bnds_name = coord.attrs.get('bounds', coord_bnds_name)
             if coord_bnds_name in dataset:
                 coord_bnds = dataset[coord_bnds_name]
-            if coord_bnds is not None and coord_bnds.ndim == 2 and coord_bnds.shape[1] == 2:
+            if coord_bnds is not None \
+                    and coord_bnds.ndim == 2 \
+                    and coord_bnds.shape[0] > 0 \
+                    and coord_bnds.shape[1] == 2:
                 coord_v1 = coord_bnds[0][0]
                 coord_v2 = coord_bnds[-1][1]
                 coord_res = (coord_v2 - coord_v1) / coord_bnds.shape[0]
@@ -121,7 +124,9 @@ def _update_dataset_attrs(dataset: xr.Dataset,
                 coord_min, coord_max = (coord_v1, coord_v2) if coord_res > 0 else (coord_v2, coord_v1)
                 dataset.attrs[coord_min_attr_name] = cast(coord_min.values)
                 dataset.attrs[coord_max_attr_name] = cast(coord_max.values)
-            elif coord is not None and coord.ndim == 1:
+            elif coord is not None \
+                    and coord.ndim == 1 \
+                    and coord.shape[0] > 0:
                 coord_v1 = coord[0]
                 coord_v2 = coord[-1]
                 if coord.shape[0] > 1:
