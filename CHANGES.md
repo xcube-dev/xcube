@@ -1,4 +1,30 @@
-## Changes in 0.13.0 (in development)
+## Changes in 0.13.0.dev3
+
+### Intermediate changes
+
+* Removed outdated example resources from `examples/serve/demo`.
+* Account for different spatial resolutions in x and y in 
+  `xcube.core.geom.get_dataset_bounds()`.
+* Make code robust against 0-size coordinates in 
+  `xcube.core.update._update_dataset_attrs()`.
+
+
+## Changes in 0.13.0.dev2
+
+### Intermediate changes
+
+* Fixed unit test w.r.t. change in 0.13.0.dev1
+
+* xcube now tries to prevent indexing timezone-naive variables with
+  timezone-aware indexers, or vice versa.
+
+## Changes in 0.13.0.dev1
+
+### Intermediate changes
+
+* Include package data `xcube/webapi/meta/res/openapi.html`.
+
+## Changes in 0.13.0.dev0
 
 ### Enhancements
 
@@ -78,7 +104,6 @@
   - `xcube.core.xarray.DatasetAccessor.levels()`
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
-
 * Fixed problem with `xcube gen` raising `FileNotFoundError` 
   with Zarr >= 2.13.
 
@@ -129,7 +154,6 @@
 * The filesystem-based data stores for the "s3", "file", and "memory"
   protocols can now provide `xr.Dataset` instances from image pyramids
   formats, i.e. the `levels` and `geotiff` formats.
-
 
 ## Changes in 0.12.0
 

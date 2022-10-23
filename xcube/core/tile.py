@@ -27,6 +27,8 @@ import xarray as xr
 from deprecated import deprecated
 
 from xcube.core.schema import get_dataset_xy_var_names
+from xcube.util.timeindex import ensure_time_label_compatible
+
 # Exported for backward compatibility only
 # noinspection PyUnresolvedReferences
 from ._tile2 import (compute_rgba_tile,
@@ -107,30 +109,7 @@ def parse_non_spatial_labels(
                                  f' value for dimension {dim!r}') from e
 
     if var is not None:
-        return _ensure_time_compatible(var, parsed_labels)
+        return ensure_time_label_compatible(var, parsed_labels)
     else:
         return parsed_labels
 
-
-def _ensure_time_compatible(var: xr.DataArray,
-                            labels: Dict[str, Any]) -> Dict[str, Any]:
-    """Ensure that labels['time'] is timezone-naive, if necessary.
-    If var has a 'time' dimension of type datetime64 and labels has a 'time'
-    key with a timezone-aware value, return a modified labels-dictionary with
-    a timezone-naive time value. Otherwise, return the original labels.
-    """
-    if _has_datetime64_time(var) and \
-            'time' in labels and pd.Timestamp(
-        labels['time']).tzinfo is not None:
-        naive_time = pd.Timestamp(labels['time']).tz_convert(None)
-        return dict(labels, time=naive_time)
-    else:
-        return labels
-
-
-def _has_datetime64_time(var: xr.DataArray) -> bool:
-    """Report whether var has a time dimension with type datetime64"""
-    return 'time' in var.dims and \
-           hasattr(var['time'], 'dtype') and \
-           hasattr(var['time'].dtype, 'type') and \
-           var['time'].dtype.type is np.datetime64

@@ -35,6 +35,7 @@ from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_variables_subset
+from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.util.assertions import assert_instance
 
 Date = Union[np.datetime64, str]
@@ -132,8 +133,10 @@ def get_time_series(
         return None
 
     if start_date is not None or end_date is not None:
+        safe_start_date, safe_end_date = \
+            ensure_time_index_compatible(dataset, (start_date, end_date))
         # noinspection PyTypeChecker
-        dataset = dataset.sel(time=slice(start_date, end_date))
+        dataset = dataset.sel(time=slice(safe_start_date, safe_end_date))
 
     x_name, y_name = grid_mapping.xy_dim_names
     if isinstance(geometry, shapely.geometry.Point):
