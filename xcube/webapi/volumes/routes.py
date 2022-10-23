@@ -123,6 +123,11 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
                 f'Variable must be 3-D, got {var.ndim}-D'
             )
 
+        if np.product(var.shape) > 256 ** 3:
+            raise ApiError.BadRequest(
+                f'Volume too large, please select a smaller dataset subset'
+            )
+
         # TODO (forman): allow for any dtype
         values = var.astype(dtype=np.float32).values
         if not ml_dataset.grid_mapping.is_j_axis_up:
