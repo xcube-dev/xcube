@@ -22,7 +22,7 @@
 from ..helpers import RoutesTestCase
 
 
-class TimeSeriesRoutesTest(RoutesTestCase):
+class MetaRoutesTest(RoutesTestCase):
 
     def test_fetch_server_info(self):
         response = self.fetch('/')
