@@ -25,6 +25,7 @@ import sys
 import numpy as np
 import pandas as pd
 
+from xcube.core.select import select_subset
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
 from .api import api
@@ -101,8 +102,6 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
         end_date = self.request.get_query_arg('endDate',
                                               type=pd.Timestamp,
                                               default=None)
-
-        from xcube.core.select import select_subset
 
         ml_dataset = self.ctx.datasets_ctx.get_ml_dataset(datasetId)
 
