@@ -470,7 +470,7 @@ def get_alpha_cmap(cm_name: str, cmap: matplotlib.colors.Colormap) \
 
 def get_cmap_png_base64(cmap: matplotlib.colors.Colormap) -> str:
     gradient = np.linspace(0, 1, 256)
-    gradient = np.vstack((gradient, gradient))
+    gradient = np.vstack((gradient,))
     image_data = cmap(gradient, bytes=True)
     image = Image.fromarray(image_data, 'RGBA')
 
