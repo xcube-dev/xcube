@@ -115,7 +115,7 @@ class Tile2Test(unittest.TestCase):
 
 class ComputeTilesTest(Tile2Test, unittest.TestCase):
 
-    def test_compute_rgba_tile_with_color_mapping(self):
+    def test_compute_tiles(self):
         crs_name = WEB_MERCATOR_CRS_NAME
         ml_ds = self._get_ml_dataset(crs_name)
         tiles = compute_tiles(
