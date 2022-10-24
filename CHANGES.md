@@ -3,6 +3,11 @@
 ### Intermediate changes
 
 * Removed outdated example resources from `examples/serve/demo`.
+* Account for different spatial resolutions in x and y in 
+  `xcube.core.geom.get_dataset_bounds()`.
+* Make code robust against 0-size coordinates in 
+  `xcube.core.update._update_dataset_attrs()`.
+
 
 ## Changes in 0.13.0.dev2
 
