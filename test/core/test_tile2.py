@@ -1,6 +1,28 @@
-import unittest
-from typing import Optional, Tuple
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
+import unittest
+from typing import Optional
+
+import matplotlib.cm
 import matplotlib.colors
 import numpy as np
 import pyproj
@@ -9,10 +31,12 @@ import xarray as xr
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.tile import compute_rgba_tile
+from xcube.core.tile import compute_tiles
 from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
 from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
 from xcube.util.cmaps import ColormapProvider
-import matplotlib.cm
+
+nan = np.nan
 
 
 class ColormapProviderMock(ColormapProvider):
@@ -87,6 +111,86 @@ class Tile2Test(unittest.TestCase):
         )
         # ds = ds.chunk(dict(x=4, y=3))
         return BaseMultiLevelDataset(ds)
+
+
+class ComputeTilesTest(Tile2Test, unittest.TestCase):
+
+    def test_compute_tiles(self):
+        crs_name = WEB_MERCATOR_CRS_NAME
+        ml_ds = self._get_ml_dataset(crs_name)
+        tiles = compute_tiles(
+            ml_ds,
+            ('var_a', 'var_b', 'var_c'),
+            (-180, -90, 180, 90),
+            tile_crs=GEOGRAPHIC_CRS_NAME,
+            tile_size=10,
+            level=0,
+            non_spatial_labels={'time': 0},
+            tile_enlargement=0
+        )
+        self.assertIsInstance(tiles, list)
+        self.assertEqual(3, len(tiles))
+        for i in range(3):
+            self.assertIsInstance(tiles[i], np.ndarray)
+            self.assertEqual(np.float32, tiles[i].dtype)
+            self.assertEqual((10, 10), tiles[i].shape)
+        np.testing.assert_equal(
+            tiles[0],
+            np.array(
+                [
+                    [5., 5., 1., 1., 1., 1., 2., 2., 2., nan],
+                    [1., 1., 5., 1., 1., 1., 2., 2., nan, 2.],
+                    [1., 1., 1., 5., 1., 1., 2., nan, 2., 2.],
+                    [1., 1., 1., 5., 1., 1., 2., nan, 2., 2.],
+                    [1., 1., 1., 1., 5., 5., nan, 2., 2., 2.],
+                    [1., 1., 1., 1., 5., 5., nan, 2., 2., 2.],
+                    [3., 3., 3., 3., nan, nan, 5., 4., 4., 4.],
+                    [3., 3., 3., 3., nan, nan, 5., 4., 4., 4.],
+                    [3., 3., 3., nan, 3., 3., 4., 5., 4., 4.],
+                    [nan, nan, 3., 3., 3., 3., 4., 4., 4., 5.]
+                ],
+                dtype=np.float32
+            )
+        )
+        np.testing.assert_equal(
+            tiles[1],
+            np.array(
+                [
+                    [nan, nan, 2., 2., 2., 2., 3., 3., 3., 7.],
+                    [2., 2., nan, 2., 2., 2., 3., 3., 7., 3.],
+                    [2., 2., 2., nan, 2., 2., 3., 7., 3., 3.],
+                    [2., 2., 2., nan, 2., 2., 3., 7., 3., 3.],
+                    [2., 2., 2., 2., nan, nan, 7., 3., 3., 3.],
+                    [2., 2., 2., 2., nan, nan, 7., 3., 3., 3.],
+                    [4., 4., 4., 4., 7., 7., nan, 5., 5., 5.],
+                    [4., 4., 4., 4., 7., 7., nan, 5., 5., 5.],
+                    [4., 4., 4., 7., 4., 4., 5., nan, 5., 5.],
+                    [7., 7., 4., 4., 4., 4., 5., 5., 5., nan]
+                ],
+                dtype=np.float32
+            )
+        )
+        np.testing.assert_equal(
+            tiles[2],
+            np.array(
+                [
+                    [7., 7., 3., 3., 3., 3., 4., 4., 4., 8.],
+                    [3., 3., 7., 3., 3., 3., 4., 4., 8., 4.],
+                    [3., 3., 3., 7., 3., 3., 4., 8., 4., 4.],
+                    [3., 3., 3., 7., 3., 3., 4., 8., 4., 4.],
+                    [3., 3., 3., 3., 7., 7., 8., 4., 4., 4.],
+                    [3., 3., 3., 3., 7., 7., 8., 4., 4., 4.],
+                    [5., 5., 5., 5., 8., 8., 7., nan, nan, nan],
+                    [5., 5., 5., 5., 8., 8., 7., nan, nan, nan],
+                    [5., 5., 5., 8., 5., 5., nan, 7., nan, nan],
+                    [8., 8., 5., 5., 5., 5., nan, nan, nan, 7.]
+                ],
+                dtype=np.float32
+            )
+        )
+
+
+class ComputeRgbaTileTest(Tile2Test, unittest.TestCase):
 
     def test_compute_rgba_tile_with_color_mapping(self):
         crs_name = WEB_MERCATOR_CRS_NAME

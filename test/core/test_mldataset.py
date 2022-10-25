@@ -1,10 +1,12 @@
 import os
+import threading
 import unittest
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
 from xcube.core.mldataset import ComputedMultiLevelDataset
@@ -64,12 +66,36 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         ml_ds = BaseMultiLevelDataset(ds)
 
         self.assertIsInstance(ml_ds.ds_id, str)
-
+        self.assertIsInstance(ml_ds.grid_mapping, GridMapping)
+        self.assertIsNotNone(ml_ds.lock)
         self.assertEqual(3, ml_ds.num_levels)
-        self.assertEqual([(0.25, 0.25), (0.5, 0.5), (1.0, 1.0)],
+
+    def test_resolutions(self):
+        ds = _get_test_dataset()
+        ml_ds = BaseMultiLevelDataset(ds)
+
+        self.assertEqual([(0.25, 0.25),
+                          (0.5, 0.5),
+                          (1.0, 1.0)],
                          ml_ds.resolutions)
-        self.assertEqual([0.25, 0.5, 1.0],
-                         ml_ds.avg_resolutions)
+        self.assertIs(ml_ds.resolutions, ml_ds.resolutions)
+
+        self.assertEqual([0.25, 0.5, 1.0], ml_ds.avg_resolutions)
+        self.assertIs(ml_ds.avg_resolutions, ml_ds.avg_resolutions)
+
+    def test_get_level_for_resolution(self):
+        ds = _get_test_dataset()
+        ml_ds = BaseMultiLevelDataset(ds)
+
+        self.assertEqual(0, ml_ds.get_level_for_resolution(0.1))
+        self.assertEqual(0, ml_ds.get_level_for_resolution(0.25))
+        self.assertEqual(0, ml_ds.get_level_for_resolution(0.3))
+        self.assertEqual(1, ml_ds.get_level_for_resolution(0.5))
+        self.assertEqual(1, ml_ds.get_level_for_resolution(0.6))
+        self.assertEqual(1, ml_ds.get_level_for_resolution(0.9))
+        self.assertEqual(2, ml_ds.get_level_for_resolution(1.0))
+        self.assertEqual(2, ml_ds.get_level_for_resolution(1.5))
+        self.assertEqual(2, ml_ds.get_level_for_resolution(10.0))
 
     def test_level_datasets(self):
         ds = _get_test_dataset()
@@ -91,6 +117,8 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
                          ds2.dims)
 
         self.assertEqual([ds0, ds1, ds2], ml_ds.datasets)
+
+        self.assertIs(ds0, ml_ds.base_dataset)
 
         ml_ds.close()
 
@@ -125,7 +153,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
 
         ml_ds2 = ComputedMultiLevelDataset(
             os.path.join(os.path.dirname(__file__),
-                         "..", "webapi", "res", "test", "script.py"),
+                         "..", "webapi", "res", "script.py"),
             "compute_dataset",
             ["ml_ds1"],
             input_ml_dataset_getter,

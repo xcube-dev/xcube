@@ -4,14 +4,26 @@
 
 * xcube Server has been rewritten almost from scratch.
   
-  - Introduced a new endpoint `${server_url}/s3/{bucket}` that emulates
+  - Introduced a new endpoint `${server_url}/s3` that emulates
     and AWS S3 object storage for the published datasets.
     The `bucket` name can be either:
-    * `datasets` - publishes all datasets in Zarr format.
-    * `pyramids` - publishes all datasets in a multi-level `levels`
+    * `s3://datasets` - publishes all datasets in Zarr format.
+    * `s3://pyramids` - publishes all datasets in a multi-level `levels`
       format (multi-resolution N-D images)
       that comprises level datasets in Zarr format.
     
+    Datasets published through the S3 API are slightly 
+    renamed for clarity. For bucket `s3://pyramids`:
+    - if a dataset identifier has suffix `.levels`, the identifier remains;
+    - if a dataset identifier has suffix `.zarr`, it will be replaced by 
+      `.levels` only if such a dataset doesn't exist;
+    - otherwise, the suffix `.levels` is appended to the identifier.
+    For bucket `s3://datasets` the opposite is true:
+    - if a dataset identifier has suffix `.zarr`, the identifier remains;
+    - if a dataset identifier has suffix `.levels`, it will be replaced by 
+      `.zarr` only if such a dataset doesn't exist;
+    - otherwise, the suffix `.zarr` is appended to the identifier.
+
     With the new S3 endpoints in place, xcube Server instances can be used
     as xcube data stores as follows:
     
@@ -52,12 +64,28 @@
 ### Other
 
 * Deprecated CLI `xcube tile` has been removed.
-* Deprecated modules and their references have finally been removed:
-  - `xcube.core.tilegrid`
+* Deprecated modules, classes, methods, and functions
+  have finally been removed:
+  - `xcube.core.geom.get_geometry_mask()`
+  - `xcube.core.mldataset.FileStorageMultiLevelDataset`
+  - `xcube.core.mldataset.open_ml_dataset()`
+  - `xcube.core.mldataset.open_ml_dataset_from_local_fs()`
+  - `xcube.core.mldataset.open_ml_dataset_from_object_storage()`
+  - `xcube.core.subsampling.get_dataset_subsampling_slices()`
   - `xcube.core.tiledimage`
-* The following functions have been deprecated:
+  - `xcube.core.tilegrid`
+* The following classes, methods, and functions have been deprecated:
+  - `xcube.core.xarray.DatasetAccessor.levels()`
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
+
+* A new function `compute_tiles()` has been 
+  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
+* Added method `get_level_for_resolution(xy_res)` to 
+  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
+
+* Fixed problem with `xcube gen` raising `FileNotFoundError` 
+  with Zarr >= 2.13.
 
 ## Changes in 0.12.1 
 

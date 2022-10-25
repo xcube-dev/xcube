@@ -643,7 +643,6 @@ class GridMapping(abc.ABC):
                      dataset: xr.Dataset,
                      *,
                      crs: Union[str, pyproj.crs.CRS] = None,
-                     xy_var_names: Tuple[str, str] = None,
                      tile_size: Union[int, Tuple[int, int]] = None,
                      prefer_is_regular: bool = True,
                      prefer_crs: Union[str, pyproj.crs.CRS] = None,
@@ -654,9 +653,6 @@ class GridMapping(abc.ABC):
 
         :param dataset: The dataset.
         :param crs: Optional spatial coordinate reference system.
-        :param xy_var_names: Optional tuple of the x- and
-            y-coordinate variables in *dataset*.
-            Deprecated since xcube 0.10.1.
         :param tile_size: Optional tile size
         :param prefer_is_regular: Whether to prefer a regular
             grid mapping if multiple found. Default is True.
@@ -673,7 +669,6 @@ class GridMapping(abc.ABC):
         return new_grid_mapping_from_dataset(
             dataset=dataset,
             crs=crs,
-            xy_var_names=xy_var_names,
             tile_size=tile_size,
             prefer_is_regular=prefer_is_regular,
             prefer_crs=prefer_crs,

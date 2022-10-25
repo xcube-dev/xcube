@@ -416,7 +416,8 @@ def _get_tile_matrix_set_element(
     scale_factor = meters_per_pixel / _STD_PIXEL_SIZE_IN_METERS
 
     tiling_scheme = TilingScheme.for_crs(get_crs_name_from_tms_id(tms_id))
-    tile_size = tiling_scheme.tile_size
+    tile_width = tiling_scheme.tile_width
+    tile_height = tiling_scheme.tile_height
     num_x_tiles_0, num_y_tiles_0 = tiling_scheme.num_level_zero_tiles
     resolutions = tiling_scheme.get_resolutions(
         min_level=min_level,
@@ -434,8 +435,8 @@ def _get_tile_matrix_set_element(
                     Element('ows:Identifier', text=f'{level}'),
                     Element('ScaleDenominator', text=f'{scale_denominator}'),
                     Element('TopLeftCorner', text=f'{bbox[0]} {bbox[3]}'),
-                    Element('TileWidth', text=f'{tile_size}'),
-                    Element('TileHeight', text=f'{tile_size}'),
+                    Element('TileWidth', text=f'{tile_width}'),
+                    Element('TileHeight', text=f'{tile_height}'),
                     Element('MatrixWidth', text=f'{num_x_tiles}'),
                     Element('MatrixHeight', text=f'{num_y_tiles}'),
                 ]
