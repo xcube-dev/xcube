@@ -151,8 +151,11 @@ def compute_tiles(
         tile_y_1d = np.linspace(tile_y_min + 0.5 * tile_res_y,
                                 tile_y_max - 0.5 * tile_res_y, tile_height)
 
-        tile_x_2d = np.tile(tile_x_1d, (tile_width, 1))
-        tile_y_2d = np.tile(tile_y_1d, (tile_height, 1)).transpose()
+        tile_x_2d = np.tile(tile_x_1d, (tile_height, 1))
+        tile_y_2d = np.tile(tile_y_1d, (tile_width, 1)).transpose()
+
+        assert tile_x_2d.shape == (tile_height, tile_width)
+        assert tile_y_2d.shape == tile_x_2d.shape
 
         t_map_to_ds = ProjCache.INSTANCE.get_transformer(
             tile_crs,
@@ -168,14 +171,14 @@ def compute_tiles(
         ds_x_n = tile_ds_x_2d[0, :]
         ds_y_n = tile_ds_y_2d[0, :]
         # South
-        ds_x_s = tile_ds_x_2d[tile_width - 1, :]
+        ds_x_s = tile_ds_x_2d[tile_height - 1, :]
         ds_y_s = tile_ds_y_2d[tile_height - 1, :]
         # West
         ds_x_w = tile_ds_x_2d[:, 0]
         ds_y_w = tile_ds_y_2d[:, 0]
         # East
         ds_x_e = tile_ds_x_2d[:, tile_width - 1]
-        ds_y_e = tile_ds_y_2d[:, tile_height - 1]
+        ds_y_e = tile_ds_y_2d[:, tile_width - 1]
         # Min
         ds_x_min = np.nanmin([np.nanmin(ds_x_n), np.nanmin(ds_x_s),
                               np.nanmin(ds_x_w), np.nanmin(ds_x_e)])

@@ -23,7 +23,7 @@ import warnings
 from typing import Dict, List, Any, Optional
 
 import numpy as np
-from xarray import Dataset
+from xarray import Dataset, DataArray
 
 import xcube.core.store.storepool as sp
 from xcube.core.gen2 import CubeGenerator
@@ -31,8 +31,11 @@ from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.core.gen2 import OutputConfig
 from xcube.core.gen2.local.writer import CubeWriter
 from xcube.core.gridmapping import GridMapping
+from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core._tile2 import compute_tiles
 from xcube.webapi.common.xml import Document
 from xcube.webapi.common.xml import Element
+from xcube.webapi.datasets.context import DatasetConfig
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
 
@@ -107,13 +110,13 @@ def get_describe_coverage_xml(ctx: WcsContext,
 
 def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
         -> CubeGeneratorRequest:
-    data_id = _get_input_data_id(ctx, req)
+    data_id = _get_dataset_config(ctx, req)['Path']
     bbox = []
     for v in req.bbox.split(','):
         bbox.append(float(v))
 
     store_pool = ctx.datasets_ctx.get_data_store_pool()
-    store_id = _get_store_id(store_pool, data_id)
+    store_id = _get_store_instance_id(store_pool, data_id)
     datastore_root = store_pool.get_store_config(store_id).store_params['root']
     store_config_id = store_pool.get_store_config(store_id).store_id
 
@@ -140,7 +143,7 @@ def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
     )
 
 
-def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
+def __get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     _validate_coverage_req(ctx, req)
     gen_req = translate_to_generator_request(ctx, req)
 
@@ -159,6 +162,54 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     return cube
 
 
+def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
+    dataset_config = _get_dataset_config(ctx, req)
+    data_id = dataset_config['Path']
+    store_pool = ctx.datasets_ctx.get_data_store_pool()
+    store_instance_id = _get_store_instance_id(store_pool, data_id)
+    store_config = store_pool.get_store_config(store_instance_id)
+    datastore_root = store_config.store_params['root']
+    store_config_id = store_config.store_id
+    store = store_pool.get_store(store_instance_id)
+    ds = store.open_data(data_id)
+    ml_dataset = BaseMultiLevelDataset(ds)
+
+    xy_dim_names = ml_dataset.grid_mapping.xy_dim_names
+
+    bbox = []
+    for v in req.bbox.split(','):
+        bbox.append(float(v))
+
+    ds_name = dataset_config['Identifier']
+    var_name = req.coverage.replace(ds_name + '.', '')
+    tile_size = (int(req.width), int(req.height))
+    tile = compute_tiles(ml_dataset, var_name, tuple(bbox), req.crs,
+                         tile_size=tile_size)[0]
+
+    # tile = compute_tiles(ml_dataset, var_name, tuple(bbox), req.crs)[0]
+
+    # lon = compute_tiles(ml_dataset, xy_dim_names[0], tuple(bbox), req.crs,
+    #                      tile_size=(int(req.width), int(req.height)))[0]
+    # lat = compute_tiles(ml_dataset, xy_dim_names[1], tuple(bbox), req.crs,
+    #                      tile_size=(int(req.width), int(req.height)))[0]
+    # spatial_ref = DataArray(
+    #     0, attrs=pyproj.CRS.from_string(req.crs).to_cf()
+    # )
+
+    if ml_dataset.grid_mapping.is_j_axis_up:
+        data = DataArray(tile, dims=['y', 'x'])
+    else:
+        data = DataArray(tile[::-1, :], dims=['y', 'x'])
+
+    # lat_coord = DataArray(lat, dims=['lat'])
+    # lon_coord = DataArray(lon, dims=['lon'])
+    return Dataset(
+        data_vars=dict(
+            data=data
+        ),
+    )
+
+
 def _write_debug_output(cube):
     history = str(cube.history[0])
     del cube.attrs['history']
@@ -169,11 +220,11 @@ def _write_debug_output(cube):
     cw.write_cube(cube, GridMapping.from_dataset(cube))
 
 
-def _get_store_id(store_pool: sp.DataStorePool, data_id: str) -> str:
-    for store_id in store_pool.store_instance_ids:
-        current_store = store_pool.get_store(store_id)
+def _get_store_instance_id(store_pool: sp.DataStorePool, data_id: str) -> str:
+    for store_instance_id in store_pool.store_instance_ids:
+        current_store = store_pool.get_store(store_instance_id)
         if current_store.has_data(data_id):
-            return store_id
+            return store_instance_id
     raise ValueError(f'{data_id} not found in any available data store')
 
 
@@ -187,7 +238,8 @@ def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
     return tuple(output_region)
 
 
-def _get_input_data_id(ctx: WcsContext, req: CoverageRequest) -> str:
+def _get_dataset_config(ctx: WcsContext, req: CoverageRequest) \
+        -> DatasetConfig:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
         ds = ctx.datasets_ctx.get_dataset(ds_name)
@@ -196,7 +248,7 @@ def _get_input_data_id(ctx: WcsContext, req: CoverageRequest) -> str:
         for var_name in var_names:
             qualified_var_name = f'{ds_name}.{var_name}'
             if req.coverage == qualified_var_name:
-                return dataset_config['Path']
+                return dataset_config
     raise RuntimeError('Should never come here. Contact the developers.')
 
 

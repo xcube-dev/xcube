@@ -168,7 +168,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
                         f'failed writing to {temp_file_path}: {e}'
                     ) from e
 
-        await self.response.finish()
+            await self.response.finish()
 
         try:
             os.remove(temp_file_path)
