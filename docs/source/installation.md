@@ -115,7 +115,7 @@ This will create the docker container and list the functionality of the
 Example 2:
 
     $  docker build -t xcube:0.10.0 .
-    $  docker run -d -p 8001:8080 "xcube:0.10.0 xcube serve -v --address 0.0.0.0 --port 8080 -c /home/xcube/examples/serve/demo/config.yml"
+    $  docker run -d -p 8001:8080 xcube:0.10.0 "xcube serve -v --address 0.0.0.0 --port 8080 -c /home/xcube/examples/serve/demo/config.yml"
     $  docker ps
 
 This will have started a service in the background which can be accessed 
