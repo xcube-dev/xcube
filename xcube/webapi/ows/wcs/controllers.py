@@ -164,17 +164,8 @@ def __get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
 
 def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     dataset_config = _get_dataset_config(ctx, req)
-    data_id = dataset_config['Path']
-    store_pool = ctx.datasets_ctx.get_data_store_pool()
-    store_instance_id = _get_store_instance_id(store_pool, data_id)
-    store_config = store_pool.get_store_config(store_instance_id)
-    datastore_root = store_config.store_params['root']
-    store_config_id = store_config.store_id
-    store = store_pool.get_store(store_instance_id)
-    ds = store.open_data(data_id)
-    ml_dataset = BaseMultiLevelDataset(ds)
-
-    xy_dim_names = ml_dataset.grid_mapping.xy_dim_names
+    ds_name = dataset_config['Identifier']
+    ds = ctx.datasets_ctx.get_ml_dataset(ds_name)
 
     bbox = []
     for v in req.bbox.split(','):
@@ -183,26 +174,13 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     ds_name = dataset_config['Identifier']
     var_name = req.coverage.replace(ds_name + '.', '')
     tile_size = (int(req.width), int(req.height))
-    tile = compute_tiles(ml_dataset, var_name, tuple(bbox), req.crs,
+    tile = compute_tiles(ds, var_name, tuple(bbox), req.crs,
                          tile_size=tile_size)[0]
 
-    # tile = compute_tiles(ml_dataset, var_name, tuple(bbox), req.crs)[0]
+    if not ds.grid_mapping.is_j_axis_up:
+        tile = tile[::-1, :]
 
-    # lon = compute_tiles(ml_dataset, xy_dim_names[0], tuple(bbox), req.crs,
-    #                      tile_size=(int(req.width), int(req.height)))[0]
-    # lat = compute_tiles(ml_dataset, xy_dim_names[1], tuple(bbox), req.crs,
-    #                      tile_size=(int(req.width), int(req.height)))[0]
-    # spatial_ref = DataArray(
-    #     0, attrs=pyproj.CRS.from_string(req.crs).to_cf()
-    # )
-
-    if ml_dataset.grid_mapping.is_j_axis_up:
-        data = DataArray(tile, dims=['y', 'x'])
-    else:
-        data = DataArray(tile[::-1, :], dims=['y', 'x'])
-
-    # lat_coord = DataArray(lat, dims=['lat'])
-    # lon_coord = DataArray(lon, dims=['lon'])
+    data = DataArray(tile, dims=['y', 'x'])
     return Dataset(
         data_vars=dict(
             data=data
