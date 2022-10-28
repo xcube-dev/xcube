@@ -538,7 +538,7 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
         -> Element:
     coverage_elements = []
 
-    band_infos = _extract_band_infos(ctx, coverages, True)
+    band_infos = _extract_band_infos(ctx, coverages)
     for var_name in band_infos.keys():
         coverage_elements.append(Element('CoverageOffering', elements=[
             Element('description', text=band_infos[var_name].label),
@@ -572,15 +572,7 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                     Element('axisDescription', elements=[
                         Element('AxisDescription', elements=[
                             Element('name', text='Band'),
-                            Element('label', text='Band'),
-                            Element('values', elements=[
-                                Element('interval', elements=[
-                                    Element('min', text=
-                                    f'{band_infos[var_name].min:0.4f}'),
-                                    Element('max', text=
-                                    f'{band_infos[var_name].max:0.4f}')
-                                ])
-                            ]),
+                            Element('label', text='Band')
                         ])
                     ])
                 ])
@@ -637,8 +629,8 @@ class BandInfo:
         self.time_steps = time_steps
 
 
-def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
-                        full: bool = False) -> Dict[str, BandInfo]:
+def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None) \
+        -> Dict[str, BandInfo]:
     band_infos = {}
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
@@ -676,11 +668,6 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
                 time_steps = [f'{str(d)[:19]}Z' for d in var.time.values]
 
             band_info = BandInfo(qualified_var_name, label, bbox, time_steps)
-            if full:
-                nn_values = var.values[~np.isnan(var.values)]
-                band_info.min = nn_values.min()
-                band_info.max = nn_values.max()
-
             band_infos[f'{ds_name}.{var_name}'] = band_info
 
     return band_infos
