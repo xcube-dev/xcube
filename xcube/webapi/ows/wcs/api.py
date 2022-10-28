@@ -26,7 +26,7 @@ from .context import WcsContext
 api = Api(
     'ows.wcs',
     description='xcube OGC WCS API',
-    required_apis=['datasets'],
+    required_apis=['tiles', 'datasets'],
     config_schema=CONFIG_SCHEMA,
     create_ctx=WcsContext
 )

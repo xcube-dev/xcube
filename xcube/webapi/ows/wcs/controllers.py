@@ -406,8 +406,10 @@ def _get_service_element(ctx: WcsContext) -> Element:
             node = v
         return str(v) if v is not None else ''
 
-    def _get_individual_name():
+    def _get_individual_name() -> str:
         individual_name = _get_sp_value(['ServiceContact', 'IndividualName'])
+        if not individual_name:
+            return ''
         individual_name = tuple(individual_name.split(' ').__reversed__())
         return '{}, {}'.format(*individual_name)
 
