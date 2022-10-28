@@ -31,7 +31,7 @@
 * xcube Server has been rewritten almost from scratch.
   
   - Introduced a new endpoint `${server_url}/s3` that emulates
-    and AWS S3 object storage for the published datasets.
+    and AWS S3 object storage for the published datasets. (#717)
     The `bucket` name can be either:
     * `s3://datasets` - publishes all datasets in Zarr format.
     * `s3://pyramids` - publishes all datasets in a multi-level `levels`
@@ -69,6 +69,10 @@
 
   - The limited `s3bucket` endpoints are no longer available and are 
     replaced by `s3` endpoints. 
+
+  - The `--show` option of `xcube serve` is no longer available. (#750)
+    We may reintroduce it, but then with a packaged build of 
+    xcube Viewer that matches the current xcube Server version. 
 
 * xcube Server's colormap management has been improved in several ways:
   - Colormaps are no longer managed globally. E.g., on server configuration 
