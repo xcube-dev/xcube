@@ -1,13 +1,16 @@
 ## Changes in 0.13.0.dev3
 
-### Intermediate changes
+### Other
 
+* A new function `compute_tiles()` has been 
+  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
+* Added method `get_level_for_resolution(xy_res)` to 
+  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
 * Removed outdated example resources from `examples/serve/demo`.
 * Account for different spatial resolutions in x and y in 
   `xcube.core.geom.get_dataset_bounds()`.
 * Make code robust against 0-size coordinates in 
   `xcube.core.update._update_dataset_attrs()`.
-
 
 ## Changes in 0.13.0.dev2
 
@@ -108,13 +111,8 @@
   - `xcube.core.xarray.DatasetAccessor.levels()`
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
-
-* A new function `compute_tiles()` has been 
-  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
-* Added method `get_level_for_resolution(xy_res)` to 
-  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
-
-* Fixed problem with `xcube gen` raising `FileNotFoundError` 
+  
+* Fixed problem with `xcube gen` raising `FileNotFoundError`
   with Zarr >= 2.13.
 
 ## Changes in 0.12.1 
