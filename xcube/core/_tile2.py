@@ -37,6 +37,7 @@ from xcube.util.assertions import assert_true
 from xcube.util.cmaps import ColormapProvider
 from xcube.util.perf import measure_time_cm
 from xcube.util.projcache import ProjCache
+from ..util.timeindex import ensure_time_label_compatible
 from xcube.util.types import Pair
 from xcube.util.types import ScalarOrPair
 from xcube.util.types import normalize_scalar_or_pair
@@ -504,7 +505,9 @@ def _get_variable(ds_name,
                                                  non_spatial_labels,
                                                  logger)
     if non_spatial_labels:
-        variable = variable.sel(**non_spatial_labels, method='nearest')
+        non_spatial_labels_safe = \
+            ensure_time_label_compatible(variable, non_spatial_labels)
+        variable = variable.sel(**non_spatial_labels_safe, method='nearest')
     return variable
 
 
