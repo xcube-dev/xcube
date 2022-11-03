@@ -62,9 +62,10 @@ def compute_tiles(
         tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
         level: int = 0,
         non_spatial_labels: Optional[Dict[str, Any]] = None,
+        as_dataset: bool = False,
         tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
         trace_perf: bool = False,
-) -> Optional[List[np.ndarray]]:
+) -> Optional[Union[List[np.ndarray], xr.Dataset]]:
     """Compute tiles for given *variable_names* in
     given multi-resolution dataset *mr_dataset*.
 
@@ -101,6 +102,8 @@ def compute_tiles(
         Defaults to 0, the base level.
     :param non_spatial_labels: Labels for the non-spatial dimensions
         in the given variables.
+    :param as_dataset: If set, an ``xr.Dataset`` is returned
+        instead of a list of numpy arrays.
     :param tile_enlargement: Enlargement in pixels applied to
         the computed source tile read from the data.
         Can be used to increase the accuracy of the borders of target
@@ -267,7 +270,62 @@ def compute_tiles(
 
         var_tiles.append(var_tile)
 
+    if as_dataset:
+        return _new_tile_dataset(
+            [(var, dataset[var.name].dims) for var in variables],
+            var_tiles,
+            (ds_x_name, ds_y_name),
+            (tile_x_1d, tile_y_1d),
+            tile_crs
+        )
+
     return var_tiles
+
+
+def _new_tile_dataset(
+        original_vars: List[Tuple[xr.DataArray, Tuple[Hashable, ...]]],
+        tiles: List[np.ndarray],
+        xy_names: Tuple[str, str],
+        xy_coords: Tuple[np.ndarray, np.ndarray],
+        crs: Union[str, pyproj.CRS]):
+    data_vars = {}
+    non_spatial_coords = {}
+    for i, (original_var, original_dims) in enumerate(original_vars):
+        var_name = original_var.name
+        non_spatial_dims = []
+        for dim in original_dims:
+            if dim not in xy_names:
+                non_spatial_dims.append(dim)
+                if dim not in non_spatial_coords \
+                        and dim in original_var.coords:
+                    non_spatial_coords[dim] = original_var.coords[dim]
+        data_2d = tiles[i]
+        data_nd = data_2d[(*(len(non_spatial_dims) * [np.newaxis]), ...)]
+        data_vars[var_name] = xr.DataArray(
+            data=data_nd,
+            dims=(*non_spatial_dims, "y", "x"),
+            name=var_name,
+            attrs=dict(**original_var.attrs, grid_mapping="crs"),
+        )
+    print(pyproj.CRS(crs).to_cf())
+    return xr.Dataset(
+        data_vars=dict(
+            **data_vars,
+            crs=xr.DataArray((), attrs=pyproj.CRS(crs).to_cf())
+        ),
+        coords=dict(
+            **{k: xr.DataArray([v.values], dims=k, attrs=v.attrs)
+               for k, v in non_spatial_coords.items()},
+            y=xr.DataArray(xy_coords[1], dims="y", attrs=dict(
+                long_name="y coordinate of projection",
+                standard_name="projection_y_coordinate"
+            )),
+            x=xr.DataArray(xy_coords[0], dims="x", attrs=dict(
+                long_name="x coordinate of projection",
+                standard_name="projection_x_coordinate"
+            )),
+        )
+    )
 
 
 def compute_rgba_tile(

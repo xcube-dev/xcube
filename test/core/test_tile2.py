@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
-from typing import Optional
+from typing import Optional, List
 
 import matplotlib.cm
 import matplotlib.colors
@@ -114,77 +114,108 @@ class Tile2Test(unittest.TestCase):
 
 
 class ComputeTilesTest(Tile2Test, unittest.TestCase):
+    crs_name = WEB_MERCATOR_CRS_NAME
+    ml_ds = Tile2Test._get_ml_dataset(crs_name)
+    tile_w = 12
+    tile_h = 8
+    args = [
+        ml_ds,
+        ('var_a', 'var_b', 'var_c'),
+        (-180, -90, 180, 90)
+    ]
+    kwargs = dict(
+        tile_crs=GEOGRAPHIC_CRS_NAME,
+        tile_size=(tile_w, tile_h),
+        level=0,
+        non_spatial_labels={'time': 0},
+        tile_enlargement=0
+    )
 
-    def test_compute_tiles(self):
-        crs_name = WEB_MERCATOR_CRS_NAME
-        ml_ds = self._get_ml_dataset(crs_name)
-        tiles = compute_tiles(
-            ml_ds,
-            ('var_a', 'var_b', 'var_c'),
-            (-180, -90, 180, 90),
-            tile_crs=GEOGRAPHIC_CRS_NAME,
-            tile_size=10,
-            level=0,
-            non_spatial_labels={'time': 0},
-            tile_enlargement=0
-        )
+    def test_compute_tiles_as_ndarrays(self):
+        tiles = compute_tiles(*self.args, **self.kwargs)
         self.assertIsInstance(tiles, list)
-        self.assertEqual(3, len(tiles))
+        self.assert_tiles_ok(self.tile_w, self.tile_h, tiles)
+
+    def test_compute_tiles_as_dataset(self):
+        dataset = compute_tiles(*self.args, **self.kwargs, as_dataset=True)
+        self.assertIsInstance(dataset, xr.Dataset)
+
+        # Test spatial reference
+        self.assertIn("crs", dataset)
+        self.assertIn("crs_wkt", dataset["crs"].attrs)
+        self.assertIn("latitude_longitude",
+                      dataset["crs"].attrs.get("grid_mapping_name"))
+
+        # Test data variables
+        tiles: List[np.ndarray] = []
+        for var_name in ('var_a', 'var_b', 'var_c'):
+            self.assertIn(var_name, dataset.data_vars)
+            var = dataset[var_name]
+            self.assertEqual(("time", "y", "x"), var.dims)
+            self.assertEqual((1, self.tile_h, self.tile_w), var.shape)
+            tiles.append(var.data[0, :, :])
+        self.assert_tiles_ok(self.tile_w, self.tile_h, tiles)
+
+        # Test coordinates
+        dim_sizes = ('time', 1), ('y', self.tile_h), ('x', self.tile_w)
+        self.assertEqual(dict(dim_sizes), dataset.dims)
+        for var_name, expected_size in dim_sizes:
+            self.assertIn(var_name, dataset.coords)
+            var = dataset[var_name]
+            self.assertEqual(expected_size, len(var))
+
+    def assert_tiles_ok(self,
+                        expected_tile_w: int,
+                        expected_tile_h: int,
+                        actual_tiles: List[np.ndarray]):
+        self.assertEqual(3, len(actual_tiles))
         for i in range(3):
-            self.assertIsInstance(tiles[i], np.ndarray)
-            self.assertEqual(np.float32, tiles[i].dtype)
-            self.assertEqual((10, 10), tiles[i].shape)
+            self.assertIsInstance(actual_tiles[i], np.ndarray)
+            self.assertEqual(np.float32, actual_tiles[i].dtype)
+            self.assertEqual((expected_tile_h, expected_tile_w),
+                             actual_tiles[i].shape)
+        # print(f'{tiles[0]!r}')
         np.testing.assert_equal(
-            tiles[0],
+            actual_tiles[0],
             np.array(
-                [
-                    [5., 5., 1., 1., 1., 1., 2., 2., 2., nan],
-                    [1., 1., 5., 1., 1., 1., 2., 2., nan, 2.],
-                    [1., 1., 1., 5., 1., 1., 2., nan, 2., 2.],
-                    [1., 1., 1., 5., 1., 1., 2., nan, 2., 2.],
-                    [1., 1., 1., 1., 5., 5., nan, 2., 2., 2.],
-                    [1., 1., 1., 1., 5., 5., nan, 2., 2., 2.],
-                    [3., 3., 3., 3., nan, nan, 5., 4., 4., 4.],
-                    [3., 3., 3., 3., nan, nan, 5., 4., 4., 4.],
-                    [3., 3., 3., nan, 3., 3., 4., 5., 4., 4.],
-                    [nan, nan, 3., 3., 3., 3., 4., 4., 4., 5.]
-                ],
+                [[1., 1., 1., 5., 1., 1., 1., 2., 2., nan, 2., 2.],
+                 [1., 1., 1., 5., 1., 1., 1., 2., 2., nan, 2., 2.],
+                 [1., 1., 1., 1., 5., 1., 1., 2., nan, 2., 2., 2.],
+                 [1., 1., 1., 1., 1., 5., 5., nan, 2., 2., 2., 2.],
+                 [1., 1., 1., 1., 1., 5., 5., nan, 2., 2., 2., 2.],
+                 [3., 3., 3., 3., 3., nan, nan, 5., 4., 4., 4., 4.],
+                 [3., 3., 3., 3., nan, 3., 3., 4., 5., 4., 4., 4.],
+                 [3., 3., 3., nan, 3., 3., 3., 4., 4., 5., 4., 4.]],
                 dtype=np.float32
             )
         )
+        # print(f'{tiles[1]!r}')
         np.testing.assert_equal(
-            tiles[1],
+            actual_tiles[1],
             np.array(
-                [
-                    [nan, nan, 2., 2., 2., 2., 3., 3., 3., 7.],
-                    [2., 2., nan, 2., 2., 2., 3., 3., 7., 3.],
-                    [2., 2., 2., nan, 2., 2., 3., 7., 3., 3.],
-                    [2., 2., 2., nan, 2., 2., 3., 7., 3., 3.],
-                    [2., 2., 2., 2., nan, nan, 7., 3., 3., 3.],
-                    [2., 2., 2., 2., nan, nan, 7., 3., 3., 3.],
-                    [4., 4., 4., 4., 7., 7., nan, 5., 5., 5.],
-                    [4., 4., 4., 4., 7., 7., nan, 5., 5., 5.],
-                    [4., 4., 4., 7., 4., 4., 5., nan, 5., 5.],
-                    [7., 7., 4., 4., 4., 4., 5., 5., 5., nan]
-                ],
+                [[2., 2., 2., nan, 2., 2., 2., 3., 3., 7., 3., 3.],
+                 [2., 2., 2., nan, 2., 2., 2., 3., 3., 7., 3., 3.],
+                 [2., 2., 2., 2., nan, 2., 2., 3., 7., 3., 3., 3.],
+                 [2., 2., 2., 2., 2., nan, nan, 7., 3., 3., 3., 3.],
+                 [2., 2., 2., 2., 2., nan, nan, 7., 3., 3., 3., 3.],
+                 [4., 4., 4., 4., 4., 7., 7., nan, 5., 5., 5., 5.],
+                 [4., 4., 4., 4., 7., 4., 4., 5., nan, 5., 5., 5.],
+                 [4., 4., 4., 7., 4., 4., 4., 5., 5., nan, 5., 5.]],
                 dtype=np.float32
             )
         )
+        # print(f'{tiles[2]!r}')
         np.testing.assert_equal(
-            tiles[2],
+            actual_tiles[2],
             np.array(
-                [
-                    [7., 7., 3., 3., 3., 3., 4., 4., 4., 8.],
-                    [3., 3., 7., 3., 3., 3., 4., 4., 8., 4.],
-                    [3., 3., 3., 7., 3., 3., 4., 8., 4., 4.],
-                    [3., 3., 3., 7., 3., 3., 4., 8., 4., 4.],
-                    [3., 3., 3., 3., 7., 7., 8., 4., 4., 4.],
-                    [3., 3., 3., 3., 7., 7., 8., 4., 4., 4.],
-                    [5., 5., 5., 5., 8., 8., 7., nan, nan, nan],
-                    [5., 5., 5., 5., 8., 8., 7., nan, nan, nan],
-                    [5., 5., 5., 8., 5., 5., nan, 7., nan, nan],
-                    [8., 8., 5., 5., 5., 5., nan, nan, nan, 7.]
-                ],
+                [[3., 3., 3., 7., 3., 3., 3., 4., 4., 8., 4., 4.],
+                 [3., 3., 3., 7., 3., 3., 3., 4., 4., 8., 4., 4.],
+                 [3., 3., 3., 3., 7., 3., 3., 4., 8., 4., 4., 4.],
+                 [3., 3., 3., 3., 3., 7., 7., 8., 4., 4., 4., 4.],
+                 [3., 3., 3., 3., 3., 7., 7., 8., 4., 4., 4., 4.],
+                 [5., 5., 5., 5., 5., 8., 8., 7., nan, nan, nan, nan],
+                 [5., 5., 5., 5., 8., 5., 5., nan, 7., nan, nan, nan],
+                 [5., 5., 5., 8., 5., 5., 5., nan, nan, 7., nan, nan]],
                 dtype=np.float32
             )
         )
