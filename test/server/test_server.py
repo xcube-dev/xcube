@@ -140,11 +140,6 @@ class ServerTest(unittest.TestCase):
                 'additionalProperties': True,
                 'required': ['data_stores'],
                 'properties': {
-                    'address': {
-                        'type': 'string',
-                        'default': '0.0.0.0',
-                        'title': 'Server address.',
-                    },
                     'api_spec': {
                         'type': 'object',
                         'title': 'API specification',
@@ -173,15 +168,20 @@ class ServerTest(unittest.TestCase):
                         'title': 'Base directory used to resolve relative '
                                  'local paths.',
                     },
-                    'data_stores': {
-                        'type': 'array',
-                        'items': {'additionalProperties': True,
-                                  'type': 'object'},
+                    'address': {
+                        'type': 'string',
+                        'default': '0.0.0.0',
+                        'title': 'Server address.',
                     },
                     'port': {
                         'type': 'integer',
                         'title': 'Server port.',
                         'default': 8080,
+                    },
+                    'url_prefix': {
+                        'title': 'Prefix to be prepended to all URL '
+                                 'route paths.',
+                        'type': 'string'
                     },
                     'static_routes': {
                         'type': 'array',
@@ -199,7 +199,12 @@ class ServerTest(unittest.TestCase):
                     'trace_perf': {
                         'type': 'boolean',
                         'title': 'Output performance measures',
-                    }
+                    },
+                    'data_stores': {
+                        'type': 'array',
+                        'items': {'additionalProperties': True,
+                                  'type': 'object'},
+                    },
                 },
             },
             server.config_schema.to_dict()
