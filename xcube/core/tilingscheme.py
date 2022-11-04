@@ -27,6 +27,9 @@ import pyproj
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
+from xcube.util.types import Pair
+from xcube.util.types import ScalarOrPair
+from xcube.util.types import normalize_scalar_or_pair
 
 WEB_MERCATOR_CRS_NAME = 'EPSG:3857'
 WEB_MERCATOR_CRS_ALIASES = (
@@ -77,26 +80,28 @@ class TilingScheme:
                  num_level_zero_tiles: Tuple[int, int],
                  crs_name: str,
                  map_height: float,
-                 tile_size: int = DEFAULT_TILE_SIZE,
+                 tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
                  min_level: Optional[int] = None,
                  max_level: Optional[int] = None):
+        tile_height, tile_width = normalize_scalar_or_pair(tile_size)
         self._num_level_zero_tiles = num_level_zero_tiles
         self._crs_name = crs_name
         self._crs = None
         self._map_height = map_height
-        self._tile_size = tile_size
+        self._tile_width = tile_width
+        self._tile_height = tile_height
         self._min_level = min_level
         self._max_level = max_level
 
     @property
-    def num_level_zero_tiles(self) -> Tuple[int, int]:
+    def num_level_zero_tiles(self) -> Pair[int]:
         """The number of level zero tiles in x and y directions."""
         return self._num_level_zero_tiles
 
     @property
     def level_zero_resolution(self) -> float:
-        """The resolution at level zero in map units."""
-        return self._map_height / self._tile_size
+        """The (vertical) resolution at level zero in map units."""
+        return self._map_height / self._tile_height
 
     @property
     def crs_name(self) -> str:
@@ -152,9 +157,19 @@ class TilingScheme:
         return map_extent[0], map_extent[3]
 
     @property
-    def tile_size(self) -> int:
+    def tile_size(self) -> Pair[int]:
         """The tile size in pixels."""
-        return self._tile_size
+        return self._tile_width, self._tile_height
+
+    @property
+    def tile_width(self) -> int:
+        """The tile width in pixels."""
+        return self._tile_width
+
+    @property
+    def tile_height(self) -> int:
+        """The tile height in pixels."""
+        return self._tile_height
 
     @property
     def min_level(self) -> Optional[int]:

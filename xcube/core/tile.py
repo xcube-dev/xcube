@@ -31,7 +31,8 @@ from xcube.util.timeindex import ensure_time_label_compatible
 
 # Exported for backward compatibility only
 # noinspection PyUnresolvedReferences
-from ._tile2 import (compute_rgba_tile,
+from ._tile2 import (compute_tiles,
+                     compute_rgba_tile,
                      get_var_valid_range,
                      get_var_cmap_params,
                      DEFAULT_VALUE_RANGE,
