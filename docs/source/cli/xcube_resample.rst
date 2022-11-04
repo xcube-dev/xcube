@@ -42,8 +42,9 @@ Resample data along the time dimension.
                                       option. Defaults to 'mean'.
       -F, --frequency TEXT            Temporal aggregation frequency. Use format
                                       "<count><offset>" where <offset> is one of
-                                      'H', 'D', 'W', 'M', 'Q', 'Y'. Defaults to
-                                      '1D'.
+                                      'H', 'D', 'W', 'M', 'Q', 'Y'. Use 'all' to
+                                      aggregate all time steps included in the
+                                      dataset.Defaults to '1D'.
       -O, --offset TEXT               Offset used to adjust the resampled time
                                       labels. Uses same syntax as frequency. Some
                                       Pandas date offset strings are supported as
@@ -69,6 +70,16 @@ Resample data along the time dimension.
                                       delta exceeds the tolerance, fill values
                                       (NaN) will be used. Defaults to the given
                                       frequency.
+      -q, --quiet                     Disable output of log messages to the
+                                      console entirely. Note, this will also
+                                      suppress error and warning messages.
+      -v, --verbose                   Enable output of log messages to the
+                                      console. Has no effect if --quiet/-q is
+                                      used. May be given multiple times to control
+                                      the level of log messages, i.e., -v refers
+                                      to level INFO, -vv to DETAIL, -vvv to DEBUG,
+                                      -vvvv to TRACE. If omitted, the log level of
+                                      the console is WARNING.
       --dry-run                       Just read and process inputs, but don't
                                       produce any outputs.
       --help                          Show this message and exit.

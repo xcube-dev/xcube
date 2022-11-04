@@ -54,6 +54,16 @@ Generate multi-resolution levels.
       -a, --anon                      For S3 inputs or outputs, whether the access
                                       is anonymous. By default, credentials are
                                       required.
+      -q, --quiet                     Disable output of log messages to the
+                                      console entirely. Note, this will also
+                                      suppress error and warning messages.
+      -v, --verbose                   Enable output of log messages to the
+                                      console. Has no effect if --quiet/-q is
+                                      used. May be given multiple times to control
+                                      the level of log messages, i.e., -v refers
+                                      to level INFO, -vv to DETAIL, -vvv to DEBUG,
+                                      -vvvv to TRACE. If omitted, the log level of
+                                      the console is WARNING.
       --help                          Show this message and exit.
 
 

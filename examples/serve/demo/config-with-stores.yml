@@ -5,6 +5,20 @@ DatasetChunkCacheSize: 100M
 
 DataStores:
 
+  # This section needs to be kept, because it is part of xcube server documentation using DataStores.
+  - Identifier: edc
+    StoreId: s3
+    StoreParams:
+      root: xcube-dcfs/edc-xc-viewer-data
+      max_depth: 1
+      storage_options:
+        anon: true
+        # client_kwargs:
+        #  endpoint_url: https://s3.eu-central-1.amazonaws.com
+    Datasets:
+      - Path: "*2.zarr"
+        Style: "default"
+
   - Identifier: sentinelhub
     StoreId: sentinelhub
     StoreParams:
@@ -50,12 +64,6 @@ DataStores:
 Styles:
   - Identifier: S2L2A
     ColorMappings:
-      B01:
-        ColorBar: "bone"
-        ValueRange: [0., 0.25]
-      B01:
-        ColorBar: "bone"
-        ValueRange: [0., 0.25]
       B01:
         ColorBar: "bone"
         ValueRange: [0., 0.25]
