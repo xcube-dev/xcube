@@ -23,7 +23,6 @@ import os
 import tempfile
 from typing import Optional
 
-import dask.array
 from xarray import Dataset
 
 from xcube.constants import LOG
@@ -140,6 +139,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
                 cov_req
             )
         except ValueError as e:
+            # TODO: too broad error message, must name invalid parameter
             raise ApiError.BadRequest(f'{e}') from e
 
         cube = self._clean_cube(cube, time)

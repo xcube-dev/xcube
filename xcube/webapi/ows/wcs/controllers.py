@@ -20,10 +20,10 @@
 # DEALINGS IN THE SOFTWARE.
 
 import warnings
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 
 import numpy as np
-from xarray import Dataset, DataArray
+import xarray as xr
 
 import xcube.core.store.storepool as sp
 from xcube.core.gen2 import CubeGenerator
@@ -31,8 +31,9 @@ from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.core.gen2 import OutputConfig
 from xcube.core.gen2.local.writer import CubeWriter
 from xcube.core.gridmapping import GridMapping
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core._tile2 import compute_tiles
+from xcube.core.tile import BBox
+from xcube.core.tile import compute_tiles
+from xcube.server.api import ApiError
 from xcube.webapi.common.xml import Document
 from xcube.webapi.common.xml import Element
 from xcube.webapi.datasets.context import DatasetConfig
@@ -108,6 +109,7 @@ def get_describe_coverage_xml(ctx: WcsContext,
     return document.to_xml(indent=4)
 
 
+# TODO: remove!
 def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
         -> CubeGeneratorRequest:
     data_id = _get_dataset_config(ctx, req)['Path']
@@ -143,7 +145,8 @@ def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
     )
 
 
-def __get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
+# TODO: remove!
+def __get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
     _validate_coverage_req(ctx, req)
     gen_req = translate_to_generator_request(ctx, req)
 
@@ -162,32 +165,34 @@ def __get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     return cube
 
 
-def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
+def get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
     dataset_config = _get_dataset_config(ctx, req)
     ds_name = dataset_config['Identifier']
-    ds = ctx.datasets_ctx.get_ml_dataset(ds_name)
+    ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_name)
 
-    bbox = []
-    for v in req.bbox.split(','):
-        bbox.append(float(v))
+    # TODO (forman): compute optimal level for RES_X/RES_Y
+
+    bbox: Union[BBox, None]
+    try:
+        # noinspection PyTypeChecker
+        bbox = tuple(float(v) for v in req.bbox.split(','))
+    except ValueError:
+        bbox = None
+    if not bbox or len(bbox) != 4:
+        raise ApiError.BadRequest('invalid bbox')
 
     ds_name = dataset_config['Identifier']
     var_name = req.coverage.replace(ds_name + '.', '')
-    tile_size = (int(req.width), int(req.height))
-    tile = compute_tiles(ds, var_name, tuple(bbox), req.crs,
-                         tile_size=tile_size)[0]
-
-    if not ds.grid_mapping.is_j_axis_up:
-        tile = tile[::-1, :]
-
-    data = DataArray(tile, dims=['y', 'x'])
-    return Dataset(
-        data_vars=dict(
-            data=data
-        ),
-    )
+    tile_size = int(req.width), int(req.height)
+    return compute_tiles(ml_dataset,
+                         var_name,
+                         bbox,
+                         req.crs,
+                         tile_size=tile_size,
+                         as_dataset=True)
 
 
+# TODO: remove!
 def _write_debug_output(cube):
     history = str(cube.history[0])
     del cube.attrs['history']
@@ -198,6 +203,7 @@ def _write_debug_output(cube):
     cw.write_cube(cube, GridMapping.from_dataset(cube))
 
 
+# TODO: remove!
 def _get_store_instance_id(store_pool: sp.DataStorePool, data_id: str) -> str:
     for store_instance_id in store_pool.store_instance_ids:
         current_store = store_pool.get_store(store_instance_id)
@@ -206,6 +212,7 @@ def _get_store_instance_id(store_pool: sp.DataStorePool, data_id: str) -> str:
     raise ValueError(f'{data_id} not found in any available data store')
 
 
+# TODO: remove!
 def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
     if not req.bbox:
         return None
@@ -218,6 +225,17 @@ def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
 
 def _get_dataset_config(ctx: WcsContext, req: CoverageRequest) \
         -> DatasetConfig:
+    # TODO: too much computation here, precompute mapping and store in
+    #   WCS context object, so the dataset config can be looked up:
+    #
+    #   class WcsContext(...):
+    #     ...
+    #     def get_dataset_config(self, coverage: str):
+    #        ds_config = self.coverage_to_ds_config.get(coverage)
+    #        if ds_config is None:
+    #           raise ApiError.BadRequest(f'unknown coverage {coverage!r}')
+    #        return ds_config
+    #
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
         ds = ctx.datasets_ctx.get_dataset(ds_name)
@@ -230,6 +248,7 @@ def _get_dataset_config(ctx: WcsContext, req: CoverageRequest) \
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
+# TODO: remove!
 def _get_input_path(ctx: WcsContext, req: CoverageRequest) -> str:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
@@ -248,6 +267,7 @@ def _get_input_path(ctx: WcsContext, req: CoverageRequest) -> str:
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
+# TODO: remove!
 def _get_input_store_id(ctx: WcsContext, req: CoverageRequest) -> str:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
@@ -261,6 +281,7 @@ def _get_input_store_id(ctx: WcsContext, req: CoverageRequest) -> str:
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
+# TODO: remove!
 def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
     def _has_no_invalid_bbox() -> bool:
         if req.bbox:
@@ -322,6 +343,7 @@ def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
         raise ValueError('Reason unclear, fix me')
 
 
+# TODO: remove!
 def _is_valid_coverage(ctx: WcsContext, coverage: str) -> bool:
     band_infos = _extract_band_infos(ctx, [coverage])
     if band_infos:
@@ -329,10 +351,12 @@ def _is_valid_coverage(ctx: WcsContext, coverage: str) -> bool:
     return False
 
 
+# TODO: remove!
 def _is_valid_crs(crs: str) -> bool:
     return crs in VALID_CRS_LIST
 
 
+# TODO: remove!
 def _is_valid_bbox(bbox: str) -> bool:
     values = bbox.split(',')
     if not len(values) == 4:
@@ -340,10 +364,12 @@ def _is_valid_bbox(bbox: str) -> bool:
     return True
 
 
+# TODO: remove!
 def _is_valid_format(format_req: str) -> bool:
     return format_req in _get_formats_list()
 
 
+# TODO: remove!
 def _is_valid_time(time: str) -> bool:
     # todo - change validation so that it makes sense but works with QGIS
     try:
