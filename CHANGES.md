@@ -1,8 +1,27 @@
+## Changes in 0.13.0.dev4
+
+## Changes in 0.13.0.dev3
+
+### Other
+
+* A new function `compute_tiles()` has been 
+  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
+* Added method `get_level_for_resolution(xy_res)` to 
+  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
+* Removed outdated example resources from `examples/serve/demo`.
+* Account for different spatial resolutions in x and y in 
+  `xcube.core.geom.get_dataset_bounds()`.
+* Make code robust against 0-size coordinates in 
+  `xcube.core.update._update_dataset_attrs()`.
+
 ## Changes in 0.13.0.dev2
 
 ### Intermediate changes
 
 * Fixed unit test w.r.t. change in 0.13.0.dev1
+
+* xcube now tries to prevent indexing timezone-naive variables with
+  timezone-aware indexers, or vice versa.
 
 ## Changes in 0.13.0.dev1
 
@@ -17,7 +36,7 @@
 * xcube Server has been rewritten almost from scratch.
   
   - Introduced a new endpoint `${server_url}/s3` that emulates
-    and AWS S3 object storage for the published datasets.
+    and AWS S3 object storage for the published datasets. (#717)
     The `bucket` name can be either:
     * `s3://datasets` - publishes all datasets in Zarr format.
     * `s3://pyramids` - publishes all datasets in a multi-level `levels`
@@ -56,6 +75,10 @@
   - The limited `s3bucket` endpoints are no longer available and are 
     replaced by `s3` endpoints. 
 
+  - The `--show` option of `xcube serve` is no longer available. (#750)
+    We may reintroduce it, but then with a packaged build of 
+    xcube Viewer that matches the current xcube Server version. 
+
 * xcube Server's colormap management has been improved in several ways:
   - Colormaps are no longer managed globally. E.g., on server configuration 
     change, new custom colormaps are reloaded from files. 
@@ -90,8 +113,8 @@
   - `xcube.core.xarray.DatasetAccessor.levels()`
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
-
-* Fixed problem with `xcube gen` raising `FileNotFoundError` 
+  
+* Fixed problem with `xcube gen` raising `FileNotFoundError`
   with Zarr >= 2.13.
 
 ## Changes in 0.12.1 
@@ -141,7 +164,6 @@
 * The filesystem-based data stores for the "s3", "file", and "memory"
   protocols can now provide `xr.Dataset` instances from image pyramids
   formats, i.e. the `levels` and `geotiff` formats.
-
 
 ## Changes in 0.12.0
 

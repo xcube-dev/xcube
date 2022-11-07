@@ -79,6 +79,7 @@ In order make this option usable, xcube-viewer must be installed and build:
 
     $ git clone https://github.com/dcs4cop/xcube-viewer.git
     $ cd xcube-viewer
+    $ yarn install
     $ yarn build
 
 3. Configure ``xcube serve`` so it finds the xcube-viewer

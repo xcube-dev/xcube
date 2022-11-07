@@ -28,6 +28,11 @@ An optional configuration file given by the `-c` option uses `YAML format`_.
 
     Usage: xcube tile [OPTIONS] CUBE
 
+      IMPORTANT NOTE: The xcube tile tool in its current form is deprecated and no
+      longer supported since xcube 0.11. A new tool is planned that can work
+      concurrently on dask clusters and also supports common tile grids such as
+      global geographic and web mercator.
+
       Create RGBA tiles from CUBE.
 
       Color bars and value ranges for variables can be specified in a CONFIG file.
@@ -68,8 +73,16 @@ An optional configuration file given by the `-c` option uses `YAML format`_.
                                      Only used if CONFIG is given. Defaults to
                                      'default'.
       -o, --output OUTPUT            Output path. Defaults to 'out.tiles'
-      -v, --verbose                  Use -vv to report all files generated, -v to
-                                     report less.
+      -q, --quiet                    Disable output of log messages to the console
+                                     entirely. Note, this will also suppress error
+                                     and warning messages.
+      -v, --verbose                  Enable output of log messages to the console.
+                                     Has no effect if --quiet/-q is used. May be
+                                     given multiple times to control the level of
+                                     log messages, i.e., -v refers to level INFO,
+                                     -vv to DETAIL, -vvv to DEBUG, -vvvv to TRACE.
+                                     If omitted, the log level of the console is
+                                     WARNING.
       --dry-run                      Generate all tiles but don't write any files.
       --help                         Show this message and exit.
 

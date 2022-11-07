@@ -15,14 +15,13 @@ Dump contents of a dataset.
 
     
     Usage: xcube dump [OPTIONS] INPUT
-    
+
       Dump contents of an input dataset.
-    
+
     Options:
-      --variable, --var VARIABLE
-                                      Name of a variable (multiple allowed).
-      -E, --encoding                  Dump also variable encoding information.
-      --help                          Show this message and exit.
+      --variable, --var VARIABLE  Name of a variable (multiple allowed).
+      -E, --encoding              Dump also variable encoding information.
+      --help                      Show this message and exit.
 
 
 Example
