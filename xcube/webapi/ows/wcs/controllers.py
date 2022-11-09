@@ -636,10 +636,10 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
 
 
 def _get_formats_list() -> List[str]:
-    # We only support GeoTIFF or NetCDF, because
+    # We currently only support NetCDF, because
     # 1. QGIS understands them
     # 2. response can be a single file
-    return ['geotiff', 'netcdf']
+    return ['netcdf']
 
 
 class BandInfo:

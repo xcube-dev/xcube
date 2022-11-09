@@ -302,7 +302,7 @@ def _new_tile_dataset(
                 if dim not in non_spatial_coords \
                         and dim in original_var.coords:
                     non_spatial_coords[dim] = original_var.coords[dim]
-        data_2d = tiles[i]
+        data_2d = tiles[i][::-1, :]
         data_nd = data_2d[(*(len(non_spatial_dims) * [np.newaxis]), ...)]
         data_vars[var_name] = xr.DataArray(
             data=data_nd,
@@ -310,17 +310,16 @@ def _new_tile_dataset(
             name=var_name,
             attrs=dict(**original_var.attrs, grid_mapping="crs"),
         )
-    print(pyproj.CRS(crs).to_cf())
     x_coords, y_coords = xy_coords
     return xr.Dataset(
         data_vars=dict(
             **data_vars,
-            crs=xr.DataArray((), attrs=pyproj.CRS(crs).to_cf())
+            crs=xr.DataArray(0, attrs=pyproj.CRS(crs).to_cf())
         ),
         coords=dict(
             **{k: xr.DataArray([v.values], dims=k, attrs=v.attrs)
                for k, v in non_spatial_coords.items()},
-            y=xr.DataArray(y_coords if is_j_axis_up else y_coords[::-1],
+            y=xr.DataArray(y_coords[::-1],
                            dims="y",
                            attrs=dict(
                                long_name="y coordinate of projection",
