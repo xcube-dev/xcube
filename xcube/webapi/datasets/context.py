@@ -859,7 +859,7 @@ def _get_common_prefixes(p):
 
 def _lastindex(prefix, symbol):
     try:
-        return len(prefix) - prefix[::-1].index(symbol) - 1
+        return prefix.rindex(symbol)
     except ValueError:
         return -1
 
