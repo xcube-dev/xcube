@@ -1,5 +1,9 @@
 ## Changes in 0.13.0.dev4
 
+### Fixes
+
+* xcube serve correctly resolves relative paths to datasets (#758)
+
 ## Changes in 0.13.0.dev3
 
 ### Other
