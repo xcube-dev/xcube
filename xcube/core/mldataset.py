@@ -461,7 +461,11 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
 
 class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     """
-    A multi-level dataset whose level datasets are a computed from a Python script.
+    A multi-level dataset whose level datasets are a computed from a Python
+    script.
+
+    The script can import other Python modules located in the same
+    directory as *script_path*.
     """
 
     def __init__(self,
