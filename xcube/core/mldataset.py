@@ -20,7 +20,9 @@
 # SOFTWARE.
 
 import math
+import os.path
 import threading
+import sys
 import uuid
 from abc import abstractmethod, ABCMeta
 from functools import cached_property
@@ -480,6 +482,12 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         except OSError as e:
             raise exception_type(
                 f"Failed to read Python code for in-memory dataset {ds_id!r} from {script_path!r}: {e}") from e
+
+        # Allow scripts to import modules from
+        # within directory
+        script_parent = os.path.dirname(script_path)
+        if script_parent not in sys.path:
+            sys.path = [script_parent] + sys.path
 
         global_env = dict()
         try:
