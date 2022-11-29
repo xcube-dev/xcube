@@ -1,11 +1,11 @@
 import os
-import threading
 import unittest
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
+from xcube.core.dsio import rimraf
 from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
@@ -176,6 +176,48 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
 
         ml_ds1.close()
         ml_ds2.close()
+
+    def test_import(self):
+        script_dir = os.path.join(os.path.dirname(__file__), "test-code")
+
+        os.mkdir(script_dir)
+
+        with open(f"{script_dir}/code.py", "w") as fp:
+            fp.write(
+                "import module as m\n"
+                "\n"
+                "def compute_dataset(ds):\n"
+                "    return m.process_dataset(ds)\n"
+            )
+
+        with open(f"{script_dir}/module.py", "w") as fp:
+            fp.write(
+                "\n"
+                "def process_dataset(ds):\n"
+                "    return ds.copy()\n"
+            )
+
+        ds = _get_test_dataset()
+
+        ml_ds1 = BaseMultiLevelDataset(ds)
+
+        def input_ml_dataset_getter(ds_id):
+            if ds_id == "ml_ds1":
+                return ml_ds1
+            self.fail(f"unexpected ds_id={ds_id!r}")
+
+        try:
+            ml_ds2 = ComputedMultiLevelDataset(
+                f"{script_dir}/code.py",
+                "compute_dataset",
+                ["ml_ds1"],
+                input_ml_dataset_getter,
+                input_parameters=dict(),
+                ds_id="ml_ds2"
+            )
+            ml_ds2.get_dataset(0).compute()
+        finally:
+            rimraf(script_dir)
 
 
 def _get_test_dataset(var_names=('noise',)):
