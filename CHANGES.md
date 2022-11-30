@@ -1,4 +1,6 @@
-## Changes in 0.13.0.dev6 (in development)
+## Changes in 0.13.0.dev7 (in development)
+
+## Changes in 0.13.0.dev6
 
 ## Changes in 0.13.0.dev5
 
