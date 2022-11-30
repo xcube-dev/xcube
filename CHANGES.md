@@ -10,6 +10,7 @@
 
 * xcube server Python scripts can now import modules from
   the script's directory.
+* Loading of dynamic cubes is now logged. 
 * xcube serve correctly resolves relative paths to datasets (#758)
 
 ## Changes in 0.13.0.dev3
