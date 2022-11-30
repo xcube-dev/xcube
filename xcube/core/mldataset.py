@@ -32,6 +32,7 @@ import xarray as xr
 
 from xcube.constants import FORMAT_NAME_LEVELS
 from xcube.constants import FORMAT_NAME_SCRIPT
+from xcube.constants import LOG
 from xcube.core.dsio import guess_dataset_format
 from xcube.core.gridmapping import GridMapping
 from xcube.core.schema import rechunk_cube
@@ -492,6 +493,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         script_parent = os.path.dirname(script_path)
         if script_parent not in sys.path:
             sys.path = [script_parent] + sys.path
+            LOG.info(f'Python sys.path prepended by {script_parent}')
 
         global_env = dict()
         try:
@@ -521,6 +523,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                 raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
                                      f"Input parameter {input_param_name!r} for callable {callable_name!r} "
                                      f"is not a valid Python identifier")
+        LOG.info(f'Imported {callable_name}() from {script_path}')
         self._callable_name = callable_name
         self._callable_obj = callable_obj
         self._input_ml_dataset_ids = input_ml_dataset_ids
