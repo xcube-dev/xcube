@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import importlib
 import math
 import os.path
 import threading
@@ -481,48 +482,60 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         input_parameters = input_parameters or {}
         super().__init__(ds_id=ds_id, parameters=input_parameters)
 
-        try:
-            with open(script_path) as fp:
-                python_code = fp.read()
-        except OSError as e:
-            raise exception_type(
-                f"Failed to read Python code for in-memory dataset {ds_id!r} from {script_path!r}: {e}") from e
-
-        # Allow scripts to import modules from
-        # within directory
+        # Allow scripts to import modules from within directory
         script_parent = os.path.dirname(script_path)
         if script_parent not in sys.path:
             sys.path = [script_parent] + sys.path
             LOG.info(f'Python sys.path prepended by {script_parent}')
 
-        global_env = dict()
+        module_name, ext = os.path.splitext(os.path.basename(script_path))
+        if not (ext == '.py' or ext == ""):
+            LOG.warning(f"Unrecognized Python module file extension {ext!r}")
+
+        if not callable_name.isidentifier():
+            raise exception_type(
+                f"Invalid dataset descriptor {ds_id!r}: "
+                f"{callable_name!r} is not a valid Python identifier"
+            )
+
         try:
-            exec(python_code, global_env, None)
-        except Exception as e:
-            raise exception_type(f"Failed to compute in-memory dataset {ds_id!r} from {script_path!r}: {e}") from e
+            module = importlib.import_module(module_name)
+        except ImportError as e:
+            raise exception_type(
+                f"Invalid in-memory dataset descriptor {ds_id!r}: {e}"
+            ) from e
 
-        if not callable_name or not callable_name.isidentifier():
-            raise exception_type(f"Invalid dataset descriptor {ds_id!r}: "
-                                 f"{callable_name!r} is not a valid Python identifier")
-        callable_obj = global_env.get(callable_name)
+        callable_obj = getattr(module, callable_name, None)
         if callable_obj is None:
-            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
-                                 f"no callable named {callable_name!r} found in {script_path!r}")
+            raise exception_type(
+                f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                f"no callable named {callable_name!r}"
+                f" found in {script_path!r}"
+            )
         if not callable(callable_obj):
-            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
-                                 f"object {callable_name!r} in {script_path!r} is not callable")
+            raise exception_type(
+                f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                f"object {callable_name!r} in {script_path!r} is not callable"
+                                 )
 
         if not callable_name or not callable_name.isidentifier():
-            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
-                                 f"{callable_name!r} is not a valid Python identifier")
+            raise exception_type(
+                f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                f"{callable_name!r} is not a valid Python identifier"
+            )
         if not input_ml_dataset_ids:
-            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
-                                 f"Input dataset(s) missing for callable {callable_name!r}")
+            raise exception_type(
+                f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                f"Input dataset(s) missing for callable {callable_name!r}"
+            )
         for input_param_name in input_parameters.keys():
             if not input_param_name or not input_param_name.isidentifier():
-                raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
-                                     f"Input parameter {input_param_name!r} for callable {callable_name!r} "
-                                     f"is not a valid Python identifier")
+                raise exception_type(
+                    f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                    f"Input parameter {input_param_name!r}"
+                    f" for callable {callable_name!r} "
+                    f"is not a valid Python identifier"
+                )
         LOG.info(f'Imported {callable_name}() from {script_path}')
         self._callable_name = callable_name
         self._callable_obj = callable_obj

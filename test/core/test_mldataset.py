@@ -182,15 +182,15 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
 
         os.mkdir(script_dir)
 
-        with open(f"{script_dir}/code.py", "w") as fp:
+        with open(f"{script_dir}/module_1.py", "w") as fp:
             fp.write(
-                "import module as m\n"
+                "import module_2 as m2\n"
                 "\n"
                 "def compute_dataset(ds):\n"
-                "    return m.process_dataset(ds)\n"
+                "    return m2.process_dataset(ds)\n"
             )
 
-        with open(f"{script_dir}/module.py", "w") as fp:
+        with open(f"{script_dir}/module_2.py", "w") as fp:
             fp.write(
                 "\n"
                 "def process_dataset(ds):\n"
@@ -208,7 +208,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
 
         try:
             ml_ds2 = ComputedMultiLevelDataset(
-                f"{script_dir}/code.py",
+                f"{script_dir}/module_1.py",
                 "compute_dataset",
                 ["ml_ds1"],
                 input_ml_dataset_getter,
