@@ -59,7 +59,8 @@ class DataTypeTest(unittest.TestCase):
                                'mldataset',
                                ('mldataset',
                                 'xcube.MultiLevelDataset',
-                                'xcube.core.mldataset.MultiLevelDataset'))
+                                'xcube.core.mldataset.MultiLevelDataset',
+                                'xcube.core.mldataset.abc.MultiLevelDataset'))
 
     def test_normalize_to_geodataframe(self):
         self.assertNormalizeOk('geodataframe',
