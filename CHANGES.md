@@ -1,5 +1,10 @@
 ## Changes in 0.13.0.dev7 (in development)
 
+### Other
+
+* Module `xcube.core.mldataset` has been refactored into 
+  a sub-package for clarity and maintainability.
+
 ## Changes in 0.13.0.dev6
 
 ## Changes in 0.13.0.dev5
