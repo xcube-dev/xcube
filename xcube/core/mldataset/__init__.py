@@ -23,6 +23,8 @@ from .abc import MultiLevelDataset
 from .base import BaseMultiLevelDataset
 from .combined import CombinedMultiLevelDataset
 from .computed import ComputedMultiLevelDataset
+from .computed import augment_ml_dataset
+from .computed import open_ml_dataset_from_python_code
 from .identity import IdentityMultiLevelDataset
 from .lazy import LazyMultiLevelDataset
 from .mapped import MappedMultiLevelDataset
