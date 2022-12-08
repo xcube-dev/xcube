@@ -226,7 +226,7 @@ class FileSet(JsonObject):
     def is_local(self) -> bool:
         """
         Test whether this file set refers to a local file or directory.
-        The test is made on the this path's protocol.
+        The test is made on this path's protocol.
         """
         if self._details is not None:
             return self._details.local_path is not None
@@ -360,8 +360,10 @@ class FileSet(JsonObject):
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
             for key in self.keys():
                 file_path = os.path.join(local_dir_path, key)
-                zip_file.write(file_path,
-                               arcname=_strip_sub_path_from_key(key, sub_path))
+                zip_file.write(
+                    file_path,
+                    arcname=_strip_sub_path_from_key(key, sub_path)
+                )
 
         return FileSet(zip_path, sub_path=self.sub_path)
 
@@ -374,7 +376,8 @@ class FileSet(JsonObject):
 
     def _get_details(self) -> _FileSetDetails:
         if self._details is None:
-            self._details = _FileSetDetails.new(self.path, self.storage_params)
+            self._details = _FileSetDetails.new(self.path,
+                                                self.storage_params)
         return self._details
 
     def _get_fs(self) -> fsspec.AbstractFileSystem:
