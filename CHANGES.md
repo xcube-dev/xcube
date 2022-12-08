@@ -5,6 +5,8 @@
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.
 
+* Provided backward compatibility with Python 3.8. (#)
+
 ## Changes in 0.13.0.dev6
 
 ## Changes in 0.13.0.dev5

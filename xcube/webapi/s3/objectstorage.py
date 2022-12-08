@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import collections.abc
-from typing import Union, Iterator, Tuple
+from typing import Union, Iterator, Tuple, Mapping
 
 import xarray as xr
 import zarr.storage
@@ -42,7 +42,7 @@ class ObjectStorage(collections.abc.Mapping):
     """
 
     def __init__(self,
-                 datasets: collections.abc.Mapping[
+                 datasets: Mapping[
                      str,
                      Union[xr.Dataset, MultiLevelDataset]
                  ]):
