@@ -152,7 +152,8 @@ class FileSet(JsonObject):
             assert_instance(sub_path, str, 'sub_path')
         self._path = path
         self._sub_path = sub_path
-        self._storage_params = dict(storage_params) if storage_params is not None else None
+        self._storage_params = dict(storage_params) \
+            if storage_params is not None else None
         self._includes = list(includes) if includes is not None else None
         self._excludes = list(excludes) if excludes is not None else None
         # computed members
@@ -169,8 +170,12 @@ class FileSet(JsonObject):
                 path=JsonStringSchema(min_length=1),
                 sub_path=JsonStringSchema(min_length=1),
                 storage_params=JsonObjectSchema(additional_properties=True),
-                includes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
-                excludes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
+                includes=JsonArraySchema(
+                    items=JsonStringSchema(min_length=1)
+                ),
+                excludes=JsonArraySchema(
+                    items=JsonStringSchema(min_length=1
+                                           )),
             ),
             additional_properties=False,
             required=['path'],
@@ -235,7 +240,7 @@ class FileSet(JsonObject):
 
     def to_local(self) -> 'FileSet':
         """
-        Turn this file set into an existing, local file set.
+        Turn this file set into a locally existing file set.
         """
         if self.is_local():
             return self

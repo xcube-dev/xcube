@@ -383,27 +383,26 @@ def _for_local(code_config: CodeConfig) -> 'CodeConfig':
         code_config = _inline_code_to_module(code_config.inline_code,
                                              code_config.callable_ref,
                                              code_config.callable_params)
+    file_set = code_config.file_set
+    if file_set is None:
+        raise RuntimeError('CodeConfig.for_local() failed'
+                           ' due to an invalid internal state')
 
-    if code_config.file_set is not None \
-            and not code_config.file_set.is_local_dir():
-        # If the file set is not a local directory,
-        # turn it into one.
-        file_set = code_config.file_set.to_local_dir()
-        code_config = code_config.from_file_set(
-            file_set=file_set,
-            callable_ref=code_config.callable_ref,
-            install_required=code_config.install_required,
-            callable_params=code_config.callable_params
-        )
-
-    if code_config.file_set is not None \
-            and code_config.file_set.is_local_dir():
-        # At this point, code_config.file_set
-        # is always a local directory.
+    if file_set.is_local_dir() \
+            or (file_set.is_local_zip()
+                and not file_set.sub_path):
+        # Either a directory or Zip file that can be added
+        # to sys.path as is
         return code_config
 
-    raise RuntimeError('for_local() failed due to an '
-                       'invalid CodeConfig state')
+    # If the file set is not a local directory,
+    # turn it into one.
+    return code_config.from_file_set(
+        file_set=file_set.to_local_dir(),
+        callable_ref=code_config.callable_ref,
+        install_required=code_config.install_required,
+        callable_params=code_config.callable_params
+    )
 
 
 def _load_callable(dir_path: str,
