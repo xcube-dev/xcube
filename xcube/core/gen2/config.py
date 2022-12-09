@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import collections
+import collections.abc
 import numbers
 from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Iterable
 
@@ -198,7 +198,7 @@ class CubeConfig(JsonObject):
 
         self.chunks = None
         if chunks is not None:
-            assert_instance(chunks, collections.Mapping, 'chunks')
+            assert_instance(chunks, collections.abc.Mapping, 'chunks')
             for chunk_dim, chunk_size in chunks.items():
                 assert_instance(chunk_dim, str, 'chunk dimension')
                 assert_instance(chunk_size, (int, type(None)), 'chunk size')
@@ -207,17 +207,17 @@ class CubeConfig(JsonObject):
         self.metadata = None
         if metadata is not None:
             assert_instance(metadata,
-                            collections.Mapping, 'metadata')
+                            collections.abc.Mapping, 'metadata')
             self.metadata = dict(metadata)
 
         self.variable_metadata = None
         if variable_metadata is not None:
             assert_instance(variable_metadata,
-                            collections.Mapping, 'variable_metadata')
+                            collections.abc.Mapping, 'variable_metadata')
             for var_name, metadata in variable_metadata.items():
                 assert_instance(var_name, str, 'chunk dimension')
                 assert_instance(metadata,
-                                collections.Mapping, 'variable metadata')
+                                collections.abc.Mapping, 'variable metadata')
             self.variable_metadata = dict(variable_metadata)
 
     def drop_props(self, name: Union[str, Iterable[str]]):
