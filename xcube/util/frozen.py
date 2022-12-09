@@ -21,7 +21,8 @@
 
 import collections.abc
 from abc import abstractmethod, ABC
-from typing import Generic, TypeVar, Tuple, Any, Iterable, Dict, List
+from typing import Generic, TypeVar, Tuple, Any, Iterable, Dict, List, \
+    Sequence, Mapping
 
 K = TypeVar('K')
 V = TypeVar('V')
@@ -47,11 +48,11 @@ class Frozen(ABC):
         """
 
 
-class FrozenDict(dict[K, V], Frozen, Generic[K, V]):
+class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
     """A frozen version of a standard ``dict``."""
 
     @classmethod
-    def freeze(cls, other: collections.abc.Mapping) -> "FrozenDict":
+    def freeze(cls, other: Mapping) -> "FrozenDict":
         return FrozenDict({key: freeze_value(value)
                            for key, value in other.items()})
 
@@ -87,11 +88,11 @@ class FrozenDict(dict[K, V], Frozen, Generic[K, V]):
         raise TypeError(_DICT_IS_READONLY)
 
 
-class FrozenList(list[V], Frozen, Generic[V]):
+class FrozenList(List[V], Frozen, Generic[V]):
     """A frozen version of a standard ``list``."""
 
     @classmethod
-    def freeze(cls, other: collections.abc.Sequence[V]) -> "FrozenList":
+    def freeze(cls, other: Sequence[V]) -> "FrozenList":
         return FrozenList(freeze_value(item) for item in other)
 
     def defrost(self) -> List[V]:

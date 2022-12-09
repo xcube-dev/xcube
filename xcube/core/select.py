@@ -19,16 +19,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import warnings
-from collections.abc import Mapping
-from typing import Collection, Optional, Tuple, Callable, Dict, Any, List
-from typing import Union
-
 import cftime
 import dask.array as da
 import numpy as np
 import pandas as pd
+import warnings
 import xarray as xr
+from typing import Collection, Optional, Tuple, Callable, Dict, Any, \
+    List, Mapping
+from typing import Union
 
 from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_given

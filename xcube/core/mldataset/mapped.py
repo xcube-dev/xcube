@@ -31,7 +31,7 @@ class MappedMultiLevelDataset(LazyMultiLevelDataset):
     def __init__(
             self,
             ml_dataset: MultiLevelDataset,
-            mapper_function: Callable[[xr.Dataset, ...], xr.Dataset],
+            mapper_function: Callable[[xr.Dataset], xr.Dataset],
             ds_id: str = None,
             mapper_params: Dict[str, Any] = None
     ):
