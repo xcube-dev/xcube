@@ -23,6 +23,8 @@ import asyncio
 import concurrent.futures
 import functools
 import logging
+import signal
+import sys
 import traceback
 import urllib.parse
 from typing import (Any, Optional, Sequence, Union, Callable, Type,
@@ -65,6 +67,7 @@ class TornadoFramework(Framework):
                  io_loop: Optional[tornado.ioloop.IOLoop] = None):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
+        self._server: Optional[tornado.web.HTTPServer] = None
         self.configure_logging()
 
     @property
@@ -155,7 +158,9 @@ class TornadoFramework(Framework):
         url_prefix = get_url_prefix(config)
         tornado_settings = config.get("tornado", {})
 
-        self.application.listen(port, address=address, **tornado_settings)
+        self._server = self.application.listen(port,
+                                               address=address,
+                                               **tornado_settings)
 
         address_ = "127.0.0.1" if address == "0.0.0.0" else address
         # TODO: get test URL template from configuration
@@ -164,9 +169,13 @@ class TornadoFramework(Framework):
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
 
+        self.configure_signals()
+
         self.io_loop.start()
 
     def stop(self, ctx: Context):
+        if self._server is not None:
+            self._server.stop()
         self.io_loop.stop()
 
     def call_later(self,
@@ -193,6 +202,14 @@ class TornadoFramework(Framework):
             functools.partial(function, **kwargs) if kwargs else function,
             *args
         )
+
+    def configure_signals(self):
+        def sig_handler(signum, frame):
+            self.io_loop.add_callback_from_signal(self.stop)
+
+        signal.signal(signal.SIGTERM, sig_handler)
+        signal.signal(signal.SIGINT, sig_handler)
+        signal.signal(signal.SIGABRT, sig_handler)
 
     @staticmethod
     def configure_logging():
