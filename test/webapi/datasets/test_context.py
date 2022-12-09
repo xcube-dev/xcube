@@ -530,3 +530,48 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
 
         self.assertEqual(dataset_configs[0]['StoreInstanceId'],
                          dataset_configs[1]['StoreInstanceId'])
+
+    def test_mix_of_absolute_and_relative_paths(self):
+        configs = [
+            {
+                'Identifier': 'z_0',
+                'FileSystem': 'file',
+                'Path': '/path/abc.zarr'
+            },
+            {
+                'Identifier': 'z_1',
+                'FileSystem': 'file',
+                'Path': 'def.zarr'
+            },
+            {
+                'Identifier': 'z_2',
+                'FileSystem': 'file',
+                'Path': 'relative/ghi.zarr'
+            }
+        ]
+
+        ctx = self.get_datasets_ctx(Datasets=configs)
+        dataset_configs = ctx.get_dataset_configs()
+
+        expected_dataset_configs = [
+            {
+                'Identifier': 'z_0',
+                'FileSystem': 'file',
+                'Path': 'abc.zarr',
+                'StoreInstanceId': 'file_1'
+            },
+            {
+                'Identifier': 'z_1',
+                'FileSystem': 'file',
+                'Path': 'def.zarr',
+                'StoreInstanceId': 'file_3'
+            },
+            {
+                'Identifier': 'z_2',
+                'FileSystem': 'file',
+                'Path': 'ghi.zarr',
+                'StoreInstanceId': 'file_2'
+            }
+        ]
+
+        self.assertEqual(expected_dataset_configs, dataset_configs)

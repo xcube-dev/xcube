@@ -1,15 +1,41 @@
+## Changes in 0.13.0.dev7 (in development)
+
+### Other
+
+* Module `xcube.core.mldataset` has been refactored into 
+  a sub-package for clarity and maintainability.
+
+* Provided backward compatibility with Python 3.8. (#760)
+
+## Changes in 0.13.0.dev6
+
+## Changes in 0.13.0.dev5
+
+### Other
+
+* xcube server Python scripts can now import modules from
+  the script's directory.
+* Loading of dynamic cubes is now logged. 
+
+## Changes in 0.13.0.dev4
+
+### Fixes
+
+* xcube serve correctly resolves relative paths to datasets (#758)
+
 ## Changes in 0.13.0.dev3
 
-### Intermediate changes
+### Other
 
-* Added experimental API `volumes` to xcube Server.
-  It is used by xcube Viewer to render 3-D volumes.
+* A new function `compute_tiles()` has been 
+  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
+* Added method `get_level_for_resolution(xy_res)` to 
+  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
 * Removed outdated example resources from `examples/serve/demo`.
 * Account for different spatial resolutions in x and y in 
   `xcube.core.geom.get_dataset_bounds()`.
 * Make code robust against 0-size coordinates in 
   `xcube.core.update._update_dataset_attrs()`.
-
 
 ## Changes in 0.13.0.dev2
 
@@ -33,7 +59,7 @@
 * xcube Server has been rewritten almost from scratch.
   
   - Introduced a new endpoint `${server_url}/s3` that emulates
-    and AWS S3 object storage for the published datasets.
+    and AWS S3 object storage for the published datasets. (#717)
     The `bucket` name can be either:
     * `s3://datasets` - publishes all datasets in Zarr format.
     * `s3://pyramids` - publishes all datasets in a multi-level `levels`
@@ -72,6 +98,10 @@
   - The limited `s3bucket` endpoints are no longer available and are 
     replaced by `s3` endpoints. 
 
+  - The `--show` option of `xcube serve` is no longer available. (#750)
+    We may reintroduce it, but then with a packaged build of 
+    xcube Viewer that matches the current xcube Server version. 
+
 * xcube Server's colormap management has been improved in several ways:
   - Colormaps are no longer managed globally. E.g., on server configuration 
     change, new custom colormaps are reloaded from files. 
@@ -106,7 +136,8 @@
   - `xcube.core.xarray.DatasetAccessor.levels()`
   - `xcube.util.cmaps.get_cmap()`
   - `xcube.util.cmaps.get_cmaps()`
-* Fixed problem with `xcube gen` raising `FileNotFoundError` 
+  
+* Fixed problem with `xcube gen` raising `FileNotFoundError`
   with Zarr >= 2.13.
 
 ## Changes in 0.12.1 
