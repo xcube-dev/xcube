@@ -2,6 +2,9 @@
 
 ### Other
 
+* Added experimental API `volumes` to xcube Server.
+  It is used by xcube Viewer to render 3-D volumes.
+
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.
 
