@@ -20,9 +20,20 @@
     Function: resample_in_time:compute_dataset
     InputDatasets: ["local"]
   ```
+  
   Implementation note: this has been achieved by using 
   `xcube.core.byoa.CodeConfig` in
   `xcube.core.mldataset.ComputedMultiLevelDataset`.
+
+* Instead of the `Function` keyword it is now
+  possible to use the `Class` keyword.
+  While `Function` references a function that receives one or 
+  more datasets (type `xarray.Dataset`) and returns a new one, 
+  `Class` references a callable that receives one or 
+  more multi-level datasets and returns a new one.
+  The callable is either a class derived from  
+  or a function that returns an instance of 
+  `xcube.core.nldataset.MultiLevelDataset`. 
 
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.
