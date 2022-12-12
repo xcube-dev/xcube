@@ -1,0 +1,11 @@
+Datasets:
+  - Identifier: ds-1
+    Title: Dataset A
+    Path: ../../../examples/serve/demo/cube-1-250-250.zarr
+
+  - Identifier: ds-2
+    Title: Dataset A Copy
+    FileSystem: memory
+    Path: script.py
+    Class: CopyMultiLevelDataset
+    InputDatasets: ["ds-1"]

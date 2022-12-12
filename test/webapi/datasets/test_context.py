@@ -227,6 +227,15 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertIsNotNone(store_params)
         self.assertEqual(expected_dict, store_params)
 
+    def test_computed_ml_dataset(self):
+        ctx = get_datasets_ctx(server_config='config-class.yml')
+        ds1 = ctx.get_ml_dataset("ds-1")
+        ds2 = ctx.get_ml_dataset("ds-2")
+        self.assertEqual(set(ds1.base_dataset.coords),
+                         set(ds2.base_dataset.coords))
+        self.assertEqual(set(ds1.base_dataset.data_vars),
+                         set(ds2.base_dataset.data_vars))
+
 
 class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
 
