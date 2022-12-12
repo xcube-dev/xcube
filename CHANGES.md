@@ -33,7 +33,7 @@
   more multi-level datasets and returns a new one.
   The callable is either a class derived from  
   or a function that returns an instance of 
-  `xcube.core.nldataset.MultiLevelDataset`. 
+  `xcube.core.mldataset.MultiLevelDataset`. 
 
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.
