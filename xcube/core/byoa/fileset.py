@@ -152,7 +152,8 @@ class FileSet(JsonObject):
             assert_instance(sub_path, str, 'sub_path')
         self._path = path
         self._sub_path = sub_path
-        self._storage_params = dict(storage_params) if storage_params is not None else None
+        self._storage_params = dict(storage_params) \
+            if storage_params is not None else None
         self._includes = list(includes) if includes is not None else None
         self._excludes = list(excludes) if excludes is not None else None
         # computed members
@@ -169,8 +170,12 @@ class FileSet(JsonObject):
                 path=JsonStringSchema(min_length=1),
                 sub_path=JsonStringSchema(min_length=1),
                 storage_params=JsonObjectSchema(additional_properties=True),
-                includes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
-                excludes=JsonArraySchema(items=JsonStringSchema(min_length=1)),
+                includes=JsonArraySchema(
+                    items=JsonStringSchema(min_length=1)
+                ),
+                excludes=JsonArraySchema(
+                    items=JsonStringSchema(min_length=1
+                                           )),
             ),
             additional_properties=False,
             required=['path'],
@@ -226,7 +231,7 @@ class FileSet(JsonObject):
     def is_local(self) -> bool:
         """
         Test whether this file set refers to a local file or directory.
-        The test is made on the this path's protocol.
+        The test is made on this path's protocol.
         """
         if self._details is not None:
             return self._details.local_path is not None
@@ -235,7 +240,7 @@ class FileSet(JsonObject):
 
     def to_local(self) -> 'FileSet':
         """
-        Turn this file set into an existing, local file set.
+        Turn this file set into a locally existing file set.
         """
         if self.is_local():
             return self
@@ -360,8 +365,10 @@ class FileSet(JsonObject):
         with zipfile.ZipFile(zip_path, 'w') as zip_file:
             for key in self.keys():
                 file_path = os.path.join(local_dir_path, key)
-                zip_file.write(file_path,
-                               arcname=_strip_sub_path_from_key(key, sub_path))
+                zip_file.write(
+                    file_path,
+                    arcname=_strip_sub_path_from_key(key, sub_path)
+                )
 
         return FileSet(zip_path, sub_path=self.sub_path)
 
@@ -374,7 +381,8 @@ class FileSet(JsonObject):
 
     def _get_details(self) -> _FileSetDetails:
         if self._details is None:
-            self._details = _FileSetDetails.new(self.path, self.storage_params)
+            self._details = _FileSetDetails.new(self.path,
+                                                self.storage_params)
         return self._details
 
     def _get_fs(self) -> fsspec.AbstractFileSystem:
