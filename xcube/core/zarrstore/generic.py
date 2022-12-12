@@ -43,7 +43,7 @@ GetData = Callable[[Tuple[int]],
 OnClose = Callable[[Dict[str, Any]], None]
 
 
-class GenericArray(dict[str, any]):
+class GenericArray(Dict[str, any]):
     """
     Represent a generic array in the ``GenericZarrStore`` as
     dictionary of properties.

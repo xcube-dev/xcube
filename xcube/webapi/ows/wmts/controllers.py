@@ -21,8 +21,7 @@
 
 import urllib.parse
 import warnings
-from collections.abc import Mapping
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Mapping
 
 import numpy as np
 import pyproj
