@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.mldataset import IdentityMultiLevelDataset
+from xcube.core.mldataset import MultiLevelDataset
 
 
 def compute_dataset(ds, period='1W', incl_stdev=False):
@@ -47,3 +48,13 @@ def _categorize_chl(chl):
 
 class CopyMultiLevelDataset(IdentityMultiLevelDataset):
     """Example for a custom MultiLevelDataset class."""
+
+
+def broken_ml_dataset_factory_1():
+    """Example for a custom, broken MultiLevelDataset class."""
+    return None
+
+
+def broken_ml_dataset_factory_2(ml_dataset: MultiLevelDataset):
+    """Example for a custom, broken MultiLevelDataset class."""
+    return xr.Dataset()

@@ -241,20 +241,23 @@ def _open_ml_dataset_from_python_code(
             ds_id=ds_id,
             exception_type=exception_type
         )
-        ml_dataset = callable_obj(
-            *[input_ml_dataset_getter(ds_id)
-              for ds_id in input_ml_dataset_ids],
-            **(input_parameters or {})
-        )
-        if isinstance(ml_dataset, MultiLevelDataset):
+        input_datasets = [input_ml_dataset_getter(ds_id)
+                          for ds_id in input_ml_dataset_ids]
+        try:
+            ml_dataset = callable_obj(*input_datasets,
+                                      **(input_parameters or {}))
+            if not isinstance(ml_dataset, MultiLevelDataset):
+                raise TypeError(
+                    f"{callable_ref!r} must return instance of"
+                    f" xcube.core.mldataset.MultiLevelDataset,"
+                    f" but was {type(ml_dataset)}"
+                )
             ml_dataset.ds_id = ds_id
             return ml_dataset
-        raise exception_type(
-            f"Invalid in-memory dataset descriptor {ds_id!r}:"
-            f" {callable_ref!r} must return instance of"
-            f" xcube.core.mldataset.MultiLevelDataset,"
-            f" was {type(ml_dataset)}"
-        )
+        except BaseException as e:
+            raise exception_type(
+                f"Invalid in-memory dataset descriptor {ds_id!r}: {e}"
+            ) from e
     else:
         return ComputedMultiLevelDataset(
             script_path,

@@ -23,6 +23,7 @@ import os.path
 import unittest
 from typing import Union, Mapping, Any
 
+import pytest
 import xarray as xr
 
 from test.webapi.helpers import get_api_ctx
@@ -227,7 +228,7 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertIsNotNone(store_params)
         self.assertEqual(expected_dict, store_params)
 
-    def test_computed_ml_dataset(self):
+    def test_computed_ml_dataset_ok(self):
         ctx = get_datasets_ctx(server_config='config-class.yml')
         ds1 = ctx.get_ml_dataset("ds-1")
         ds2 = ctx.get_ml_dataset("ds-2")
@@ -235,6 +236,28 @@ class DatasetsContextTest(unittest.TestCase):
                          set(ds2.base_dataset.coords))
         self.assertEqual(set(ds1.base_dataset.data_vars),
                          set(ds2.base_dataset.data_vars))
+
+    def test_computed_ml_dataset_call_fails(self):
+        ctx = get_datasets_ctx(server_config='config-class.yml')
+        with pytest.raises(
+                ApiError.InvalidServerConfig,
+                match="HTTP status 580:"
+                      " Invalid in-memory dataset descriptor 'ds-3':"
+                      " broken_ml_dataset_factory_1\\(\\)"
+                      " takes 0 positional arguments but 1 was given"
+        ):
+            ctx.get_ml_dataset("ds-3")
+
+    def test_computed_ml_dataset_illegal_return(self):
+        ctx = get_datasets_ctx(server_config='config-class.yml')
+        with pytest.raises(
+                ApiError.InvalidServerConfig,
+                match="Invalid in-memory dataset descriptor 'ds-4':"
+                      " 'script:broken_ml_dataset_factory_2' must return"
+                      " instance of xcube.core.mldataset.MultiLevelDataset,"
+                      " but was <class 'xarray.core.dataset.Dataset'>"
+        ):
+            ctx.get_ml_dataset("ds-4")
 
 
 class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
