@@ -52,7 +52,7 @@ class ServerTest(unittest.TestCase):
         self.assertIs(framework, server.framework)
         self.assertIsInstance(server.apis, tuple)
         self.assertIs(server.apis, server.apis)
-        self.assertIsInstance(server.open_api_doc, dict)
+        self.assertIsInstance(server.get_open_api_doc(), dict)
         self.assertIsInstance(server.ctx, ServerContext)
         self.assertIs(server.ctx, server.ctx)
 
@@ -406,7 +406,7 @@ class ServerContextTest(unittest.TestCase):
         self.assertIsInstance(server_ctx.config, FrozenDict)
         self.assertEqual(config, server_ctx.config)
         self.assertEqual((), server_ctx.apis)
-        self.assertIsInstance(server_ctx.open_api_doc, dict)
+        self.assertIsInstance(server_ctx.get_open_api_doc(), dict)
 
     def test_on_update_and_on_dispose(self):
         server = mock_server()
