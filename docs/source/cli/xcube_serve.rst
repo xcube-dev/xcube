@@ -216,7 +216,7 @@ Remotely stored xcube Datasets
 ------------------------------
 
 The following configuration snippet demonstrates how to
-publish static (persistent) xcube datasets stored
+publish static (persistent) xcube datasets stored in
 S3-compatible object storage:
 
 .. code:: yaml
