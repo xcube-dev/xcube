@@ -115,8 +115,12 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
             self,
             computed_ml_ds: ComputedMultiLevelDataset
     ):
-        # assert output is same as input
         self.assertEqual(3, computed_ml_ds.num_levels)
+        self.assertEqual(1, computed_ml_ds.num_inputs)
+        self.assertEqual(computed_ml_ds.grid_mapping,
+                         computed_ml_ds.get_input_dataset(0).grid_mapping)
+
+        # assert output is same as input
         base_dataset = computed_ml_ds.get_dataset(0)
         self.assertEqual({'lon', 'lat',
                           'lat_bnds', 'lon_bnds',
