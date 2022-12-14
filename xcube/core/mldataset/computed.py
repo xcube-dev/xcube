@@ -21,7 +21,7 @@
 
 import os.path
 import uuid
-from typing import Sequence, Any, Dict, Callable, Mapping, Optional
+from typing import Sequence, Any, Dict, Callable, Mapping, Optional, Tuple
 
 import xarray as xr
 
@@ -33,7 +33,6 @@ from xcube.util.assertions import assert_true
 from xcube.util.perf import measure_time
 from .abc import MultiLevelDataset
 from .lazy import LazyMultiLevelDataset
-
 
 MultiLevelDatasetGetter = Callable[[str], MultiLevelDataset]
 MultiLevelDatasetSetter = Callable[[MultiLevelDataset], None]
@@ -56,6 +55,35 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                  ds_id: str = '',
                  exception_type: type = ValueError):
 
+        callable_ref, callable_obj = self.get_callable(
+            script_path,
+            callable_name,
+            input_ml_dataset_ids,
+            input_ml_dataset_getter,
+            input_parameters=input_parameters,
+            ds_id=ds_id,
+            exception_type=exception_type
+        )
+
+        super().__init__(ds_id=ds_id, parameters=input_parameters)
+        self._callable_ref = callable_ref
+        self._callable_obj = callable_obj
+        self._input_ml_dataset_ids = input_ml_dataset_ids
+        self._input_ml_dataset_getter = input_ml_dataset_getter
+        self._exception_type = exception_type
+
+    @classmethod
+    def get_callable(
+            cls,
+            script_path: str,
+            callable_name: str,
+            input_ml_dataset_ids: Sequence[str],
+            input_ml_dataset_getter: MultiLevelDatasetGetter,
+            input_parameters: Optional[Mapping[str, Any]] = None,
+            ds_id: str = '',
+            exception_type: type = ValueError
+    ) -> Tuple[str, Callable]:
+
         assert_instance(script_path, str, name='script_path')
         assert_given(script_path, name='script_path')
         assert_true(callable(input_ml_dataset_getter),
@@ -77,7 +105,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
             if not module_name:
                 raise exception_type(
                     f"Invalid in-memory dataset descriptor {ds_id!r}:"
-                    f' Missing module name in {callable_name}'
+                    f' Missing module name in {callable_name!r}'
                 )
             callable_ref = f'{module_name}:{callable_name}'
 
@@ -107,12 +135,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                 f"Invalid dataset descriptor {ds_id!r}: {e}"
             ) from e
 
-        super().__init__(ds_id=ds_id, parameters=input_parameters)
-        self._callable_ref = callable_ref
-        self._callable_obj = callable_obj
-        self._input_ml_dataset_ids = input_ml_dataset_ids
-        self._input_ml_dataset_getter = input_ml_dataset_getter
-        self._exception_type = exception_type
+        return callable_ref, callable_obj
 
     def _get_num_levels_lazily(self) -> int:
         ds_0 = self._input_ml_dataset_getter(self._input_ml_dataset_ids[0])
@@ -144,25 +167,6 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         return computed_value
 
 
-def open_ml_dataset_from_python_code(
-        script_path: str,
-        callable_name: str,
-        input_ml_dataset_ids: Sequence[str],
-        input_ml_dataset_getter: MultiLevelDatasetGetter,
-        input_parameters: Optional[Mapping[str, Any]] = None,
-        ds_id: str = '',
-        exception_type: type = ValueError
-) -> MultiLevelDataset:
-    with measure_time(tag=f"Opened memory dataset {script_path}"):
-        return ComputedMultiLevelDataset(script_path,
-                                         callable_name,
-                                         input_ml_dataset_ids,
-                                         input_ml_dataset_getter,
-                                         input_parameters=input_parameters,
-                                         ds_id=ds_id,
-                                         exception_type=exception_type)
-
-
 def augment_ml_dataset(
         ml_dataset: MultiLevelDataset,
         script_path: str,
@@ -170,6 +174,7 @@ def augment_ml_dataset(
         input_ml_dataset_getter: MultiLevelDatasetGetter,
         input_ml_dataset_setter: MultiLevelDatasetSetter,
         input_parameters: Optional[Mapping[str, Any]] = None,
+        is_factory: bool = False,
         exception_type: type = ValueError
 ):
     from .identity import IdentityMultiLevelDataset
@@ -180,11 +185,86 @@ def augment_ml_dataset(
         aug_inp_id = f'aug-input-{aug_id}'
         aug_inp_ds = IdentityMultiLevelDataset(ml_dataset, ds_id=aug_inp_id)
         input_ml_dataset_setter(aug_inp_ds)
-        aug_ds = ComputedMultiLevelDataset(script_path,
-                                           callable_name,
-                                           [aug_inp_id],
-                                           input_ml_dataset_getter,
-                                           input_parameters=input_parameters,
-                                           ds_id=f'aug-{aug_id}',
-                                           exception_type=exception_type)
+        aug_ds = _open_ml_dataset_from_python_code(
+            script_path,
+            callable_name,
+            [aug_inp_id],
+            input_ml_dataset_getter,
+            input_parameters=input_parameters,
+            is_factory=is_factory,
+            ds_id=f'aug-{aug_id}',
+            exception_type=exception_type
+        )
         return CombinedMultiLevelDataset([ml_dataset, aug_ds], ds_id=orig_id)
+
+
+def open_ml_dataset_from_python_code(
+        script_path: str,
+        callable_name: str,
+        input_ml_dataset_ids: Sequence[str],
+        input_ml_dataset_getter: MultiLevelDatasetGetter,
+        input_parameters: Optional[Mapping[str, Any]] = None,
+        is_factory: bool = False,
+        ds_id: str = '',
+        exception_type: type = ValueError
+) -> MultiLevelDataset:
+    with measure_time(tag=f"Opened memory dataset {script_path}"):
+        return _open_ml_dataset_from_python_code(
+            script_path,
+            callable_name,
+            input_ml_dataset_ids,
+            input_ml_dataset_getter,
+            input_parameters=input_parameters,
+            is_factory=is_factory,
+            ds_id=ds_id,
+            exception_type=exception_type
+        )
+
+
+def _open_ml_dataset_from_python_code(
+        script_path: str,
+        callable_name: str,
+        input_ml_dataset_ids: Sequence[str],
+        input_ml_dataset_getter: MultiLevelDatasetGetter,
+        input_parameters: Optional[Mapping[str, Any]] = None,
+        is_factory: bool = False,
+        ds_id: str = '',
+        exception_type: type = ValueError
+) -> MultiLevelDataset:
+    if is_factory:
+        callable_ref, callable_obj = ComputedMultiLevelDataset.get_callable(
+            script_path,
+            callable_name,
+            input_ml_dataset_ids,
+            input_ml_dataset_getter,
+            input_parameters=input_parameters,
+            ds_id=ds_id,
+            exception_type=exception_type
+        )
+        input_datasets = [input_ml_dataset_getter(ds_id)
+                          for ds_id in input_ml_dataset_ids]
+        try:
+            ml_dataset = callable_obj(*input_datasets,
+                                      **(input_parameters or {}))
+            if not isinstance(ml_dataset, MultiLevelDataset):
+                raise TypeError(
+                    f"{callable_ref!r} must return instance of"
+                    f" xcube.core.mldataset.MultiLevelDataset,"
+                    f" but was {type(ml_dataset)}"
+                )
+            ml_dataset.ds_id = ds_id
+            return ml_dataset
+        except BaseException as e:
+            raise exception_type(
+                f"Invalid in-memory dataset descriptor {ds_id!r}: {e}"
+            ) from e
+    else:
+        return ComputedMultiLevelDataset(
+            script_path,
+            callable_name,
+            input_ml_dataset_ids,
+            input_ml_dataset_getter,
+            input_parameters=input_parameters,
+            ds_id=ds_id,
+            exception_type=exception_type
+        )

@@ -206,14 +206,19 @@ Dataset Attribution may be added to the server via *DatasetAttribution*.
 
 Datasets [mandatory]
 --------------------
-In order to publish selected xcube datasets via xcube serve the datasets need to be specified in the configuration
-file of the server. Several xcube datasets may be served within one server, by providing a list of information
-concerning the xcube datasets.
+
+In order to publish selected xcube datasets via ``xcube serve``,
+the datasets need to be described in the server configuration.
 
 .. _remotely stored xcube datasets:
 
-Remotely Stored xcube Datasets
------------------------------
+Remotely stored xcube Datasets
+------------------------------
+
+The following configuration snippet demonstrates how to
+publish static (persistent) xcube datasets stored in
+S3-compatible object storage:
+
 .. code:: yaml
 
     Datasets:
@@ -248,7 +253,7 @@ Credentials may be saved either in a file called .aws/credentials with content l
 Or they may be exported as environment variables AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID.
 
 Further down an example for a `locally stored xcube datasets`_ will be given,
-as well as an example of a `on-the-fly generation of xcube datasets`_.
+as well as an example of `dynamic xcube datasets`_.
 
 *Identifier* [mandatory]
 is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
@@ -291,10 +296,11 @@ configuring the *RequiredScopes* entry whose value is a list of required scopes,
 
 .. _locally stored xcube datasets:
 
-Locally Stored xcube Datasets
+Locally stored xcube Datasets
 -----------------------------
 
-To serve a locally stored dataset the configuration of it would look like the example below:
+The following configuration snippet demonstrates how to
+publish static (persistent) xcube datasets stored in the local filesystem:
 
 .. code:: yaml
 
@@ -350,13 +356,14 @@ can only be used when providing `authentication`_. By passing the *IsSubstitute*
 a dataset disappears for authorized requests. This might be useful for showing a demo dataset in the viewer for
 user who are not logged in.
 
-.. _on-the-fly generation of xcube datasets:
+.. _dynamic xcube datasets:
 
-On-the-fly Generation of xcube Datasets
----------------------------------------
+Dynamic xcube Datasets
+----------------------
 
-There is the possibility of generating resampled xcube datasets on-the-fly, e.g. in order to
-obtain daily or weekly averages of a xcube dataset.
+There is the possibility to define dynamic xcube datasets
+that are computed on-the-fly. Given here is an example that
+obtains daily or weekly averages of an xcube dataset named "local".
 
 .. code:: yaml
 
@@ -378,18 +385,36 @@ obtain daily or weekly averages of a xcube dataset.
       IsSubstitute: True
 
 *FileSystem* [mandatory]
-is defined as "memory" for the on-the-fly generated dataset.
+must be "memory" for dynamically generated datasets.
 
 *Path* [mandatory]
-leads to the resample python module. There might be several functions specified in the
-python module, therefore the particular *Function* needs to be included into the configuration.
+points to a Python module. Can be a Python file, a package, or a Zip file.
+
+*Function* [mandatory, mutually exclusive with *Class*]
+references a function in the Python file given by *Path*. Must be suffixed
+by colon-separated module name, if *Path* references a package or Zip file.
+The function receives one or more datasets of type ``xarray.Dataset``
+as defined by *InputDatasets* and optional keyword-arguments as
+given by *InputParameters*, if any. It must return a new ``xarray.Dataset``
+with same spatial coordinates as the inputs.
+
+*Class* [mandatory, mutually exclusive with *Function*]
+references a callable in the Python file given by *Path*. Must be suffixed
+by colon-separated module name, if *Path* references a package or Zip file.
+The callable is either a class derived from
+``xcube.core.mldataset.MultiLevelDataset`` or a function that returns
+an instance of ``xcube.core.mldataset.MultiLevelDataset``.
+The callable receives one or more datasets of type
+``xcube.core.mldataset.MultiLevelDataset`` as defined by *InputDatasets*
+and optional keyword-arguments as given by *InputParameters*, if any.
 
 *InputDatasets* [mandatory]
-specifies the dataset to be resampled.
+specifies the input datasets passed to *Function* or *Class*.
 
-*InputParameter* [mandatory]
-defines which kind of resampling should be performed.
-In the example a weekly average is computed.
+*InputParameters* [mandatory]
+specifies optional keyword arguments passed to *Function* or *Class*.
+In the example, *InputParameters* defines which kind of resampling
+should be performed.
 
 Again, the dataset may be associated with place groups.
 

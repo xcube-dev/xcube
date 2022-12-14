@@ -616,7 +616,10 @@ class DatasetsContext(ResourcesContext):
                 f"'Augmentation' of dataset configuration {ds_id}"
             )
             input_parameters = augmentation.get('InputParameters')
-            callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
+            callable_name = augmentation.get('Class')
+            is_factory = callable_name is not None
+            if not is_factory:
+                callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
             ml_dataset = augment_ml_dataset(
                 ml_dataset,
                 script_path,
@@ -624,6 +627,7 @@ class DatasetsContext(ResourcesContext):
                 self.get_ml_dataset,
                 self.set_ml_dataset,
                 input_parameters=input_parameters,
+                is_factory=is_factory,
                 exception_type=ApiError.InvalidServerConfig
             )
         return ml_dataset
@@ -786,7 +790,10 @@ def _open_ml_dataset_from_python_code(
     ds_id = dataset_config.get('Identifier')
     path = ctx.get_config_path(dataset_config,
                                f"dataset configuration {ds_id}")
-    callable_name = dataset_config.get('Function', COMPUTE_DATASET)
+    callable_name = dataset_config.get('Class')
+    is_factory = callable_name is not None
+    if not is_factory:
+        callable_name = dataset_config.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_config.get('InputDatasets', [])
     input_parameters = dataset_config.get('InputParameters', {})
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(
@@ -795,20 +802,23 @@ def _open_ml_dataset_from_python_code(
     if chunk_cache_capacity:
         warnings.warn(
             'chunk cache size is not effective for'
-            ' datasets computed from scripts')
+            ' datasets computed from scripts'
+        )
     for input_dataset_id in input_dataset_ids:
         if not ctx.get_dataset_config(input_dataset_id):
             raise ApiError.InvalidServerConfig(
-                f"Invalid dataset configuration {ds_id!r}: "
-                f"Input dataset {input_dataset_id!r} of"
-                f" callable {callable_name!r} "
-                f"must reference another dataset")
+                f"Invalid dataset configuration {ds_id!r}:"
+                f" Input dataset {input_dataset_id!r} of"
+                f" callable {callable_name!r}"
+                f" must reference another dataset"
+            )
     return open_ml_dataset_from_python_code(
         path,
         callable_name=callable_name,
         input_ml_dataset_ids=input_dataset_ids,
         input_ml_dataset_getter=ctx.get_ml_dataset,
         input_parameters=input_parameters,
+        is_factory=is_factory,
         ds_id=ds_id,
         exception_type=ApiError.InvalidServerConfig
     )
