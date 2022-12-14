@@ -27,6 +27,7 @@ import xarray as xr
 
 from xcube.core.byoa import CodeConfig
 from xcube.core.byoa import FileSet
+from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
@@ -137,11 +138,23 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
 
         return callable_ref, callable_obj
 
-    def _get_num_levels_lazily(self) -> int:
-        ds_0 = self._input_ml_dataset_getter(self._input_ml_dataset_ids[0])
-        return ds_0.num_levels
+    @property
+    def num_inputs(self) -> int:
+        return len(self._input_ml_dataset_ids)
 
-    def _get_dataset_lazily(self, index: int,
+    def get_input_dataset(self, index: int) -> MultiLevelDataset:
+        return self._input_ml_dataset_getter(
+            self._input_ml_dataset_ids[index]
+        )
+
+    def _get_num_levels_lazily(self) -> int:
+        return self.get_input_dataset(0).num_levels
+
+    def _get_grid_mapping_lazily(self) -> GridMapping:
+        return self.get_input_dataset(0).grid_mapping
+
+    def _get_dataset_lazily(self,
+                            index: int,
                             parameters: Dict[str, Any]) -> xr.Dataset:
         input_datasets = [
             self._input_ml_dataset_getter(ds_id).get_dataset(index)
