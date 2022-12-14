@@ -253,7 +253,7 @@ Credentials may be saved either in a file called .aws/credentials with content l
 Or they may be exported as environment variables AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID.
 
 Further down an example for a `locally stored xcube datasets`_ will be given,
-as well as an example of a `dynamic xcube datasets`_.
+as well as an example of `dynamic xcube datasets`_.
 
 *Identifier* [mandatory]
 is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
