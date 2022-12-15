@@ -65,6 +65,7 @@ class TornadoFramework(Framework):
                  io_loop: Optional[tornado.ioloop.IOLoop] = None):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
+        self._share_io_loop = io_loop is not None
         self.configure_logging()
 
     @property
@@ -164,7 +165,8 @@ class TornadoFramework(Framework):
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
 
-        self.io_loop.start()
+        if not self._share_io_loop:
+            self.io_loop.start()
 
     def stop(self, ctx: Context):
         self.io_loop.stop()
