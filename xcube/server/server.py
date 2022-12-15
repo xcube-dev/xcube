@@ -33,8 +33,8 @@ from xcube.constants import LOG
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_subclass
 from xcube.util.extension import ExtensionRegistry
-from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.plugin import get_extension_registry
 from xcube.version import version
 from .api import Api
 from .api import ApiContext
