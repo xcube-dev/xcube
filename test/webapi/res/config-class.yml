@@ -1,0 +1,25 @@
+Datasets:
+  - Identifier: ds-1
+    Title: Dataset
+    Path: ../../../examples/serve/demo/cube-1-250-250.zarr
+
+  - Identifier: ds-2
+    Title: Dataset Copy
+    FileSystem: memory
+    Path: script.py
+    Class: CopyMultiLevelDataset
+    InputDatasets: ["ds-1"]
+
+  - Identifier: ds-3
+    Title: Dataset Broken
+    FileSystem: memory
+    Path: script.py
+    Class: broken_ml_dataset_factory_1
+    InputDatasets: ["ds-1"]
+
+  - Identifier: ds-4
+    Title: Dataset Broken
+    FileSystem: memory
+    Path: script.py
+    Class: broken_ml_dataset_factory_2
+    InputDatasets: ["ds-1"]

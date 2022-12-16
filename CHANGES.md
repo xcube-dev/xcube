@@ -1,9 +1,48 @@
-## Changes in 0.13.0.dev7 (in development)
+## Changes in 0.13.0.dev8 (in development)
 
 ### Other
 
 * Added experimental API `volumes` to xcube Server.
   It is used by xcube Viewer to render 3-D volumes.
+
+### Fixes
+
+## Changes in 0.13.0.dev7
+
+### Other
+
+* xcube Server has been enhanced to load multi-module Python code 
+  for dynamic cubes both from both directories and zip archives.
+  For example, the following dataset definition computes a dynamic 
+  cube from dataset "local" using function "compute_dataset" in 
+  Python module "resample_in_time.py":
+  ```yaml
+    Path: resample_in_time.py
+    Function: compute_dataset
+    InputDatasets: ["local"]
+  ```
+  Users can now pack "resample_in_time.py" among any other modules and 
+  packages into a zip archive. Note that the original module name 
+  is now a prefix to the function name:
+  ```yaml
+    Path: modules.zip
+    Function: resample_in_time:compute_dataset
+    InputDatasets: ["local"]
+  ```
+  
+  Implementation note: this has been achieved by using 
+  `xcube.core.byoa.CodeConfig` in
+  `xcube.core.mldataset.ComputedMultiLevelDataset`.
+
+* Instead of the `Function` keyword it is now
+  possible to use the `Class` keyword.
+  While `Function` references a function that receives one or 
+  more datasets (type `xarray.Dataset`) and returns a new one, 
+  `Class` references a callable that receives one or 
+  more multi-level datasets and returns a new one.
+  The callable is either a class derived from  
+  or a function that returns an instance of 
+  `xcube.core.mldataset.MultiLevelDataset`. 
 
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.

@@ -1,30 +1,30 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2022 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import importlib
 import inspect
 import os.path
 import sys
 import warnings
-from typing import Any, Union, Dict, Callable, Sequence, Optional, Tuple
+from typing import Any, Union, Dict, Callable, Optional, Tuple
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
@@ -38,6 +38,7 @@ from .constants import DEFAULT_CALLABLE_NAME
 from .constants import DEFAULT_MODULE_NAME
 from .constants import TEMP_FILE_PREFIX
 from .fileset import FileSet
+from ...constants import LOG
 
 
 class CodeConfig(JsonObject):
@@ -63,9 +64,11 @@ class CodeConfig(JsonObject):
     :param install_required: Whether *file_set* contains
         Python modules or packages that must be installed.
         Can only be True if *file_set* is given.
-    :param callable_params: Optional parameters passed
-        as keyword-arguments to the callable.
-        Must be a dictionary if given.
+    :param callable_params: Optional parameters that are supposed to
+        be passed as keyword-arguments to the callable.
+        Stored as part of the configuration, but this class
+        does not apply them.
+        Must be a dictionary, if given.
     """
 
     def __init__(self,
@@ -76,16 +79,8 @@ class CodeConfig(JsonObject):
                  file_set: FileSet = None,
                  install_required: bool = None):
         if callable_ref is not None:
-            assert_instance(callable_ref, str, 'callable_ref')
-            msg = ('callable_ref must have form '
-                   '"module:function" or "module:class"')
-            try:
-                module_name, callable_name = \
-                    _normalize_callable_ref(callable_ref)
-            except ValueError:
-                raise ValueError(msg)
-            assert_true(module_name, msg)
-            assert_true(callable_name, msg)
+            # Will validate callable_ref
+            _normalize_callable_ref(callable_ref)
         if _callable is not None:
             assert_true(callable(_callable),
                         '_callable must be a function or class')
@@ -139,11 +134,13 @@ class CodeConfig(JsonObject):
         :param code: The code.
         :param callable_name: The callable name.
             If not given, will be inferred from first callable.
-            Otherwise it defaults to "process_dataset".
+            Otherwise, it defaults to "process_dataset".
         :param module_name: The module name. If not given,
             defaults to "user_code".
-        :param callable_params: The parameters passed
-            as keyword-arguments to the callable.
+        :param callable_params: Optional parameters that are supposed to
+            be passed as keyword-arguments to the callable.
+            Stored as part of the configuration, but this class
+            does not apply them. Must be a dictionary, if given.
         :return: A new code configuration.
         """
         assert_given(code, 'code')
@@ -157,9 +154,11 @@ class CodeConfig(JsonObject):
                           callable_params=callable_params)
 
     @classmethod
-    def from_callable(cls,
-                      _callable: Callable,
-                      callable_params: Dict[str, Any] = None) -> 'CodeConfig':
+    def from_callable(
+            cls,
+            _callable: Callable,
+            callable_params: Optional[Dict[str, Any]] = None
+    ) -> 'CodeConfig':
         """
         Create a code configuration from the callable *_callable*.
 
@@ -170,8 +169,10 @@ class CodeConfig(JsonObject):
         using the :meth:to_service first.
 
         :param _callable: A function or class
-        :param callable_params: The parameters passed
-            as keyword-arguments to the callable.
+        :param callable_params: Optional parameters that are supposed to
+            be passed as keyword-arguments to the callable.
+            Stored as part of the configuration, but this class
+            does not apply them. Must be a dictionary, if given.
         :return: A new code configuration.
         """
         assert_given(_callable, '_callable')
@@ -182,20 +183,22 @@ class CodeConfig(JsonObject):
     def from_file_set(cls,
                       file_set: Union[FileSet, str, Any],
                       callable_ref: str,
-                      install_required: Optional[bool] = None,
-                      callable_params: Optional[Dict[str, Any]] = None) \
+                      callable_params: Optional[Dict[str, Any]] = None,
+                      install_required: Optional[bool] = None) \
             -> 'CodeConfig':
         """
         Create a code configuration from a file set.
 
         :param file_set: The file set.
-            May be a path or a :class:FileSet instance.
+            Can be a path or a :class:FileSet instance.
         :param callable_ref: Reference to the callable in the *file_set*,
             must have form "<module-name>:<callable-name>"
         :param install_required: Whether the *file_set* is
             a package that must be installed.
-        :param callable_params: Parameters to be passed
-            as keyword-arguments to the the callable.
+        :param callable_params: Optional parameters that are supposed to
+            be passed as keyword-arguments to the callable.
+            Stored as part of the configuration, but this class
+            does not apply them. Must be a dictionary, if given.
         :return: A new code configuration.
         """
         assert_given(file_set, 'file_set')
@@ -218,7 +221,7 @@ class CodeConfig(JsonObject):
         """
         Create a code configuration from a GitHub archive.
 
-        :param gh_org: GitHub organisation name or user name
+        :param gh_org: GitHub organisation name or username
         :param gh_repo:  GitHub repository name
         :param gh_tag: GitHub release tag
         :param gh_release: The name of a GitHub release. It is used to
@@ -226,10 +229,12 @@ class CodeConfig(JsonObject):
             "<gh_repo>-<gh_release>".
         :param callable_ref: Reference to the callable in the *file_set*,
             must have form "<module-name>:<callable-name>"
-        :param callable_params: Parameters to be passed
-            as keyword-arguments to the the callable.
-        :param gh_username: Optional GitHub user name.
-        :param gh_token: Optional GitHub user name.
+        :param callable_params: Optional parameters that are supposed to
+            be passed as keyword-arguments to the callable.
+            Stored as part of the configuration, but this class
+            does not apply them. Must be a dictionary, if given.
+        :param gh_username: Optional GitHub username.
+        :param gh_token: Optional GitHub username.
         :return:
         """
         assert_given(gh_org, 'gh_org')
@@ -294,7 +299,8 @@ class CodeConfig(JsonObject):
         Set the callable that is represented by this configuration.
         :param func_or_class: A callable
         """
-        assert_true(callable(func_or_class), f'func_or_class must be callable')
+        assert_true(callable(func_or_class),
+                    f'func_or_class must be callable')
         self._callable = func_or_class
 
     def _load_callable(self) -> Callable:
@@ -369,7 +375,7 @@ def _for_local(code_config: CodeConfig) -> 'CodeConfig':
     # noinspection PyProtectedMember
     if code_config._callable is not None:
         # If the callable is already defined,
-        # there is not need to do anything else.
+        # there is no need to do anything else.
         return code_config
 
     if code_config.inline_code:
@@ -377,62 +383,65 @@ def _for_local(code_config: CodeConfig) -> 'CodeConfig':
         code_config = _inline_code_to_module(code_config.inline_code,
                                              code_config.callable_ref,
                                              code_config.callable_params)
+    file_set = code_config.file_set
+    if file_set is None:
+        raise RuntimeError('CodeConfig.for_local() failed'
+                           ' due to an invalid internal state')
 
-    if code_config.file_set is not None \
-            and not code_config.file_set.is_local_dir():
-        # If the file set is not a local directory,
-        # turn it into one.
-        file_set = code_config.file_set.to_local_dir()
-        code_config = code_config.from_file_set(
-            file_set=file_set,
-            callable_ref=code_config.callable_ref,
-            install_required=code_config.install_required,
-            callable_params=code_config.callable_params
-        )
-
-    if code_config.file_set is not None \
-            and code_config.file_set.is_local_dir():
-        # At this point, code_config.file_set
-        # is always a local directory.
+    if file_set.is_local_dir() \
+            or (file_set.is_local_zip()
+                and not file_set.sub_path):
+        # Either a directory or Zip file that can be added
+        # to sys.path as is
         return code_config
 
-    raise RuntimeError('for_local() failed due to an '
-                       'invalid CodeConfig state')
+    # If the file set is not a local directory,
+    # turn it into one.
+    return code_config.from_file_set(
+        file_set=file_set.to_local_dir(),
+        callable_ref=code_config.callable_ref,
+        install_required=code_config.install_required,
+        callable_params=code_config.callable_params
+    )
 
 
 def _load_callable(dir_path: str,
-                   callable_red: str,
+                   callable_ref: str,
                    install_required: bool) -> Callable:
     """
     Load the callable from given *dir_path* using the
     callable reference *callable_red*.
     :param dir_path: A local directory path
         (local ZIPs should work too).
-    :param callable_red: A callable reference of form "module:callable"
+    :param callable_ref: A callable reference of form "module:callable"
     :param install_required: Whether source code in *dir_path*
         must be installed using setup.
     :return: The loaded callable
     """
-    module_name, callable_name = _normalize_callable_ref(callable_red)
+    module_name, callable_name = _normalize_callable_ref(callable_ref)
     if install_required:
         warnings.warn(f'This user-code configuration requires '
                       f'package installation, '
                       f'but this is not supported yet')
-    # Ok, we change global state here, but the main use case
-    # is in the generator service where a process is spawned
-    # just for one single cube generator invocation.
-    sys.path = [dir_path] + sys.path
+    if dir_path not in sys.path:
+        # Ok, we need to change global state here.
+        # This cannot be done temporarily (e.g., by using a context manager)
+        # as additional code might be dynamically loaded later
+        # from local imports.
+        LOG.warn(f'Python sys.path prepended by {dir_path}')
+        sys.path = [dir_path] + sys.path
     # Now we should be able to import the module...
     # (import_module() will raise an ImportError otherwise).
     module = importlib.import_module(module_name)
-    # ...and fine the callable.
+    # ...and find the callable.
     _callable = getattr(module, callable_name, None)
     if _callable is None:
-        raise ImportError(f'callable {callable_name!r} '
-                          f'not found in module {module_name!r}')
+        raise ImportError(f'callable {callable_name!r}'
+                          f' not found in module {module_name!r}')
     if not callable(_callable):
-        raise ImportError(f'{module_name}:{callable_name} '
-                          f'is not callable')
+        raise ImportError(f'{callable_name} of module {callable_name}'
+                          f' is not callable')
+    LOG.info(f'Imported {callable_ref!r} from {dir_path}')
     return _callable
 
 
@@ -530,6 +539,28 @@ def _normalize_inline_code(
     return inline_code, f'{module_name}:{callable_name}'
 
 
-def _normalize_callable_ref(callable_ref: str) -> Tuple[str, str]:
-    module_name, callable_name = callable_ref.split(':')
+def _normalize_callable_ref(callable_ref: str) -> Tuple[Optional[str], str]:
+    """Normalize a callable reference *callable_ref* of the form
+    "[module_name:]callable_name" into a pair.
+    """
+    assert_instance(callable_ref, str, 'callable_ref')
+
+    splits = callable_ref.split(':')
+    if len(splits) == 2:
+        module_name, callable_name = [s.strip() for s in splits]
+    else:
+        module_name, callable_name = '', ''
+
+    # Verify components
+
+    assert_true(module_name and callable_name,
+                message=f'illegal callable_ref {callable_ref!r}: '
+                        f'expected format "<module>:<callable>"')
+    assert_true(all(s.isidentifier() for s in module_name.split('.')),
+                message=f'illegal callable_ref {callable_ref!r}: '
+                        f'{module_name!r} is not a valid Python module name')
+    assert_true(callable_name.isidentifier(),
+                message=f'illegal callable_ref {callable_ref!r}: '
+                        f'{callable_name!r} is not a valid Python identifier')
+
     return module_name, callable_name

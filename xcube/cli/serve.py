@@ -175,7 +175,7 @@ def exec_command(server, command):
             print(f'{api.name} - {api.description}')
 
     def show_open_api():
-        output_fn(server.ctx.open_api_doc)
+        output_fn(server.ctx.get_open_api_doc())
 
     def show_config():
         output_fn(server.ctx.config.defrost())
