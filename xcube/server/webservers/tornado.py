@@ -120,7 +120,8 @@ class TornadoFramework(Framework):
                 (
                     f'{url_prefix}{url_path}/(.*)',
                     tornado.web.StaticFileHandler,
-                    {'path': local_path}
+                    {'path': local_path,
+                     'default_filename': 'index.html'}
                 )
                 for url_path, local_path in static_routes
             ]
