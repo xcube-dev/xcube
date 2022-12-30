@@ -110,11 +110,14 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                      features,
                                      ['a', 'b', 'c'],
                                      var_props=dict(
-                                         b=dict(name='b', dtype=np.float32,
+                                         b=dict(name='b',
+                                                dtype=np.float32,
                                                 fill_value=np.nan,
                                                 attrs=dict(units='meters')),
-                                         c=dict(name='c2', dtype=np.uint8,
-                                                fill_value=0, converter=int)
+                                         c=dict(name='c2',
+                                                dtype=np.uint8,
+                                                fill_value=0,
+                                                converter=int)
                                      ),
                                      tile_size=tile_size,
                                      in_place=False)
