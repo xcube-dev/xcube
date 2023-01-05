@@ -216,7 +216,7 @@ the expression
 ``list(map(lambda e: e.name, xcube.core.store.find_data_store_extensions()))``.
 You can create a local store object for an identifier ``store_id`` with
 ``xcube.core.store.get_data_store_instance(store_id).store``. The store
-object provides methods ``get_data_ids``,
+object provides methods ``list_data_ids``,
 ``get_data_store_params_schema``, and ``get_open_data_params_schema`` to
 describe the allowed values for the corresponding parameters. Note that
 the available stores and datasets on a remote xcube generator server may
