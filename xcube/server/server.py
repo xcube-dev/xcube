@@ -40,6 +40,7 @@ from .api import Api
 from .api import ApiContext
 from .api import ApiContextT
 from .api import ApiRoute
+from .api import ApiStaticRoute
 from .api import Context
 from .api import ReturnT
 from .api import ServerConfig
@@ -92,8 +93,9 @@ class Server(AsyncExecution):
                               extension_registry=extension_registry)
         for api in apis:
             LOG.info(f'Loaded service API {api.name!r}')
-        static_routes = self.collect_static_routes(config)
-        routes = self.collect_api_routes(apis)
+        static_routes = self._collect_static_routes(config)
+        static_routes.extend(self._collect_api_static_routes(apis))
+        routes = self._collect_api_routes(apis)
         url_prefix = get_url_prefix(config)
         framework.add_static_routes(static_routes, url_prefix)
         framework.add_routes(routes, url_prefix)
@@ -109,7 +111,7 @@ class Server(AsyncExecution):
 
     @property
     def framework(self) -> Framework:
-        """The web server framework use by this server."""
+        """The web server framework used by this server."""
         return self._framework
 
     @property
@@ -263,21 +265,36 @@ class Server(AsyncExecution):
                             key=lambda api: api_ref_counts[api.name]))
 
     @classmethod
-    def collect_static_routes(cls, config: collections.abc.Mapping) \
-            -> Sequence[Tuple[str, str]]:
+    def _collect_static_routes(cls, config: collections.abc.Mapping) \
+            -> List[ApiStaticRoute]:
         static_routes = config.get('static_routes', [])
         base_dir = config.get('base_dir', os.path.abspath(""))
-        return [
-            (
-                url_path,
-                local_path if os.path.isabs(local_path)
-                else os.path.join(base_dir, local_path)
-            )
-            for url_path, local_path in static_routes
-        ]
+        api_static_routes = []
+        for static_route in static_routes:
+            params = dict(**static_route)
+            dir_path = params.get("dir_path")
+            if dir_path is not None:
+                if not os.path.isabs(dir_path):
+                    dir_path = os.path.join(base_dir, dir_path)
+                params["dir_path"] = dir_path
+            try:
+                api_static_route = ApiStaticRoute(**params)
+                api_static_routes.append(api_static_route)
+            except (TypeError, ValueError):
+                LOG.error(f"Failed to add static route: {params!r}",
+                          exc_info=True)
+        return api_static_routes
 
     @classmethod
-    def collect_api_routes(cls, apis: Sequence[Api]) -> Sequence[ApiRoute]:
+    def _collect_api_static_routes(cls, apis: Sequence[Api]) \
+            -> List[ApiStaticRoute]:
+        static_routes = []
+        for api in apis:
+            static_routes.extend(api.static_routes)
+        return static_routes
+
+    @classmethod
+    def _collect_api_routes(cls, apis: Sequence[Api]) -> List[ApiRoute]:
         handlers = []
         for api in apis:
             handlers.extend(api.routes)
@@ -384,15 +401,15 @@ class Server(AsyncExecution):
 
         tags = []
         paths = {}
-        for other_api in self.ctx.apis:
-            if not other_api.routes:
+        for api in self.ctx.apis:
+            if not api.routes and not api.static_routes:
                 # Only include APIs with endpoints
                 continue
             tags.append({
-                "name": other_api.name,
-                "description": other_api.description or ""
+                "name": api.name,
+                "description": api.description or ""
             })
-            for route in other_api.routes:
+            for route in api.routes:
                 if not include_all \
                         and route.path.startswith('/maintenance/'):
                     continue
@@ -408,18 +425,25 @@ class Server(AsyncExecution):
                                "delete",
                                "options"):
                     fn = getattr(route.handler_cls, method, None)
-                    fn_openapi = getattr(fn, '__openapi__', None)
-                    if fn_openapi is not None:
-                        fn_openapi = dict(**fn_openapi)
-                        if 'tags' not in fn_openapi:
-                            fn_openapi['tags'] = [other_api.name]
-                        if 'description' not in fn_openapi:
-                            fn_openapi['description'] = \
+                    openapi_metadata = getattr(fn, '__openapi__', None)
+                    if openapi_metadata is not None:
+                        openapi_metadata = dict(**openapi_metadata)
+                        if 'tags' not in openapi_metadata:
+                            openapi_metadata['tags'] = [api.name]
+                        if 'description' not in openapi_metadata:
+                            openapi_metadata['description'] = \
                                 getattr(fn, "__doc__", None) or ""
-                        if 'responses' not in fn_openapi:
-                            fn_openapi['responses'] = default_responses
-                        path[method] = dict(**fn_openapi)
+                        if 'responses' not in openapi_metadata:
+                            openapi_metadata['responses'] = default_responses
+                        path[method] = dict(**openapi_metadata)
                 paths[route.path] = path
+            for route in api.static_routes:
+                openapi_metadata = dict(route.openapi_metadata or {})
+                if 'tags' not in openapi_metadata:
+                    openapi_metadata['tags'] = [api.name]
+                paths[route.path] = dict(
+                    get=dict(**openapi_metadata)
+                )
 
         return {
             "openapi": "3.0.0",

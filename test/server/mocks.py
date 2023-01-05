@@ -30,6 +30,7 @@ from xcube.server.api import ApiContext
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import ApiStaticRoute
 from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
@@ -85,7 +86,7 @@ class MockFramework(Framework):
         return None
 
     def add_static_routes(self,
-                          static_routes: Sequence[Tuple[str, str]],
+                          static_routes: Sequence[ApiStaticRoute],
                           url_prefix: str):
         self.add_static_routes_count += 1
 
