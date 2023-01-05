@@ -21,6 +21,7 @@
 
 import concurrent.futures
 import inspect
+import os.path
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
     Generic, TypeVar, Union, Callable, Awaitable, Mapping
@@ -134,6 +135,7 @@ class Api(Generic[ServerContextT]):
             version: str = '0.0.0',
             description: Optional[str] = None,
             routes: Optional[Sequence["ApiRoute"]] = None,
+            static_routes: Optional[Sequence["ApiStaticRoute"]] = None,
             required_apis: Optional[Sequence[str]] = None,
             optional_apis: Optional[Sequence[str]] = None,
             config_schema: Optional[JsonObjectSchema] = None,
@@ -165,6 +167,7 @@ class Api(Generic[ServerContextT]):
         self._required_apis = tuple(required_apis or ())
         self._optional_apis = tuple(optional_apis or ())
         self._routes: List[ApiRoute] = list(routes or [])
+        self._static_routes: List[ApiStaticRoute] = list(static_routes or [])
         self._config_schema = config_schema
         self._create_ctx = create_ctx or ApiContext
         self._on_start = on_start or self._handle_event
@@ -195,6 +198,35 @@ class Api(Generic[ServerContextT]):
     def optional_apis(self) -> Tuple[str]:
         """The names of other optional APIs."""
         return self._optional_apis
+
+    def static_route(self,
+                     path: str,
+                     default_filename: Optional[str] = None,
+                     **openapi_metadata):
+        """
+        Decorator that adds static route to this API.
+
+        The decorator target must be function that returns the route's
+        local root directory path.
+
+        :param path: The route path.
+        :param default_filename: Optional name of the default filenames,
+            e.g., "index.html"
+        :param openapi_metadata: Optional OpenAPI GET operation metadata.
+        """
+
+        def decorator_func(get_root_path: Callable[[], Optional[str]]):
+            root_path = get_root_path()
+            if root_path is not None:
+                self._static_routes.append(
+                    ApiStaticRoute(path,
+                                   root_path,
+                                   api_name=self.name,
+                                   default_filename=default_filename,
+                                   openapi_metadata=openapi_metadata)
+                )
+
+        return decorator_func
 
     def route(self, path: str, **handler_kwargs):
         """
@@ -255,6 +287,11 @@ class Api(Generic[ServerContextT]):
             return target
 
         return decorator_func
+
+    @property
+    def static_routes(self) -> Tuple["ApiStaticRoute"]:
+        """The static routes provided by this API."""
+        return tuple(self._static_routes)
 
     @property
     def routes(self) -> Tuple["ApiRoute"]:
@@ -673,6 +710,41 @@ class ApiRoute:
         if self.handler_kwargs:
             args += f", handler_kwargs={self.handler_kwargs!r}"
         return f"ApiRoute({args})"
+
+
+class ApiStaticRoute:
+    """
+    An API static route.
+
+    :param path: The route path.
+    :param dir_path: A local directory path.
+    :param default_filename: Optional name of the default filenames,
+        e.g., "index.html"
+    :param api_name: Optional name of the API to which this route belongs to.
+    :param openapi_metadata: Optional OpenAPI operation metadata.
+    """
+
+    def __init__(self,
+                 path: str,
+                 dir_path: str,
+                 default_filename: Optional[str] = None,
+                 api_name: Optional[str] = None,
+                 openapi_metadata: Optional[Dict[str, Any]] = None):
+        assert_instance(path, str, name="path")
+        assert_instance(dir_path, str, name="dir_path")
+        assert_true(os.path.abspath(dir_path),
+                    message="dir_path must be an absolute path")
+        assert_instance(default_filename, (type(None), str),
+                        name="default_filename")
+        assert_instance(api_name, (type(None), str),
+                        name="api_name")
+        assert_instance(openapi_metadata, (type(None), dict),
+                        name="openapi_metadata")
+        self.path = path
+        self.dir_path = dir_path
+        self.default_filename = default_filename
+        self.api_name = api_name
+        self.openapi_metadata = openapi_metadata
 
 
 class ApiError(Exception):

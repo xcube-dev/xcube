@@ -26,7 +26,7 @@ import logging
 import traceback
 import urllib.parse
 from typing import (Any, Optional, Sequence, Union, Callable, Type,
-                    Awaitable, Mapping, Tuple)
+                    Awaitable, Mapping)
 
 import tornado.escape
 import tornado.httputil
@@ -36,10 +36,12 @@ import tornado.web
 from xcube.constants import LOG
 from xcube.constants import LOG_LEVEL_DETAIL
 from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler, ArgT
+from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import ApiStaticRoute
+from xcube.server.api import ArgT
 from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
@@ -113,18 +115,27 @@ class TornadoFramework(Framework):
         return self._io_loop or tornado.ioloop.IOLoop.current()
 
     def add_static_routes(self,
-                          static_routes: Sequence[Tuple[str, str]],
+                          api_routes: Sequence[ApiStaticRoute],
                           url_prefix: str):
-        if static_routes:
-            handlers = [
-                (
-                    f'{url_prefix}{url_path}/(.*)',
-                    tornado.web.StaticFileHandler,
-                    {'path': local_path,
-                     'default_filename': 'index.html'}
-                )
-                for url_path, local_path in static_routes
-            ]
+        handlers = []
+        for api_route in api_routes:
+            base_url = f'{url_prefix}{api_route.path}'
+            default_filename = api_route.default_filename
+            handlers.append((
+                f'{base_url}',
+                tornado.web.RedirectHandler,
+                {'url': f'{base_url}/'}
+            ))
+            handlers.append((
+                f'{base_url}/(.*)',
+                tornado.web.StaticFileHandler,
+                {'path': api_route.dir_path,
+                 'default_filename': default_filename}
+            ))
+            LOG.log(LOG_LEVEL_DETAIL, f'Added static route'
+                                      f' {api_route.path!r}'
+                                      f' from API {api_route.api_name!r}')
+        if handlers:
             self.application.add_handlers(".*$", handlers)
 
     def add_routes(self,

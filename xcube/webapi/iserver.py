@@ -20,11 +20,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 import threading
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import tornado.ioloop
 import xarray as xr
-
+import os
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import ServerConfig
 from xcube.server.server import Server
@@ -33,11 +33,38 @@ from xcube.webapi.datasets.context import DatasetsContext
 
 
 class InteractiveServer:
-    def __init__(self):
+    def __init__(self,
+                 viewer_url: Optional[str] = None,
+                 **config):
         self._io_loop = tornado.ioloop.IOLoop()
         thread = threading.Thread(target=self._io_loop.start)
         thread.daemon = True
         thread.start()
+
+        if "port" not in config:
+            config["port"] = 8080
+        if "address" not in config:
+            config["address"] = "0.0.0.0"
+        xcube_viewer_path = os.environ.get("XCUBE_VIEWER_PATH")
+        if xcube_viewer_path is not None:
+            static_routes: List[List[str]]
+            if "static_routes" not in config:
+                static_routes = []
+                config["static_routes"] = static_routes
+            else:
+                static_routes = config["static_routes"]
+            index = -1
+            for i in range(len(static_routes)):
+                if static_routes[i][0] == "/viewer":
+                    index = i
+                    break
+            if index >= 0:
+                static_routes[index][1] = xcube_viewer_path
+            else:
+                static_routes.append(
+                    ["/viewer", xcube_viewer_path]
+                )
+
 
         config = {
             "port": 8080,
