@@ -3,6 +3,7 @@
                      xmlns:gml="http://www.opengis.net/gml"
                      version="1.0.0">
     <CoverageOffering>
+        <description>C2RCC quality flags</description>
         <name>demo.c2rcc_flags</name>
         <label>C2RCC quality flags</label>
         <lonLatEnvelope>
@@ -48,15 +49,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>Chlorophyll concentration</description>
         <name>demo.conc_chl</name>
         <label>Chlorophyll concentration</label>
         <lonLatEnvelope>
@@ -102,15 +103,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>Total suspended matter dry weight concentration</description>
         <name>demo.conc_tsm</name>
         <label>Total suspended matter dry weight concentration</label>
         <lonLatEnvelope>
@@ -156,15 +157,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>Irradiance attenuation coefficient at 489 nm</description>
         <name>demo.kd489</name>
         <label>Irradiance attenuation coefficient at 489 nm</label>
         <lonLatEnvelope>
@@ -210,15 +211,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>Classification and quality flags</description>
         <name>demo.quality_flags</name>
         <label>Classification and quality flags</label>
         <lonLatEnvelope>
@@ -264,15 +265,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>c2rcc_flags</description>
         <name>demo-1w.c2rcc_flags</name>
         <label>c2rcc_flags</label>
         <lonLatEnvelope>
@@ -314,15 +315,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>c2rcc_flags_stdev</description>
         <name>demo-1w.c2rcc_flags_stdev</name>
         <label>c2rcc_flags_stdev</label>
         <lonLatEnvelope>
@@ -364,15 +365,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>conc_chl</description>
         <name>demo-1w.conc_chl</name>
         <label>conc_chl</label>
         <lonLatEnvelope>
@@ -414,15 +415,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>conc_chl_stdev</description>
         <name>demo-1w.conc_chl_stdev</name>
         <label>conc_chl_stdev</label>
         <lonLatEnvelope>
@@ -464,15 +465,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>conc_tsm</description>
         <name>demo-1w.conc_tsm</name>
         <label>conc_tsm</label>
         <lonLatEnvelope>
@@ -514,15 +515,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>conc_tsm_stdev</description>
         <name>demo-1w.conc_tsm_stdev</name>
         <label>conc_tsm_stdev</label>
         <lonLatEnvelope>
@@ -564,15 +565,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>kd489</description>
         <name>demo-1w.kd489</name>
         <label>kd489</label>
         <lonLatEnvelope>
@@ -614,15 +615,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>kd489_stdev</description>
         <name>demo-1w.kd489_stdev</name>
         <label>kd489_stdev</label>
         <lonLatEnvelope>
@@ -664,15 +665,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>quality_flags</description>
         <name>demo-1w.quality_flags</name>
         <label>quality_flags</label>
         <lonLatEnvelope>
@@ -714,15 +715,15 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
+        <description>quality_flags_stdev</description>
         <name>demo-1w.quality_flags_stdev</name>
         <label>quality_flags_stdev</label>
         <lonLatEnvelope>
@@ -764,12 +765,11 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
 </CoverageDescription>

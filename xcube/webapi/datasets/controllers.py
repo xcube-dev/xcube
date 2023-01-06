@@ -32,20 +32,19 @@ import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
-from xcube.core.geom import get_dataset_bounds, get_dataset_geometry
+from xcube.core.geom import get_dataset_bounds
+from xcube.core.geom import get_dataset_geometry
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.store import DataStoreError
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.server.api import ApiError
-from xcube.util.cmaps import get_cmaps, get_cmap, get_norm
 from .authutil import READ_ALL_DATASETS_SCOPE
 from .authutil import READ_ALL_VARIABLES_SCOPE
 from .authutil import assert_scopes
 from .authutil import check_scopes
 from .context import DatasetConfig
 from .context import DatasetsContext
-from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
 
@@ -478,7 +477,7 @@ def get_dataset_coordinates(ctx: DatasetsContext,
 # noinspection PyUnusedLocal
 def get_color_bars(ctx: DatasetsContext,
                    mime_type: str) -> str:
-    cmaps = get_cmaps()
+    cmaps = ctx.colormap_registry.to_json()
     if mime_type == 'application/json':
         return json.dumps(cmaps, indent=2)
     elif mime_type == 'text/html':
@@ -486,29 +485,31 @@ def get_color_bars(ctx: DatasetsContext,
                     '<html lang="en">\n' + \
                     '<head>' + \
                     '<meta charset="UTF-8">' + \
-                    '<title>xcube server color maps</title>' + \
+                    '<title>xcube Server Colormaps</title>' + \
                     '</head>\n' + \
-                    '<body style="padding: 0.2em">\n'
+                    '<body style="padding: 0.2em; font-family: sans-serif">\n'
         html_body = ''
         html_foot = '</body>\n' \
                     '</html>\n'
         for cmap_cat, cmap_desc, cmap_bars in cmaps:
             html_body += '    <h2>%s</h2>\n' % cmap_cat
-            html_body += '    <p><i>%s</i></p>\n' % cmap_desc
+            html_body += '    <p>%s</p>\n' % cmap_desc
             html_body += '    <table style=border: 0">\n'
             for cmap_bar in cmap_bars:
                 cmap_name, cmap_data = cmap_bar
                 cmap_image = f'<img src="data:image/png;base64,{cmap_data}"' \
                              f' width="100%%"' \
-                             f' height="32"/>'
-                name_cell = f'<td style="width: 5em">{cmap_name}:</td>'
+                             f' height="24"/>'
+                name_cell = f'<td style="width: 5em">' \
+                            f'<code>{cmap_name}</code>' \
+                            f'</td>'
                 image_cell = f'<td style="width: 40em">{cmap_image}</td>'
                 row = f'<tr>{name_cell}{image_cell}</tr>\n'
                 html_body += f'        {row}\n'
             html_body += '    </table>\n'
         return html_head + html_body + html_foot
     raise ApiError.BadRequest(
-        f'Format {mime_type!r} not supported for color bars'
+        f'Format {mime_type!r} not supported for colormaps'
     )
 
 
@@ -573,27 +574,29 @@ def get_legend(ctx: DatasetsContext,
         cmap_name = params.get('cbar', params.get('cmap', default_cmap_cbar))
         cmap_vmin = float(params.get('vmin', str(default_cmap_vmin)))
         cmap_vmax = float(params.get('vmax', str(default_cmap_vmax)))
-        cmap_w = int(params.get('width', str(DEFAULT_CMAP_WIDTH)))
-        cmap_h = int(params.get('height', str(DEFAULT_CMAP_HEIGHT)))
+        cmap_w = int(params.get('width', '256'))
+        cmap_h = int(params.get('height', '16'))
     except (ValueError, TypeError):
         raise ApiError.BadRequest("Invalid color legend parameter(s)")
 
+    cmap_name, cmap = ctx.colormap_registry.get_cmap(cmap_name)
+    colormap = ctx.colormap_registry.colormaps.get(cmap_name)
+    assert colormap is not None
+
+    norm = colormap.norm
+    if norm is None:
+        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+
     try:
-        _, cmap = get_cmap(cmap_name)
+        _, cmap = ctx.colormap_registry.get_cmap(cmap_name)
     except ValueError:
         raise ApiError.NotFound(f"Colormap {cmap_name!r} not found")
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
-    if '.cpd' in cmap_name:
-        norm, ticks = get_norm(cmap_name)
-    else:
-        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
-        ticks = None
-
     image_legend = matplotlib.colorbar.ColorbarBase(ax1,
                                                     format='%.1f',
-                                                    ticks=ticks,
+                                                    ticks=None,
                                                     cmap=cmap,
                                                     norm=norm,
                                                     orientation='vertical')

@@ -21,14 +21,14 @@
 
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
-from xcube.webapi.config import IdentifierSchema
-from xcube.webapi.config import PathSchema
-from xcube.webapi.config import StringSchema
+from xcube.webapi.common.schemas import IDENTIFIER_SCHEMA
+from xcube.webapi.common.schemas import PATH_SCHEMA
+from xcube.webapi.common.schemas import STRING_SCHEMA
 
 PLACE_GROUP_JOIN_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Property=IdentifierSchema,
-        Path=PathSchema,
+        Property=IDENTIFIER_SCHEMA,
+        Path=PATH_SCHEMA,
     ),
     required=[
         'Property',
@@ -39,14 +39,14 @@ PLACE_GROUP_JOIN_SCHEMA = JsonObjectSchema(
 
 PLACE_GROUP_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Identifier=IdentifierSchema,
-        Title=StringSchema,
-        Path=PathSchema,
+        Identifier=IDENTIFIER_SCHEMA,
+        Title=STRING_SCHEMA,
+        Path=PATH_SCHEMA,
         Join=PLACE_GROUP_JOIN_SCHEMA,
         PropertyMapping=JsonObjectSchema(
-            additional_properties=PathSchema
+            additional_properties=PATH_SCHEMA
         ),
-        PlaceGroupRef=IdentifierSchema,
+        PlaceGroupRef=IDENTIFIER_SCHEMA,
     ),
     required=[
         # Either we have

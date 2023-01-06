@@ -24,7 +24,7 @@ from .context import S3Context
 
 api = Api(
     's3',
-    description='xcube S3 data access API',
+    description='xcube S3 API emulation',
     required_apis=['datasets'],
     create_ctx=S3Context
 )

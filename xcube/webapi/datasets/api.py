@@ -27,6 +27,6 @@ api = Api(
     'datasets',
     description='xcube Datasets API',
     config_schema=CONFIG_SCHEMA,
-    required_apis=['_auth', 'places'],
+    required_apis=['auth', 'places'],
     create_ctx=DatasetsContext
 )

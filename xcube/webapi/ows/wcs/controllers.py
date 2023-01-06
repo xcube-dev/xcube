@@ -18,28 +18,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import re
 import warnings
-from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 import numpy as np
 from xarray import Dataset
 
 import xcube.core.store.storepool as sp
-from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.core.gen2 import CubeGenerator, OutputConfig
 from xcube.core.gen2 import CubeGeneratorRequest
 from xcube.core.gen2.local.writer import CubeWriter
 from xcube.core.gridmapping import GridMapping
-from xcube.util.plugin import get_extension_registry
 from xcube.webapi.ows.wcs.context import WcsContext
 from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
-from xcube.webapi.xml import Document
-from xcube.webapi.xml import Element
+from xcube.webapi.common.xml import Document
+from xcube.webapi.common.xml import Element
 
 WCS_VERSION = '1.0.0'
-VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
+VALID_CRS_LIST = ['EPSG:4326']
+# VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
 
 
 class CoverageRequest:
@@ -97,7 +94,8 @@ def get_wcs_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     return document.to_xml(indent=4)
 
 
-def get_describe_coverage_xml(ctx: WcsContext, coverages: List[str] = None) -> str:
+def get_describe_coverage_xml(ctx: WcsContext,
+                              coverages: List[str] = None) -> str:
     element = _get_describe_element(ctx, coverages)
     document = Document(element)
     return document.to_xml(indent=4)
@@ -107,16 +105,20 @@ def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
         -> CubeGeneratorRequest:
     data_id = _get_input_data_id(ctx, req)
     bbox = []
-    for v in req.bbox.split(' '):
+    for v in req.bbox.split(','):
         bbox.append(float(v))
+
+    store_pool = ctx.datasets_ctx.get_data_store_pool()
+    store_id = _get_store_id(store_pool, data_id)
+    datastore_root = store_pool.get_store_config(store_id).store_params['root']
+    store_config_id = store_pool.get_store_config(store_id).store_id
 
     return CubeGeneratorRequest.from_dict(
         {
-            # todo - put generic data store here
             'input_config': {
-                'store_id': 'file',
+                'store_id': store_config_id,
                 'store_params': {
-                    'root': '../../../../examples/serve/demo'
+                    'root': datastore_root
                 },
                 'data_id': f'{data_id}'
             },
@@ -144,8 +146,8 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     if not result.status == 'ok':
         raise ValueError(f'Failed to generate cube: {result.message}')
 
+    cube_id = result.result.data_id
     memory_store = sp.get_data_store_instance('memory')
-    cube_id = list(memory_store.store.get_data_ids())[0]
     cube = memory_store.store.open_data(cube_id)
 
     # _write_debug_output(cube)
@@ -161,6 +163,14 @@ def _write_debug_output(cube):
                                  writer_id='dataset:netcdf:file',
                                  data_id='/../../../test_cube.nc'))
     cw.write_cube(cube, GridMapping.from_dataset(cube))
+
+
+def _get_store_id(store_pool: sp.DataStorePool, data_id: str) -> str:
+    for store_id in store_pool.store_instance_ids:
+        current_store = store_pool.get_store(store_id)
+        if current_store.has_data(data_id):
+            return store_id
+    raise ValueError(f'{data_id} not found in any available data store')
 
 
 def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
@@ -261,7 +271,8 @@ def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
         raise ValueError('INTERPOLATION not yet supported')
     elif req.exceptions:
         raise ValueError('EXCEPTIONS not yet supported')
-    elif ((req.width and not req.height)
+    elif ((not req.width and not req.height and not req.resy and not req.resy)
+          or (req.width and not req.height)
           or (req.height and not req.width)
           or (req.resx and not req.resy)
           or (req.resy and not req.resx)
@@ -270,9 +281,10 @@ def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
         raise ValueError('Either both WIDTH and HEIGHT, or both RESX and RESY '
                          'must be provided.')
     elif not req.format or not _is_valid_format(req.format):
-        raise ValueError('FORMAT wrong or missing. Must be one of ' +
-                         ', '.join(_get_formats_list()))
-    elif True:
+        raise ValueError('FORMAT wrong or missing. Must be one of '
+                         + ', '.join(_get_formats_list())
+                         + f'. Was: {req.format}')
+    else:
         raise ValueError('Reason unclear, fix me')
 
 
@@ -288,9 +300,9 @@ def _is_valid_crs(crs: str) -> bool:
 
 
 def _is_valid_bbox(bbox: str) -> bool:
-    bbox_regex = re.compile(r'-?\d{1,3} -?\d{1,2} -?\d{1,3} -?\d{1,2}')
-    if not bbox_regex.match(bbox):
-        raise ValueError('BBOX must be given as `minx miny maxx maxy`')
+    values = bbox.split(',')
+    if not len(values) == 4:
+        raise ValueError('BBOX must be given as `minx,miny,maxx,maxy`')
     return True
 
 
@@ -299,8 +311,10 @@ def _is_valid_format(format_req: str) -> bool:
 
 
 def _is_valid_time(time: str) -> bool:
+    # todo - change validation so that it makes sense but works with QGIS
     try:
-        datetime.fromisoformat(time)
+        pass
+        # datetime.fromisoformat(time)
     except ValueError:
         raise ValueError('TIME value must be given in the format'
                          '\'YYYY-MM-DD[*HH[:MM[:SS[.mmm[mmm]]]]'
@@ -436,11 +450,11 @@ def _get_service_element(ctx: WcsContext) -> Element:
 
 
 def _get_capability_element(base_url: str) -> Element:
-    get_capabilities_url = f'{base_url}?service=WCS&amp;version=1.0.0&amp;' \
-                           f'request=GetCapabilities'
-    describe_url = f'{base_url}?service=WCS&amp;version=1.0.0&amp;' \
+    get_capabilities_url = f'{base_url}/wcs/kvp?service=WCS&amp;version=1.0.0'\
+                           f'&amp;request=GetCapabilities'
+    describe_url = f'{base_url}/wcs/kvp?service=WCS&amp;version=1.0.0&amp;' \
                    f'request=DescribeCoverage'
-    get_url = f'{base_url}?service=WCS&amp;version=1.0.0&amp;' \
+    get_url = f'{base_url}/wcs/kvp?service=WCS&amp;version=1.0.0&amp;' \
               f'request=GetCoverage'
     return Element('Capability', elements=[
         Element('Request', elements=[
@@ -497,9 +511,6 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                 Element('gml:pos', text=f'{band_infos[var_name].bbox[2]} '
                                         f'{band_infos[var_name].bbox[3]}')
             ]),
-            Element('keywords', elements=[
-                Element('keyword', text='grid')
-            ]),
             Element('domainSet', elements=[
                 Element('spatialDomain', elements=[
                     Element('gml:Envelope', elements=[
@@ -536,7 +547,9 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                 ])
             ]),
             Element('supportedCRSs', elements=[
-                Element('requestResponseCRSs', text=' '.join(VALID_CRS_LIST))
+                Element('requestResponseCRSs', text='EPSG:4326')
+                # todo - find out why this does not work with qgis
+                # Element('requestResponseCRSs', text=','.join(VALID_CRS_LIST))
             ]),
             Element('supportedFormats', elements=[
                 Element('formats', text=f) for f in _get_formats_list()
@@ -555,11 +568,16 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
 
 
 def _get_formats_list() -> List[str]:
-    formats = get_extension_registry().find_extensions(
-        EXTENSION_POINT_DATASET_IOS,
-        lambda e: 'w' in e.metadata.get('modes', set())
-    )
-    return [ext.name for ext in formats if not ext.name == 'mem']
+    # formats = get_extension_registry().find_extensions(
+    #     EXTENSION_POINT_DATASET_IOS,
+    #     lambda e: 'w' in e.metadata.get('modes', set())
+    # )
+    # return [ext.name for ext in formats if not ext.name == 'mem'
+    #                                        or not ext.name == 'zarr']
+
+    # the code above is correct, but the combination of QGIS and WCS only
+    # supports GeoTIFF or NetCDF, so we simply return these.
+    return ['GeoTIFF', 'NetCDF4']
 
 
 class BandInfo:

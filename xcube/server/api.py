@@ -28,6 +28,7 @@ from typing import Any, List, Optional, Tuple, Dict, Type, Sequence, \
 from .asyncexec import AsyncExecution
 from ..util.assertions import assert_instance
 from ..util.assertions import assert_true
+from ..util.frozen import FrozenDict
 from ..util.jsonschema import JsonObjectSchema
 
 _SERVER_CONTEXT_ATTR_NAME = '__xcube_server_context'
@@ -49,8 +50,8 @@ JSON = Union[
     Dict[str, "JSON"],
 ]
 
-ServerConfigObject = Mapping[str, Any]
-ServerConfig = ServerConfigObject
+ServerConfigObject = FrozenDict[str, Any]
+ServerConfig = FrozenDict[str, Any]
 
 builtin_type = type
 
@@ -193,7 +194,7 @@ class Api(Generic[ServerContextT]):
     @property
     def optional_apis(self) -> Tuple[str]:
         """The names of other optional APIs."""
-        return self._required_apis
+        return self._optional_apis
 
     def route(self, path: str, **handler_kwargs):
         """
@@ -305,6 +306,9 @@ class Api(Generic[ServerContextT]):
 
     def _handle_event(self, server_ctx: "Context"):
         """Do nothing."""
+
+    def __repr__(self):
+        return f'Api({self.name!r}, version={self.version!r})'
 
 
 class Context(AsyncExecution, ABC):

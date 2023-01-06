@@ -21,7 +21,7 @@
 
 import os.path
 import unittest
-from typing import Union
+from typing import Union, Mapping, Any
 
 import xarray as xr
 
@@ -30,12 +30,11 @@ from test.webapi.helpers import get_server
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import ApiError
 from xcube.server.api import Context
-from xcube.server.api import ServerConfig
 from xcube.webapi.datasets.context import DatasetsContext
 
 
 def get_datasets_ctx(
-        server_config: Union[str, ServerConfig] = "config.yml"
+        server_config: Union[str, Mapping[str, Any]] = "config.yml"
 ) -> DatasetsContext:
     return get_api_ctx("datasets", DatasetsContext, server_config)
 
@@ -121,10 +120,8 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertIn('test~cube-1-250-250.levels', ids)
 
     def test_get_dataset_configs_with_duplicate_ids_from_stores(self):
-        ctx = get_datasets_ctx('config-datastores-double-ids.yml')
-
         with self.assertRaises(ApiError.InvalidServerConfig) as sce:
-            ctx.get_dataset_configs_from_stores(ctx.get_data_store_pool())
+            ctx = get_datasets_ctx('config-datastores-double-ids.yml')
         self.assertEqual('HTTP status 580:'
                          ' User-defined identifiers can only be assigned to '
                          'datasets with non-wildcard paths.',
@@ -155,22 +152,29 @@ class DatasetsContextTest(unittest.TestCase):
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertIn('demo2', ctx.dataset_cache)
 
-        ctx = get_datasets_ctx(dict(Datasets=[
-            dict(Identifier='demo2',
-                 Path="examples/serve/demo/cube.nc"),
-        ]))
+        ctx = get_datasets_ctx(dict(
+            Datasets=[
+                dict(Identifier='demo2',
+                     Path="examples/serve/demo/cube.nc"),
+            ]
+        ))
         self.assertNotIn('demo', ctx.dataset_cache)
         self.assertNotIn('demo2', ctx.dataset_cache)
 
-    def test_get_s3_bucket_mapping(self):
+    def test_get_color_mappings(self):
         ctx = get_datasets_ctx()
-        bucket_mapping = ctx.get_s3_bucket_mapping()
-        self.assertEqual(['demo'],
-                         list(bucket_mapping.keys()))
-        path = bucket_mapping['demo']
-        self.assertTrue(os.path.isabs(path))
-        self.assertTrue(path.replace('\\', '/').endswith(
-            'examples/serve/demo/cube-1-250-250.zarr'))
+        color_mapping = ctx.get_color_mappings('demo-1w')
+        self.assertEqual(
+            {
+                'conc_chl': {'ColorBar': 'plasma',
+                             'ValueRange': [0.0, 24.0]},
+                'conc_tsm': {'ColorBar': 'PuBuGn',
+                             'ValueRange': [0.0, 100.0]},
+                'kd489': {'ColorBar': 'jet',
+                          'ValueRange': [0.0, 6.0]}
+            },
+            color_mapping
+        )
 
     def test_get_color_mapping(self):
         ctx = get_datasets_ctx()
@@ -197,25 +201,6 @@ class DatasetsContextTest(unittest.TestCase):
         rgb_cm = ctx.get_rgb_color_mapping('demo-rgb')
         self.assertEqual((['conc_chl', 'conc_tsm', 'kd489'],
                           [(0.0, 24.0), (0.0, 100.0), (0.0, 6.0)]), rgb_cm)
-
-    def test_get_style(self):
-        ctx = get_datasets_ctx()
-        style = ctx.get_style('demo-1w')
-        self.assertEqual(
-            {
-                'Identifier': 'default',
-                'ColorMappings': {'conc_chl': {'ColorBar': 'plasma',
-                                               'ValueRange': [0.0,
-                                                              24.0]},
-                                  'conc_tsm': {'ColorBar': 'PuBuGn',
-                                               'ValueRange': [0.0,
-                                                              100.0]},
-                                  'kd489': {'ColorBar': 'jet',
-                                            'ValueRange': [0.0,
-                                                           6.0]}}
-            },
-            style
-        )
 
     def test_get_other_store_params_than_root(self):
         ctx = get_datasets_ctx()

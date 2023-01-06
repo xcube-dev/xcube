@@ -1,23 +1,18 @@
+import collections.abc
 import os
-from typing import Dict, Any
-from typing import Mapping, Union
+from typing import Any, Mapping
 from typing import Optional, Type, TypeVar
+from typing import Union
 
 import yaml
 
 from test.server.mocks import MockFramework
 from xcube.server.api import Context
-from xcube.server.api import ServerConfig
 from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.server.testing import ServerTestCase
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.plugin import get_extension_registry
-from xcube.util.undefined import UNDEFINED
-from xcube.webapi.context import MultiLevelDatasetOpener
-from xcube.webapi.context import ServiceContext
-from xcube.webapi.errors import ServiceBadRequestError
-from xcube.webapi.reqparams import RequestParams
 
 XCUBE_TEST_CLIENT_ID = os.environ.get('XCUBE_TEST_CLIENT_ID')
 XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
@@ -26,7 +21,7 @@ T = TypeVar('T', bound=Context)
 
 
 def get_server(
-        server_config: Optional[Union[str, ServerConfig]] = None,
+        server_config: Optional[Union[str, Mapping[str, Any]]] = None,
         framework: Optional[Framework] = None,
         extension_registry: Optional[ExtensionRegistry] = None
 ) -> Server:
@@ -35,7 +30,7 @@ def get_server(
 
     This function is used for testing API contexts and controllers.
 
-    :param server_config: Server configuration string or dictionary.
+    :param server_config: Server configuration string or mapping.
         If it is just a filename, it is resolved against test resource
         directory "${project}/test/webapi/res/test".
         If it is a relative path, it is resolved against the current
@@ -61,7 +56,7 @@ def get_server(
             assert isinstance(server_config, dict)
             server_config["base_dir"] = base_dir
     else:
-        assert isinstance(server_config, dict)
+        assert isinstance(server_config, collections.abc.Mapping)
 
     framework = framework or MockFramework()
     extension_registry = extension_registry or get_extension_registry()
@@ -70,11 +65,13 @@ def get_server(
                   extension_registry=extension_registry)
 
 
-def get_api_ctx(api_name: str,
-                api_ctx_cls: Type[T],
-                server_config: Optional[Union[str, ServerConfig]] = None,
-                framework: Optional[Framework] = None,
-                extension_registry: Optional[ExtensionRegistry] = None) -> T:
+def get_api_ctx(
+        api_name: str,
+        api_ctx_cls: Type[T],
+        server_config: Optional[Union[str, Mapping[str, Any]]] = None,
+        framework: Optional[Framework] = None,
+        extension_registry: Optional[ExtensionRegistry] = None
+) -> T:
     """Get the API context object for the given
     API name *api_name*,
     API context class *api_ctx_cls*,
@@ -104,19 +101,6 @@ def get_api_ctx(api_name: str,
     return api_ctx
 
 
-# DO NOT USE: User ServerTest class instead
-def new_test_service_context(config_file_name: str = 'config.yml',
-                             ml_dataset_openers: Dict[
-                                 str, MultiLevelDatasetOpener] = None,
-                             prefix: str = None) -> ServiceContext:
-    ctx = ServiceContext(base_dir=get_res_test_dir(),
-                         ml_dataset_openers=ml_dataset_openers, prefix=prefix)
-    config_file = os.path.join(ctx.base_dir, config_file_name)
-    with open(config_file, encoding='utf-8') as fp:
-        ctx.config = yaml.safe_load(fp)
-    return ctx
-
-
 def get_res_test_dir() -> str:
     return os.path.normpath(os.path.join(os.path.dirname(__file__),
                                          'res', 'test'))
@@ -126,23 +110,6 @@ def get_res_demo_dir() -> str:
     return os.path.normpath(os.path.join(os.path.dirname(__file__),
                                          '..', '..',
                                          'xcube', 'webapi', 'res', 'demo'))
-
-
-# DO NOT USE: mocks outdated API
-class RequestParamsMock(RequestParams):
-    def __init__(self, **kvp):
-        self.kvp = kvp
-
-    def get_query_arguments(self) -> Mapping[str, str]:
-        return dict(self.kvp)
-
-    def get_query_argument(self, name: str,
-                           default: Optional[str] = UNDEFINED) -> Optional[
-        str]:
-        value = self.kvp.get(name, default)
-        if value == UNDEFINED:
-            raise ServiceBadRequestError(f'Missing query parameter "{name}"')
-        return value
 
 
 class RoutesTestCase(ServerTestCase):
@@ -162,7 +129,7 @@ class RoutesTestCase(ServerTestCase):
         """
         return f'{get_res_test_dir()}/{self.get_config_filename()}'
 
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> Mapping[str, Any]:
         """Get configuration.
         Default impl. uses ``self.get_config_path()`` to load
         configuration from YAML file.

@@ -4,9 +4,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+# noinspection PyProtectedMember
+from xcube.core.tile import _ensure_time_compatible
 from xcube.core.tile import get_var_valid_range
 from xcube.core.tile import parse_non_spatial_labels
-from xcube.core.tile import _ensure_time_compatible
 
 
 class GetVarValidRangeTest(unittest.TestCase):
@@ -107,9 +108,10 @@ class ParseNonSpatialLabelsTest(unittest.TestCase):
 
     def test_ensure_timezone_naive(self):
         da_tznaive = xr.DataArray(
-            np.zeros((3,3,3)),
+            np.zeros((3, 3, 3)),
             coords=self.coords,
-            dims=self.dims)
+            dims=self.dims
+        )
         labels = parse_non_spatial_labels(dict(time='2000-01-02T00:00:00Z'),
                                           dims=da_tznaive.dims,
                                           coords=da_tznaive.coords,

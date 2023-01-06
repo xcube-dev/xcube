@@ -19,11 +19,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import collections.abc
 import concurrent.futures
 import copy
 import os.path
 from typing import (Optional, Dict, Any, Union,
-                    Callable, Sequence, Awaitable, Tuple, Type, List)
+                    Callable, Sequence, Awaitable, Tuple, Type, List, Mapping)
 
 import jsonschema.exceptions
 
@@ -45,6 +46,7 @@ from .api import ServerConfig
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
 from .framework import Framework
+from ..util.frozen import FrozenDict
 
 
 class Server(AsyncExecution):
@@ -80,9 +82,11 @@ class Server(AsyncExecution):
     def __init__(
             self,
             framework: Framework,
-            config: ServerConfig,
+            config: Mapping[str, Any],
             extension_registry: Optional[ExtensionRegistry] = None,
     ):
+        assert_instance(framework, Framework)
+        assert_instance(config, collections.abc.Mapping)
         apis = self.load_apis(config,
                               extension_registry=extension_registry)
         for api in apis:
@@ -125,7 +129,7 @@ class Server(AsyncExecution):
         self._ctx = ctx
         self._framework.update(ctx)
 
-    def _new_ctx(self, config: ServerConfig) -> "ServerContext":
+    def _new_ctx(self, config: collections.abc.Mapping) -> "ServerContext":
         config = dict(config)
         for key in tuple(config.keys()):
             if key not in self._config_schema.properties:
@@ -153,7 +157,7 @@ class Server(AsyncExecution):
             api.on_stop(self.ctx)
         self._ctx.on_dispose()
 
-    def update(self, config: ServerConfig):
+    def update(self, config: Mapping[str, Any]):
         """Update this server with given server configuration."""
         ctx = self._new_ctx(config)
         ctx.on_update(prev_ctx=self._ctx)
@@ -201,7 +205,7 @@ class Server(AsyncExecution):
     @classmethod
     def load_apis(
             cls,
-            config: ServerConfig,
+            config: collections.abc.Mapping,
             extension_registry: Optional[ExtensionRegistry] = None
     ) -> Tuple[Api]:
         # Collect all registered API extensions
@@ -257,7 +261,7 @@ class Server(AsyncExecution):
                             key=lambda api: api_ref_counts[api.name]))
 
     @classmethod
-    def collect_static_routes(cls, config: ServerConfig) \
+    def collect_static_routes(cls, config: collections.abc.Mapping) \
             -> Sequence[Tuple[str, str]]:
         static_routes = config.get('static_routes', [])
         base_dir = config.get('base_dir', os.path.abspath(""))
@@ -449,9 +453,9 @@ class ServerContext(Context):
 
     def __init__(self,
                  server: Server,
-                 config: ServerConfig):
+                 config: collections.abc.Mapping):
         self._server = server
-        self._config = config
+        self._config = FrozenDict.freeze(config)
         self._api_contexts: Dict[str, Context] = dict()
 
     @property

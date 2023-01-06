@@ -26,7 +26,8 @@ import os
 import os.path
 import warnings
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, Set
+from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, \
+    Set, Mapping
 
 import numpy as np
 import pandas as pd
@@ -47,11 +48,11 @@ from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
-from xcube.server.api import ServerConfigObject
 from xcube.util.cache import parse_mem_size
-from xcube.util.cmaps import get_cmap
+from xcube.util.cmaps import ColormapRegistry
+from xcube.util.cmaps import load_snap_cpd_colormap
 from xcube.webapi.places import PlacesContext
-from xcube.webapi.resctx import ResourcesContext
+from xcube.webapi.common.context import ResourcesContext
 
 COMPUTE_DATASET = 'compute_dataset'
 COMPUTE_VARIABLES = 'compute_variables'
@@ -74,7 +75,7 @@ MultiLevelDatasetOpener = Callable[
     MultiLevelDataset
 ]
 
-DatasetConfig = ServerConfigObject
+DatasetConfig = Mapping[str, Any]
 
 
 class DatasetsContext(ResourcesContext):
@@ -89,9 +90,10 @@ class DatasetsContext(ResourcesContext):
         self._ml_dataset_openers = ml_dataset_openers
         # cache for all dataset configs
         # contains tuples of form (MultiLevelDataset, dataset_config)
-        self._dataset_configs: Optional[List[DatasetConfig]] = None
         self._dataset_cache = dict()
-        self._data_store_pool = DataStorePool()
+        self._data_store_pool, self._dataset_configs = \
+            self._process_dataset_configs(self.config, self.base_dir)
+        self._cm_styles, self._colormap_registry = self._get_cm_styles()
 
     def on_dispose(self):
         with self.rlock:
@@ -125,6 +127,10 @@ class DatasetsContext(ResourcesContext):
     @cached_property
     def required_scopes(self) -> List[str]:
         return self.access_control.get('RequiredScopes', [])
+
+    @property
+    def colormap_registry(self) -> ColormapRegistry:
+        return self._colormap_registry
 
     def get_required_dataset_scopes(
             self,
@@ -187,7 +193,8 @@ class DatasetsContext(ResourcesContext):
             for var_name in expected_var_names:
                 if var_name not in dataset:
                     raise ApiError.NotFound(
-                        f'Variable "{var_name}" not found in dataset "{ds_id}"'
+                        f'Variable "{var_name}" not found'
+                        f' in dataset "{ds_id}"'
                     )
         return dataset
 
@@ -227,25 +234,23 @@ class DatasetsContext(ResourcesContext):
             )
         return dataset[var_name]
 
-    def get_dataset_configs(self) -> List[DatasetConfig]:
-        if self._dataset_configs is None:
-            with self.rlock:
-                if self._dataset_configs is None:
-                    self._set_up_data_store_pool_and_dataset_configs()
-        return self._dataset_configs
-
-    def _maybe_assign_store_instance_ids(self, data_store_pool: DataStorePool):
+    @classmethod
+    def _maybe_assign_store_instance_ids(
+            cls,
+            dataset_configs: List[Dict[str, Any]],
+            data_store_pool: DataStorePool,
+            base_dir: str
+    ) -> None:
         assignable_dataset_configs = [
-            dc for dc in self._dataset_configs
+            dc for dc in dataset_configs
             if 'StoreInstanceId' not in dc
-               and dc.get('FileSystem', 'file')
-               in NON_MEMORY_FILE_SYSTEMS
+               and dc.get('FileSystem', 'file') in NON_MEMORY_FILE_SYSTEMS
         ]
-        # split into sublists according to file system and
+        # split into sub-lists according to file system and
         # non-root store params
         config_lists = []
         for config in assignable_dataset_configs:
-            store_params = self._get_other_store_params_than_root(config)
+            store_params = cls._get_other_store_params_than_root(config)
             file_system = config.get('FileSystem', 'file')
             appended = False
             for config_list in config_lists:
@@ -289,17 +294,20 @@ class DatasetsContext(ResourcesContext):
                 if root.endswith("/") or root.endswith("\\"):
                     root = root[:-1]
                 abs_root = root
-                # For local file systems: Determine absolute root from base dir
-                fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system, file_system)
+                # For local file systems:
+                # Determine absolute root from base dir
+                fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system,
+                                                      file_system)
                 if fs_protocol == 'file' and not os.path.isabs(abs_root):
-                    abs_root = os.path.join(self.base_dir, abs_root)
+                    abs_root = os.path.join(base_dir, abs_root)
                     abs_root = os.path.normpath(abs_root)
                 store_params_for_root = store_params.copy()
                 store_params_for_root['root'] = abs_root
                 # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
                     store_id=fs_protocol,
-                    store_params=store_params_for_root)
+                    store_params=store_params_for_root
+                )
                 store_instance_id = data_store_pool. \
                     get_store_instance_id(data_store_config)
                 if not store_instance_id:
@@ -347,7 +355,7 @@ class DatasetsContext(ResourcesContext):
             cls,
             data_store_pool: DataStorePool
     ) -> List[DatasetConfig]:
-        all_dataset_configs: List[ServerConfig] = []
+        all_dataset_configs: List[DatasetConfig] = []
         for store_instance_id in data_store_pool.store_instance_ids:
             LOG.info(f'Scanning store {store_instance_id!r}')
             data_store_config = data_store_pool.get_store_config(
@@ -431,20 +439,34 @@ class DatasetsContext(ResourcesContext):
         # noinspection PyTypeChecker
         return dataset_metadata
 
+    def get_dataset_config(self, ds_id: str) -> DatasetConfig:
+        dataset_configs = self.get_dataset_configs()
+        dataset_config = next(
+            (dsd for dsd in dataset_configs if dsd['Identifier'] == ds_id),
+            None
+        )
+        if dataset_config is None:
+            raise ApiError.NotFound(f'Dataset "{ds_id}" not found')
+        return dataset_config
+
+    def get_dataset_configs(self) -> List[DatasetConfig]:
+        assert self._dataset_configs is not None
+        return self._dataset_configs
+
     def get_data_store_pool(self) -> DataStorePool:
-        if self._data_store_pool.is_empty:
-            with self.rlock:
-                if self._data_store_pool.is_empty:
-                    self._set_up_data_store_pool_and_dataset_configs()
+        assert self._data_store_pool is not None
         return self._data_store_pool
 
-    def _set_up_data_store_pool_and_dataset_configs(self):
-        data_store_configs = self.config.get('DataStores', [])
-        if not isinstance(data_store_configs, list):
-            raise ApiError.InvalidServerConfig('DataStores must be a list')
-        dataset_configs = self.config.get('Datasets', [])
-        if not isinstance(dataset_configs, list):
-            raise ApiError.InvalidServerConfig('Datasets must be a list')
+    @classmethod
+    def _process_dataset_configs(
+            cls,
+            config: ServerConfig,
+            base_dir: str
+    ) -> Tuple[DataStorePool, List[Dict[str, Any]]]:
+        data_store_configs = config.get('DataStores', [])
+        dataset_configs = config.get('Datasets', [])
+
+        data_store_pool = DataStorePool()
         for data_store_config_dict in data_store_configs:
             store_instance_id = data_store_config_dict.get('Identifier')
             store_id = data_store_config_dict.get('StoreId')
@@ -453,47 +475,20 @@ class DatasetsContext(ResourcesContext):
             store_config = DataStoreConfig(store_id,
                                            store_params=store_params,
                                            user_data=store_dataset_configs)
-            self._data_store_pool.add_store_config(store_instance_id,
-                                                   store_config)
-        self._dataset_configs = \
-            dataset_configs + self.get_dataset_configs_from_stores(
-                self._data_store_pool
+            data_store_pool.add_store_config(store_instance_id,
+                                             store_config)
+        dataset_configs = \
+            dataset_configs + cls.get_dataset_configs_from_stores(
+                data_store_pool
             )
-        self._maybe_assign_store_instance_ids(self._data_store_pool)
-
-    def get_dataset_config(self, ds_id: str) -> DatasetConfig:
-        dataset_configs = self.get_dataset_configs()
-        dataset_config = self.find_dataset_config(
-            dataset_configs, ds_id
-        )
-        if dataset_config is None:
-            raise ApiError.NotFound(f'Dataset "{ds_id}" not found')
-        return dataset_config
-
-    def get_s3_bucket_mapping(self):
-        s3_bucket_mapping = {}
-        for dataset_config in self.get_dataset_configs():
-            ds_id = dataset_config.get('Identifier')
-            protocol = FS_TYPE_TO_PROTOCOL.get(
-                dataset_config.get('FileSystem', 'file')
-            )
-            if protocol == 'file':
-                store_instance_id = dataset_config.get('StoreInstanceId')
-                if store_instance_id:
-                    data_store_pool = self.get_data_store_pool()
-                    store_root = data_store_pool.get_store_config(
-                        store_instance_id). \
-                        store_params.get('root')
-                    data_id = dataset_config.get('Path')
-                    local_path = os.path.join(store_root, data_id)
-                else:
-                    local_path = self.get_config_path(dataset_config,
-                                                      f'dataset configuration'
-                                                      f' {ds_id!r}')
-                local_path = os.path.normpath(local_path)
-                if os.path.isdir(local_path):
-                    s3_bucket_mapping[ds_id] = local_path
-        return s3_bucket_mapping
+        # Allow dataset_configs to be writable, because
+        # _maybe_assign_store_instance_ids() will change
+        # entries:
+        dataset_configs = [dict(c) for c in dataset_configs]
+        cls._maybe_assign_store_instance_ids(dataset_configs,
+                                             data_store_pool,
+                                             base_dir)
+        return data_store_pool, dataset_configs
 
     def get_rgb_color_mapping(
             self,
@@ -532,7 +527,7 @@ class DatasetsContext(ResourcesContext):
                     cmap_name = color_mapping.get('ColorFile', cmap_name)
                 else:
                     cmap_name = color_mapping.get('ColorBar', cmap_name)
-                    cmap_name, _ = get_cmap(cmap_name)
+                    cmap_name, _ = self._colormap_registry.get_cmap(cmap_name)
 
         cmap_range = cmap_vmin, cmap_vmax
         if cmap_name is not None and None not in cmap_range:
@@ -544,22 +539,52 @@ class DatasetsContext(ResourcesContext):
         valid_range = get_var_valid_range(var)
         return get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
 
-    def get_style(self, ds_id: str):
-        dataset_config = self.get_dataset_config(ds_id)
-        style_name = dataset_config.get('Style', 'default')
-        styles = self.config.get('Styles')
-        if styles:
-            for style in styles:
-                if style_name == style['Identifier']:
-                    return style
-        return None
+    def _get_cm_styles(self) -> Tuple[Dict[str, Any], ColormapRegistry]:
+        custom_colormaps = {}
+        cm_styles = {}
+        for style in self.config.get("Styles", []):
+            style_id = style["Identifier"]
+            color_mappings = dict(style["ColorMappings"])
+            for var_name, color_mapping in color_mappings.items():
+                if "ColorFile" not in color_mapping:
+                    continue
+                custom_cmap_path = self.get_config_path(
+                    color_mapping,
+                    "ColorMappings",
+                    path_entry_name="ColorFile"
+                )
+                custom_colormap = custom_colormaps.get(custom_cmap_path)
+                if custom_colormap is not None:
+                    continue
+                if not os.path.isfile(custom_cmap_path):
+                    LOG.error(f"Missing custom colormap file:"
+                              f" {custom_cmap_path}")
+                    continue
+                try:
+                    custom_colormap = load_snap_cpd_colormap(
+                        custom_cmap_path
+                    )
+                    LOG.info(f'Loaded custom colormap {custom_cmap_path!r}')
+                except ValueError as e:
+                    LOG.warning(f'Detected invalid custom colormap'
+                                f' {custom_cmap_path!r}: {e}',
+                                exc_info=True)
+                    continue
+                custom_colormaps[custom_cmap_path] = custom_colormap
+                color_mappings[var_name] = {
+                    "ColorBar": custom_colormap.cm_name,
+                    "ValueRange": (custom_colormap.norm.vmin,
+                                   custom_colormap.norm.vmax)
+                }
+            cm_styles[style_id] = color_mappings
+
+        return cm_styles, ColormapRegistry(*custom_colormaps.values())
 
     def get_color_mappings(self, ds_id: str) \
             -> Optional[Dict[str, Dict[str, Any]]]:
-        style = self.get_style(ds_id)
-        if style:
-            return style.get('ColorMappings')
-        return None
+        dataset_config = self.get_dataset_config(ds_id)
+        style_id = dataset_config.get('Style', 'default')
+        return self._cm_styles.get(style_id, {})
 
     def _get_dataset_entry(self, ds_id: str) \
             -> Tuple[MultiLevelDataset, ServerConfig]:
@@ -581,7 +606,7 @@ class DatasetsContext(ResourcesContext):
         ml_dataset = self._open_ml_dataset(dataset_config)
         return ml_dataset, dataset_config
 
-    def _open_ml_dataset(self, dataset_config: ServerConfig) \
+    def _open_ml_dataset(self, dataset_config: DatasetConfig) \
             -> MultiLevelDataset:
         ds_id: str = dataset_config.get('Identifier')
         store_instance_id = dataset_config.get('StoreInstanceId')
@@ -678,7 +703,8 @@ class DatasetsContext(ResourcesContext):
 
         for place_group in place_groups:
             place_group_id = place_group_id_prefix + place_group["id"]
-            self.places_ctx.set_cached_place_group(place_group_id, place_group)
+            self.places_ctx.set_cached_place_group(place_group_id,
+                                                   place_group)
 
         return place_groups
 
@@ -756,15 +782,6 @@ class DatasetsContext(ResourcesContext):
                 ) from e
         return var_indexers
 
-    @classmethod
-    def find_dataset_config(cls,
-                            dataset_configs: List[DatasetConfig],
-                            ds_name: str) -> Optional[DatasetConfig]:
-        # Note: can be optimized by dict/key lookup
-        return next(
-            (dsd for dsd in dataset_configs if dsd['Identifier'] == ds_name),
-            None)
-
     def get_dataset_chunk_cache_capacity(
             self,
             dataset_config: DatasetConfig
@@ -781,7 +798,7 @@ class DatasetsContext(ResourcesContext):
     @classmethod
     def get_chunk_cache_capacity(
             cls,
-            config: ServerConfigObject,
+            config: Mapping[str, Any],
             cache_size_key: str
     ) -> Optional[int]:
         cache_size = config.get(cache_size_key, None)
@@ -791,7 +808,9 @@ class DatasetsContext(ResourcesContext):
             try:
                 cache_size = parse_mem_size(cache_size)
             except ValueError:
-                raise ApiError.InvalidServerConfig(f'Invalid {cache_size_key}')
+                raise ApiError.InvalidServerConfig(
+                    f'Invalid {cache_size_key}'
+                )
         elif not isinstance(cache_size, int) or cache_size < 0:
             raise ApiError.InvalidServerConfig(f'Invalid {cache_size_key}')
         return cache_size
@@ -807,7 +826,9 @@ def _open_ml_dataset_from_python_code(
     callable_name = dataset_config.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_config.get('InputDatasets', [])
     input_parameters = dataset_config.get('InputParameters', {})
-    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_config)
+    chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(
+        dataset_config
+    )
     if chunk_cache_capacity:
         warnings.warn(
             'chunk cache size is not effective for'

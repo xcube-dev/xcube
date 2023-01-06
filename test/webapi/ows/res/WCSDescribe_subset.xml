@@ -10,9 +10,6 @@
             <gml:pos>0 50</gml:pos>
             <gml:pos>5 52.5</gml:pos>
         </lonLatEnvelope>
-        <keywords>
-            <keyword>grid</keyword>
-        </keywords>
         <domainSet>
             <spatialDomain>
                 <gml:Envelope>
@@ -52,12 +49,11 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -68,9 +64,6 @@
             <gml:pos>0 50</gml:pos>
             <gml:pos>5 52.5</gml:pos>
         </lonLatEnvelope>
-        <keywords>
-            <keyword>grid</keyword>
-        </keywords>
         <domainSet>
             <spatialDomain>
                 <gml:Envelope>
@@ -106,12 +99,11 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
     <CoverageOffering>
@@ -122,9 +114,6 @@
             <gml:pos>0 50</gml:pos>
             <gml:pos>5 52.5</gml:pos>
         </lonLatEnvelope>
-        <keywords>
-            <keyword>grid</keyword>
-        </keywords>
         <domainSet>
             <spatialDomain>
                 <gml:Envelope>
@@ -160,12 +149,11 @@
             </RangeSet>
         </rangeSet>
         <supportedCRSs>
-            <requestResponseCRSs>EPSG:4326 EPSG:3857</requestResponseCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
         </supportedCRSs>
         <supportedFormats>
-            <formats>zarr</formats>
-            <formats>netcdf4</formats>
-            <formats>csv</formats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
         </supportedFormats>
     </CoverageOffering>
 </CoverageDescription>

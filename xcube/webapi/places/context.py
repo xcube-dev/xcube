@@ -28,7 +28,7 @@ import fiona
 
 from xcube.server.api import ApiError
 from xcube.server.api import Context
-from xcube.webapi.resctx import ResourcesContext
+from xcube.webapi.common.context import ResourcesContext
 
 PlaceGroup = Dict[str, Any]
 Feature = Dict[str, Any]
