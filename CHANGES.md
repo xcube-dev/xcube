@@ -7,7 +7,7 @@
 * Implementation of function `xcube.core.geom.rasterize_features()` 
   has been changed to account for consistent use of a target variable's
   `fill_value` and `dtype` for a given feature.
-  In-memory (decoded) variables now always use dtype `fgloat64` and use 
+  In-memory (decoded) variables now always use dtype `float64` and use 
   `np.nan` to represent missing values. Persisted (encoded) variable data
   will make use of the target `fill_value` and `dtype`. (#778)
 
