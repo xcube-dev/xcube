@@ -32,6 +32,10 @@ from xcube.server.webservers.tornado import TornadoFramework
 from xcube.webapi.datasets.context import DatasetsContext
 
 
+# Got trick from
+# https://stackoverflow.com/questions/55201748/running-a-tornado-server-within-a-jupyter-notebook
+
+
 class InteractiveServer:
 
     def __init__(self,
@@ -57,8 +61,12 @@ class InteractiveServer:
 
         self._io_loop.add_callback(self._server.start)
 
-        print(f"Server: http://localhost:{port}")
-        print(f"Viewer: http://localhost:{port}/viewer/")
+        server_url = f"http://localhost:{port}"
+        # TODO (forman): let xcube-viewer detect serverUrl from URL pathname
+        #   "/viewer/".
+        viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
+        print(f"Server: {server_url}")
+        print(f"Viewer: {viewer_url}")
 
     def stop(self):
         if self._server is not None:
