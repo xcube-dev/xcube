@@ -143,21 +143,32 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertEquals((10, 10), dataset.a.shape)
         self.assertEquals((10, 10), dataset.b.shape)
         self.assertEquals((10, 10), dataset.c2.shape)
+
+        # Assert in-memory (decoding) data types are correct.
         self.assertEquals(np.float64, dataset.a.dtype)
         self.assertEquals(np.float64, dataset.b.dtype)
         self.assertEquals(np.float64, dataset.c2.dtype)
+
+        # Assert external representation (encoding) information
+        # is correctly set up.
+        # See also test.core.test_xarray.XarrayEncodingTest
         self.assertIs(nan, dataset.a.encoding.get('_FillValue'))
         self.assertIs(nan, dataset.b.encoding.get('_FillValue'))
         self.assertEqual(0, dataset.c2.encoding.get('_FillValue'))
         self.assertEqual(np.dtype('float64'), dataset.a.encoding.get('dtype'))
         self.assertEqual(np.dtype('float32'), dataset.b.encoding.get('dtype'))
         self.assertEqual(np.dtype('uint8'), dataset.c2.encoding.get('dtype'))
+
+        # Other metadata
         self.assertEquals({}, dataset.a.attrs)
         self.assertEquals({'units': 'meters'}, dataset.b.attrs)
         self.assertEquals({}, dataset.c2.attrs)
         self.assertEquals((y_name, x_name), dataset.a.dims)
         self.assertEquals((y_name, x_name), dataset.b.dims)
         self.assertEquals((y_name, x_name), dataset.c2.dims)
+
+        # Assert actual data is correct
+
         actual_a_values = dataset.a.values
         expected_a_values = np.array(
             [[0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],

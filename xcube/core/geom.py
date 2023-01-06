@@ -244,16 +244,13 @@ def rasterize_features(
         var_attrs = var_prop_mapping.get('attrs', {})
 
         feature_image = rasterized_features[feature_index]
-        # if feature_image.dtype != var_dtype:
-        #     feature_image = da.Array.astype(feature_image,
-        #                                     dtype=var_dtype)
 
         feature_var = xr.DataArray(feature_image,
                                    coords=yx_coords,
                                    dims=yx_dims,
                                    attrs=var_attrs)
         feature_var.encoding.update(_FillValue=var_fill_value,
-                                    dtype=var_dtype.str)
+                                    dtype=var_dtype)
         dataset[var_name] = feature_var
 
     return dataset
