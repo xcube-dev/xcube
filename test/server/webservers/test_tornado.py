@@ -200,6 +200,11 @@ class TornadoApiRequestTest(unittest.TestCase):
                          request.url_for_path('/collections',
                                               query='details=1'))
 
+        request = TornadoApiRequest(tr, url_prefix='/api/v1')
+        self.assertEqual("http://localhost:8080/api/v1/collections?details=1",
+                         request.url_for_path('/collections',
+                                              query='details=1'))
+
     def test_get_query_args(self):
         tr = tornado.httputil.HTTPServerRequest(
             method='GET',
@@ -369,13 +374,13 @@ class MockContext(Context):
     def apis(self) -> Tuple[Api]:
         return self._api,
 
-    @property
-    def open_api_doc(self) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
         return {}
 
     @property
     def config(self) -> ServerConfig:
-        return self.config
+        # noinspection PyTypeChecker
+        return self._config
 
     def get_api_ctx(self,
                     api_name: str,

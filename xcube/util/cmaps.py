@@ -490,6 +490,23 @@ def get_cmap_png_base64(cmap: matplotlib.colors.Colormap) -> str:
     return cbar_png_bytes
 
 
+def load_custom_colormap(custom_colormap_path: str) -> Optional[Colormap]:
+    try:
+        # Currently, we only support SNAP *.cpd files
+        colormap = load_snap_cpd_colormap(custom_colormap_path)
+        LOG.info(f'Loaded custom colormap'
+                 f' {custom_colormap_path!r}')
+        return colormap
+    except FileNotFoundError:
+        LOG.error(f"Missing custom colormap file:"
+                  f" {custom_colormap_path}")
+    except ValueError as e:
+        LOG.error(f'Detected invalid custom colormap'
+                  f' {custom_colormap_path!r}: {e}',
+                  exc_info=True)
+    return None
+
+
 def load_snap_cpd_colormap(snap_cpd_path: str) -> Colormap:
     points, log_scaled = _parse_snap_cpd_file(snap_cpd_path)
     samples = [sample for sample, _ in points]

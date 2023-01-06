@@ -45,6 +45,7 @@ from .api import ReturnT
 from .api import ServerConfig
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
+from .config import get_url_prefix
 from .framework import Framework
 from ..util.frozen import FrozenDict
 
@@ -93,8 +94,9 @@ class Server(AsyncExecution):
             LOG.info(f'Loaded service API {api.name!r}')
         static_routes = self.collect_static_routes(config)
         routes = self.collect_api_routes(apis)
-        framework.add_static_routes(static_routes)
-        framework.add_routes(routes)
+        url_prefix = get_url_prefix(config)
+        framework.add_static_routes(static_routes, url_prefix)
+        framework.add_routes(routes, url_prefix)
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(
@@ -319,8 +321,7 @@ class Server(AsyncExecution):
                 config_schema_update.required
             )
 
-    @property
-    def open_api_doc(self) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
         """Get the OpenAPI JSON document for this server."""
         error_schema = {
             "type": "object",
@@ -379,6 +380,8 @@ class Server(AsyncExecution):
             }
         }
 
+        url_prefix = get_url_prefix(self.ctx.config)
+
         tags = []
         paths = {}
         for other_api in self.ctx.apis:
@@ -390,6 +393,9 @@ class Server(AsyncExecution):
                 "description": other_api.description or ""
             })
             for route in other_api.routes:
+                if not include_all \
+                        and route.path.startswith('/maintenance/'):
+                    continue
                 path = dict(
                     description=getattr(
                         route.handler_cls, "__doc__", ""
@@ -424,7 +430,10 @@ class Server(AsyncExecution):
             },
             "servers": [
                 {
-                    "url": "http://localhost:8080",
+                    # TODO (forman): the following URL must be adjusted
+                    #   e.g. pass request.url_for_path('') as url into
+                    #   this method, or even pass the list of servers.
+                    "url": f"http://localhost:8080{url_prefix}",
                     "description": "Local development server."
                 },
             ],
@@ -466,9 +475,8 @@ class ServerContext(Context):
     def apis(self) -> Tuple[Api]:
         return self._server.apis
 
-    @property
-    def open_api_doc(self) -> Dict[str, Any]:
-        return self._server.open_api_doc
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+        return self._server.get_open_api_doc(include_all=include_all)
 
     @property
     def config(self) -> ServerConfig:

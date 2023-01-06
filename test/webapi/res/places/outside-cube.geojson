@@ -1,0 +1,53 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.5,
+          52.1
+        ]
+      },
+      "properties": {
+        "Name": "Station 4",
+        "ID": "4",
+        "Sub_Region_Name": "Outside",
+        "Region_Name": "Belgium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.5,
+          52.8
+        ]
+      },
+      "properties": {
+        "Name": "Station 5",
+        "ID": "5",
+        "Sub_Region_Name": "Outside",
+        "Region_Name": "Belgium"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.5,
+          49.1
+        ]
+      },
+      "properties": {
+        "Name": "Station 6",
+        "ID": "6",
+        "Sub_Region_Name": "Outside",
+        "Region_Name": "Belgium"
+      }
+    }
+  ]
+}

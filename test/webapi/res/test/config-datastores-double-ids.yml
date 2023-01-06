@@ -1,9 +1,0 @@
-DataStores:
-  - Identifier: test
-    StoreId: file
-    StoreParams:
-      root: examples/serve/demo
-    Datasets:
-      - Path: "cube-*.zarr"
-        Identifier: "Cube"
-        Style: "default"

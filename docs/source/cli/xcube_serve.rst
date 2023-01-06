@@ -116,7 +116,7 @@ The parts of the demo configuration file are explained in detail further down.
 
 Some hints before, which are not addressed in the server demo configuration file.
 To increase imaging performance, xcube datasets can be converted to multi-resolution pyramids using the
-:doc:`xcube_level` tool. In the configuration, the format must be set to ``'level'``.
+:doc:`xcube_level` tool. In the configuration, the format must be set to ``'levels'``.
 Leveled xcube datasets are configured this way:
 
 .. code:: yaml
@@ -126,7 +126,7 @@ Leveled xcube datasets are configured this way:
       - Identifier: my_multi_level_dataset
         Title: "My Multi-Level Dataset"
         FileSystem: file
-        Path: my_multi_level_dataset.level
+        Path: my_multi_level_dataset.levels
 
       - ...
 
@@ -206,14 +206,19 @@ Dataset Attribution may be added to the server via *DatasetAttribution*.
 
 Datasets [mandatory]
 --------------------
-In order to publish selected xcube datasets via xcube serve the datasets need to be specified in the configuration
-file of the server. Several xcube datasets may be served within one server, by providing a list of information
-concerning the xcube datasets.
+
+In order to publish selected xcube datasets via ``xcube serve``,
+the datasets need to be described in the server configuration.
 
 .. _remotely stored xcube datasets:
 
-Remotely Stored xcube Datasets
------------------------------
+Remotely stored xcube Datasets
+------------------------------
+
+The following configuration snippet demonstrates how to
+publish static (persistent) xcube datasets stored in
+S3-compatible object storage:
+
 .. code:: yaml
 
     Datasets:
@@ -248,7 +253,7 @@ Credentials may be saved either in a file called .aws/credentials with content l
 Or they may be exported as environment variables AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID.
 
 Further down an example for a `locally stored xcube datasets`_ will be given,
-as well as an example of a `on-the-fly generation of xcube datasets`_.
+as well as an example of `dynamic xcube datasets`_.
 
 *Identifier* [mandatory]
 is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
@@ -291,10 +296,11 @@ configuring the *RequiredScopes* entry whose value is a list of required scopes,
 
 .. _locally stored xcube datasets:
 
-Locally Stored xcube Datasets
+Locally stored xcube Datasets
 -----------------------------
 
-To serve a locally stored dataset the configuration of it would look like the example below:
+The following configuration snippet demonstrates how to
+publish static (persistent) xcube datasets stored in the local filesystem:
 
 .. code:: yaml
 
@@ -350,13 +356,14 @@ can only be used when providing `authentication`_. By passing the *IsSubstitute*
 a dataset disappears for authorized requests. This might be useful for showing a demo dataset in the viewer for
 user who are not logged in.
 
-.. _on-the-fly generation of xcube datasets:
+.. _dynamic xcube datasets:
 
-On-the-fly Generation of xcube Datasets
----------------------------------------
+Dynamic xcube Datasets
+----------------------
 
-There is the possibility of generating resampled xcube datasets on-the-fly, e.g. in order to
-obtain daily or weekly averages of a xcube dataset.
+There is the possibility to define dynamic xcube datasets
+that are computed on-the-fly. Given here is an example that
+obtains daily or weekly averages of an xcube dataset named "local".
 
 .. code:: yaml
 
@@ -378,18 +385,36 @@ obtain daily or weekly averages of a xcube dataset.
       IsSubstitute: True
 
 *FileSystem* [mandatory]
-is defined as "memory" for the on-the-fly generated dataset.
+must be "memory" for dynamically generated datasets.
 
 *Path* [mandatory]
-leads to the resample python module. There might be several functions specified in the
-python module, therefore the particular *Function* needs to be included into the configuration.
+points to a Python module. Can be a Python file, a package, or a Zip file.
+
+*Function* [mandatory, mutually exclusive with *Class*]
+references a function in the Python file given by *Path*. Must be suffixed
+by colon-separated module name, if *Path* references a package or Zip file.
+The function receives one or more datasets of type ``xarray.Dataset``
+as defined by *InputDatasets* and optional keyword-arguments as
+given by *InputParameters*, if any. It must return a new ``xarray.Dataset``
+with same spatial coordinates as the inputs.
+
+*Class* [mandatory, mutually exclusive with *Function*]
+references a callable in the Python file given by *Path*. Must be suffixed
+by colon-separated module name, if *Path* references a package or Zip file.
+The callable is either a class derived from
+``xcube.core.mldataset.MultiLevelDataset`` or a function that returns
+an instance of ``xcube.core.mldataset.MultiLevelDataset``.
+The callable receives one or more datasets of type
+``xcube.core.mldataset.MultiLevelDataset`` as defined by *InputDatasets*
+and optional keyword-arguments as given by *InputParameters*, if any.
 
 *InputDatasets* [mandatory]
-specifies the dataset to be resampled.
+specifies the input datasets passed to *Function* or *Class*.
 
-*InputParameter* [mandatory]
-defines which kind of resampling should be performed.
-In the example a weekly average is computed.
+*InputParameters* [mandatory]
+specifies optional keyword arguments passed to *Function* or *Class*.
+In the example, *InputParameters* defines which kind of resampling
+should be performed.
 
 Again, the dataset may be associated with place groups.
 
@@ -467,9 +492,10 @@ Styles [optional]
 -----------------
 
 
-Within the *Styles* section colorbars may be defined which should be used initially for a certain variable of a dataset,
-as well as the value ranges.
-For xcube viewer version 0.3.0 or higher the colorbars and the value ranges may be adjusted by the user
+Within the *Styles* section, colorbars may be defined which should
+be used initially for a certain variable of a dataset,
+as well as the value ranges. For xcube viewer version 0.3.0 or
+higher the colorbars and the value ranges may be adjusted by the user
 within the xcube viewer.
 
 .. code:: yaml
@@ -497,12 +523,26 @@ within the xcube viewer.
               Variable: kd489
               ValueRange: [0., 6.]
 
-The *ColorMapping* may be specified for each variable of the datasets to be served.
-If not specified, the server uses a default colorbar as well as a default value range.
+The *ColorMapping* may be specified for each variable of the
+datasets to be served. If not specified, xcube server will try
+to extract default values from attributes of dataset variables.
+The default value ranges are determined by:
 
-*rgb* may be used to generate an RGB-Image on-the-fly within xcube viewer. This may be done if  the dataset contains
-variables which represent the bands red, green and blue, they may be combined to an RGB-Image. Or three variables
-of the dataset may be combined to an RGB-Image, as shown in the configuration above.
+* xcube-specific variable attributes
+  ``color_value_min`` and ``color_value_max``;
+* The CF variable attributes ``valid_min``, ``valid_max``
+  or ``valid_range``.
+* Or otherwise, the value range ``[0, 1]`` is assumed.
+
+The colorbar name can be set using the
+
+* xcube-specific variable attribute ``color_bar_name``;
+* Otherwise, the default colorbar name will be ``"viridis"``.
+
+The special name *rgb* may be used to generate an RGB-image
+from any other three dataset variables used for the individual
+*Red*, *Green* and *Blue* channels of the resulting image.
+An example is shown in the configuration above.
 
 .. _example:
 

@@ -319,9 +319,8 @@ class Context(AsyncExecution, ABC):
     def apis(self) -> Tuple[Api]:
         """The APIs used by the server."""
 
-    @property
     @abstractmethod
-    def open_api_doc(self) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
         """The OpenAPI JSON document for the server."""
 
     @property
@@ -408,10 +407,9 @@ class ApiContext(Context):
         """Return the server context's ``apis`` property."""
         return self.server_ctx.apis
 
-    @property
-    def open_api_doc(self) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
         """Return the server context's ``apis`` property."""
-        return self.server_ctx.open_api_doc
+        return self.server_ctx.get_open_api_doc(include_all=include_all)
 
     @property
     def config(self) -> ServerConfig:
@@ -608,7 +606,15 @@ class ApiHandler(Generic[ServerContextT], ABC):
         raise ApiError.MethodNotAllowed("method DELETE not allowed")
 
     def options(self, *args, **kwargs):
-        raise ApiError.MethodNotAllowed("method OPTIONS not allowed")
+        # Warning, naive implementation:
+        # By default, we allow for pre-flight OPTIONS requests.
+        # We could improve by returning 204 only for the method given by
+        # header "Access-Control-Request-Method", which effectively
+        # has an implementation in a client's ApiHandler.
+        # For more, see
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/OPTIONS
+        self.response.set_status(204)
+        self.response.finish()
 
 
 class ApiRoute:

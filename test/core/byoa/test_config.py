@@ -11,9 +11,14 @@ INLINE_CODE = (
 
 PARENT_DIR = os.path.dirname(__file__)
 LOCAL_MODULE_DIR = os.path.join(PARENT_DIR,
-                                'test_data', 'user_code')
+                                'test_data',
+                                'user_code')
 LOCAL_MODULE_ZIP = os.path.join(PARENT_DIR,
-                                'test_data', 'user_code.zip')
+                                'test_data',
+                                'user_code.zip')
+LOCAL_PREFIXED_MODULE_ZIP = os.path.join(PARENT_DIR,
+                                         'test_data',
+                                         'user_code_prefixed.zip')
 
 
 class CodeConfigTest(unittest.TestCase):
@@ -149,10 +154,24 @@ class CodeConfigTest(unittest.TestCase):
         # CodeConfigs from for_local() shall be able to load callable
         self.assertTrue(callable(local_code_config.get_callable()))
 
-    def test_for_local_from_file_set_zip(self):
+    def test_for_local_from_zip_file_set(self):
         user_code_config = CodeConfig.from_file_set(
             LOCAL_MODULE_ZIP,
             'processor:process_dataset'
+        )
+
+        local_code_config = user_code_config.for_local()
+        self.assertIs(user_code_config, local_code_config)
+        self.assertIsInstance(local_code_config.file_set, FileSet)
+        self.assertIs(user_code_config.file_set, local_code_config.file_set)
+        self.assertEqual(LOCAL_MODULE_ZIP, local_code_config.file_set.path)
+        # CodeConfigs from for_local() shall be able to load callable
+        self.assertTrue(callable(local_code_config.get_callable()))
+
+    def test_for_local_from_prefixed_zip_file_set(self):
+        user_code_config = CodeConfig.from_file_set(
+            FileSet(LOCAL_PREFIXED_MODULE_ZIP, sub_path='user_code'),
+            'processor:process_dataset',
         )
 
         local_code_config = user_code_config.for_local()
@@ -198,7 +217,8 @@ class CodeConfigTest(unittest.TestCase):
         with self.assertRaises(RuntimeError) as e:
             code_config.for_local()
         self.assertEqual(
-            ('for_local() failed due to an invalid CodeConfig state',),
+            ('CodeConfig.for_local() failed'
+             ' due to an invalid internal state',),
             e.exception.args
         )
 
@@ -213,7 +233,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(service_code_config.file_set, FileSet)
         self.assertTrue(service_code_config.file_set.is_local_zip())
 
-    def test_for_service_from_file_set_zip(self):
+    def test_for_service_from_zip_file_set(self):
         user_code_config = CodeConfig.from_file_set(
             LOCAL_MODULE_ZIP,
             'processor:process_dataset'

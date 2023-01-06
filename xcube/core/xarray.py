@@ -1,6 +1,6 @@
 import threading
 from typing import Dict, List, Mapping, Any, Union, Sequence, Optional
-
+from deprecated import deprecated
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -293,6 +293,9 @@ class DatasetAccessor:
         """
         return select_variables_subset(self._dataset, var_names)
 
+    @deprecated(version='0.13.0',
+                reason='multi-level datasets should be represented by'
+                       ' class xcube.core.mldataset.MultiLevelDataset')
     def levels(self, **kwargs) -> List[xr.Dataset]:
         """
         Transform this dataset into the levels of a multi-level pyramid with spatial resolution

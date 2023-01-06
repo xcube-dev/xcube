@@ -308,7 +308,8 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             with fs.open(str(link_path), 'r') as fp:
                 level_path = self._get_path(fp.read())
             if not level_path.is_absolute() \
-                    and not level_path.is_relative_to(ds_path):
+                    and not self._is_path_relative_to_path(level_path,
+                                                           ds_path):
                 level_path = resolve_path(ds_path / level_path)
         else:
             # Nominal "{index}.zarr" must exist
@@ -339,6 +340,18 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
         level_dataset.zarr_store.set(level_zarr_store)
         return level_dataset
+
+    @staticmethod
+    def _is_path_relative_to_path(level_path, ds_path):
+        if hasattr(level_path, 'is_relative_to'):
+            # Python >=3.9
+            return level_path.is_relative_to(ds_path)
+        try:
+            # Python <3.9
+            level_path.relative_to(ds_path)
+            return True
+        except ValueError:
+            return False
 
     @staticmethod
     def compute_size_weights(num_levels: int) -> np.ndarray:

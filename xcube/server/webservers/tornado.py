@@ -1,23 +1,23 @@
-#  The MIT License (MIT)
-#  Copyright (c) 2022 by the xcube development team and contributors
+# The MIT License (MIT)
+# Copyright (c) 2022 by the xcube development team and contributors
 #
-#  Permission is hereby granted, free of charge, to any person obtaining a
-#  copy of this software and associated documentation files (the "Software"),
-#  to deal in the Software without restriction, including without limitation
-#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-#  and/or sell copies of the Software, and to permit persons to whom the
-#  Software is furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-#  The above copyright notice and this permission notice shall be included in
-#  all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-#  DEALINGS IN THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import asyncio
 import concurrent.futures
@@ -43,6 +43,7 @@ from xcube.server.api import ApiRoute
 from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
+from xcube.server.config import get_url_prefix
 from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -110,11 +111,13 @@ class TornadoFramework(Framework):
     def io_loop(self) -> tornado.ioloop.IOLoop:
         return self._io_loop or tornado.ioloop.IOLoop.current()
 
-    def add_static_routes(self, static_routes: Sequence[Tuple[str, str]]):
+    def add_static_routes(self,
+                          static_routes: Sequence[Tuple[str, str]],
+                          url_prefix: str):
         if static_routes:
             handlers = [
                 (
-                    f'{url_path}/(.*)',
+                    f'{url_prefix}{url_path}/(.*)',
                     tornado.web.StaticFileHandler,
                     {'path': local_path}
                 )
@@ -122,11 +125,13 @@ class TornadoFramework(Framework):
             ]
             self.application.add_handlers(".*$", handlers)
 
-    def add_routes(self, api_routes: Sequence[ApiRoute]):
+    def add_routes(self,
+                   api_routes: Sequence[ApiRoute],
+                   url_prefix: str):
         handlers = []
         for api_route in api_routes:
             handlers.append((
-                self.path_to_pattern(api_route.path),
+                url_prefix + self.path_to_pattern(api_route.path),
                 TornadoRequestHandler,
                 {
                     "api_route": api_route
@@ -147,13 +152,14 @@ class TornadoFramework(Framework):
 
         port = config["port"]
         address = config["address"]
+        url_prefix = get_url_prefix(config)
         tornado_settings = config.get("tornado", {})
 
         self.application.listen(port, address=address, **tornado_settings)
 
         address_ = "127.0.0.1" if address == "0.0.0.0" else address
         # TODO: get test URL template from configuration
-        test_url = f"http://{address_}:{port}/openapi.html"
+        test_url = f"http://{address_}:{port}{url_prefix}/openapi.html"
         LOG.info(f"Service running, listening on {address}:{port}")
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
@@ -289,7 +295,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         ctx: Context = server_ctx.get_api_ctx(api_route.api_name)
         self._api_handler: ApiHandler = api_route.handler_cls(
             ctx,
-            TornadoApiRequest(request),
+            TornadoApiRequest(request, get_url_prefix(server_ctx.config)),
             TornadoApiResponse(self),
             **api_route.handler_kwargs
         )
@@ -353,8 +359,11 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
 
 
 class TornadoApiRequest(ApiRequest):
-    def __init__(self, request: tornado.httputil.HTTPServerRequest):
+    def __init__(self,
+                 request: tornado.httputil.HTTPServerRequest,
+                 url_prefix: str = ''):
         self._request = request
+        self._url_prefix = url_prefix
         self._is_query_lower_case = False
         # print("full_url:", self._request.full_url())
         # print("protocol:", self._request.protocol)
@@ -398,12 +407,13 @@ class TornadoApiRequest(ApiRequest):
                      query: Optional[str] = None) -> str:
         protocol = self._request.protocol
         host = self._request.host
+        prefix = self._url_prefix
         uri = ""
         if path:
             uri = path if path.startswith("/") else "/" + path
         if query:
             uri += "?" + query
-        return f"{protocol}://{host}{uri}"
+        return f"{protocol}://{host}{prefix}{uri}"
 
     @property
     def url(self) -> str:

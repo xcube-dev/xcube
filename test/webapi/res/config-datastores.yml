@@ -1,0 +1,14 @@
+DataStores:
+  - Identifier: test
+    StoreId: file
+    StoreParams:
+      root: examples/serve/demo
+    Datasets:
+      - Path: "cube-1-250-250.zarr"
+        Identifier: "Cube-T1.zarr"
+        Style: "default"
+      - Path: "cube-5-100-200.zarr"
+        Identifier: "Cube-T5.zarr"
+        Style: "default"
+      - Path: "*.levels"
+        Style: "default"

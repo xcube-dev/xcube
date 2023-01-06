@@ -49,6 +49,7 @@ AUGMENTATION_SCHEMA = JsonObjectSchema(
     properties=dict(
         Path=PATH_SCHEMA,
         Function=IDENTIFIER_SCHEMA,
+        Class=IDENTIFIER_SCHEMA,
         InputParameters=JsonObjectSchema(
             additional_properties=True,
         ),
@@ -91,6 +92,7 @@ DATASET_CONFIG_SCHEMA = JsonObjectSchema(
         Endpoint=URI_SCHEMA,
         Region=IDENTIFIER_SCHEMA,
         Function=IDENTIFIER_SCHEMA,
+        Class=IDENTIFIER_SCHEMA,
         InputDatasets=JsonArraySchema(items=IDENTIFIER_SCHEMA),
         InputParameters=JsonObjectSchema(additional_properties=True),
         **COMMON_DATASET_PROPERTIES,
@@ -135,10 +137,7 @@ COLOR_MAPPING_EXPLICIT_SCHEMA = JsonObjectSchema(
         ColorBar=STRING_SCHEMA,
         ValueRange=VALUE_RANGE_SCHEMA
     ),
-    required=[
-        "ValueRange",
-        "ColorBar"
-    ],
+    required=[],
     additional_properties=False
 )
 

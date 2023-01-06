@@ -522,13 +522,14 @@ def _clip_dataset_by_geometry(
 
     width = x_var.size
     height = y_var.size
-    res = (ds_y_max - ds_y_min) / height
+    res_x = (ds_x_max - ds_x_min) / width
+    res_y = (ds_y_max - ds_y_min) / height
 
     g_x_min, g_y_min, g_x_max, g_y_max = intersection_geometry.bounds
-    x1 = _clamp(int(math.floor((g_x_min - ds_x_min) / res)), 0, width - 1)
-    x2 = _clamp(int(math.ceil((g_x_max - ds_x_min) / res)), 0, width - 1)
-    y1 = _clamp(int(math.floor((g_y_min - ds_y_min) / res)), 0, height - 1)
-    y2 = _clamp(int(math.ceil((g_y_max - ds_y_min) / res)), 0, height - 1)
+    x1 = _clamp(int(math.floor((g_x_min - ds_x_min) / res_x)), 0, width - 1)
+    x2 = _clamp(int(math.ceil((g_x_max - ds_x_min) / res_x)), 0, width - 1)
+    y1 = _clamp(int(math.floor((g_y_min - ds_y_min) / res_y)), 0, height - 1)
+    y2 = _clamp(int(math.ceil((g_y_max - ds_y_min) / res_y)), 0, height - 1)
     if y_var[0] > y_var[-1]:  # inverse ?
         _y1, _y2 = y1, y2
         y1 = height - _y2 - 1
@@ -562,27 +563,6 @@ def _save_geometry_wkt(dataset, intersection_geometry, save_geometry):
             if isinstance(save_geometry, str) \
             else 'geometry_wkt'
         dataset.attrs.update({attr_name: intersection_geometry.wkt})
-
-
-@deprecated(version="0.10.2", reason="No longer in use.")
-def get_geometry_mask(width: int, height: int,
-                      geometry: GeometryLike,
-                      x_min: float,
-                      y_min: float,
-                      x_res: float,
-                      y_res: Optional[float] = None,
-                      all_touched: bool = True) -> np.ndarray:
-    if y_res is None:
-        y_res = x_res
-    geometry = normalize_geometry(geometry)
-    # noinspection PyTypeChecker
-    transform = affine.Affine(x_res, 0.0, x_min,
-                              0.0, -y_res, y_min + y_res * height)
-    return rasterio.features.geometry_mask([geometry],
-                                           out_shape=(height, width),
-                                           transform=transform,
-                                           all_touched=all_touched,
-                                           invert=True)
 
 
 def intersect_geometries(geometry1: GeometryLike, geometry2: GeometryLike) \

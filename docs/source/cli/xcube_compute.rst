@@ -15,8 +15,10 @@ Compute a cube variable from other cube variables using a user-provided Python f
 
     Usage: xcube compute [OPTIONS] SCRIPT [CUBE]...
 
-      Compute a cube variable from other cube variables in CUBEs using a user-
-      provided Python function in SCRIPT.
+      Compute a cube from one or more other cubes.
+
+      The command computes a cube variable from other cube variables in CUBEs
+      using a user-provided Python function in SCRIPT.
 
       The SCRIPT must define a function named "compute":
 
@@ -30,13 +32,13 @@ Compute a cube variable from other cube variables using a user-provided Python f
               return output_array
 
       where input_vars are numpy arrays (chunks) in the order given by VARIABLES
-      or given by the variable names returned by an optional "initialize"
-      function that my be defined in SCRIPT too, see below. input_params is a
-      mapping of parameter names to values according to PARAMS or the ones
-      returned by the aforesaid "initialize" function. dim_coords is a mapping
-      from dimension name to coordinate labels for the current chunk to be
-      computed. dim_ranges is a mapping from dimension name to index ranges into
-      coordinate arrays of the cube.
+      or given by the variable names returned by an optional "initialize" function
+      that my be defined in SCRIPT too, see below. input_params is a mapping of
+      parameter names to values according to PARAMS or the ones returned by the
+      aforesaid "initialize" function. dim_coords is a mapping from dimension name
+      to coordinate labels for the current chunk to be computed. dim_ranges is a
+      mapping from dimension name to index ranges into coordinate arrays of the
+      cube.
 
       The SCRIPT may define a function named "initialize":
 
@@ -55,8 +57,8 @@ Compute a cube variable from other cube variables using a user-provided Python f
       variables in desired order and to provide some extra processing parameters
       passed to the "compute" function.
 
-      Note that if no input variable names are specified, no variables are
-      passed to the "compute" function.
+      Note that if no input variable names are specified, no variables are passed
+      to the "compute" function.
 
       The SCRIPT may also define a function named "finalize":
 
@@ -66,10 +68,10 @@ Compute a cube variable from other cube variables using a user-provided Python f
               # Optionally modify output_cube and return it or return None
               return output_cube
 
-      If defined, the "finalize" function will be called before the command
-      writes the new cube and then exists. The functions may perform a cleaning
-      up or perform side effects such as write the cube to some sink. If the
-      functions returns None, the CLI will *not* write any cube data.
+      If defined, the "finalize" function will be called before the command writes
+      the new cube and then exists. The functions may perform a cleaning up or
+      perform side effects such as write the cube to some sink. If the functions
+      returns None, the CLI will *not* write any cube data.
 
     Options:
       --variables, --vars VARIABLES  Comma-separated list of variable names.
@@ -79,7 +81,7 @@ Compute a cube variable from other cube variables using a user-provided Python f
       -f, --format FORMAT            Output format.
       -N, --name NAME                Output variable's name.
       -D, --dtype DTYPE              Output variable's data type.
-      --help
+      --help                         Show this message and exit.
 
 
 Example

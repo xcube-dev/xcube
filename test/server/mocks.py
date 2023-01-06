@@ -84,10 +84,14 @@ class MockFramework(Framework):
     def config_schema(self):
         return None
 
-    def add_static_routes(self, static_routes: Sequence[Tuple[str, str]]):
+    def add_static_routes(self,
+                          static_routes: Sequence[Tuple[str, str]],
+                          url_prefix: str):
         self.add_static_routes_count += 1
 
-    def add_routes(self, routes: Sequence[ApiRoute]):
+    def add_routes(self,
+                   routes: Sequence[ApiRoute],
+                   url_prefix: str):
         self.add_routes_count += 1
 
     def update(self, ctx: Context):

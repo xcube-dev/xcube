@@ -200,7 +200,7 @@ class ApiContextTest(unittest.TestCase):
         self.assertIsInstance(api_ctx.config, FrozenDict)
         self.assertEqual(config, api_ctx.config)
         self.assertEqual((), api_ctx.apis)
-        self.assertIsInstance(api_ctx.open_api_doc, dict)
+        self.assertIsInstance(api_ctx.get_open_api_doc(), dict)
 
     def test_async_exec(self):
         framework = MockFramework()
@@ -269,10 +269,10 @@ class ApiHandlerTest(unittest.TestCase):
         self.assertEqual('HTTP status 405: method DELETE not allowed',
                          f'{cm.exception}')
 
-        with self.assertRaises(ApiError.MethodNotAllowed) as cm:
-            handler.options()
-        self.assertEqual('HTTP status 405: method OPTIONS not allowed',
-                         f'{cm.exception}')
+    def test_default_options_method(self):
+        handler = self.handler
+        # Should not raise
+        handler.options()
 
 
 class ApiRequestTest(unittest.TestCase):

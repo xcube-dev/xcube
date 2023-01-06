@@ -183,7 +183,9 @@ DATASET_TYPE = DataType(
 
 MULTI_LEVEL_DATASET_TYPE = DataType(
     MultiLevelDataset,
-    ['mldataset', 'xcube.MultiLevelDataset']
+    ['mldataset',
+     'xcube.MultiLevelDataset',
+     'xcube.core.mldataset.MultiLevelDataset']
 )
 
 GEO_DATA_FRAME_TYPE = DataType(
