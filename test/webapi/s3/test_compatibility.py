@@ -44,15 +44,15 @@ class S3CompatibilityTest(unittest.TestCase):
             )
         )
 
-        data_ids = store.get_data_ids()
-        self.assertEqual({'cog_local.zarr',
-                          'geotiff_local.zarr',
-                          'local.zarr',
-                          'local_1w.zarr',
-                          'local_ts.zarr',
-                          'remote.zarr',
-                          'remote_1w.zarr'},
-                         set(data_ids))
+        expected_data_ids = {'cog_local.zarr',
+                             'geotiff_local.zarr',
+                             'local.zarr',
+                             'local_1w.zarr',
+                             'local_ts.zarr',
+                             'remote.zarr',
+                             'remote_1w.zarr'}
+        self.assertEqual(expected_data_ids, set(store.get_data_ids()))
+        self.assertEqual(expected_data_ids, set(store.list_data_ids()))
 
         ds = store.open_data('local.zarr')
         self.assertCubeOk(ds)
@@ -69,15 +69,15 @@ class S3CompatibilityTest(unittest.TestCase):
             )
         )
 
-        data_ids = store.get_data_ids()
-        self.assertEqual({'cog_local.levels',
-                          'geotiff_local.levels',
-                          'local.levels',
-                          'local_1w.levels',
-                          'local_ts.levels',
-                          'remote.levels',
-                          'remote_1w.levels'},
-                         set(data_ids))
+        expected_data_ids = {'cog_local.levels',
+                             'geotiff_local.levels',
+                             'local.levels',
+                             'local_1w.levels',
+                             'local_ts.levels',
+                             'remote.levels',
+                             'remote_1w.levels'}
+        self.assertEqual(expected_data_ids, set(store.get_data_ids()))
+        self.assertEqual(expected_data_ids, set(store.list_data_ids()))
 
         ds = store.open_data('local.levels')
         self.assertIsInstance(ds, MultiLevelDataset)
