@@ -1,4 +1,13 @@
-## Changes in 0.13.0.dev7 (in development)
+## Changes in 0.13.0.dev8 (in development)
+
+### Other
+
+* Added convenience method `DataStore.list_data_ids()` that works 
+  like `get_data_ids()`, but returns a list instead of an iterator. (#776)
+
+### Fixes
+
+## Changes in 0.13.0.dev7
 
 ### Other
 
