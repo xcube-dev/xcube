@@ -111,6 +111,10 @@ def rasterize_features(
                                # Deprecated, no longer used.
     }
 
+    Note that newly created variables will have data type `np.float64`
+    because `np.nan` is used to encode missing values. `fill_value` and
+    `dtype` are used to encode the variables when persisting the data.
+
     Currently, the coordinates of the geometries in the given
     *features* must use the same CRS as the given *dataset*.
 
