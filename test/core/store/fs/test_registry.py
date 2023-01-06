@@ -391,7 +391,7 @@ class FsDataStoresTestMixin(ABC):
                          set(data_store.get_data_types_for_data(data_id)))
         self.assertEqual(True, data_store.has_data(data_id))
         self.assertIn(data_id, set(data_store.get_data_ids()))
-        self.assertIn(data_id, set(data_store.list_data_ids()))
+        self.assertIn(data_id, data_store.list_data_ids())
 
         if expected_descriptor_type is not None:
             data_descriptors = list(data_store.search_data(
