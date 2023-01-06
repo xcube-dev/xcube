@@ -144,8 +144,14 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertEquals((10, 10), dataset.b.shape)
         self.assertEquals((10, 10), dataset.c2.shape)
         self.assertEquals(np.float64, dataset.a.dtype)
-        self.assertEquals(np.float32, dataset.b.dtype)
-        self.assertEquals(np.uint8, dataset.c2.dtype)
+        self.assertEquals(np.float64, dataset.b.dtype)
+        self.assertEquals(np.float64, dataset.c2.dtype)
+        self.assertIs(nan, dataset.a.encoding.get('_FillValue'))
+        self.assertIs(nan, dataset.b.encoding.get('_FillValue'))
+        self.assertEqual(0, dataset.c2.encoding.get('_FillValue'))
+        self.assertEqual(np.dtype('float64'), dataset.a.encoding.get('dtype'))
+        self.assertEqual(np.dtype('float32'), dataset.b.encoding.get('dtype'))
+        self.assertEqual(np.dtype('uint8'), dataset.c2.encoding.get('dtype'))
         self.assertEquals({}, dataset.a.attrs)
         self.assertEquals({'units': 'meters'}, dataset.b.attrs)
         self.assertEquals({}, dataset.c2.attrs)
@@ -188,17 +194,16 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                        actual_b_values)
         actual_c_values = dataset.c2.values
         expected_c_values = np.array(
-            [[8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7]],
-            dtype=np.uint8
+            [[8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7]]
         )
         if inverse_y:
             expected_c_values = expected_c_values[::-1, :]
