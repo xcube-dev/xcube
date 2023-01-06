@@ -198,6 +198,11 @@ class DatasetsContext(ResourcesContext):
             if ds_id:
                 ml_dataset = IdentityMultiLevelDataset(dataset, ds_id=ds_id)
         ds_id = ml_dataset.ds_id
+        dataset_configs = self.get_dataset_configs()
+        for index, dataset_config in enumerate(dataset_configs):
+            if dataset_config["Identifier"] == ds_id:
+                del dataset_configs[index]
+                break
         dataset_config = dict(Identifier=ds_id, Title=title)
         self._dataset_cache[ds_id] = ml_dataset, dataset_config
         self._dataset_configs.append(dataset_config)
