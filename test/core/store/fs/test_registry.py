@@ -428,7 +428,7 @@ class FsDataStoresTestMixin(ABC):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
         self.assertNotIn(data_id, set(data_store.get_data_ids()))
-        self.assertNotIn(data_id, set(data_store.list_data_ids()))
+        self.assertNotIn(data_id, data_store.list_data_ids())
 
 
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
