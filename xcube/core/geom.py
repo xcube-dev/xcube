@@ -111,6 +111,10 @@ def rasterize_features(
                                # Deprecated, no longer used.
     }
 
+    Note that newly created variables will have data type `np.float64`
+    because `np.nan` is used to encode missing values. `fill_value` and
+    `dtype` are used to encode the variables when persisting the data.
+
     Currently, the coordinates of the geometries in the given
     *features* must use the same CRS as the given *dataset*.
 
@@ -235,20 +239,18 @@ def rasterize_features(
             'name',
             feature_prop_name.replace(' ', '_')
         )
-        var_dtype = var_prop_mapping.get('dtype', np.float64)
+        var_dtype = np.dtype(var_prop_mapping.get('dtype', np.float64))
         var_fill_value = var_prop_mapping.get('fill_value', np.nan)
         var_attrs = var_prop_mapping.get('attrs', {})
 
         feature_image = rasterized_features[feature_index]
-        if feature_image.dtype != var_dtype:
-            feature_image = da.Array.astype(feature_image,
-                                            dtype=var_dtype)
 
         feature_var = xr.DataArray(feature_image,
                                    coords=yx_coords,
                                    dims=yx_dims,
                                    attrs=var_attrs)
-        feature_var.encoding.update(fill_value=var_fill_value)
+        feature_var.encoding.update(_FillValue=var_fill_value,
+                                    dtype=var_dtype)
         dataset[var_name] = feature_var
 
     return dataset
