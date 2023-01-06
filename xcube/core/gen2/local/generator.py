@@ -219,21 +219,23 @@ class LocalCubeGenerator(CubeGenerator):
                 self._generated_gm = None
 
         total_time = progress.state.total_time
+        if isinstance(total_time, float):
+            duration_msg = f' after {total_time:.2f} seconds'
+        else:
+            duration_msg = ''
 
         if self._generated_data_id is not None:
             return CubeGeneratorResult(
                 status='ok',
                 status_code=201,
                 result=CubeReference(data_id=data_id),
-                message=f'Cube generated successfully'
-                        f' after {total_time:.2f} seconds'
+                message=f'Cube generated successfully{duration_msg}'
             )
         else:
             return CubeGeneratorResult(
                 status='warning',
                 status_code=422,
-                message=f'An empty cube has been generated'
-                        f' after {total_time:.2f} seconds.'
+                message=f'An empty cube has been generated{duration_msg}.'
                         f' No data has been written at all.'
             )
 

@@ -51,13 +51,14 @@ DEFAULT_CMAP_NAME = 'bone'
 DEFAULT_FORMAT = 'png'
 DEFAULT_TILE_ENLARGEMENT = 1
 
+BBox = Tuple[float, float, float, float]
 ValueRange = Tuple[float, float]
 
 
 def compute_tiles(
         ml_dataset: MultiLevelDataset,
         variable_names: Union[str, Sequence[str]],
-        tile_bbox: Tuple[float, float, float, float],
+        tile_bbox: BBox,
         tile_crs: Union[str, pyproj.CRS] = DEFAULT_CRS_NAME,
         tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
         level: int = 0,
@@ -276,6 +277,7 @@ def compute_tiles(
             var_tiles,
             (ds_x_name, ds_y_name),
             (tile_x_1d, tile_y_1d),
+            ml_dataset.grid_mapping.is_j_axis_up,
             tile_crs
         )
 
@@ -287,6 +289,7 @@ def _new_tile_dataset(
         tiles: List[np.ndarray],
         xy_names: Tuple[str, str],
         xy_coords: Tuple[np.ndarray, np.ndarray],
+        is_j_axis_up: bool,
         crs: Union[str, pyproj.CRS]):
     data_vars = {}
     non_spatial_coords = {}
@@ -299,7 +302,7 @@ def _new_tile_dataset(
                 if dim not in non_spatial_coords \
                         and dim in original_var.coords:
                     non_spatial_coords[dim] = original_var.coords[dim]
-        data_2d = tiles[i]
+        data_2d = tiles[i][::-1, :]
         data_nd = data_2d[(*(len(non_spatial_dims) * [np.newaxis]), ...)]
         data_vars[var_name] = xr.DataArray(
             data=data_nd,
@@ -307,23 +310,27 @@ def _new_tile_dataset(
             name=var_name,
             attrs=dict(**original_var.attrs, grid_mapping="crs"),
         )
-    print(pyproj.CRS(crs).to_cf())
+    x_coords, y_coords = xy_coords
     return xr.Dataset(
         data_vars=dict(
             **data_vars,
-            crs=xr.DataArray((), attrs=pyproj.CRS(crs).to_cf())
+            crs=xr.DataArray(0, attrs=pyproj.CRS(crs).to_cf())
         ),
         coords=dict(
             **{k: xr.DataArray([v.values], dims=k, attrs=v.attrs)
                for k, v in non_spatial_coords.items()},
-            y=xr.DataArray(xy_coords[1], dims="y", attrs=dict(
-                long_name="y coordinate of projection",
-                standard_name="projection_y_coordinate"
-            )),
-            x=xr.DataArray(xy_coords[0], dims="x", attrs=dict(
-                long_name="x coordinate of projection",
-                standard_name="projection_x_coordinate"
-            )),
+            y=xr.DataArray(y_coords[::-1],
+                           dims="y",
+                           attrs=dict(
+                               long_name="y coordinate of projection",
+                               standard_name="projection_y_coordinate"
+                           )),
+            x=xr.DataArray(x_coords,
+                           dims="x",
+                           attrs=dict(
+                               long_name="x coordinate of projection",
+                               standard_name="projection_x_coordinate"
+                           )),
         )
     )
 

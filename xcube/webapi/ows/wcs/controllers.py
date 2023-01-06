@@ -18,24 +18,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import warnings
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 
 import numpy as np
-from xarray import Dataset
+import xarray as xr
 
 import xcube.core.store.storepool as sp
-from xcube.core.gen2 import CubeGenerator, OutputConfig
+from xcube.core.gen2 import CubeGenerator
 from xcube.core.gen2 import CubeGeneratorRequest
+from xcube.core.gen2 import OutputConfig
 from xcube.core.gen2.local.writer import CubeWriter
 from xcube.core.gridmapping import GridMapping
-from xcube.webapi.ows.wcs.context import WcsContext
-from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
+from xcube.core.tile import BBox
+from xcube.core.tile import compute_tiles
+from xcube.server.api import ApiError
 from xcube.webapi.common.xml import Document
 from xcube.webapi.common.xml import Element
+from xcube.webapi.datasets.context import DatasetConfig
+from xcube.webapi.ows.wcs.context import WcsContext
+from xcube.webapi.ows.wmts.controllers import get_crs84_bbox
 
 WCS_VERSION = '1.0.0'
 VALID_CRS_LIST = ['EPSG:4326']
+
+
 # VALID_CRS_LIST = ['EPSG:4326', 'EPSG:3857']
 
 
@@ -101,15 +109,16 @@ def get_describe_coverage_xml(ctx: WcsContext,
     return document.to_xml(indent=4)
 
 
+# TODO: remove!
 def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
         -> CubeGeneratorRequest:
-    data_id = _get_input_data_id(ctx, req)
+    data_id = _get_dataset_config(ctx, req)['Path']
     bbox = []
     for v in req.bbox.split(','):
         bbox.append(float(v))
 
     store_pool = ctx.datasets_ctx.get_data_store_pool()
-    store_id = _get_store_id(store_pool, data_id)
+    store_id = _get_store_instance_id(store_pool, data_id)
     datastore_root = store_pool.get_store_config(store_id).store_params['root']
     store_config_id = store_pool.get_store_config(store_id).store_id
 
@@ -136,7 +145,8 @@ def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
     )
 
 
-def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
+# TODO: remove!
+def __get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
     _validate_coverage_req(ctx, req)
     gen_req = translate_to_generator_request(ctx, req)
 
@@ -155,6 +165,34 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> Dataset:
     return cube
 
 
+def get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
+    dataset_config = _get_dataset_config(ctx, req)
+    ds_name = dataset_config['Identifier']
+    ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_name)
+
+    # TODO (forman): compute optimal level for RES_X/RES_Y
+
+    bbox: Union[BBox, None]
+    try:
+        # noinspection PyTypeChecker
+        bbox = tuple(float(v) for v in req.bbox.split(','))
+    except ValueError:
+        bbox = None
+    if not bbox or len(bbox) != 4:
+        raise ApiError.BadRequest('invalid bbox')
+
+    ds_name = dataset_config['Identifier']
+    var_name = req.coverage.replace(ds_name + '.', '')
+    tile_size = int(req.width), int(req.height)
+    return compute_tiles(ml_dataset,
+                         var_name,
+                         bbox,
+                         req.crs,
+                         tile_size=tile_size,
+                         as_dataset=True)
+
+
+# TODO: remove!
 def _write_debug_output(cube):
     history = str(cube.history[0])
     del cube.attrs['history']
@@ -165,14 +203,16 @@ def _write_debug_output(cube):
     cw.write_cube(cube, GridMapping.from_dataset(cube))
 
 
-def _get_store_id(store_pool: sp.DataStorePool, data_id: str) -> str:
-    for store_id in store_pool.store_instance_ids:
-        current_store = store_pool.get_store(store_id)
+# TODO: remove!
+def _get_store_instance_id(store_pool: sp.DataStorePool, data_id: str) -> str:
+    for store_instance_id in store_pool.store_instance_ids:
+        current_store = store_pool.get_store(store_instance_id)
         if current_store.has_data(data_id):
-            return store_id
+            return store_instance_id
     raise ValueError(f'{data_id} not found in any available data store')
 
 
+# TODO: remove!
 def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
     if not req.bbox:
         return None
@@ -183,7 +223,19 @@ def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
     return tuple(output_region)
 
 
-def _get_input_data_id(ctx: WcsContext, req: CoverageRequest) -> str:
+def _get_dataset_config(ctx: WcsContext, req: CoverageRequest) \
+        -> DatasetConfig:
+    # TODO: too much computation here, precompute mapping and store in
+    #   WCS context object, so the dataset config can be looked up:
+    #
+    #   class WcsContext(...):
+    #     ...
+    #     def get_dataset_config(self, coverage: str):
+    #        ds_config = self.coverage_to_ds_config.get(coverage)
+    #        if ds_config is None:
+    #           raise ApiError.BadRequest(f'unknown coverage {coverage!r}')
+    #        return ds_config
+    #
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
         ds = ctx.datasets_ctx.get_dataset(ds_name)
@@ -192,10 +244,11 @@ def _get_input_data_id(ctx: WcsContext, req: CoverageRequest) -> str:
         for var_name in var_names:
             qualified_var_name = f'{ds_name}.{var_name}'
             if req.coverage == qualified_var_name:
-                return dataset_config['Path']
+                return dataset_config
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
+# TODO: remove!
 def _get_input_path(ctx: WcsContext, req: CoverageRequest) -> str:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
@@ -214,6 +267,7 @@ def _get_input_path(ctx: WcsContext, req: CoverageRequest) -> str:
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
+# TODO: remove!
 def _get_input_store_id(ctx: WcsContext, req: CoverageRequest) -> str:
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
@@ -227,6 +281,7 @@ def _get_input_store_id(ctx: WcsContext, req: CoverageRequest) -> str:
     raise RuntimeError('Should never come here. Contact the developers.')
 
 
+# TODO: remove!
 def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
     def _has_no_invalid_bbox() -> bool:
         if req.bbox:
@@ -288,6 +343,7 @@ def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
         raise ValueError('Reason unclear, fix me')
 
 
+# TODO: remove!
 def _is_valid_coverage(ctx: WcsContext, coverage: str) -> bool:
     band_infos = _extract_band_infos(ctx, [coverage])
     if band_infos:
@@ -295,10 +351,12 @@ def _is_valid_coverage(ctx: WcsContext, coverage: str) -> bool:
     return False
 
 
+# TODO: remove!
 def _is_valid_crs(crs: str) -> bool:
     return crs in VALID_CRS_LIST
 
 
+# TODO: remove!
 def _is_valid_bbox(bbox: str) -> bool:
     values = bbox.split(',')
     if not len(values) == 4:
@@ -306,10 +364,12 @@ def _is_valid_bbox(bbox: str) -> bool:
     return True
 
 
+# TODO: remove!
 def _is_valid_format(format_req: str) -> bool:
     return format_req in _get_formats_list()
 
 
+# TODO: remove!
 def _is_valid_time(time: str) -> bool:
     # todo - change validation so that it makes sense but works with QGIS
     try:
@@ -359,9 +419,10 @@ def _get_capabilities_element(ctx: WcsContext,
 
 
 def _get_service_element(ctx: WcsContext) -> Element:
-    service_provider = ctx.config.get('ServiceProvider')
+    service_provider = ctx.config.get('ServiceProvider', {})
+    wcs_metadata = ctx.config.get('WebCoverageService', {})
 
-    def _get_value(path):
+    def _get_sp_value(path):
         v = None
         node = service_provider
         for k in path:
@@ -371,76 +432,80 @@ def _get_service_element(ctx: WcsContext) -> Element:
             node = v
         return str(v) if v is not None else ''
 
-    def _get_individual_name():
-        individual_name = _get_value(['ServiceContact', 'IndividualName'])
+    def _get_individual_name() -> str:
+        individual_name = _get_sp_value(['ServiceContact', 'IndividualName'])
+        if not individual_name:
+            return ''
         individual_name = tuple(individual_name.split(' ').__reversed__())
         return '{}, {}'.format(*individual_name)
 
     element = Element('Service', elements=[
         Element('description',
-                text=_get_value(['WCS-description'])),
+                text=wcs_metadata.get('Description',
+                                      'xcube WCS 1.0 API')),
         Element('name',
-                text=_get_value(['WCS-name'])),
+                text=wcs_metadata.get('Name', 'xcube WCS')),
         Element('label',
-                text=_get_value(['WCS-label'])),
+                text=wcs_metadata.get('Label', 'xcube WCS')),
         Element('keywords', elements=[
-            Element('keyword', text=k) for k in service_provider['keywords']
+            Element('keyword', text=k) for k in wcs_metadata.get('Keywords',
+                                                                 [])
         ]),
         Element('responsibleParty', elements=[
             Element('individualName',
                     text=_get_individual_name()),
             Element('organisationName',
-                    text=_get_value(['ProviderName'])),
+                    text=_get_sp_value(['ProviderName'])),
             Element('positionName',
-                    text=_get_value(['ServiceContact',
+                    text=_get_sp_value(['ServiceContact',
                                      'PositionName'])),
             Element('contactInfo', elements=[
                 Element('phone', elements=[
                     Element('voice',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Phone',
                                              'Voice'])),
                     Element('facsimile',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Phone',
                                              'Facsimile'])),
                 ]),
                 Element('address', elements=[
                     Element('deliveryPoint',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'DeliveryPoint'])),
                     Element('city',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'City'])),
                     Element('administrativeArea',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'AdministrativeArea'])),
                     Element('postalCode',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'PostalCode'])),
                     Element('country',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'Country'])),
                     Element('electronicMailAddress',
-                            text=_get_value(['ServiceContact',
+                            text=_get_sp_value(['ServiceContact',
                                              'ContactInfo',
                                              'Address',
                                              'ElectronicMailAddress'])),
                 ]),
                 Element('onlineResource', attrs={
-                    'xlink:href': _get_value(['ProviderSite'])})
+                    'xlink:href': _get_sp_value(['ProviderSite'])})
             ]),
         ]),
         Element('fees', text='NONE'),
@@ -499,7 +564,7 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
         -> Element:
     coverage_elements = []
 
-    band_infos = _extract_band_infos(ctx, coverages, True)
+    band_infos = _extract_band_infos(ctx, coverages)
     for var_name in band_infos.keys():
         coverage_elements.append(Element('CoverageOffering', elements=[
             Element('description', text=band_infos[var_name].label),
@@ -533,15 +598,7 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                     Element('axisDescription', elements=[
                         Element('AxisDescription', elements=[
                             Element('name', text='Band'),
-                            Element('label', text='Band'),
-                            Element('values', elements=[
-                                Element('interval', elements=[
-                                    Element('min', text=
-                                    f'{band_infos[var_name].min:0.4f}'),
-                                    Element('max', text=
-                                    f'{band_infos[var_name].max:0.4f}')
-                                ])
-                            ]),
+                            Element('label', text='Band')
                         ])
                     ])
                 ])
@@ -549,11 +606,22 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
             Element('supportedCRSs', elements=[
                 Element('requestResponseCRSs', text='EPSG:4326')
                 # todo - find out why this does not work with qgis
-                # Element('requestResponseCRSs', text=','.join(VALID_CRS_LIST))
+                # Element('requestResponseCRSs',
+                #         text=','.join(VALID_CRS_LIST))
             ]),
             Element('supportedFormats', elements=[
                 Element('formats', text=f) for f in _get_formats_list()
-            ])
+            ]),
+            Element('supportedInterpolations',
+                    attrs=dict(default='nearest neighbor'),
+                    elements=[
+                        # Respect BBOX only
+                        Element('interpolationMethod',
+                                text='none'),
+                        # Respect BBOX and WIDTH,HEIGHT or RESX,RESY
+                        Element('interpolationMethod',
+                                text='nearest neighbor'),
+                    ]),
         ]))
 
     return Element(
@@ -568,16 +636,10 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
 
 
 def _get_formats_list() -> List[str]:
-    # formats = get_extension_registry().find_extensions(
-    #     EXTENSION_POINT_DATASET_IOS,
-    #     lambda e: 'w' in e.metadata.get('modes', set())
-    # )
-    # return [ext.name for ext in formats if not ext.name == 'mem'
-    #                                        or not ext.name == 'zarr']
-
-    # the code above is correct, but the combination of QGIS and WCS only
-    # supports GeoTIFF or NetCDF, so we simply return these.
-    return ['GeoTIFF', 'NetCDF4']
+    # We currently only support NetCDF, because
+    # 1. QGIS understands them
+    # 2. response can be a single file
+    return ['netcdf']
 
 
 class BandInfo:
@@ -593,8 +655,8 @@ class BandInfo:
         self.time_steps = time_steps
 
 
-def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
-                        full: bool = False) -> Dict[str, BandInfo]:
+def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None) \
+        -> Dict[str, BandInfo]:
     band_infos = {}
     for dataset_config in ctx.datasets_ctx.get_dataset_configs():
         ds_name = dataset_config['Identifier']
@@ -619,6 +681,7 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
             var = ds[var_name]
 
             label = var.long_name if hasattr(var, 'long_name') else var_name
+            label += f' (from {ds_name})'
             is_spatial_var = var.ndim >= 2 \
                              and var.dims[-1] == x_name \
                              and var.dims[-2] == y_name
@@ -631,11 +694,6 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None,
                 time_steps = [f'{str(d)[:19]}Z' for d in var.time.values]
 
             band_info = BandInfo(qualified_var_name, label, bbox, time_steps)
-            if full:
-                nn_values = var.values[~np.isnan(var.values)]
-                band_info.min = nn_values.min()
-                band_info.max = nn_values.max()
-
             band_infos[f'{ds_name}.{var_name}'] = band_info
 
     return band_infos
