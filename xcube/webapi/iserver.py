@@ -19,65 +19,46 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import socket
 import threading
-from typing import Optional, Union, List
+from typing import Optional, Union
 
 import tornado.ioloop
 import xarray as xr
-import os
+
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.server.api import ServerConfig
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
 from xcube.webapi.datasets.context import DatasetsContext
 
 
 class InteractiveServer:
+
     def __init__(self,
-                 viewer_url: Optional[str] = None,
+                 port: Optional[int] = None,
+                 address: Optional[str] = None,
                  **config):
+        if port is None:
+            port = _find_port()
+        if address is None:
+            address = "0.0.0.0"
+
+        config = dict(config)
+        config["port"] = port
+        config["address"] = address
+
         self._io_loop = tornado.ioloop.IOLoop()
         thread = threading.Thread(target=self._io_loop.start)
         thread.daemon = True
         thread.start()
 
-        if "port" not in config:
-            config["port"] = 8080
-        if "address" not in config:
-            config["address"] = "0.0.0.0"
-        xcube_viewer_path = os.environ.get("XCUBE_VIEWER_PATH")
-        if xcube_viewer_path is not None:
-            static_routes: List[List[str]]
-            if "static_routes" not in config:
-                static_routes = []
-                config["static_routes"] = static_routes
-            else:
-                static_routes = config["static_routes"]
-            index = -1
-            for i in range(len(static_routes)):
-                if static_routes[i][0] == "/viewer":
-                    index = i
-                    break
-            if index >= 0:
-                static_routes[index][1] = xcube_viewer_path
-            else:
-                static_routes.append(
-                    ["/viewer", xcube_viewer_path]
-                )
-
-
-        config = {
-            "port": 8080,
-            "address": "0.0.0.0",
-            "static_routes": [
-                ["/viewer", "D:\\Projects\\xcube-viewer\\build"],
-            ]
-        }
-
         self._server = Server(TornadoFramework(io_loop=self._io_loop),
                               config=config)
 
         self._io_loop.add_callback(self._server.start)
+
+        print(f"Server: http://localhost:{port}")
+        print(f"Viewer: http://localhost:{port}/viewer/")
 
     def stop(self):
         if self._server is not None:
@@ -114,3 +95,13 @@ class InteractiveServer:
         if not is_running:
             print('Server not running')
         return is_running
+
+
+def _find_port(start: int = 8000, end: Optional[int] = None) -> int:
+    """Find a port not in use in range *start* to *end*"""
+    end = end if isinstance(end, int) and end >= start else start + 12000
+    for port in range(start, end + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("localhost", port)) != 0:
+                return port
+    raise RuntimeError("No available port found")
