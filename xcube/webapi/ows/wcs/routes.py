@@ -131,8 +131,6 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
             'RESY': resy
         })
 
-        LOG.debug(str(cov_req))
-
         try:
             cube = await self.ctx.run_in_executor(
                 None,

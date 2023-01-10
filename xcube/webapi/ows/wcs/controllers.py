@@ -350,7 +350,8 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
             ]),
             Element('domainSet', elements=[
                 Element('spatialDomain', elements=[
-                    Element('gml:Envelope', elements=[
+                    Element('gml:Envelope', attrs={'srsName': 'EPSG:4326'},
+                            elements=[
                         Element('gml:pos',
                                 text=f'{band_infos[var_name].bbox[0]} '
                                      f'{band_infos[var_name].bbox[1]}'),
