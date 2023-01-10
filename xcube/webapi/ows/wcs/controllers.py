@@ -87,6 +87,15 @@ class CoverageRequest:
         if 'EXCEPTIONS' in req:
             self.exceptions = req['EXCEPTIONS']
 
+    def __repr__(self):
+        return f'Coverage: {self.coverage}\n' \
+               f'CRS: {self.crs}\n' \
+               f'BBOX: {self.bbox}\n' \
+               f'Time: {self.time}\n' \
+               f'Width: {self.width}\n' \
+               f'Height: {self.height}\n' \
+               f'Format: {self.format}'
+
 
 def get_wcs_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     """

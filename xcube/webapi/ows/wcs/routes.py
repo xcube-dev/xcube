@@ -67,6 +67,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
             raise ApiError.BadRequest(
                 'value for "service" parameter must be "WCS"'
             )
+        LOG.debug(self.request.url)
         request = self.request.get_query_arg('request')
         if request == "GetCapabilities":
             await self._do_get_capabilities()
@@ -129,6 +130,8 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
             'RESX': resx,
             'RESY': resy
         })
+
+        LOG.debug(str(cov_req))
 
         try:
             cube = await self.ctx.run_in_executor(
