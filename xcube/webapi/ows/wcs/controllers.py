@@ -20,17 +20,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 import warnings
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Union
 
 import numpy as np
 import xarray as xr
 
-import xcube.core.store.storepool as sp
-from xcube.core.gen2 import CubeGenerator
-from xcube.core.gen2 import CubeGeneratorRequest
-from xcube.core.gen2 import OutputConfig
-from xcube.core.gen2.local.writer import CubeWriter
-from xcube.core.gridmapping import GridMapping
 from xcube.core.tile import BBox
 from xcube.core.tile import compute_tiles
 from xcube.server.api import ApiError
@@ -87,15 +81,6 @@ class CoverageRequest:
         if 'EXCEPTIONS' in req:
             self.exceptions = req['EXCEPTIONS']
 
-    def __repr__(self):
-        return f'Coverage: {self.coverage}\n' \
-               f'CRS: {self.crs}\n' \
-               f'BBOX: {self.bbox}\n' \
-               f'Time: {self.time}\n' \
-               f'Width: {self.width}\n' \
-               f'Height: {self.height}\n' \
-               f'Format: {self.format}'
-
 
 def get_wcs_capabilities_xml(ctx: WcsContext, base_url: str) -> str:
     """
@@ -118,62 +103,6 @@ def get_describe_coverage_xml(ctx: WcsContext,
     return document.to_xml(indent=4)
 
 
-# TODO: remove!
-def translate_to_generator_request(ctx: WcsContext, req: CoverageRequest) \
-        -> CubeGeneratorRequest:
-    data_id = _get_dataset_config(ctx, req)['Path']
-    bbox = []
-    for v in req.bbox.split(','):
-        bbox.append(float(v))
-
-    store_pool = ctx.datasets_ctx.get_data_store_pool()
-    store_id = _get_store_instance_id(store_pool, data_id)
-    datastore_root = store_pool.get_store_config(store_id).store_params['root']
-    store_config_id = store_pool.get_store_config(store_id).store_id
-
-    return CubeGeneratorRequest.from_dict(
-        {
-            'input_config': {
-                'store_id': store_config_id,
-                'store_params': {
-                    'root': datastore_root
-                },
-                'data_id': f'{data_id}'
-            },
-            'cube_config': {
-                'variable_names': [f'{req.coverage}'.split('.')[-1]],
-                'crs': f'{req.crs}',
-                'bbox': tuple(bbox)
-            },
-            'output_config': {
-                'store_id': 'memory',
-                'replace': True,
-                'data_id': f'{req.coverage}.zarr',
-            }
-        }
-    )
-
-
-# TODO: remove!
-def __get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
-    _validate_coverage_req(ctx, req)
-    gen_req = translate_to_generator_request(ctx, req)
-
-    gen = CubeGenerator.new()
-
-    result = gen.generate_cube(request=gen_req)
-    if not result.status == 'ok':
-        raise ValueError(f'Failed to generate cube: {result.message}')
-
-    cube_id = result.result.data_id
-    memory_store = sp.get_data_store_instance('memory')
-    cube = memory_store.store.open_data(cube_id)
-
-    # _write_debug_output(cube)
-
-    return cube
-
-
 def get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
     dataset_config = _get_dataset_config(ctx, req)
     ds_name = dataset_config['Identifier']
@@ -193,43 +122,11 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
     ds_name = dataset_config['Identifier']
     var_name = req.coverage.replace(ds_name + '.', '')
     tile_size = int(req.width), int(req.height)
-    return compute_tiles(ml_dataset,
-                         var_name,
-                         bbox,
-                         req.crs,
-                         tile_size=tile_size,
-                         as_dataset=True)
-
-
-# TODO: remove!
-def _write_debug_output(cube):
-    history = str(cube.history[0])
-    del cube.attrs['history']
-    cube['history'] = history
-    cw = CubeWriter(OutputConfig('file',
-                                 writer_id='dataset:netcdf:file',
-                                 data_id='/../../../test_cube.nc'))
-    cw.write_cube(cube, GridMapping.from_dataset(cube))
-
-
-# TODO: remove!
-def _get_store_instance_id(store_pool: sp.DataStorePool, data_id: str) -> str:
-    for store_instance_id in store_pool.store_instance_ids:
-        current_store = store_pool.get_store(store_instance_id)
-        if current_store.has_data(data_id):
-            return store_instance_id
-    raise ValueError(f'{data_id} not found in any available data store')
-
-
-# TODO: remove!
-def _get_output_region(req: CoverageRequest) -> Optional[tuple[float, ...]]:
-    if not req.bbox:
-        return None
-
-    output_region = []
-    for v in req.bbox.split(' '):
-        output_region.append(float(v))
-    return tuple(output_region)
+    dataset = compute_tiles(ml_dataset, var_name, bbox, req.crs,
+                            tile_size=tile_size, as_dataset=True)
+    dataset = dataset.rename_dims({'x': 'lon', 'y': 'lat'})
+    dataset = dataset.rename_vars({'x': 'lon', 'y': 'lat'})
+    return dataset
 
 
 def _get_dataset_config(ctx: WcsContext, req: CoverageRequest) \
@@ -255,140 +152,6 @@ def _get_dataset_config(ctx: WcsContext, req: CoverageRequest) \
             if req.coverage == qualified_var_name:
                 return dataset_config
     raise RuntimeError('Should never come here. Contact the developers.')
-
-
-# TODO: remove!
-def _get_input_path(ctx: WcsContext, req: CoverageRequest) -> str:
-    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
-        ds_name = dataset_config['Identifier']
-        ds = ctx.datasets_ctx.get_dataset(ds_name)
-
-        var_names = sorted(ds.data_vars)
-        for var_name in var_names:
-            qualified_var_name = f'{ds_name}.{var_name}'
-            if req.coverage == qualified_var_name:
-                path = dataset_config['Path']
-                break
-        store_instance_id = dataset_config['StoreInstanceId']
-        store = ctx.datasets_ctx.get_data_store_pool(). \
-            get_store(store_instance_id)
-        return store.root + '/' + path
-    raise RuntimeError('Should never come here. Contact the developers.')
-
-
-# TODO: remove!
-def _get_input_store_id(ctx: WcsContext, req: CoverageRequest) -> str:
-    for dataset_config in ctx.datasets_ctx.get_dataset_configs():
-        ds_name = dataset_config['Identifier']
-        ds = ctx.datasets_ctx.get_dataset(ds_name)
-
-        var_names = sorted(ds.data_vars)
-        for var_name in var_names:
-            qualified_var_name = f'{ds_name}.{var_name}'
-            if req.coverage == qualified_var_name:
-                return dataset_config['StoreInstanceId']
-    raise RuntimeError('Should never come here. Contact the developers.')
-
-
-# TODO: remove!
-def _validate_coverage_req(ctx: WcsContext, req: CoverageRequest):
-    def _has_no_invalid_bbox() -> bool:
-        if req.bbox:
-            return _is_valid_bbox(req.bbox)
-        else:
-            return True
-
-    def _has_no_invalid_time() -> bool:
-        if req.time:
-            return _is_valid_time(req.time)
-        else:
-            return True
-
-    if req.coverage and _is_valid_coverage(ctx, req.coverage) \
-            and req.crs and _is_valid_crs(req.crs) \
-            and ((req.bbox and _is_valid_bbox(req.bbox))
-                 or (req.time and _is_valid_time(req.time))) \
-            and _has_no_invalid_bbox \
-            and _has_no_invalid_time() \
-            and ((req.width and req.height)
-                 or (req.resx and req.resy)) \
-            and ((req.width and not req.resx)
-                 or (req.width and not req.resy)
-                 or (req.height and not req.resx)
-                 or (req.height and not req.resy)
-                 or (req.resx and not req.width)
-                 or (req.resx and not req.height)
-                 or (req.resy and not req.width)
-                 or (req.resy and not req.height)) \
-            and req.format and _is_valid_format(req.format) \
-            and not req.parameter \
-            and not req.interpolation \
-            and not req.exceptions:
-        return
-    elif not req.coverage or not _is_valid_coverage(ctx, req.coverage):
-        raise ValueError('No valid value for parameter COVERAGE provided. '
-                         'COVERAGE must be a variable name prefixed with '
-                         'its dataset name. Example: my_dataset.my_var')
-    elif req.parameter:
-        raise ValueError('PARAMETER not yet supported')
-    elif req.interpolation:
-        raise ValueError('INTERPOLATION not yet supported')
-    elif req.exceptions:
-        raise ValueError('EXCEPTIONS not yet supported')
-    elif ((not req.width and not req.height and not req.resy and not req.resy)
-          or (req.width and not req.height)
-          or (req.height and not req.width)
-          or (req.resx and not req.resy)
-          or (req.resy and not req.resx)
-          or (req.width and req.resx or req.resy)
-          or (req.height and req.resx or req.resy)):
-        raise ValueError('Either both WIDTH and HEIGHT, or both RESX and RESY '
-                         'must be provided.')
-    elif not req.format or not _is_valid_format(req.format):
-        raise ValueError('FORMAT wrong or missing. Must be one of '
-                         + ', '.join(_get_formats_list())
-                         + f'. Was: {req.format}')
-    else:
-        raise ValueError('Reason unclear, fix me')
-
-
-# TODO: remove!
-def _is_valid_coverage(ctx: WcsContext, coverage: str) -> bool:
-    band_infos = _extract_band_infos(ctx, [coverage])
-    if band_infos:
-        return True
-    return False
-
-
-# TODO: remove!
-def _is_valid_crs(crs: str) -> bool:
-    return crs in VALID_CRS_LIST
-
-
-# TODO: remove!
-def _is_valid_bbox(bbox: str) -> bool:
-    values = bbox.split(',')
-    if not len(values) == 4:
-        raise ValueError('BBOX must be given as `minx,miny,maxx,maxy`')
-    return True
-
-
-# TODO: remove!
-def _is_valid_format(format_req: str) -> bool:
-    return format_req in _get_formats_list()
-
-
-# TODO: remove!
-def _is_valid_time(time: str) -> bool:
-    # todo - change validation so that it makes sense but works with QGIS
-    try:
-        pass
-        # datetime.fromisoformat(time)
-    except ValueError:
-        raise ValueError('TIME value must be given in the format'
-                         '\'YYYY-MM-DD[*HH[:MM[:SS[.mmm[mmm]]]]'
-                         '[+HH:MM[:SS[.ffffff]]]]\'')
-    return True
 
 
 # noinspection HttpUrlsUsage
@@ -467,51 +230,51 @@ def _get_service_element(ctx: WcsContext) -> Element:
                     text=_get_sp_value(['ProviderName'])),
             Element('positionName',
                     text=_get_sp_value(['ServiceContact',
-                                     'PositionName'])),
+                                        'PositionName'])),
             Element('contactInfo', elements=[
                 Element('phone', elements=[
                     Element('voice',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Phone',
-                                             'Voice'])),
+                                                'ContactInfo',
+                                                'Phone',
+                                                'Voice'])),
                     Element('facsimile',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Phone',
-                                             'Facsimile'])),
+                                                'ContactInfo',
+                                                'Phone',
+                                                'Facsimile'])),
                 ]),
                 Element('address', elements=[
                     Element('deliveryPoint',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Address',
-                                             'DeliveryPoint'])),
+                                                'ContactInfo',
+                                                'Address',
+                                                'DeliveryPoint'])),
                     Element('city',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Address',
-                                             'City'])),
+                                                'ContactInfo',
+                                                'Address',
+                                                'City'])),
                     Element('administrativeArea',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Address',
-                                             'AdministrativeArea'])),
+                                                'ContactInfo',
+                                                'Address',
+                                                'AdministrativeArea'])),
                     Element('postalCode',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Address',
-                                             'PostalCode'])),
+                                                'ContactInfo',
+                                                'Address',
+                                                'PostalCode'])),
                     Element('country',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Address',
-                                             'Country'])),
+                                                'ContactInfo',
+                                                'Address',
+                                                'Country'])),
                     Element('electronicMailAddress',
                             text=_get_sp_value(['ServiceContact',
-                                             'ContactInfo',
-                                             'Address',
-                                             'ElectronicMailAddress'])),
+                                                'ContactInfo',
+                                                'Address',
+                                                'ElectronicMailAddress'])),
                 ]),
                 Element('onlineResource', attrs={
                     'xlink:href': _get_sp_value(['ProviderSite'])})
@@ -524,8 +287,8 @@ def _get_service_element(ctx: WcsContext) -> Element:
 
 
 def _get_capability_element(base_url: str) -> Element:
-    get_capabilities_url = f'{base_url}/wcs/kvp?service=WCS&amp;version=1.0.0'\
-                           f'&amp;request=GetCapabilities'
+    get_capabilities_url = f'{base_url}/wcs/kvp?service=WCS&amp;' \
+                           f'version=1.0.0&amp;request=GetCapabilities'
     describe_url = f'{base_url}/wcs/kvp?service=WCS&amp;version=1.0.0&amp;' \
                    f'request=DescribeCoverage'
     get_url = f'{base_url}/wcs/kvp?service=WCS&amp;version=1.0.0&amp;' \
@@ -607,7 +370,10 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                     Element('axisDescription', elements=[
                         Element('AxisDescription', elements=[
                             Element('name', text='Band'),
-                            Element('label', text='Band')
+                            Element('label', text='Band'),
+                            Element('values', elements=[
+                                Element('singleValue', text='1')
+                            ])
                         ])
                     ])
                 ])
