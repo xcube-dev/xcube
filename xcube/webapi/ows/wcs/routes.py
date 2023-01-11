@@ -142,8 +142,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
             # TODO: too broad error message, must name invalid parameter
             raise ApiError.BadRequest(f'{e}') from e
 
-        self.response.set_header('Content-Type',
-                                 'application/octet-stream')
+        self.response.set_header('Content-Type', 'application/x-netcdf4')
 
         if file_format == 'netcdf':
             temp_file_path = await self.ctx.run_in_executor(
@@ -216,6 +215,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
         with tempfile.NamedTemporaryFile(prefix='xcube-wcs-',
                                          suffix='.tif',
                                          delete=False) as tf:
+            dataset = dataset.squeeze('time')
             dataset.rio.to_raster(tf.name)
             return tf.name
 

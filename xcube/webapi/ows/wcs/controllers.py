@@ -358,7 +358,27 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                         Element('gml:pos',
                                 text=f'{band_infos[var_name].bbox[2]} '
                                      f'{band_infos[var_name].bbox[3]}')
-                    ])
+                    ]),
+                    Element('gml:RectifiedGrid',
+                            attrs={'dimension': '2', 'srsName': 'EPSG:4326'},
+                            elements=[
+                                Element('gml:limits', elements=[
+                                    Element('gml:GridEnvelope', elements=[
+                                        # to do - handle negative values!
+                                        Element('gml:low', text='0 0'),
+                                        Element('gml:high', text=
+                                            f'{band_infos[var_name].bbox[2] - band_infos[var_name].bbox[0]} '
+                                            f'{band_infos[var_name].bbox[3] - band_infos[var_name].bbox[1]}')
+                                    ])
+                                ]),
+                                Element('gml:axisName', text='lon'),
+                                Element('gml:axisName', text='lat'),
+                                Element('gml:origin', elements=[
+                                    Element('gml:pos', text=f'{band_infos[var_name].bbox[0]} {band_infos[var_name].bbox[1]}')
+                                ]),
+                                Element('gml:offsetVector', text='0.0 0.0'),
+                                Element('gml:offsetVector', text='0.0 0.0')
+                            ])
                 ]),
                 Element('temporalDomain', elements=[
                     Element('gml:timePosition', text=time_step)
@@ -415,7 +435,7 @@ def _get_formats_list() -> List[str]:
     # We currently only support NetCDF, because
     # 1. QGIS understands them
     # 2. response can be a single file
-    return ['netcdf']
+    return ['netcdf', 'GeoTIFF']
 
 
 class BandInfo:
