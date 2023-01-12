@@ -124,8 +124,11 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
     tile_size = int(req.width), int(req.height)
     dataset = compute_tiles(ml_dataset, var_name, bbox, req.crs,
                             tile_size=tile_size, as_dataset=True)
-    dataset = dataset.rename_dims({'x': 'lon', 'y': 'lat'})
-    dataset = dataset.rename_vars({'x': 'lon', 'y': 'lat'})
+    dataset = dataset.rename_dims({'x': 'longitude', 'y': 'latitude'})
+    dataset = dataset.rename_vars({'x': 'longitude', 'y': 'latitude'})
+    dataset.longitude.attrs['standard_name'] = 'longitude'
+    dataset.latitude.attrs['standard_name'] = 'latitude'
+    dataset = dataset.drop_vars('crs')
     return dataset
 
 
