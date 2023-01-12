@@ -12,7 +12,7 @@ env:
 
 jobs:
   unittest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       NUMBA_DISABLE_JIT: 1
     steps:
