@@ -195,6 +195,16 @@ def new_fs_data_store(
     """
     Create a new instance of a filesystem-based data store.
 
+    The data store is capable of filtering the data identifiers reported
+    by ``get_data_ids()``. For this purpose the optional keywords
+    `excludes` and `includes` are used which can both take the form of
+    a wildcard pattern or a sequence of wildcard patterns:
+
+    * ``excludes``: if given and if any pattern matches the identifier,
+      the identifier is not reported.
+    * ``includes``: if not given or if any pattern matches the identifier,
+      the identifier is reported.
+
     :param protocol: The filesystem protocol,
         for example "file", "s3", "memory".
     :param root: Root or base directory.
