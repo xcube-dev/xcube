@@ -126,6 +126,7 @@ def get_coverage(ctx: WcsContext, req: CoverageRequest) -> xr.Dataset:
                             tile_size=tile_size, as_dataset=True)
     dataset = dataset.rename_dims({'x': 'lon', 'y': 'lat'})
     dataset = dataset.rename_vars({'x': 'lon', 'y': 'lat'})
+    
     return dataset
 
 
@@ -367,8 +368,8 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                                         # to do - handle negative values!
                                         Element('gml:low', text='0 0'),
                                         Element('gml:high', text=
-                                            f'{band_infos[var_name].bbox[2] - band_infos[var_name].bbox[0]} '
-                                            f'{band_infos[var_name].bbox[3] - band_infos[var_name].bbox[1]}')
+                                            f'{band_infos[var_name].width} '
+                                            f'{band_infos[var_name].height}')
                                     ])
                                 ]),
                                 Element('gml:axisName', text='lon'),
@@ -442,7 +443,9 @@ class BandInfo:
 
     def __init__(self, var_name: str, label: str,
                  bbox: tuple[float, float, float, float],
-                 time_steps: list[str]):
+                 time_steps: list[str], width, height):
+        self.height = height
+        self.width = width
         self.var_name = var_name
         self.label = label
         self.bbox = bbox
@@ -489,7 +492,11 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None) \
             if is_temporal_var:
                 time_steps = [f'{str(d)[:19]}Z' for d in var.time.values]
 
-            band_info = BandInfo(qualified_var_name, label, bbox, time_steps)
+            width = grid_mapping.width
+            height = grid_mapping.height
+
+            band_info = BandInfo(qualified_var_name, label, bbox, time_steps,
+                                 width, height)
             band_infos[f'{ds_name}.{var_name}'] = band_info
 
     return band_infos
