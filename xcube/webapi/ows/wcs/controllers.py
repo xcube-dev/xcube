@@ -367,7 +367,6 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                             elements=[
                                 Element('gml:limits', elements=[
                                     Element('gml:GridEnvelope', elements=[
-                                        # to do - handle negative values!
                                         Element('gml:low', text='0 0'),
                                         Element('gml:high', text=
                                             f'{band_infos[var_name].width} '
@@ -377,7 +376,9 @@ def _get_describe_element(ctx: WcsContext, coverages: List[str] = None) \
                                 Element('gml:axisName', text='lon'),
                                 Element('gml:axisName', text='lat'),
                                 Element('gml:origin', elements=[
-                                    Element('gml:pos', text=f'{band_infos[var_name].bbox[0]} {band_infos[var_name].bbox[1]}')
+                                    Element('gml:pos', text=
+                                        f'{band_infos[var_name].bbox[0]} '
+                                        f'{band_infos[var_name].bbox[1]}')
                                 ]),
                                 Element('gml:offsetVector', text='0.0 0.0'),
                                 Element('gml:offsetVector', text='0.0 0.0')
@@ -438,7 +439,7 @@ def _get_formats_list() -> List[str]:
     # We currently only support NetCDF, because
     # 1. QGIS understands them
     # 2. response can be a single file
-    return ['netcdf', 'GeoTIFF']
+    return ['netcdf']
 
 
 class BandInfo:
@@ -446,14 +447,14 @@ class BandInfo:
     def __init__(self, var_name: str, label: str,
                  bbox: tuple[float, float, float, float],
                  time_steps: list[str], width, height):
-        self.height = height
-        self.width = width
         self.var_name = var_name
         self.label = label
         self.bbox = bbox
         self.min = np.nan
         self.max = np.nan
         self.time_steps = time_steps
+        self.height = height
+        self.width = width
 
 
 def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None) \
@@ -494,11 +495,8 @@ def _extract_band_infos(ctx: WcsContext, coverages: List[str] = None) \
             if is_temporal_var:
                 time_steps = [f'{str(d)[:19]}Z' for d in var.time.values]
 
-            width = grid_mapping.width
-            height = grid_mapping.height
-
             band_info = BandInfo(qualified_var_name, label, bbox, time_steps,
-                                 width, height)
+                                 grid_mapping.width, grid_mapping.height)
             band_infos[f'{ds_name}.{var_name}'] = band_info
 
     return band_infos
