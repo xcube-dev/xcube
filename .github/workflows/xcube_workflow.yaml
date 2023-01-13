@@ -17,9 +17,10 @@ jobs:
       NUMBA_DISABLE_JIT: 1
     steps:
       - uses: actions/checkout@v2
-      # Setup miniconda nd build env
-      - uses: conda-incubator/setup-miniconda@v2
+      # Setup miniconda build env
+      - uses: conda-incubator/setup-miniconda@v2.2.0
         with:
+          miniconda-version: py39_22.11.1-1
           mamba-version: "*"
           channels: conda-forge
           activate-environment: xcube
