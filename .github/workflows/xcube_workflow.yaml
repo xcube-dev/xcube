@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       # Setup miniconda nd build env
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: conda-incubator/setup-miniconda@vlatest
         with:
           miniconda-version: latest-py39
           mamba-version: "*"
