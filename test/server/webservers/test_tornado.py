@@ -374,8 +374,7 @@ class MockContext(Context):
     def apis(self) -> Tuple[Api]:
         return self._api,
 
-    @property
-    def open_api_doc(self) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
         return {}
 
     @property

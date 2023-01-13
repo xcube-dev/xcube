@@ -321,8 +321,7 @@ class Server(AsyncExecution):
                 config_schema_update.required
             )
 
-    @property
-    def open_api_doc(self) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
         """Get the OpenAPI JSON document for this server."""
         error_schema = {
             "type": "object",
@@ -394,6 +393,9 @@ class Server(AsyncExecution):
                 "description": other_api.description or ""
             })
             for route in other_api.routes:
+                if not include_all \
+                        and route.path.startswith('/maintenance/'):
+                    continue
                 path = dict(
                     description=getattr(
                         route.handler_cls, "__doc__", ""
@@ -473,9 +475,8 @@ class ServerContext(Context):
     def apis(self) -> Tuple[Api]:
         return self._server.apis
 
-    @property
-    def open_api_doc(self) -> Dict[str, Any]:
-        return self._server.open_api_doc
+    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+        return self._server.get_open_api_doc(include_all=include_all)
 
     @property
     def config(self) -> ServerConfig:

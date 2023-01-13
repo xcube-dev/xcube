@@ -110,11 +110,14 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                      features,
                                      ['a', 'b', 'c'],
                                      var_props=dict(
-                                         b=dict(name='b', dtype=np.float32,
+                                         b=dict(name='b',
+                                                dtype=np.float32,
                                                 fill_value=np.nan,
                                                 attrs=dict(units='meters')),
-                                         c=dict(name='c2', dtype=np.uint8,
-                                                fill_value=0, converter=int)
+                                         c=dict(name='c2',
+                                                dtype=np.uint8,
+                                                fill_value=0,
+                                                converter=int)
                                      ),
                                      tile_size=tile_size,
                                      in_place=False)
@@ -140,15 +143,32 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertEquals((10, 10), dataset.a.shape)
         self.assertEquals((10, 10), dataset.b.shape)
         self.assertEquals((10, 10), dataset.c2.shape)
+
+        # Assert in-memory (decoding) data types are correct.
         self.assertEquals(np.float64, dataset.a.dtype)
-        self.assertEquals(np.float32, dataset.b.dtype)
-        self.assertEquals(np.uint8, dataset.c2.dtype)
+        self.assertEquals(np.float64, dataset.b.dtype)
+        self.assertEquals(np.float64, dataset.c2.dtype)
+
+        # Assert external representation (encoding) information
+        # is correctly set up.
+        # See also test.core.test_xarray.XarrayEncodingTest
+        self.assertIs(nan, dataset.a.encoding.get('_FillValue'))
+        self.assertIs(nan, dataset.b.encoding.get('_FillValue'))
+        self.assertEqual(0, dataset.c2.encoding.get('_FillValue'))
+        self.assertEqual(np.dtype('float64'), dataset.a.encoding.get('dtype'))
+        self.assertEqual(np.dtype('float32'), dataset.b.encoding.get('dtype'))
+        self.assertEqual(np.dtype('uint8'), dataset.c2.encoding.get('dtype'))
+
+        # Other metadata
         self.assertEquals({}, dataset.a.attrs)
         self.assertEquals({'units': 'meters'}, dataset.b.attrs)
         self.assertEquals({}, dataset.c2.attrs)
         self.assertEquals((y_name, x_name), dataset.a.dims)
         self.assertEquals((y_name, x_name), dataset.b.dims)
         self.assertEquals((y_name, x_name), dataset.c2.dims)
+
+        # Assert actual data is correct
+
         actual_a_values = dataset.a.values
         expected_a_values = np.array(
             [[0.6, 0.6, 0.6, 0.6, 0.6, nan, nan, 0.8, 0.8, 0.8],
@@ -185,17 +205,16 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
                                        actual_b_values)
         actual_c_values = dataset.c2.values
         expected_c_values = np.array(
-            [[8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [8, 8, 8, 8, 8, 0, 0, 6, 6, 6],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7],
-             [9, 9, 9, 9, 9, 0, 0, 7, 7, 7]],
-            dtype=np.uint8
+            [[8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [8, 8, 8, 8, 8, nan, nan, 6, 6, 6],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7],
+             [9, 9, 9, 9, 9, nan, nan, 7, 7, 7]]
         )
         if inverse_y:
             expected_c_values = expected_c_values[::-1, :]

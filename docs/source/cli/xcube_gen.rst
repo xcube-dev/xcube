@@ -20,14 +20,13 @@ Generate xcube dataset.
 
     Usage: xcube gen [OPTIONS] [INPUT]...
 
-      Generate xcube dataset. Data cubes may be created in one go or
-      successively for all given inputs. Each input is expected to provide a
-      single time slice which may be appended, inserted or which may replace an
-      existing time slice in the output dataset. The input paths may be one or
-      more input files or a pattern that may contain wildcards '?', '*', and
-      '**'. The input paths can also be passed as lines of a text file. To do
-      so, provide exactly one input file with ".txt" extension which contains
-      the actual input paths to be used.
+      Generate xcube dataset. Data cubes may be created in one go or successively
+      for all given inputs. Each input is expected to provide a single time slice
+      which may be appended, inserted or which may replace an existing time slice
+      in the output dataset. The input paths may be one or more input files or a
+      pattern that may contain wildcards '?', '*', and '**'. The input paths can
+      also be passed as lines of a text file. To do so, provide exactly one input
+      file with ".txt" extension which contains the actual input paths to be used.
 
     Options:
       -P, --proc INPUT-PROCESSOR      Input processor name. The available input
@@ -102,11 +101,11 @@ Below is the ouput of a ``xcube gen --info`` call showing five input processors 
     For more input processors use existing "xcube-gen-..." plugins from the github organisation DCS4COP or write own plugin.
 
 
-    output formats to be used with option --format:
+    Output formats to be used with option --format:
+      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
+      netcdf4                 (*.nc)        NetCDF-4 file format
       csv                     (*.csv)       CSV file format
       mem                     (*.mem)       In-memory dataset I/O
-      netcdf4                 (*.nc)        NetCDF-4 file format
-      zarr                    (*.zarr)      Zarr file format (http://zarr.readthedocs.io)
 
 
 Configuration File

@@ -5,15 +5,73 @@ import unittest
 
 from xcube.core.byoa.constants import TEMP_FILE_PREFIX
 from xcube.core.byoa import FileSet
+import os
+import os.path
+import zipfile
+from xcube.core.dsio import rimraf
 
 PARENT_DIR = os.path.dirname(__file__)
+
+
+class FileSetToLocalTest(unittest.TestCase):
+
+    test_dir = os.path.join(os.path.dirname(__file__), 'test-data')
+
+    def setUp(self) -> None:
+        if os.path.exists(self.test_dir):
+            rimraf(self.test_dir)
+        os.mkdir(self.test_dir)
+
+    def tearDown(self) -> None:
+        rimraf(self.test_dir)
+
+    def _make_dir(self):
+        for i in range(3):
+            file_path = f'{self.test_dir}/module_{i}.py'
+            with open(file_path, 'w') as file:
+                file.write('\n')
+        return self.test_dir
+
+    def _make_zip(self, prefix: str = ''):
+        zip_path = f'{self.test_dir}/modules.zip'
+        with zipfile.ZipFile(zip_path, 'w') as zf:
+            for i in range(3):
+                file_path = f'{(prefix + "/") if prefix else ""}module_{i}.py'
+                with zf.open(file_path, 'w') as file:
+                    file.write(b'\n')
+        return zip_path
+
+    def test_to_local_from_local_dir(self):
+        dir_path = self._make_dir()
+        file_set = FileSet(dir_path)
+        local_file_set = file_set.to_local()
+        self.assertIs(local_file_set, file_set)
+
+    def test_to_local_from_local_flat_zip(self):
+        zip_path = self._make_zip()
+        file_set = FileSet(zip_path)
+        local_file_set = file_set.to_local()
+        self.assertIs(local_file_set, file_set)
+
+    def test_to_local_from_local_nested_zip(self):
+        zip_path = self._make_zip(prefix='content')
+        file_set = FileSet(zip_path, sub_path='content')
+        local_file_set = file_set.to_local()
+        self.assertIs(local_file_set, file_set)
+        # self.assertNotEqual(local_file_set.path, file_set.path)
+        # self.assertTrue(os.path.isdir(local_file_set.path))
+        # for i in range(3):
+        #     file_path = f'{local_file_set.path}/module_{i}.py'
+        #     self.assertTrue(os.path.isfile(file_path))
 
 
 class FileSetTest(unittest.TestCase):
 
     def test_is_local(self):
         self.assertTrue(FileSet('test_data/user_code').is_local())
+        self.assertTrue(FileSet('test_data/user_code.zip').is_local())
         self.assertTrue(FileSet('file://test_data/user_code').is_local())
+        self.assertTrue(FileSet('file://test_data/user_code.zip').is_local())
         self.assertFalse(FileSet('s3://xcube/user_code').is_local())
         self.assertFalse(FileSet('https://xcube/user_code.zip').is_local())
         self.assertFalse(FileSet('github://dcs4cop:xcube@v0.8.1').is_local())

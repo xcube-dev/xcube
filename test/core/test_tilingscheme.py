@@ -50,7 +50,7 @@ class TilingSchemeTest(unittest.TestCase):
 
         tiling_scheme = TilingScheme.for_crs('CRS84', tile_size=512)
         self.assertIsNot(TilingScheme.GEOGRAPHIC, tiling_scheme)
-        self.assertEqual(512, tiling_scheme.tile_size)
+        self.assertEqual((512, 512), tiling_scheme.tile_size)
 
     def test_for_crs_web_mercator(self):
         self.assertIs(TilingScheme.WEB_MERCATOR,
@@ -65,14 +65,16 @@ class TilingSchemeTest(unittest.TestCase):
 
         tiling_scheme = TilingScheme.for_crs('EPSG:3857', tile_size=512)
         self.assertIsNot(TilingScheme.WEB_MERCATOR, tiling_scheme)
-        self.assertEqual(512, tiling_scheme.tile_size)
+        self.assertEqual((512, 512), tiling_scheme.tile_size)
 
     def test_properties_geographic(self):
         tiling_scheme = TilingScheme.GEOGRAPHIC
 
         self.assertEqual((2, 1), tiling_scheme.num_level_zero_tiles)
         self.assertEqual('CRS84', tiling_scheme.crs_name)
-        self.assertEqual(256, tiling_scheme.tile_size)
+        self.assertEqual((256, 256), tiling_scheme.tile_size)
+        self.assertEqual(256, tiling_scheme.tile_width)
+        self.assertEqual(256, tiling_scheme.tile_height)
         self.assertEqual(360, tiling_scheme.map_width)
         self.assertEqual(180, tiling_scheme.map_height)
         self.assertEqual(None, tiling_scheme.min_level)
@@ -86,7 +88,9 @@ class TilingSchemeTest(unittest.TestCase):
 
         self.assertEqual((1, 1), tiling_scheme.num_level_zero_tiles)
         self.assertEqual('EPSG:3857', tiling_scheme.crs_name)
-        self.assertEqual(256, tiling_scheme.tile_size)
+        self.assertEqual((256, 256), tiling_scheme.tile_size)
+        self.assertEqual(256, tiling_scheme.tile_width)
+        self.assertEqual(256, tiling_scheme.tile_height)
         self.assertEqual(EARTH_CIRCUMFERENCE_WGS84, tiling_scheme.map_width)
         self.assertEqual(EARTH_CIRCUMFERENCE_WGS84, tiling_scheme.map_height)
         self.assertEqual(None, tiling_scheme.min_level)

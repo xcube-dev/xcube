@@ -265,34 +265,9 @@ class DatasetsContext(ResourcesContext):
         for file_system, store_params, config_list in config_lists:
             # Retrieve paths per configuration
             paths = [dc['Path'] for dc in config_list]
-            list.sort(paths)
             # Determine common prefixes of paths (and call them roots)
-            prefixes = _get_common_prefixes(paths)
-            if len(prefixes) < 1:
-                roots = ['']
-            else:
-                # perform further step to merge prefixes with same start
-                prefixes = list(set(prefixes))
-                prefixes.sort()
-                roots = []
-                root_candidate = prefixes[0]
-                for root in prefixes[1:]:
-                    common_root = os.path.commonprefix([root_candidate, root])
-                    if _is_not_empty(common_root):
-                        root_candidate = common_root
-                    else:
-                        roots.append(root_candidate)
-                        root_candidate = root
-                roots.append(root_candidate)
+            roots = _get_roots(paths)
             for root in roots:
-                # ensure root does not end with full or partial directory
-                # or file name
-                while not root.endswith("/") \
-                        and not root.endswith("\\") \
-                        and len(root) > 0:
-                    root = root[:-1]
-                if root.endswith("/") or root.endswith("\\"):
-                    root = root[:-1]
                 abs_root = root
                 # For local file systems:
                 # Determine absolute root from base dir
@@ -320,7 +295,8 @@ class DatasetsContext(ResourcesContext):
                     data_store_pool.add_store_config(store_instance_id,
                                                      data_store_config)
                 for config in config_list:
-                    if config['Path'].startswith(root):
+                    if config['Path'].startswith(root) and \
+                            config.get('StoreInstanceId') is None:
                         config['StoreInstanceId'] = store_instance_id
                         new_path = config['Path'][len(root):]
                         while new_path.startswith("/") or \
@@ -640,7 +616,10 @@ class DatasetsContext(ResourcesContext):
                 f"'Augmentation' of dataset configuration {ds_id}"
             )
             input_parameters = augmentation.get('InputParameters')
-            callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
+            callable_name = augmentation.get('Class')
+            is_factory = callable_name is not None
+            if not is_factory:
+                callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
             ml_dataset = augment_ml_dataset(
                 ml_dataset,
                 script_path,
@@ -648,6 +627,7 @@ class DatasetsContext(ResourcesContext):
                 self.get_ml_dataset,
                 self.set_ml_dataset,
                 input_parameters=input_parameters,
+                is_factory=is_factory,
                 exception_type=ApiError.InvalidServerConfig
             )
         return ml_dataset
@@ -810,7 +790,10 @@ def _open_ml_dataset_from_python_code(
     ds_id = dataset_config.get('Identifier')
     path = ctx.get_config_path(dataset_config,
                                f"dataset configuration {ds_id}")
-    callable_name = dataset_config.get('Function', COMPUTE_DATASET)
+    callable_name = dataset_config.get('Class')
+    is_factory = callable_name is not None
+    if not is_factory:
+        callable_name = dataset_config.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_config.get('InputDatasets', [])
     input_parameters = dataset_config.get('InputParameters', {})
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(
@@ -819,20 +802,23 @@ def _open_ml_dataset_from_python_code(
     if chunk_cache_capacity:
         warnings.warn(
             'chunk cache size is not effective for'
-            ' datasets computed from scripts')
+            ' datasets computed from scripts'
+        )
     for input_dataset_id in input_dataset_ids:
         if not ctx.get_dataset_config(input_dataset_id):
             raise ApiError.InvalidServerConfig(
-                f"Invalid dataset configuration {ds_id!r}: "
-                f"Input dataset {input_dataset_id!r} of"
-                f" callable {callable_name!r} "
-                f"must reference another dataset")
+                f"Invalid dataset configuration {ds_id!r}:"
+                f" Input dataset {input_dataset_id!r} of"
+                f" callable {callable_name!r}"
+                f" must reference another dataset"
+            )
     return open_ml_dataset_from_python_code(
         path,
         callable_name=callable_name,
         input_ml_dataset_ids=input_dataset_ids,
         input_ml_dataset_getter=ctx.get_ml_dataset,
         input_parameters=input_parameters,
+        is_factory=is_factory,
         ds_id=ds_id,
         exception_type=ApiError.InvalidServerConfig
     )
@@ -842,16 +828,50 @@ def _is_not_empty(prefix):
     return prefix != '' and prefix != '/' and prefix != '\\'
 
 
+def _get_roots(paths):
+    list.sort(paths)
+    prefixes = _get_common_prefixes(paths)
+    if len(prefixes) < 1:
+        roots = ['']
+    else:
+        # perform further step to merge prefixes with same start
+        prefixes = list(set(prefixes))
+        prefixes.sort()
+        roots = []
+        root_candidate = prefixes[0]
+        for root in prefixes[1:]:
+            common_root = os.path.commonprefix([root_candidate, root])
+            if _is_not_empty(common_root):
+                root_candidate = common_root
+            else:
+                roots.append(root_candidate)
+                root_candidate = root
+        roots.append(root_candidate)
+    if roots[0] == '':
+        roots.append(roots.pop(0))
+    return roots
+
+
 def _get_common_prefixes(p):
     # Recursively examine a list of paths for common prefixes:
     # If no common prefix is found, split the list in half and
     # examine each half separately
     prefix = os.path.commonprefix(p)
+    # ensure prefix does not end with full or partial directory
+    # or file name
+    prefix = prefix[:max(_lastindex(prefix, '/'), _lastindex(prefix, '\\'), 0)]
     if _is_not_empty(prefix) or len(p) == 1:
         return [prefix]
     else:
         return _get_common_prefixes(p[:int(len(p) / 2)]) + \
                _get_common_prefixes(p[int(len(p) / 2):])
+
+
+def _lastindex(prefix, symbol):
+    try:
+        return prefix.rindex(symbol)
+    except ValueError:
+        return -1
 
 
 _MULTI_LEVEL_DATASET_OPENERS = {

@@ -38,7 +38,7 @@ import click
 def vars2dim(cube, variable, dim_name, output=None, format=None):
     """
     Convert cube variables into new dimension.
-    Moves all variables of CUBE into into a single new variable <var-name>
+    Moves all variables of CUBE into a single new variable <var-name>
     with a new dimension DIM-NAME and writes the results to OUTPUT.
     """
 
