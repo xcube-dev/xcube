@@ -18,9 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       # Setup miniconda nd build env
-      - uses: conda-incubator/setup-miniconda@v2.2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
-          miniconda-version: Miniconda3-py39_22.11.1-1-Linux-x86_64.sh
+          miniconda-version: latest-py39
           mamba-version: "*"
           channels: conda-forge
           activate-environment: xcube
