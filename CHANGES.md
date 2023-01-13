@@ -2,6 +2,16 @@
 
 ### Other
 
+* The xcube filesystem data stores such as "file", "s3", "memory"
+  can now filter the data identifiers reported by `get_data_ids()`. (#585)
+  For this purpose, the data stores now accept two new optional keywords
+  which are sequences of wildcard patterns:
+
+  1.`excludes`: if given and if any pattern matches the identifier, 
+     the identifier is not reported. 
+  2.`includes`: if not given or if any pattern matches the identifier, 
+     the identifier is reported.
+
 ### Fixes
 
 
