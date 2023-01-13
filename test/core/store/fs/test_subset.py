@@ -76,7 +76,7 @@ class FsStoreSubset:
                              set(store.get_data_ids()))
 
         def test_include(self):
-            store = self.new_store(includes=['*/*20220502*'])
+            store = self.new_store(includes='*/*20220502*')
             self.assertEqual({'l1b/olci-l1b-20220502.zarr',
                               'l2/olci-l2-20220502.zarr'},
                              set(store.get_data_ids()))
@@ -93,7 +93,7 @@ class FsStoreSubset:
                              set(store.get_data_ids()))
 
         def test_exclude(self):
-            store = self.new_store(excludes=['*/*20220502*'])
+            store = self.new_store(excludes='*/*20220502*')
             self.assertEqual({'l1b/olci-l1b-20220501.zarr',
                               'l1b/olci-l1b-20220503.zarr',
                               'l2/olci-l2-20220501.zarr',
@@ -114,12 +114,12 @@ class FsStoreSubset:
                              set(store.get_data_ids()))
 
         def test_include_exclude(self):
-            store = self.new_store(includes=['*.levels'],
-                                   excludes=['*2021*'])
+            store = self.new_store(includes='*.levels',
+                                   excludes='*2021*')
             self.assertEqual({'l3/olci-l3-2020.levels'},
                              set(store.get_data_ids()))
 
-            store = self.new_store(includes=['*2022*'],
+            store = self.new_store(includes='*2022*',
                                    excludes=['*.levels', 'l1b/*'])
             self.assertEqual({'l2/olci-l2-20220501.zarr',
                               'l2/olci-l2-20220502.zarr',

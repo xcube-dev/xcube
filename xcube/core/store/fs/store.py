@@ -40,7 +40,9 @@ from xcube.util.assertions import assert_true
 from xcube.util.extension import Extension
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .accessor import FsAccessor
@@ -107,6 +109,16 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     Base class for data stores that use an underlying filesystem
     of type ``fsspec.AbstractFileSystem``.
 
+    The data store is capable of filtering the data identifiers reported
+    by ``get_data_ids()``. For this purpose the optional keywords
+    `excludes` and `includes` are used which can both take the form of
+    a wildcard pattern or a sequence of wildcard patterns:
+
+    * ``excludes``: if given and if any pattern matches the identifier,
+      the identifier is not reported.
+    * ``includes``: if not given or if any pattern matches the identifier,
+      the identifier is reported.
+
     :param fs: Optional filesystem. If not given,
         :meth:_load_fs() must return a filesystem instance.
     :param root: Root or base directory.
@@ -128,8 +140,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                  root: str = '',
                  max_depth: Optional[int] = 1,
                  read_only: bool = False,
-                 includes: Optional[Sequence[str]] = None,
-                 excludes: Optional[Sequence[str]] = None):
+                 includes: Optional[Union[str, Sequence[str]]] = None,
+                 excludes: Optional[Union[str, Sequence[str]]] = None):
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name='fs')
         self._fs = fs
@@ -137,8 +149,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         self._root: Optional[str] = None
         self._max_depth = max_depth
         self._read_only = read_only
-        self._includes = tuple(includes or ())
-        self._excludes = tuple(excludes or ())
+        self._includes = self._normalize_wc(includes)
+        self._excludes = self._normalize_wc(excludes)
         self._lock = RLock()
 
     @property
@@ -208,15 +220,18 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
+        wc_schema = JsonComplexSchema(one_of=[
+            JsonNullSchema(),
+            JsonStringSchema(),
+            JsonArraySchema(items=JsonStringSchema())
+        ])
         return JsonObjectSchema(
             properties=dict(
                 root=JsonStringSchema(default=''),
                 max_depth=JsonIntegerSchema(nullable=True, default=1),
                 read_only=JsonBooleanSchema(default=False),
-                includes=JsonArraySchema(nullable=True,
-                                         items=JsonStringSchema()),
-                excludes=JsonArraySchema(nullable=True,
-                                         items=JsonStringSchema()),
+                includes=wc_schema,
+                excludes=wc_schema,
             ),
             additional_properties=False
         )
@@ -687,12 +702,28 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 if included:
                     yield data_id
 
+    @staticmethod
+    def _normalize_wc(wc: Optional[Union[str, Sequence[str]]]) -> Tuple[str]:
+        return tuple() if not wc \
+            else (wc,) if isinstance(wc, str) \
+            else tuple(wc)
+
 
 class FsDataStore(BaseFsDataStore, FsAccessor):
     """
     Specialization of a :class:BaseFsDataStore that
     also implements a :class:FsAccessor which serves
     the filesystem.
+
+    The data store is capable of filtering the data identifiers reported
+    by ``get_data_ids()``. For this purpose the optional keywords
+    `excludes` and `includes` are used which can both take the form of
+    a wildcard pattern or a sequence of wildcard patterns:
+
+    * ``excludes``: if given and if any pattern matches the identifier,
+      the identifier is not reported.
+    * ``includes``: if not given or if any pattern matches the identifier,
+      the identifier is reported.
 
     :param root: Root or base directory.
         Defaults to "".
