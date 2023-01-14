@@ -59,8 +59,15 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
                    ' in CONFIG files. Defaults to the parent directory'
                    ' of (last) CONFIG file.')
 @click.option('--prefix', 'url_prefix',
-              metavar='PREFIX', default=None,
-              help='Prefix to be used for all endpoint URLs.')
+              metavar='URL_PREFIX', default=None,
+              help='Prefix path to be used for all endpoint URLs.'
+                   ' May include template variables, e.g., "api/{version}".')
+@click.option('--revprefix', 'reverse_url_prefix',
+              metavar='REVERSE_URL_PREFIX', default=None,
+              help='Prefix path to be used for reverse endpoint URLs'
+                   ' that may be reported by server responses.'
+                   ' May include template variables, e.g., "/proxy/{port}".'
+                   ' Defaults to value of URL_PREFIX.')
 @click.option('--traceperf', 'trace_perf', is_flag=True, default=None,
               help='Whether to output extra performance logs.')
 @click.option('--update-after', 'update_after',
@@ -79,6 +86,7 @@ def serve(framework_name: str,
           config_paths: List[str],
           base_dir: Optional[str],
           url_prefix: Optional[str],
+          reverse_url_prefix: Optional[str],
           trace_perf: Optional[bool],
           update_after: Optional[float],
           stop_after: Optional[float],
@@ -124,6 +132,9 @@ def serve(framework_name: str,
 
     if url_prefix is not None:
         config["url_prefix"] = url_prefix
+
+    if reverse_url_prefix is not None:
+        config["reverse_url_prefix"] = reverse_url_prefix
 
     if trace_perf is not None:
         config["trace_perf"] = trace_perf

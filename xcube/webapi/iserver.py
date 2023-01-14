@@ -56,7 +56,8 @@ class InteractiveServer:
         thread.daemon = True
         thread.start()
 
-        self._server = Server(TornadoFramework(io_loop=self._io_loop),
+        self._server = Server(TornadoFramework(io_loop=self._io_loop,
+                                               shared_io_loop=True),
                               config=config)
 
         self._io_loop.add_callback(self._server.start)

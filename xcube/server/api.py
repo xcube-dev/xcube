@@ -490,23 +490,37 @@ class ApiRequest:
     @abstractmethod
     def url_for_path(self,
                      path: str,
-                     query: Optional[str] = None) -> str:
-        """Get the full URL for the given *path* component and
+                     query: Optional[str] = None,
+                     reverse: bool = False) -> str:
+        """Get the reverse URL for the given *path* component and
         optional *query* string.
+
+        The *reverse* flag controls if configuration parameter
+        ``reverse_url_prefix`` shall be used for prefixing
+        the returned URL.
 
         :param path: The path component.
         :param query: Optional query string.
-        :return: Full URL for *path* and *query*.
+        :param reverse: Whether the reverse URL shall be returned.
+        :return: Full reverse URL for *path* and *query*.
         """
 
     @property
     def base_url(self) -> str:
-        return self.url_for_path("")
+        """Full base URL for this request, without query."""
+        return self.url_for_path("", reverse=False)
+
+    @property
+    def reverse_base_url(self) -> str:
+        """Full reverse base URL for this request, without query."""
+        return self.url_for_path("", reverse=True)
 
     @property
     @abstractmethod
     def url(self) -> str:
-        """The full URL of the request."""
+        """The full, original URL of the request.
+        Includes query parameters, if any.
+        """
 
     @property
     @abstractmethod

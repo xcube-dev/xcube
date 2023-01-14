@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-from typing import Mapping, Any
+from typing import Mapping, Any, Optional
 
 from xcube.constants import DEFAULT_SERVER_ADDRESS
 from xcube.constants import DEFAULT_SERVER_PORT
@@ -43,6 +43,10 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
         ),
         url_prefix=JsonStringSchema(
             title='Prefix to be prepended to all URL route paths.',
+        ),
+        reverse_url_prefix=JsonStringSchema(
+            title='Prefix to be prepended to reverse URL paths'
+                  ' returned by server responses.',
         ),
         trace_perf=JsonBooleanSchema(
             title='Output performance measures',
@@ -89,7 +93,32 @@ def get_url_prefix(config: Mapping[str, Any]) -> str:
     :param config: Server configuration.
     :return: Sanitized URL prefix, may be an empty string.
     """
-    url_prefix = (config.get('url_prefix') or '').strip()
+    return _sanitize_url_prefix(config.get('url_prefix'))
+
+
+def get_reverse_url_prefix(config: Mapping[str, Any]) -> str:
+    """
+    Get the sanitized reverse URL prefix so, if given, it starts with
+    a leading slash and ends without one.
+
+    :param config: Server configuration.
+    :return: Sanitized URL prefix, may be an empty string.
+    """
+    return _sanitize_url_prefix(
+        config.get('reverse_url_prefix',
+                   config.get('url_prefix'))
+    )
+
+
+def _sanitize_url_prefix(url_prefix: Optional[str]) -> str:
+    """Get a sanitized URL prefix so, if given, it starts with
+    a leading slash and ends without one.
+
+    :param url_prefix: URL prefix path.
+    :return: Sanitized URL prefix path, may be an empty string.
+    """
+    if not url_prefix:
+        return ''
     while url_prefix.startswith('//'):
         url_prefix = url_prefix[1:]
     while url_prefix.endswith('/'):
