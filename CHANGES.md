@@ -16,6 +16,7 @@
 * xcube CLI tools no longer emit warnings when trying to import
   installed packages named `xcube_*` as xcube plugins.
   
+* The `timeindex` module can now handle 0-dimensional `ndarray`s as indexers.
 
 ### Fixes
 
