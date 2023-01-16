@@ -19,24 +19,33 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import json
 import socket
 import threading
+from pathlib import Path
 from typing import Optional, Union
 
 import tornado.ioloop
 import xarray as xr
 
+from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
 from xcube.webapi.datasets.context import DatasetsContext
 
-
-# Got trick from
-# https://stackoverflow.com/questions/55201748/running-a-tornado-server-within-a-jupyter-notebook
+_LAB_INFO_FILE = "~/.xcube/lab-info.json"
 
 
 class InteractiveServer:
+    """
+
+    :param port: Port to be used. If not given,
+        an arbitrary free port is selected.
+    :param address: Server address. Defaults to "0.0.0.0".
+    :param config: Server configuration.
+        See "xcube serve --show configschema".
+    """
 
     def __init__(self,
                  port: Optional[int] = None,
@@ -51,6 +60,8 @@ class InteractiveServer:
         config["port"] = port
         config["address"] = address
 
+        # Got trick from
+        # https://stackoverflow.com/questions/55201748/running-a-tornado-server-within-a-jupyter-notebook
         self._io_loop = tornado.ioloop.IOLoop()
         thread = threading.Thread(target=self._io_loop.start)
         thread.daemon = True
@@ -62,12 +73,11 @@ class InteractiveServer:
 
         self._io_loop.add_callback(self._server.start)
 
-        server_url = f"http://localhost:{port}"
-        # TODO (forman): let xcube-viewer detect serverUrl from URL pathname
-        #   "/viewer/".
-        viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
-        print(f"Server: {server_url}")
-        print(f"Viewer: {viewer_url}")
+        server_url = _get_server_url(port)
+        self._server_url = server_url
+        self._viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
+        print(f"Server: {self._server_url}")
+        print(f"Viewer: {self._viewer_url}")
 
     def stop(self):
         if self._server is not None:
@@ -99,11 +109,41 @@ class InteractiveServer:
             self._server.ctx.get_api_ctx('datasets')
         datasets_ctx.remove_dataset(ds_id)
 
+    def show(self,
+             width: Union[int, str] = "100%",
+             height: Union[str, int] = 800):
+        from IPython.core.display import HTML
+        return HTML(
+            f'<iframe src="{self._viewer_url}"'
+            f' width="{width}"'
+            f' height="{height}"'
+            f'/>'
+        )
+
     def _check_running(self):
         is_running = self.is_running()
         if not is_running:
             print('Server not running')
         return is_running
+
+
+def _get_server_url(port: int) -> str:
+    lab_url = None
+    has_proxy = None
+    lab_info_path = Path(*_LAB_INFO_FILE.split("/"))
+    if lab_info_path.exists():
+        try:
+            with lab_info_path.open() as fp:
+                lab_info = json.load(fp)
+            lab_url = lab_info["lab_url"]
+            has_proxy = lab_info["has_proxy"]
+        except (OSError, KeyError):
+            LOG.warning(f"Failed loading {lab_info_path}")
+            pass
+    if lab_url and has_proxy:
+        return f"{lab_url}proxy/{port}"
+    else:
+        return f"http://localhost:{port}"
 
 
 def _find_port(start: int = 8000, end: Optional[int] = None) -> int:
