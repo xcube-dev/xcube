@@ -111,6 +111,12 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
     if time_value is None:
         return None
 
+    if isinstance(time_value, np.ndarray):
+        def check_time_value(t):
+            return _ensure_timestamp_compatible(var, t, time_name)
+        new_value = np.vectorize(check_time_value)(time_value)
+        return time_value if time_value == new_value else new_value
+
     if hasattr(time_value, 'tzinfo'):
         timestamp = time_value
         time_value_tzinfo = time_value.tzinfo

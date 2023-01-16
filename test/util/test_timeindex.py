@@ -137,6 +137,20 @@ class TimeIndexTest(TestCase):
         self.assertEqual(dict(time=pd.Timestamp('2020-01-01T12:00:00+00:00')),
                          new_labels)
 
+    def test_with_ndarray_time_label(self):
+        old_labels = dict(time=np.array(pd.Timestamp('2020-01-01T12:00:00')))
+        time_coords = [
+            pd.Timestamp('2020-01-01T12:00:00+00:00'),
+            pd.Timestamp('2020-01-02T12:00:00+00:00')
+        ]
+        new_labels = ensure_time_label_compatible(
+            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                         coords=dict(time=time_coords)),
+            old_labels
+        )
+        self.assertEqual(dict(time=np.array(pd.Timestamp('2020-01-01T12:00:00+00:00'))),
+                         new_labels)
+
 
 def _are_times_equal(labels1, labels2):
     return pd.Timestamp(labels1['time']) == pd.Timestamp(labels2['time'])
