@@ -112,10 +112,19 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         return None
 
     if isinstance(time_value, np.ndarray):
-        def check_time_value(t):
-            return _ensure_timestamp_compatible(var, t, time_name)
-        new_value = np.vectorize(check_time_value)(time_value)
-        return time_value if time_value == new_value else new_value
+        if time_value.shape == ():
+            contents = time_value[()]
+            new_contents = _ensure_timestamp_compatible(
+                var, contents, time_name
+            )
+            return (
+                time_value if contents == new_contents
+                else np.array(new_contents)
+            )
+        else:
+            logger.warning('Indexer is a multi-element ndarray; '
+                           'leaving it unmodified')
+            return time_value
 
     if hasattr(time_value, 'tzinfo'):
         timestamp = time_value
