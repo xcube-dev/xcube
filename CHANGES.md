@@ -13,6 +13,10 @@
   2. `includes`: if not given or if any pattern matches the identifier, 
      the identifier is reported.
 
+* xcube CLI tools no longer emit warnings when trying to import
+  installed packages named `xcube_*` as xcube plugins.
+  
+
 ### Fixes
 
 
