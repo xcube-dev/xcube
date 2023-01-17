@@ -16,7 +16,9 @@
 * xcube CLI tools no longer emit warnings when trying to import
   installed packages named `xcube_*` as xcube plugins.
   
-* The `timeindex` module can now handle 0-dimensional `ndarray`s as indexers.
+* The `xcube.util.timeindex` module can now handle 0-dimensional `ndarray`s as indexers.
+  This effectively avoids the warning `Can't determine indexer timezone; leaving it unmodified.`
+  which was emitted in such cases.
 
 ### Fixes
 
