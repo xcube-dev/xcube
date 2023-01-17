@@ -23,6 +23,11 @@
 
 The utilities in this module check and, where necessary, modify time indexers
 to ensure that they are compatible with the variables they are indexing.
+"Compatibility" in this case refers to timezone-awareness: a timezone-aware
+indexer cannot index a timezone-naive variable, and vice versa. Since xcube
+processes data from external sources, we need a generalized way to ensure
+this compatibility before attempting an indexing operation. See
+https://github.com/dcs4cop/xcube/issues/605 for more background information.    
 """
 
 from typing import Dict, Any, Union, Hashable
@@ -112,6 +117,9 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         return None
 
     if isinstance(time_value, np.ndarray):
+        # Sometimes a provided indexer is not a scalar, but a 0-dimensional
+        # singleton ndarray containing the scalar indexing value itself.
+        # In this case we unwrap the value and call the function recursively.
         if time_value.shape == ():
             contents = time_value[()]
             new_contents = _ensure_timestamp_compatible(
