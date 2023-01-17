@@ -23,7 +23,7 @@ import json
 import socket
 import threading
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Mapping, Any
 
 import tornado.ioloop
 import xarray as xr
@@ -34,31 +34,32 @@ from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
 from xcube.webapi.datasets.context import DatasetsContext
 
-_LAB_INFO_FILE = "~/.xcube/lab-info.json"
+_LAB_INFO_FILE = "~/.xcube/jupyterlab/lab-info.json"
 
 
-class InteractiveServer:
+class Viewer:
     """
+    Experimental class that represents the xcube Viewer
+    in Jupyter Notebooks.
 
-    :param port: Port to be used. If not given,
-        an arbitrary free port is selected.
-    :param address: Server address. Defaults to "0.0.0.0".
-    :param config: Server configuration.
+    :param server_config: Server configuration.
         See "xcube serve --show configschema".
     """
 
-    def __init__(self,
-                 port: Optional[int] = None,
-                 address: Optional[str] = None,
-                 **config):
+    def __init__(self, server_config: Optional[Mapping[str, Any]] = None):
+        server_config = dict(server_config or {})
+
+        port = server_config.get("port")
+        address = server_config.get("address")
+
         if port is None:
             port = _find_port()
         if address is None:
             address = "0.0.0.0"
 
-        config = dict(config)
-        config["port"] = port
-        config["address"] = address
+        server_config["port"] = port
+        server_config["address"] = address
+        self._server_config = server_config
 
         # Got trick from
         # https://stackoverflow.com/questions/55201748/running-a-tornado-server-within-a-jupyter-notebook
@@ -69,17 +70,32 @@ class InteractiveServer:
 
         self._server = Server(TornadoFramework(io_loop=self._io_loop,
                                                shared_io_loop=True),
-                              config=config)
+                              config=server_config)
 
         self._io_loop.add_callback(self._server.start)
 
         server_url = _get_server_url(port)
         self._server_url = server_url
         self._viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
-        print(f"Server: {self._server_url}")
-        print(f"Viewer: {self._viewer_url}")
+        self.info()
 
-    def stop(self):
+    @property
+    def server_config(self) -> Mapping[str, Any]:
+        return self._server_config
+
+    @property
+    def server_url(self):
+        return self._server_url
+
+    @property
+    def viewer_url(self):
+        return self._viewer_url
+
+    @property
+    def is_server_running(self) -> bool:
+        return self._server is not None
+
+    def stop_server(self):
         if self._server is not None:
             # noinspection PyBroadException
             try:
@@ -89,21 +105,18 @@ class InteractiveServer:
         self._server = None
         self._io_loop = None
 
-    def is_running(self) -> bool:
-        return self._server is not None
-
     def add_dataset(self,
                     dataset: Union[xr.Dataset, MultiLevelDataset],
                     ds_id: Optional[str] = None,
                     title: Optional[str] = None):
-        if not self._check_running():
+        if not self._check_server_running():
             return
         datasets_ctx: DatasetsContext = \
             self._server.ctx.get_api_ctx('datasets')
         return datasets_ctx.add_dataset(dataset, ds_id=ds_id, title=title)
 
     def remove_dataset(self, ds_id: str):
-        if not self._check_running():
+        if not self._check_server_running():
             return
         datasets_ctx: DatasetsContext = \
             self._server.ctx.get_api_ctx('datasets')
@@ -112,19 +125,27 @@ class InteractiveServer:
     def show(self,
              width: Union[int, str] = "100%",
              height: Union[str, int] = 800):
-        from IPython.core.display import HTML
-        return HTML(
-            f'<iframe src="{self._viewer_url}"'
-            f' width="{width}"'
-            f' height="{height}"'
-            f'/>'
-        )
+        try:
+            from IPython.core.display import HTML
+            return HTML(
+                f'<iframe src="{self._viewer_url}&compact=1"'
+                f' width="{width}"'
+                f' height="{height}"'
+                f'/>'
+            )
+        except ImportError:
+            import webbrowser
+            webbrowser.open_new_tab(self.viewer_url)
 
-    def _check_running(self):
-        is_running = self.is_running()
-        if not is_running:
+    def info(self):
+        # Consider outputting this as HTML
+        print(f"Server: {self.server_url}")
+        print(f"Viewer: {self.viewer_url}")
+
+    def _check_server_running(self):
+        if not self.is_server_running:
             print('Server not running')
-        return is_running
+        return self.is_server_running
 
 
 def _get_server_url(port: int) -> str:

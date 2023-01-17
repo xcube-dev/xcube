@@ -21,3 +21,4 @@
 
 # noinspection PyUnresolvedReferences
 from .routes import api
+from .viewer import Viewer
