@@ -122,6 +122,10 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         # singleton ndarray containing the scalar indexing value itself.
         # In this case we unwrap the value and call the function recursively.
         if time_value.shape == ():
+            # We use [()] rather than .item() here, since the contents may
+            # well be a datetime64. In that case we want to preserve the
+            # numpy array scalar type rather than converting to a native
+            # Python integer.
             contents = time_value[()]
             new_contents = _ensure_timestamp_compatible(
                 var, contents, time_name
