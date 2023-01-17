@@ -77,7 +77,6 @@ class Viewer:
         server_url = _get_server_url(port)
         self._server_url = server_url
         self._viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
-        self.info()
 
     @property
     def server_config(self) -> Mapping[str, Any]:
@@ -133,12 +132,16 @@ class Viewer:
                 f' height="{height}"'
                 f'/>'
             )
-        except ImportError:
-            import webbrowser
-            webbrowser.open_new_tab(self.viewer_url)
+        except ImportError as e:
+            print(f"Error: {e}; Trying to open Viewer in web browser...")
+            try:
+                import webbrowser
+                webbrowser.open_new_tab(self.viewer_url)
+            except:
+                print("Failed too.")
 
     def info(self):
-        # Consider outputting this as HTML
+        # Consider outputting this as HTML if in Notebook
         print(f"Server: {self.server_url}")
         print(f"Viewer: {self.viewer_url}")
 
