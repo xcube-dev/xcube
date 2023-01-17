@@ -27,7 +27,7 @@ to ensure that they are compatible with the variables they are indexing.
 indexer cannot index a timezone-naive variable, and vice versa. Since xcube
 processes data from external sources, we need a generalized way to ensure
 this compatibility before attempting an indexing operation. See
-https://github.com/dcs4cop/xcube/issues/605 for more background information.    
+https://github.com/dcs4cop/xcube/issues/605 for more background information.
 """
 
 from typing import Dict, Any, Union, Hashable
@@ -36,6 +36,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import logging
+import warnings
 
 logger = logging.getLogger('xcube')
 
@@ -130,8 +131,8 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
                 else np.array(new_contents)
             )
         else:
-            logger.warning('Indexer is a multi-element ndarray; '
-                           'leaving it unmodified')
+            warnings.warn('Indexer is a multi-element ndarray; '
+                          'leaving it unmodified')
             return time_value
 
     if hasattr(time_value, 'tzinfo'):
@@ -142,8 +143,8 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
             timestamp = pd.Timestamp(time_value)
             time_value_tzinfo = timestamp.tzinfo
         except (TypeError, ValueError):
-            logger.warning('Can\'t determine indexer timezone; leaving it '
-                           'unmodified.')
+            warnings.warn('Can\'t determine indexer timezone; leaving it '
+                          'unmodified.')
             return time_value
 
     if _has_datetime64_time(var, time_name):
@@ -165,7 +166,7 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         if hasattr(first_time_value, 'tzinfo'):
             array_timezone = first_time_value.tzinfo
         else:
-            logger.warning(
+            warnings.warn(
                 'Can\'t determine array timezone; leaving indexer unmodified.'
             )
             return time_value
@@ -174,13 +175,13 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         if hasattr(timestamp, 'tz_convert'):
             return timestamp.tz_convert(None)
         else:
-            logger.warning('Indexer lacks tz_convert; leaving it unmodified.')
+            warnings.warn('Indexer lacks tz_convert; leaving it unmodified.')
             return time_value
     elif array_timezone is not None and time_value_tzinfo is None:
         if hasattr(timestamp, 'tz_localize'):
             return timestamp.tz_localize(array_timezone)
         else:
-            logger.warning('Indexer lacks tz_localize; leaving it unmodified.')
+            warnings.warn('Indexer lacks tz_localize; leaving it unmodified.')
             return time_value
     else:
         return time_value
