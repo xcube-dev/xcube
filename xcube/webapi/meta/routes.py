@@ -51,7 +51,9 @@ class OpenApiHtmlHandler(ApiHandler):
                                          'res/openapi.html').decode('utf-8')
         self.response.finish(Template(html_template).substitute(
             open_api_url=self.request.url_for_path(
-                'openapi.json' + ('?all=1' if include_all else '')
+                'openapi.json',
+                query='all=1' if include_all else None,
+                reverse=True
             )
         ))
 
