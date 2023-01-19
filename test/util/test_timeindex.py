@@ -1,4 +1,6 @@
 from unittest import TestCase
+
+import pytest
 import xarray as xr
 import pandas as pd
 from pytz import UTC
@@ -84,11 +86,12 @@ class TimeIndexTest(TestCase):
 
     def test_ensure_time_label_compatible_no_timezone_info(self):
         old_labels = dict(time='foo')
-        new_labels = ensure_time_label_compatible(
-            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
-                         coords=dict(time=['foo', 'bar'])),
-            old_labels
-        )
+        with pytest.warns(UserWarning):
+            new_labels = ensure_time_label_compatible(
+                xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                             coords=dict(time=['foo', 'bar'])),
+                old_labels
+            )
         self.assertEqual(old_labels, new_labels)
 
     def test_ensure_time_label_compatible_no_tz_convert(self):
@@ -100,11 +103,12 @@ class TimeIndexTest(TestCase):
             pd.Timestamp('2020-01-01T12:00:00'),
             pd.Timestamp('2020-01-02T12:00:00')
         ]
-        new_labels = ensure_time_label_compatible(
-            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
-                         coords=dict(time=time_coords)),
-            old_labels
-        )
+        with pytest.warns(UserWarning):
+            new_labels = ensure_time_label_compatible(
+                xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                             coords=dict(time=time_coords)),
+                old_labels
+            )
         self.assertEqual(old_labels, new_labels)
 
     def test_ensure_time_label_compatible_no_tz_localize(self):
@@ -116,11 +120,12 @@ class TimeIndexTest(TestCase):
             pd.Timestamp('2020-01-01T12:00:00+00:00'),
             pd.Timestamp('2020-01-02T12:00:00+00:00')
         ]
-        new_labels = ensure_time_label_compatible(
-            xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
-                         coords=dict(time=time_coords)),
-            old_labels
-        )
+        with pytest.warns(UserWarning):
+            new_labels = ensure_time_label_compatible(
+                xr.DataArray([[1, 2], [3, 4]], dims=('x', 'time'),
+                             coords=dict(time=time_coords)),
+                old_labels
+            )
         self.assertEqual(old_labels, new_labels)
 
     def test_ensure_time_label_compatible_tz_localize(self):
@@ -148,8 +153,10 @@ class TimeIndexTest(TestCase):
                          coords=dict(time=time_coords)),
             old_labels
         )
-        self.assertEqual(dict(time=np.array(pd.Timestamp('2020-01-01T12:00:00+00:00'))),
-                         new_labels)
+        self.assertEqual(
+            dict(time=np.array(pd.Timestamp('2020-01-01T12:00:00+00:00'))),
+            new_labels
+        )
 
 
 def _are_times_equal(labels1, labels2):
