@@ -113,20 +113,30 @@ class MaintenanceFailHandler(ApiHandler[MetaContext]):
 
 @api.route("/maintenance/update")
 class MaintenanceUpdateHandler(ApiHandler[MetaContext]):
-    @api.operation(operation_id='updateServer',
-                   summary='Force server update,'
-                           ' updates configuration, and'
-                           ' resets all resource caches.')
-    async def get(self):
+    @api.operation(operation_id='getLastConfigUpdate',
+                   summary='Get information about the'
+                           ' last server configuration update.')
+    def get(self):
+        return self._finish()
+
+    @api.operation(operation_id='updateConfig',
+                   summary='Force server configuration update and'
+                           ' reset all resource caches.')
+    async def put(self):
         LOG.warning("Forcing server update...")
-        # self.ctx.call_later(0,
-        #                     self.ctx.server_ctx.server.update,
-        #                     self.ctx.config)
-        # self.ctx.server_ctx.server.update(self.ctx.config)
+        # We update with existing configuration.
+        # This will discard all cached resources (datasets) and
+        # force re-loading.
         await self.ctx.run_in_executor(None,
                                        self.ctx.server_ctx.server.update,
                                        self.ctx.config)
-        return self.response.finish(dict(status="OK"))
+        return self._finish()
+
+    def _finish(self):
+        return self.response.finish({
+           "status": "OK",
+           "modification_time": str(self.ctx.server_ctx.modification_time),
+        })
 
 
 @api.route("/maintenance/kill")

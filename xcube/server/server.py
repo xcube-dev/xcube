@@ -23,6 +23,7 @@ import collections.abc
 import concurrent.futures
 import copy
 import os.path
+from datetime import datetime
 from typing import (Optional, Dict, Any, Union,
                     Callable, Sequence, Awaitable, Tuple, Type, List, Mapping)
 
@@ -490,6 +491,7 @@ class ServerContext(Context):
         self._server = server
         self._config = FrozenDict.freeze(config)
         self._api_contexts: Dict[str, Context] = dict()
+        self._modification_time = datetime.utcnow()
 
     @property
     def server(self) -> Server:
@@ -505,6 +507,11 @@ class ServerContext(Context):
     @property
     def config(self) -> ServerConfig:
         return self._config
+
+    @property
+    def modification_time(self) -> datetime:
+        """Last modification time as UTC datetime object."""
+        return self._modification_time
 
     def get_api_ctx(self,
                     api_name: str,

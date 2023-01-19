@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
+from datetime import datetime
 from typing import Optional
 
 from tornado import concurrent
@@ -413,6 +414,7 @@ class ServerContextTest(unittest.TestCase):
         self.assertEqual(config, server_ctx.config)
         self.assertEqual((), server_ctx.apis)
         self.assertIsInstance(server_ctx.get_open_api_doc(), dict)
+        self.assertIsInstance(server_ctx.modification_time, datetime.datetime)
 
     def test_on_update_and_on_dispose(self):
         server = mock_server()
