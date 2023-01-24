@@ -21,7 +21,8 @@
 
 import importlib.resources
 import os
-from typing import Optional
+import pathlib
+from typing import Union
 
 from xcube.constants import LOG
 from .api import api
@@ -41,23 +42,28 @@ _responses = {
     }
 }
 
-_data_module = "xcube.webapi.viewer.data"
-_default_filename="index.html"
+_viewer_module = "xcube.webapi.viewer"
+_data_dir = "data"
+_default_filename = "index.html"
 
 
 @api.static_route('/viewer',
                   default_filename=_default_filename,
                   summary="Brings up the xcube Viewer webpage",
                   responses=_responses)
-def get_local_viewer_path() -> Optional[str]:
-    if ENV_VAR_XCUBE_VIEWER_PATH in os.environ:
-        return os.environ[ENV_VAR_XCUBE_VIEWER_PATH]
+def get_local_viewer_path() -> Union[None, str, pathlib.Path]:
+    local_viewer_path = os.environ.get(ENV_VAR_XCUBE_VIEWER_PATH)
+    if local_viewer_path:
+        return local_viewer_path
     try:
-        with importlib.resources.path(_data_module, _default_filename) as p:
-            return str(p.parent)
+        with importlib.resources.files(_viewer_module) as path:
+            local_viewer_path = path / _data_dir
+            if (local_viewer_path / _default_filename).is_file():
+                return local_viewer_path
     except ImportError:
-        LOG.warning(f"Cannot find {_default_filename} in {_data_module},"
-                    f" consider setting environment variable"
-                    f" {ENV_VAR_XCUBE_VIEWER_PATH}",
-                    exc_info=True)
+        pass
+    LOG.warning(f"Cannot find {_data_dir}/{_default_filename}"
+                f" in {_viewer_module}, consider setting environment variable"
+                f" {ENV_VAR_XCUBE_VIEWER_PATH}",
+                exc_info=True)
     return None
