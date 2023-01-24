@@ -207,7 +207,8 @@ class Api(Generic[ServerContextT]):
         Decorator that adds static route to this API.
 
         The decorator target must be function that returns the route's
-        local root directory path.
+        local root directory path either as a string or a ``pathlib.Path``.
+        If it can not determine an existing path, it should return None.
 
         :param path: The route path.
         :param default_filename: Optional name of the default filenames,
@@ -220,7 +221,7 @@ class Api(Generic[ServerContextT]):
             if root_path is not None:
                 self._static_routes.append(
                     ApiStaticRoute(path,
-                                   root_path,
+                                   str(root_path),
                                    api_name=self.name,
                                    default_filename=default_filename,
                                    openapi_metadata=openapi_metadata)
