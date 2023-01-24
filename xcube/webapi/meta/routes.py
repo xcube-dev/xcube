@@ -48,7 +48,7 @@ class OpenApiHtmlHandler(ApiHandler):
     def get(self):
         include_all = self.request.get_query_arg('all', default=False)
         html_template = pkgutil.get_data('xcube.webapi.meta',
-                                         'res/openapi.html').decode('utf-8')
+                                         'data/openapi.html').decode('utf-8')
         self.response.finish(Template(html_template).substitute(
             open_api_url=self.request.url_for_path(
                 'openapi.json',
