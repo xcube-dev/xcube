@@ -13,15 +13,19 @@
   2. `includes`: if not given or if any pattern matches the identifier, 
      the identifier is reported.
 
+### Fixes
+
 * xcube CLI tools no longer emit warnings when trying to import
   installed packages named `xcube_*` as xcube plugins.
   
-* The `xcube.util.timeindex` module can now handle 0-dimensional `ndarray`s as indexers.
-  This effectively avoids the warning `Can't determine indexer timezone; leaving it unmodified.`
+* The `xcube.util.timeindex` module can now handle 0-dimensional 
+  `ndarray`s as indexers. This effectively avoids the warning 
+  `Can't determine indexer timezone; leaving it unmodified.`
   which was emitted in such cases.
 
-### Fixes
-
+* Function `xcube.core.resampling.affine.affine_transform_dataset()`
+  now assumes that geographic coordinate systems are equal by default and
+  hence a resampling based on an affine transformation can be performed.
 
 ## Changes in 0.13.0.dev8
 

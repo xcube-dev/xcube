@@ -58,7 +58,10 @@ def affine_transform_dataset(
         new ones.
     :return: The resampled target dataset.
     """
-    if source_gm.crs != target_gm.crs:
+    # Are source and target both geographic grid mappings?
+    both_geographic = source_gm.crs.is_geographic \
+                      and target_gm.crs.is_geographic
+    if not (both_geographic or source_gm.crs == target_gm.crs):
         raise ValueError(f'CRS of source_gm and target_gm must be equal,'
                          f' was "{source_gm.crs.name}"'
                          f' and "{target_gm.crs.name}"')
