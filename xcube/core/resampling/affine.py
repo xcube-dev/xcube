@@ -46,6 +46,10 @@ def affine_transform_dataset(
     """
     Resample dataset according to an affine transformation.
 
+    The affine transformation will be applied only if the CRS of
+    *source_gm* and the CRS of *target_gm* are both geographic or equal.
+    Otherwise, a ``ValueError`` will be raised.
+
     :param dataset: The source dataset
     :param source_gm: Source grid mapping of *dataset*.
         Must be regular. Must have same CRS as *target_gm*.
