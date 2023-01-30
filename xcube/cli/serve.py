@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2023 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -19,13 +19,11 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import json
 import sys
 from pathlib import Path
 from typing import List, Optional, Any, Dict
 
 import click
-import yaml
 
 from xcube.cli.common import (cli_option_quiet,
                               cli_option_verbosity,
@@ -150,7 +148,9 @@ def serve(framework_name: str,
 
     configure_cli_output(quiet=quiet, verbosity=verbosity)
 
-    config = load_configs(*config_paths) if config_paths else {}
+    config = load_configs(*config_paths,
+                          exception_type=click.ClickException) \
+        if config_paths else {}
 
     if port is not None:
         config["port"] = port
@@ -250,9 +250,11 @@ def _add_path_to_data_stores(data_stores: Dict[Path, Dict[str, Any]],
 
 def show_asset(server, asset_to_show: str):
     def to_yaml(obj):
+        import yaml
         yaml.safe_dump(obj, sys.stdout, indent=2)
 
     def to_json(obj):
+        import json
         json.dump(obj, sys.stdout, indent=2)
 
     available_formats = {
