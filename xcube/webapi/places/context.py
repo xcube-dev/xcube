@@ -249,11 +249,13 @@ class PlacesContext(ResourcesContext):
     def _to_geo_interface(cls, feature_collection: Iterator[Any]) \
             -> Iterator[Dict[str, Any]]:
         for feature in feature_collection:
+            # fiona >=1.9 returns features of type fiona.model.Feature
+            # rather than JSON-serializable dictionaries.
             if hasattr(feature, '__geo_interface__'):
-                # fiona >=1.9
+                # We fall back on the traditional geo-interface:
                 feature = feature.__geo_interface__
                 # Fiona =1.9.0 adds empty "geometries" field
-                # to any "geometry"   :(
+                # to any "geometry", we fix this too:
                 geometry = feature.get('geometry')
                 if geometry \
                         and "geometries" in geometry \
