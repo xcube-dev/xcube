@@ -1,10 +1,13 @@
 import unittest
 
 import numpy as np
+import pytest
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.core.schema import CubeSchema, get_dataset_chunks
+from xcube.core.schema import CubeSchema
+from xcube.core.schema import get_dataset_chunks
+from xcube.core.schema import get_dataset_xy_var_names
 
 
 class CubeSchemaTest(unittest.TestCase):
@@ -223,3 +226,80 @@ class GetDatasetChunksTest(unittest.TestCase):
             {'time': 1, 'x': 10, 'y': 25},
             get_dataset_chunks(dataset)
         )
+
+
+class GetDatasetXYVarNamesTest(unittest.TestCase):
+
+    def test_find_by_cf_standard_name_attr(self):
+        dataset = xr.Dataset(coords=dict(
+            u=xr.DataArray([1, 2, 3], attrs=dict(
+                standard_name="projection_x_coordinate"
+            )),
+            v=xr.DataArray([1, 2, 3], attrs=dict(
+                standard_name="projection_y_coordinate"
+            )),
+        ))
+        self.assertEqual(("u", "v"),
+                         get_dataset_xy_var_names(dataset))
+
+    def test_find_by_cf_long_name_attr(self):
+
+        dataset = xr.Dataset(coords=dict(
+            u=xr.DataArray([1, 2, 3], attrs=dict(
+                long_name="x coordinate of projection"
+            )),
+            v=xr.DataArray([1, 2, 3], attrs=dict(
+                long_name="y coordinate of projection"
+            )),
+        ))
+        self.assertEqual(("u", "v"),
+                         get_dataset_xy_var_names(dataset))
+
+        dataset = xr.Dataset(coords=dict(
+            a=xr.DataArray([1, 2, 3], attrs=dict(
+                long_name="longitude"
+            )),
+            b=xr.DataArray([1, 2, 3], attrs=dict(
+                long_name="latitude"
+            )),
+        ))
+        self.assertEqual(("a", "b"),
+                         get_dataset_xy_var_names(dataset))
+
+    def test_find_by_var_name(self):
+
+        dataset = xr.Dataset(coords=dict(
+            x=xr.DataArray([1, 2, 3]),
+            y=xr.DataArray([1, 2, 3]),
+        ))
+        self.assertEqual(("x", "y"),
+                         get_dataset_xy_var_names(dataset))
+
+        dataset = xr.Dataset(coords=dict(
+            lon=xr.DataArray([1, 2, 3]),
+            lat=xr.DataArray([1, 2, 3]),
+        ))
+        self.assertEqual(("lon", "lat"),
+                         get_dataset_xy_var_names(dataset))
+
+        dataset = xr.Dataset(coords=dict(
+            longitude=xr.DataArray([1, 2, 3]),
+            latitude=xr.DataArray([1, 2, 3]),
+        ))
+        self.assertEqual(("longitude", "latitude"),
+                         get_dataset_xy_var_names(dataset))
+
+    def test_not_found(self):
+        dataset = xr.Dataset(coords=dict(
+            hanni=xr.DataArray([1, 2, 3]),
+            nanni=xr.DataArray([1, 2, 3]),
+        ))
+
+        self.assertIsNone(get_dataset_xy_var_names(dataset))
+
+        with pytest.raises(ValueError,
+                           match="dataset has no valid"
+                                 " spatial coordinate variables"):
+            get_dataset_xy_var_names(dataset, must_exist=True)
+
+        self.assertIsNone(get_dataset_xy_var_names(dataset))

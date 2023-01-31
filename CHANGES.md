@@ -22,6 +22,9 @@
 
 ### Fixes
 
+* `xcube serve` will now also accept datasets with coordinate names
+  `longitude` and `latitude`, even if the attribute `long_name` isn't set.
+  (#763)
 
 ## Changes in 0.13.0.dev8
 

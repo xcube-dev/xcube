@@ -713,7 +713,7 @@ def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray],
 
 
 def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
-                       xy_var_names: Tuple[str, str] = None) -> Bounds:
+                       xy_var_names: Optional[Tuple[str, str]] = None) -> Bounds:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     x_name, y_name = xy_var_names
