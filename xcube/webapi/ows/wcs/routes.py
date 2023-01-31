@@ -50,7 +50,7 @@ class WcsCapabilitiesXmlHandler(ApiHandler[WcsContext]):
             None,
             get_wcs_capabilities_xml,
             self.ctx,
-            self.request.base_url
+            self.request.reverse_base_url
         )
         self.response.set_header('Content-Type', 'application/xml')
         await self.response.finish(capabilities)
@@ -205,7 +205,7 @@ class WcsKvpHandler(ApiHandler[WcsContext]):
             None,
             get_wcs_capabilities_xml,
             self.ctx,
-            self.request.base_url
+            self.request.reverse_base_url
         )
         self.response.set_header('Content-Type', 'application/xml')
         await self.response.finish(capabilities_xml)
