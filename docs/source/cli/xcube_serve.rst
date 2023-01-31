@@ -23,75 +23,73 @@ Serve data cubes via web service.
 
 ::
 
-    Usage: xcube serve [OPTIONS] [CUBE]...
+    Usage: xcube serve [OPTIONS] [PATHS...]
 
-      Serve data cubes via web service.
+      Run the xcube Server for the given configuration and/or the given raster
+      dataset paths given by PATHS.
 
-      Serves data cubes by a RESTful API and a OGC WMTS 1.0 RESTful and KVP
-      interface. The RESTful API documentation can be found at
-      https://app.swaggerhub.com/apis/bcdev/xcube-server.
+      Each of the PATHS arguments can point to a raster dataset such as a Zarr
+      directory (*.zarr), an xcube multi-level Zarr dataset (*.levels), a NetCDF
+      file (*.nc), a GeoTIFF/COG file (*.tiff).
+
+      If one of PATHS is a directory that is not a dataset itself, it is scanned
+      for readable raster datasets.
+
+      The --show ASSET option can be used to inspect the current configuration of
+      the server. ASSET is one of:
+
+      apis            outputs the list of APIs provided by the server
+      endpoints       outputs the list of all endpoints provided by the server
+      openapi         outputs the OpenAPI document representing this server
+      config          outputs the effective server configuration
+      configschema    outputs the JSON Schema for the server configuration
+
+      The ASSET may be suffixed by ".yaml" or ".json" forcing the respective
+      output format. The default format is YAML.
+
+      Note, if --show  is provided, the ASSET will be shown and the program will
+      exit immediately.
 
     Options:
-      -A, --address ADDRESS    Service address. Defaults to 'localhost'.
-      -P, --port PORT          Port number where the service will listen on.
-                               Defaults to 8080.
-      --prefix PREFIX          Service URL prefix. May contain template patterns
-                               such as "${version}" or "${name}". For example
-                               "${name}/api/${version}". Will be used to prefix
-                               all API operation routes and in any URLs returned
-                               by the service.
-      --revprefix REVPREFIX    Service reverse URL prefix. May contain template
-                               patterns such as "${version}" or "${name}". For
-                               example "${name}/api/${version}". Defaults to
-                               PREFIX, if any. Will be used only in URLs returned
-                               by the service e.g. the tile URLs returned by the
-                               WMTS service.
-      -u, --update PERIOD      Service will update after given seconds of
-                               inactivity. Zero or a negative value will disable
-                               update checks. Defaults to 2.0.
-      -S, --styles STYLES      Color mapping styles for variables. Used only, if
-                               one or more CUBE arguments are provided and CONFIG
-                               is not given. Comma-separated list with elements of
-                               the form <var>=(<vmin>,<vmax>) or
-                               <var>=(<vmin>,<vmax>,"<cmap>")
-      -c, --config CONFIG      Use datasets configuration file CONFIG. Cannot be
-                               used if CUBES are provided. If not given and also
-                               CUBES are not provided, the configuration may be
-                               given by environment variable
-                               XCUBE_SERVE_CONFIG_FILE.
-      -b, --base-dir BASE_DIR  Base directory used to resolve relative dataset
-                               paths in CONFIG and relative CUBES paths. Defaults
-                               to value of environment variable
-                               XCUBE_SERVE_BASE_DIR, if given, otherwise defaults
-                               to the parent directory of CONFIG.
-      --tilecache SIZE         In-memory tile cache size in bytes. Unit suffixes
-                               'K', 'M', 'G' may be used. Defaults to '512M'. The
-                               special value 'OFF' disables tile caching.
-      --tilemode MODE          Tile computation mode. This is an internal option
-                               used to switch between different tile computation
-                               implementations. Defaults to 0.
-      -s, --show               Run viewer app. Requires setting the environment
-                               variable XCUBE_VIEWER_PATH to a valid xcube-viewer
-                               deployment or build directory. Refer to
-                               https://github.com/dcs4cop/xcube-viewer for more
-                               information.
-      -q, --quiet              Disable output of log messages to the console
-                               entirely. Note, this will also suppress error and
-                               warning messages.
-      -v, --verbose            Enable output of log messages to the console. Has
-                               no effect if --quiet/-q is used. May be given
-                               multiple times to control the level of log
-                               messages, i.e., -v refers to level INFO, -vv to
-                               DETAIL, -vvv to DEBUG, -vvvv to TRACE. If omitted,
-                               the log level of the console is WARNING.
-      --traceperf              Log extra performance diagnostics using log level
-                               DEBUG.
-      --aws-prof PROFILE       To publish remote CUBEs, use AWS credentials from
-                               section [PROFILE] found in ~/.aws/credentials.
-      --aws-env                To publish remote CUBEs, use AWS credentials from
-                               environment variables AWS_ACCESS_KEY_ID and
-                               AWS_SECRET_ACCESS_KEY
-      --help                   Show this message and exit.
+      --framework FRAMEWORK           Web server framework. Defaults to "tornado"
+      -p, --port PORT                 Service port number. Defaults to 8080
+      -a, --address ADDRESS           Service address. Defaults to "0.0.0.0".
+      -c, --config CONFIG             Configuration YAML or JSON file.  If
+                                      multiple are passed, they will be merged in
+                                      order.
+      --base-dir BASE_DIR             Directory used to resolve relative paths in
+                                      CONFIG files. Defaults to the parent
+                                      directory of (last) CONFIG file.
+      --prefix URL_PREFIX             Prefix path to be used for all endpoint
+                                      URLs. May include template variables, e.g.,
+                                      "api/{version}".
+      --revprefix REVERSE_URL_PREFIX  Prefix path to be used for reverse endpoint
+                                      URLs that may be reported by server
+                                      responses. May include template variables,
+                                      e.g., "/proxy/{port}". Defaults to value of
+                                      URL_PREFIX.
+      --traceperf                     Whether to output extra performance logs.
+      --update-after TIME             Check for server configuration updates every
+                                      TIME seconds.
+      --stop-after TIME               Unconditionally stop service after TIME
+                                      seconds.
+      --show ASSET                    Show ASSET and exit. Possible values for
+                                      ASSET are 'apis', 'endpoints', 'openapi',
+                                      'config', 'configschema' optionally suffixed
+                                      by '.yaml' or '.json'.
+      --open-viewer                   After starting the server, open xcube Viewer
+                                      in a browser tab.
+      -q, --quiet                     Disable output of log messages to the
+                                      console entirely. Note, this will also
+                                      suppress error and warning messages.
+      -v, --verbose                   Enable output of log messages to the
+                                      console. Has no effect if --quiet/-q is
+                                      used. May be given multiple times to control
+                                      the level of log messages, i.e., -v refers
+                                      to level INFO, -vv to DETAIL, -vvv to DEBUG,
+                                      -vvvv to TRACE. If omitted, the log level of
+                                      the console is WARNING.
+      --help                          Show this message and exit.
 
 
 Configuration File

@@ -34,6 +34,7 @@ from xcube.constants import (DEFAULT_SERVER_FRAMEWORK,
 
 assets_to_show = [
     'apis',
+    'endpoints',
     'openapi',
     'config',
     'configschema'
@@ -131,6 +132,7 @@ def serve(framework_name: str,
 
     \b
     apis            outputs the list of APIs provided by the server
+    endpoints       outputs the list of all endpoints provided by the server
     openapi         outputs the OpenAPI document representing this server
     config          outputs the effective server configuration
     configschema    outputs the JSON Schema for the server configuration
@@ -280,6 +282,11 @@ def show_asset(server, asset_to_show: str):
                         description=api.description)
                    for api in server.apis])
 
+    def show_endpoints():
+        output_fn([route.path
+                   for api in server.apis
+                   for route in (api.routes + api.static_routes)])
+
     def show_open_api():
         output_fn(server.ctx.get_open_api_doc())
 
@@ -291,6 +298,7 @@ def show_asset(server, asset_to_show: str):
 
     available_commands = {
         "apis": show_apis,
+        "endpoints": show_endpoints,
         "openapi": show_open_api,
         "config": show_config,
         "configschema": show_config_schema,
