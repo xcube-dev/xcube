@@ -179,9 +179,15 @@ class ServerTest(unittest.TestCase):
                         'default': 8080,
                     },
                     'url_prefix': {
+                        'type': 'string',
                         'title': 'Prefix to be prepended to all URL '
                                  'route paths.',
-                        'type': 'string'
+                    },
+                    'reverse_url_prefix': {
+                        'type': 'string',
+                        'title': 'Prefix to be prepended to '
+                                 'reverse URL paths returned by '
+                                 'server responses.',
                     },
                     'static_routes': {
                         'type': 'array',

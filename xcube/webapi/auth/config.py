@@ -32,7 +32,7 @@ AUTHENTICATION_SCHEMA = JsonObjectSchema(
     properties=dict(
         Authority=JsonStringSchema(format='uri'),
         Domain=JsonStringSchema(description='Deprecated, use Authority'),
-        Audience=JsonStringSchema(format='uri'),
+        Audience=JsonStringSchema(),
         Algorithms=JsonArraySchema(
             items=JsonStringSchema(default=["RS256"]),
         ),

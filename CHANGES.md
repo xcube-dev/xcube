@@ -1,4 +1,48 @@
-## Changes in 0.13.0.dev8 (in development)
+## Changes in 0.13.0.dev9 (in development)
+
+### Enhancements
+
+* xcube Server has been rewritten almost from scratch.
+
+  - Added new endpoint `/viewer` that serves a self-contained, 
+    packaged build of 
+    [xcube Viewer](https://github.com/dcs4cop/xcube-viewer). 
+    The packaged viewer can be overridden by environment variable 
+    `XCUBE_VIEWER_PATH` that must point to a directory with a 
+    build of a compatible viewer.
+  
+  - The `--show` option of `xcube serve` 
+    has been renamed to `--open-viewer`. 
+    It now uses the self-contained, packaged build of 
+    [xcube Viewer](https://github.com/dcs4cop/xcube-viewer). (#750)
+
+  - The `--show` option of `xcube serve` 
+    now outputs various aspects of the server configuration. 
+  
+### Other
+
+* The xcube filesystem data stores such as "file", "s3", "memory"
+  can now filter the data identifiers reported by `get_data_ids()`. (#585)
+  For this purpose, the data stores now accept two new optional keywords
+  which both can take the form of a wildcard pattern or a sequence 
+  of wildcard patterns:
+
+  1. `excludes`: if given and if any pattern matches the identifier, 
+     the identifier is not reported. 
+  2. `includes`: if not given or if any pattern matches the identifier, 
+     the identifier is reported.
+
+* xcube CLI tools no longer emit warnings when trying to import
+  installed packages named `xcube_*` as xcube plugins.
+  
+* The `xcube.util.timeindex` module can now handle 0-dimensional `ndarray`s as indexers.
+  This effectively avoids the warning `Can't determine indexer timezone; leaving it unmodified.`
+  which was emitted in such cases.
+
+### Fixes
+
+
+## Changes in 0.13.0.dev8
 
 ### Other
 
@@ -6,6 +50,13 @@
   like `get_data_ids()`, but returns a list instead of an iterator. (#776)
 
 ### Fixes
+
+* Implementation of function `xcube.core.geom.rasterize_features()` 
+  has been changed to account for consistent use of a target variable's
+  `fill_value` and `dtype` for a given feature.
+  In-memory (decoded) variables now always use dtype `float64` and use 
+  `np.nan` to represent missing values. Persisted (encoded) variable data
+  will make use of the target `fill_value` and `dtype`. (#778)
 
 ## Changes in 0.13.0.dev7
 
@@ -63,7 +114,9 @@
 
 ### Fixes
 
-* xcube serve correctly resolves relative paths to datasets (#758)
+* Relative local filesystem paths to datasets are now correctly resolved 
+  against the base directory of the xcube Server's configuration, i.e.
+ configuration parameter `base_dir`. (#758)
 
 ## Changes in 0.13.0.dev3
 
@@ -139,10 +192,6 @@
 
   - The limited `s3bucket` endpoints are no longer available and are 
     replaced by `s3` endpoints. 
-
-  - The `--show` option of `xcube serve` is no longer available. (#750)
-    We may reintroduce it, but then with a packaged build of 
-    xcube Viewer that matches the current xcube Server version. 
 
 * xcube Server's colormap management has been improved in several ways:
   - Colormaps are no longer managed globally. E.g., on server configuration 

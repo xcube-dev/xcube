@@ -193,6 +193,7 @@ class TornadoApiRequestTest(unittest.TestCase):
             host='localhost:8080',
             uri='/datasets?details=1',
         )
+
         request = TornadoApiRequest(tr)
         self.assertEqual("http://localhost:8080/collections",
                          request.url_for_path('collections'))
@@ -200,10 +201,28 @@ class TornadoApiRequestTest(unittest.TestCase):
                          request.url_for_path('/collections',
                                               query='details=1'))
 
-        request = TornadoApiRequest(tr, url_prefix='/api/v1')
-        self.assertEqual("http://localhost:8080/api/v1/collections?details=1",
-                         request.url_for_path('/collections',
-                                              query='details=1'))
+        request = TornadoApiRequest(tr,
+                                    url_prefix='/api/v1')
+        self.assertEqual(
+            "http://localhost:8080/api/v1/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1')
+        )
+
+        request = TornadoApiRequest(tr,
+                                    url_prefix='/api/v1',
+                                    reverse_url_prefix='/proxy/9999')
+        self.assertEqual(
+            "http://localhost:8080/api/v1/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1')
+        )
+        self.assertEqual(
+            "http://localhost:8080/proxy/9999/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1',
+                                 reverse=True)
+        )
 
     def test_get_query_args(self):
         tr = tornado.httputil.HTTPServerRequest(

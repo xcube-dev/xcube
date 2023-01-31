@@ -20,6 +20,7 @@ class S3Test(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        super().setUpClass()
 
         """Mocked AWS Credentials for moto."""
         os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
@@ -48,3 +49,5 @@ class S3Test(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         cls._moto_server.kill()
+        super().tearDownClass()
+
