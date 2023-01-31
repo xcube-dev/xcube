@@ -33,14 +33,20 @@ class ServerCliTest(CliTest):
 
     def test_commands_with_format(self):
         for f in ["yaml", "json"]:
-            result = self.invoke_cli(["serve", "show", "openapi"] + [f])
+            result = self.invoke_cli(["serve", "--show", f"apis.{f}"])
             self.assertEqual(0, result.exit_code)
 
-            result = self.invoke_cli(["serve", "show", "config"] + [f])
+            result = self.invoke_cli(["serve", "--show", f"endpoints.{f}"])
             self.assertEqual(0, result.exit_code)
 
-            result = self.invoke_cli(["serve", "show", "configschema"] + [f])
+            result = self.invoke_cli(["serve", "--show", f"openapi.{f}"])
             self.assertEqual(0, result.exit_code)
 
-        result = self.invoke_cli(["serve", "show", "configschema", "nc"])
-        self.assertEqual(1, result.exit_code)
+            result = self.invoke_cli(["serve", "--show", f"config.{f}"])
+            self.assertEqual(0, result.exit_code)
+
+            result = self.invoke_cli(["serve", "--show", f"configschema.{f}"])
+            self.assertEqual(0, result.exit_code)
+
+        result = self.invoke_cli(["serve", "--show", "configschema.nc"])
+        self.assertEqual(2, result.exit_code)
