@@ -206,7 +206,7 @@ class Api(Generic[ServerContextT]):
         """
         Decorator that adds static route to this API.
 
-        The decorator target must be function that returns the route's
+        The decorator target must be a function that returns the route's
         local root directory path either as a string or a ``pathlib.Path``.
         If it can not determine an existing path, it should return None.
 

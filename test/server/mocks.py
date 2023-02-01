@@ -143,7 +143,7 @@ class MockApiRequest(ApiRequest):
                  reverse_url_prefix: str = ''):
         self._base_url = 'http://localhost:8080'
         self._query_args = query_args or {}
-        self._reverse_url_prefix = reverse_url_prefix or ''
+        self._reverse_url_prefix = reverse_url_prefix
 
     @property
     def query(self) -> Mapping[str, Sequence[str]]:

@@ -30,7 +30,7 @@ Serve data cubes via web service.
 
       Each of the PATHS arguments can point to a raster dataset such as a Zarr
       directory (*.zarr), an xcube multi-level Zarr dataset (*.levels), a NetCDF
-      file (*.nc), a GeoTIFF/COG file (*.tiff).
+      file (*.nc), or a GeoTIFF/COG file (*.tiff).
 
       If one of PATHS is a directory that is not a dataset itself, it is scanned
       for readable raster datasets.
@@ -55,7 +55,7 @@ Serve data cubes via web service.
       -p, --port PORT                 Service port number. Defaults to 8080
       -a, --address ADDRESS           Service address. Defaults to "0.0.0.0".
       -c, --config CONFIG             Configuration YAML or JSON file.  If
-                                      multiple are passed, they will be merged in
+                                      multiple configuration files are passed, they will be merged in
                                       order.
       --base-dir BASE_DIR             Directory used to resolve relative paths in
                                       CONFIG files. Defaults to the parent
