@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 from typing import Mapping, Any, Optional
 
 from xcube.constants import DEFAULT_SERVER_ADDRESS
@@ -53,16 +54,29 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
         ),
         static_routes=JsonArraySchema(
             title='Static content routes',
-            items=JsonArraySchema([
-                JsonStringSchema(
-                    title='URL path',
-                    min_length=1
+            items=JsonObjectSchema(
+                properties=dict(
+                    path=JsonStringSchema(
+                        title='The URL path',
+                        min_length=1
+                    ),
+                    dir_path=JsonStringSchema(
+                        title='A local directory path',
+                        min_length=1
+                    ),
+                    default_filename=JsonStringSchema(
+                        title='Optional default filename',
+                        examples=['index.html'],
+                        min_length=1
+                    ),
+                    openapi_metadata=JsonObjectSchema(
+                        title='Optional OpenAPI operation metadata',
+                        additional_properties=True
+                    ),
                 ),
-                JsonStringSchema(
-                    title='Local path',
-                    min_length=1
-                ),
-            ])
+                required=['path', 'dir_path'],
+                additional_properties=False
+            )
         ),
         api_spec=JsonObjectSchema(
             title='API specification',

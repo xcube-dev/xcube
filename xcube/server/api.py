@@ -211,8 +211,8 @@ class Api(Generic[ServerContextT]):
         If it can not determine an existing path, it should return None.
 
         :param path: The route path.
-        :param default_filename: Optional name of the default filenames,
-            e.g., "index.html"
+        :param default_filename: Optional default filename,
+            e.g., "index.html".
         :param openapi_metadata: Optional OpenAPI GET operation metadata.
         """
 
@@ -733,8 +733,7 @@ class ApiStaticRoute:
 
     :param path: The route path.
     :param dir_path: A local directory path.
-    :param default_filename: Optional name of the default filenames,
-        e.g., "index.html"
+    :param default_filename: Optional default filename, e.g., "index.html".
     :param api_name: Optional name of the API to which this route belongs to.
     :param openapi_metadata: Optional OpenAPI operation metadata.
     """

@@ -193,13 +193,33 @@ class ServerTest(unittest.TestCase):
                         'type': 'array',
                         'title': 'Static content routes',
                         'items': {
-                            'type': 'array',
-                            'items': [{'minLength': 1,
-                                       'title': 'URL path',
-                                       'type': 'string'},
-                                      {'minLength': 1,
-                                       'title': 'Local path',
-                                       'type': 'string'}],
+                            'type': 'object',
+                            'required': ['path', 'dir_path'],
+                            'properties': {
+                                'path': {
+                                    'type': 'string',
+                                    'minLength': 1,
+                                    'title': 'The URL path',
+                                },
+                                'dir_path': {
+                                    'type': 'string',
+                                    'minLength': 1,
+                                    'title': 'A local directory path',
+                                },
+                                'default_filename': {
+                                    'type': 'string',
+                                    'examples': ['index.html'],
+                                    'minLength': 1,
+                                    'title': 'Optional default filename',
+                                },
+                                'openapi_metadata': {
+                                    'type': 'object',
+                                    'additionalProperties': True,
+                                    'title': 'Optional OpenAPI operation '
+                                             'metadata',
+                                },
+                            },
+                            'additionalProperties': False,
                         },
                     },
                     'trace_perf': {

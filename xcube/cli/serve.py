@@ -156,7 +156,16 @@ def serve(framework_name: str,
 
     if port is not None:
         config["port"] = port
+    port = config.get("port")
+    if port is None:
+        port = DEFAULT_SERVER_PORT
+        config["port"] = port
+
     if address is not None:
+        config["address"] = address
+    address = config.get("address")
+    if address is None:
+        address = DEFAULT_SERVER_ADDRESS
         config["address"] = address
 
     if base_dir is not None:
@@ -215,7 +224,7 @@ def serve(framework_name: str,
     if open_viewer:
         def open_xcube_viewer():
             import webbrowser
-            webbrowser.open_new_tab(f'http://127.0.0.1:{port}/viewer/')
+            webbrowser.open_new_tab(f'http://localhost:{port}/viewer/')
 
         server.call_later(2.5, open_xcube_viewer)
 
