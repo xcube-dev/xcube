@@ -443,6 +443,16 @@ class GetDatasetBoundsTest(unittest.TestCase):
         bounds = get_dataset_bounds(ds2)
         self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
 
+    def test_longitude_latitude(self):
+        ds1, ds2 = _get_nominal_datasets()
+        ds1 = ds1.rename(dict(lon='longitude', lat='latitude'))
+        ds2 = ds2.rename(dict(lon='longitude', lat='latitude'))
+
+        bounds = get_dataset_bounds(ds1)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+        bounds = get_dataset_bounds(ds2)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+
     def test_inv_y(self):
         ds1, ds2 = _get_inv_y_datasets()
         bounds = get_dataset_bounds(ds1)

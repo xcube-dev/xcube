@@ -23,6 +23,12 @@
   `Can't determine indexer timezone; leaving it unmodified.`
   which was emitted in such cases.
 
+### Fixes
+
+* `xcube serve` will now also accept datasets with coordinate names
+  `longitude` and `latitude`, even if the attribute `long_name` isn't set.
+  (#763)
+
 * Function `xcube.core.resampling.affine.affine_transform_dataset()`
   now assumes that geographic coordinate systems are equal by default and
   hence a resampling based on an affine transformation can be performed.
