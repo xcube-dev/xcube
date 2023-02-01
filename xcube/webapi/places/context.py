@@ -21,7 +21,7 @@
 
 
 import glob
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional, Callable, Iterator
 from typing import Sequence
 
 import fiona
@@ -213,7 +213,7 @@ class PlacesContext(ResourcesContext):
             with self.measure_time(f'Loading features from file {source_file}'):
                 with fiona.open(source_file,
                                 encoding=source_encoding) as feature_collection:
-                    for feature in feature_collection:
+                    for feature in self._to_geo_interface(feature_collection):
                         self._remove_feature_id(feature)
                         feature["id"] = self.new_feature_id()
                         features.append(feature)
@@ -225,8 +225,11 @@ class PlacesContext(ResourcesContext):
             join_encoding = join['encoding']
             with fiona.open(join_path,
                             encoding=join_encoding) as feature_collection:
+                self._to_geo_interface(feature_collection)
                 indexed_join_features = self._get_indexed_features(
-                    feature_collection, join_property)
+                    list(self._to_geo_interface(feature_collection)),
+                    join_property
+                )
             for feature in features:
                 properties = feature.get('properties')
                 if isinstance(properties, dict) \
@@ -241,6 +244,24 @@ class PlacesContext(ResourcesContext):
 
         place_group['features'] = features
         return features
+
+    @classmethod
+    def _to_geo_interface(cls, feature_collection: Iterator[Any]) \
+            -> Iterator[Dict[str, Any]]:
+        for feature in feature_collection:
+            # fiona >=1.9 returns features of type fiona.model.Feature
+            # rather than JSON-serializable dictionaries.
+            if hasattr(feature, '__geo_interface__'):
+                # We fall back on the traditional geo-interface:
+                feature = feature.__geo_interface__
+                # Fiona =1.9.0 adds empty "geometries" field
+                # to any "geometry", we fix this too:
+                geometry = feature.get('geometry')
+                if geometry \
+                        and "geometries" in geometry \
+                        and geometry.get("type") != "GeometryCollection":
+                    del geometry["geometries"]
+            yield feature
 
     @classmethod
     def _get_indexed_features(cls,
