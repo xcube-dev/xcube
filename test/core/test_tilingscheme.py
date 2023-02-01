@@ -295,6 +295,57 @@ class TilingSchemeTest(unittest.TestCase):
                 'degrees'
             )
 
+    def test_get_limited_levels_for_resolutions_geographic(self):
+        tiling_scheme = TilingScheme.GEOGRAPHIC
+
+        self.assertEqual(
+            (0, 2),
+            tiling_scheme.get_levels_for_resolutions(
+                [0.25, 0.5, 1.0, 2.0],
+                'degrees'
+            )
+        )
+
+        self.assertEqual(
+            (0, 2),
+            tiling_scheme.get_levels_for_resolutions(
+                [0.25, 0.5, 1.0, 2.0, 4.0],
+                'degrees'
+            )
+        )
+
+        self.assertEqual(
+            (0, 3),
+            tiling_scheme.get_levels_for_resolutions(
+                [0.125, 0.25, 0.5, 1.0, 2.0],
+                'degrees'
+            )
+        )
+
+        self.assertEqual(
+            (0, 3),
+            tiling_scheme.get_levels_for_resolutions(
+                [0.125, 0.25, 0.5, 1.0, 2.0, 4.0],
+                'degrees'
+            )
+        )
+
+        self.assertEqual(
+            (0, 4),
+            tiling_scheme.get_levels_for_resolutions(
+                [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0],
+                'degrees'
+            )
+        )
+
+        self.assertEqual(
+            (0, 4),
+            tiling_scheme.get_levels_for_resolutions(
+                [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0],
+                'degrees'
+            )
+        )
+
 
 class TilingSchemeHelpersTest(unittest.TestCase):
 
