@@ -19,8 +19,6 @@
   - The `--show` option of `xcube serve` 
     now outputs various aspects of the server configuration. 
   
-### Other
-
 * The xcube filesystem data stores such as "file", "s3", "memory"
   can now filter the data identifiers reported by `get_data_ids()`. (#585)
   For this purpose, the data stores now accept two new optional keywords
@@ -41,8 +39,6 @@
   `ndarray`s as indexers. This effectively avoids the warning 
   `Can't determine indexer timezone; leaving it unmodified.`
   which was emitted in such cases.
-
-### Fixes
 
 * `xcube serve` will now also accept datasets with coordinate names
   `longitude` and `latitude`, even if the attribute `long_name` isn't set.
