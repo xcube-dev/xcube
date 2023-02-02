@@ -29,7 +29,7 @@ from .controllers import find_places
 class PlaceGroupsHandler(ApiHandler[PlacesContext]):
     @api.operation(operationId='getPlaceGroups')
     def get(self):
-        place_groups = self.ctx.get_global_place_groups(self.request.base_url)
+        place_groups = self.ctx.get_global_place_groups(self.request.reverse_base_url)
         self.response.finish({"placeGroups": place_groups})
 
 
@@ -51,7 +51,7 @@ class FindPlacesHandler(ApiHandler):
             )
         places = find_places(self.ctx,
                              placeGroupId,
-                             self.request.base_url,
+                             self.request.reverse_base_url,
                              query_geometry=box_coords or geom_wkt or None,
                              query_expr=query_expr, comb_op=comb_op)
         self.response.finish({"places": places})
@@ -65,7 +65,7 @@ class FindPlacesHandler(ApiHandler):
         geojson_obj = self.request.json
         places = find_places(self.ctx,
                              placeGroupId,
-                             self.request.base_url,
+                             self.request.reverse_base_url,
                              query_geometry=geojson_obj,
                              query_expr=query_expr, comb_op=comb_op)
         self.response.finish({"places": places})

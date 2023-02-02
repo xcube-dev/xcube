@@ -27,7 +27,7 @@ import os.path
 import warnings
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, \
-    Set, Mapping
+    Set, Mapping, Union
 
 import numpy as np
 import pandas as pd
@@ -35,7 +35,8 @@ import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
-from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset, \
+    IdentityMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_python_code
@@ -48,6 +49,7 @@ from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
+from xcube.util.assertions import assert_instance, assert_given
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_custom_colormap
@@ -183,6 +185,47 @@ class DatasetsContext(ResourcesContext):
         self._set_dataset_entry((ml_dataset,
                                  dict(Identifier=ml_dataset.ds_id,
                                       Hidden=True)))
+
+    def add_dataset(self,
+                    dataset: Union[xr.Dataset, MultiLevelDataset],
+                    ds_id: Optional[str] = None,
+                    title: Optional[str] = None):
+        assert_instance(dataset, (xr.Dataset, MultiLevelDataset), 'dataset')
+        if isinstance(dataset, xr.Dataset):
+            ml_dataset = BaseMultiLevelDataset(dataset, ds_id=ds_id)
+        else:
+            ml_dataset = dataset
+            if ds_id:
+                ml_dataset = IdentityMultiLevelDataset(dataset, ds_id=ds_id)
+        ds_id = ml_dataset.ds_id
+        dataset_configs = self.get_dataset_configs()
+        for index, dataset_config in enumerate(dataset_configs):
+            if dataset_config["Identifier"] == ds_id:
+                del dataset_configs[index]
+                break
+        dataset_config = dict(Identifier=ds_id, Title=title)
+        self._dataset_cache[ds_id] = ml_dataset, dataset_config
+        self._dataset_configs.append(dataset_config)
+        return ds_id
+
+    def remove_dataset(self, ds_id: str):
+        assert_instance(ds_id, str, 'ds_id')
+        assert_given(ds_id, 'ds_id')
+        if ds_id in self._dataset_cache:
+            del self._dataset_cache[ds_id]
+            # TODO: remove from self._dataset_configs
+
+    def add_ml_dataset(self,
+                       ml_dataset: MultiLevelDataset,
+                       ds_id: Optional[str] = None,
+                       title: Optional[str] = None):
+        if ds_id:
+            ml_dataset.ds_id = ds_id
+        else:
+            ds_id = ml_dataset.ds_id
+        self._set_dataset_entry((ml_dataset,
+                                 dict(Identifier=ds_id,
+                                      Title=title)))
 
     def get_dataset(self,
                     ds_id: str,

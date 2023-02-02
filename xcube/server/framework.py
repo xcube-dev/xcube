@@ -26,6 +26,7 @@ from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
 from xcube.util.extension import get_extension_registry
 from xcube.util.jsonschema import JsonObjectSchema
 from .api import ApiRoute
+from .api import ApiStaticRoute
 from .api import Context
 from .asyncexec import AsyncExecution
 
@@ -44,7 +45,7 @@ class Framework(AsyncExecution, abc.ABC):
 
     @abc.abstractmethod
     def add_static_routes(self,
-                          routes: Sequence[Tuple[str, str]],
+                          routes: Sequence[ApiStaticRoute],
                           url_prefix: str):
         """
         Adds the given static routes to this web server.

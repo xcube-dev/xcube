@@ -77,7 +77,7 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
         response = get_datasets(self.ctx,
                                 details=details,
                                 point=point,
-                                base_url=self.request.base_url,
+                                base_url=self.request.reverse_base_url,
                                 granted_scopes=granted_scopes)
         self.response.finish(response)
 
@@ -93,7 +93,7 @@ class DatasetHandler(ApiHandler[DatasetsContext]):
         )
         result = get_dataset(self.ctx,
                              datasetId,
-                             base_url=self.request.base_url,
+                             base_url=self.request.reverse_base_url,
                              granted_scopes=granted_scopes)
         self.response.set_header('Content-Type', 'application/json')
         await self.response.finish(result)
@@ -122,7 +122,7 @@ class DatasetPlaceGroupHandler(ApiHandler[DatasetsContext]):
         response = get_dataset_place_group(self.ctx,
                                            datasetId,
                                            placeGroupId,
-                                           self.request.base_url)
+                                           self.request.reverse_base_url)
         self.response.finish(response)
 
 
@@ -139,7 +139,7 @@ class PlacesForDatasetHandler(ApiHandler[DatasetsContext]):
         response = find_dataset_places(self.ctx,
                                        placeGroupId,
                                        datasetId,
-                                       self.request.base_url,
+                                       self.request.reverse_base_url,
                                        query_expr=query_expr,
                                        comb_op=comb_op)
         self.response.finish(response)

@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import collections.abc
-from typing import Union, Iterator, Set
+from typing import Union, Iterator, Set, Dict
 
 import xarray as xr
 
@@ -58,21 +58,24 @@ class DatasetsMapping(collections.abc.Mapping):
         assert_instance(is_multi_level, bool, name="is_multi_level")
         self._datasets_ctx = datasets_ctx
         self._is_multi_level = is_multi_level
-        self._s3_names = self._get_s3_names(datasets_ctx, is_multi_level)
+
+    @property
+    def _s3_names(self):
+        return self._get_s3_names(self._datasets_ctx, self._is_multi_level)
 
     @staticmethod
     def _get_s3_names(datasets_ctx: DatasetsContext,
-                      is_multi_level: bool):
+                      is_multi_level: bool) -> Dict[str, str]:
         """Generate user-friendly S3 names for dataset identifiers.
         If *is_multi_level* is True, S3 names will be forced to have
         ".levels" suffix, otherwise the ".zarr" suffix.
         """
-        all_ids = set(c["Identifier"]
-                      for c in datasets_ctx.get_dataset_configs())
+        ds_ids = [c["Identifier"]
+                  for c in datasets_ctx.get_dataset_configs()]
+        all_ids = set(ds_ids)
 
         s3_names = {}
-        for c in datasets_ctx.get_dataset_configs():
-            ds_id: str = c["Identifier"]
+        for ds_id in ds_ids:
             s3_base, s3_ext = _split_base_ext(ds_id)
             if is_multi_level:
                 s3_name = _replace_ext(s3_base, s3_ext,

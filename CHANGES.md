@@ -1,7 +1,24 @@
 ## Changes in 0.13.0.dev9 (in development)
 
-### Other
+### Enhancements
 
+* xcube Server has been rewritten almost from scratch.
+
+  - Added new endpoint `/viewer` that serves a self-contained, 
+    packaged build of 
+    [xcube Viewer](https://github.com/dcs4cop/xcube-viewer). 
+    The packaged viewer can be overridden by environment variable 
+    `XCUBE_VIEWER_PATH` that must point to a directory with a 
+    build of a compatible viewer.
+  
+  - The `--show` option of `xcube serve` 
+    has been renamed to `--open-viewer`. 
+    It now uses the self-contained, packaged build of 
+    [xcube Viewer](https://github.com/dcs4cop/xcube-viewer). (#750)
+
+  - The `--show` option of `xcube serve` 
+    now outputs various aspects of the server configuration. 
+  
 * The xcube filesystem data stores such as "file", "s3", "memory"
   can now filter the data identifiers reported by `get_data_ids()`. (#585)
   For this purpose, the data stores now accept two new optional keywords
@@ -116,7 +133,9 @@
 
 ### Fixes
 
-* xcube serve correctly resolves relative paths to datasets (#758)
+* Relative local filesystem paths to datasets are now correctly resolved 
+  against the base directory of the xcube Server's configuration, i.e.
+ configuration parameter `base_dir`. (#758)
 
 ## Changes in 0.13.0.dev3
 
@@ -192,10 +211,6 @@
 
   - The limited `s3bucket` endpoints are no longer available and are 
     replaced by `s3` endpoints. 
-
-  - The `--show` option of `xcube serve` is no longer available. (#750)
-    We may reintroduce it, but then with a packaged build of 
-    xcube Viewer that matches the current xcube Server version. 
 
 * xcube Server's colormap management has been improved in several ways:
   - Colormaps are no longer managed globally. E.g., on server configuration 
