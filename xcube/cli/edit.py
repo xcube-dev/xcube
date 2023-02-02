@@ -51,6 +51,8 @@ def edit(cube,
     The command currently works only for data cubes using ZARR format.
     """
     from xcube.core.edit import edit_metadata
+    print('"xcube edit" is deprecated since xcube 0.13.'
+          ' Please use "xcube patch" instead.')
     edit_metadata(cube,
                   output_path=output,
                   metadata_path=metadata,

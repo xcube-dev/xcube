@@ -29,6 +29,14 @@
      the identifier is not reported. 
   2. `includes`: if not given or if any pattern matches the identifier, 
      the identifier is reported.
+  
+* The CLI tool `xcube edit` has been deprecated in favour of the 
+  `xcube patch`. (#748)
+
+* `xcube serve` is now more tolerant with respect to datasets it can not 
+  open without errors. Implementation detail: It no longer fails if 
+  opening datasets raises any exception other than `DatasetIsNotACubeError`.
+  (#789)
 
 ### Fixes
 
@@ -47,6 +55,11 @@
 * Function `xcube.core.resampling.affine.affine_transform_dataset()`
   now assumes that geographic coordinate systems are equal by default and
   hence a resampling based on an affine transformation can be performed.
+
+* Fixed a problem with xcube server's WMTS implementation.
+  For multi-level resolution datasets with very coarse low resolution levels, 
+  the tile matrix sets `WorldCRS84Quad` and `WorldWebMercatorQuad` have 
+  reported a negative minimum z-level.
 
 ## Changes in 0.13.0.dev8
 
