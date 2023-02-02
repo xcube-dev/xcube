@@ -12,6 +12,9 @@
      the identifier is not reported. 
   2. `includes`: if not given or if any pattern matches the identifier, 
      the identifier is reported.
+  
+* The CLI tool `xcube edit` has been deprecated in favour of the 
+  `xcube patch`. (#748)
 
 ### Fixes
 
