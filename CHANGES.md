@@ -23,8 +23,6 @@
   `Can't determine indexer timezone; leaving it unmodified.`
   which was emitted in such cases.
 
-### Fixes
-
 * `xcube serve` will now also accept datasets with coordinate names
   `longitude` and `latitude`, even if the attribute `long_name` isn't set.
   (#763)
@@ -32,6 +30,11 @@
 * Function `xcube.core.resampling.affine.affine_transform_dataset()`
   now assumes that geographic coordinate systems are equal by default and
   hence a resampling based on an affine transformation can be performed.
+
+* Fixed a problem with xcube server's WMTS implementation.
+  For multi-level resolution datasets with very coarse low resolution levels, 
+  the tile matrix sets `WorldCRS84Quad` and `WorldWebMercatorQuad` have 
+  reported a negative minimum z-level.
 
 ## Changes in 0.13.0.dev8
 
