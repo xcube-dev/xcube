@@ -4,13 +4,53 @@
 
 * xcube Server has been rewritten almost from scratch.
 
+  - Introduced a new endpoint `${server_url}/s3` that emulates
+    and AWS S3 object storage for the published datasets. (#717)
+    The `bucket` name can be either:
+    * `s3://datasets` - publishes all datasets in Zarr format.
+    * `s3://pyramids` - publishes all datasets in a multi-level `levels`
+      format (multi-resolution N-D images)
+      that comprises level datasets in Zarr format.
+    
+    Datasets published through the S3 API are slightly 
+    renamed for clarity. For bucket `s3://pyramids`:
+    * if a dataset identifier has suffix `.levels`, the identifier remains;
+    * if a dataset identifier has suffix `.zarr`, it will be replaced by 
+      `.levels` only if such a dataset doesn't exist;
+    * otherwise, the suffix `.levels` is appended to the identifier.
+    For bucket `s3://datasets` the opposite is true:
+    * if a dataset identifier has suffix `.zarr`, the identifier remains;
+    * if a dataset identifier has suffix `.levels`, it will be replaced by 
+      `.zarr` only if such a dataset doesn't exist;
+    * otherwise, the suffix `.zarr` is appended to the identifier.
+
+    With the new S3 endpoints in place, xcube Server instances can be used
+    as xcube data stores as follows:
+    
+    ```python
+    store = new_data_store(
+        "s3", 
+        root="datasets",   # bucket "datasets", use also "pyramids"
+        max_depth=2,       # optional, but we may have nested datasets
+        storage_options=dict(
+            anon=True,
+            client_kwargs=dict(
+                endpoint_url='http://localhost:8080/s3' 
+            )
+        )
+    )
+    ```
+
+  - The limited `s3bucket` endpoints are no longer available and are 
+    replaced by `s3` endpoints. 
+
   - Added new endpoint `/viewer` that serves a self-contained, 
     packaged build of 
     [xcube Viewer](https://github.com/dcs4cop/xcube-viewer). 
     The packaged viewer can be overridden by environment variable 
     `XCUBE_VIEWER_PATH` that must point to a directory with a 
     build of a compatible viewer.
-  
+
   - The `--show` option of `xcube serve` 
     has been renamed to `--open-viewer`. 
     It now uses the self-contained, packaged build of 
@@ -18,7 +58,30 @@
 
   - The `--show` option of `xcube serve` 
     now outputs various aspects of the server configuration. 
-  
+
+* xcube Server is now more tolerant with respect to datasets it can not 
+  open without errors. Implementation detail: It no longer fails if 
+  opening datasets raises any exception other than `DatasetIsNotACubeError`.
+  (#789)
+
+* xcube Server's colormap management has been improved in several ways:
+  - Colormaps are no longer managed globally. E.g., on server configuration 
+    change, new custom colormaps are reloaded from files. 
+  - Colormaps are loaded dynamically from underlying 
+    matplotlib and cmocean registries, and custom SNAP color palette files. 
+    That means, latest matplotlib colormaps are now always available. (#687)
+  - Colormaps can now be reversed (name suffix `"_r"`), 
+    can have alpha blending (name suffix `"_alpha"`),
+    or both (name suffix `"_r_alpha"`).
+  - Loading of custom colormaps from SNAP `*.cpd` has been rewritten.
+    Now also the `isLogScaled` property of the colormap is recognized. (#661)
+  - The module `xcube.util.cmaps` has been redesigned and now offers
+    three new classes for colormap management:
+    * `Colormap` - a colormap 
+    * `ColormapCategory` - represents a colormap category
+    * `ColormapRegistry` - manages colormaps and their categories
+
+
 * The xcube filesystem data stores such as "file", "s3", "memory"
   can now filter the data identifiers reported by `get_data_ids()`. (#585)
   For this purpose, the data stores now accept two new optional keywords
@@ -30,13 +93,8 @@
   2. `includes`: if not given or if any pattern matches the identifier, 
      the identifier is reported.
   
-* The CLI tool `xcube edit` has been deprecated in favour of the 
-  `xcube patch`. (#748)
-
-* `xcube serve` is now more tolerant with respect to datasets it can not 
-  open without errors. Implementation detail: It no longer fails if 
-  opening datasets raises any exception other than `DatasetIsNotACubeError`.
-  (#789)
+* Added convenience method `DataStore.list_data_ids()` that works 
+  like `get_data_ids()`, but returns a list instead of an iterator. (#776)
 
 ### Fixes
 
@@ -61,15 +119,6 @@
   the tile matrix sets `WorldCRS84Quad` and `WorldWebMercatorQuad` have 
   reported a negative minimum z-level.
 
-## Changes in 0.13.0.dev8
-
-### Other
-
-* Added convenience method `DataStore.list_data_ids()` that works 
-  like `get_data_ids()`, but returns a list instead of an iterator. (#776)
-
-### Fixes
-
 * Implementation of function `xcube.core.geom.rasterize_features()` 
   has been changed to account for consistent use of a target variable's
   `fill_value` and `dtype` for a given feature.
@@ -77,9 +126,52 @@
   `np.nan` to represent missing values. Persisted (encoded) variable data
   will make use of the target `fill_value` and `dtype`. (#778)
 
-## Changes in 0.13.0.dev7
+* Relative local filesystem paths to datasets are now correctly resolved 
+  against the base directory of the xcube Server's configuration, i.e.
+  configuration parameter `base_dir`. (#758)
+
+* Fixed problem with `xcube gen` raising `FileNotFoundError`
+  with Zarr >= 2.13.
+
+* Provided backward compatibility with Python 3.8. (#760)
+
 
 ### Other
+
+* The CLI tool `xcube edit` has been deprecated in favour of the 
+  `xcube patch`. (#748)
+
+* Deprecated CLI `xcube tile` has been removed.
+
+* Deprecated modules, classes, methods, and functions
+  have finally been removed:
+  - `xcube.core.geom.get_geometry_mask()`
+  - `xcube.core.mldataset.FileStorageMultiLevelDataset`
+  - `xcube.core.mldataset.open_ml_dataset()`
+  - `xcube.core.mldataset.open_ml_dataset_from_local_fs()`
+  - `xcube.core.mldataset.open_ml_dataset_from_object_storage()`
+  - `xcube.core.subsampling.get_dataset_subsampling_slices()`
+  - `xcube.core.tiledimage`
+  - `xcube.core.tilegrid`
+
+* The following classes, methods, and functions have been deprecated:
+  - `xcube.core.xarray.DatasetAccessor.levels()`
+  - `xcube.util.cmaps.get_cmap()`
+  - `xcube.util.cmaps.get_cmaps()`
+  
+* A new function `compute_tiles()` has been 
+  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
+
+* Added method `get_level_for_resolution(xy_res)` to 
+  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
+
+* Removed outdated example resources from `examples/serve/demo`.
+
+* Account for different spatial resolutions in x and y in 
+  `xcube.core.geom.get_dataset_bounds()`.
+
+* Make code robust against 0-size coordinates in 
+  `xcube.core.update._update_dataset_attrs()`.
 
 * xcube Server has been enhanced to load multi-module Python code 
   for dynamic cubes both from both directories and zip archives.
@@ -117,138 +209,6 @@
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.
 
-* Provided backward compatibility with Python 3.8. (#760)
-
-## Changes in 0.13.0.dev6
-
-## Changes in 0.13.0.dev5
-
-### Other
-
-* xcube server Python scripts can now import modules from
-  the script's directory.
-* Loading of dynamic cubes is now logged. 
-
-## Changes in 0.13.0.dev4
-
-### Fixes
-
-* Relative local filesystem paths to datasets are now correctly resolved 
-  against the base directory of the xcube Server's configuration, i.e.
- configuration parameter `base_dir`. (#758)
-
-## Changes in 0.13.0.dev3
-
-### Other
-
-* A new function `compute_tiles()` has been 
-  refactored out from function `xcube.core.tile.compute_rgba_tile()`.
-* Added method `get_level_for_resolution(xy_res)` to 
-  abstract base class `xcube.core.mldataset.MultiLevelDataset`. 
-* Removed outdated example resources from `examples/serve/demo`.
-* Account for different spatial resolutions in x and y in 
-  `xcube.core.geom.get_dataset_bounds()`.
-* Make code robust against 0-size coordinates in 
-  `xcube.core.update._update_dataset_attrs()`.
-
-## Changes in 0.13.0.dev2
-
-### Intermediate changes
-
-* Fixed unit test w.r.t. change in 0.13.0.dev1
-
-* xcube now tries to prevent indexing timezone-naive variables with
-  timezone-aware indexers, or vice versa.
-
-## Changes in 0.13.0.dev1
-
-### Intermediate changes
-
-* Include package data `xcube/webapi/meta/res/openapi.html`.
-
-## Changes in 0.13.0.dev0
-
-### Enhancements
-
-* xcube Server has been rewritten almost from scratch.
-  
-  - Introduced a new endpoint `${server_url}/s3` that emulates
-    and AWS S3 object storage for the published datasets. (#717)
-    The `bucket` name can be either:
-    * `s3://datasets` - publishes all datasets in Zarr format.
-    * `s3://pyramids` - publishes all datasets in a multi-level `levels`
-      format (multi-resolution N-D images)
-      that comprises level datasets in Zarr format.
-    
-    Datasets published through the S3 API are slightly 
-    renamed for clarity. For bucket `s3://pyramids`:
-    - if a dataset identifier has suffix `.levels`, the identifier remains;
-    - if a dataset identifier has suffix `.zarr`, it will be replaced by 
-      `.levels` only if such a dataset doesn't exist;
-    - otherwise, the suffix `.levels` is appended to the identifier.
-    For bucket `s3://datasets` the opposite is true:
-    - if a dataset identifier has suffix `.zarr`, the identifier remains;
-    - if a dataset identifier has suffix `.levels`, it will be replaced by 
-      `.zarr` only if such a dataset doesn't exist;
-    - otherwise, the suffix `.zarr` is appended to the identifier.
-
-    With the new S3 endpoints in place, xcube Server instances can be used
-    as xcube data stores as follows:
-    
-    ```python
-    store = new_data_store(
-        "s3", 
-        root="datasets",   # bucket "datasets", use also "pyramids"
-        max_depth=2,       # optional, but we may have nested datasets
-        storage_options=dict(
-            anon=True,
-            client_kwargs=dict(
-                endpoint_url='http://localhost:8080/s3' 
-            )
-        )
-    )
-    ```
-
-  - The limited `s3bucket` endpoints are no longer available and are 
-    replaced by `s3` endpoints. 
-
-* xcube Server's colormap management has been improved in several ways:
-  - Colormaps are no longer managed globally. E.g., on server configuration 
-    change, new custom colormaps are reloaded from files. 
-  - Colormaps are loaded dynamically from underlying 
-    matplotlib and cmocean registries, and custom SNAP color palette files. 
-    That means, latest matplotlib colormaps are now always available. (#687)
-  - Colormaps can now be reversed (name suffix `"_r"`), 
-    can have alpha blending (name suffix `"_alpha"`),
-    or both (name suffix `"_r_alpha"`).
-  - Loading of custom colormaps from SNAP `*.cpd` has been rewritten.
-    Now also the `isLogScaled` property of the colormap is recognized. (#661)
-  - The module `xcube.util.cmaps` has been redesigned and now offers
-    three new classes for colormap management:
-    * `Colormap` - a colormap 
-    * `ColormapCategory` - represents a colormap category
-    * `ColormapRegistry` - manages colormaps and their categories
-  
-### Other
-
-* Deprecated CLI `xcube tile` has been removed.
-* Deprecated modules, classes, methods, and functions
-  have finally been removed:
-  - `xcube.core.geom.get_geometry_mask()`
-  - `xcube.core.mldataset.FileStorageMultiLevelDataset`
-  - `xcube.core.mldataset.open_ml_dataset()`
-  - `xcube.core.mldataset.open_ml_dataset_from_local_fs()`
-  - `xcube.core.mldataset.open_ml_dataset_from_object_storage()`
-  - `xcube.core.subsampling.get_dataset_subsampling_slices()`
-  - `xcube.core.tiledimage`
-  - `xcube.core.tilegrid`
-* The following classes, methods, and functions have been deprecated:
-  - `xcube.core.xarray.DatasetAccessor.levels()`
-  - `xcube.util.cmaps.get_cmap()`
-  - `xcube.util.cmaps.get_cmaps()`
-  
-* Fixed problem with `xcube gen` raising `FileNotFoundError`
-  with Zarr >= 2.13.
 
 ## Changes in 0.12.1 
 
