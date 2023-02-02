@@ -58,6 +58,9 @@
 
   - The `--show` option of `xcube serve` 
     now outputs various aspects of the server configuration. 
+  
+  - Added experimental endpoint `/volumes`.
+    It is used by xcube Viewer to render 3-D volumes.
 
 * xcube Server is now more tolerant with respect to datasets it can not 
   open without errors. Implementation detail: It no longer fails if 
@@ -95,9 +98,6 @@
   
 * Added convenience method `DataStore.list_data_ids()` that works 
   like `get_data_ids()`, but returns a list instead of an iterator. (#776)
-
-* Added experimental API `volumes` to xcube Server.
-  It is used by xcube Viewer to render 3-D volumes.
 
 ### Fixes
 
