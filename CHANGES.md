@@ -13,6 +13,11 @@
   2. `includes`: if not given or if any pattern matches the identifier, 
      the identifier is reported.
 
+* `xcube serve` is now more tolerant with respect to datasets it can not 
+  open without errors. Implementation detail: It no longer fails if 
+  opening datasets raises any exception other than `DatasetIsNotACubeError`.
+  (#789)
+
 ### Fixes
 
 * xcube CLI tools no longer emit warnings when trying to import
