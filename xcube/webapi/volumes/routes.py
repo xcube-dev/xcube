@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import gzip
 import math
 import sys
 
@@ -38,6 +39,7 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
     @api.operation(operation_id='getVolume',
                    summary="Get the volume data for a variable"
                            " in NRRD format.",
+                   description="This is an experimental feature",
                    parameters=[
                        {
                            "name": "datasetId",
@@ -81,6 +83,16 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
                                "format": "datetime"
                            }
                        },
+                       {
+                           "name": "encoding",
+                           "in": "query",
+                           "description": 'Encoding of the result',
+                           "schema": {
+                               "type": "string",
+                               "enum": ["raw", "gz"],
+                               "default": "gz",
+                           }
+                       },
                    ])
     async def get(self, datasetId: str, varName: str):
         bbox = self.request.get_query_arg('bbox',
@@ -102,6 +114,15 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
         end_date = self.request.get_query_arg('endDate',
                                               type=pd.Timestamp,
                                               default=None)
+
+        encoding = self.request.get_query_arg('encoding',
+                                              type=str,
+                                              default="gz")
+
+        if encoding not in ("gz", "raw"):
+            raise ApiError.BadRequest(
+                'Encoding must be one of "gz" or "raw"'
+            )
 
         ml_dataset = self.ctx.datasets_ctx.get_ml_dataset(datasetId)
 
@@ -140,6 +161,10 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
         scale_x = scale_y = 100. / max(size_x, size_y)
         scale_z = 100. / size_z
 
+        data = values.tobytes(order='C')
+        if encoding == 'gz':
+            data = gzip.compress(data)
+
         block_size = 1024 * 1024
         num_blocks = math.ceil(len(data) / block_size)
 
@@ -151,7 +176,8 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
             "dimension: 3\n"
             "sizes:"
             f" {size_x} {size_y} {size_z}\n"
-            "encoding: raw\n"  # TODO (forman): allow for gzip
+            f"encoding:"
+            f" {encoding}\n"
             "endian:"
             f" {sys.byteorder}\n"
             "space directions:"
@@ -171,3 +197,9 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
             time.sleep(1 / 10000)
 
         await self.response.finish()
+
+
+def compress_gzip(data: bytes) -> bytes:
+    with gzip.GzipFile(fileobj=bytesIO(data), mode='wb') as f:
+        f.write(data)
+    return buf.getvalue()
