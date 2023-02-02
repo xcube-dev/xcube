@@ -237,6 +237,29 @@ class DataStore(DataOpener, DataSearcher, ABC):
         :raise DataStoreError: If an error occurs.
         """
 
+    def list_data_ids(self,
+                      data_type: DataTypeLike = None,
+                      include_attrs: Container[str] = None) -> \
+            Union[List[str], List[Tuple[str, Dict[str, Any]]]]:
+        """
+        Convenience version of `get_data_ids()` that returns a list rather
+        than an iterator.
+
+        :param data_type: If given, only data identifiers that are
+            available as this type are returned.
+            If this is omitted, all available data identifiers are returned.
+        :param include_attrs: A sequence of names of attributes to
+            be returned for each dataset identifier.
+            If given, the store will attempt to provide the set of
+            requested dataset attributes in addition to the data ids.
+            (added in xcube 0.8.0)
+        :return: A list comprising the identifiers and titles of data
+            resources provided by this data store.
+        :raise DataStoreError: If an error occurs.
+        """
+        return list(self.get_data_ids(data_type=data_type,
+                                      include_attrs=include_attrs))
+
     @abstractmethod
     def has_data(self,
                  data_id: str,

@@ -284,10 +284,10 @@ class TilingScheme:
         map_levels = np.ceil(np.log2(
             self.level_zero_resolution / map_resolutions
         ))
-        min_level = np.min(map_levels)
-        max_level = np.max(map_levels)
+        min_level = max(int(np.min(map_levels)), 0)
+        max_level = max(int(np.max(map_levels)), min_level)
 
-        return int(min_level), int(max_level)
+        return min_level, max_level
 
     def get_resolutions_level(
             self,

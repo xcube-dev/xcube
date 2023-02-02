@@ -44,7 +44,7 @@ class WmtsCapabilitiesXmlHandler(ApiHandler[WmtsContext]):
             None,
             get_wmts_capabilities_xml,
             self.ctx,
-            self.request.base_url,
+            self.request.reverse_base_url,
             WMTS_CRS84_TMS_ID
         )
         self.response.set_header('Content-Type', 'application/xml')
@@ -64,7 +64,7 @@ class WmtsCapabilitiesXmlForTmsHandler(ApiHandler[WmtsContext]):
             None,
             get_wmts_capabilities_xml,
             self.ctx,
-            self.request.base_url,
+            self.request.reverse_base_url,
             tmsId
         )
         self.response.set_header('Content-Type', 'application/xml')
@@ -156,7 +156,7 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
                 None,
                 get_wmts_capabilities_xml,
                 self.ctx,
-                self.request.base_url,
+                self.request.reverse_base_url,
                 tms_id
             )
             self.response.set_header("Content-Type", "application/xml")

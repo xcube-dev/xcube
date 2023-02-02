@@ -21,6 +21,7 @@
 
 import unittest
 
+from xcube.server.config import get_reverse_url_prefix
 from xcube.server.config import get_url_prefix
 
 
@@ -51,3 +52,46 @@ class ConfigTest(unittest.TestCase):
                          get_url_prefix(dict(url_prefix='//api/v1//')))
         self.assertEqual('/api/v1',
                          get_url_prefix(dict(url_prefix='///api/v1//')))
+
+    def test_get_reverse_url_prefix(self):
+        self.assertEqual('',
+                         get_reverse_url_prefix(dict()))
+        self.assertEqual('',
+                         get_reverse_url_prefix(dict(reverse_url_prefix='')))
+        self.assertEqual('',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix=None)))
+        self.assertEqual('',
+                         get_reverse_url_prefix(dict(reverse_url_prefix='/')))
+        self.assertEqual('',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='//')))
+
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='proxy/9192')))
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='/proxy/9192')))
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='proxy/9192/')))
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='/proxy/9192/')))
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='/proxy/9192//')))
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='//proxy/9192//')))
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='///proxy/9192//')))
+
+        self.assertEqual('/api/v1',
+                         get_reverse_url_prefix(dict(url_prefix='api/v1')))
+        self.assertEqual('/proxy/9192',
+                         get_reverse_url_prefix(
+                             dict(reverse_url_prefix='/proxy/9192',
+                                  url_prefix='/api/v1')))

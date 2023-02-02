@@ -1,9 +1,11 @@
 import unittest
 
 import numpy as np
+import pyproj
+import pytest
 import xarray as xr
 
-from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping import GridMapping, CRS_CRS84, CRS_WGS84
 from xcube.core.resampling import affine_transform_dataset
 
 nan = np.nan
@@ -72,6 +74,33 @@ class AffineTransformDatasetTest(unittest.TestCase):
                 [1., 1.25, 1.5],
                 [1.75, 1., 1.25]
             ]))
+
+    def test_different_geographic_crses(self):
+        expected = np.array([
+            [1.25, 1.5, 0.75],
+            [1., 1.25, 1.5],
+            [1.75, 1., 1.25]
+        ])
+
+        target_gm = GridMapping.regular((3, 3), (50.05, 10.05), res,
+                                        CRS_WGS84)
+        target_ds = affine_transform_dataset(source_ds, source_gm, target_gm)
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(target_ds.refl.values, expected)
+
+        target_gm = GridMapping.regular((3, 3), (50.05, 10.05), res,
+                                        CRS_CRS84)
+        target_ds = affine_transform_dataset(source_ds, source_gm, target_gm)
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(target_ds.refl.values, expected)
+
+        target_gm = GridMapping.regular((3, 3), (50.05, 10.05), res,
+                                        pyproj.crs.CRS(3035))
+        with pytest.raises(ValueError,
+                           match='CRS of source_gm and target_gm'
+                                 ' must be equal, was "WGS 84" and'
+                                 ' "ETRS89-extended / LAEA Europe"'):
+            affine_transform_dataset(source_ds, source_gm, target_gm)
 
     def test_downscale_x2(self):
         target_gm = GridMapping.regular((8, 6), (50, 10), 2 * res, source_gm.crs)

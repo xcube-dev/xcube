@@ -228,6 +228,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         'volumes',
         'ows.wmts',
         's3',
+        'viewer',
     ]
     for api_name in server_api_names:
         ext_registry.add_extension(

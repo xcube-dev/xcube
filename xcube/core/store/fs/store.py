@@ -19,13 +19,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import fnmatch
 import os.path
 import pathlib
 import uuid
 import warnings
 from threading import RLock
 from typing import Optional, Iterator, Any, Tuple, List, Dict, \
-    Union, Container, Callable
+    Union, Container, Callable, Sequence
 
 import fsspec
 import geopandas as gpd
@@ -37,8 +38,11 @@ from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.extension import Extension
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonNullSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from .accessor import FsAccessor
@@ -93,11 +97,27 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
     'shapefile': (GEO_DATA_FRAME_TYPE.alias,),
 }
 
+_DataId = str
+_DataIdTuple = Tuple[_DataId, Dict[str, Any]]
+_DataIdIter = Iterator[_DataId]
+_DataIdTupleIter = Iterator[_DataIdTuple]
+_DataIds = Union[_DataIdIter, _DataIdTupleIter]
+
 
 class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     """
     Base class for data stores that use an underlying filesystem
     of type ``fsspec.AbstractFileSystem``.
+
+    The data store is capable of filtering the data identifiers reported
+    by ``get_data_ids()``. For this purpose the optional keywords
+    `excludes` and `includes` are used which can both take the form of
+    a wildcard pattern or a sequence of wildcard patterns:
+
+    * ``excludes``: if given and if any pattern matches the identifier,
+      the identifier is not reported.
+    * ``includes``: if not given or if any pattern matches the identifier,
+      the identifier is reported.
 
     :param fs: Optional filesystem. If not given,
         :meth:_load_fs() must return a filesystem instance.
@@ -107,13 +127,21 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         Defaults to 1.
     :param read_only: Whether this is a read-only store.
         Defaults to False.
+    :param includes: Optional sequence of wildcards that identify included
+        filesystem paths. Affects the data identifiers (paths)
+        returned by `get_data_ids()`. By default, all paths are included.
+    :param excludes: Optional sequence of wildcards that identify excluded
+        filesystem paths. Affects the data identifiers (paths)
+        returned by `get_data_ids()`. By default, no paths are excluded.
     """
 
     def __init__(self,
                  fs: Optional[fsspec.AbstractFileSystem] = None,
                  root: str = '',
                  max_depth: Optional[int] = 1,
-                 read_only: bool = False):
+                 read_only: bool = False,
+                 includes: Optional[Union[str, Sequence[str]]] = None,
+                 excludes: Optional[Union[str, Sequence[str]]] = None):
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name='fs')
         self._fs = fs
@@ -121,6 +149,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         self._root: Optional[str] = None
         self._max_depth = max_depth
         self._read_only = read_only
+        self._includes = self._normalize_wc(includes)
+        self._excludes = self._normalize_wc(excludes)
         self._lock = RLock()
 
     @property
@@ -167,22 +197,41 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @property
     def max_depth(self) -> Optional[int]:
+        """Maximum recursion depth. None means limitless."""
         return self._max_depth
 
     @property
     def read_only(self) -> bool:
+        """Whether this is a read-only store."""
         return self._read_only
+
+    @property
+    def includes(self) -> Tuple[str]:
+        """Wildcard patterns that include paths."""
+        return self._includes
+
+    @property
+    def excludes(self) -> Tuple[str]:
+        """Wildcard patterns that exclude paths."""
+        return self._excludes
 
     #########################################################################
     # MutableDataStore impl.
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
+        wc_schema = JsonComplexSchema(one_of=[
+            JsonNullSchema(),
+            JsonStringSchema(),
+            JsonArraySchema(items=JsonStringSchema())
+        ])
         return JsonObjectSchema(
             properties=dict(
                 root=JsonStringSchema(default=''),
                 max_depth=JsonIntegerSchema(nullable=True, default=1),
                 read_only=JsonBooleanSchema(default=False),
+                includes=wc_schema,
+                excludes=wc_schema,
             ),
             additional_properties=False
         )
@@ -211,12 +260,14 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_ids(self,
                      data_type: DataTypeLike = None,
-                     include_attrs: Container[str] = None) -> \
-            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+                     include_attrs: Container[str] = None) -> _DataIds:
         data_type = DataType.normalize(data_type)
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
-        yield from self._generate_data_ids('', data_type, return_tuples, 1)
+        data_ids = self._generate_data_ids('', data_type, return_tuples, 1)
+        if self._includes or self._excludes:
+            yield from self._filter_data_ids(data_ids, return_tuples)
+        yield from data_ids
 
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         assert_given(data_id, 'data_id')
@@ -609,7 +660,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                            dir_path: str,
                            data_type: DataType,
                            return_tuples: bool,
-                           current_depth: int):
+                           current_depth: int) -> _DataIds:
         root = self.root + ('/' + dir_path if dir_path else '')
         if not self.fs.exists(root):
             return
@@ -632,6 +683,31 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                                                    return_tuples,
                                                    current_depth + 1)
 
+    def _filter_data_ids(self,
+                         data_ids: _DataIds,
+                         return_tuples: bool) -> _DataIds:
+        for data_id in data_ids:
+            path = data_id[0] if return_tuples else data_id
+            excluded = False
+            for pattern in self._excludes:
+                excluded = fnmatch.fnmatch(path, pattern)
+                if excluded:
+                    break
+            if not excluded:
+                included = True
+                for pattern in self._includes:
+                    included = fnmatch.fnmatch(path, pattern)
+                    if included:
+                        break
+                if included:
+                    yield data_id
+
+    @staticmethod
+    def _normalize_wc(wc: Optional[Union[str, Sequence[str]]]) -> Tuple[str]:
+        return tuple() if not wc \
+            else (wc,) if isinstance(wc, str) \
+            else tuple(wc)
+
 
 class FsDataStore(BaseFsDataStore, FsAccessor):
     """
@@ -639,25 +715,45 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
     also implements a :class:FsAccessor which serves
     the filesystem.
 
-    :param storage_options: Parameters specific to the underlying filesystem.
-        Used to instantiate the filesystem.
+    The data store is capable of filtering the data identifiers reported
+    by ``get_data_ids()``. For this purpose the optional keywords
+    `excludes` and `includes` are used which can both take the form of
+    a wildcard pattern or a sequence of wildcard patterns:
+
+    * ``excludes``: if given and if any pattern matches the identifier,
+      the identifier is not reported.
+    * ``includes``: if not given or if any pattern matches the identifier,
+      the identifier is reported.
+
     :param root: Root or base directory.
         Defaults to "".
     :param max_depth: Maximum recursion depth. None means limitless.
         Defaults to 1.
     :param read_only: Whether this is a read-only store.
         Defaults to False.
+    :param includes: Optional sequence of wildcards that include
+        certain filesystem paths. Affects the data identifiers (paths)
+        returned by `get_data_ids()`. By default, all paths are included.
+    :param excludes: Optional sequence of wildcards that exclude
+        certain filesystem paths. Affects the data identifiers (paths)
+        returned by `get_data_ids()`. By default, no paths are excluded.
+    :param storage_options: Parameters specific to the underlying filesystem.
+        Used to instantiate the filesystem.
     """
 
     def __init__(self,
                  root: str = '',
                  max_depth: Optional[int] = 1,
                  read_only: bool = False,
+                 includes: Optional[Sequence[str]] = None,
+                 excludes: Optional[Sequence[str]] = None,
                  storage_options: Dict[str, Any] = None):
         self._storage_options = storage_options or {}
         super().__init__(root=root,
                          max_depth=max_depth,
-                         read_only=read_only)
+                         read_only=read_only,
+                         includes=includes,
+                         excludes=excludes)
 
     @property
     def protocol(self) -> str:
