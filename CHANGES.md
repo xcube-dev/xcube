@@ -16,6 +16,11 @@
 * The CLI tool `xcube edit` has been deprecated in favour of the 
   `xcube patch`. (#748)
 
+* `xcube serve` is now more tolerant with respect to datasets it can not 
+  open without errors. Implementation detail: It no longer fails if 
+  opening datasets raises any exception other than `DatasetIsNotACubeError`.
+  (#789)
+
 ### Fixes
 
 * xcube CLI tools no longer emit warnings when trying to import
