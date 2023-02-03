@@ -25,10 +25,12 @@ import sys
 import functools
 import numpy as np
 import pandas as pd
+import pyproj
 
 from xcube.core.select import select_subset
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
+from xcube.core.gridmapping import CRS_CRS84
 from .api import api
 from .config import DEFAULT_MAX_VOXEL_COUNT
 from .context import VolumesContext
@@ -65,7 +67,8 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
                        {
                            "name": "bbox",
                            "in": "query",
-                           "description": 'Bounding box',
+                           "description": 'Bounding box in degrees (WGS-84)'
+                                          ' using format x1,y1,x2,y2',
                            "schema": {
                                "type": "string",
                            }
@@ -120,6 +123,9 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
                                               type=pd.Timestamp,
                                               default=None)
 
+        time_range = [start_date, end_date] if start_date or end_date \
+            else None
+
         encoding = self.request.get_query_arg('encoding',
                                               type=str,
                                               default="gz")
@@ -130,6 +136,14 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
             )
 
         ml_dataset = self.ctx.datasets_ctx.get_ml_dataset(datasetId)
+        grid_mapping = ml_dataset.grid_mapping
+
+        if bbox is not None and not grid_mapping.crs.is_geographic:
+            transformer = pyproj.Transformer.from_crs(CRS_CRS84,
+                                                      grid_mapping.crs)
+            x1, y1, x2, y2 = bbox
+            (x1, x2), (y1, y2) = transformer.transform((x1, x2), (y1, y2))
+            bbox = x1, y1, x2, y2
 
         dataset = self.ctx.datasets_ctx.get_dataset(
             datasetId,
@@ -138,9 +152,9 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
         var = select_subset(
             dataset,
             var_names=[varName],
+            time_range=time_range,
             bbox=bbox,
-            time_range=[start_date,
-                        end_date] if start_date or end_date else None
+            grid_mapping=ml_dataset.grid_mapping
         )[varName]
 
         if var.ndim != 3:

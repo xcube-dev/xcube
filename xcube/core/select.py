@@ -19,15 +19,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
+from typing import Collection, Optional, Tuple, Callable, Dict, Any, \
+    List, Mapping
+from typing import Union
+
 import cftime
 import dask.array as da
 import numpy as np
 import pandas as pd
-import warnings
 import xarray as xr
-from typing import Collection, Optional, Tuple, Callable, Dict, Any, \
-    List, Mapping
-from typing import Union
 
 from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_given
@@ -38,11 +39,14 @@ TimeRange = Union[Tuple[Optional[str], Optional[str]],
                   Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]]
 
 
-def select_subset(dataset: xr.Dataset,
-                  *,
-                  var_names: Collection[str] = None,
-                  bbox: Bbox = None,
-                  time_range: TimeRange = None):
+def select_subset(
+        dataset: xr.Dataset,
+        *,
+        var_names: Optional[Collection[str]] = None,
+        bbox: Optional[Bbox] = None,
+        time_range: Optional[TimeRange] = None,
+        grid_mapping: Optional[GridMapping] = None
+):
     """
     Create a subset from *dataset* given *var_names*,
     *bbox*, *time_range*.
@@ -58,20 +62,29 @@ def select_subset(dataset: xr.Dataset,
     :param bbox: Optional bounding box in the dataset's
         CRS coordinate units.
     :param time_range: Optional time range
+    :param grid_mapping: Optional dataset grid mapping.
     :return: a subset of *dataset*, or unchanged *dataset*
         if no keyword-arguments are used.
     """
     if var_names is not None:
-        dataset = select_variables_subset(dataset, var_names=var_names)
+        dataset = select_variables_subset(
+            dataset, var_names=var_names
+        )
     if bbox is not None:
-        dataset = select_spatial_subset(dataset, xy_bbox=bbox)
+        dataset = select_spatial_subset(
+            dataset, xy_bbox=bbox, grid_mapping=grid_mapping
+        )
     if time_range is not None:
-        dataset = select_temporal_subset(dataset, time_range=time_range)
+        dataset = select_temporal_subset(
+            dataset, time_range=time_range
+        )
     return dataset
 
 
-def select_variables_subset(dataset: xr.Dataset,
-                            var_names: Collection[str] = None) -> xr.Dataset:
+def select_variables_subset(
+        dataset: xr.Dataset,
+        var_names: Optional[Collection[str]] = None
+) -> xr.Dataset:
     """
     Select data variable from given *dataset* and create new dataset.
 
@@ -88,15 +101,14 @@ def select_variables_subset(dataset: xr.Dataset,
     return dataset.drop_vars(dropped_variables)
 
 
-def select_spatial_subset(dataset: xr.Dataset,
-                          ij_bbox: Tuple[int, int, int, int] = None,
-                          ij_border: int = 0,
-                          xy_bbox: Tuple[float, float, float, float] = None,
-                          xy_border: float = 0.,
-                          grid_mapping: GridMapping = None,
-                          geo_coding: GridMapping = None,
-                          xy_names: Tuple[str, str] = None) \
-        -> Optional[xr.Dataset]:
+def select_spatial_subset(
+        dataset: xr.Dataset,
+        ij_bbox: Optional[Tuple[int, int, int, int]] = None,
+        ij_border: int = 0,
+        xy_bbox: Optional[Tuple[float, float, float, float]] = None,
+        xy_border: float = 0.,
+        grid_mapping: Optional[GridMapping] = None,
+) -> Optional[xr.Dataset]:
     """
     Select a spatial subset of *dataset* for the
     bounding box *ij_bbox* or *xy_bbox*.
@@ -113,9 +125,6 @@ def select_spatial_subset(dataset: xr.Dataset,
     :param xy_bbox: The bounding box in x,y coordinates.
     :param xy_border: Border in units of the x,y coordinates.
     :param grid_mapping: Optional dataset grid mapping.
-    :param geo_coding: Deprecated. Use *grid_mapping* instead.
-    :param xy_names: Optional tuple of the x- and y-coordinate
-        variables in *dataset*. Ignored if *geo_coding* is given.
     :return: Spatial dataset subset
     """
 
@@ -124,12 +133,6 @@ def select_spatial_subset(dataset: xr.Dataset,
     if ij_bbox and xy_bbox:
         raise ValueError('Only one of ij_bbox and xy_bbox can be given')
 
-    if geo_coding:
-        warnings.warn('keyword "geo_coding" has been deprecated,'
-                      ' use "grid_mapping" instead',
-                      DeprecationWarning)
-
-    grid_mapping = grid_mapping or geo_coding
     if grid_mapping is None:
         grid_mapping = GridMapping.from_dataset(dataset)
     x_name, y_name = grid_mapping.xy_var_names
