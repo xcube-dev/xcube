@@ -463,7 +463,7 @@ class JsonObjectSchema(JsonSchema):
         self.additional_properties = additional_properties
         self.min_properties = min_properties
         self.max_properties = max_properties
-        self.required = set(required) if required else set()
+        self.required = list(required) if required else []
         self.dependencies = dict(dependencies) if dependencies else None
 
     def to_dict(self) -> Dict[str, Any]:
