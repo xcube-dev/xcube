@@ -1,5 +1,4 @@
 .. _`WMTS`: https://en.wikipedia.org/wiki/Web_Map_Tile_Service
-.. _`xcube Web API reference`: https://app.swaggerhub.com/apis/bcdev/xcube-server/v0.11.2
 
 
 ==================
@@ -18,6 +17,7 @@ xcube's RESTful web API is used to publish data cubes to clients. Using the API,
 Later versions of API will also allow for xcube dataset management including generation, modification, and deletion
 of xcube datasets.
 
-The complete description of all available functions is provided in the in the `xcube Web API reference`_.
+The complete description of all available functions is provided via openapi.html after starting the server locally.
+Please checkout the :doc:`examples/xcube_serve` to learn how to do access it.
 
 The web API is provided through the *xcube server* which is started using the :doc:`cli/xcube_serve` CLI command.

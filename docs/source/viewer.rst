@@ -1,10 +1,7 @@
 .. _`xcube viewer demo`: https://bc-viewer.brockmann-consult.de/
 .. _`xcube-viewer`: https://github.com/dcs4cop/xcube-viewer
-.. _`DCS4COP Demo viewer`: https://eodatabee-viewer.brockmann-consult.de
 .. _`README`: https://github.com/dcs4cop/xcube-viewer/blob/master/README.md
-
 .. _`Euro Data Cube`: https://edc-viewer.brockmann-consult.de/
-.. _`Data Cube Service for Copernicus`: https://dcs4cop.eu/
 
 ==========
 Viewer App
@@ -18,10 +15,8 @@ Demo
 To test the viewer app, you can use the `xcube viewer demo`_. This is our Brockmann Consult Demo xcube viewer.
 Via the viewer's settings it is possible to change the xcube server url which is used for displaying data.
 To do so open the viewer's settings panels, select "Server". A "Select Server" panel is opened, click the "+"
-button to add a new server. Here are two demo servers that you may add for testing:
+button to add a new server. Here is demo server that you may add for testing:
 
-* DCS4COP Demo Server (``https://eodatabee-api.brockmann-consult.de/api``) providing
-  ocean color variables in the North Sea area for the `Data Cube Service for Copernicus`_ (DCS4COP) EU project;
 * Euro Data Cube Server (``https://edc-api.brockmann-consult.de/api``) has integrated amongst others a data cube with
   global essential climate variables (ECVs) variables from the ESA Earth System Data Lab Project.
   To access the Euro Data Cube viewer directly please visit https://edc-viewer.brockmann-consult.de .
