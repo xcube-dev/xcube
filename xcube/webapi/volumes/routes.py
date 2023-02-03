@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2023 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -22,7 +22,7 @@
 import gzip
 import math
 import sys
-
+import functools
 import numpy as np
 import pandas as pd
 
@@ -30,6 +30,7 @@ from xcube.core.select import select_subset
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
 from .api import api
+from .config import DEFAULT_MAX_VOXEL_COUNT
 from .context import VolumesContext
 
 
@@ -37,9 +38,13 @@ from .context import VolumesContext
 @api.route('/volumes/{datasetId}/{varName}')
 class VolumesContextHandler(ApiHandler[VolumesContext]):
     @api.operation(operation_id='getVolume',
-                   summary="Get the volume data for a variable"
-                           " in NRRD format.",
-                   description="This is an experimental feature",
+                   summary="Get the volume data for a variable.",
+                   description=(
+                           "This is an experimental feature."
+                           " The volume data is returned in NRRD format."
+                           " Details of the NRRD format can be found at"
+                           " https://teem.sourceforge.net/nrrd/format.html"
+                   ),
                    parameters=[
                        {
                            "name": "datasetId",
@@ -143,9 +148,15 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
                 f'Variable must be 3-D, got {var.ndim}-D'
             )
 
-        if np.product(var.shape) > 256 ** 3:
+        voxel_count = functools.reduce(lambda x, y: x * y, var.shape, 1)
+        max_voxel_count = self.ctx.config \
+            .get("VolumesAccess", {}) \
+            .get("MaxVoxelCount", DEFAULT_MAX_VOXEL_COUNT)
+        if voxel_count > max_voxel_count:
             raise ApiError.BadRequest(
-                f'Volume too large, please select a smaller dataset subset'
+                f'Volume too large, please select a smaller dataset subset.'
+                f' Maximum is {max_voxel_count} voxels,'
+                f' got {" x ".join(map(str, var.shape))} = {voxel_count}.'
             )
 
         # TODO (forman): allow for any dtype
@@ -154,19 +165,16 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
             values = values[:, ::-1, :]
         values = np.where(np.isnan(values), 0.0, values)
         data = values.tobytes(order='C')
-
-        size_z, size_y, size_x = var.shape
-
-        # TODO (forman): find more suitable normalisation
-        scale_x = scale_y = 100. / max(size_x, size_y)
-        scale_z = 100. / size_z
-
-        data = values.tobytes(order='C')
         if encoding == 'gz':
             data = gzip.compress(data)
 
         block_size = 1024 * 1024
         num_blocks = math.ceil(len(data) / block_size)
+
+        size_z, size_y, size_x = var.shape
+        # TODO (forman): find more suitable normalisation
+        scale_x = scale_y = 100. / max(size_x, size_y)
+        scale_z = 100. / size_z
 
         nrrd_header = (
             "NRRD0004\n"
@@ -198,8 +206,3 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
 
         await self.response.finish()
 
-
-def compress_gzip(data: bytes) -> bytes:
-    with gzip.GzipFile(fileobj=bytesIO(data), mode='wb') as f:
-        f.write(data)
-    return buf.getvalue()

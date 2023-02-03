@@ -19,18 +19,24 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import ApiContext
-from xcube.server.api import Context
-from ..datasets.context import DatasetsContext
+from xcube.util.jsonschema import JsonIntegerSchema
+from xcube.util.jsonschema import JsonObjectSchema
 
 
-class VolumesContext(ApiContext):
+DEFAULT_MAX_VOXEL_COUNT = 256 ** 3
 
-    def __init__(self, server_ctx: Context):
-        super().__init__(server_ctx)
-        self._datasets_ctx = server_ctx.get_api_ctx("datasets",
-                                                    cls=DatasetsContext)
+VOLUMES_ACCESS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        MaxVoxelCount=JsonIntegerSchema(
+            minimum=10 ** 3,
+            default=DEFAULT_MAX_VOXEL_COUNT,
+        ),
+    ),
+    additional_properties=False,
+)
 
-    @property
-    def datasets_ctx(self) -> DatasetsContext:
-        return self._datasets_ctx
+CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        VolumesAccess=VOLUMES_ACCESS_SCHEMA,
+    )
+)

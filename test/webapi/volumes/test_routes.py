@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2023 by the xcube team and contributors
+# Copyright (c) 2022 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -19,18 +19,19 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import ApiContext
-from xcube.server.api import Context
-from ..datasets.context import DatasetsContext
+from ..helpers import RoutesTestCase
 
 
-class VolumesContext(ApiContext):
+class VolumesRoutesTest(RoutesTestCase):
 
-    def __init__(self, server_ctx: Context):
-        super().__init__(server_ctx)
-        self._datasets_ctx = server_ctx.get_api_ctx("datasets",
-                                                    cls=DatasetsContext)
+    def test_fetch_dataset_volume_ok(self):
+        response = self.fetch('/volumes/demo/conc_chl?bbox=1.0,51.0,2.0,51.5')
+        self.assertResponseOK(response)
 
-    @property
-    def datasets_ctx(self) -> DatasetsContext:
-        return self._datasets_ctx
+    def test_fetch_dataset_volume_404(self):
+        response = self.fetch('/volumes/demo/conc_x?bbox=1.0,51.0,2.0,51.5')
+        self.assertResourceNotFoundResponse(response)
+
+    def test_fetch_dataset_volume_400(self):
+        response = self.fetch('/volumes/demo/conc_chl?bbox=1.0,51.0')
+        self.assertBadRequestResponse(response)

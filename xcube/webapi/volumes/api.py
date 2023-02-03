@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2023 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -20,11 +20,13 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
+from .config import CONFIG_SCHEMA
 from .context import VolumesContext
 
 api = Api(
     'volumes',
     description='xcube Volumes API',
     required_apis=['datasets'],
+    config_schema=CONFIG_SCHEMA,
     create_ctx=VolumesContext
 )
