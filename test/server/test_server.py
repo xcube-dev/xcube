@@ -110,6 +110,7 @@ class ServerTest(unittest.TestCase):
                          server.ctx.config)
 
     def test_config_schema_effectively_merged(self):
+        self.maxDiff = None
         extension_registry = mock_extension_registry([
             (
                 "datasets",
