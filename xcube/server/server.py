@@ -334,9 +334,9 @@ class Server(AsyncExecution):
                                  f' is already defined.')
             config_schema.properties[k] = v
         if config_schema_update.required:
-            config_schema.required.update(
-                config_schema_update.required
-            )
+            for r in config_schema_update.required:
+                if r not in config_schema.required:
+                    config_schema.required.append(r)
 
     def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
         """Get the OpenAPI JSON document for this server."""

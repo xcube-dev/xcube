@@ -235,7 +235,7 @@ class CubeInfoWithCosts(CubeInfo):
     def get_schema(cls) -> JsonObjectSchema:
         schema = super().get_schema()
         schema.properties.update(cost_estimation=CostEstimation.get_schema())
-        schema.required.add('cost_estimation')
+        schema.required.append('cost_estimation')
         schema.factory = cls
         return schema
 
