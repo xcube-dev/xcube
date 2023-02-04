@@ -29,9 +29,58 @@ from .controllers import WMTS_VERSION
 from .controllers import WMTS_WEB_MERCATOR_TMS_ID
 from .controllers import get_crs_name_from_tms_id
 from .controllers import get_wmts_capabilities_xml
+from ...datasets import PATH_PARAM_DATASET_ID
+from ...datasets import PATH_PARAM_VAR_NAME
+from ...datasets import QUERY_PARAM_CBAR
+from ...datasets import QUERY_PARAM_CRS
+from ...datasets import QUERY_PARAM_VMAX
+from ...datasets import QUERY_PARAM_VMIN
+from ...tiles import PATH_PARAM_X
+from ...tiles import PATH_PARAM_Y
+from ...tiles import PATH_PARAM_Z
+from ...tiles import QUERY_PARAM_RETINA
+from ...tiles import QUERY_PARAM_TIME
 from ...tiles.controllers import compute_ml_dataset_tile
 
 _VALID_WMTS_TMS_IDS = (WMTS_CRS84_TMS_ID, WMTS_WEB_MERCATOR_TMS_ID)
+
+PATH_PARAM_TMS_ID = {
+    "name": "tmsId",
+    "in": "query",
+    "description": "Tile matrix set identifier",
+    "schema": {
+        "type": "string",
+        "enum": [WMTS_CRS84_TMS_ID, WMTS_WEB_MERCATOR_TMS_ID],
+    }
+}
+
+TILE_PARAMETERS = [
+    PATH_PARAM_DATASET_ID,
+    PATH_PARAM_VAR_NAME,
+    PATH_PARAM_Z,
+    PATH_PARAM_Y,
+    PATH_PARAM_X,
+    QUERY_PARAM_CRS,
+    QUERY_PARAM_VMIN,
+    QUERY_PARAM_VMAX,
+    QUERY_PARAM_CBAR,
+    QUERY_PARAM_TIME,
+    QUERY_PARAM_RETINA,
+]
+
+TMS_TILE_PARAMETERS = [
+    PATH_PARAM_DATASET_ID,
+    PATH_PARAM_VAR_NAME,
+    PATH_PARAM_Z,
+    PATH_PARAM_Y,
+    PATH_PARAM_X,
+    QUERY_PARAM_CRS,
+    QUERY_PARAM_VMIN,
+    QUERY_PARAM_VMAX,
+    QUERY_PARAM_CBAR,
+    QUERY_PARAM_TIME,
+    QUERY_PARAM_RETINA,
+]
 
 
 @api.route('/wmts/1.0.0/WMTSCapabilities.xml')
@@ -56,7 +105,8 @@ class WmtsCapabilitiesXmlForTmsHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
     @api.operation(operationId='getWmtsTmsCapabilities',
                    summary='Gets the WMTS capabilities'
-                           ' for tile matrix set as XML document')
+                           ' for tile matrix set as XML document',
+                   parameters=[PATH_PARAM_TMS_ID])
     async def get(self, tmsId):
         self.request.make_query_lower_case()
         _assert_valid_tms_id(tmsId)
@@ -75,7 +125,8 @@ class WmtsCapabilitiesXmlForTmsHandler(ApiHandler[WmtsContext]):
 class WmtsImageTileHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
     @api.operation(operationId='getWmtsImageTile',
-                   summary='Gets a WMTS image tile in PNG format')
+                   summary='Gets a WMTS image tile in PNG format.',
+                   parameters=TILE_PARAMETERS)
     async def get(self,
                   datasetId: str,
                   varName: str,
@@ -105,7 +156,8 @@ class WmtsImageTileForTmsHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
     @api.operation(operationId='getWmtsTmsImageTile',
                    summary='Gets a WMTS image tile'
-                           ' for given tile matrix set in PNG format')
+                           ' for given tile matrix set in PNG format',
+                   parameters=TMS_TILE_PARAMETERS)
     async def get(self,
                   datasetId: str,
                   varName: str,
@@ -131,7 +183,8 @@ class WmtsImageTileForTmsHandler(ApiHandler[WmtsContext]):
 @api.route('/wmts/kvp')
 class WmtsKvpHandler(ApiHandler[WmtsContext]):
     @api.operation(operationId='invokeWmtsMethodFromKvp',
-                   summary='Invokes the WMTS by key-value pairs')
+                   summary='Invokes the WMTS by key-value pairs',
+                   parameters=TILE_PARAMETERS)
     async def get(self):
         self.request.make_query_lower_case()
         service = self.request.get_query_arg('service')

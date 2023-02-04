@@ -30,7 +30,66 @@ from .controllers import get_dataset_coordinates
 from .controllers import get_dataset_place_group
 from .controllers import get_datasets
 from .controllers import get_legend
+from ..places import PATH_PARAM_PLACE_GROUP_ID
 from ...util.assertions import assert_true
+
+PATH_PARAM_DATASET_ID = {
+    "name": "datasetId",
+    "in": "path",
+    "description": "Dataset identifier",
+    "schema": {"type": "string"}
+}
+
+PATH_PARAM_VAR_NAME = {
+    "name": "varName",
+    "in": "path",
+    "description": "Variable name",
+    "schema": {"type": "string"}
+}
+
+QUERY_PARAM_CRS = {
+    "name": "crs",
+    "in": "query",
+    "description": "The tile grid's spatial CRS",
+    "schema": {
+        "type": "string",
+        "enum": ["EPSG:3857", "CRS84"],
+        "default": "CRS84"
+    }
+}
+
+QUERY_PARAM_VMIN = {
+    "name": "vmin",
+    "in": "query",
+    "description": "Minimum value of variable"
+                   " for color mapping",
+    "schema": {
+        "type": "number",
+        "default": 0
+    }
+}
+
+QUERY_PARAM_VMAX = {
+    "name": "vmax",
+    "in": "query",
+    "description": "Maximum value of variable"
+                   " for color mapping",
+    "schema": {
+        "type": "number",
+        "default": 1
+    }
+}
+
+QUERY_PARAM_CBAR = {
+    "name": "cbar",
+    "in": "query",
+    "description": "Name of the (matplotlib) color bar"
+                   " for color mapping",
+    "schema": {
+        "type": "string",
+        "default": "bone"
+    }
+}
 
 
 @api.route('/datasets')
@@ -39,7 +98,7 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
 
     @api.operation(
         operation_id="getDatasets",
-        summary="Get the published datasets",
+        summary="Get all datasets.",
         parameters=[
             {
                 "name": "details",
@@ -86,7 +145,8 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
 class DatasetHandler(ApiHandler[DatasetsContext]):
     # noinspection PyPep8Naming
     @api.operation(operation_id='getDataset',
-                   summary='Get dataset details')
+                   summary='Get the details of a dataset.',
+                   parameters=[PATH_PARAM_DATASET_ID])
     async def get(self, datasetId: str):
         granted_scopes = self.ctx.auth_ctx.get_granted_scopes(
             self.request.headers
@@ -104,7 +164,8 @@ class DatasetCoordsHandler(ApiHandler[DatasetsContext]):
 
     # noinspection PyPep8Naming
     @api.operation(operation_id='getDatasetCoordinates',
-                   summary='Get dataset coordinates')
+                   summary='Get the coordinates for a dimension of a dataset.',
+                   parameters=[PATH_PARAM_DATASET_ID])
     async def get(self, datasetId: str, dimName: str):
         result = get_dataset_coordinates(self.ctx, datasetId, dimName)
         self.response.set_header('Content-Type', 'application/json')
@@ -117,7 +178,11 @@ class DatasetPlaceGroupHandler(ApiHandler[DatasetsContext]):
     """Get places for given dataset and place group."""
 
     @api.operation(operation_id='getDatasetPlaceGroup',
-                   summary='Get places for given dataset and place group')
+                   summary='Get places for given dataset and place group.',
+                   parameters=[
+                       PATH_PARAM_DATASET_ID,
+                       PATH_PARAM_PLACE_GROUP_ID
+                   ])
     def get(self, datasetId: str, placeGroupId: str):
         response = get_dataset_place_group(self.ctx,
                                            datasetId,
@@ -132,7 +197,11 @@ class PlacesForDatasetHandler(ApiHandler[DatasetsContext]):
     @api.operation(operation_id='findPlacesForDataset',
                    tags=['places'],
                    summary='Find places in place group for'
-                           ' bounding box of given dataset')
+                           ' bounding box of given dataset.',
+                   parameters=[
+                       PATH_PARAM_PLACE_GROUP_ID,
+                       PATH_PARAM_DATASET_ID
+                   ])
     def get(self, placeGroupId: str, datasetId: str):
         query_expr = self.request.get_query_arg("query", default=None)
         comb_op = self.request.get_query_arg("comb", default="and")
@@ -160,11 +229,40 @@ class LegendHandler(ApiHandler[DatasetsContext]):
         await self.response.finish(legend)
 
 
+LEGEND_PARAMETERS = [
+    PATH_PARAM_DATASET_ID,
+    PATH_PARAM_VAR_NAME,
+    QUERY_PARAM_CBAR,
+    QUERY_PARAM_VMIN,
+    QUERY_PARAM_VMAX,
+    {
+        "name": "width",
+        "in": "query",
+        "description": "Width of the legend in pixels",
+        "schema": {
+            "type": "number",
+            "default": 256
+        }
+    },
+    {
+        "name": "height",
+        "in": "query",
+        "description": "Height of the legend in pixels",
+        "schema": {
+            "type": "number",
+            "default": 16
+        }
+    },
+]
+
+
 # noinspection PyPep8Naming
 @api.route('/datasets/{datasetId}/vars/{varName}/legend.png')
 class OldLegendHandler(LegendHandler):
     @api.operation(operation_id='getLegendForVariable',
-                   summary='Deprecated.')
+                   summary='Get the legend as PNG used for the tiles'
+                           ' for given variable. Deprecated!',
+                   parameters=LEGEND_PARAMETERS)
     async def get(self, datasetId: str, varName: str):
         await super().get(datasetId, varName)
 
@@ -175,13 +273,13 @@ class NewLegendHandler(LegendHandler):
     @api.operation(operation_id='getLegendForTiles',
                    tags=["tiles"],
                    summary='Get the legend as PNG used for the tiles'
-                           ' for given variable.')
+                           ' for given variable.',
+                   parameters=LEGEND_PARAMETERS)
     async def get(self, datasetId: str, varName: str):
         await super().get(datasetId, varName)
 
 
 # TODO (forman): move as endpoint "styles/colorbars" into API "styles"
-
 
 @api.route('/colorbars')
 class StylesColorBarsHandler(ApiHandler):

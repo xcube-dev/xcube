@@ -24,13 +24,22 @@ from .api import api
 from .context import PlacesContext
 from .controllers import find_places
 
+PATH_PARAM_PLACE_GROUP_ID = {
+    "name": "placeGroupId",
+    "in": "path",
+    "description": "Place group identifier",
+    "schema": {"type": "string"}
+}
+
 
 @api.route('/places')
 class PlaceGroupsHandler(ApiHandler[PlacesContext]):
-    @api.operation(operationId='getPlaceGroups')
+    @api.operation(operationId='getPlaceGroups',
+                   summary='Get place groups including all places.')
     def get(self):
         place_groups = self.ctx.get_global_place_groups(
-            self.request.reverse_base_url)
+            self.request.reverse_base_url
+        )
         self.response.finish({"placeGroups": place_groups})
 
 
@@ -42,6 +51,7 @@ class FindPlacesHandler(ApiHandler):
     @api.operation(operationId='findPlacesInPlaceGroup',
                    summary='Find places in a given place group.',
                    parameters=[
+                       PATH_PARAM_PLACE_GROUP_ID,
                        {
                            "name": "geom",
                            "in": "query",
@@ -79,6 +89,7 @@ class FindPlacesHandler(ApiHandler):
     @api.operation(operationId='findPlacesInPlaceGroup',
                    summary='Find places in a given place group'
                            ' for a GeoJSON object.',
+                   parameters=[PATH_PARAM_PLACE_GROUP_ID],
                    description='The request body must be a GeoJSON object.')
     def post(self, placeGroupId: str):
         # Not implemented yet:

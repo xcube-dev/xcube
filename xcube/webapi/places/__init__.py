@@ -20,4 +20,5 @@
 # DEALINGS IN THE SOFTWARE.
 
 from .context import PlacesContext
+from .routes import PATH_PARAM_PLACE_GROUP_ID
 from .routes import api
