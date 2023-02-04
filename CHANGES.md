@@ -120,7 +120,7 @@
 * Fixed a problem with xcube server's WMTS implementation.
   For multi-level resolution datasets with very coarse low resolution levels, 
   the tile matrix sets `WorldCRS84Quad` and `WorldWebMercatorQuad` have 
-  reported a negative minimum z-level.
+  reported a negative minimum z-level. (#673)
 
 * Implementation of function `xcube.core.geom.rasterize_features()` 
   has been changed to account for consistent use of a target variable's
