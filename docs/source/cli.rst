@@ -75,7 +75,6 @@ Cube conversion
 .. toctree::
    :maxdepth: 1
 
-   cli/xcube_tile
    cli/xcube_level
 
 Cube publication
