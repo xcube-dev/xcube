@@ -19,21 +19,24 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import functools
 import gzip
 import math
 import sys
-import functools
+
 import numpy as np
 import pandas as pd
 import pyproj
 
+from xcube.core.gridmapping import CRS_CRS84
 from xcube.core.select import select_subset
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
-from xcube.core.gridmapping import CRS_CRS84
 from .api import api
 from .config import DEFAULT_MAX_VOXEL_COUNT
 from .context import VolumesContext
+from ..datasets import PATH_PARAM_DATASET_ID
+from ..datasets import PATH_PARAM_VAR_NAME
 
 
 # noinspection PyPep8Naming
@@ -48,22 +51,8 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
                            " https://teem.sourceforge.net/nrrd/format.html"
                    ),
                    parameters=[
-                       {
-                           "name": "datasetId",
-                           "in": "path",
-                           "description": "Dataset identifier",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
-                       {
-                           "name": "varName",
-                           "in": "path",
-                           "description": "Name of variable in dataset",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
+                       PATH_PARAM_DATASET_ID,
+                       PATH_PARAM_VAR_NAME,
                        {
                            "name": "bbox",
                            "in": "query",
