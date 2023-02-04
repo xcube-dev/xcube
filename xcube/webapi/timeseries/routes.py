@@ -25,6 +25,8 @@ from xcube.server.api import ApiHandler
 from .api import api
 from .context import TimeSeriesContext
 from .controllers import get_time_series
+from ..datasets import PATH_PARAM_DATASET_ID
+from ..datasets import PATH_PARAM_VAR_NAME
 
 
 # noinspection PyPep8Naming
@@ -34,22 +36,8 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                    summary="Get the time-series for a variable"
                            " and given GeoJSON object.",
                    parameters=[
-                       {
-                           "name": "datasetId",
-                           "in": "path",
-                           "description": "Dataset identifier",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
-                       {
-                           "name": "varName",
-                           "in": "path",
-                           "description": "Name of variable in dataset",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
+                       PATH_PARAM_DATASET_ID,
+                       PATH_PARAM_VAR_NAME,
                        {
                            "name": "aggMethods",
                            "in": "query",

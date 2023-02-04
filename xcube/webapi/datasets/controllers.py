@@ -51,7 +51,6 @@ from ..places.controllers import find_places
 _CRS84 = pyproj.CRS.from_string('CRS84')
 
 
-
 def find_dataset_places(ctx: DatasetsContext,
                         place_group_id: str,
                         ds_id: str,

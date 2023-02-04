@@ -122,7 +122,7 @@ Leveled xcube datasets are configured this way:
     Datasets:
 
       - Identifier: my_multi_level_dataset
-        Title: "My Multi-Level Dataset"
+        Title: My Multi-Level Dataset
         FileSystem: file
         Path: my_multi_level_dataset.levels
 
@@ -137,13 +137,13 @@ and the it is referred to by the non-hidden, actual dataset using the ``TimeSeri
     Datasets:
 
       - Identifier: my_dataset
-        Title: "My Dataset"
+        Title: My Dataset
         FileSystem: file
         Path: my_dataset.zarr
         TimeSeriesDataset: my_dataset_opt_for_ts
 
       - Identifier: my_dataset_opt_for_ts
-        Title: "My Dataset optimized for Time-Series"
+        Title: My Dataset optimized for Time-Series
         FileSystem: file
         Path: my_ts_opt_dataset.zarr
         Hidden: True
@@ -225,8 +225,8 @@ S3-compatible object storage:
         BoundingBox: [0.0, 50, 5.0, 52.5]
         FileSystem: s3
         Endpoint: "https://s3.eu-central-1.amazonaws.com"
-        Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
-        Region: "eu-central-1"
+        Path: xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr
+        Region: eu-central-1
         Anonymous: true
         Style: default
         ChunkCacheSize: 250M
@@ -303,15 +303,15 @@ publish static (persistent) xcube datasets stored in the local filesystem:
 .. code:: yaml
 
       - Identifier: local
-        Title: "Local OLCI L2C cube for region SNS"
+        Title: Local OLCI L2C cube for region SNS
         BoundingBox: [0.0, 50, 5.0, 52.5]
         FileSystem: file
         Path: cube-1-250-250.zarr
         Style: default
         TimeSeriesDataset: local_ts
         Augmentation:
-          Path: "compute_extra_vars.py"
-          Function: "compute_variables"
+          Path: compute_extra_vars.py
+          Function: compute_variables
           InputParameters:
             factor_chl: 0.2
             factor_tsm: 0.7
@@ -337,7 +337,7 @@ datacube will not appear among the displayed datasets in xcube viewer.
 
   # Will not appear at all, because it is a "hidden" resource
   - Identifier: local_ts
-    Title: "'local' optimized for time-series"
+    Title: 'local' optimized for time-series
     BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: file
     Path: cube-5-100-200.zarr
@@ -369,11 +369,11 @@ obtains daily or weekly averages of an xcube dataset named "local".
     Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
     BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: memory
-    Path: "resample_in_time.py"
-    Function: "compute_dataset"
+    Path: resample_in_time.py
+    Function: compute_dataset
     InputDatasets: ["local"]
     InputParameters:
-      period: "1W"
+      period: 1W
       incl_stdev: True
     Style: default
     PlaceGroups:
@@ -395,6 +395,15 @@ The function receives one or more datasets of type ``xarray.Dataset``
 as defined by *InputDatasets* and optional keyword-arguments as
 given by *InputParameters*, if any. It must return a new ``xarray.Dataset``
 with same spatial coordinates as the inputs.
+If "resample_in_time.py" is compressed among any other modules in a zip archive, the original module name
+must be indicated by the prefix to the function name:
+
+.. code:: yaml
+
+    Path: modules.zip
+    Function: resample_in_time:compute_dataset
+    InputDatasets: ["local"]
+
 
 *Class* [mandatory, mutually exclusive with *Function*]
 references a callable in the Python file given by *Path*. Must be suffixed
@@ -429,7 +438,7 @@ Place groups may be stored e.g. in shapefiles or a geoJson.
     PlaceGroups:
       - Identifier: outside-cube
         Title: Points outside the cube
-        Path: "places/outside-cube.geojson"
+        Path: places/outside-cube.geojson
         PropertyMapping:
           image: "${base_url}/images/outside-cube/${ID}.jpg"
 
@@ -502,13 +511,13 @@ within the xcube viewer.
       - Identifier: default
         ColorMappings:
           conc_chl:
-            ColorBar: "plasma"
+            ColorBar: plasma
             ValueRange: [0., 24.]
           conc_tsm:
-            ColorBar: "PuBuGn"
+            ColorBar: PuBuGn
             ValueRange: [0., 100.]
           kd489:
-            ColorBar: "jet"
+            ColorBar: jet
             ValueRange: [0., 6.]
           rgb:
             Red:
@@ -535,12 +544,25 @@ The default value ranges are determined by:
 The colorbar name can be set using the
 
 * xcube-specific variable attribute ``color_bar_name``;
-* Otherwise, the default colorbar name will be ``"viridis"``.
+* Otherwise, the default colorbar name will be ``viridis``.
 
 The special name *rgb* may be used to generate an RGB-image
 from any other three dataset variables used for the individual
 *Red*, *Green* and *Blue* channels of the resulting image.
 An example is shown in the configuration above.
+
+Colormaps may be reversed by using name suffix "_r".
+They also can have alpha blending indicated by name suffix "_alpha".
+Both, reversed and alpha blending is possible as well and can be configured by name suffix "_r_alpha".
+
+.. code:: yaml
+
+    Styles:
+      - Identifier: default
+        ColorMappings:
+          conc_chl:
+            ColorBar: plasma_r_alpha
+            ValueRange: [0., 24.]
 
 .. _example:
 
@@ -591,7 +613,7 @@ Datasets, which are stored in the same location, may be configured in the config
             #  endpoint_url: https://s3.eu-central-1.amazonaws.com
         Datasets:
           - Path: "*2.zarr"
-            Style: "default"
+            Style: default
             # ChunkCacheSize: 1G
 
 *Identifier* [mandatory]
@@ -630,8 +652,8 @@ Example Stores
 Web API
 =======
 
-The xcube server has a dedicated `Web API Documentation <https://app.swaggerhub.com/apis-docs/bcdev/xcube-server>`_
-on SwaggerHub. It also allows you to explore the API of existing xcube-servers.
+The xcube server has a dedicated self describing Web API Documentation. After starting the server, you can check the
+various functions provided by xcube Web API. To explore the functions, open ``<base-url>/openapi.html``.
 
 The xcube server implements the OGC WMTS RESTful and KVP architectural styles of the
 `OGC WMTS 1.0.0 specification <http://www.opengeospatial.org/standards/wmts>`_. The following operations are supported:
