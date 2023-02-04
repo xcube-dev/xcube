@@ -58,6 +58,9 @@
 
   - The `--show` option of `xcube serve` 
     now outputs various aspects of the server configuration. 
+  
+  - Added experimental endpoint `/volumes`.
+    It is used by xcube Viewer to render 3-D volumes.
 
 * xcube Server is now more tolerant with respect to datasets it can not 
   open without errors. Implementation detail: It no longer fails if 
