@@ -1,5 +1,10 @@
 ## Changes in 0.13.0.dev10 (in development)
 
+### Fixes
+
+* Replaced usages of deprecated numpy dtype `numpy.bool` 
+  by Python type `bool`. 
+
 ## Changes in 0.13.0.dev9
 
 ### Enhancements

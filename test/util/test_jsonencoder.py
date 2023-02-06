@@ -39,7 +39,7 @@ PY_INPUT = {
 }
 
 NP_INPUT = {
-    'np_bool': np.bool(True),
+    'np_bool': True,
     'np_int8': np.int8(1),
     'np_uint8': np.uint8(2),
     'np_int16': np.int16(3),
@@ -62,7 +62,7 @@ INPUT = {
 EXPECTED_PY_OUTPUT = {**PY_INPUT}
 
 EXPECTED_NP_OUTPUT = {
-    'np_bool': bool(np.bool(True)),
+    'np_bool': True,
     'np_int8': int(np.int8(1)),
     'np_uint8': int(np.uint8(2)),
     'np_int16': int(np.int16(3)),

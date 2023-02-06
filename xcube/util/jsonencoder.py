@@ -107,7 +107,7 @@ def _key(key: Any) -> str:
 def _convert_default(obj: Any) -> Any:
     if hasattr(obj, 'dtype') and hasattr(obj, 'ndim'):
         if obj.ndim == 0:
-            if np.issubdtype(obj.dtype, np.bool):
+            if np.issubdtype(obj.dtype, bool):
                 return bool(obj)
             elif np.issubdtype(obj.dtype, np.integer):
                 return int(obj)
