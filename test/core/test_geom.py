@@ -376,7 +376,7 @@ class DatasetGeometryTest(unittest.TestCase):
                 [0, 0, 0, 1, 1, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0],
             ],
-            dtype=np.bool
+            dtype=bool
         )
         np.testing.assert_array_almost_equal(
             actual_mask_values,

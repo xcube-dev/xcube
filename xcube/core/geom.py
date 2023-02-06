@@ -384,8 +384,8 @@ def mask_dataset_by_geometry(
     mask_data = da.map_blocks(
         _mask_block,
         chunks=chunks,
-        dtype=np.bool,
-        meta=np.array((), dtype=np.bool),
+        dtype=bool,
+        meta=np.array((), dtype=bool),
         geometry=intersection_geometry,
         x_offset=x_min,
         y_offset=y_max,
