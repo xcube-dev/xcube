@@ -10,6 +10,8 @@
 
 ### Fixes
 
+* Intermediate: Ensure `Viewer.add_dataset()` provides a dataset title. 
+
 * Intermediate: Fixed `xcube.webapi.viewer.Viewer` 
   so it can find `~/.xcube/jupyterlab/lab-info.json`.
 
