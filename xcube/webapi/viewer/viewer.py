@@ -23,7 +23,7 @@ import json
 import socket
 import threading
 from pathlib import Path
-from typing import Optional, Union, Mapping, Any
+from typing import Optional, Union, Mapping, Any, Tuple
 
 import tornado.ioloop
 import xarray as xr
@@ -61,6 +61,10 @@ class Viewer:
 
         server_config["port"] = port
         server_config["address"] = address
+
+        server_url, reverse_url_prefix = _get_server_url_and_rev_prefix(port)
+        server_config["reverse_url_prefix"] = reverse_url_prefix
+
         self._server_config = server_config
 
         # Got trick from
@@ -76,7 +80,7 @@ class Viewer:
 
         self._io_loop.add_callback(self._server.start)
 
-        server_url = _get_server_url(port)
+        server_url = _get_server_url_and_rev_prefix(port)
         self._server_url = server_url
         self._viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
 
@@ -153,7 +157,7 @@ class Viewer:
         return self.is_server_running
 
 
-def _get_server_url(port: int) -> str:
+def _get_server_url_and_rev_prefix(port: int) -> Tuple[str, str]:
     lab_url = None
     has_proxy = None
     lab_info_path = Path(*_LAB_INFO_FILE.split("/")).expanduser()
@@ -167,9 +171,12 @@ def _get_server_url(port: int) -> str:
             LOG.warning(f"Failed loading {lab_info_path}")
             pass
     if lab_url and has_proxy:
-        return f"{lab_url}proxy/{port}"
+        reverse_prefix = f"/proxy/{port}"
+        if lab_url.endswith("/"):
+            lab_url = lab_url[:-1]
+        return lab_url + reverse_prefix, reverse_prefix
     else:
-        return f"http://localhost:{port}"
+        return f"http://localhost:{port}", ""
 
 
 def _find_port(start: int = 8000, end: Optional[int] = None) -> int:

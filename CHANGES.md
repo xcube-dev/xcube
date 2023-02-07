@@ -10,6 +10,8 @@
 
 ### Fixes
 
+* Intermediate: Ensure `Viewer()` creates a server with reverse prefix set. 
+
 * Intermediate: Ensure `Viewer.add_dataset()` provides a dataset title. 
 
 * Intermediate: Fixed `xcube.webapi.viewer.Viewer` 
