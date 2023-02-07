@@ -1,4 +1,18 @@
-## Changes in 0.13.0.dev10 (in development)
+## Changes in 0.13.0.dev11 (in development)
+
+### Enhancements
+
+* Added Notebook 
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
+  that explains how xcube Viewer can now be utilised in JupyterLab
+  using the new (still experimental) xcube JupyterLab extension
+  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
+
+### Other
+
+* Removed deprecated example `examples/tile`.
+
+## Changes in 0.13.0.dev10
 
 ### Fixes
 
