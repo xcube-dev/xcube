@@ -156,7 +156,7 @@ class Viewer:
 def _get_server_url(port: int) -> str:
     lab_url = None
     has_proxy = None
-    lab_info_path = Path(*_LAB_INFO_FILE.split("/"))
+    lab_info_path = Path(*_LAB_INFO_FILE.split("/")).expanduser()
     if lab_info_path.exists():
         try:
             with lab_info_path.open() as fp:

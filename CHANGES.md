@@ -8,6 +8,11 @@
   using the new (still experimental) xcube JupyterLab extension
   [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
 
+### Fixes
+
+* Intermediate: Fixed `xcube.webapi.viewer.Viewer` 
+  so it can find `~/.xcube/jupyterlab/lab-info.json`.
+
 ### Other
 
 * Removed deprecated example `examples/tile`.
