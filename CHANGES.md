@@ -1,4 +1,10 @@
-## Changes in 0.13.0.dev11 (in development)
+## Changes in 0.13.0.dev12 (in development)
+
+### Fixes
+
+* Intermediate: Fixed `Viewer.show()` and `Viewer.info()`. 
+
+## Changes in 0.13.0.dev11
 
 ### Enhancements
 
