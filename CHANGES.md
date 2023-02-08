@@ -19,6 +19,8 @@
 
 ### Other
 
+* Intermediate: Added important TODO, should be made a GH issue after 0.13.
+
 * Removed deprecated example `examples/tile`.
 
 ## Changes in 0.13.0.dev10
