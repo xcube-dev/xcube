@@ -1,42 +1,4 @@
-## Changes in 0.13.0.dev12 (in development)
-
-### Fixes
-
-* Intermediate: Fixed `Viewer.show()` and `Viewer.info()`. 
-
-## Changes in 0.13.0.dev11
-
-### Enhancements
-
-* Added Notebook 
-  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
-  that explains how xcube Viewer can now be utilised in JupyterLab
-  using the new (still experimental) xcube JupyterLab extension
-  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
-
-### Fixes
-
-* Intermediate: Ensure `Viewer()` creates a server with reverse prefix set. 
-
-* Intermediate: Ensure `Viewer.add_dataset()` provides a dataset title. 
-
-* Intermediate: Fixed `xcube.webapi.viewer.Viewer` 
-  so it can find `~/.xcube/jupyterlab/lab-info.json`.
-
-### Other
-
-* Intermediate: Added important TODO, should be made a GH issue after 0.13.
-
-* Removed deprecated example `examples/tile`.
-
-## Changes in 0.13.0.dev10
-
-### Fixes
-
-* Replaced usages of deprecated numpy dtype `numpy.bool` 
-  by Python type `bool`. 
-
-## Changes in 0.13.0.dev9
+## Changes in 0.13.0
 
 ### Enhancements
 
@@ -137,6 +99,16 @@
 * Added convenience method `DataStore.list_data_ids()` that works 
   like `get_data_ids()`, but returns a list instead of an iterator. (#776)
 
+* Added Notebook 
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
+  that explains how xcube Viewer can now be utilised in JupyterLab
+  using the new (still experimental) xcube JupyterLab extension
+  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
+
+* Replaced usages of deprecated numpy dtype `numpy.bool` 
+  by Python type `bool`. 
+
+
 ### Fixes
 
 * xcube CLI tools no longer emit warnings when trying to import
@@ -175,7 +147,6 @@
   with Zarr >= 2.13.
 
 * Provided backward compatibility with Python 3.8. (#760)
-
 
 ### Other
 
@@ -249,6 +220,8 @@
 
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.
+
+* Removed deprecated example `examples/tile`.
 
 
 ## Changes in 0.12.1 
