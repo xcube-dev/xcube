@@ -136,3 +136,21 @@ class S3FsAccessor(FsAccessor):
             ),
             additional_properties=True,
         )
+
+class AzureFsAccessor(FsAccessor):
+    @classmethod
+    def get_protocol(cls) -> str:
+        return 'abfs'
+
+    @classmethod
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
+
+        return JsonObjectSchema(
+            properties=dict(
+                anon=JsonBooleanSchema(
+                    title='Whether to anonymously connect to Azure Blob Storage.'
+                ),
+                **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
+            ),
+            additional_properties=True,
+        )
