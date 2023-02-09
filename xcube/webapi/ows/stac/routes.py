@@ -38,8 +38,9 @@ class CatalogRootHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogRoot",
                    summary="Get the STAC catalog's root.")
     async def get(self):
-        return await self.finish(get_root(self.ctx.datasets_ctx,
-                                          self.request.reverse_base_url))
+        result = get_root(self.ctx.datasets_ctx,
+                          self.request.reverse_base_url)
+        return await self.response.finish(result)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -48,9 +49,8 @@ class CatalogConformanceHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogConformance",
                    summary="Get the STAC catalog's conformance.")
     async def get(self):
-        return await self.finish(get_conformance(
-            self.ctx.datasets_ctx
-        ))
+        result = get_conformance(self.ctx.datasets_ctx)
+        return await self.response.finish(result)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -59,10 +59,9 @@ class CatalogCollectionsHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollections",
                    summary="Get the STAC catalog's collections.")
     async def get(self):
-        return await self.finish(get_collections(
-            self.ctx.datasets_ctx,
-            self.request.reverse_base_url
-        ))
+        result = get_collections(self.ctx.datasets_ctx,
+                                 self.request.reverse_base_url)
+        return await self.response.finish(result)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -72,11 +71,10 @@ class CatalogCollectionHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollection",
                    summary="Get a STAC catalog collection.")
     async def get(self, collectionId: str):
-        return await self.finish(get_collection(
-            self.ctx.datasets_ctx,
-            self.request.reverse_base_url,
-            collectionId
-        ))
+        result = get_collection(self.ctx.datasets_ctx,
+                                self.request.reverse_base_url,
+                                collectionId)
+        return await self.response.finish(result)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -86,11 +84,10 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollectionItems",
                    summary="Get the items of a STAC catalog collection.")
     async def get(self, collectionId: str):
-        return await self.finish(get_collection_items(
-            self.ctx.datasets_ctx,
-            self.request.reverse_base_url,
-            collectionId
-        ))
+        result = get_collection_items(self.ctx.datasets_ctx,
+                                      self.request.reverse_base_url,
+                                      collectionId)
+        return await self.response.finish(result)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -100,12 +97,10 @@ class CatalogCollectionItemHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollectionItem",
                    summary="Get an item of a STAC catalog collection.")
     async def get(self, collectionId: str, featureId: str):
-        return await self.finish(get_collection_item(
-            self.ctx.datasets_ctx,
-            self.request.reverse_base_url,
-            collectionId,
-            featureId
-        ))
+        result = get_collection_item(self.ctx.datasets_ctx,
+                                     self.request.reverse_base_url,
+                                     collectionId, featureId)
+        return await self.response.finish(result)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -115,15 +110,13 @@ class CatalogSearchHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="searchCatalogByKeywords",
                    summary="Search the STAC catalog by keywords.")
     async def get(self):
-        return await self.finish(search(
-            self.ctx.datasets_ctx,
-            self.request.reverse_base_url
-        ))
+        # TODO (forman): get search params from query
+        result = search(self.ctx.datasets_ctx, self.request.reverse_base_url)
+        return await self.response.finish(result)
 
     @api.operation(operation_id="searchCatalogByJSON",
                    summary="Search the STAC catalog by JSON request body.")
     async def post(self):
-        return await self.finish(search(
-            self.ctx.datasets_ctx,
-            self.request.reverse_base_url
-        ))
+        # TODO (forman): get search params from request body
+        result = search(self.ctx.datasets_ctx, self.request.reverse_base_url)
+        return await self.response.finish(result)
