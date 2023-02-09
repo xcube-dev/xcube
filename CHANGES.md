@@ -1,5 +1,10 @@
 ## Changes in 0.13.1 (in development)
 
+### Enhancements
+
+* Documented xcube server architecture and added developer 
+  guide for API extensions in 
+  [serverdevguide](docs/source/serverdevguide.md). 
 
 ## Changes in 0.13.0
 
