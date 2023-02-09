@@ -80,7 +80,6 @@ class Viewer:
 
         self._io_loop.add_callback(self._server.start)
 
-        server_url = _get_server_url_and_rev_prefix(port)
         self._server_url = server_url
         self._viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
 

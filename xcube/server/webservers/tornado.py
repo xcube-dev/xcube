@@ -427,6 +427,17 @@ class TornadoApiRequest(ApiRequest):
                      query: Optional[str] = None,
                      reverse: bool = False) -> str:
         """Get the reverse URL for given *path* and *query*."""
+
+        # TODO (forman): in some cases, e.g.,
+        #   when running a tornado server (such as xcube server)
+        #   next to a remote Jupyter Server,
+        #   the URL reported by this implementation is wrong.
+        #   For example with reverse prefix "/proxy/8000", we expect
+        #       https://{host}/users/{user}/proxy/8000/{path}
+        #   but we get
+        #       http://{host}/proxy/8000/{path}
+        #   Also note, that protocol degraded from HTTPS to HTTP!
+        #
         protocol = self._request.protocol
         host = self._request.host
         prefix = self._reverse_url_prefix if reverse else self._url_prefix
