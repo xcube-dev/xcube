@@ -15,7 +15,7 @@ of a concrete web server in mind. However, the xcube server default web server
 is [Tornado](https://www.tornadoweb.org/), but stubs are already provided 
 for [Flask](https://flask.palletsprojects.com/).
 
-### The Server API Extension
+### Server API
 
 A _server API_ is a pluggable server extension that can be provided
 by a xcube plugin. Also, the xcube server's standard APIs, such as 
@@ -28,12 +28,11 @@ It describes its configuration by a [JSON Schema](https://json-schema.org/),
 so it can be validated by the server.
 
 
+### Server API extension module
 
-### Anatomy of an API extension module
-
-An API extension module is any Python module that exports a
-variable named `api` whose value is an instance of the 
-class `xcube.server.Api`. 
+A server API extension module is any Python module that exports a variable,
+typically named `api`, whose value is an instance of the 
+class `xcube.server.Api`.
 
 We recommend laying out the API module as a sub-package with the following 
 structure: 
@@ -43,19 +42,24 @@ structure:
   |- __index__.py     # Export the API object: from .api import api 
   |- api.py           # Define the API object: api = xcube.server.Api(...)
   |- routes.py        # Optional: Add API's routes and implements handlers 
-  |- context.py       # Optional: Implement access to API resources
-  |- controllers.py   # Optional: Implement the logic of the routes
   |- config.py        # Optional: Define the configuration's JSON schema 
+  |- context.py       # Optional: Implement access to API resources
+  |- controllers.py   # Optional: Implement the logic of the route handlers
 ```
 
-The name of the API extension module must be registered in the `plugin`
-module of your main package. The registration is done in a function 
-that must be called `init_plugin`. API extensions are registered
-using the extension point named `"xcube.server.api"`, 
-also defined by `xcube.constants.EXTENSION_POINT_SERVER_APIS`.
+The name of the API extension module must be registered in xcube.
+API extensions are registered using the xcube extension point named
+`"xcube.server.api"`, also defined by
+`xcube.constants.EXTENSION_POINT_SERVER_APIS`.
 
-Here is an example of a xcube plugin `xcube_ew4dv` that implements
-its server API module in `xcube_ew4dv.webapi`:
+By xcube convention, the name of a xcube plugin package starts with `xcube`.
+And by xcube convention, the registration of xcube extensions is done 
+by a function called `init_plugin` that is defined in top-level module 
+named `plugin`.
+
+Here is an example of a xcube plugin package `xcube_ew4dv` that implements
+its server API module in `xcube_ew4dv.webapi`. Here is the contents of 
+the `xcube_ew4dv.plugin` module (file `xcube_ew4dv/plugin.py`):
 
 ```python
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
@@ -70,12 +74,144 @@ def init_plugin(ext_registry: ExtensionRegistry):
     )    
 ```
 
+---
 You may have noticed that there is no need to import any component
 directly from `xcube_ew4dv.webapi`. This is done by design - we defer
 importing of extension code until it is really needed, e.g., when the
 xcube server is started using CLI tool `xcube serve`. Importing modules
 eagerly may take up to a few seconds, which may be already too much if 
 you just want to call `xcube --help` or `xcube serve --help`.
+---
+
+Since in the above example the package is called `xcube_ew4dv`, xcube will
+automatically recognise it as a potential xcube plugin package because of 
+the name prefix `xcube_`. If any of the following conditions 
+
+- registration function is called `init_plugin` and
+- registration function is in top-level module `plugin` and
+- package name starts with `xcube_`
+
+then it must be registered in the package's setuptools entry points:
+
+```python
+from setuptools import setup
+
+setup(
+    # ...
+    entry_points={
+        'xcube_plugins': [
+            # This is xcube convention (no need to specify it here at all): 
+            # 'xcube_ew4dv = xcube_ew4dv.plugin:init_plugin',
+            # If you differ, specify your init_plugin() here:
+            'xcube_ew4dv = ew4dv.xcube:register_api',
+        ],
+    }
+)
+```
+
+### API definition (`api.py`) 
+
+In its simplest form an API definition just requires a unique API identifier: 
+
+```python
+from xcube.server.api import Api
+
+api = Api("4d-viewer")
+```
+
+Many APIs may be configurable through the xcube server configuration.
+Then we can pass a JSON schema for the specific API configuration,
+which is defined our `config.py`:
+
+```python
+from xcube.server.api import Api
+from .config import CONFIG_SCHEMA
+
+api = Api("4d-viewer",
+          config_schema=CONFIG_SCHEMA)
+```
+
+If your API manages state, for example it could maintain caches for frequently
+requested resources, this state can be kept in a dedicated API context
+object. Then we can pass a factory for a specific API context object
+which is defined our `context.py`. In our case it is a class `FourDContext`:
+
+```python
+from xcube.server.api import Api
+from .config import CONFIG_SCHEMA
+from .context import FourDContext
+
+api = Api("4d-viewer",
+          config_schema=CONFIG_SCHEMA,
+          create_ctx=FourDContext)
+```
+
+Both the configuration and the context object are accessible
+from your API's route handlers. We'll see how that works in a moment.
+
+Your API extension may be build on top of other APIs and may want to share
+their configuration and context information. We can tell our API to
+require other APIs. In the following case, the API depends on 
+the "datasets" and "tiles" APIs. That means, the `FourDContext` object
+will have access to the context objects of the "datasets" and "tiles" APIs:
+
+```python
+api = Api("4d-viewer",
+          config_schema=CONFIG_SCHEMA,
+          create_ctx=FourDContext,
+          required_apis=["datasets", "tiles"])
+```
+
+The next section describes how to add routes to the API.
+But note that it is not required for an API to have any routes.
+An API might go without any routes and just provide a server middleware 
+(e.g. do something on any request) or serve as a base API for 
+other dependent APIs.
+
+### API Routes (`routes.py`)
+
+An API route defines server's endpoint and implements one or more of the 
+HTTP request's `GET`, `PUT`, `DELETE`, etc., methods.
+
+The following route implements an asynchronous `GET` handler for the 
+endpoint `/tiles4d/{datasetId}/{varName}/{z}/{y}/{x}`. We can also implement
+handlers for other HTTP methods in the same class. 
+
+```python
+from xcube.server.api import ApiHandler
+from .api import api
+from .context import FourDContext
+
+@api.route("/tiles4d/{datasetId}/{varName}/{z}/{y}/{x}")
+class FourDTileHandler(ApiHandler[FourDContext]):
+  
+    @api.operation(operation_id="getFourDTile",
+                   summary="Get a tile for the 4D Viewer.")
+    async def get(self, 
+                  datasetId: str, 
+                  varName: str, 
+                  z: str, 
+                  y: str, 
+                  x: str):
+       ctx = self.ctx        # State/resource access of type FourDContext.
+       config = ctx.config   # Server configuration as dict.
+       request = self.request    # The request
+       response = self.response  # The response
+       # Implementation ...
+       await response.finish()
+```
+
+We can now run `xcube serve` and open <http://localhost:8080/openapi.html>
+in a browser. We get:
+
+TODO: add screenshot
+
+### API Configuration (`config.py`)
+
+### API Context (`context.py`)
+
+### API Controllers (`controllers.py`)
+
 
 ### TODO - describe more API details
 
@@ -109,7 +245,7 @@ you just want to call `xcube --help` or `xcube serve --help`.
 ### TODO - describe API context object
 
 - Provide the runtime state of a server extension.
-- Are created and updated from a server extension’s configuration.
+- Are created and updated from a server configuration changes.
 - Are optional. Some server extensions don’t require a context object.
   By default, the context object is null. 
 - Typically, provide access (= Python API) to the resources served by the 
