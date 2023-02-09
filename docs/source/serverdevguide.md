@@ -4,7 +4,7 @@
 The _xcube server framework_ has been introduced in xcube 0.13.
 It is implemented in the `xcube.server` module.
 
-The main feature of the framework is its modularity and extendability.
+The main features of the framework are its modularity and extendability.
 A server comprises one or more _server APIs_, and each API contributes 
 dedicated _API routes_. An API route defines server's endpoint 
 and implements one or more of the HTTP request's `GET`, `PUT`, `DELETE`, 
@@ -52,8 +52,8 @@ API extensions are registered using the xcube extension point named
 `"xcube.server.api"`, also defined by
 `xcube.constants.EXTENSION_POINT_SERVER_APIS`.
 
-By xcube convention, the name of a xcube plugin package starts with `xcube`.
-And by xcube convention, the registration of xcube extensions is done 
+By xcube convention, the name of a xcube plugin package starts with `xcube_`.
+And also by xcube convention, the registration of xcube extensions is done 
 by a function called `init_plugin` that is defined in top-level module 
 named `plugin`.
 
@@ -91,7 +91,9 @@ the name prefix `xcube_`. If any of the following conditions
 - registration function is in top-level module `plugin` and
 - package name starts with `xcube_`
 
-then it must be registered in the package's setuptools entry points:
+cannot be satisfied, then it must be registered in the package's entry points.
+
+If you use `setup.py` and `setuptools` in your project folder:
 
 ```python
 from setuptools import setup
@@ -108,6 +110,10 @@ setup(
     }
 )
 ```
+
+If you use `setup.cfg` in your project folder:
+
+TODO - add the above for `setup.cfg`
 
 ### API definition (`api.py`) 
 
