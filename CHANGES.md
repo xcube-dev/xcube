@@ -8,7 +8,51 @@
   using the new (still experimental) xcube JupyterLab extension
   [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
 
+* Added Notebook
+  [test_AzureBlobFS.ipynb](/test/test_AzureBlobFS.ipynb). This notebook shows how a
+  new data store instance can connect and list zarr files from Azure bolb storage using 
+  'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
+  params. 
+
+* Included support for Azure Blob Storage filesystem by adding `AzureFsAccessor()` with support 
+  for the 'abfs' protocol (fsspec adlfs package) class in `/xcube/core/store/fs/impl/fs.py` 
+  and `/xcube/core/store/fs/registry.py`.
+  
+  These changes will enable access to data cubes (`.zarr` or `.levels`) in Azure blob storage. This
+  has been tested with xcube `new_data_store()` function and xcube server configuration file for DataStores.
+  
+  ```python
+    new_data_store(
+        "abfs", # Azure fs protocol
+        root="blob_container",  # Azure blob container name
+        storage_options= {'anon':True, 'account_name':"xxx", 'account_key':'xxx...'} # or connection_string:xxxxxxxx
+    )
+    ```
+  Configuration file sample for Azure Blob
+  Here you can either use `account_name` and `account_key` or use only the `connection_string` which contain both name and key
+  
+  ```yaml
+  DataStores:
+  - Identifier: siec
+    StoreId: abfs
+    StoreParams:
+      root: zarr_cubes
+      max_depth: 1
+      storage_options:
+        anon: true
+        account_name': "xxx"
+        account_key': 'xxx...' # or
+
+        connection_string: xxxxxxxx
+    Datasets:
+      - Path: "*.levels"
+        Style: default
+        
+
+
+
 ### Fixes
+
 
 * Intermediate: Ensure `Viewer()` creates a server with reverse prefix set. 
 
@@ -70,6 +114,7 @@
         )
     )
     ```
+
 
   - The limited `s3bucket` endpoints are no longer available and are 
     replaced by `s3` endpoints. 
