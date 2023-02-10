@@ -24,14 +24,28 @@ from xcube.util.jsonschema import JsonStringSchema
 
 DEFAULT_CATALOG_ID = "xcube-server"
 DEFAULT_CATALOG_TITLE = "xcube Server"
-DEFAULT_CATALOG_DESCRIPTION = "Catalog of datasets" \
-                              " and places served by xcube."
+DEFAULT_CATALOG_DESCRIPTION = "Catalog of datasets served by xcube."
+
+DEFAULT_COLLECTION_ID = "datasets"
+DEFAULT_COLLECTION_TITLE = "Datasets"
+DEFAULT_COLLECTION_DESCRIPTION = ""
+
+COLLECTION_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Identifier=JsonStringSchema(default=DEFAULT_COLLECTION_ID),
+        Title=JsonStringSchema(default=DEFAULT_COLLECTION_TITLE),
+        Description=JsonStringSchema(default=DEFAULT_COLLECTION_DESCRIPTION),
+    ),
+    additional_properties=False,
+    required=[],
+)
 
 STAC_SCHEMA = JsonObjectSchema(
     properties=dict(
         Identifier=JsonStringSchema(default=DEFAULT_CATALOG_ID),
         Title=JsonStringSchema(default=DEFAULT_CATALOG_TITLE),
         Description=JsonStringSchema(default=DEFAULT_CATALOG_DESCRIPTION),
+        Collection=COLLECTION_SCHEMA,
     ),
     additional_properties=False,
     required=[],

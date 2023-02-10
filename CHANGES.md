@@ -1,5 +1,11 @@
 ## Changes in 0.13.1 (in development)
 
+### Enhancements
+
+* Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
+  xcube server. (#455)
+  It serves a single collection named "datasets" whose items are the
+  datasets published by the service.
 
 ## Changes in 0.13.0
 

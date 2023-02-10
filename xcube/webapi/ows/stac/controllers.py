@@ -25,29 +25,29 @@ from typing import Hashable
 
 import pyproj
 import xarray as xr
-from xcube.core.gridmapping import CRS_CRS84
 
-from ...datasets.context import DatasetsContext
+from xcube.core.gridmapping import CRS_CRS84
+from xcube.server.api import ApiError
+from xcube.server.api import ServerConfig
+from .config import DEFAULT_CATALOG_DESCRIPTION
 from .config import DEFAULT_CATALOG_ID
 from .config import DEFAULT_CATALOG_TITLE
-from .config import DEFAULT_CATALOG_DESCRIPTION
+from .config import DEFAULT_COLLECTION_DESCRIPTION
+from .config import DEFAULT_COLLECTION_ID
+from .config import DEFAULT_COLLECTION_TITLE
+from ...datasets.context import DatasetsContext
 
 STAC_VERSION = '0.9.0'
-
-DATA_CUBES_COLLECTION_ID = "datacubes"
 
 
 # noinspection PyUnusedLocal
 def get_root(ctx: DatasetsContext, base_url: str):
-    stac_config = ctx.config.get("STAC", {})
+    c_id, c_title, c_description = _get_catalog_metadata(ctx.config)
     return {
         "stac_version": STAC_VERSION,
-        "id": stac_config.get("Identifier",
-                              DEFAULT_CATALOG_ID),
-        "title": stac_config.get("Title",
-                                 DEFAULT_CATALOG_TITLE),
-        "description": stac_config.get("Description",
-                                       DEFAULT_CATALOG_DESCRIPTION),
+        "id": c_id,
+        "title": c_title,
+        "description": c_description,
         "links": [
             {
                 "rel": "self",
@@ -106,7 +106,7 @@ def get_conformance(ctx: DatasetsContext):
 def get_collections(ctx: DatasetsContext, base_url: str):
     return {
         "collections": [
-            _get_datacubes_collection(ctx, base_url)
+            _get_datasets_collection(ctx, base_url)
         ]
     }
 
@@ -114,17 +114,14 @@ def get_collections(ctx: DatasetsContext, base_url: str):
 def get_collection(ctx: DatasetsContext,
                    base_url: str,
                    collection_id: str):
-    if collection_id != DATA_CUBES_COLLECTION_ID:
-        raise CollectionNotFoundException()
-    return _get_datacubes_collection(ctx, base_url, full=True)
+    _assert_valid_collection(ctx, collection_id)
+    return _get_datasets_collection(ctx, base_url, full=True)
 
 
 def get_collection_items(ctx: DatasetsContext,
                          base_url: str,
                          collection_id: str):
-    if collection_id != DATA_CUBES_COLLECTION_ID:
-        raise CollectionNotFoundException()
-
+    _assert_valid_collection(ctx, collection_id)
     features = []
     for dataset_config in ctx.get_dataset_configs():
         dataset_id = dataset_config["Identifier"]
@@ -133,7 +130,6 @@ def get_collection_items(ctx: DatasetsContext,
                                        dataset_id,
                                        full=False)
         features.append(feature)
-
     return {
         "type": "FeatureCollection",
         "features": features,
@@ -147,8 +143,7 @@ def get_collection_item(ctx: DatasetsContext,
                         base_url: str,
                         collection_id: str,
                         feature_id: str):
-    if collection_id != DATA_CUBES_COLLECTION_ID:
-        raise CollectionNotFoundException()
+    _assert_valid_collection(ctx, collection_id)
     return _get_dataset_feature(ctx, base_url, feature_id, full=True)
 
 
@@ -159,15 +154,16 @@ def search(ctx: DatasetsContext, base_url: str):
 
 
 # noinspection PyUnusedLocal
-def _get_datacubes_collection(ctx: DatasetsContext,
-                              base_url: str,
-                              full: bool = False):
+def _get_datasets_collection(ctx: DatasetsContext,
+                             base_url: str,
+                             full: bool = False):
+    c_id, c_title, c_description = _get_collection_metadata(ctx.config)
     return {
         "stac_version": STAC_VERSION,
         "stac_extensions": ["xcube"],
-        "id": DATA_CUBES_COLLECTION_ID,
-        "title": "Data cubes",
-        "description": "",
+        "id": c_id,
+        "title": c_title,
+        "description": c_description,
         "license": "proprietary",
         "keywords": [],
         "providers": [],
@@ -176,8 +172,7 @@ def _get_datacubes_collection(ctx: DatasetsContext,
         "links": [
             {
                 "rel": "self",
-                "href": f"{base_url}/catalog/collections/"
-                        f"{DATA_CUBES_COLLECTION_ID}"
+                "href": f"{base_url}/catalog/collections/{c_id}"
             },
             {
                 "rel": "root",
@@ -197,6 +192,8 @@ def _get_dataset_feature(ctx: DatasetsContext,
                          base_url: str,
                          dataset_id: str,
                          full: bool = False):
+    collection_id, _, _ = _get_collection_metadata(ctx.config)
+
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
 
@@ -257,11 +254,12 @@ def _get_dataset_feature(ctx: DatasetsContext,
             "xcube:coordinates": coordinates,
             "xcube:attributes": dict(dataset.attrs),
         },
-        "collection": DATA_CUBES_COLLECTION_ID,
+        "collection": collection_id,
         "links": [
             {
                 "rel": "self",
-                'href': f'{base_url}/catalog/collections/{dataset_id}'
+                'href': f'{base_url}/catalog/collections/{collection_id}'
+                        f'/items/{dataset_id}'
             }
         ],
         "assets": {
@@ -322,6 +320,41 @@ def get_variable_asset(var_name: Hashable, var: xr.DataArray):
         "attrs": dict(var.attrs),
         # "encoding": dict(var.encoding),
     }
+
+
+def _assert_valid_collection(ctx: DatasetsContext, collection_id: str):
+    c_id, _, _ = _get_collection_metadata(ctx.config)
+    if collection_id != c_id:
+        raise ApiError.NotFound(f'Collection "{collection_id}" not found')
+
+
+def _get_catalog_metadata(config: ServerConfig):
+    stac_config = config.get("STAC", {})
+    catalog_id = stac_config.get(
+        "Identifier", DEFAULT_CATALOG_ID
+    )
+    catalog_title = stac_config.get(
+        "Title", DEFAULT_CATALOG_TITLE
+    )
+    catalog_description = stac_config.get(
+        "Description", DEFAULT_CATALOG_DESCRIPTION
+    )
+    return catalog_id, catalog_title, catalog_description
+
+
+def _get_collection_metadata(config: ServerConfig):
+    stac_config = config.get("STAC", {})
+    collection_config = stac_config.get("Collection", {})
+    collection_id = collection_config.get(
+        "Identifier", DEFAULT_COLLECTION_ID
+    )
+    collection_title = collection_config.get(
+        "Title", DEFAULT_COLLECTION_TITLE
+    )
+    collection_description = collection_config.get(
+        "Description", DEFAULT_COLLECTION_DESCRIPTION
+    )
+    return collection_id, collection_title, collection_description
 
 
 def _utc_now():

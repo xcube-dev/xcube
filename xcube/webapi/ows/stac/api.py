@@ -20,9 +20,8 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
-
-from .context import StacContext
 from .config import CONFIG_SCHEMA
+from .context import StacContext
 
 api = Api(
     'ows.stac',
