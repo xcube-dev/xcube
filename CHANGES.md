@@ -1,58 +1,9 @@
-## Changes in 0.13.0.dev11 (in development)
-
-### Enhancements
-
-* Added Notebook 
-  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
-  that explains how xcube Viewer can now be utilised in JupyterLab
-  using the new (still experimental) xcube JupyterLab extension
-  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
-
-* Added Notebook
-  [test_AzureBlobFS.ipynb](/test/test_AzureBlobFS.ipynb). This notebook shows how a
-  new data store instance can connect and list zarr files from Azure bolb storage using 
-  'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
-  params. 
-
-* Included support for Azure Blob Storage filesystem by adding `AzureFsAccessor()` with support 
-  for the 'abfs' protocol (fsspec adlfs package) class in `/xcube/core/store/fs/impl/fs.py` 
-  and `/xcube/core/store/fs/registry.py`.
-  
-  These changes will enable access to data cubes (`.zarr` or `.levels`) in Azure blob storage. This
-  has been tested with xcube `new_data_store()` function and xcube server configuration file for DataStores.
-  
-  ```python
-    new_data_store(
-        "abfs", # Azure fs protocol
-        root="blob_container",  # Azure blob container name
-        storage_options= {'anon':True, 'account_name':"xxx", 'account_key':'xxx...'} # or connection_string:xxxxxxxx
-    )
-    ```
-  Configuration file sample for Azure Blob
-  Here you can either use `account_name` and `account_key` or use only the `connection_string` which contain both name and key
-  
-  ```yaml
-  DataStores:
-  - Identifier: siec
-    StoreId: abfs
-    StoreParams:
-      root: zarr_cubes
-      max_depth: 1
-      storage_options:
-        anon: true
-        account_name': "xxx"
-        account_key': 'xxx...' # or
-
-        connection_string: xxxxxxxx
-    Datasets:
-      - Path: "*.levels"
-        Style: default
-        
+## Changes in 0.13.1 (in development)
 
 
+## Changes in 0.13.0
 
 ### Fixes
-
 
 * Intermediate: Ensure `Viewer()` creates a server with reverse prefix set. 
 
@@ -174,6 +125,16 @@
 * Added convenience method `DataStore.list_data_ids()` that works 
   like `get_data_ids()`, but returns a list instead of an iterator. (#776)
 
+* Added Notebook 
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
+  that explains how xcube Viewer can now be utilised in JupyterLab
+  using the new (still experimental) xcube JupyterLab extension
+  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
+
+* Replaced usages of deprecated numpy dtype `numpy.bool` 
+  by Python type `bool`. 
+
+
 ### Fixes
 
 * xcube CLI tools no longer emit warnings when trying to import
@@ -212,7 +173,6 @@
   with Zarr >= 2.13.
 
 * Provided backward compatibility with Python 3.8. (#760)
-
 
 ### Other
 
@@ -286,6 +246,8 @@
 
 * Module `xcube.core.mldataset` has been refactored into 
   a sub-package for clarity and maintainability.
+
+* Removed deprecated example `examples/tile`.
 
 
 ## Changes in 0.12.1 
