@@ -133,13 +133,18 @@ def _sanitize_url_prefix(url_prefix: Optional[str]) -> str:
     """
     if not url_prefix:
         return ''
+
     while url_prefix.startswith('//'):
         url_prefix = url_prefix[1:]
     while url_prefix.endswith('/'):
         url_prefix = url_prefix[:-1]
+
     if url_prefix == '':
         return ''
-    elif url_prefix.startswith('/'):
+
+    if url_prefix.startswith('/') \
+            or url_prefix.startswith('http://') \
+            or url_prefix.startswith('https://'):
         return url_prefix
-    else:
-        return '/' + url_prefix
+
+    return '/' + url_prefix
