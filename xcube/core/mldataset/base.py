@@ -26,7 +26,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.schema import rechunk_cube
 from xcube.core.subsampling import AggMethods
-from xcube.core.subsampling import assert_valid_agg_methods
+from xcube.core.subsampling import get_dataset_agg_methods
 from xcube.core.subsampling import subsample_dataset
 from xcube.core.tilingscheme import get_num_levels
 from xcube.util.assertions import assert_instance
@@ -54,22 +54,31 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                  base_dataset: xr.Dataset,
                  grid_mapping: Optional[GridMapping] = None,
                  num_levels: Optional[int] = None,
-                 agg_methods: AggMethods = 'first',
+                 agg_methods: Optional[AggMethods] = 'first',
                  ds_id: Optional[str] = None):
         assert_instance(base_dataset, xr.Dataset, name='base_dataset')
+        if grid_mapping is not None:
+            assert_instance(grid_mapping, GridMapping, name='grid_mapping')
 
         if grid_mapping is None:
             # TODO (forman): why not computing it lazily?
             grid_mapping = GridMapping.from_dataset(base_dataset,
                                                     tolerance=1e-4)
 
-        assert_valid_agg_methods(agg_methods)
-        self._agg_methods = agg_methods
+        self._agg_methods = get_dataset_agg_methods(
+            base_dataset,
+            xy_dim_names=grid_mapping.xy_dim_names,
+            agg_methods=agg_methods
+        )
 
         self._base_dataset = base_dataset
         super().__init__(grid_mapping=grid_mapping,
                          num_levels=num_levels,
                          ds_id=ds_id)
+
+    @property
+    def agg_methods(self):
+        return self._agg_methods
 
     def _get_num_levels_lazily(self) -> int:
         gm = self.grid_mapping

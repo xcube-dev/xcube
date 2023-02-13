@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import json
 import math
 import pathlib
 import warnings
@@ -54,6 +54,8 @@ from ...datatype import DATASET_TYPE
 from ...datatype import DataType
 from ...datatype import MULTI_LEVEL_DATASET_TYPE
 from ...error import DataStoreError
+
+LEVELS_FORMAT_VERSION = "1.0"
 
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
@@ -174,7 +176,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                                                agg_methods=agg_methods)
         fs, root, write_params = self.load_fs(write_params)
         consolidated = write_params.pop('consolidated', True)
-        use_saved_levels = write_params.pop('use_saved_levels', False)
+        use_saved_levels = write_params.pop('use_saved_levels', None)
         base_dataset_id = write_params.pop('base_dataset_id', None)
         num_levels = write_params.pop('num_levels', None)
 
@@ -193,6 +195,17 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             num_levels_max = ml_dataset.num_levels
         else:
             num_levels_max = min(num_levels, ml_dataset.num_levels)
+
+        with fs.open(str(data_path / '.zlevels'), mode='w') as fp:
+            levels_data = dict(version=LEVELS_FORMAT_VERSION,
+                               num_levels=num_levels_max)
+            if use_saved_levels is not None:
+                levels_data.update(use_saved_levels=bool(use_saved_levels))
+            if tile_size is not None:
+                levels_data.update(tile_size=list(tile_size))
+            if hasattr(ml_dataset, 'agg_methods'):
+                levels_data.update(agg_methods=dict(ml_dataset.agg_methods))
+            json.dump(levels_data, fp, indent=2)
 
         for index in range(num_levels_max):
             level_dataset = ml_dataset.get_dataset(index)

@@ -41,10 +41,12 @@ TODO (forman): link to xcube dataset convention
 
 The following is a multi-resolution dataset with three levels:
 
-    - test_pyramid.levels/
-        - 0.zarr/
-        - 1.zarr/
-        - 2.zarr/
+```text
+- test_pyramid.levels/
+    - 0.zarr/
+    - 1.zarr/
+    - 2.zarr/
+```
 
 An important use case is generating image pyramids from existing large 
 datasets without the need to create a copy of level zero.
@@ -55,10 +57,77 @@ The link file contains the path to the actual Zarr dataset
 to be used as level zero as a plain text string. It may be an absolute 
 path or a path relative to the top-level dataset.
 
-    - test_pyramid.levels/
-        - 0.link    # --> link to actual level zero dataset
-        - 1.zarr/
-        - 2.zarr/
+```text
+- test_pyramid.levels/
+    - 0.link    # --> link to actual level zero dataset
+    - 1.zarr/
+    - 2.zarr/
+```
+
+Starting with xcube 0.13.1, an additional, optional file `.zlevels` 
+has been made part of the levels format:
+
+```text
+- test_pyramid.levels/
+    - .zlevels
+    - 0.zarr/
+    - 1.zarr/
+    - 2.zarr/
+```
+
+If present, it is a text file comprising a JSON object with the following 
+properties:
+
+| Name               | Type                 | Description                                                   |
+|--------------------|----------------------|---------------------------------------------------------------|
+| `version`          | `"1.0"`              | Levels format version.                                        |
+| `num_levels`       | integer              | Number of levels in this dataset                              |
+| `use_saved_levels` | boolean              | If a next level shall be computed from the predecessor level. |
+| `tile_size`        | \[integer, integer\] | Tile size width and height in pixels.                         |
+| `agg_methods`      | object               | Mapping from variable name to aggregation method.             |
+
+Only `version` and `num_levels` are required.
+
+The properties of the `agg_methods` objects are the names of data variables.
+The values are aggregation methods. Valid values are
+
+| Value    | Description                                                  |
+|----------|--------------------------------------------------------------|
+| `first`  | Select the first pixel at (0,0) of a window of N x N pixels. | 
+| `min`    | Minimum value of a window of N x N pixels.                   | 
+| `max`    | Minimum value of a window of N x N pixels.                   | 
+| `mean`   | Mean value of a window of N x N pixels.                      | 
+| `median` | Median value of a window of N x N pixels.                    | 
+
+The following is an example of the `.zlevels` file for a dataset with the 
+data variables `CHL` (chlorophyll) if type `float32` and a variable 
+`qflags` of type `uint16`:
+
+```json
+{
+  "version": "1.0",
+  "num_levels": 8,
+  "use_saved_levels": true,
+  "tile_size": [2048, 2048],
+  "agg_methods": {
+    "CHL": "median",
+    "qflags": "first"
+  }
+}
+```
+
+---
+**xcube implementation note**: 
+When writing datasets as multi-level datasets and the `agg_methods` 
+parameter is missing, or a data variable's name is not contained in
+given `agg_methods` then `first` is used for variables that have 
+an integer data type and `median` for a floating point data type.
+In xcube Server, when opening datasets and converting them into 
+multi-level datasets on-the-fly, `agg_methods` is `first` for all 
+data variables for best performance. 
+---
+
+
 
 Related reads
 -------------

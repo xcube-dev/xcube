@@ -1,5 +1,8 @@
 ## Changes in 0.13.1 (in development)
 
+### Enhancements
+
+The multi-level dataset specification has been enhanced. (#802) 
 
 ## Changes in 0.13.0
 
