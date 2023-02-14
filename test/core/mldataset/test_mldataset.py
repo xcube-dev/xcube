@@ -20,14 +20,23 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-from .abc import MultiLevelDataset
-from .base import BaseMultiLevelDataset
-from .combined import CombinedMultiLevelDataset
-from .computed import ComputedMultiLevelDataset
-from .computed import augment_ml_dataset
-from .computed import open_ml_dataset_from_python_code
-from .fs import FsMultiLevelDataset
-from .fs import FsMultiLevelDatasetError
-from .identity import IdentityMultiLevelDataset
-from .lazy import LazyMultiLevelDataset
-from .mapped import MappedMultiLevelDataset
+import math
+import unittest
+
+from xcube.core.mldataset import FsMultiLevelDataset
+
+
+class FsMultiLevelDatasetTest(unittest.TestCase):
+    def test_compute_size_weights(self):
+        size = 2 ** 28
+        weighted_sizes = list(map(
+            math.ceil, size * FsMultiLevelDataset.compute_size_weights(5)
+        ))
+        self.assertEqual(
+            [201523393,
+             50380849,
+             12595213,
+             3148804,
+             787201],
+            weighted_sizes
+        )
