@@ -1,6 +1,10 @@
+import os
+import re
 import itertools
 import uuid
-from typing import Callable, Tuple, Any, Sequence, Iterable, Union, List, Mapping
+from typing import Callable, Tuple, Any, Sequence, Iterable, Union, List, \
+    Mapping, Optional
+import distributed
 
 import dask.array as da
 import dask.array.core as dac
@@ -133,6 +137,54 @@ def get_chunk_slices(chunk_sizes: Sequence[int]) -> Iterable[slice]:
         start = stop
         stop = start + chunk_sizes[i]
         yield slice(start, stop)
+
+
+def new_cluster(
+    provider: str = 'coiled',
+    name: Optional[str] = None,
+    software: str = None,
+    n_workers: int = 4,
+    **kwargs,
+) -> distributed.deploy.Cluster:
+    account = 'bc'
+
+    if provider == 'coiled':
+        import coiled
+        if software is None:
+            # Construct an identifier from the current user image specifier.
+            current_image = os.environ['JUPYTER_IMAGE']
+            software = re.sub(
+                '[:.]',
+                '-',
+                re.search(r'/([^/]+)$', current_image).group(1),
+            )
+            # If it doesn't exist yet, create it
+            available_environments = coiled.list_software_environments(account=account).keys()
+            if software not in available_environments:
+                coiled.create_software_environment(
+                    name=software,
+                    container=current_image
+                )
+
+        coiled_params = dict(
+            n_workers=n_workers,
+            environ=None,
+            tags={
+                'cost-center': 'avl',
+                'environment': 'dev',
+                'creator': 'auto',
+                'purpose': 'AVL dask cluster',
+            },
+            account=account,
+            name=name,
+            software=software,
+            use_best_zone=True,
+            compute_purchase_option='spot_with_fallback'
+        )
+        coiled_params.update(kwargs)
+
+        return coiled.Cluster(**coiled_params)
+    raise NotImplementedError(f'Unknown provider {provider!r}')
 
 
 class _NestedList:
