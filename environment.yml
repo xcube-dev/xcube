@@ -9,6 +9,7 @@ dependencies:
   - affine >=2.2
   - click >=8.0
   - cmocean >=2.0
+  - coiled >=0.3.1
   - dask >=2021.6
   - dask-image >=0.6
   - deprecated >=1.2
