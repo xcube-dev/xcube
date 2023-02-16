@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import unittest
+from typing import Callable
 
 from xcube.server.config import get_reverse_url_prefix
 from xcube.server.config import get_url_prefix
@@ -27,71 +28,47 @@ from xcube.server.config import get_url_prefix
 
 class ConfigTest(unittest.TestCase):
     def test_get_url_prefix(self):
-        self.assertEqual('',
-                         get_url_prefix(dict()))
-        self.assertEqual('',
-                         get_url_prefix(dict(url_prefix='')))
-        self.assertEqual('',
-                         get_url_prefix(dict(url_prefix=None)))
-        self.assertEqual('',
-                         get_url_prefix(dict(url_prefix='/')))
-        self.assertEqual('',
-                         get_url_prefix(dict(url_prefix='//')))
-
-        self.assertEqual('/api/v1',
-                         get_url_prefix(dict(url_prefix='api/v1')))
-        self.assertEqual('/api/v1',
-                         get_url_prefix(dict(url_prefix='/api/v1')))
-        self.assertEqual('/api/v1',
-                         get_url_prefix(dict(url_prefix='api/v1/')))
-        self.assertEqual('/api/v1',
-                         get_url_prefix(dict(url_prefix='/api/v1/')))
-        self.assertEqual('/api/v1',
-                         get_url_prefix(dict(url_prefix='/api/v1//')))
-        self.assertEqual('/api/v1',
-                         get_url_prefix(dict(url_prefix='//api/v1//')))
-        self.assertEqual('/api/v1',
-                         get_url_prefix(dict(url_prefix='///api/v1//')))
+        self.assert_url_prefix(get_url_prefix,
+                               key='url_prefix')
 
     def test_get_reverse_url_prefix(self):
-        self.assertEqual('',
-                         get_reverse_url_prefix(dict()))
-        self.assertEqual('',
-                         get_reverse_url_prefix(dict(reverse_url_prefix='')))
-        self.assertEqual('',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix=None)))
-        self.assertEqual('',
-                         get_reverse_url_prefix(dict(reverse_url_prefix='/')))
-        self.assertEqual('',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='//')))
+        self.assert_url_prefix(get_reverse_url_prefix,
+                               key='reverse_url_prefix')
 
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='proxy/9192')))
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='/proxy/9192')))
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='proxy/9192/')))
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='/proxy/9192/')))
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='/proxy/9192//')))
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='//proxy/9192//')))
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='///proxy/9192//')))
+    def assert_url_prefix(self,
+                          get_prefix: Callable,
+                          key: str):
+        self.assertEqual('',
+                         get_prefix({}))
+        self.assertEqual('',
+                         get_prefix({key: ''}))
+        self.assertEqual('',
+                         get_prefix({key: None}))
+        self.assertEqual('',
+                         get_prefix({key: '/'}))
+        self.assertEqual('',
+                         get_prefix({key: '//'}))
 
         self.assertEqual('/api/v1',
-                         get_reverse_url_prefix(dict(url_prefix='api/v1')))
-        self.assertEqual('/proxy/9192',
-                         get_reverse_url_prefix(
-                             dict(reverse_url_prefix='/proxy/9192',
-                                  url_prefix='/api/v1')))
+                         get_prefix({key: 'api/v1'}))
+        self.assertEqual('/api/v1',
+                         get_prefix({key: '/api/v1'}))
+        self.assertEqual('/api/v1',
+                         get_prefix({key: 'api/v1/'}))
+        self.assertEqual('/api/v1',
+                         get_prefix({key: '/api/v1/'}))
+        self.assertEqual('/api/v1',
+                         get_prefix({key: '/api/v1//'}))
+        self.assertEqual('/api/v1',
+                         get_prefix({key: '//api/v1//'}))
+        self.assertEqual('/api/v1',
+                         get_prefix({key: '///api/v1//'}))
+
+        self.assertEqual('https://test.com',
+                         get_prefix({key: 'https://test.com'}))
+        self.assertEqual('https://test.com',
+                         get_prefix({key: 'https://test.com/'}))
+        self.assertEqual('https://test.com/api',
+                         get_prefix({key: 'https://test.com/api'}))
+        self.assertEqual('http://test.com/api',
+                         get_prefix({key: 'http://test.com/api/'}))
