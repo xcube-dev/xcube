@@ -159,10 +159,11 @@ def new_cluster(
     # as function arguments. Reading them from environment variables, perhaps.
 
     if provider == 'coiled':
-            try:
-                import coiled
-            except ImportError as e:
-                raise ImportError(f"provider 'coiled' requires package 'coiled' to be installed") from e            
+        try:
+            import coiled
+        except ImportError as e:
+            raise ImportError(f"provider 'coiled' requires package"
+                              f"'coiled' to be installed") from e
 
         if software is None and 'JUPYTER_IMAGE' in os.environ:
             # If the JUPYTER_IMAGE environment variable is set, we're
