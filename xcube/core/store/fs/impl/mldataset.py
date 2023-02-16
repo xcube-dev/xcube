@@ -139,6 +139,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                            **write_params) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name='data')
         fs, fs_root, write_params = self.load_fs(write_params)
+        base_dataset_id = write_params.pop("base_dataset_id", None)
         try:
             return FsMultiLevelDataset.write_dataset(
                 data,
@@ -146,6 +147,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
                 fs=fs,
                 fs_root=fs_root,
                 replace=replace,
+                base_dataset_path=base_dataset_id,
                 **write_params
             )
         except FsMultiLevelDatasetError as e:

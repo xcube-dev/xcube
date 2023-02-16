@@ -192,8 +192,11 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         return weights[::-1] / np.sum(weights)
 
     def _get_num_levels_lazily(self) -> int:
+        spec = self._levels_spec
+        num_levels = spec.get("num_levels")
         levels = self._get_levels()
-        num_levels = len(levels)
+        if num_levels is None:
+            num_levels = len(levels)
         expected_levels = list(range(num_levels))
         for level in expected_levels:
             if level != levels[level]:
