@@ -2,8 +2,8 @@ import os
 import re
 import itertools
 import uuid
-from typing import Callable, Tuple, Any, Sequence, Iterable, Union, List, \
-    Mapping, Optional
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, \
+    Sequence, Tuple, Union
 import distributed
 
 import dask.array as da
@@ -142,39 +142,52 @@ def get_chunk_slices(chunk_sizes: Sequence[int]) -> Iterable[slice]:
 def new_cluster(
     provider: str = 'coiled',
     name: Optional[str] = None,
-    software: str = None,
+    software: Optional[str] = None,
     n_workers: int = 4,
+    resource_tags: Optional[Dict[str, str]] = None,
+    account: str = 'bc',
     **kwargs,
 ) -> distributed.deploy.Cluster:
-    account = 'bc'
+    if resource_tags is None:
+        resource_tags = {
+            'cost-center': 'unknown',
+            'environment': 'dev',
+            'creator': 'auto',
+            'purpose': 'xcube dask cluster',
+        }
+    # TODO: there should be a way to set account and tags without passing them
+    # as function arguments. Reading them from environment variables, perhaps.
 
     if provider == 'coiled':
         import coiled
-        if software is None:
-            # Construct an identifier from the current user image specifier.
+
+        if software is None and 'JUPYTER_IMAGE' in os.environ:
+            # If the JUPYTER_IMAGE environment variable is set, we're
+            # presumably in a Z2JH deployment and can base a Coiled environment
+            # on the same image.
+            # First we construct an identifier from the user image specifier.
             current_image = os.environ['JUPYTER_IMAGE']
             software = re.sub(
                 '[:.]',
                 '-',
                 re.search(r'/([^/]+)$', current_image).group(1),
             )
-            # If it doesn't exist yet, create it
-            available_environments = coiled.list_software_environments(account=account).keys()
+            # If the referenced software environment doesn't exist yet as a
+            # Coiled environment, create it from the currently used image.
+            available_environments = \
+                coiled.list_software_environments(account=account).keys()
             if software not in available_environments:
                 coiled.create_software_environment(
                     name=software,
                     container=current_image
                 )
 
+        # If software is (still) None, Coiled will try to mirror the current
+        # environment automagically.
         coiled_params = dict(
             n_workers=n_workers,
             environ=None,
-            tags={
-                'cost-center': 'avl',
-                'environment': 'dev',
-                'creator': 'auto',
-                'purpose': 'AVL dask cluster',
-            },
+            tags=resource_tags,
             account=account,
             name=name,
             software=software,
