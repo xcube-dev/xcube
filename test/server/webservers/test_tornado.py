@@ -166,11 +166,6 @@ class TornadoFrameworkTest(unittest.TestCase):
                          f"{cm.exception}")
 
 
-# class TornadoRequestHandlerTest(unittest.TestCase):
-#     def test_basic_props(self):
-#         TornadoRequestHandler()
-
-
 class TornadoApiRequestTest(unittest.TestCase):
     def test_basic_props(self):
         body = b'{"type": "feature", "id": 137}'
@@ -186,43 +181,6 @@ class TornadoApiRequestTest(unittest.TestCase):
         self.assertEqual({"type": "feature", "id": 137}, request.json)
         self.assertEqual([],
                          request.get_query_args('details'))
-
-    def test_url_for_path(self):
-        tr = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets?details=1',
-        )
-
-        request = TornadoApiRequest(tr)
-        self.assertEqual("http://localhost:8080/collections",
-                         request.url_for_path('collections'))
-        self.assertEqual("http://localhost:8080/collections?details=1",
-                         request.url_for_path('/collections',
-                                              query='details=1'))
-
-        request = TornadoApiRequest(tr,
-                                    url_prefix='/api/v1')
-        self.assertEqual(
-            "http://localhost:8080/api/v1/collections?details=1",
-            request.url_for_path('/collections',
-                                 query='details=1')
-        )
-
-        request = TornadoApiRequest(tr,
-                                    url_prefix='/api/v1',
-                                    reverse_url_prefix='/proxy/9999')
-        self.assertEqual(
-            "http://localhost:8080/api/v1/collections?details=1",
-            request.url_for_path('/collections',
-                                 query='details=1')
-        )
-        self.assertEqual(
-            "http://localhost:8080/proxy/9999/collections?details=1",
-            request.url_for_path('/collections',
-                                 query='details=1',
-                                 reverse=True)
-        )
 
     def test_get_query_args(self):
         tr = tornado.httputil.HTTPServerRequest(
@@ -283,6 +241,120 @@ class TornadoApiRequestTest(unittest.TestCase):
                          " Body does not contain valid JSON:"
                          " Expecting value: line 1 column 1 (char 0)",
                          f'{cm.exception}')
+
+
+class TornadoApiRequestUrlTest(unittest.TestCase):
+    tr = tornado.httputil.HTTPServerRequest(
+        method='GET',
+        host='localhost:8080',
+        uri='/datasets?details=1',
+    )
+
+    def test_prefixes_not_given(self):
+        request = TornadoApiRequest(self.tr)
+        self.assertEqual("http://localhost:8080/collections",
+                         request.url_for_path('collections'))
+        self.assertEqual("http://localhost:8080/collections?details=1",
+                         request.url_for_path('/collections',
+                                              query='details=1'))
+        self.assertEqual("http://localhost:8080",
+                         request.base_url)
+        self.assertEqual("http://localhost:8080",
+                         request.reverse_base_url)
+
+    def test_rel_url_prefix_given(self):
+        request = TornadoApiRequest(self.tr,
+                                    url_prefix='/api/v1')
+        self.assertEqual(
+            "http://localhost:8080/api/v1/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1')
+        )
+        self.assertEqual("http://localhost:8080/api/v1",
+                         request.base_url)
+        self.assertEqual("http://localhost:8080/api/v1",
+                         request.reverse_base_url)
+
+    def test_rel_url_prefix_and_rel_reverse_url_prefix_given(self):
+        request = TornadoApiRequest(self.tr,
+                                    url_prefix='/api/v1',
+                                    reverse_url_prefix='/proxy/9999')
+        self.assertEqual(
+            "http://localhost:8080/api/v1/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1')
+        )
+        self.assertEqual(
+            "http://localhost:8080/proxy/9999/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1',
+                                 reverse=True)
+        )
+        self.assertEqual("http://localhost:8080/api/v1",
+                         request.base_url)
+        self.assertEqual("http://localhost:8080/proxy/9999",
+                         request.reverse_base_url)
+
+    def test_abs_url_prefix_given(self):
+        request = TornadoApiRequest(self.tr,
+                                    url_prefix='https://test.com')
+        self.assertEqual(
+            "https://test.com/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1')
+        )
+        self.assertEqual(
+            "https://test.com/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1',
+                                 reverse=True)
+        )
+        self.assertEqual("https://test.com",
+                         request.base_url)
+        self.assertEqual("https://test.com",
+                         request.reverse_base_url)
+
+    def test_abs_url_prefix_and_rel_reverse_url_prefix_given(self):
+        request = TornadoApiRequest(self.tr,
+                                    url_prefix='https://test.com/api/v1',
+                                    reverse_url_prefix='/proxy/9999')
+        self.assertEqual(
+            "https://test.com/api/v1/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1')
+        )
+        self.assertEqual(
+            "http://localhost:8080/proxy/9999/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1',
+                                 reverse=True)
+        )
+        self.assertEqual("https://test.com/api/v1",
+                         request.base_url)
+        self.assertEqual("http://localhost:8080/proxy/9999",
+                         request.reverse_base_url)
+
+    def test_abs_reverse_url_prefix_given(self):
+        request = TornadoApiRequest(self.tr,
+                                    url_prefix='',
+                                    reverse_url_prefix='https://test.com/api')
+        self.assertEqual(
+            "http://localhost:8080/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1')
+        )
+        self.assertEqual(
+            "https://test.com/api/collections?details=1",
+            request.url_for_path('/collections',
+                                 query='details=1',
+                                 reverse=True)
+        )
+        self.assertEqual("http://localhost:8080",
+                         request.base_url)
+        self.assertEqual("https://test.com/api",
+                         request.reverse_base_url)
+
+
 
 
 class TornadoRequestHandlerTest(unittest.TestCase):

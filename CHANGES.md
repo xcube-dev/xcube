@@ -1,5 +1,14 @@
 ## Changes in 0.13.1 (in development)
 
+### Fixes
+
+* The xcube server configuration parameters `url_prefix` and 
+  `reverse_url_prefix` can now be absolute URLs. This fixes a problem for 
+  relative prefixes such as `"proxy/8000"` used for xcube server running 
+  inside JupyterLab. Here, the expected returned self-referencing URL was
+  `https://{host}/users/{user}/proxy/8000/{path}` but we got
+  `http://{host}/proxy/8000/{path}`. (#806)
+
 
 ## Changes in 0.13.0
 
