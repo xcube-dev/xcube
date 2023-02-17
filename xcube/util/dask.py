@@ -2,6 +2,7 @@ import os
 import re
 import itertools
 import uuid
+import warnings
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, \
     Sequence, Tuple, Union
 import distributed
@@ -16,6 +17,8 @@ IntIterable = Iterable[int]
 IntTupleIterable = Iterable[IntTuple]
 SliceTupleIterable = Iterable[SliceTuple]
 
+_CLUSTER_TAGS_ENV_VAR_NAME = 'XCUBE_CLUSTER_TAGS'
+_CLUSTER_ACCOUNT_ENV_VAR_NAME = 'XCUBE_CLUSTER_ACCOUNT'
 
 def compute_array_from_func(func: Callable[..., np.ndarray],
                             shape: IntTuple,
@@ -145,18 +148,22 @@ def new_cluster(
     software: Optional[str] = None,
     n_workers: int = 4,
     resource_tags: Optional[Dict[str, str]] = None,
-    account: str = 'bc',
+    account: str = None,
     **kwargs,
 ) -> distributed.deploy.Cluster:
-    if resource_tags is None:
-        resource_tags = {
-            'cost-center': 'unknown',
-            'environment': 'dev',
-            'creator': 'auto',
-            'purpose': 'xcube dask cluster',
-        }
-    # TODO: there should be a way to set account and tags without passing them
-    # as function arguments. Reading them from environment variables, perhaps.
+
+    if _CLUSTER_ACCOUNT_ENV_VAR_NAME in os.environ:
+        account_from_env_var = os.environ[_CLUSTER_ACCOUNT_ENV_VAR_NAME]
+    else:
+        account_from_env_var = None
+        warnings.warn(f'Environment variable {_CLUSTER_ACCOUNT_ENV_VAR_NAME} '
+                      f'not set; cluster account name may be incorrect.')
+
+    cluster_account = (
+        account if account is not None else
+        account_from_env_var if account_from_env_var is not None else
+        'bc'
+    )
 
     if provider == 'coiled':
         try:
@@ -164,7 +171,6 @@ def new_cluster(
         except ImportError as e:
             raise ImportError(f"provider 'coiled' requires package"
                               f"'coiled' to be installed") from e
-
         if software is None and 'JUPYTER_IMAGE' in os.environ:
             # If the JUPYTER_IMAGE environment variable is set, we're
             # presumably in a Z2JH deployment and can base a Coiled environment
@@ -191,8 +197,8 @@ def new_cluster(
         coiled_params = dict(
             n_workers=n_workers,
             environ=None,
-            tags=resource_tags,
-            account=account,
+            tags=_collate_cluster_resource_tags(resource_tags),
+            account=cluster_account,
             name=name,
             software=software,
             use_best_zone=True,
@@ -202,6 +208,26 @@ def new_cluster(
 
         return coiled.Cluster(**coiled_params)
     raise NotImplementedError(f'Unknown provider {provider!r}')
+
+
+def _collate_cluster_resource_tags(
+        extra_tags: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    fallback_tags = {
+        'cost-center': 'unknown',
+        'environment': 'dev',
+        'creator': 'auto',
+        'purpose': 'xcube dask cluster'
+    }
+    if _CLUSTER_TAGS_ENV_VAR_NAME in os.environ:
+        kvps = os.environ[_CLUSTER_TAGS_ENV_VAR_NAME].split(':')
+        env_var_tags = {
+            (parts := kvp.split('=', 1))[0]: parts[1] for kvp in kvps
+        }
+    else:
+        warnings.warn(f'Environment variable {_CLUSTER_TAGS_ENV_VAR_NAME} not '
+                      f'set; cluster resource tags may be missing.')
+        env_var_tags = {}
+    return fallback_tags | env_var_tags | extra_tags
 
 
 class _NestedList:
