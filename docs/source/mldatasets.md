@@ -23,8 +23,8 @@ In xcube, multi-resolution datasets are represented by the abstract class
 `xcube.core.mldataset.MultiLevelDataset`. The xcube data store framework
 refers to this datatype using the alias `mldataset`. The corresponding
 default data format is the xcube _Levels_ format, named `levels`.
-It is planned to also support Cloud Optimized GeoTIFF (COG) as format 
-for multi-resolution datasets in xcube.
+xcube also supports the Cloud Optimized GeoTIFF (COG) format 
+for reading multi-resolution datasets.
 
 The xcube Levels Format
 -----------------------
@@ -128,7 +128,6 @@ data variables for best performance.
 ---
 
 
-
 Related reads
 -------------
 
@@ -138,20 +137,15 @@ Related reads
   in zarr-developers / zarr-specs on GitHub.
 * [Package ndpyramid](https://github.com/carbonplan/ndpyramid)
 
+
 To be discussed
 ---------------
 
 * Allow links for all levels?
-* Make top-level directory a Zarr group (`.zgroup`)
-  and encode level metadata (e.g. `num_levels` and level links) in `.zattrs`, or 
-  even better `.zlevels`?
-* Allow a Zarr levels sub-group of the level zero Zarr dataset.
-  It would contain all levels without level zero, hence avoiding the need to 
-  link level zeros. 
+* Do not write `0.link` file. Instead, provide in `.zlevels` where to find 
+  each level.
+* No longer use `.zarr` extension for levels. Just use the index as name.
+* Make top-level directory a Zarr group (`.zgroup`), so the multi-level 
+  dataset can be opened as a group using the `zarr` package.
 
-To do
------
-
-* Currently, the FS data stores treat relative link paths as relative
-  to the data store's `root`. See https://github.com/dcs4cop/xcube/pull/637
 
