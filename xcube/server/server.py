@@ -97,8 +97,8 @@ class Server(AsyncExecution):
         static_routes.extend(self._collect_api_static_routes(apis))
         routes = self._collect_api_routes(apis)
         url_prefix = get_url_prefix(config)
-        framework.add_static_routes(static_routes, url_prefix)
         framework.add_routes(routes, url_prefix)
+        framework.add_static_routes(static_routes, url_prefix)
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(
