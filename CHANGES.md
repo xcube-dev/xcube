@@ -2,7 +2,12 @@
 
 ### Enhancements
 
-The multi-level dataset specification has been enhanced. (#802) 
+* Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
+  xcube server. (#455)
+  It serves a single collection named "datasets" whose items are the
+  datasets published by the service.
+
+* The multi-level dataset specification has been enhanced. (#802) 
 
 ### Fixes
 
