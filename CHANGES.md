@@ -6,7 +6,16 @@
   xcube server. (#455)
   It serves a single collection named "datasets" whose items are the
   datasets published by the service.
-
+* Added new endpoint `/viewer/config/{*path}` that allows for configuring
+  the viewer accessible via endpoint `/viewer`. The actual source for the 
+  configuration items is configured by xcube server configuration using the 
+  new entry `Viewer/Configuration/Path`, for example:
+  ```yaml
+  Viewer:
+    Configuration:
+      Path: s3://xcube-viewer-app/bc/dev/viewer/ 
+  ```
+  
 ### Fixes
 
 * The xcube server configuration parameters `url_prefix` and 

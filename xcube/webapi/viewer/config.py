@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2023 by the xcube team and contributors
+# Copyright (c) 2022 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -19,13 +19,25 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import Api
-from .config import CONFIG_SCHEMA
-from .context import ViewerContext
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.webapi.common.schemas import STRING_SCHEMA
 
-api = Api(
-    'viewer',
-    description='xcube Viewer web application',
-    create_ctx=ViewerContext,
-    config_schema=CONFIG_SCHEMA
+CONFIGURATION_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Path=STRING_SCHEMA,
+    ),
+    additional_properties=False
+)
+
+VIEWER_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Configuration=CONFIGURATION_SCHEMA,
+    ),
+    additional_properties=False
+)
+
+CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Viewer=VIEWER_SCHEMA,
+    )
 )
