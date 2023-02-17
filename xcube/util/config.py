@@ -27,7 +27,7 @@ import os
 import os.path
 import string
 from typing import Any, Dict, Optional, Iterable, Tuple, List, Type
-
+import fsspec
 import yaml
 
 from xcube.constants import LOG
@@ -200,7 +200,7 @@ def load_json_or_yaml_config(
 
 
 def _load_json_or_yaml_config(config_file: str) -> Any:
-    with open(config_file, 'r') as fp:
+    with fsspec.open(config_file, mode='r') as fp:
         file_content = fp.read()
     template = string.Template(file_content)
     file_content = template.safe_substitute(os.environ)
