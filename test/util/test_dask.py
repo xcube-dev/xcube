@@ -2,6 +2,8 @@ import unittest
 import unittest.mock
 import os
 import sys
+from builtins import ImportError
+
 import numpy as np
 
 from xcube.util.dask import _NestedList
@@ -107,7 +109,7 @@ class CoiledMock:
         return 'mocked cluster'
 
 
-class CoiledTest(unittest.TestCase):
+class NewClusterTest(unittest.TestCase):
     @unittest.mock.patch.dict(sys.modules, {'coiled': CoiledMock()})
     @unittest.mock.patch.dict(
         os.environ,
@@ -138,6 +140,19 @@ class CoiledTest(unittest.TestCase):
                       'tag3': 'value3'},
              'use_best_zone': True},
             coiled_mock.cluster_kwargs)
+
+    def test_new_coiled_cluster_no_coiled(self):
+        self.assertRaises(ImportError, new_cluster)
+
+    @unittest.mock.patch.dict(sys.modules, {'coiled': CoiledMock()})
+    def test_new_coiled_cluster_no_env_vars(self):
+        self.assertWarnsRegex(UserWarning, 'account name may be incorrect',
+                              new_cluster)
+        self.assertWarnsRegex(UserWarning, 'tags may be missing',
+                              new_cluster)
+
+    def test_new_cluster_unknown_provider(self):
+        self.assertRaises(NotImplementedError, new_cluster, dict(provider='unknown_provider'))
 
 
 class NestedListTest(unittest.TestCase):
