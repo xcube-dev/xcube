@@ -3,19 +3,19 @@
 ### Enhancements
 
 * Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
-  xcube server. (#455)
+  xcube server. 
   It serves a single collection named "datasets" whose items are the
-  datasets published by the service.
+  datasets published by the service. (#455)
 
-* Simplified the cloud deployment of xcube server/viewer applications by
-  adding the following two features:
-
-  - xcube server configurations files can now also be URLs which allows 
+* Simplified the cloud deployment of xcube server/viewer applications (#815). 
+  This has been achieved by the following new xcube server features:
+  - Configuration files can now also be URLs which allows 
     provisioning from S3-compatible object storage. 
     For example, it is now possible to invoke xcube server as follows: 
-    `xcube serve --config s3://cyanoalert/xcube/demo.yaml ...`.
-
-  - Added new xcube server endpoint `/viewer/config/{*path}` that allows 
+    ```bash
+    $ xcube serve --config s3://cyanoalert/xcube/demo.yaml ...
+    ```
+  - A new endpoint `/viewer/config/{*path}` allows 
     for configuring the viewer accessible via endpoint `/viewer`. 
     The actual source for the configuration items is configured by xcube 
     server configuration using the new entry `Viewer/Configuration/Path`, 
