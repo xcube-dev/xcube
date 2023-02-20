@@ -25,7 +25,18 @@
       Configuration:
         Path: s3://cyanoalert/xcube/viewer/ 
     ```
-  
+  - A typical xcube server configuration comprises many paths, and 
+    relative paths are resolved against the `base_dir` configuration parameter. 
+    Values of parameters passed to user functions that represent paths, can now 
+    be made absolute using the template parameter `base_dir`, e.g.,
+    ```yaml
+    Augmentation:
+      Path: augmentation/metadata.py
+      Function: metadata:update_metadata
+      InputParameters:
+        bands_config: ${base_dir}/../common/bands.yaml
+    ```
+
 ### Fixes
 
 * The xcube server configuration parameters `url_prefix` and 

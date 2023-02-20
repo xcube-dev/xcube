@@ -113,6 +113,21 @@ class ResourcesContext(ApiContext):
     def resolve_config_path(self, path: str) -> str:
         return resolve_config_path(self.config, path)
 
+    def interpolate_config_value(self, value: Any) -> Any:
+        """Replace any occurrences of template variables in given *value*.
+        Currently, only "${base_dir}" is replaced.
+        """
+        if isinstance(value, dict):
+            return {k: self.interpolate_config_value(v)
+                    for k, v in value.items()}
+        if isinstance(value, list):
+            return [self.interpolate_config_value(v)
+                    for v in value]
+        if isinstance(value, str):
+            if "${base_dir}" in value:
+                return value.replace("${base_dir}", self.base_dir)
+        return value
+
 
 def normalize_prefix(prefix: Optional[str]) -> str:
     if not prefix:

@@ -259,6 +259,33 @@ class DatasetsContextTest(unittest.TestCase):
         ):
             ctx.get_ml_dataset("ds-4")
 
+    def test_interpolate_config_value(self):
+        ctx = get_datasets_ctx()
+
+        self.assertEqual(
+            f"{ctx.base_dir}/test.yaml",
+            ctx.interpolate_config_value(
+                "${base_dir}/test.yaml"
+            )
+        )
+
+        self.assertEqual(13, ctx.interpolate_config_value(13))
+        self.assertEqual(True, ctx.interpolate_config_value(True))
+
+        self.assertEqual(
+            [f"{ctx.base_dir}/test.yaml", 13, True],
+            ctx.interpolate_config_value(
+                ["${base_dir}/test.yaml", 13, True]
+            )
+        )
+
+        self.assertEqual(
+            dict(path=f"{ctx.base_dir}/test.yaml", count=13, check=True),
+            ctx.interpolate_config_value(
+                dict(path="${base_dir}/test.yaml", count=13, check=True)
+            )
+        )
+
 
 class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
 
