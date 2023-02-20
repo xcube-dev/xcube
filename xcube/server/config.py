@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import os.path
+import urllib.parse
 from functools import cache
 from typing import Mapping, Any, Optional
 
@@ -127,10 +128,16 @@ def resolve_config_path(config: Mapping[str, Any], path: str) -> str:
     """Resolve a given relative *path* against the base directory given by
     *config*. Return *path* unchanged, if it is absolute.
     """
-    if not is_absolute_path(path):
+    if is_absolute_path(path):
+        abs_path = path
+    else:
         base_dir = get_base_dir(config)
-        return f"{base_dir}/{path}"
-    return path
+        abs_path = f"{base_dir}/{path}"
+    if "://" in abs_path:
+        # Resolve ".." and "." in path
+        scheme, host, path, _, _ = urllib.parse.urlsplit(abs_path)
+        abs_path = urllib.parse.urljoin(f"{scheme}://{host}", path)
+    return abs_path
 
 
 def is_absolute_path(path: str) -> bool:
