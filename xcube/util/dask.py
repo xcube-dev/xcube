@@ -151,6 +151,31 @@ def new_cluster(
     account: str = None,
     **kwargs,
 ) -> distributed.deploy.Cluster:
+    """
+    Create a new Dask cluster
+
+    Cloud resource tags can be specified in an environment variable
+    XCUBE_CLUSTER_TAGS in the format
+    ``tag_1=value_1:tag_2=value_2:...:tag_n=value_n``. In case of
+    conflicts, tags specified in ``resource_tags`` will override tags
+    specified by the environment variable.
+
+    The cluster provider account name can be specified in an environment
+    variable ``XCUBE_CLUSTER_ACCOUNT``. If the ``account`` argument is
+    given to ``new_cluster``, it will override the value from the environment
+    variable.
+
+    :param provider: identifier of the provider to use. Currently, only
+        'coiled' is supported.
+    :param name: name to use as an identifier for the cluster
+    :param software: identifier for the software environment to be used.
+    :param n_workers: number of workers in the cluster
+    :param resource_tags: tags to apply to the cloud resources forming the
+        cluster
+    :param account: cluster provider account name
+    :param **kwargs: further named arguments will be passed on to the
+        cluster creation function
+    """
 
     if resource_tags is None:
         resource_tags = {}
