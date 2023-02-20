@@ -152,6 +152,8 @@ def new_cluster(
     **kwargs,
 ) -> distributed.deploy.Cluster:
 
+    if resource_tags is None:
+        resource_tags = {}
     if _CLUSTER_ACCOUNT_ENV_VAR_NAME in os.environ:
         account_from_env_var = os.environ[_CLUSTER_ACCOUNT_ENV_VAR_NAME]
     else:
