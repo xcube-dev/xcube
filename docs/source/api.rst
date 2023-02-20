@@ -111,6 +111,8 @@ Utilities
 .. autoclass:: xcube.core.schema.CubeSchema
     :members:
 
+.. autofunction:: xcube.util.dask.new_cluster
+
 Plugin Development
 ==================
 
