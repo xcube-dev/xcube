@@ -6,15 +6,25 @@
   xcube server. (#455)
   It serves a single collection named "datasets" whose items are the
   datasets published by the service.
-* Added new endpoint `/viewer/config/{*path}` that allows for configuring
-  the viewer accessible via endpoint `/viewer`. The actual source for the 
-  configuration items is configured by xcube server configuration using the 
-  new entry `Viewer/Configuration/Path`, for example:
-  ```yaml
-  Viewer:
-    Configuration:
-      Path: s3://xcube-viewer-app/bc/dev/viewer/ 
-  ```
+
+* Simplified the cloud deployment of xcube server/viewer applications by
+  adding the following two features:
+
+  - xcube server configurations files can now also be URLs which allows 
+    provisioning from S3-compatible object storage. 
+    For example, it is now possible to invoke xcube server as follows: 
+    `xcube serve --config s3://cyanoalert/xcube/demo.yaml ...`.
+
+  - Added new xcube server endpoint `/viewer/config/{*path}` that allows 
+    for configuring the viewer accessible via endpoint `/viewer`. 
+    The actual source for the configuration items is configured by xcube 
+    server configuration using the new entry `Viewer/Configuration/Path`, 
+    for example:
+    ```yaml
+    Viewer:
+      Configuration:
+        Path: s3://cyanoalert/xcube/viewer/ 
+    ```
   
 ### Fixes
 
