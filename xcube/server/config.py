@@ -20,7 +20,6 @@
 # DEALINGS IN THE SOFTWARE.
 
 import os.path
-import urllib.parse
 from functools import cache
 from typing import Mapping, Any, Optional
 
@@ -133,11 +132,53 @@ def resolve_config_path(config: Mapping[str, Any], path: str) -> str:
     else:
         base_dir = get_base_dir(config)
         abs_path = f"{base_dir}/{path}"
+    # Resolve ".." and "." in path
     if "://" in abs_path:
-        # Resolve ".." and "." in path
-        scheme, host, path, _, _ = urllib.parse.urlsplit(abs_path)
-        abs_path = urllib.parse.urljoin(f"{scheme}://{host}", path)
-    return abs_path
+        scheme, host_path = abs_path.split("://", maxsplit=1)
+        if "/" in host_path:
+            hostname, url_path = host_path.split("/", maxsplit=1)
+            url_path = _remove_path_dot_segments(url_path)
+            return f"{scheme}://{hostname}/{url_path}"
+        else:
+            return f"{scheme}://{host_path}"
+    else:
+        if os.name == "nt":
+            # Windows can also live with forward slashes
+            abs_path = abs_path.replace("\\", "/")
+        return _remove_path_dot_segments(abs_path)
+
+
+#
+# Following code is stolen from urllib3.url
+#
+def _remove_path_dot_segments(path: str) -> str:
+    # See http://tools.ietf.org/html/rfc3986#section-5.2.4 for pseudo-code
+    segments = path.split("/")  # Turn the path into a list of segments
+    output = []  # Initialize the variable to use to store output
+
+    for segment in segments:
+        # '.' is the current directory, so ignore it, it is superfluous
+        if segment == ".":
+            continue
+        # Anything other than '..', should be appended to the output
+        elif segment != "..":
+            output.append(segment)
+        # In this case segment == '..', if we can, we should pop the last
+        # element
+        elif output:
+            output.pop()
+
+    # If the path starts with '/' and the output is empty or the first string
+    # is non-empty
+    if path.startswith("/") and (not output or output[0]):
+        output.insert(0, "")
+
+    # If the path starts with '/.' or '/..' ensure we add one more empty
+    # string to add a trailing '/'
+    if path.endswith(("/.", "/..")):
+        output.append("")
+
+    return "/".join(output)
 
 
 def is_absolute_path(path: str) -> bool:
