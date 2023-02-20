@@ -38,13 +38,7 @@ class ViewerContext(ResourcesContext):
 
     @cached_property
     def config_path(self) -> Optional[str]:
-        config = self.config
-        config_path = config.get("Viewer", {}).get("Configuration", {}).get("Path")
-        if config_path is None:
-            return None
-        if "//" in config_path \
-                or ":" in config_path \
-                or config_path.startswith("/"):
-            return config_path
-        base_dir = self.config.get("base_dir", ".")
-        return f"{base_dir}/{config_path}"
+        return self.get_config_path(
+            self.config.get("Viewer", {}).get("Configuration", {}),
+            "'Configuration' item of 'Viewer'"
+        )

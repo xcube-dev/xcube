@@ -27,6 +27,7 @@ import os
 import os.path
 import string
 from typing import Any, Dict, Optional, Iterable, Tuple, List, Type
+
 import fsspec
 import yaml
 
@@ -160,10 +161,6 @@ def load_configs(
 ) -> Dict[str, Any]:
     config_dicts = []
     for config_path in config_paths:
-        if not os.path.isfile(config_path):
-            raise exception_type(
-                f'Cannot find configuration {config_path!r}'
-            )
         config_dict = load_json_or_yaml_config(
             config_path,
             exception_type=exception_type
@@ -180,6 +177,10 @@ def load_json_or_yaml_config(
     try:
         config_dict = _load_json_or_yaml_config(config_path)
         LOG.info(f'Configuration loaded: {config_path}')
+    except FileNotFoundError as e:
+        raise exception_type(
+            f'Cannot find configuration {config_path!r}'
+        ) from e
     except yaml.YAMLError as e:
         raise exception_type(
             f'YAML in {config_path!r} is invalid: {e}'

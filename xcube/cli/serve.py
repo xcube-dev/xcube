@@ -63,22 +63,26 @@ assets_to_show_choices.extend([a + '.json' for a in assets_to_show])
               metavar='CONFIG', default=None, multiple=True,
               help='Configuration YAML or JSON file. '
                    ' If multiple are passed,'
-                   ' they will be merged in order.')
+                   ' they will be merged in order.'
+                   ' Can be a local filesystem path or an absolute URL.')
 @click.option('--base-dir', 'base_dir',
               metavar='BASE_DIR', default=None,
               help='Directory used to resolve relative paths'
                    ' in CONFIG files. Defaults to the parent directory'
-                   ' of (last) CONFIG file.')
+                   ' of (last) CONFIG file.'
+                   ' Can be a local filesystem path or an absolute URL.')
 @click.option('--prefix', 'url_prefix',
               metavar='URL_PREFIX', default=None,
               help='Prefix path to be used for all endpoint URLs.'
-                   ' May include template variables, e.g., "api/{version}".')
+                   ' May include template variables, e.g., "api/{version}".'
+                   ' Can be an absolute URL or a relative URL path.')
 @click.option('--revprefix', 'reverse_url_prefix',
               metavar='REVERSE_URL_PREFIX', default=None,
               help='Prefix path to be used for reverse endpoint URLs'
                    ' that may be reported by server responses.'
                    ' May include template variables, e.g., "/proxy/{port}".'
-                   ' Defaults to value of URL_PREFIX.')
+                   ' Defaults to value of URL_PREFIX.'
+                   ' Can be an absolute URL or relative URL path.')
 @click.option('--traceperf', 'trace_perf', is_flag=True, default=None,
               help='Whether to output extra performance logs.')
 @click.option('--update-after', 'update_after',
@@ -146,6 +150,7 @@ def serve(framework_name: str,
     from xcube.server.framework import get_framework_class
     from xcube.server.helpers import ConfigChangeObserver
     from xcube.server.server import Server
+    from xcube.server.config import normalize_base_dir
     from xcube.util.config import load_configs
 
     configure_cli_output(quiet=quiet, verbosity=verbosity)
@@ -169,13 +174,17 @@ def serve(framework_name: str,
         config["address"] = address
 
     if base_dir is not None:
-        base_dir = str(Path(base_dir).absolute())
+        pass
     elif "base_dir" in config:
-        base_dir = str(Path(config["base_dir"]).parent.absolute())
+        base_dir = config["base_dir"]
     elif config_paths:
-        base_dir = str(Path(config_paths[-1]).parent.absolute())
+        config_path = config_paths[-1]
+        if '\\' in config_path:
+            config_path.replace('\\', '/')
+        base_dir = '/'.join(config_path.split('/')[:-1])
     else:
-        base_dir = str(Path("").parent.absolute())
+        base_dir = ""
+    base_dir = normalize_base_dir(base_dir)
     config["base_dir"] = base_dir
 
     if url_prefix is not None:

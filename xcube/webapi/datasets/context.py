@@ -49,7 +49,9 @@ from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
-from xcube.util.assertions import assert_instance, assert_given
+from xcube.server.config import is_absolute_path
+from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_instance
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_custom_colormap
@@ -315,13 +317,10 @@ class DatasetsContext(ResourcesContext):
             roots = _get_roots(paths)
             for root in roots:
                 abs_root = root
-                # For local file systems:
-                # Determine absolute root from base dir
                 fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system,
                                                       file_system)
-                if fs_protocol == 'file' and not os.path.isabs(abs_root):
-                    abs_root = os.path.join(base_dir, abs_root)
-                    abs_root = os.path.normpath(abs_root)
+                if not is_absolute_path(abs_root):
+                    abs_root = f"{base_dir}/{root}"
                 store_params_for_root = store_params.copy()
                 store_params_for_root['root'] = abs_root
                 # See if there already is a store with this configuration

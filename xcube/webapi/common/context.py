@@ -19,8 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os
-import os.path
 import threading
 from typing import Any, Dict, List, Optional, Mapping
 
@@ -28,6 +26,8 @@ from xcube.constants import LOG
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiError
 from xcube.server.api import Context
+from xcube.server.config import get_base_dir
+from xcube.server.config import resolve_config_path
 from xcube.util.perf import measure_time_cm
 from xcube.version import version
 from xcube.webapi.auth import AuthContext
@@ -40,7 +40,7 @@ class ResourcesContext(ApiContext):
         # noinspection PyTypeChecker
         self._auth_ctx: AuthContext = server_ctx.get_api_ctx("auth")
         assert isinstance(self._auth_ctx, AuthContext)
-        self._base_dir = os.path.abspath(self.config.get("base_dir", "."))
+        self._base_dir = get_base_dir(self.config)
         self._prefix = normalize_prefix(self.config.get("prefix", ""))
         self._trace_perf = self.config.get("trace_perf", False)
         self._rlock = threading.RLock()
@@ -102,16 +102,16 @@ class ResourcesContext(ApiContext):
     def get_config_path(self,
                         config: Mapping[str, Any],
                         config_name: str,
-                        path_entry_name: str = 'Path',
-                        is_url: bool = False) -> str:
+                        path_entry_name: str = 'Path') -> str:
         path = config.get(path_entry_name)
         if not path:
-            raise ApiError.InternalServerError(
+            raise ApiError.InvalidServerConfig(
                 f"Missing entry {path_entry_name!r} in {config_name}"
             )
-        if not is_url and not os.path.isabs(path):
-            path = os.path.join(self._base_dir, path)
-        return path
+        return self.resolve_config_path(path)
+
+    def resolve_config_path(self, path: str) -> str:
+        return resolve_config_path(self.config, path)
 
 
 def normalize_prefix(prefix: Optional[str]) -> str:
