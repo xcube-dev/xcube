@@ -661,7 +661,7 @@ class DatasetsContext(ResourcesContext):
                 f"'Augmentation' of dataset configuration {ds_id}"
             )
             input_parameters = augmentation.get('InputParameters', {})
-            input_parameters = self.interpolate_config_value(input_parameters)
+            input_parameters = self.eval_config_value(input_parameters)
             callable_name = augmentation.get('Class')
             is_factory = callable_name is not None
             if not is_factory:
@@ -842,7 +842,7 @@ def _open_ml_dataset_from_python_code(
         callable_name = dataset_config.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_config.get('InputDatasets', [])
     input_parameters = dataset_config.get('InputParameters', {})
-    input_parameters = ctx.interpolate_config_value(input_parameters)
+    input_parameters = ctx.eval_config_value(input_parameters)
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(
         dataset_config
     )

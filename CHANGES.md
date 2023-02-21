@@ -26,15 +26,22 @@
         Path: s3://cyanoalert/xcube/viewer/ 
     ```
   - A typical xcube server configuration comprises many paths, and 
-    relative paths are resolved against the `base_dir` configuration parameter. 
-    Values of parameters passed to user functions that represent paths, can now 
-    be made absolute using the template parameter `base_dir`, e.g.,
+    relative paths of known configuration parameters are resolved against 
+    the `base_dir` configuration parameter. However, for values of 
+    parameters passed to user functions that represent paths in user code, 
+    this cannot be done automatically. For such situations, expressions 
+    can be used. An expression is any string between `"${"` and `"}"` in a 
+    configuration value. An expression can contain the variables
+    `base_dir` (a string), `ctx` the current server context 
+    (type `xcube.webapi.datasets.DatasetsContext`), as well as the function
+    `resolve_config_path(path)` that is used to make a path absolut with 
+    respect to `base_dir` and to normalize it. For example
     ```yaml
     Augmentation:
       Path: augmentation/metadata.py
       Function: metadata:update_metadata
       InputParameters:
-        bands_config: ${base_dir}/../common/bands.yaml
+        bands_config: ${resolve_config_path("../common/bands.yaml")}
     ```
 
 ### Fixes
