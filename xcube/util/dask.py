@@ -161,7 +161,7 @@ def new_cluster(
     specified by the environment variable.
 
     The cluster provider account name can be specified in an environment
-    variable ``XCUBE_CLUSTER_ACCOUNT``. If the ``account`` argument is
+    variable ``XCUBE_DASK_CLUSTER_ACCOUNT``. If the ``account`` argument is
     given to ``new_cluster``, it will override the value from the environment
     variable.
 
