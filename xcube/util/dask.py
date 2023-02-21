@@ -155,7 +155,7 @@ def new_cluster(
     Create a new Dask cluster
 
     Cloud resource tags can be specified in an environment variable
-    XCUBE_CLUSTER_TAGS in the format
+    XCUBE_DASK_CLUSTER_TAGS in the format
     ``tag_1=value_1:tag_2=value_2:...:tag_n=value_n``. In case of
     conflicts, tags specified in ``resource_tags`` will override tags
     specified by the environment variable.
