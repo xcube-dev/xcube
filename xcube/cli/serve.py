@@ -174,16 +174,20 @@ def serve(framework_name: str,
         config["address"] = address
 
     if base_dir is not None:
+        # Use base_dir CLI option
         pass
     elif "base_dir" in config:
+        # Use base_dir from configuration
         base_dir = config["base_dir"]
     elif config_paths:
+        # Use base_dir derived from last config file's parent
         config_path = config_paths[-1]
         if '\\' in config_path:
             config_path.replace('\\', '/')
         base_dir = '/'.join(config_path.split('/')[:-1])
     else:
-        base_dir = ""
+        # base_dir is current working directory
+        base_dir = str(Path.cwd())
     base_dir = normalize_base_dir(base_dir)
     config["base_dir"] = base_dir
 
@@ -233,7 +237,11 @@ def serve(framework_name: str,
     if open_viewer:
         def open_xcube_viewer():
             import webbrowser
-            webbrowser.open_new_tab(f'http://localhost:{port}/viewer/')
+            server_url = f'http://localhost:{port}'
+            webbrowser.open_new_tab(f'{server_url}/viewer/'
+                                    f'?serverUrl={server_url}'
+                                    f'&serverId=local'
+                                    f'&serverName=Local')
 
         server.call_later(2.5, open_xcube_viewer)
 
