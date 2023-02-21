@@ -577,7 +577,8 @@ class DatasetsContext(ResourcesContext):
                     custom_colormap = load_custom_colormap(
                         custom_cmap_path
                     )
-                    custom_colormaps[custom_cmap_path] = custom_colormap
+                    if custom_colormap is not None:
+                        custom_colormaps[custom_cmap_path] = custom_colormap
                 if custom_colormap is not None:
                     color_mappings[var_name] = {
                         "ColorBar": custom_colormap.cm_name,
