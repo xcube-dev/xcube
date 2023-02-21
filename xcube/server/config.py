@@ -43,16 +43,16 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
         ),
         base_dir=JsonStringSchema(
             title='Base directory used to resolve relative local paths.'
-                  ' Can be a local filesystem path or a absolute URL.',
+                  ' Can be a local filesystem path or an absolute URL.',
         ),
         url_prefix=JsonStringSchema(
             title='Prefix to be prepended to all URL route paths.'
-                  ' Can be an absolute URL or relative URL path.',
+                  ' Can be an absolute URL or a relative URL path.',
         ),
         reverse_url_prefix=JsonStringSchema(
             title='Prefix to be prepended to reverse URL paths'
                   ' returned by server responses.'
-                  ' Can be an absolute URL or relative URL path.',
+                  ' Can be an absolute URL or a relative URL path.',
         ),
         trace_perf=JsonBooleanSchema(
             title='Output performance measures',
