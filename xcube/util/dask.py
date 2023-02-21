@@ -17,8 +17,8 @@ IntIterable = Iterable[int]
 IntTupleIterable = Iterable[IntTuple]
 SliceTupleIterable = Iterable[SliceTuple]
 
-_CLUSTER_TAGS_ENV_VAR_NAME = 'XCUBE_CLUSTER_TAGS'
-_CLUSTER_ACCOUNT_ENV_VAR_NAME = 'XCUBE_CLUSTER_ACCOUNT'
+_CLUSTER_TAGS_ENV_VAR_NAME = 'XCUBE_DASK_CLUSTER_TAGS'
+_CLUSTER_ACCOUNT_ENV_VAR_NAME = 'XCUBE_DASK_CLUSTER_ACCOUNT'
 
 def compute_array_from_func(func: Callable[..., np.ndarray],
                             shape: IntTuple,
