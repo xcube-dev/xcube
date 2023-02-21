@@ -7,6 +7,9 @@
   It serves a single collection named "datasets" whose items are the
   datasets published by the service.
 
+* Added a `new_cluster` function to `xcube.util.dask`, which can create
+  Dask clusters with various configuration options.
+
 ### Fixes
 
 * The xcube server configuration parameters `url_prefix` and 
