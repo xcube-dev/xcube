@@ -46,6 +46,10 @@
 
 ### Fixes
 
+* Tiles of datasets with forward slashes in their identifiers
+  (originated from nested directories) now display again correctly
+  in xcube Viewer. Tile URLs have not been URL-encoded in such cases. (#817)
+
 * The xcube server configuration parameters `url_prefix` and 
   `reverse_url_prefix` can now be absolute URLs. This fixes a problem for 
   relative prefixes such as `"proxy/8000"` used for xcube server running 
