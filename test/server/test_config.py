@@ -24,9 +24,120 @@ from typing import Callable
 
 from xcube.server.config import get_reverse_url_prefix
 from xcube.server.config import get_url_prefix
+from xcube.server.config import resolve_config_path
 
 
-class ConfigTest(unittest.TestCase):
+class ResolveConfigPathTest(unittest.TestCase):
+    def test_resolve_config_path_path_abs(self):
+        base_dir = '/cyanoalert/configs'
+
+        self.assertEqual(
+            f'{base_dir}/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                f'{base_dir}/demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            '/cyanoalert/testing/configs/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                '/cyanoalert/testing/configs/demo.yaml'
+            )
+        )
+
+    def test_resolve_config_path_url_abs(self):
+        base_dir = 's3://cyanoalert/configs'
+
+        self.assertEqual(
+            f'{base_dir}/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                f'{base_dir}/demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            's3://cyanoalert/testing/configs/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                's3://cyanoalert/testing/configs/demo.yaml'
+            )
+        )
+
+    def test_resolve_config_path_path_rel(self):
+        base_dir = '/cyanoalert/configs'
+
+        self.assertEqual(
+            '/cyanoalert/configs/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                f'demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            '/cyanoalert/configs/testing/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                'testing/demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            '/cyanoalert/configs/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                './testing/../demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            f'/cyanoalert/testing/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                '../testing/demo.yaml'
+            )
+        )
+
+    def test_resolve_config_path_url_rel(self):
+        base_dir = 's3://cyanoalert/configs'
+
+        self.assertEqual(
+            's3://cyanoalert/configs/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                f'demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            's3://cyanoalert/configs/testing/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                'testing/demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            f's3://cyanoalert/configs/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                './testing/../demo.yaml'
+            )
+        )
+
+        self.assertEqual(
+            f's3://cyanoalert/testing/demo.yaml',
+            resolve_config_path(
+                dict(base_dir=base_dir),
+                '../testing/demo.yaml'
+            )
+        )
+
+
+class UrlPrefixConfigTest(unittest.TestCase):
     def test_get_url_prefix(self):
         self.assert_url_prefix(get_url_prefix,
                                key='url_prefix')
