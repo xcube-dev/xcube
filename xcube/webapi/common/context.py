@@ -22,6 +22,8 @@
 import threading
 from typing import Any, Dict, List, Optional, Mapping, Iterator, Union, Tuple
 
+import fsspec
+
 from xcube.constants import LOG
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiError
@@ -113,6 +115,20 @@ class ResourcesContext(ApiContext):
     def resolve_config_path(self, path: str) -> str:
         return resolve_config_path(self.config, path)
 
+    def load_file(self,
+                  path: str,
+                  mode: str = "rb",
+                  encoding: str = "utf-8") -> Union[str, bytes]:
+        with self.open_file(path, mode=mode, encoding=encoding) as fp:
+            return fp.read()
+
+    def open_file(self,
+                  path: str,
+                  mode: str = "rb",
+                  encoding: str = "utf-8") -> fsspec.core.OpenFile:
+        path = self.resolve_config_path(path)
+        return fsspec.open(path, mode=mode, encoding=encoding)
+
     def eval_config_value(self, value: Any) -> Any:
         """Evaluate expressions in the given *value* if it is
         a string. If *value* is a dict or list, then the method
@@ -152,13 +168,18 @@ class ResourcesContext(ApiContext):
         for token in self._tokenize_value(value):
             if isinstance(token, tuple):
                 expression, = token
-                yield eval(expression, None, dict(
-                    ctx=self,
-                    base_dir=self.base_dir,
-                    resolve_config_path=self.resolve_config_path
-                ))
+                yield eval(expression, None, self.new_eval_env())
             else:
                 yield token
+
+    def new_eval_env(self) -> Dict[str, Any]:
+        return dict(
+            ctx=self,
+            base_dir=self.base_dir,
+            load_file=self.load_file,
+            open_file=self.open_file,
+            resolve_config_path=self.resolve_config_path
+        )
 
     @classmethod
     def _tokenize_value(cls, value: str) -> Iterator[Union[str, Tuple[str]]]:
