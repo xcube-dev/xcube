@@ -37,14 +37,16 @@ from .config import DEFAULT_COLLECTION_ID
 from .config import DEFAULT_COLLECTION_TITLE
 from ...datasets.context import DatasetsContext
 
-STAC_VERSION = '0.9.0'
+STAC_VERSION = '1.0.0'
 
 
 # noinspection PyUnusedLocal
 def get_root(ctx: DatasetsContext, base_url: str):
     c_id, c_title, c_description = _get_catalog_metadata(ctx.config)
     return {
+        "type": "Catalog",
         "stac_version": STAC_VERSION,
+        "conformsTo": ["https://api.stacspec.org/v1.0.0-rc.2/core"],
         "id": c_id,
         "title": c_title,
         "description": c_description,
@@ -54,6 +56,12 @@ def get_root(ctx: DatasetsContext, base_url: str):
                 "href": f'{base_url}/catalog',
                 "type": "application/json",
                 "title": "this document"
+            },
+            {
+                "rel": "root",
+                "href": f'{base_url}/catalog',
+                "type": "application/json",
+                "title": "root of the STAC catalog"
             },
             {
                 "rel": "service-desc",

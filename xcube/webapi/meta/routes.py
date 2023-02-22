@@ -66,9 +66,14 @@ class OpenApiJsonHandler(ApiHandler):
     )
     def get(self):
         include_all = self.request.get_query_arg('all', default=False)
-        self.response.finish(self.ctx.get_open_api_doc(
+        self.response.write(self.ctx.get_open_api_doc(
             include_all=include_all
         ))
+        # We can only override Content-Type after calling write (see
+        # tornado.web.RequestHandler.write docstring).
+        self.response.set_header('Content-Type',
+                                 'application/vnd.oai.openapi+json;version=3.0')
+        self.response.finish()
 
 
 @api.route("/maintenance/fail")
