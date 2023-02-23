@@ -46,7 +46,8 @@ def get_root(ctx: DatasetsContext, base_url: str):
     return {
         "type": "Catalog",
         "stac_version": STAC_VERSION,
-        "conformsTo": ["https://api.stacspec.org/v1.0.0-rc.2/core"],
+        "conformsTo": ["https://api.stacspec.org/v1.0.0-rc.2/core",
+                       "https://api.stacspec.org/v1.0.0-rc.2/ogcapi-features"],
         "id": c_id,
         "title": c_title,
         "description": c_description,
@@ -115,6 +116,21 @@ def get_collections(ctx: DatasetsContext, base_url: str):
     return {
         "collections": [
             _get_datasets_collection(ctx, base_url)
+        ],
+        "links": [
+            {
+                "rel": "self",
+                "type": "application/json",
+                "href": f"{base_url}/catalog/collections"
+            },
+            {
+                "rel": "parent",
+                "href": f"{base_url}/catalog"
+            },
+            {
+                "rel": "root",
+                "href": f"{base_url}/catalog"
+            }
         ]
     }
 
@@ -170,22 +186,34 @@ def _get_datasets_collection(ctx: DatasetsContext,
         "stac_version": STAC_VERSION,
         "stac_extensions": ["xcube"],
         "id": c_id,
+        "type": "Collection",
         "title": c_title,
         "description": c_description,
         "license": "proprietary",
         "keywords": [],
         "providers": [],
-        "extent": {},
+        "extent": {
+            "spatial": {"bbox": [[-180.0, -90.0, 180.0, 90.0]]},  # FIXME
+            "temporal": {"interval": [["2019-01-01T00:00:00Z", None]]},  # FIXME
+        },
         "summaries": {},
         "links": [
             {
                 "rel": "self",
-                "href": f"{base_url}/catalog/collections/{c_id}"
+                "type": "application/json",
+                "href": f"{base_url}/catalog/collections/{c_id}",
+                "title": "this collection"
             },
             {
                 "rel": "root",
-                "href": f"{base_url}/catalog/collections"
-            },
+                "href": f"{base_url}/catalog",
+                "title": "STAC catalog root"
+    },
+            {
+                "rel": "parent",
+                "href": f"{base_url}/catalog/collections",
+                "title": "collections list"
+    },
             # {
             #     "rel": "license",
             #     "href": ctx.get_url("TODO"),
