@@ -39,6 +39,15 @@ from ...datasets.context import DatasetsContext
 
 STAC_VERSION = '1.0.0'
 
+_CONFORMANCE = [
+    # TODO: fix this list
+    "https://api.stacspec.org/v1.0.0-rc.2/core",
+    "https://api.stacspec.org/v1.0.0-rc.2/ogcapi-features",
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html",
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson"
+]
 
 # noinspection PyUnusedLocal
 def get_root(ctx: DatasetsContext, base_url: str):
@@ -46,23 +55,17 @@ def get_root(ctx: DatasetsContext, base_url: str):
     return {
         "type": "Catalog",
         "stac_version": STAC_VERSION,
-        "conformsTo": ["https://api.stacspec.org/v1.0.0-rc.2/core",
-                       "https://api.stacspec.org/v1.0.0-rc.2/ogcapi-features"],
+        "conformsTo": _CONFORMANCE,
         "id": c_id,
         "title": c_title,
         "description": c_description,
         "links": [
+            _root_link(base_url),
             {
                 "rel": "self",
                 "href": f'{base_url}/catalog',
                 "type": "application/json",
                 "title": "this document"
-            },
-            {
-                "rel": "root",
-                "href": f'{base_url}/catalog',
-                "type": "application/json",
-                "title": "root of the STAC catalog"
             },
             {
                 "rel": "service-desc",
@@ -99,17 +102,18 @@ def get_root(ctx: DatasetsContext, base_url: str):
     }
 
 
+def _root_link(base_url):
+    return {
+        "rel": "root",
+        "href": f'{base_url}/catalog',
+        "type": "application/json",
+        "title": "root of the STAC catalog"
+    }
+
+
 # noinspection PyUnusedLocal
 def get_conformance(ctx: DatasetsContext):
-    return {
-        "conformsTo": [
-            # TODO: fix this list
-            "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
-            "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
-            "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html",
-            "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson"
-        ]
-    }
+    return {"conformsTo": _CONFORMANCE}
 
 
 def get_collections(ctx: DatasetsContext, base_url: str):
@@ -118,6 +122,7 @@ def get_collections(ctx: DatasetsContext, base_url: str):
             _get_datasets_collection(ctx, base_url)
         ],
         "links": [
+            _root_link(base_url),
             {
                 "rel": "self",
                 "type": "application/json",
@@ -125,10 +130,6 @@ def get_collections(ctx: DatasetsContext, base_url: str):
             },
             {
                 "rel": "parent",
-                "href": f"{base_url}/catalog"
-            },
-            {
-                "rel": "root",
                 "href": f"{base_url}/catalog"
             }
         ]
@@ -160,6 +161,14 @@ def get_collection_items(ctx: DatasetsContext,
         "timeStamp": _utc_now(),
         "numberMatched": len(features),
         "numberReturned": len(features),
+        "links": [
+            _root_link(base_url),
+            {
+                "rel": "self",
+                "type": "application/json",
+                "href": f"{base_url}/catalog/collections/{collection_id}/items"
+            }
+        ]
     }
 
 
@@ -194,10 +203,11 @@ def _get_datasets_collection(ctx: DatasetsContext,
         "providers": [],
         "extent": {
             "spatial": {"bbox": [[-180.0, -90.0, 180.0, 90.0]]},  # FIXME
-            "temporal": {"interval": [["2019-01-01T00:00:00Z", None]]},  # FIXME
+            "temporal": {"interval": [["2000-01-01T00:00:00Z", None]]},  # FIXME
         },
         "summaries": {},
         "links": [
+            _root_link(base_url),
             {
                 "rel": "self",
                 "type": "application/json",
@@ -205,15 +215,15 @@ def _get_datasets_collection(ctx: DatasetsContext,
                 "title": "this collection"
             },
             {
-                "rel": "root",
-                "href": f"{base_url}/catalog",
-                "title": "STAC catalog root"
-    },
-            {
                 "rel": "parent",
                 "href": f"{base_url}/catalog/collections",
                 "title": "collections list"
-    },
+            },
+            {
+                "rel": "items",
+                "href": f"{base_url}/catalog/collections/{c_id}/items",
+                "title": "feature collection of dataset items"
+            }
             # {
             #     "rel": "license",
             #     "href": ctx.get_url("TODO"),
@@ -292,6 +302,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
         },
         "collection": collection_id,
         "links": [
+            _root_link(base_url),
             {
                 "rel": "self",
                 'href': f'{base_url}/catalog/collections/{collection_id}'

@@ -87,7 +87,9 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
         result = get_collection_items(self.ctx.datasets_ctx,
                                       self.request.reverse_base_url,
                                       collectionId)
-        return await self.response.finish(result)
+        self.response.write(result)
+        self.response.set_header('Content-Type', 'application/geo+json')
+        return await self.response.finish()
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -100,7 +102,9 @@ class CatalogCollectionItemHandler(ApiHandler[StacContext]):
         result = get_collection_item(self.ctx.datasets_ctx,
                                      self.request.reverse_base_url,
                                      collectionId, featureId)
-        return await self.response.finish(result)
+        self.response.write(result)
+        self.response.set_header('Content-Type', 'application/geo+json')
+        return await self.response.finish()
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
