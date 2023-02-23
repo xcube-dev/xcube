@@ -12,7 +12,6 @@ ENV XCUBE_CMEMS_VERSION=latest
 # Metadata
 LABEL maintainer="xcube-team@brockmann-consult.de"
 LABEL name=xcube
-LABEL conda_env=xcube
 
 # Ensure usage of bash (ensures conda calls succeed)
 SHELL ["/bin/bash", "-c"]
@@ -29,8 +28,8 @@ RUN chown -R ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /opt/conda
 
 USER ${XCUBE_USER_NAME}
 
-RUN source activate base && conda update -n base conda && conda init
-RUN source activate base && conda install -n base -c conda-forge mamba==0.24.0 pip=21.3.1
+RUN conda update -n base conda && conda init
+RUN conda install -n base -c conda-forge mamba==0.24.0 pip=21.3.1
 
 # Setup conda environment
 # Copy yml config into image
@@ -38,7 +37,7 @@ COPY environment.yml /tmp/environment.yml
 
 # Use mamba to create an environment based on the specifications in
 # environment.yml. 
-RUN mamba env create --file /tmp/environment.yml
+RUN mamba env update -n base -f /tmp/environment.yml
 
 # Set work directory for xcube installation
 WORKDIR /home/xcube
@@ -47,7 +46,7 @@ WORKDIR /home/xcube
 COPY . ./
 
 # Setup xcube package.
-RUN source activate xcube && python setup.py install
+RUN python setup.py install
 
 WORKDIR /tmp
 ADD scripts/install_xcube.sh ./
@@ -61,7 +60,7 @@ RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cmems $
 EXPOSE 8080
 
 # Run bash in xcube environment, so we can invoke xcube CLI.
-ENTRYPOINT ["conda", "run", "-v", "-n", "xcube", "/bin/bash", "-c"]
+ENTRYPOINT ["conda", "run", "-v", "-n", "base", "/bin/bash", "-c"]
 
 # By default show xcube help 
 CMD ["xcube --help"]

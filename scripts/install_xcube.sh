@@ -14,8 +14,8 @@ if [[ $INSTALL_MODE == "branch" ]]; then
   git checkout "${PACKAGE_VERSION}"
   sed -i "s/- xcube/#- xcube/g" environment.yml || exit
 
-  source activate xcube && mamba env update -n xcube
-  source activate xcube && pip install .
+  mamba env update -n base
+  pip install .
   cd .. && rm -rf "${PACKAGE}"
 elif [[ $INSTALL_MODE == "release" ]]; then
   # Receive version number if PACKAGE_VERSION is latest
@@ -29,17 +29,17 @@ elif [[ $INSTALL_MODE == "release" ]]; then
 
   cd "${PACKAGE}"-"${PACKAGE_VERSION}" || exit
 
-# xcubes python version should not be changed by the plugins
+  # xcube's python version should not be changed by the plugins
   sed -i "s/- python/#- python/g" environment.yml || exit
-# xcubes version should not be changed by the plugins
+  # xcube version should not be changed by the plugins
   sed -i "s/- xcube/#- xcube/g" environment.yml || exit
 
   cat environment.yml
-  source activate xcube && mamba env update -n xcube
-  source activate xcube && pip install .
+  mamba env update -n base
+  pip install .
   cd .. && rm v"${PACKAGE_VERSION}".tar.gz
 else
-  mamba install -y -n xcube -c conda-forge "${PACKAGE}"="${PACKAGE_VERSION}"
+  mamba install -y -n base -c conda-forge "${PACKAGE}"="${PACKAGE_VERSION}"
 fi
 
 

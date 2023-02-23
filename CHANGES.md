@@ -60,6 +60,11 @@
   `https://{host}/users/{user}/proxy/8000/{path}` but we got
   `http://{host}/proxy/8000/{path}`. (#806)
 
+### Other changes
+
+* xcube's `Dockerfile` no longer creates a conda environment `xcube`.
+  All dependencies are now installed into the `base` environment making it 
+  easier to use the container as a executable for xcube applications.
 
 ## Changes in 0.13.0
 
