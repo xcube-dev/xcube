@@ -32,7 +32,7 @@ RUN conda update -n base conda && conda init
 RUN conda install -n base -c conda-forge mamba==0.24.0 pip=21.3.1
 
 # Setup conda environment
-# Copy yml config into image
+# Copy environment.yml into image
 COPY environment.yml /tmp/environment.yml
 
 # Use mamba to create an environment based on the specifications in
@@ -55,9 +55,6 @@ RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-sh ${XC
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cmems ${XCUBE_CMEMS_VERSION} release; fi;
-
-# Export web server port
-EXPOSE 8080
 
 # Run bash in xcube environment, so we can invoke xcube CLI.
 ENTRYPOINT ["conda", "run", "-v", "-n", "base", "/bin/bash", "-c"]
