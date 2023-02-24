@@ -1,10 +1,6 @@
 ## Changes in 0.13.1 (in development)
 
-* Added Notebook
-  [test_AzureBlobFS.ipynb](/test/test_AzureBlobFS.ipynb). This notebook shows how a
-  new data store instance can connect and list zarr files from Azure bolb storage using 
-  'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
-  params. 
+### Enhancements
 
 * Included support for Azure Blob Storage filesystem by adding `AzureFsAccessor()` with support 
   for the 'abfs' protocol (fsspec adlfs package) class in `/xcube/core/store/fs/impl/fs.py` 
@@ -40,30 +36,72 @@
       - Path: "*.levels"
         Style: default
 
+* Added Notebook
+  [test_AzureBlobFS.ipynb](/test/test_AzureBlobFS.ipynb). This notebook shows how a
+  new data store instance can connect and list zarr files from Azure bolb storage using 
+  'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
+  params. 
+
+* Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
+  xcube server. 
+  It serves a single collection named "datasets" whose items are the
+  datasets published by the service. (#455)
+
+* Simplified the cloud deployment of xcube server/viewer applications (#815). 
+  This has been achieved by the following new xcube server features:
+  - Configuration files can now also be URLs which allows 
+    provisioning from S3-compatible object storage. 
+    For example, it is now possible to invoke xcube server as follows: 
+    ```bash
+    $ xcube serve --config s3://cyanoalert/xcube/demo.yaml ...
+    ```
+  - A new endpoint `/viewer/config/{*path}` allows 
+    for configuring the viewer accessible via endpoint `/viewer`. 
+    The actual source for the configuration items is configured by xcube 
+    server configuration using the new entry `Viewer/Configuration/Path`, 
+    for example:
+    ```yaml
+    Viewer:
+      Configuration:
+        Path: s3://cyanoalert/xcube/viewer/ 
+    ```
+  - A typical xcube server configuration comprises many paths, and 
+    relative paths of known configuration parameters are resolved against 
+    the `base_dir` configuration parameter. However, for values of 
+    parameters passed to user functions that represent paths in user code, 
+    this cannot be done automatically. For such situations, expressions 
+    can be used. An expression is any string between `"${"` and `"}"` in a 
+    configuration value. An expression can contain the variables
+    `base_dir` (a string), `ctx` the current server context 
+    (type `xcube.webapi.datasets.DatasetsContext`), as well as the function
+    `resolve_config_path(path)` that is used to make a path absolut with 
+    respect to `base_dir` and to normalize it. For example
+    ```yaml
+    Augmentation:
+      Path: augmentation/metadata.py
+      Function: metadata:update_metadata
+      InputParameters:
+        bands_config: ${resolve_config_path("../common/bands.yaml")}
+    ```
+
+* Added a `new_cluster` function to `xcube.util.dask`, which can create
+  Dask clusters with various configuration options.
+
+### Fixes
+
+* Tiles of datasets with forward slashes in their identifiers
+  (originated from nested directories) now display again correctly
+  in xcube Viewer. Tile URLs have not been URL-encoded in such cases. (#817)
+
+* The xcube server configuration parameters `url_prefix` and 
+  `reverse_url_prefix` can now be absolute URLs. This fixes a problem for 
+  relative prefixes such as `"proxy/8000"` used for xcube server running 
+  inside JupyterLab. Here, the expected returned self-referencing URL was
+  `https://{host}/users/{user}/proxy/8000/{path}` but we got
+  `http://{host}/proxy/8000/{path}`. (#806)
+
 
 ## Changes in 0.13.0
-
-### Fixes
-
-* Intermediate: Ensure `Viewer()` creates a server with reverse prefix set. 
-
-* Intermediate: Ensure `Viewer.add_dataset()` provides a dataset title. 
-
-* Intermediate: Fixed `xcube.webapi.viewer.Viewer` 
-  so it can find `~/.xcube/jupyterlab/lab-info.json`.
-
-### Other
-
-* Removed deprecated example `examples/tile`.
-
-## Changes in 0.13.0.dev10
-
-### Fixes
-
-* Replaced usages of deprecated numpy dtype `numpy.bool` 
-  by Python type `bool`. 
-
-## Changes in 0.13.0.dev9
 
 ### Enhancements
 
@@ -105,7 +143,6 @@
         )
     )
     ```
-
 
   - The limited `s3bucket` endpoints are no longer available and are 
     replaced by `s3` endpoints. 

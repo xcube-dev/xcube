@@ -27,6 +27,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Dict, Tuple, List, Optional
 
+import fsspec
 import matplotlib
 import matplotlib.colors
 import numpy as np
@@ -536,7 +537,7 @@ LogScaled = bool
 
 def _parse_snap_cpd_file(cpd_file_path: str) \
         -> Tuple[Palette, LogScaled]:
-    with open(cpd_file_path, "r") as f:
+    with fsspec.open(cpd_file_path, mode="r") as f:
 
         illegal_format_msg = f"Illegal SNAP *.cpd format: {cpd_file_path}"
 
