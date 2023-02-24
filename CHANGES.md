@@ -46,8 +46,8 @@
 
 * xcube's `Dockerfile` no longer creates a conda environment `xcube`.
   All dependencies are now installed into the `base` environment making it 
-  easier to use the container as a executable for xcube applications.
-  We are now also using a `micromamba` base images instead of `miniconda`.
+  easier to use the container as an executable for xcube applications.
+  We are now also using a `micromamba` base image instead of `miniconda`.
   The result is a much faster build and smaller image size.
 
 * Added a `new_cluster` function to `xcube.util.dask`, which can create
