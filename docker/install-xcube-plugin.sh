@@ -14,7 +14,7 @@ if [[ $INSTALL_MODE == "branch" ]]; then
   git checkout "${PACKAGE_VERSION}"
   sed -i "s/- xcube/#- xcube/g" environment.yml || exit
 
-  micromamba env update -n base
+  micromamba install --yes --quiet --name base --file environment.yml
   pip install .
   cd .. && rm -rf "${PACKAGE}"
 elif [[ $INSTALL_MODE == "release" ]]; then
