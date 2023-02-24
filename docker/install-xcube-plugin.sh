@@ -35,7 +35,7 @@ elif [[ $INSTALL_MODE == "release" ]]; then
   sed -i "s/- xcube/#- xcube/g" environment.yml || exit
 
   cat environment.yml
-  micromamba env update -n base
+micromamba install --yes --quiet --name base --file environment.yml
   pip install .
   cd .. && rm v"${PACKAGE_VERSION}".tar.gz
 else
