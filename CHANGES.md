@@ -47,6 +47,14 @@
 * Added a `new_cluster` function to `xcube.util.dask`, which can create
   Dask clusters with various configuration options.
 
+* The xcube multi-level dataset specification has been enhanced. (#802)
+  - When writing multi-level datasets (`*.levels/`) we now create a new 
+    JSON file `.zlevels` that contains the parameters used to create the 
+    dataset.
+  - A new class `xcube.core.mldataset.FsMultiLevelDataset` that represents
+    a multi-level dataset persisted to some filesystem, like 
+    "file", "s3", "memory". It can also write datasets to the filesystem. 
+
 ### Fixes
 
 * Tiles of datasets with forward slashes in their identifiers

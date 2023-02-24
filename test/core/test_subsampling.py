@@ -26,6 +26,7 @@ import xarray as xr
 
 from xcube.core.new import new_cube
 from xcube.core.subsampling import find_agg_method
+from xcube.core.subsampling import get_dataset_agg_methods
 from xcube.core.subsampling import subsample_dataset
 
 
@@ -52,7 +53,6 @@ class SubsampleDatasetTest(unittest.TestCase):
                                 crs_name='spatial_ref',
                                 variables=dict(var_1=test_data_1,
                                                var_2=test_data_2))
-
 
     def test_subsample_dataset_none(self):
         subsampled_dataset = subsample_dataset(self.dataset,
@@ -81,6 +81,7 @@ class SubsampleDatasetTest(unittest.TestCase):
             np.array([1., 3., 5.]),
             np.array([2., 4., 6.]),
         )
+
 
     def test_subsample_dataset_first(self):
         subsampled_dataset = subsample_dataset(self.dataset,
@@ -215,6 +216,22 @@ class SubsampleDatasetTest(unittest.TestCase):
             subsampled_dataset.var_2.values,
             expected_var_2
         )
+
+    def test_get_dataset_agg_methods(self):
+        agg_methods = get_dataset_agg_methods(self.dataset,
+                                              agg_methods=None)
+        self.assertEqual({'var_1': 'first', 'var_2': 'mean'},
+                         agg_methods)
+
+        agg_methods = get_dataset_agg_methods(self.dataset,
+                                              agg_methods='mean')
+        self.assertEqual({'var_1': 'mean', 'var_2': 'mean'},
+                         agg_methods)
+
+        agg_methods = get_dataset_agg_methods(self.dataset,
+                                              agg_methods='max')
+        self.assertEqual({'var_1': 'max', 'var_2': 'max'},
+                         agg_methods)
 
     # noinspection PyTypeChecker
     def test_find_agg_method(self):
