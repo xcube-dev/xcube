@@ -65,7 +65,7 @@ RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cmems ${XCUBE_CMEMS_VERSION} release; fi;
-
+RUN micromamba clean --all --force-pkgs-dirs --yes
 WORKDIR /home/$MAMBA_USER
 
 # The micromamba entrypoint.
