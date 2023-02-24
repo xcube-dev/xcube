@@ -294,6 +294,10 @@
 
 * Removed deprecated example `examples/tile`.
 
+### Other Changes
+
+* The utility function `xcube.util.dask.create_cluster()` now also
+  generates the tag `user` for the current user's name.
 
 ## Changes in 0.12.1 
 
