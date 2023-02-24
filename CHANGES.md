@@ -44,6 +44,12 @@
         bands_config: ${resolve_config_path("../common/bands.yaml")}
     ```
 
+* xcube's `Dockerfile` no longer creates a conda environment `xcube`.
+  All dependencies are now installed into the `base` environment making it 
+  easier to use the container as a executable for xcube applications.
+  We are now also using a `micromamba` base images instead of `miniconda`.
+  The result is a much faster build and smaller image size.
+
 * Added a `new_cluster` function to `xcube.util.dask`, which can create
   Dask clusters with various configuration options.
 
@@ -59,12 +65,6 @@
   inside JupyterLab. Here, the expected returned self-referencing URL was
   `https://{host}/users/{user}/proxy/8000/{path}` but we got
   `http://{host}/proxy/8000/{path}`. (#806)
-
-### Other changes
-
-* xcube's `Dockerfile` no longer creates a conda environment `xcube`.
-  All dependencies are now installed into the `base` environment making it 
-  easier to use the container as a executable for xcube applications.
 
 ## Changes in 0.13.0
 

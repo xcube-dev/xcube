@@ -14,7 +14,7 @@ if [[ $INSTALL_MODE == "branch" ]]; then
   git checkout "${PACKAGE_VERSION}"
   sed -i "s/- xcube/#- xcube/g" environment.yml || exit
 
-  mamba env update -n base
+  micromamba env update -n base
   pip install .
   cd .. && rm -rf "${PACKAGE}"
 elif [[ $INSTALL_MODE == "release" ]]; then
@@ -35,11 +35,11 @@ elif [[ $INSTALL_MODE == "release" ]]; then
   sed -i "s/- xcube/#- xcube/g" environment.yml || exit
 
   cat environment.yml
-  mamba env update -n base
+  micromamba env update -n base
   pip install .
   cd .. && rm v"${PACKAGE_VERSION}".tar.gz
 else
-  mamba install -y -n base -c conda-forge "${PACKAGE}"="${PACKAGE_VERSION}"
+  micromamba install -y -n base -c conda-forge "${PACKAGE}"="${PACKAGE_VERSION}"
 fi
 
 
