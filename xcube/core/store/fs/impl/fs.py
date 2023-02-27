@@ -150,6 +150,25 @@ class AzureFsAccessor(FsAccessor):
                 anon=JsonBooleanSchema(
                     title='Whether to anonymously connect to Azure Blob Storage.'
                 ),
+                account_name=JsonStringSchema(
+                    min_length=1,
+                    title='Azure storage account name.',
+                    description='Must be used with the account key parameter.'
+                                ' This is not required when using a connection string.'
+                                
+                ),
+                account_key=JsonStringSchema(
+                    min_length=1,
+                    title='Azure storage account key.',
+                    description='Must be used with the account name parameter.'
+                                ' This is not required when using a connection string'
+                ),
+                connection_string=JsonStringSchema(
+                    min_length=1,
+                    title='Connection string for Azure blob storage.',
+                    description='Use this parameter inplace of both account name and key'
+                                ' because they are both contained in the string.'
+                )
                 **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
             ),
             additional_properties=True,

@@ -1,7 +1,7 @@
 ## Changes in 0.13.1 (in development)
 
 * Added Notebook
-  [test_AzureBlobFS.ipynb](/test/test_AzureBlobFS.ipynb). This notebook shows how a
+  [8_azure_blob_filesystem.ipynb](/examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). This notebook shows how a
   new data store instance can connect and list zarr files from Azure bolb storage using 
   'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
   params. 
@@ -15,9 +15,9 @@
   
   ```python
     new_data_store(
-        "abfs", # Azure fs protocol
+        "abfs",  # Azure fs protocol
         root="blob_container",  # Azure blob container name
-        storage_options= {'anon':True, 'account_name':"xxx", 'account_key':'xxx...'} # or connection_string:xxxxxxxx
+        storage_options= {'anon':True, 'account_name':"xxx", 'account_key':'xxx...'}  # or connection_string:xxxxxxxx
     )
     ```
   Configuration file sample for Azure Blob
@@ -33,7 +33,7 @@
       storage_options:
         anon: true
         account_name': "xxx"
-        account_key': 'xxx...' # or
+        account_key': 'xxx...'  # or
 
         connection_string: xxxxxxxx
     Datasets:
