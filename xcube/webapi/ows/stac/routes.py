@@ -84,9 +84,17 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollectionItems",
                    summary="Get the items of a STAC catalog collection.")
     async def get(self, collectionId: str):
-        result = get_collection_items(self.ctx.datasets_ctx,
-                                      self.request.reverse_base_url,
-                                      collectionId)
+        get_items_args = dict(
+            ctx=self.ctx.datasets_ctx,
+            base_url=self.request.reverse_base_url,
+            collection_id=collectionId
+        )
+        if 'limit' in self.request.query:
+            get_items_args['limit'] = int(self.request.query['limit'][0])
+        if 'cursor' in self.request.query:
+            get_items_args['cursor'] = int(self.request.query['cursor'][0])
+        result = get_collection_items(**get_items_args)
+
         self.response.write(result)
         self.response.set_header('Content-Type', 'application/geo+json')
         return await self.response.finish()

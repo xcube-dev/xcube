@@ -49,6 +49,7 @@ _CONFORMANCE = [
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson"
 ]
 
+
 # noinspection PyUnusedLocal
 def get_root(ctx: DatasetsContext, base_url: str):
     c_id, c_title, c_description = _get_catalog_metadata(ctx.config)
@@ -145,30 +146,50 @@ def get_collection(ctx: DatasetsContext,
 
 def get_collection_items(ctx: DatasetsContext,
                          base_url: str,
-                         collection_id: str):
+                         collection_id: str,
+                         limit: int = 100,
+                         cursor: int = 0):
     _assert_valid_collection(ctx, collection_id)
+    all_configs = ctx.get_dataset_configs()
+    configs = all_configs[cursor:(cursor + limit)]
     features = []
-    for dataset_config in ctx.get_dataset_configs():
+    for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
         feature = _get_dataset_feature(ctx,
                                        base_url,
                                        dataset_id,
                                        full=False)
         features.append(feature)
+    self_href = f"{base_url}/catalog/collections/{collection_id}/items"
+    links = [
+            _root_link(base_url),
+            {
+                "rel": "self",
+                "type": "application/json",
+                "href": self_href
+            }
+        ]
+    if cursor + limit < len(all_configs):
+        links.append({
+            'rel': 'next',
+            'href': self_href + f'?cursor={cursor + limit}&limit={limit}'
+        })
+    if cursor > 0:
+        new_cursor = cursor - limit
+        if new_cursor < 0:
+            new_cursor = 0
+        cursor_param = 'cursor={new_cursor}&' if new_cursor > 0 else ''
+        links.append({
+            'rel': 'previous',
+            'href': self_href + f'?{cursor_param}limit={limit}'
+        })
     return {
         "type": "FeatureCollection",
         "features": features,
         "timeStamp": _utc_now(),
         "numberMatched": len(features),
         "numberReturned": len(features),
-        "links": [
-            _root_link(base_url),
-            {
-                "rel": "self",
-                "type": "application/json",
-                "href": f"{base_url}/catalog/collections/{collection_id}/items"
-            }
-        ]
+        "links": links
     }
 
 
@@ -260,7 +281,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
             if dim in dataset:
                 coord = dataset[dim]
                 if coord.ndim == 1 and coord.size > 0:
-                    val = coord[0]
+                    val = coord[0].to_numpy()
             thumbnail_query_params.append(f'{dim}={val}')
         thumbnail_query = '?' + '&'.join(thumbnail_query_params)
 
@@ -284,7 +305,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
 
     return {
         "stac_version": STAC_VERSION,
-        "stac_extensions": ["xcube"],
+        "stac_extensions": [], # ["xcube"],
         "type": "Feature",
         "id": dataset_id,
         "bbox": [x1, y1, x2, y2],
@@ -299,14 +320,25 @@ def _get_dataset_feature(ctx: DatasetsContext,
             "xcube:variables": variables,
             "xcube:coordinates": coordinates,
             "xcube:attributes": dict(dataset.attrs),
+            "datetime": "2020-01-01T00:00:00.000Z",  # FIXME
+            "start_datetime": "2000-01-02T00:00:00.000Z",  # FIXME
+            "end_datetime": "2020-01-01T00:00:00.000Z"  # FIXME
         },
         "collection": collection_id,
         "links": [
             _root_link(base_url),
             {
                 "rel": "self",
-                'href': f'{base_url}/catalog/collections/{collection_id}'
-                        f'/items/{dataset_id}'
+                "href": f"{base_url}/catalog/collections/{collection_id}"
+                        f"/items/{dataset_id}"
+            },
+            {
+                "rel": "collection",
+                "href": f"{base_url}/catalog/collections/{collection_id}"
+            },
+            {
+                "rel": "parent",
+                "href": f"{base_url}/catalog/collections/{collection_id}"
             }
         ],
         "assets": {
