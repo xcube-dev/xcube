@@ -7,6 +7,8 @@
   that explains how xcube Viewer can now be utilised in JupyterLab
   using the new (still experimental) xcube JupyterLab extension
   [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
+* Updated example [Notebook for CMEMS data store](examples/notebooks/datastores/7_cmems_data_store.ipynb) to reflect 
+changes of parameter names that provide CMEMS API credentials.
 
 ### Fixes
 
