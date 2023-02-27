@@ -1,9 +1,16 @@
 import unittest
 from io import StringIO
 
+import fsspec
+import pytest
 import yaml
-from xcube.util.config import flatten_dict, to_name_dict_pair, to_name_dict_pairs, to_resolved_name_dict_pairs, \
-    merge_config
+
+from xcube.util.config import flatten_dict
+from xcube.util.config import load_configs
+from xcube.util.config import merge_config
+from xcube.util.config import to_name_dict_pair
+from xcube.util.config import to_name_dict_pairs
+from xcube.util.config import to_resolved_name_dict_pairs
 
 
 # from yaml.parser import ParserError # needs to be kept for last test, which is still not working properly
@@ -11,10 +18,12 @@ from xcube.util.config import flatten_dict, to_name_dict_pair, to_name_dict_pair
 
 class ToResolvedNameDictPairsTest(unittest.TestCase):
     def test_to_resolved_name_dict_pairs_and_reject(self):
-        container = ['a', 'a1', 'a2', 'b1', 'b2', 'x_c', 'y_c', 'd', 'e', 'e1', 'e_1', 'e_12', 'e_AB']
+        container = ['a', 'a1', 'a2', 'b1', 'b2', 'x_c', 'y_c', 'd', 'e', 'e1',
+                     'e_1', 'e_12', 'e_AB']
         resolved = to_resolved_name_dict_pairs([('a*', None),
                                                 ('b', {'name': 'B'}),
-                                                ('*_c', {'marker': True, 'name': 'C'}),
+                                                ('*_c',
+                                                 {'marker': True, 'name': 'C'}),
                                                 ('d', {'name': 'D'}),
                                                 ('e_??', {'marker': True})],
                                                container)
@@ -30,10 +39,12 @@ class ToResolvedNameDictPairsTest(unittest.TestCase):
                          resolved)
 
     def test_to_resolved_name_dict_pairs_and_keep(self):
-        container = ['a', 'a1', 'a2', 'b1', 'b2', 'x_c', 'y_c', 'd', 'e', 'e1', 'e_1', 'e_12', 'e_AB']
+        container = ['a', 'a1', 'a2', 'b1', 'b2', 'x_c', 'y_c', 'd', 'e', 'e1',
+                     'e_1', 'e_12', 'e_AB']
         resolved = to_resolved_name_dict_pairs([('a*', None),
                                                 ('b', {'name': 'B'}),
-                                                ('*_c', {'marker': True, 'name': 'C'}),
+                                                ('*_c',
+                                                 {'marker': True, 'name': 'C'}),
                                                 ('d', {'name': 'D'}),
                                                 ('e_??', {'marker': True})],
                                                container,
@@ -142,46 +153,50 @@ class FlattenDictTest(unittest.TestCase):
         self.assertEqual({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
                           "source": "Sentinel-3 OLCI L2 surface observation"
                           },
-                         flatten_dict({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
-                                       "source": "Sentinel-3 OLCI L2 surface observation"
-                                       }))
+                         flatten_dict(
+                             {"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
+                              "source": "Sentinel-3 OLCI L2 surface observation"
+                              }))
 
         self.assertEqual({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
                           "date_created": "2018-05-30",
                           "date_modified": "2018-05-30",
                           "date_issued": "2018-06-01"
                           },
-                         flatten_dict({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
-                                       "date": {
-                                           "created": "2018-05-30",
-                                           "modified": "2018-05-30",
-                                           "issued": "2018-06-01"
-                                       }}))
+                         flatten_dict(
+                             {"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
+                              "date": {
+                                  "created": "2018-05-30",
+                                  "modified": "2018-05-30",
+                                  "issued": "2018-06-01"
+                              }}))
 
         self.assertEqual({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
                           "creator_name": "BC",
                           "creator_url": "http://www.bc.de"
                           },
-                         flatten_dict({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
-                                       "creator": [
-                                           {"name": "BC",
-                                            "url": "http://www.bc.de"
-                                            }
-                                       ]}))
+                         flatten_dict(
+                             {"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
+                              "creator": [
+                                  {"name": "BC",
+                                   "url": "http://www.bc.de"
+                                   }
+                              ]}))
 
         self.assertEqual({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
                           "creator_name": "BC, ACME",
                           "creator_url": "http://www.bc.de, http://acme.com"
                           },
-                         flatten_dict({"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
-                                       "creator": [
-                                           {"name": "BC",
-                                            "url": "http://www.bc.de"
-                                            },
-                                           {"name": "ACME",
-                                            "url": "http://acme.com"
-                                            }
-                                       ]}))
+                         flatten_dict(
+                             {"title": "DCS4COP Sentinel-3 OLCI L2C Data Cube",
+                              "creator": [
+                                  {"name": "BC",
+                                   "url": "http://www.bc.de"
+                                   },
+                                  {"name": "ACME",
+                                   "url": "http://acme.com"
+                                   }
+                              ]}))
 
     def test_from_yaml(self):
         stream = StringIO(TEST_JSON)
@@ -190,10 +205,12 @@ class FlattenDictTest(unittest.TestCase):
         self.assertEqual(17, len(d))
         self.assertEqual('DCS4COP Sentinel-3 OLCI L2C Data Cube',
                          d.get('title'))
-        self.assertEqual('Brockmann Consult GmbH, Royal Belgian Institute for Natural Sciences (RBINS)',
-                         d.get('creator_name'))
-        self.assertEqual('https://www.brockmann-consult.de, http://odnature.naturalsciences.be/remsem/',
-                         d.get('creator_url'))
+        self.assertEqual(
+            'Brockmann Consult GmbH, Royal Belgian Institute for Natural Sciences (RBINS)',
+            d.get('creator_name'))
+        self.assertEqual(
+            'https://www.brockmann-consult.de, http://odnature.naturalsciences.be/remsem/',
+            d.get('creator_url'))
         self.assertEqual("2018-05-30", d.get('date_created'))
         self.assertEqual("2018-06-01", d.get('date_issued'))
         self.assertEqual(0.0, d.get('geospatial_lon_min'))
@@ -286,3 +303,29 @@ class MergeDictsTest(unittest.TestCase):
         second_dict = {'a': dict(c=25)}
         actual_dict = merge_config(first_dict, second_dict)
         self.assertEqual({'a': dict(c=25), 'o': 105}, actual_dict)
+
+
+class LoadConfigsTest(unittest.TestCase):
+
+    def tearDown(self) -> None:
+        fs: fsspec.AbstractFileSystem = fsspec.filesystem("memory")
+        fs.rm("/", recursive=True)
+
+    def test_load_configs_ok(self):
+        with fsspec.open("memory://config-1.yaml", mode="w") as fp:
+            yaml.safe_dump(dict(a=1), fp)
+        with fsspec.open("memory://config-2.yaml", mode="w") as fp:
+            yaml.safe_dump(dict(b=2), fp)
+        with fsspec.open("memory://config-3.yaml", mode="w") as fp:
+            yaml.safe_dump(dict(c=3), fp)
+        config = load_configs("memory://config-1.yaml",
+                              "memory://config-2.yaml",
+                              "memory://config-3.yaml")
+        self.assertEqual({'a': 1, 'b': 2, 'c': 3}, config)
+
+    # noinspection PyMethodMayBeStatic
+    def test_load_configs_fails(self):
+        with pytest.raises(ValueError,
+                           match="Cannot find configuration"
+                                 " 'memory://config_1.yaml'"):
+            load_configs("memory://config_1.yaml")

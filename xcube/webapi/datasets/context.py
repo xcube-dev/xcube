@@ -49,7 +49,9 @@ from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
-from xcube.util.assertions import assert_instance, assert_given
+from xcube.server.config import is_absolute_path
+from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_instance
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_custom_colormap
@@ -197,13 +199,16 @@ class DatasetsContext(ResourcesContext):
             ml_dataset = dataset
             if ds_id:
                 ml_dataset = IdentityMultiLevelDataset(dataset, ds_id=ds_id)
+            dataset = ml_dataset.base_dataset
         ds_id = ml_dataset.ds_id
         dataset_configs = self.get_dataset_configs()
         for index, dataset_config in enumerate(dataset_configs):
             if dataset_config["Identifier"] == ds_id:
                 del dataset_configs[index]
                 break
-        dataset_config = dict(Identifier=ds_id, Title=title)
+        dataset_config = dict(Identifier=ds_id,
+                              Title=title or dataset.attrs.get("title",
+                                                               ds_id))
         self._dataset_cache[ds_id] = ml_dataset, dataset_config
         self._dataset_configs.append(dataset_config)
         return ds_id
@@ -312,13 +317,10 @@ class DatasetsContext(ResourcesContext):
             roots = _get_roots(paths)
             for root in roots:
                 abs_root = root
-                # For local file systems:
-                # Determine absolute root from base dir
                 fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system,
                                                       file_system)
-                if fs_protocol == 'file' and not os.path.isabs(abs_root):
-                    abs_root = os.path.join(base_dir, abs_root)
-                    abs_root = os.path.normpath(abs_root)
+                if not is_absolute_path(abs_root):
+                    abs_root = f"{base_dir}/{root}"
                 store_params_for_root = store_params.copy()
                 store_params_for_root['root'] = abs_root
                 # See if there already is a store with this configuration
@@ -575,7 +577,8 @@ class DatasetsContext(ResourcesContext):
                     custom_colormap = load_custom_colormap(
                         custom_cmap_path
                     )
-                    custom_colormaps[custom_cmap_path] = custom_colormap
+                    if custom_colormap is not None:
+                        custom_colormaps[custom_cmap_path] = custom_colormap
                 if custom_colormap is not None:
                     color_mappings[var_name] = {
                         "ColorBar": custom_colormap.cm_name,
@@ -658,7 +661,8 @@ class DatasetsContext(ResourcesContext):
                 augmentation,
                 f"'Augmentation' of dataset configuration {ds_id}"
             )
-            input_parameters = augmentation.get('InputParameters')
+            input_parameters = augmentation.get('InputParameters', {})
+            input_parameters = self.eval_config_value(input_parameters)
             callable_name = augmentation.get('Class')
             is_factory = callable_name is not None
             if not is_factory:
@@ -839,6 +843,7 @@ def _open_ml_dataset_from_python_code(
         callable_name = dataset_config.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_config.get('InputDatasets', [])
     input_parameters = dataset_config.get('InputParameters', {})
+    input_parameters = ctx.eval_config_value(input_parameters)
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(
         dataset_config
     )

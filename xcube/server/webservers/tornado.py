@@ -426,16 +426,27 @@ class TornadoApiRequest(ApiRequest):
                      path: str,
                      query: Optional[str] = None,
                      reverse: bool = False) -> str:
-        """Get the reverse URL for given *path* and *query*."""
-        protocol = self._request.protocol
-        host = self._request.host
-        prefix = self._reverse_url_prefix if reverse else self._url_prefix
+        """Get the URL for given *path* and *query*.
+        If the *reverse* flag is set, the configuration parameter
+        ``reverse_url_prefix``, if provided, is used to construct the URL,
+        otherwise only ``url_prefix``, if provided, is used.
+        """
+        prefix = self._url_prefix
+        if reverse:
+            prefix = self._reverse_url_prefix or prefix
         uri = ""
         if path:
             uri = path if path.startswith("/") else "/" + path
         if query:
             uri += "?" + query
-        return f"{protocol}://{host}{prefix}{uri}"
+        if "://" in prefix:
+            # Absolute prefix
+            return f"{prefix}{uri}"
+        else:
+            # Relative prefix
+            protocol = self._request.protocol
+            host = self._request.host
+            return f"{protocol}://{host}{prefix}{uri}"
 
     @property
     def url(self) -> str:

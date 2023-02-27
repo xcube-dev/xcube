@@ -249,14 +249,14 @@ class FileSet(JsonObject):
         fs, root = details.fs, details.root
 
         url_path = fsspec.core.strip_protocol(self.path)
-        suffix = ''
-        for suffix in reversed(url_path.split('/')):
-            if suffix != '':
+        temp_file_suffix = ''
+        for temp_file_suffix in reversed(url_path.split('/')):
+            if temp_file_suffix != '':
                 break
 
-        if root.endswith('/'):
+        if fs.isdir(root):
             temp_dir = new_temp_dir(prefix=TEMP_FILE_PREFIX,
-                                    suffix=suffix)
+                                    suffix=temp_file_suffix)
             # TODO: replace by loop so we can apply includes/excludes
             #   before downloading actual files. See impl of fs.get().
             fs.get(root, temp_dir + "/", recursive=True)
@@ -266,7 +266,7 @@ class FileSet(JsonObject):
                            excludes=self.excludes)
         else:
             _, temp_file = new_temp_file(prefix=TEMP_FILE_PREFIX,
-                                         suffix=suffix)
+                                         suffix=temp_file_suffix)
             fs.get_file(root, temp_file)
             return FileSet(temp_file,
                            sub_path=self.sub_path,

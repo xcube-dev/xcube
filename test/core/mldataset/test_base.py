@@ -15,6 +15,7 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         self.assertIsInstance(ml_ds.grid_mapping, GridMapping)
         self.assertIsNotNone(ml_ds.lock)
         self.assertEqual(3, ml_ds.num_levels)
+        self.assertEqual({'noise': 'first'}, ml_ds.agg_methods)
 
     def test_resolutions(self):
         ds = get_test_dataset()

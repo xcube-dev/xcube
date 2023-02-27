@@ -40,6 +40,10 @@ Styles:
         ColorBar: jet
         ValueRange: [0., 6.]
 
+Viewer:
+  Configuration:
+    Path: viewer
+
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
   ProviderSite: "https://www.brockmann-consult.de"
