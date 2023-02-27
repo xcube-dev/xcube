@@ -1,10 +1,6 @@
 ## Changes in 0.13.1 (in development)
 
-* Added Notebook
-  [test_AzureBlobFS.ipynb](/test/test_AzureBlobFS.ipynb). This notebook shows how a
-  new data store instance can connect and list zarr files from Azure bolb storage using 
-  'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
-  params. 
+### Enhancements
 
 * Included support for Azure Blob Storage filesystem by adding `AzureFsAccessor()` with support 
   for the 'abfs' protocol (fsspec adlfs package) class in `/xcube/core/store/fs/impl/fs.py` 
@@ -41,7 +37,7 @@
         Style: default
 
 * Added Notebook
-  [test_AzureBlobFS.ipynb](/test/test_AzureBlobFS.ipynb). This notebook shows how a
+  [8_azure_blob_filesystem.ipynb](examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). This notebook shows how a
   new data store instance can connect and list zarr files from Azure bolb storage using 
   'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
   params. 
