@@ -21,9 +21,10 @@
 
 
 import datetime
-from typing import Hashable
+from typing import Hashable, Any
 
 import pyproj
+import pandas as pd
 import xarray as xr
 
 from xcube.core.gridmapping import CRS_CRS84
@@ -43,6 +44,7 @@ _CONFORMANCE = [
     # TODO: fix this list
     "https://api.stacspec.org/v1.0.0-rc.2/core",
     "https://api.stacspec.org/v1.0.0-rc.2/ogcapi-features",
+    "https://api.stacspec.org/v1.0.0-rc.1/collections",
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html",
@@ -223,8 +225,10 @@ def _get_datasets_collection(ctx: DatasetsContext,
         "keywords": [],
         "providers": [],
         "extent": {
-            "spatial": {"bbox": [[-180.0, -90.0, 180.0, 90.0]]},  # FIXME
-            "temporal": {"interval": [["2000-01-01T00:00:00Z", None]]},  # FIXME
+            # TODO Replace these placeholder spatial / temporal extents
+            # with extents calculated from the datasets.
+            "spatial": {"bbox": [[-180.0, -90.0, 180.0, 90.0]]},
+            "temporal": {"interval": [["2000-01-01T00:00:00Z", None]]}
         },
         "summaries": {},
         "links": [
@@ -303,9 +307,25 @@ def _get_dataset_feature(ctx: DatasetsContext,
     #       The "s3" operation is default.
     default_storage_url = f"{base_url}/s3/datasets"
 
+    if 'time' in dataset:
+        start_time = _format_timestamp(dataset['time'][0].values)
+        end_time = _format_timestamp(dataset['time'][-1].values)
+        time_properties = {
+            'datetime': start_time
+        } if start_time == end_time else {
+            'datetime': None,
+            'start_datetime': start_time,
+            'end_datetime': end_time
+        }
+    else:
+        time_properties = {
+            # TODO Decide what to use as a fall-back datetime
+            'datetime': '2000-01-01T00:00:00Z'
+        }
+
     return {
         "stac_version": STAC_VERSION,
-        "stac_extensions": [], # ["xcube"],
+        "stac_extensions": [],  # ["xcube"],
         "type": "Feature",
         "id": dataset_id,
         "bbox": [x1, y1, x2, y2],
@@ -320,9 +340,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
             "xcube:variables": variables,
             "xcube:coordinates": coordinates,
             "xcube:attributes": dict(dataset.attrs),
-            "datetime": "2020-01-01T00:00:00.000Z",  # FIXME
-            "start_datetime": "2000-01-02T00:00:00.000Z",  # FIXME
-            "end_datetime": "2020-01-01T00:00:00.000Z"  # FIXME
+            **time_properties
         },
         "collection": collection_id,
         "links": [
@@ -388,6 +406,14 @@ def _get_dataset_feature(ctx: DatasetsContext,
         }
     }
 
+
+def _format_timestamp(timestamp: Any) -> str:
+    ts = pd.Timestamp(timestamp)
+    return (
+        ts.tz_localize('UTC')
+        if ts.tz is None
+        else ts.tz_convert('UTC')
+    ).isoformat()
 
 def get_variable_asset(var_name: Hashable, var: xr.DataArray):
     return {
