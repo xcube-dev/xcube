@@ -39,27 +39,49 @@ from .test_context import get_stac_ctx
 
 BASE_URL = "http://localhost:8080"
 
+_OGC_PREFIX = 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf'
+_STAC_PREFIX = 'https://api.stacspec.org'
+
+EXPECTED_CONFORMANCE = [
+    f'{_STAC_PREFIX}/v1.0.0-rc.2/core',
+    f'{_STAC_PREFIX}/v1.0.0-rc.2/ogcapi-features',
+    f'{_STAC_PREFIX}/v1.0.0-rc.1/collections',
+    f'{_OGC_PREFIX}/core',
+    f'{_OGC_PREFIX}/oas30',
+    f'{_OGC_PREFIX}/html',
+    f'{_OGC_PREFIX}/geojson'
+]
+
 EXPECTED_COLLECTION = {
-    'id': DEFAULT_COLLECTION_ID,
-    'title': DEFAULT_COLLECTION_TITLE,
     'description': DEFAULT_COLLECTION_DESCRIPTION,
-    'stac_version': STAC_VERSION,
-    'stac_extensions': ['xcube'],
-    'summaries': {},
-    'extent': {},
+    'extent': {'spatial': {'bbox': [[-180.0, -90.0, 180.0, 90.0]]},
+               'temporal': {'interval': [['2000-01-01T00:00:00Z', None]]}},
+    'id': DEFAULT_COLLECTION_ID,
     'keywords': [],
     'license': 'proprietary',
     'links': [
+        {'href': f'{BASE_URL}/catalog',
+         'rel': 'root',
+         'title': 'root of the STAC catalog',
+         'type': 'application/json'},
+        {'href': f'{BASE_URL}/catalog/collections/{DEFAULT_COLLECTION_ID}',
+         'rel': 'self',
+         'title': 'this collection',
+         'type': 'application/json'},
+        {'href': f'{BASE_URL}/catalog/collections',
+         'rel': 'parent',
+         'title': 'collections list'},
         {
-            'href': f'{BASE_URL}/catalog/collections/{DEFAULT_COLLECTION_ID}',
-            'rel': 'self'
-        },
-        {
-            'href': f'{BASE_URL}/catalog/collections',
-            'rel': 'root'
-        }
+            'href': f'{BASE_URL}/catalog/collections/{DEFAULT_COLLECTION_ID}/items',
+            'rel': 'items',
+            'title': 'feature collection of dataset items'}
     ],
     'providers': [],
+    'stac_version': STAC_VERSION,
+    'stac_extensions': [],
+    'summaries': {},
+    'title': DEFAULT_COLLECTION_TITLE,
+    'type': 'Collection',
 }
 
 
@@ -102,19 +124,24 @@ class StacControllersTest(unittest.TestCase):
 
     def test_get_collections(self):
         result = get_collections(get_stac_ctx().datasets_ctx, BASE_URL)
-        self.assertEqual({'collections': [EXPECTED_COLLECTION]}, result)
+        self.assertEqual(
+            {'collections': [EXPECTED_COLLECTION],
+             'links': [{'href': f'{BASE_URL}/catalog',
+                        'rel': 'root',
+                        'title': 'root of the STAC catalog',
+                        'type': 'application/json'},
+                       {'href': f'{BASE_URL}/catalog/collections',
+                        'rel': 'self',
+                        'type': 'application/json'},
+                       {'href': f'{BASE_URL}/catalog', 'rel': 'parent'}]},
+            result
+        )
 
     def test_get_conformance(self):
         result = get_conformance(get_stac_ctx().datasets_ctx)
-        prefix = 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf'
         self.assertEqual(
             {
-                'conformsTo': [
-                    f'{prefix}/core',
-                    f'{prefix}/oas30',
-                    f'{prefix}/html',
-                    f'{prefix}/geojson'
-                ]
+                'conformsTo': EXPECTED_CONFORMANCE
             },
             result
         )
@@ -123,37 +150,49 @@ class StacControllersTest(unittest.TestCase):
         result = get_root(get_stac_ctx().datasets_ctx, BASE_URL)
         self.assertEqual(
             {
-                'stac_version': STAC_VERSION,
-                'id': DEFAULT_CATALOG_ID,
-                'title': DEFAULT_CATALOG_TITLE,
+                'conformsTo': EXPECTED_CONFORMANCE,
                 'description': DEFAULT_CATALOG_DESCRIPTION,
+                'id': DEFAULT_CATALOG_ID,
                 'links': [
-                    {'rel': 'self',
-                     'href': f'{BASE_URL}/catalog',
-                     'type': 'application/json',
-                     'title': 'this document'},
-                    {'rel': 'service-desc',
-                     'href': f'{BASE_URL}/openapi.json',
-                     'type': 'application/vnd.oai.openapi+json;version=3.0',
-                     'title': 'the API definition'},
-                    {'rel': 'service-doc',
-                     'href': f'{BASE_URL}/openapi.html',
-                     'type': 'text/html',
-                     'title': 'the API documentation'},
-                    {'rel': 'conformance',
-                     'href': f'{BASE_URL}/catalog/conformance',
-                     'type': 'application/json',
-                     'title': 'OGC API conformance classes implemented'
-                              ' by this server'},
-                    {'rel': 'data',
-                     'href': f'{BASE_URL}/catalog/collections',
-                     'type': 'application/json',
-                     'title': 'Information about the feature collections'},
-                    {'rel': 'search',
-                     'href': f'{BASE_URL}/catalog/search',
-                     'type': 'application/json',
-                     'title': 'Search across feature collections'}
-                ]
+                    {'href': f'{BASE_URL}/catalog',
+                     'rel': 'root',
+                     'title': 'root of the STAC catalog',
+                     'type': 'application/json'},
+                    {'href': f'{BASE_URL}/catalog',
+                     'rel': 'self',
+                     'title': 'this document',
+                     'type': 'application/json'},
+                    {'href': f'{BASE_URL}/openapi.json',
+                     'rel': 'service-desc',
+                     'title': 'the API definition',
+                     'type': 'application/vnd.oai.openapi+json;version=3.0'},
+                    {'href': f'{BASE_URL}/openapi.html',
+                     'rel': 'service-doc',
+                     'title': 'the API documentation',
+                     'type': 'text/html'},
+                    {'href': f'{BASE_URL}/catalog/conformance',
+                     'rel': 'conformance',
+                     'title': 'OGC API conformance classes'
+                              ' implemented by this server',
+                     'type': 'application/json'},
+                    {'href': f'{BASE_URL}/catalog/collections',
+                     'rel': 'data',
+                     'title': 'Information about the feature collections',
+                     'type': 'application/json'},
+                    {'href': f'{BASE_URL}/catalog/search',
+                     'rel': 'search',
+                     'title': 'Search across feature collections',
+                     'type': 'application/json'},
+                    {
+                        'href': f'{BASE_URL}/catalog/collections/'
+                                f'{DEFAULT_COLLECTION_ID}',
+                        'rel': 'child',
+                        'title': DEFAULT_COLLECTION_DESCRIPTION,
+                        'type': 'application/json'}
+                ],
+                'stac_version': STAC_VERSION,
+                'title': DEFAULT_CATALOG_TITLE,
+                'type': 'Catalog'
             },
             result
         )
