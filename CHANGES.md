@@ -65,10 +65,10 @@
 * Changed the behaviour of the class 
   `xcube.core.mldataset.CombinedMultiLevelDataset` to do what we 
   actually expect:
-  If the keyword argument `combiner_func` is not given or ``None`` is passed, 
+  If the keyword argument `combiner_func` is not given or `None` is passed, 
   a copy of the first dataset is made, which is then subsequently updated 
-  by the remaining datasets using ``xarray.Dataset.update()``.
-  The former default was using the ``xarray.merge()``, which for some reason
+  by the remaining datasets using `xarray.Dataset.update()`.
+  The former default was using the `xarray.merge()`, which for some reason
   can eagerly load Dask array chunks into memory that won't be released. 
 
 ### Fixes
