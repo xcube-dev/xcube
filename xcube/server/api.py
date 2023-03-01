@@ -747,7 +747,7 @@ class ApiStaticRoute:
         assert_instance(path, str, name="path")
         assert_instance(dir_path, str, name="dir_path")
         assert_true(os.path.abspath(dir_path),
-                    message="dir_path must be an absolute path")
+                    message="dir_path must be an absolute local path")
         assert_instance(default_filename, (type(None), str),
                         name="default_filename")
         assert_instance(api_name, (type(None), str),

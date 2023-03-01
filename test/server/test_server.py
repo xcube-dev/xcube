@@ -167,7 +167,8 @@ class ServerTest(unittest.TestCase):
                     'base_dir': {
                         'type': 'string',
                         'title': 'Base directory used to resolve relative '
-                                 'local paths.',
+                                 'local paths. Can be a local filesystem '
+                                 'path or an absolute URL.',
                     },
                     'address': {
                         'type': 'string',
@@ -182,13 +183,17 @@ class ServerTest(unittest.TestCase):
                     'url_prefix': {
                         'type': 'string',
                         'title': 'Prefix to be prepended to all URL '
-                                 'route paths.',
+                                 'route paths. Can be an '
+                                 'absolute URL or a relative URL '
+                                 'path.',
                     },
                     'reverse_url_prefix': {
                         'type': 'string',
                         'title': 'Prefix to be prepended to '
                                  'reverse URL paths returned by '
-                                 'server responses.',
+                                 'server responses. Can be an '
+                                 'absolute URL or a relative URL '
+                                 'path.',
                     },
                     'static_routes': {
                         'type': 'array',
