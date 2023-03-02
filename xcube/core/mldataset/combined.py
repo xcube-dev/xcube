@@ -39,9 +39,9 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
         If given, it receives a list of datasets
         (``xarray.Dataset`` instances) and *combiner_params* as keyword
         arguments.
-            If not given or ``None`` is passed, a copy of the first dataset
-            is made, which is then subsequently updated by the remaining datasets
-            using ``xarray.Dataset.update()``.
+        If not given or ``None`` is passed, a copy of the first dataset
+        is made, which is then subsequently updated by the remaining datasets
+        using ``xarray.Dataset.update()``.
     :param combiner_params: Parameters to the *combiner_function*
         passed as keyword arguments.
     """
@@ -49,7 +49,7 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
     def __init__(self,
                  ml_datasets: Sequence[MultiLevelDataset],
                  ds_id: Optional[str] = None,
-                 combiner_function: Optional[Callable] = xr.merge,
+                 combiner_function: Optional[Callable] = None,
                  combiner_params: Optional[Dict[str, Any]] = None):
         if not ml_datasets or len(ml_datasets) < 2:
             raise ValueError('ml_datasets must have at least two elements')
