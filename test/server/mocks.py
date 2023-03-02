@@ -196,8 +196,10 @@ class MockApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
         pass
 
-    def write(self, data: Union[str, bytes, JSON]):
+    def write(self, data: Union[str, bytes, JSON],
+              content_type: Optional[str] = None):
         pass
 
-    def finish(self, data: Union[str, bytes, JSON] = None):
+    def finish(self, data: Union[str, bytes, JSON] = None,
+              content_type: Optional[str] = None):
         pass

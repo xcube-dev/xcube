@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2022-2023 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -19,7 +19,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from ...helpers import RoutesTestCase
+from typing import Any, Mapping
+
+from ...helpers import RoutesTestCase, get_res_test_dir
 
 
 class StacRoutesTest(RoutesTestCase):
@@ -39,22 +41,25 @@ class StacRoutesTest(RoutesTestCase):
 
     def test_fetch_catalog_collection(self):
         response = self.fetch('/catalog/collections/datasets')
-        self.assertResponseOK(response)
-        response = self.fetch('/catalog/collections/datacubes')
         self.assertResourceNotFoundResponse(response)
+        response = self.fetch('/catalog/collections/datacubes')
+        self.assertResponseOK(response)
 
     def test_fetch_catalog_collection_items(self):
-        response = self.fetch('/catalog/collections/datasets/items')
+        response = self.fetch('/catalog/collections/datacubes/items')
         self.assertResponseOK(response)
-        response = self.fetch('/catalog/collections/datacubes')
+        response = self.fetch('/catalog/collections/datacubes/items'
+                              '?limit=1&cursor=1')
+        self.assertResponseOK(response)
+        response = self.fetch('/catalog/collections/datasets')
         self.assertResourceNotFoundResponse(response)
 
     def test_fetch_catalog_collection_item(self):
-        response = self.fetch('/catalog/collections/datasets/items/demo')
-        self.assertResponseOK(response)
-        response = self.fetch('/catalog/collections/datasets/items/demox')
-        self.assertResourceNotFoundResponse(response)
         response = self.fetch('/catalog/collections/datacubes/items/demo')
+        self.assertResponseOK(response)
+        response = self.fetch('/catalog/collections/datacubes/items/demox')
+        self.assertResourceNotFoundResponse(response)
+        response = self.fetch('/catalog/collections/datasets/items/demo')
         self.assertResourceNotFoundResponse(response)
 
     def test_fetch_catalog_search_by_kw(self):
@@ -63,4 +68,20 @@ class StacRoutesTest(RoutesTestCase):
 
     def test_fetch_catalog_search_by_json(self):
         response = self.fetch('/catalog/search', method='POST')
+        self.assertResponseOK(response)
+
+
+class StacRoutesTestCog(RoutesTestCase):
+
+    def get_config(self) -> Mapping[str, Any]:
+        return {
+            'Datasets': [{
+                'Identifier': 'demo',
+                'Title': 'xcube-server COG sample',
+                'Path': f'{get_res_test_dir()}/../../../'
+                        f'examples/serve/demo/sample-cog.tif'
+            }]}
+
+    def test_fetch_catalog_collection_items(self):
+        response = self.fetch('/catalog/collections/datacubes/items')
         self.assertResponseOK(response)
