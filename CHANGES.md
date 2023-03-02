@@ -1,4 +1,4 @@
-## Changes in 0.13.1 (in development)
+## Changes in 1.0.0.dev1
 
 ### Enhancements
 
