@@ -21,7 +21,7 @@
 
 
 import datetime
-from typing import Hashable, Any
+from typing import Hashable, Any, Optional, Dict
 
 import pyproj
 import pandas as pd
@@ -39,7 +39,9 @@ from .config import DEFAULT_COLLECTION_TITLE
 from ...datasets.context import DatasetsContext
 
 STAC_VERSION = '1.0.0'
-STAC_EXTENSIONS = []  # TODO support datacube extension
+STAC_EXTENSIONS = [
+    "https://stac-extensions.github.io/datacube/v2.1.0/schema.json"
+]
 
 _CONFORMANCE = [
     "https://api.stacspec.org/v1.0.0-rc.2/core",
@@ -274,9 +276,9 @@ def _get_dataset_feature(ctx: DatasetsContext,
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
 
-    variables = [get_variable_asset(var_name, var)
+    variables = [get_xc_variable_asset(var_name, var)
                  for var_name, var in dataset.data_vars.items()]
-    coordinates = [get_variable_asset(var_name, var)
+    coordinates = [get_xc_variable_asset(var_name, var)
                    for var_name, var in dataset.coords.items()]
 
     first_var_name = next(iter(variables))["name"]
@@ -422,7 +424,7 @@ def _format_timestamp(timestamp: Any) -> str:
     ).isoformat()
 
 
-def get_variable_asset(var_name: Hashable, var: xr.DataArray):
+def get_xc_variable_asset(var_name: Hashable, var: xr.DataArray):
     return {
         "name": str(var_name),
         "dtype": str(var.dtype),
@@ -432,6 +434,48 @@ def get_variable_asset(var_name: Hashable, var: xr.DataArray):
         "attrs": dict(var.attrs),
         # "encoding": dict(var.encoding),
     }
+
+
+def get_dc_dimension_asset(var: xr.DataArray,
+                           type: str,
+                           axis: Optional[str] = None):
+    asset = dict(type=type)
+    if axis is not None:
+        asset.update(axis=axis)
+    _set_dc_description(asset, var)
+    _set_dc_unit(asset, var)
+    return asset
+
+
+def get_dc_variable_asset(var: xr.DataArray,
+                          type: str = 'data'):
+    asset = dict(type=type, dimensions=list(var.dims))
+    _set_dc_description(asset, var)
+    _set_dc_unit(asset, var)
+    return asset
+
+
+def _set_dc_description(asset, var):
+    description = _get_str_attr(var.attrs,
+                                ['description', 'title', 'long_name'])
+    if description:
+        asset.update(description=description)
+
+
+def _set_dc_unit(asset, var):
+    unit = _get_str_attr(var.attrs, ['unit', 'units'])
+    if unit:
+        asset.update(unit=unit)
+
+
+
+
+def _get_str_attr(attrs: Dict[str, Any], keys: List[str]) -> Optional[str]:
+    for k in ['description', 'title', 'long_name']:
+        v = attrs.get(k)
+        if isinstance(v, str) and v:
+            return v
+    return None
 
 
 def _assert_valid_collection(ctx: DatasetsContext, collection_id: str):
