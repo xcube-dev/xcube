@@ -482,7 +482,8 @@ class TornadoApiResponse(ApiResponse):
 
     def write(self, data: Union[str, bytes, JSON],
               content_type: Optional[str] = None):
-        self._handler.write(data)
+        if data is not None:
+            self._handler.write(data)
         # https://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
         # "If the given chunk is a dictionary, we write it as JSON and set the
         # Content-Type of the response to be application/json. (if you want to
