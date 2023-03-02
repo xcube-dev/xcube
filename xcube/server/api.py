@@ -593,7 +593,8 @@ class ApiResponse(ABC):
         """Set the HTTP header *name* to given *value*."""
 
     @abstractmethod
-    def write(self, data: Union[str, bytes, JSON],
+    def write(self, 
+              data: Union[str, bytes, JSON],
               content_type: Optional[str] = None):
         """Write data."""
 
