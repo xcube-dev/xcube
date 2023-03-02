@@ -74,7 +74,7 @@ EXPECTED_COLLECTION = {
         {
             'href': f'{BASE_URL}/catalog/collections/{DEFAULT_COLLECTION_ID}/items',
             'rel': 'items',
-            'title': 'feature collection of dataset items'}
+            'title': 'feature collection of data cube items'}
     ],
     'providers': [],
     'stac_version': STAC_VERSION,

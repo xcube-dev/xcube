@@ -103,9 +103,9 @@ def get_root(ctx: DatasetsContext, base_url: str):
             },
             {
                 "rel": "child",
-                "href": f'{base_url}/catalog/collections/datasets',
+                "href": f'{base_url}/catalog/collections/datacubes',
                 "type": "application/json",
-                "title": "a collection of xcube datasets"
+                "title": DEFAULT_COLLECTION_DESCRIPTION
             }
         ],
     }
@@ -253,7 +253,7 @@ def _get_datasets_collection(ctx: DatasetsContext,
             {
                 "rel": "items",
                 "href": f"{base_url}/catalog/collections/{c_id}/items",
-                "title": "feature collection of dataset items"
+                "title": "feature collection of data cube items"
             }
             # {
             #     "rel": "license",
