@@ -493,7 +493,8 @@ class TornadoApiResponse(ApiResponse):
         if content_type is not None:
             self._handler.set_header('Content-Type', content_type)
 
-    def finish(self, data: Union[str, bytes, JSON] = None,
+    def finish(self, 
+               data: Union[str, bytes, JSON] = None,
                content_type: Optional[str] = None):
         self.write(data, content_type)
         return self._handler.finish()
