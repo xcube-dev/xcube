@@ -90,14 +90,16 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
             collection_id=collectionId
         )
         if 'limit' in self.request.query:
-            get_items_args['limit'] = int(self.request.query['limit'][0])
+            get_items_args['limit'] = \
+                self.request.get_query_arg('limit', type=int)
         if 'cursor' in self.request.query:
-            get_items_args['cursor'] = int(self.request.query['cursor'][0])
+            get_items_args['cursor'] = \
+                self.request.get_query_arg('cursor', type=int)
         result = get_collection_items(**get_items_args)
 
-        self.response.write(result)
-        self.response.set_header('Content-Type', 'application/geo+json')
-        return await self.response.finish()
+        return await self.response.finish(
+            result, content_type='application/geo+json'
+        )
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -110,9 +112,9 @@ class CatalogCollectionItemHandler(ApiHandler[StacContext]):
         result = get_collection_item(self.ctx.datasets_ctx,
                                      self.request.reverse_base_url,
                                      collectionId, featureId)
-        self.response.write(result)
-        self.response.set_header('Content-Type', 'application/geo+json')
-        return await self.response.finish()
+        return await self.response.finish(
+            result, content_type='application/geo+json'
+        )
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic

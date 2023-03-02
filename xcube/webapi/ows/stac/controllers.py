@@ -421,6 +421,7 @@ def _format_timestamp(timestamp: Any) -> str:
         else ts.tz_convert('UTC')
     ).isoformat()
 
+
 def get_variable_asset(var_name: Hashable, var: xr.DataArray):
     return {
         "name": str(var_name),
