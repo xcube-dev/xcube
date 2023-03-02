@@ -598,7 +598,8 @@ class ApiResponse(ABC):
         """Write data."""
 
     @abstractmethod
-    def finish(self, data: Union[str, bytes, JSON] = None,
+    def finish(self, 
+               data: Union[str, bytes, JSON] = None,
                content_type: Optional[str] = None):
         """Finish the response (and submit it)."""
 
