@@ -480,7 +480,8 @@ class TornadoApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
         self._handler.set_status(status_code, reason=reason)
 
-    def write(self, data: Union[str, bytes, JSON],
+    def write(self, 
+              data: Union[str, bytes, JSON],
               content_type: Optional[str] = None):
         if data is not None:
             self._handler.write(data)
