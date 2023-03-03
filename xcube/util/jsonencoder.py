@@ -58,6 +58,9 @@ def to_json_value(obj: Any) -> JsonValue:
         if *obj* is already JSON-serializable.
     :raises TypeError: If *obj* cannot be made JSON-serializable
     """
+    if obj is None:
+        return None
+
     converted_obj = _convert_default(obj)
     if converted_obj is not obj:
         return converted_obj
@@ -113,6 +116,8 @@ def _convert_default(obj: Any) -> Any:
                 return int(obj)
             elif np.issubdtype(obj.dtype, np.floating):
                 return float(obj)
+            elif np.issubdtype(obj.dtype, np.datetime64):
+                return np.datetime_as_string(obj, timezone='UTC', unit='s')
             elif np.issubdtype(obj.dtype, np.str):
                 return str(obj)
         else:

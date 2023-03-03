@@ -18,9 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
-
+import json
+import os.path
 import unittest
+from pathlib import Path
 
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_DESCRIPTION
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_ID
@@ -78,7 +79,9 @@ EXPECTED_COLLECTION = {
     ],
     'providers': [],
     'stac_version': STAC_VERSION,
-    'stac_extensions': [],
+    'stac_extensions': [
+        'https://stac-extensions.github.io/datacube/v2.1.0/schema.json'
+    ],
     'summaries': {},
     'title': DEFAULT_COLLECTION_TITLE,
     'type': 'Collection',
@@ -87,10 +90,16 @@ EXPECTED_COLLECTION = {
 
 class StacControllersTest(unittest.TestCase):
     def test_get_collection_item(self):
+        self.maxDiff = None
         result = get_collection_item(get_stac_ctx().datasets_ctx, BASE_URL,
                                      DEFAULT_COLLECTION_ID, "demo-1w")
         self.assertIsInstance(result, dict)
-        # TODO (forman): add more assertions
+        path = Path(__file__).parent / "stac-item.json"
+        # with open(path, mode="w") as fp:
+        #     json.dump(result, fp, indent=2)
+        with open(path, mode="r") as fp:
+            expected_result = json.load(fp)
+        self.assertEqual(expected_result, result)
 
     def test_get_collection_items(self):
         result = get_collection_items(get_stac_ctx().datasets_ctx, BASE_URL,
