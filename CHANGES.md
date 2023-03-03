@@ -32,10 +32,10 @@
       max_depth: 1
       storage_options:
         anon: true
-        account_name': "xxx"
-        account_key': 'xxx...'  # or
+        account_name: "xxx"
+        account_key': "xxx"
         # or
-        connection_string: xxxxxxxx
+        # connection_string: "xxx"
     Datasets:
       - Path: "*.levels"
         Style: default
