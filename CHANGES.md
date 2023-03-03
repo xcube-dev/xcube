@@ -3,7 +3,7 @@
 ### Enhancements
 
 * Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
-  xcube server. (#455)
+  xcube server. Many thanks to [Ed](https://github.com/edd3x). (#455)
   - It serves a single collection named "datacubes" whose items are the
     datasets published by the service. 
   - The collection items make use the STAC 
