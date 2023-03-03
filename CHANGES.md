@@ -2,45 +2,48 @@
 
 ### Enhancements
 
-* Included support for Azure Blob Storage filesystem by adding `AzureFsAccessor()` with support 
-  for the 'abfs' protocol (fsspec adlfs package) class in `/xcube/core/store/fs/impl/fs.py` 
-  and `/xcube/core/store/fs/registry.py`.
-  
-  These changes will enable access to data cubes (`.zarr` or `.levels`) in Azure blob storage. This
-  has been tested with xcube `new_data_store()` function and xcube server configuration file for DataStores.
+* Included support for Azure Blob Storage filesystem by adding a new 
+  data store `abfs`. (#752)
+
+  These changes will enable access to data cubes (`.zarr` or `.levels`) 
+  in Azure blob storage as shown here: 
   
   ```python
-    new_data_store(
-        "abfs",  # Azure fs protocol
-        root="blob_container",  # Azure blob container name
-        storage_options= {'anon':True, 'account_name':"xxx", 'account_key':'xxx...'}  # or connection_string:xxxxxxxx
-    )
-    ```
-  Configuration file sample for Azure Blob
-  Here you can either use `account_name` and `account_key` or use only the `connection_string` which contain both name and key
+  store = new_data_store(
+      "abfs",                    # Azure filesystem protocol
+      root="my_blob_container",  # Azure blob container name
+      storage_options= {'anon': True, 
+                        # Alternatively, use 'connection_string': 'xxx'
+                        'account_name': 'xxx', 
+                        'account_key':'xxx'}  
+  )
+  store.list_data_ids()
+  ```
   
+  Same configuration for xcube Server:
+
   ```yaml
   DataStores:
   - Identifier: siec
     StoreId: abfs
     StoreParams:
-      root: zarr_cubes
+      root: my_blob_container
       max_depth: 1
       storage_options:
         anon: true
         account_name': "xxx"
         account_key': 'xxx...'  # or
-
+        # or
         connection_string: xxxxxxxx
     Datasets:
       - Path: "*.levels"
         Style: default
-
+  ```
+  
 * Added Notebook
-  [8_azure_blob_filesystem.ipynb](examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). This notebook shows how a
-  new data store instance can connect and list zarr files from Azure bolb storage using 
-  'abfs' as store id, blob container as root, account_name and account_key or connection_string as store
-  params. 
+  [8_azure_blob_filesystem.ipynb](examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). 
+  This notebook shows how a new data store instance can connect and list 
+  Zarr files from Azure bolb storage using the new `abfs` data store. 
 
 * Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
   xcube server. 
