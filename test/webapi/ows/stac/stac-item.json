@@ -74,24 +74,6 @@
       }
     },
     "datacube:variables": {
-      "lat_bnds": {
-        "type": "data",
-        "dimensions": [
-          "lat",
-          "bnds"
-        ],
-        "description": "latitude",
-        "unit": "degrees_north"
-      },
-      "lon_bnds": {
-        "type": "data",
-        "dimensions": [
-          "lon",
-          "bnds"
-        ],
-        "description": "longitude",
-        "unit": "degrees_east"
-      },
       "c2rcc_flags": {
         "type": "data",
         "dimensions": [
@@ -187,15 +169,33 @@
           "lon"
         ],
         "description": "Classification and quality flags"
+      },
+      "lat_bnds": {
+        "type": "auxiliary",
+        "dimensions": [
+          "lat",
+          "bnds"
+        ],
+        "description": "latitude",
+        "unit": "degrees_north"
+      },
+      "lon_bnds": {
+        "type": "auxiliary",
+        "dimensions": [
+          "lon",
+          "bnds"
+        ],
+        "description": "longitude",
+        "unit": "degrees_east"
       }
     },
-    "xcube:dimensions": {
+    "xcube:dims": {
       "lat": 1000,
       "bnds": 2,
       "lon": 2000,
       "time": 3
     },
-    "xcube:variables": [
+    "xcube:data_vars": [
       {
         "name": "c2rcc_flags",
         "dtype": "float64",
@@ -831,7 +831,7 @@
         }
       }
     ],
-    "xcube:coordinates": [
+    "xcube:coords": [
       {
         "name": "lat",
         "dtype": "float64",
@@ -929,12 +929,12 @@
         "attrs": {}
       }
     ],
-    "xcube:attributes": {
+    "xcube:attrs": {
       "Conventions": "CF-1.7"
     },
     "datetime": null,
-    "start_datetime": "2017-01-22T00:00:00+00:00",
-    "end_datetime": "2017-02-05T00:00:00+00:00"
+    "start_datetime": "2017-01-22T00:00:00Z",
+    "end_datetime": "2017-02-05T00:00:00Z"
   },
   "collection": "datacubes",
   "links": [
