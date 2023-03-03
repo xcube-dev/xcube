@@ -3,7 +3,8 @@
 ### Enhancements
 
 * Included support for Azure Blob Storage filesystem by adding a new 
-  data store `abfs`. (#752)
+  data store `abfs`. Many thanks to [Ed](https://github.com/edd3x)!
+  (#752)
 
   These changes will enable access to data cubes (`.zarr` or `.levels`) 
   in Azure blob storage as shown here: 
