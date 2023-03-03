@@ -1,4 +1,4 @@
-## Changes in 1.0.0.dev3 (in development)
+## Changes in 1.0.0.dev3 
 
 ### Enhancements
 
