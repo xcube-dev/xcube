@@ -3,9 +3,11 @@
 ### Enhancements
 
 * Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
-  xcube server. 
-  It serves a single collection named "datasets" whose items are the
-  datasets published by the service. (#455)
+  xcube server. (#455)
+  - It serves a single collection named "datacubes" whose items are the
+    datasets published by the service. 
+  - The collection items make use the STAC 
+    [datacube](https://github.com/stac-extensions/datacube) extension. 
 
 * Simplified the cloud deployment of xcube server/viewer applications (#815). 
   This has been achieved by the following new xcube server features:

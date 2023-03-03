@@ -21,15 +21,17 @@
 
 
 import datetime
-from typing import Hashable, Any, Optional, Dict
+from typing import Hashable, Any, Optional, Dict, List
 
-import pyproj
+import numpy as np
 import pandas as pd
+import pyproj
 import xarray as xr
 
-from xcube.core.gridmapping import CRS_CRS84
+from xcube.core.gridmapping import CRS_CRS84, GridMapping
 from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
+from xcube.util.jsonencoder import to_json_value
 from .config import DEFAULT_CATALOG_DESCRIPTION
 from .config import DEFAULT_CATALOG_ID
 from .config import DEFAULT_CATALOG_TITLE
@@ -274,14 +276,45 @@ def _get_dataset_feature(ctx: DatasetsContext,
     collection_id, _, _ = _get_collection_metadata(ctx.config)
 
     ml_dataset = ctx.get_ml_dataset(dataset_id)
+    grid_mapping = ml_dataset.grid_mapping
     dataset = ml_dataset.base_dataset
 
-    variables = [get_xc_variable_asset(var_name, var)
-                 for var_name, var in dataset.data_vars.items()]
-    coordinates = [get_xc_variable_asset(var_name, var)
-                   for var_name, var in dataset.coords.items()]
+    xc_coordinates = [get_xc_variable_asset(var_name, var)
+                      for var_name, var in dataset.coords.items()]
+    xc_variables = [get_xc_variable_asset(var_name, var)
+                    for var_name, var in dataset.data_vars.items()]
 
-    first_var_name = next(iter(variables))["name"]
+    x_dim_name, y_dim_name = grid_mapping.xy_dim_names
+    x_var_name, y_var_name = grid_mapping.xy_var_names
+
+    dc_dimensions = {
+        x_dim_name: get_dc_spatial_dimension_asset(
+            dataset[x_var_name], "x", grid_mapping,
+        ),
+        y_dim_name: get_dc_spatial_dimension_asset(
+            dataset[y_var_name], "y", grid_mapping,
+        ),
+    }
+    if "time" in dataset.dims \
+            and "time" in dataset.coords \
+            and dataset["time"].ndim == 1:
+        dc_dimensions.update(
+            time=get_dc_temporal_dimension_asset(dataset["time"])
+        )
+    for dim_name in dataset.dims.keys():
+        if dim_name not in {x_dim_name, y_dim_name, "time"} \
+                and dim_name in dataset:
+            dc_dimensions.update(
+                dim_name=get_dc_additional_dimension_asset(dataset[dim_name])
+            )
+
+    dc_variables = {
+        str(var_name): get_dc_variable_asset(var)
+        for var_name, var in dataset.variables.items()
+        if var_name not in dc_dimensions and var.ndim >= 1
+    }
+
+    first_var_name = next(iter(xc_variables))["name"]
     first_var = dataset[first_var_name]
     first_var_extra_dims = first_var.dims[0:-2]
 
@@ -304,11 +337,11 @@ def _get_dataset_feature(ctx: DatasetsContext,
         )
 
     t = pyproj.Transformer.from_crs(
-        ml_dataset.grid_mapping.crs,
+        grid_mapping.crs,
         CRS_CRS84,
         always_xy=True
     )
-    bbox = ml_dataset.grid_mapping.xy_bbox
+    bbox = grid_mapping.xy_bbox
     (x1, x2), (y1, y2) = t.transform((bbox[0], bbox[2]), (bbox[1], bbox[3]))
 
     # TODO: Prefer original storage location.
@@ -344,9 +377,11 @@ def _get_dataset_feature(ctx: DatasetsContext,
             ],
         },
         "properties": {
+            "datacube:dimensions": dc_dimensions,
+            "datacube:variables": dc_variables,
             "xcube:dimensions": dict(dataset.dims),
-            "xcube:variables": variables,
-            "xcube:coordinates": coordinates,
+            "xcube:variables": xc_variables,
+            "xcube:coordinates": xc_coordinates,
             "xcube:attributes": dict(dataset.attrs),
             **time_properties
         },
@@ -381,7 +416,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
                         "href": f"{default_storage_url}/"
                                 f"{dataset_id}.zarr/{v['name']}"
                     }
-                    for v in variables
+                    for v in xc_variables
                 }
             },
             "visual": {
@@ -401,7 +436,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
                                 + "/{z}/{y}/{x}"
                                 + tiles_query),
                     }
-                    for v in variables
+                    for v in xc_variables
                 }
             },
             "thumbnail": {
@@ -428,27 +463,76 @@ def get_xc_variable_asset(var_name: Hashable, var: xr.DataArray):
     return {
         "name": str(var_name),
         "dtype": str(var.dtype),
-        "dims": list(var.dims),
-        "chunks": list(var.chunks) if var.chunks else None,
-        "shape": list(var.shape),
-        "attrs": dict(var.attrs),
-        # "encoding": dict(var.encoding),
+        "dims": to_json_value(var.dims),
+        "chunks": to_json_value(var.chunks) if var.chunks else None,
+        "shape": to_json_value(var.shape),
+        "attrs": to_json_value(var.attrs),
+        # "encoding": to_json_value(var.encoding),
     }
 
 
-def get_dc_dimension_asset(var: xr.DataArray,
-                           type: str,
-                           axis: Optional[str] = None):
+def get_dc_spatial_dimension_asset(
+        var: xr.DataArray,
+        axis: str,
+        grid_mapping: GridMapping
+) -> Dict[str, Any]:
+    asset = get_dc_dimension_asset(var, "spatial", axis=axis)
+    if axis == "x":
+        extent = grid_mapping.x_min, grid_mapping.x_max
+        step = grid_mapping.x_res if grid_mapping.is_regular else None
+    else:
+        extent = grid_mapping.y_min, grid_mapping.y_max
+        step = grid_mapping.y_res if grid_mapping.is_regular else None
+    asset["extent"] = to_json_value(extent)
+    asset["step"] = to_json_value(step)
+    asset["reference_system"] = to_json_value(grid_mapping.crs.srs)
+    return asset
+
+
+def get_dc_temporal_dimension_asset(
+        var: xr.DataArray
+) -> Dict[str, Any]:
+    asset = get_dc_dimension_asset(var, "temporal", axis=None, drop_unit=True)
+    asset["values"] = [to_json_value(t) for t in var.values]
+    return asset
+
+
+def get_dc_additional_dimension_asset(
+        var: xr.DataArray,
+        type: str = "unknown"
+) -> Dict[str, Any]:
+    asset = get_dc_dimension_asset(var, type, axis=None)
+    if var.ndim == 1:
+        asset["range"] = [to_json_value(var[0]), to_json_value(var[-1])]
+        if var.size > 1:
+            diff_var = np.diff(var)
+            if np.issubdtype(var.dtype, np.numeric) \
+                    and np.allclose(np.diff(diff_var), 0):
+                asset["step"] = to_json_value(diff_var[0])
+        if "step" not in asset and var.size < 1000:
+            asset["values"] = [to_json_value(t) for t in var.values]
+    return asset
+
+
+def get_dc_dimension_asset(
+        var: xr.DataArray,
+        type: str,
+        axis: Optional[str] = None,
+        drop_unit: bool = False
+) -> Dict[str, Any]:
     asset = dict(type=type)
     if axis is not None:
         asset.update(axis=axis)
     _set_dc_description(asset, var)
-    _set_dc_unit(asset, var)
+    if not drop_unit:
+        _set_dc_unit(asset, var)
     return asset
 
 
-def get_dc_variable_asset(var: xr.DataArray,
-                          type: str = 'data'):
+def get_dc_variable_asset(
+        var: xr.DataArray,
+        type: str = 'data'
+) -> Dict[str, Any]:
     asset = dict(type=type, dimensions=list(var.dims))
     _set_dc_description(asset, var)
     _set_dc_unit(asset, var)
@@ -468,10 +552,8 @@ def _set_dc_unit(asset, var):
         asset.update(unit=unit)
 
 
-
-
 def _get_str_attr(attrs: Dict[str, Any], keys: List[str]) -> Optional[str]:
-    for k in ['description', 'title', 'long_name']:
+    for k in keys:
         v = attrs.get(k)
         if isinstance(v, str) and v:
             return v
