@@ -283,13 +283,13 @@ def _get_dataset_feature(ctx: DatasetsContext,
     grid_mapping = ml_dataset.grid_mapping
     dataset = ml_dataset.base_dataset
 
-    xc_coords = _get_xc_variables(dataset.coords)
-    xc_data_vars = _get_xc_variables(dataset.data_vars)
+    xcube_coords = _get_xc_variables(dataset.coords)
+    xcube_data_vars = _get_xc_variables(dataset.data_vars)
 
-    dc_dimensions = _get_dc_dimensions(dataset, grid_mapping)
-    dc_variables = _get_dc_variables(dataset, dc_dimensions)
+    cube_dimensions = _get_dc_dimensions(dataset, grid_mapping)
+    cube_variables = _get_dc_variables(dataset, cube_dimensions)
 
-    first_var_name = next(iter(xc_data_vars))["name"]
+    first_var_name = next(iter(xcube_data_vars))["name"]
     first_var = dataset[first_var_name]
     first_var_extra_dims = first_var.dims[0:-2]
 
@@ -353,11 +353,11 @@ def _get_dataset_feature(ctx: DatasetsContext,
             ],
         },
         "properties": {
-            "datacube:dimensions": dc_dimensions,
-            "datacube:variables": dc_variables,
+            "cube:dimensions": cube_dimensions,
+            "cube:variables": cube_variables,
             "xcube:dims": to_json_value(dataset.dims),
-            "xcube:data_vars": xc_data_vars,
-            "xcube:coords": xc_coords,
+            "xcube:data_vars": xcube_data_vars,
+            "xcube:coords": xcube_coords,
             "xcube:attrs": to_json_value(dataset.attrs),
             **time_properties
         },
@@ -392,7 +392,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
                         "href": f"{default_storage_url}/"
                                 f"{dataset_id}.zarr/{v['name']}"
                     }
-                    for v in xc_data_vars
+                    for v in xcube_data_vars
                 }
             },
             "visual": {
@@ -412,7 +412,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
                                 + "/{z}/{y}/{x}"
                                 + tiles_query),
                     }
-                    for v in xc_data_vars
+                    for v in xcube_data_vars
                 }
             },
             "thumbnail": {

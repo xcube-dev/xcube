@@ -39,7 +39,7 @@
     ]
   },
   "properties": {
-    "datacube:dimensions": {
+    "cube:dimensions": {
       "lon": {
         "type": "spatial",
         "axis": "x",
@@ -73,7 +73,7 @@
         ]
       }
     },
-    "datacube:variables": {
+    "cube:variables": {
       "c2rcc_flags": {
         "type": "data",
         "dimensions": [

@@ -95,8 +95,8 @@ class StacControllersTest(unittest.TestCase):
                                      DEFAULT_COLLECTION_ID, "demo-1w")
         self.assertIsInstance(result, dict)
         path = Path(__file__).parent / "stac-item.json"
-        # with open(path, mode="w") as fp:
-        #     json.dump(result, fp, indent=2)
+        with open(path, mode="w") as fp:
+            json.dump(result, fp, indent=2)
         with open(path, mode="r") as fp:
             expected_result = json.load(fp)
         self.assertEqual(expected_result, result)
