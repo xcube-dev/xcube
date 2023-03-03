@@ -610,15 +610,6 @@ def _get_str_attr(attrs: Dict[str, Any], keys: List[str]) -> Optional[str]:
     return None
 
 
-def _format_timestamp(timestamp: Any) -> str:
-    ts = pd.Timestamp(timestamp)
-    return (
-        ts.tz_localize('UTC')
-        if ts.tz is None
-        else ts.tz_convert('UTC')
-    ).isoformat()
-
-
 def _assert_valid_collection(ctx: DatasetsContext, collection_id: str):
     c_id, _, _ = _get_collection_metadata(ctx.config)
     if collection_id != c_id:
