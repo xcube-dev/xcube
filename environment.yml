@@ -6,6 +6,7 @@ dependencies:
   # Python
   - python >=3.8,<3.10
   # Required
+  - adlfs >=2023.1  # for azure blob filesystem
   - affine >=2.2
   - click >=8.0
   - cmocean >=2.0
@@ -36,7 +37,6 @@ dependencies:
   - rfc3339-validator >=0.1  # for python-jsonschema date-time format validation
   - rioxarray >=0.11
   - s3fs >=2021.6
-  - adlfs >=2023.1  # for azure blob filesystem
   - scipy >=1.6.0
   - setuptools >=41.0
   - shapely >=1.6
