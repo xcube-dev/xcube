@@ -199,6 +199,54 @@ Dataset Attribution may be added to the server via *DatasetAttribution*.
       - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
       - "© by EU H2020 CyanoAlert project"
 
+.. _base directory:
+
+Base Directory [optional]
+------------------------------
+
+A typical xcube server configuration comprises many paths, and
+relative paths of known configuration parameters are resolved against
+the `base_dir` configuration parameter.
+
+.. code:: yaml
+
+    base_dir: s3://<bucket>/<path-to-your>/<resources>/
+
+However, for values of
+parameters passed to user functions that represent paths in user code,
+this cannot be done automatically. For such situations, expressions
+can be used. An expression is any string between `"${"` and `"}"` in a
+configuration value. An expression can contain the variables
+`base_dir` (a string), `ctx` the current server context
+(type `xcube.webapi.datasets.DatasetsContext`), as well as the function
+`resolve_config_path(path)` that is used to make a path absolut with
+respect to `base_dir` and to normalize it. For example
+
+.. code:: yaml
+
+    Augmentation:
+    Path: augmentation/metadata.py
+    Function: metadata:update_metadata
+    InputParameters:
+    bands_config: ${resolve_config_path("../common/bands.yaml")}
+
+
+.. _viewer configuration:
+
+Viewer Configuration [optional]
+------------------------------
+
+The xcube server endpoint `/viewer/config/{*path}` allows
+for configuring the viewer accessible via endpoint `/viewer`.
+The actual source for the configuration items is configured by xcube
+server configuration using the new entry `Viewer/Configuration/Path`,
+for example:
+
+.. code:: yaml
+
+    Viewer:
+      Configuration:
+        Path: s3://<bucket>/<path-to-your-viewer>/<resources>
 
 .. _datasets:
 
@@ -440,7 +488,7 @@ Place groups may be stored e.g. in shapefiles or a geoJson.
         Title: Points outside the cube
         Path: places/outside-cube.geojson
         PropertyMapping:
-          image: "${base_url}/images/outside-cube/${ID}.jpg"
+          image: ${resolve_config_path("images/outside-cube/${ID}.jpg")}
 
 
 *Identifier* [mandatory]
@@ -491,7 +539,7 @@ while an image is provided by the place feature's ``IMG_URL`` property:
 
 
 The values on the right side may either **be** feature property names or **contain** them as placeholders in the form
-``${PROPERTY}``. A special placeholder is ``${base_url}`` which is replaced by the server's current base URL.
+``${PROPERTY}``.
 
 .. _styles:
 
@@ -649,6 +697,34 @@ Example Stores
     [I 190924 17:08:54 service:228] configuration file 'D:\\Projects\\xcube\\examples\\serve\\demo\\config.yml' successfully loaded
     [I 190924 17:08:54 service:158] service running, listening on localhost:8080, try http://localhost:8080/datasets
     [I 190924 17:08:54 service:159] press CTRL+C to stop service
+
+.. _example azure blob storage filesystem stores:
+
+Example Azure Blob Storage filesystem Stores
+============================================
+
+xcube server includes support for Azure Blob Storage filesystem by a data store `abfs`.
+This enables access to data cubes (`.zarr` or `.levels`) in Azure blob storage as shown here:
+
+
+.. code:: yaml
+
+    DataStores:
+      - Identifier: siec
+        StoreId: abfs
+        StoreParams:
+          root: my_blob_container
+          max_depth: 1
+          storage_options:
+            anon: true
+            account_name: "xxx"
+            account_key': "xxx"
+            # or
+            # connection_string: "xxx"
+        Datasets:
+          - Path: "*.levels"
+            Style: default
+
 
 Web API
 =======
