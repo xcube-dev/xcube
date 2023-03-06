@@ -480,9 +480,22 @@ class TornadoApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
         self._handler.set_status(status_code, reason=reason)
 
-    def write(self, data: Union[str, bytes, JSON]):
-        self._handler.write(data)
+    def write(self, 
+              data: Union[str, bytes, JSON],
+              content_type: Optional[str] = None):
+        if data is not None:
+            self._handler.write(data)
+        # https://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+        # "If the given chunk is a dictionary, we write it as JSON and set the
+        # Content-Type of the response to be application/json. (if you want to
+        # send JSON as a different Content-Type, call set_header after calling
+        # write())."
+        if content_type is not None:
+            self._handler.set_header('Content-Type', content_type)
 
-    def finish(self, data: Union[str, bytes, JSON] = None):
-        return self._handler.finish(data)
+    def finish(self, 
+               data: Union[str, bytes, JSON] = None,
+               content_type: Optional[str] = None):
+        self.write(data, content_type)
+        return self._handler.finish()
 

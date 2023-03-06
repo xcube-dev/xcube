@@ -91,6 +91,7 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
 _FS_STORAGE_ITEMS = (
     ('file', 'local filesystem'),
     ('s3', 'AWS S3 compatible object storage'),
+    ('abfs', 'Azure blob compatible object storage'),
     ('memory', 'in-memory filesystem')
 )
 

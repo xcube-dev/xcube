@@ -2,6 +2,7 @@ import unittest
 
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.mldataset import CombinedMultiLevelDataset
+from xcube.core.mldataset import MultiLevelDataset
 from .helpers import get_test_dataset
 
 
@@ -18,7 +19,15 @@ class CombinedMultiLevelDatasetTest(unittest.TestCase):
         )
 
         ml_ds = CombinedMultiLevelDataset([ml_ds_1, ml_ds_2, ml_ds_3])
+        self.assert_ml_dataset_structure_ok(ml_ds)
+        ml_ds.close()
 
+        ml_ds = CombinedMultiLevelDataset([ml_ds_1, ml_ds_2, ml_ds_3],
+                                          combiner_function=None)
+        self.assert_ml_dataset_structure_ok(ml_ds)
+        ml_ds.close()
+
+    def assert_ml_dataset_structure_ok(self, ml_ds: MultiLevelDataset):
         self.assertEqual(3, ml_ds.num_levels)
         self.assertEqual((180, 180), ml_ds.grid_mapping.tile_size)
 
@@ -48,5 +57,3 @@ class CombinedMultiLevelDatasetTest(unittest.TestCase):
                             for v in ds2.data_vars.values()))
 
         self.assertEqual([ds0, ds1, ds2], ml_ds.datasets)
-
-        ml_ds.close()
