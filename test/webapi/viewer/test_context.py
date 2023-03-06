@@ -43,7 +43,7 @@ class ViewerContextTest(unittest.TestCase):
     def test_config_path_ok(self):
         ctx = get_viewer_ctx()
         path = f"{ctx.config['base_dir']}/viewer"
-        self.assertEqual(path, ctx.config_path)
+        self.assertEqual(path.replace('\\', '/'), ctx.config_path)
 
         config_path = "s3://xcube-viewer-app/bc/dev/viewer/"
         config = dict(ctx.config)

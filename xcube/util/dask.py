@@ -1,14 +1,14 @@
+import itertools
 import os
 import re
-import itertools
 import uuid
 import warnings
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, \
     Sequence, Tuple, Union
-import distributed
 
 import dask.array as da
 import dask.array.core as dac
+import distributed
 import numpy as np
 
 IntTuple = Tuple[int, ...]
@@ -19,6 +19,7 @@ SliceTupleIterable = Iterable[SliceTuple]
 
 _CLUSTER_TAGS_ENV_VAR_NAME = 'XCUBE_DASK_CLUSTER_TAGS'
 _CLUSTER_ACCOUNT_ENV_VAR_NAME = 'XCUBE_DASK_CLUSTER_ACCOUNT'
+
 
 def compute_array_from_func(func: Callable[..., np.ndarray],
                             shape: IntTuple,
@@ -151,8 +152,7 @@ def new_cluster(
     account: str = None,
     **kwargs,
 ) -> distributed.deploy.Cluster:
-    """
-    Create a new Dask cluster
+    """Create a new Dask cluster.
 
     Cloud resource tags can be specified in an environment variable
     XCUBE_DASK_CLUSTER_TAGS in the format
@@ -183,8 +183,8 @@ def new_cluster(
         account_from_env_var = os.environ[_CLUSTER_ACCOUNT_ENV_VAR_NAME]
     else:
         account_from_env_var = None
-        warnings.warn(f'Environment variable {_CLUSTER_ACCOUNT_ENV_VAR_NAME} '
-                      f'not set; cluster account name may be incorrect.')
+        warnings.warn(f'Environment variable {_CLUSTER_ACCOUNT_ENV_VAR_NAME}'
+                      f' not set; cluster account name may be incorrect.')
 
     cluster_account = (
         account if account is not None else
@@ -200,8 +200,8 @@ def new_cluster(
                               f"'coiled' to be installed") from e
         if software is None and 'JUPYTER_IMAGE' in os.environ:
             # If the JUPYTER_IMAGE environment variable is set, we're
-            # presumably in a Z2JH deployment and can base a Coiled environment
-            # on the same image.
+            # presumably in a Z2JH deployment and can base a
+            # Coiled environment on the same image.
             # First we construct an identifier from the user image specifier.
             current_image = os.environ['JUPYTER_IMAGE']
             software = re.sub(
@@ -234,25 +234,31 @@ def new_cluster(
         coiled_params.update(kwargs)
 
         return coiled.Cluster(**coiled_params)
+
     raise NotImplementedError(f'Unknown provider {provider!r}')
 
 
-def _collate_cluster_resource_tags(
-        extra_tags: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def _collate_cluster_resource_tags(extra_tags: Dict[str, str]) \
+        -> Dict[str, str]:
     fallback_tags = {
         'cost-center': 'unknown',
         'environment': 'dev',
         'creator': 'auto',
-        'purpose': 'xcube dask cluster'
+        'purpose': 'xcube dask cluster',
+        'user': (os.environ.get('JUPYTERHUB_USER')  # JupyterHub
+                 or os.environ.get('USER')          # Unixes
+                 or os.environ.get('USERNAME')      # Windows
+                 or os.getlogin()
+                 or '')
     }
     if _CLUSTER_TAGS_ENV_VAR_NAME in os.environ:
         kvps = os.environ[_CLUSTER_TAGS_ENV_VAR_NAME].split(':')
         env_var_tags = {
-            (parts := kvp.split('=', 1))[0]: parts[1] for kvp in kvps
+            (parts := kvp.split('=', maxsplit=1))[0]: parts[1] for kvp in kvps
         }
     else:
-        warnings.warn(f'Environment variable {_CLUSTER_TAGS_ENV_VAR_NAME} not '
-                      f'set; cluster resource tags may be missing.')
+        warnings.warn(f'Environment variable {_CLUSTER_TAGS_ENV_VAR_NAME}'
+                      f' not set; cluster resource tags may be missing.')
         env_var_tags = {}
     return fallback_tags | env_var_tags | extra_tags
 

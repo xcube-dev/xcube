@@ -26,9 +26,9 @@ DEFAULT_CATALOG_ID = "xcube-server"
 DEFAULT_CATALOG_TITLE = "xcube Server"
 DEFAULT_CATALOG_DESCRIPTION = "Catalog of datasets served by xcube."
 
-DEFAULT_COLLECTION_ID = "datasets"
-DEFAULT_COLLECTION_TITLE = "Datasets"
-DEFAULT_COLLECTION_DESCRIPTION = ""
+DEFAULT_COLLECTION_ID = "datacubes"
+DEFAULT_COLLECTION_TITLE = "Data cubes"
+DEFAULT_COLLECTION_DESCRIPTION = "a collection of xcube datasets"
 
 COLLECTION_SCHEMA = JsonObjectSchema(
     properties=dict(

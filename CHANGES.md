@@ -1,6 +1,7 @@
-## Changes in 0.13.1 (in development)
+## Changes in 1.0.0.dev3 
 
 ### Enhancements
+
 
 
 * Added Notebook 
@@ -13,10 +14,57 @@
   [Notebook for CMEMS data store](examples/notebooks/datastores/7_cmems_data_store.ipynb)
   to reflect changes of parameter names that provide CMEMS API credentials.
 
+* Included support for Azure Blob Storage filesystem by adding a new 
+  data store `abfs`. Many thanks to [Ed](https://github.com/edd3x)!
+  (#752)
+
+  These changes will enable access to data cubes (`.zarr` or `.levels`) 
+  in Azure blob storage as shown here: 
+  
+  ```python
+  store = new_data_store(
+      "abfs",                    # Azure filesystem protocol
+      root="my_blob_container",  # Azure blob container name
+      storage_options= {'anon': True, 
+                        # Alternatively, use 'connection_string': 'xxx'
+                        'account_name': 'xxx', 
+                        'account_key':'xxx'}  
+  )
+  store.list_data_ids()
+  ```
+  
+  Same configuration for xcube Server:
+
+  ```yaml
+  DataStores:
+  - Identifier: siec
+    StoreId: abfs
+    StoreParams:
+      root: my_blob_container
+      max_depth: 1
+      storage_options:
+        anon: true
+        account_name: "xxx"
+        account_key': "xxx"
+        # or
+        # connection_string: "xxx"
+    Datasets:
+      - Path: "*.levels"
+        Style: default
+  ```
+  
+* Added Notebook
+  [8_azure_blob_filesystem.ipynb](examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). 
+  This notebook shows how a new data store instance can connect and list 
+  Zarr files from Azure bolb storage using the new `abfs` data store. 
+
+
 * Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
-  xcube server. 
-  It serves a single collection named "datasets" whose items are the
-  datasets published by the service. (#455)
+  xcube server. (#455)
+  - It serves a single collection named "datacubes" whose items are the
+    datasets published by the service. 
+  - The collection items make use the STAC 
+    [datacube](https://github.com/stac-extensions/datacube) extension. 
 
 * Simplified the cloud deployment of xcube server/viewer applications (#815). 
   This has been achieved by the following new xcube server features:
@@ -55,6 +103,12 @@
         bands_config: ${resolve_config_path("../common/bands.yaml")}
     ```
 
+* xcube's `Dockerfile` no longer creates a conda environment `xcube`.
+  All dependencies are now installed into the `base` environment making it 
+  easier to use the container as an executable for xcube applications.
+  We are now also using a `micromamba` base image instead of `miniconda`.
+  The result is a much faster build and smaller image size.
+
 * Added a `new_cluster` function to `xcube.util.dask`, which can create
   Dask clusters with various configuration options.
 
@@ -65,6 +119,16 @@
   - A new class `xcube.core.mldataset.FsMultiLevelDataset` that represents
     a multi-level dataset persisted to some filesystem, like 
     "file", "s3", "memory". It can also write datasets to the filesystem. 
+
+
+* Changed the behaviour of the class 
+  `xcube.core.mldataset.CombinedMultiLevelDataset` to do what we 
+  actually expect:
+  If the keyword argument `combiner_func` is not given or `None` is passed, 
+  a copy of the first dataset is made, which is then subsequently updated 
+  by the remaining datasets using `xarray.Dataset.update()`.
+  The former default was using the `xarray.merge()`, which for some reason
+  can eagerly load Dask array chunks into memory that won't be released. 
 
 ### Fixes
 
@@ -78,7 +142,6 @@
   inside JupyterLab. Here, the expected returned self-referencing URL was
   `https://{host}/users/{user}/proxy/8000/{path}` but we got
   `http://{host}/proxy/8000/{path}`. (#806)
-
 
 ## Changes in 0.13.0
 
@@ -305,6 +368,10 @@
 
 * Removed deprecated example `examples/tile`.
 
+### Other Changes
+
+* The utility function `xcube.util.dask.create_cluster()` now also
+  generates the tag `user` for the current user's name.
 
 ## Changes in 0.12.1 
 

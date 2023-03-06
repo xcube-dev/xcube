@@ -66,9 +66,10 @@ class OpenApiJsonHandler(ApiHandler):
     )
     def get(self):
         include_all = self.request.get_query_arg('all', default=False)
-        self.response.finish(self.ctx.get_open_api_doc(
-            include_all=include_all
-        ))
+        self.response.finish(
+            self.ctx.get_open_api_doc(include_all=include_all),
+            content_type='application/vnd.oai.openapi+json;version=3.0'
+        )
 
 
 @api.route("/maintenance/fail")

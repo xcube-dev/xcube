@@ -135,6 +135,8 @@ class NewClusterTest(unittest.TestCase):
                       'creator': 'auto',
                       'environment': 'dev',
                       'purpose': 'xcube dask cluster',
+                      'user': os.environ.get('USER',
+                                             os.environ.get('USERNAME')),
                       'tag1': 'value1',
                       'tag2': 'value2a',
                       'tag3': 'value3'},

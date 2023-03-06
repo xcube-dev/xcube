@@ -31,6 +31,7 @@ from .impl.dataset import DatasetZarrFsDataAccessor
 from .impl.fs import FileFsAccessor
 from .impl.fs import MemoryFsAccessor
 from .impl.fs import S3FsAccessor
+from .impl.fs import AzureFsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
 from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
@@ -59,7 +60,7 @@ def register_fs_accessor_class(
     _FS_ACCESSOR_CLASSES[protocol] = fs_accessor_class
 
 
-for cls in (FileFsAccessor, S3FsAccessor, MemoryFsAccessor):
+for cls in (FileFsAccessor, S3FsAccessor, AzureFsAccessor, MemoryFsAccessor):
     register_fs_accessor_class(cls)
 
 
