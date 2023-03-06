@@ -246,7 +246,16 @@ for example:
 
     Viewer:
       Configuration:
-        Path: s3://<bucket>/<path-to-your-viewer>/<resources>
+        Path: s3://<bucket>/<viewer-config-dir-path>
+
+`Path` must be an absolute filesystem path or a S3 path as in the example above.
+It points to a directory that is expected to contain the the viewer configuration file `config.json` 
+among other configuration resources, such as custom `favicon.ico` or `logo.png`.
+The file `config.json` should conform to the 
+[configuration JSON Schema](https://github.com/dcs4cop/xcube-viewer/blob/master/src/resources/config.schema.json). 
+All its values are optional, if not provided, 
+[default values](https://github.com/dcs4cop/xcube-viewer/blob/master/src/resources/config.json) 
+are used instead. 
 
 .. _datasets:
 
