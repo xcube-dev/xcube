@@ -69,7 +69,7 @@
     ```yaml
     Viewer:
       Configuration:
-        Path: s3://cyanoalert/xcube/viewer/ 
+        Path: s3://cyanoalert/xcube/viewer-config
     ```
   - A typical xcube server configuration comprises many paths, and 
     relative paths of known configuration parameters are resolved against 
