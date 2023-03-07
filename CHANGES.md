@@ -2,6 +2,18 @@
 
 ### Enhancements
 
+
+
+* Added Notebook 
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
+  that explains how xcube Viewer can now be utilised in JupyterLab
+  using the new (still experimental) xcube JupyterLab extension
+  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
+  
+* Updated example 
+  [Notebook for CMEMS data store](examples/notebooks/datastores/7_cmems_data_store.ipynb)
+  to reflect changes of parameter names that provide CMEMS API credentials.
+
 * Included support for Azure Blob Storage filesystem by adding a new 
   data store `abfs`. Many thanks to [Ed](https://github.com/edd3x)!
   (#752)
@@ -45,6 +57,7 @@
   [8_azure_blob_filesystem.ipynb](examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). 
   This notebook shows how a new data store instance can connect and list 
   Zarr files from Azure bolb storage using the new `abfs` data store. 
+
 
 * Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
   xcube server. (#455)
