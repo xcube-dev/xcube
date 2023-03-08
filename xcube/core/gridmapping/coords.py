@@ -265,6 +265,30 @@ def new_grid_mapping_from_coords(
     x_max = _to_int_or_float(x_coords.max() + x_res_05)
     y_max = _to_int_or_float(y_coords.max() + y_res_05)
 
+    if cls is Coords1DGridMapping and is_regular:
+        from .regular import RegularGridMapping
+        """
+                 size: Union[int, Tuple[int, int]],
+                 tile_size: Optional[Union[int, Tuple[int, int]]],
+                 xy_bbox: Tuple[Number, Number, Number, Number],
+                 xy_res: Union[Number, Tuple[Number, Number]],
+                 crs: pyproj.crs.CRS,
+                 xy_var_names: Tuple[str, str],
+                 xy_dim_names: Tuple[str, str],
+                 is_regular: Optional[bool],
+                 is_lon_360: Optional[bool],
+                 is_j_axis_up: Optional[bool]
+        """
+        return RegularGridMapping(crs=crs,
+                                  size=size,
+                                  tile_size=tile_size,
+                                  xy_bbox=(x_min, y_min, x_max, y_max),
+                                  xy_res=(x_res, y_res),
+                                  xy_var_names=xy_var_names,
+                                  xy_dim_names=(str(x_dim), str(y_dim)),
+                                  is_lon_360=is_lon_360,
+                                  is_j_axis_up=is_j_axis_up)
+
     return cls(x_coords=x_coords,
                y_coords=y_coords,
                crs=crs,

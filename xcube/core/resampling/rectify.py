@@ -1,23 +1,23 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 from typing import Mapping, Optional, Sequence, Tuple, Union
 
@@ -29,6 +29,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_spatial_subset
 from xcube.util.dask import compute_array_from_func
+from .cf import encode_grid_mapping
 
 
 def rectify_dataset(source_ds: xr.Dataset,
@@ -37,6 +38,7 @@ def rectify_dataset(source_ds: xr.Dataset,
                     source_gm: GridMapping = None,
                     xy_var_names: Tuple[str, str] = None,
                     target_gm: GridMapping = None,
+                    gm_name: str = "crs",
                     tile_size: Union[int, Tuple[int, int]] = None,
                     is_j_axis_up: bool = None,
                     output_ij_names: Tuple[str, str] = None,
@@ -77,6 +79,8 @@ def rectify_dataset(source_ds: xr.Dataset,
     :param target_gm: Optional output geometry. If not given,
         output geometry will be computed to spatially fit *dataset*
         and to retain its spatial resolution.
+    :param gm_name: Name for the grid mapping variable.
+        Defaults to "crs".
     :param tile_size: Optional tile size for the output.
     :param is_j_axis_up: Whether y coordinates are increasing with
         positive image j axis.
@@ -173,7 +177,11 @@ def rectify_dataset(source_ds: xr.Dataset,
                                                dims=dst_dims,
                                                coords=dst_ij_coords)
 
-    return xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs)
+    return encode_grid_mapping(xr.Dataset(dst_vars,
+                                          coords=dst_ds_coords,
+                                          attrs=src_attrs),
+                               target_gm,
+                               gm_name=gm_name)
 
 
 def _select_variables(

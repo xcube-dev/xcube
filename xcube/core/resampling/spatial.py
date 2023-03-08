@@ -1,23 +1,23 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 from typing import Union, Callable, Mapping, Hashable, Any
 
@@ -44,7 +44,8 @@ def resample_in_space(
         dataset: xr.Dataset,
         source_gm: GridMapping = None,
         target_gm: GridMapping = None,
-        var_configs: Mapping[Hashable, Mapping[str, Any]] = None
+        var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+        gm_name: str = "crs"
 ):
     """
     Resample a dataset in the spatial dimensions.
@@ -105,6 +106,8 @@ def resample_in_space(
     :param target_gm: The target grid mapping. Must be regular.
     :param var_configs: Optional resampling configurations
         for individual variables.
+    :param gm_name: Name for the grid mapping variable.
+        Defaults to "crs".
     :return: The spatially resampled dataset.
     """
     if source_gm is None:
@@ -136,6 +139,7 @@ def resample_in_space(
                 source_gm=source_gm,
                 target_gm=target_gm,
                 var_configs=var_configs,
+                gm_name=gm_name
             )
 
         # If the source is not regular, we need to rectify it,
@@ -150,7 +154,8 @@ def resample_in_space(
             return rectify_dataset(
                 dataset,
                 source_gm=source_gm,
-                target_gm=target_gm
+                target_gm=target_gm,
+                gm_name=gm_name
             )
 
         # Source has higher resolution than target.
@@ -185,21 +190,17 @@ def resample_in_space(
             )
         return rectify_dataset(downscaled_dataset,
                                source_gm=downscaled_gm,
-                               target_gm=target_gm)
+                               target_gm=target_gm,
+                               gm_name=gm_name)
 
     # If CRSes are not both geographic and their CRSes are different
     # transform the source_gm so its CRS matches the target CRS:
     transformed_source_gm = source_gm.transform(target_gm.crs)
     transformed_x, transformed_y = transformed_source_gm.xy_coords
-    reprojected_dataset = resample_in_space(
+    return resample_in_space(
         dataset.assign(transformed_x=transformed_x,
                        transformed_y=transformed_y),
         source_gm=transformed_source_gm,
-        target_gm=target_gm
+        target_gm=target_gm,
+        gm_name=gm_name
     )
-    if not target_gm.crs.is_geographic:
-        # Add 'crs' variable according to CF conventions
-        reprojected_dataset = reprojected_dataset.assign(
-            crs=xr.DataArray(0, attrs=target_gm.crs.to_cf())
-        )
-    return reprojected_dataset

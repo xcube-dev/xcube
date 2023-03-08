@@ -38,7 +38,8 @@ from .helpers import _to_int_or_float
 class RegularGridMapping(GridMapping):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        kwargs.pop('is_regular', None)
+        super().__init__(is_regular=True, **kwargs)
         self._xy_coords = None
 
     def _new_xy_coords(self) -> xr.DataArray:
@@ -104,7 +105,6 @@ def new_regular_grid_mapping(
         xy_res=(x_res, y_res),
         xy_var_names=_default_xy_var_names(crs),
         xy_dim_names=_default_xy_dim_names(crs),
-        is_regular=True,
         is_lon_360=x_max > 180,
         is_j_axis_up=is_j_axis_up
     )
