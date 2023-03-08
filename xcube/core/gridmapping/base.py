@@ -1,29 +1,29 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import abc
 import copy
 import math
 import threading
-from typing import Any, Tuple, Optional, Union, Mapping
+from typing import Any, Tuple, Optional, Union, Mapping, Callable
 
 import numpy as np
 import pyproj
@@ -90,7 +90,10 @@ class GridMapping(abc.ABC):
                  xy_dim_names: Tuple[str, str],
                  is_regular: Optional[bool],
                  is_lon_360: Optional[bool],
-                 is_j_axis_up: Optional[bool]):
+                 is_j_axis_up: Optional[bool],
+                 x_coords: Optional[xr.DataArray] = None,
+                 y_coords: Optional[xr.DataArray] = None,
+                 xy_coords: Optional[xr.DataArray] = None):
 
         width, height = _normalize_int_pair(size, name='size')
         assert_true(width > 1 and height > 1,
@@ -107,6 +110,23 @@ class GridMapping(abc.ABC):
         _assert_valid_xy_names(xy_dim_names, name='xy_dim_names')
         assert_instance(crs, pyproj.crs.CRS, name='crs')
 
+        if x_coords is not None:
+            assert_instance(x_coords, xr.DataArray, name='x_coords')
+            assert_true(x_coords.ndim in (1, 2),
+                        message=f'x_coords.ndim must be 1 or 2,'
+                                f' was {x_coords.ndim}')
+        if y_coords is not None:
+            assert_instance(y_coords, xr.DataArray, name='y_coords')
+            assert_true(y_coords.ndim in (1, 2),
+                        message=f'y_coords.ndim must be 1 or 2,'
+                                f' was {y_coords.ndim}')
+        if xy_coords is not None:
+            assert_instance(xy_coords, xr.DataArray, name='xy_coords')
+            assert_true(xy_coords.shape == (2, height, width),
+                        message=f'xy_coords.shape must be'
+                                f' {(2, height, width)},'
+                                f' was {xy_coords.shape}')
+
         x_min, y_min, x_max, y_max = xy_bbox
         x_res, y_res = _normalize_number_pair(xy_res, name='xy_res')
         assert_true(x_res > 0 and y_res > 0,
@@ -116,7 +136,6 @@ class GridMapping(abc.ABC):
 
         self._size = width, height
         self._tile_size = tile_width, tile_height
-        self._xy_coords = None
         self._xy_bbox = x_min, y_min, x_max, y_max
         self._xy_res = x_res, y_res
         self._crs = crs
@@ -125,6 +144,9 @@ class GridMapping(abc.ABC):
         self._is_regular = is_regular
         self._is_lon_360 = is_lon_360
         self._is_j_axis_up = is_j_axis_up
+        self._x_coords = x_coords
+        self._y_coords = y_coords
+        self._xy_coords = xy_coords
 
     def derive(self,
                /,
@@ -151,7 +173,8 @@ class GridMapping(abc.ABC):
         if tile_size is not None:
             tile_width, tile_height = _normalize_int_pair(tile_size,
                                                           name='tile_size')
-            assert_true(tile_width > 1 and tile_height > 1, 'invalid tile_size')
+            assert_true(tile_width > 1 and tile_height > 1,
+                        'invalid tile_size')
             tile_size = tile_width, tile_height
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
@@ -160,8 +183,16 @@ class GridMapping(abc.ABC):
                         other._xy_coords = other._xy_coords.chunk(
                             other.xy_coords_chunks
                         )
-        if is_j_axis_up is not None:
+        if is_j_axis_up is not None and is_j_axis_up != other._is_j_axis_up:
             other._is_j_axis_up = is_j_axis_up
+            if other._y_coords is not None:
+                other._y_coords = other._y_coords[::-1]
+            if other._xy_coords is not None:
+                other._xy_coords = other._xy_coords[:, ::-1, :]
+                other._xy_coords = other._xy_coords.chunk(
+                    other.xy_coords_chunks
+                )
+
         return other
 
     def scale(self,
@@ -241,19 +272,43 @@ class GridMapping(abc.ABC):
         return self.tile_size[1]
 
     @property
+    def x_coords(self):
+        """The 1D or 2D x-coordinate array of
+        shape (width,) or (height, width).
+        """
+        return self._get_computed_attribute("_x_coords",
+                                            self._new_x_coords)
+
+    @abc.abstractmethod
+    def _new_x_coords(self) -> xr.DataArray:
+        """Create new 1D or 2D x-coordinate array of
+        shape (width,) or (height, width).
+        """
+
+    @property
+    def y_coords(self):
+        """The 1D or 2D y-coordinate array of
+        shape (width,) or (height, width).
+        """
+        return self._get_computed_attribute("_y_coords",
+                                            self._new_y_coords)
+
+    @abc.abstractmethod
+    def _new_y_coords(self) -> xr.DataArray:
+        """Create new 1D or 2D y-coordinate array of
+        shape (width,) or (height, width).
+        """
+
+    @property
     def xy_coords(self) -> xr.DataArray:
         """
         The x,y coordinates as data array of shape (2, height, width).
         Coordinates are given in units of the CRS.
         """
-        if self._xy_coords is None:
-            with self._lock:
-                # Double check for None is by intention
-                if self._xy_coords is None:
-                    xy_coords = self._new_xy_coords()
-                    _assert_valid_xy_coords(xy_coords)
-                    self._xy_coords = xy_coords
-        return self._xy_coords
+        xy_coords = self._get_computed_attribute("_xy_coords",
+                                                 self._new_xy_coords)
+        _assert_valid_xy_coords(xy_coords)
+        return xy_coords
 
     @property
     def xy_coords_chunks(self) -> Tuple[int, int, int]:
@@ -263,6 +318,24 @@ class GridMapping(abc.ABC):
     @abc.abstractmethod
     def _new_xy_coords(self) -> xr.DataArray:
         """Create new coordinate array of shape (2, height, width)."""
+
+    def _get_computed_attribute(self,
+                                name: str,
+                                computer: Callable[[], Any]) -> Any:
+        """Get the value for a computed attribute.
+        Utility to be used by this and derived classes.
+        """
+        value = getattr(self, name)
+        if value is not None:
+            return value
+        with self._lock:
+            # Double null check
+            value = getattr(self, name)
+            if value is not None:
+                return value
+            value = computer()
+            setattr(self, name, value)
+            return value
 
     @property
     def xy_var_names(self) -> Tuple[str, str]:
