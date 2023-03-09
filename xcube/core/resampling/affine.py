@@ -31,7 +31,7 @@ from dask_image import ndinterp
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.helpers import AffineTransformMatrix
 from xcube.util.assertions import assert_true
-from .cf import encode_grid_mapping
+from .cf import maybe_encode_grid_mapping
 
 NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
@@ -43,7 +43,7 @@ def affine_transform_dataset(
         target_gm: GridMapping,
         var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
         encode_cf: bool = True,
-        gm_name: str = "crs",
+        gm_name: Optional[str] = None,
         reuse_coords: bool = False,
 ) -> xr.Dataset:
     """
@@ -62,8 +62,9 @@ def affine_transform_dataset(
         for individual variables.
     :param encode_cf: Whether to encode the target grid mapping
         into the resampled dataset in a CF-compliant way.
+        Defaults to ``True``.
     :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs". Used only if *encode_cf == True*.
+        Defaults to "crs". Used only if *encode_cf* is ``True``.
     :param reuse_coords: Whether to either reuse target
         coordinate arrays from target_gm or to compute
         new ones.
@@ -94,13 +95,12 @@ def affine_transform_dataset(
         exclude_bounds=not has_bounds,
         reuse_coords=reuse_coords
     )
-    resampled_dataset = resampled_dataset.assign_coords(new_coords)
-    if encode_cf:
-        resampled_dataset = encode_grid_mapping(resampled_dataset,
-                                                target_gm,
-                                                gm_name=gm_name,
-                                                force=bool(gm_name))
-    return resampled_dataset
+    return maybe_encode_grid_mapping(
+        encode_cf,
+        resampled_dataset.assign_coords(new_coords),
+        target_gm,
+        gm_name
+    )
 
 
 def resample_dataset(

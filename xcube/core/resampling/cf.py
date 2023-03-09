@@ -24,7 +24,7 @@ from typing import Optional
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-from xcube.util.assertions import assert_given, assert_instance
+from xcube.util.assertions import assert_instance
 
 
 def encode_grid_mapping(ds: xr.Dataset,
@@ -90,3 +90,17 @@ def encode_grid_mapping(ds: xr.Dataset,
         ds_copy[gm_name] = xr.DataArray(0, attrs=gm.crs.to_cf())
 
     return ds_copy
+
+
+def maybe_encode_grid_mapping(encode_cf: bool,
+                              ds: xr.Dataset,
+                              gm: GridMapping,
+                              gm_name: Optional[str]) -> xr.Dataset:
+    """Internal helper."""
+    if encode_cf:
+        return encode_grid_mapping(
+            ds, gm,
+            gm_name=gm_name,
+            force=True if gm_name else None
+        )
+    return ds

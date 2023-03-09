@@ -109,8 +109,9 @@ def resample_in_space(
         for individual variables.
     :param encode_cf: Whether to encode the target grid mapping
         into the resampled dataset in a CF-compliant way.
+        Defaults to ``True``.
     :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs". Used only if *encode_cf == True*.
+        Defaults to "crs". Used only if *encode_cf* is ``True``.
     :return: The spatially resampled dataset.
     """
     if source_gm is None:

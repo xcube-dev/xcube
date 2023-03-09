@@ -29,7 +29,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_spatial_subset
 from xcube.util.dask import compute_array_from_func
-from .cf import encode_grid_mapping
+from .cf import maybe_encode_grid_mapping
 
 
 def rectify_dataset(source_ds: xr.Dataset,
@@ -39,7 +39,7 @@ def rectify_dataset(source_ds: xr.Dataset,
                     xy_var_names: Tuple[str, str] = None,
                     target_gm: GridMapping = None,
                     encode_cf: bool = True,
-                    gm_name: str = "crs",
+                    gm_name: Optional[str] = None,
                     tile_size: Union[int, Tuple[int, int]] = None,
                     is_j_axis_up: bool = None,
                     output_ij_names: Tuple[str, str] = None,
@@ -68,7 +68,7 @@ def rectify_dataset(source_ds: xr.Dataset,
     or *tile_size* is given, and the number of tiles is
     greater than one in the output's x- or y-direction, then the
     returned dataset will be composed of lazy, chunked dask
-    arrays. Otherwise the returned dataset will be composed
+    arrays. Otherwise, the returned dataset will be composed
     of ordinary numpy arrays.
 
     :param source_ds: Source dataset grid mapping.
@@ -82,8 +82,9 @@ def rectify_dataset(source_ds: xr.Dataset,
         and to retain its spatial resolution.
     :param encode_cf: Whether to encode the target grid mapping
         into the resampled dataset in a CF-compliant way.
+        Defaults to ``True``.
     :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs". Used only if *encode_cf == True*.
+        Defaults to "crs". Used only if *encode_cf* is ``True``.
     :param tile_size: Optional tile size for the output.
     :param is_j_axis_up: Whether y coordinates are increasing with
         positive image j axis.
@@ -180,15 +181,12 @@ def rectify_dataset(source_ds: xr.Dataset,
                                                dims=dst_dims,
                                                coords=dst_ij_coords)
 
-    resampled_dataset = xr.Dataset(dst_vars,
-                                   coords=dst_ds_coords,
-                                   attrs=src_attrs)
-    if encode_cf:
-        resampled_dataset = encode_grid_mapping(resampled_dataset,
-                                                target_gm,
-                                                gm_name=gm_name,
-                                                force=bool(gm_name))
-    return resampled_dataset
+    return maybe_encode_grid_mapping(encode_cf,
+                                     xr.Dataset(dst_vars,
+                                                coords=dst_ds_coords,
+                                                attrs=src_attrs),
+                                     target_gm,
+                                     gm_name)
 
 
 def _select_variables(
