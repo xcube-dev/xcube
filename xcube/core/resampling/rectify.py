@@ -38,6 +38,7 @@ def rectify_dataset(source_ds: xr.Dataset,
                     source_gm: GridMapping = None,
                     xy_var_names: Tuple[str, str] = None,
                     target_gm: GridMapping = None,
+                    encode_cf: bool = True,
                     gm_name: str = "crs",
                     tile_size: Union[int, Tuple[int, int]] = None,
                     is_j_axis_up: bool = None,
@@ -73,14 +74,16 @@ def rectify_dataset(source_ds: xr.Dataset,
     :param source_ds: Source dataset grid mapping.
     :param var_names: Optional variable name or sequence of
         variable names.
-    :param source_gm: Target dataset grid mapping.
+    :param source_gm: Source dataset grid mapping.
     :param xy_var_names: Optional tuple of the x- and y-coordinate
         variables in *source_ds*. Ignored if *source_gm* is given.
-    :param target_gm: Optional output geometry. If not given,
+    :param target_gm: Optional target geometry. If not given,
         output geometry will be computed to spatially fit *dataset*
         and to retain its spatial resolution.
+    :param encode_cf: Whether to encode the target grid mapping
+        into the resampled dataset in a CF-compliant way.
     :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs".
+        Defaults to "crs". Used only if *encode_cf == True*.
     :param tile_size: Optional tile size for the output.
     :param is_j_axis_up: Whether y coordinates are increasing with
         positive image j axis.
@@ -177,11 +180,15 @@ def rectify_dataset(source_ds: xr.Dataset,
                                                dims=dst_dims,
                                                coords=dst_ij_coords)
 
-    return encode_grid_mapping(xr.Dataset(dst_vars,
-                                          coords=dst_ds_coords,
-                                          attrs=src_attrs),
-                               target_gm,
-                               gm_name=gm_name)
+    resampled_dataset = xr.Dataset(dst_vars,
+                                   coords=dst_ds_coords,
+                                   attrs=src_attrs)
+    if encode_cf:
+        resampled_dataset = encode_grid_mapping(resampled_dataset,
+                                                target_gm,
+                                                gm_name=gm_name,
+                                                force=bool(gm_name))
+    return resampled_dataset
 
 
 def _select_variables(

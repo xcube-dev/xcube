@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Union, Callable, Mapping, Hashable, Any
+from typing import Union, Callable, Mapping, Hashable, Any, Optional
 
 import numpy as np
 import xarray as xr
@@ -45,7 +45,8 @@ def resample_in_space(
         source_gm: GridMapping = None,
         target_gm: GridMapping = None,
         var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
-        gm_name: str = "crs"
+        encode_cf: bool = True,
+        gm_name: Optional[str] = None
 ):
     """
     Resample a dataset in the spatial dimensions.
@@ -106,8 +107,10 @@ def resample_in_space(
     :param target_gm: The target grid mapping. Must be regular.
     :param var_configs: Optional resampling configurations
         for individual variables.
+    :param encode_cf: Whether to encode the target grid mapping
+        into the resampled dataset in a CF-compliant way.
     :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs".
+        Defaults to "crs". Used only if *encode_cf == True*.
     :return: The spatially resampled dataset.
     """
     if source_gm is None:
@@ -139,6 +142,7 @@ def resample_in_space(
                 source_gm=source_gm,
                 target_gm=target_gm,
                 var_configs=var_configs,
+                encode_cf=encode_cf,
                 gm_name=gm_name
             )
 
@@ -155,6 +159,7 @@ def resample_in_space(
                 dataset,
                 source_gm=source_gm,
                 target_gm=target_gm,
+                encode_cf=encode_cf,
                 gm_name=gm_name
             )
 
@@ -191,6 +196,7 @@ def resample_in_space(
         return rectify_dataset(downscaled_dataset,
                                source_gm=downscaled_gm,
                                target_gm=target_gm,
+                               encode_cf=encode_cf,
                                gm_name=gm_name)
 
     # If CRSes are not both geographic and their CRSes are different

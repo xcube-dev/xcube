@@ -22,7 +22,9 @@ class ResampleInSpaceTest(unittest.TestCase):
                                         xy_res=2,
                                         crs=CRS_WGS84)
 
-        target_ds = resample_in_space(source_ds, source_gm, target_gm)
+        target_ds = resample_in_space(source_ds, source_gm, target_gm,
+                                      encode_cf=True,
+                                      gm_name="crs")
 
         self.assertIn("crs", target_ds)
         self.assertEqual(
@@ -34,7 +36,7 @@ class ResampleInSpaceTest(unittest.TestCase):
             self.assertIn(var_name, target_ds)
             self.assertEqual(
                 "crs",
-                target_ds[var_name].attrs.get("grid_mapping_name")
+                target_ds[var_name].attrs.get("grid_mapping")
             )
 
         actual_gm = GridMapping.from_dataset(target_ds)

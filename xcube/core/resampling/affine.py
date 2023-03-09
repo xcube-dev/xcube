@@ -42,6 +42,7 @@ def affine_transform_dataset(
         source_gm: GridMapping,
         target_gm: GridMapping,
         var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+        encode_cf: bool = True,
         gm_name: str = "crs",
         reuse_coords: bool = False,
 ) -> xr.Dataset:
@@ -59,8 +60,10 @@ def affine_transform_dataset(
         Must be regular. Must have same CRS as *source_gm*.
     :param var_configs: Optional resampling configurations
         for individual variables.
+    :param encode_cf: Whether to encode the target grid mapping
+        into the resampled dataset in a CF-compliant way.
     :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs".
+        Defaults to "crs". Used only if *encode_cf == True*.
     :param reuse_coords: Whether to either reuse target
         coordinate arrays from target_gm or to compute
         new ones.
@@ -91,9 +94,13 @@ def affine_transform_dataset(
         exclude_bounds=not has_bounds,
         reuse_coords=reuse_coords
     )
-    return encode_grid_mapping(resampled_dataset.assign_coords(new_coords),
-                               target_gm,
-                               gm_name=gm_name)
+    resampled_dataset = resampled_dataset.assign_coords(new_coords)
+    if encode_cf:
+        resampled_dataset = encode_grid_mapping(resampled_dataset,
+                                                target_gm,
+                                                gm_name=gm_name,
+                                                force=bool(gm_name))
+    return resampled_dataset
 
 
 def resample_dataset(
