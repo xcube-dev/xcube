@@ -1,6 +1,50 @@
-## Changes in 1.0.0.dev3 
+## Changes in 1.0.0 
 
 ### Enhancements
+
+* Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
+  xcube server. (#455)
+  - It serves a single collection named "datacubes" whose items are the
+    datasets published by the service. 
+  - The collection items make use the STAC 
+    [datacube](https://github.com/stac-extensions/datacube) extension. 
+
+* Simplified the cloud deployment of xcube server/viewer applications (#815). 
+  This has been achieved by the following new xcube server features:
+  - Configuration files can now also be URLs which allows 
+    provisioning from S3-compatible object storage. 
+    For example, it is now possible to invoke xcube server as follows: 
+    ```bash
+    $ xcube serve --config s3://cyanoalert/xcube/demo.yaml ...
+    ```
+  - A new endpoint `/viewer/config/{*path}` allows 
+    for configuring the viewer accessible via endpoint `/viewer`. 
+    The actual source for the configuration items is configured by xcube 
+    server configuration using the new entry `Viewer/Configuration/Path`, 
+    for example:
+    ```yaml
+    Viewer:
+      Configuration:
+        Path: s3://cyanoalert/xcube/viewer-config
+    ```
+  - A typical xcube server configuration comprises many paths, and 
+    relative paths of known configuration parameters are resolved against 
+    the `base_dir` configuration parameter. However, for values of 
+    parameters passed to user functions that represent paths in user code, 
+    this cannot be done automatically. For such situations, expressions 
+    can be used. An expression is any string between `"${"` and `"}"` in a 
+    configuration value. An expression can contain the variables
+    `base_dir` (a string), `ctx` the current server context 
+    (type `xcube.webapi.datasets.DatasetsContext`), as well as the function
+    `resolve_config_path(path)` that is used to make a path absolut with 
+    respect to `base_dir` and to normalize it. For example
+    ```yaml
+    Augmentation:
+      Path: augmentation/metadata.py
+      Function: metadata:update_metadata
+      InputParameters:
+        bands_config: ${resolve_config_path("../common/bands.yaml")}
+    ```
 
 * xcube's spatial resampling functions `resample_in_space()`,
   `affine_transform_dataset()`,  and `rectify_dataset()` exported 
@@ -76,51 +120,6 @@
   [8_azure_blob_filesystem.ipynb](examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). 
   This notebook shows how a new data store instance can connect and list 
   Zarr files from Azure bolb storage using the new `abfs` data store. 
-
-
-* Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
-  xcube server. (#455)
-  - It serves a single collection named "datacubes" whose items are the
-    datasets published by the service. 
-  - The collection items make use the STAC 
-    [datacube](https://github.com/stac-extensions/datacube) extension. 
-
-* Simplified the cloud deployment of xcube server/viewer applications (#815). 
-  This has been achieved by the following new xcube server features:
-  - Configuration files can now also be URLs which allows 
-    provisioning from S3-compatible object storage. 
-    For example, it is now possible to invoke xcube server as follows: 
-    ```bash
-    $ xcube serve --config s3://cyanoalert/xcube/demo.yaml ...
-    ```
-  - A new endpoint `/viewer/config/{*path}` allows 
-    for configuring the viewer accessible via endpoint `/viewer`. 
-    The actual source for the configuration items is configured by xcube 
-    server configuration using the new entry `Viewer/Configuration/Path`, 
-    for example:
-    ```yaml
-    Viewer:
-      Configuration:
-        Path: s3://cyanoalert/xcube/viewer-config
-    ```
-  - A typical xcube server configuration comprises many paths, and 
-    relative paths of known configuration parameters are resolved against 
-    the `base_dir` configuration parameter. However, for values of 
-    parameters passed to user functions that represent paths in user code, 
-    this cannot be done automatically. For such situations, expressions 
-    can be used. An expression is any string between `"${"` and `"}"` in a 
-    configuration value. An expression can contain the variables
-    `base_dir` (a string), `ctx` the current server context 
-    (type `xcube.webapi.datasets.DatasetsContext`), as well as the function
-    `resolve_config_path(path)` that is used to make a path absolut with 
-    respect to `base_dir` and to normalize it. For example
-    ```yaml
-    Augmentation:
-      Path: augmentation/metadata.py
-      Function: metadata:update_metadata
-      InputParameters:
-        bands_config: ${resolve_config_path("../common/bands.yaml")}
-    ```
 
 * xcube's `Dockerfile` no longer creates a conda environment `xcube`.
   All dependencies are now installed into the `base` environment making it 
