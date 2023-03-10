@@ -257,9 +257,15 @@ class FileSet(JsonObject):
         if fs.isdir(root):
             temp_dir = new_temp_dir(prefix=TEMP_FILE_PREFIX,
                                     suffix=temp_file_suffix)
+            # Note, AbstractFileSystem.get() behaves
+            # unpredictably. Sometimes it will create a new directory
+            # named after root in temp_dir (e.g. this is the case
+            # if temp_dir exists). To avoid this, we add a non-existing
+            # directory here:
+            temp_dir += "/data"
             # TODO: replace by loop so we can apply includes/excludes
             #   before downloading actual files. See impl of fs.get().
-            fs.get(root, temp_dir + "/", recursive=True)
+            fs.get(root + "/*", temp_dir, recursive=True)
             return FileSet(temp_dir,
                            sub_path=self.sub_path,
                            includes=self.includes,
