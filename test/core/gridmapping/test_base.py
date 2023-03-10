@@ -16,13 +16,26 @@ NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 
 class TestGridMapping(GridMapping):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.rgm = GridMapping.regular(
+            size=self.size,
+            tile_size=self.tile_size,
+            is_j_axis_up=self.is_j_axis_up,
+            xy_res=self.xy_res,
+            xy_min=(self.xy_bbox[0], self.xy_bbox[1]),
+            crs=self.crs
+        )
+
+    def _new_x_coords(self) -> xr.DataArray:
+        return self.rgm.x_coords
+
+    def _new_y_coords(self) -> xr.DataArray:
+        return self.rgm.y_coords
+
     def _new_xy_coords(self) -> xr.DataArray:
-        return GridMapping.regular(size=self.size,
-                                   tile_size=self.tile_size,
-                                   is_j_axis_up=self.is_j_axis_up,
-                                   xy_res=self.xy_res,
-                                   xy_min=(self.xy_bbox[0], self.xy_bbox[1]),
-                                   crs=self.crs).xy_coords
+        return self.rgm.xy_coords
 
 
 # noinspection PyMethodMayBeStatic

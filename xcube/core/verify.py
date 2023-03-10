@@ -129,6 +129,12 @@ def _check_data_variables(dataset, xy_var_names, time_var_name, report):
         dims = var.dims
         chunks = var.data.chunks if hasattr(var.data, "chunks") else None
 
+        if ("grid_mapping_name" in var.attrs
+                or 'geographic_crs_name' in var.attrs
+                or "crs_wkt" in var.attrs):
+            # potential CRS / grid mapping variable
+            continue
+
         if len(dims) < 3 or dims[0] != time_dim or dims[-2] != y_dim or dims[-1] != x_dim:
             report.append(f"dimensions of data variable {var_name!r}"
                           f" must be ({time_dim!r}, ..., {y_dim!r}, {x_dim!r}),"

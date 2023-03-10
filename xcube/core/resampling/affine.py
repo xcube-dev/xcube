@@ -1,23 +1,23 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import math
 from typing import Union, Callable, Optional, \
@@ -31,6 +31,7 @@ from dask_image import ndinterp
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.helpers import AffineTransformMatrix
 from xcube.util.assertions import assert_true
+from .cf import maybe_encode_grid_mapping
 
 NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
@@ -41,6 +42,8 @@ def affine_transform_dataset(
         source_gm: GridMapping,
         target_gm: GridMapping,
         var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+        encode_cf: bool = True,
+        gm_name: Optional[str] = None,
         reuse_coords: bool = False,
 ) -> xr.Dataset:
     """
@@ -57,6 +60,11 @@ def affine_transform_dataset(
         Must be regular. Must have same CRS as *source_gm*.
     :param var_configs: Optional resampling configurations
         for individual variables.
+    :param encode_cf: Whether to encode the target grid mapping
+        into the resampled dataset in a CF-compliant way.
+        Defaults to ``True``.
+    :param gm_name: Name for the grid mapping variable.
+        Defaults to "crs". Used only if *encode_cf* is ``True``.
     :param reuse_coords: Whether to either reuse target
         coordinate arrays from target_gm or to compute
         new ones.
@@ -87,7 +95,12 @@ def affine_transform_dataset(
         exclude_bounds=not has_bounds,
         reuse_coords=reuse_coords
     )
-    return resampled_dataset.assign_coords(new_coords)
+    return maybe_encode_grid_mapping(
+        encode_cf,
+        resampled_dataset.assign_coords(new_coords),
+        target_gm,
+        gm_name
+    )
 
 
 def resample_dataset(

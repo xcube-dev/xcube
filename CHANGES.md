@@ -2,14 +2,33 @@
 
 ### Enhancements
 
+* xcube's spatial resampling functions `resample_in_space()`,
+  `affine_transform_dataset()`,  and `rectify_dataset()` exported 
+  from module `xcube.core.resampling` now encode the target grid mapping 
+  into the resampled datasets. (#822) 
+  
+  This new default behaviour can be switched off by keyword argument 
+  `encode_cf=False`. 
+  The grid mapping name can be set by keyword argument `gm_name`. 
+  If `gm_name` is not given a grid mapping will not be encoded if 
+  all the following conditions are true: 
+  - The target CRS is geographic; 
+  - The spatial dimension names are "lon" and "lat";
+  - The spatial 1-D coordinate variables are named "lon" and "lat" 
+    and are evenly spaced.  
 
-
+  The encoding of the grid mapping is done according to CF conventions:
+  - The CRS is encoded as attributes of a 0-D data variable named by `gm_name`
+  - All spatial data variables receive an attribute `grid_mapping` that is
+    set to the value of `gm_name`.
+  
 * Added Notebook 
   [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
   that explains how xcube Viewer can now be utilised in JupyterLab
   using the new (still experimental) xcube JupyterLab extension
   [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
-  
+  The `xcube-jl-ext` package is also available on PyPI.
+
 * Updated example 
   [Notebook for CMEMS data store](examples/notebooks/datastores/7_cmems_data_store.ipynb)
   to reflect changes of parameter names that provide CMEMS API credentials.
