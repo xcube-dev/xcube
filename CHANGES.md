@@ -10,12 +10,12 @@
   This new default behaviour can be switched off by keyword argument 
   `encode_cf=False`. 
   The grid mapping name can be set by keyword argument `gm_name`. 
-  Note, a grid mapping will not be encoded, if 
-  - `gm_name` is not given
-  - and the target CRS is geographic WGS-84 
-  - and the spatial 1-D coordinate variables are named "lon" and "lat"
-    according to their dimensions
-  - and are evenly spaced. 
+  If `gm_name` is not given a grid mapping will not be encoded if 
+  all the following conditions are true: 
+  - The target CRS is geographic; 
+  - The spatial dimension names are "lon" and "lat";
+  - The spatial 1-D coordinate variables are named "lon" and "lat" 
+    and are evenly spaced.  
 
   The encoding of the grid mapping is done according to CF conventions:
   - The CRS is encoded as attributes of a 0-D data variable named by `gm_name`
