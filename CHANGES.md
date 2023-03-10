@@ -16,13 +16,19 @@
   - and the spatial 1-D coordinate variables are named "lon" and "lat"
     according to their dimensions
   - and are evenly spaced. 
+
+  The encoding of the grid mapping is done according to CF conventions:
+  - The CRS is encoded as attributes of a 0-D data variable named by `gm_name`
+  - All spatial data variables receive an attribute `grid_mapping` that is
+    set to the value of `gm_name`.
   
 * Added Notebook 
   [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
   that explains how xcube Viewer can now be utilised in JupyterLab
   using the new (still experimental) xcube JupyterLab extension
   [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
-  
+  The `xcube-jl-ext` package is also available on PyPI.
+
 * Updated example 
   [Notebook for CMEMS data store](examples/notebooks/datastores/7_cmems_data_store.ipynb)
   to reflect changes of parameter names that provide CMEMS API credentials.
