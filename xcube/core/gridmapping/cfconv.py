@@ -33,206 +33,218 @@ from xcube.core.schema import get_dataset_chunks
 from xcube.util.assertions import assert_instance
 from .base import CRS_WGS84
 
-class GridCoords:
-    """
-    Grid coordinates comprising x and y of
-    type xarray.DataArray.
-    """
 
-    def __init__(self):
-        self.x: Optional[xr.DataArray] = None
-        self.y: Optional[xr.DataArray] = None
-
-
-class GridMappingProxy:
-    """
-    Grid mapping comprising *crs* of type pyproj.crs.CRS,
-    grid coordinates, an optional name, coordinates, and a
-    tile size (= spatial chunk sizes).
-    """
-
+class GridMappingSchema:
     def __init__(self,
-                 crs: Optional[pyproj.crs.CRS] = None,
-                 name: Optional[str] = None,
-                 coords: Optional[GridCoords] = None,
-                 tile_size: Optional[Tuple[int, int]] = None):
-        self.crs = crs
+                 name: str,
+                 standard_names: Tuple[str, str],
+                 common_names: Tuple[Tuple[str, str], ...],
+                 default_crs: Optional[pyproj.CRS]):
         self.name = name
-        self.coords = coords
-        self.tile_size = tile_size
+        self.standard_names = standard_names
+        self.common_var_names = common_names
+        self.default_crs = default_crs
 
 
-def get_dataset_grid_mapping_proxies(
-        dataset: xr.Dataset,
-        *,
-        missing_latitude_longitude_crs: pyproj.crs.CRS = None,
-        missing_rotated_latitude_longitude_crs: pyproj.crs.CRS = None,
-        missing_projected_crs: pyproj.crs.CRS = None,
-        emit_warnings: bool = False
-) -> Dict[Union[Hashable, None], GridMappingProxy]:
+GMS_LATITUDE_LONGITUDE = GridMappingSchema(
+    'latitude_longitude',
+    ('longitude', 'latitude'),
+    (('lon', 'lat'),
+     ('longitude', 'latitude')),
+    CRS_WGS84
+)
+
+GMS_ROTATED_LATITUDE_LONGITUDE = GridMappingSchema(
+    'rotated_latitude_longitude',
+    ('grid_longitude', 'grid_latitude'),
+    (('rlon', 'rlat'),
+     ('rlongitude', 'rlatitude')),
+    CRS_WGS84
+)
+
+GMS_PROJECTED = GridMappingSchema(
+    'projected',
+    ('projection_x_coordinate', 'projection_y_coordinate'),
+    (('x', 'y'),
+     ('xc', 'yc'),
+     ('transformed_x', 'transformed_y')),
+    None
+)
+
+GM_SCHEMAS = (GMS_LATITUDE_LONGITUDE,
+              GMS_ROTATED_LATITUDE_LONGITUDE,
+              GMS_PROJECTED)
+
+
+class GridMappingTemplate:
+    def __init__(self,
+                 var_name: str,
+                 var: xr.DataArray,
+                 crs: pyproj.CRS,
+                 x_coords: Optional[xr.DataArray] = None,
+                 y_coords: Optional[xr.DataArray] = None):
+        self.var_name = var_name
+        self.var = var
+        self.crs = crs
+        self.x_coords = x_coords
+        self.y_coords = y_coords
+        self.ref_vars: List[xr.DataArray] = []
+
+def get_dataset_grid_mapping_templates(dataset: xr.Dataset) \
+        -> List[GridMappingTemplate]:
     """
     Find grid mappings encoded as described in the CF conventions
     [Horizontal Coordinate Reference Systems, Grid Mappings, and Projections]
     (http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#grid-mappings-and-projections).
 
-    :param dataset:
-    :param missing_latitude_longitude_crs:
-    :param missing_rotated_latitude_longitude_crs:
-    :param missing_projected_crs:
-    :param emit_warnings:
+    :param dataset: The dataset
     :return:
     """
-    grid_mapping_proxies: Dict[Union[Hashable, None],
-                               GridMappingProxy] = dict()
 
-    # Find any grid mapping variables by CF 'grid_mapping' attribute
+    grid_mappings = _get_raw_grid_mappings(dataset)
+
+    if grid_mappings:
+        for gm in grid_mappings.values():
+            if gm.ref_vars:
+                ref_var = gm.ref_vars[0]
+                y_dim, x_dim = ref_var[-2:]
+                ok = False
+                if x_dim in dataset.coords and y_dim in dataset.coords:
+                    x_coords = dataset.coords[x_dim]
+                    y_coords = dataset.coords[y_dim]
+                    if x_coords.ndim == 1 and y_coords.ndim == 1:
+                        gm.x_coords = x_coords
+                        gm.y_coords = y_coords
+                        ok = True
+                if not ok:
+                    for gms in GM_SCHEMAS:
+                        x_name, y_name = gms.standard_names
+                        x_coords = None
+                        y_coords = None
+                        for var_name, var in dataset.coords.items():
+                            standard_name = var.attrs.get("standard_name")
+                            if standard_name == x_name \
+                                    and var.ndim == 1 \
+                                    and var.dims[0] == x_dim:
+                                x_coords = var
+                            if standard_name == y_name \
+                                    and var.ndim == 1 \
+                                    and var.dims[0] == y_dim:
+                                y_coords = var
+                        if x_coords is not None and y_coords is not None:
+                            gm.x_coords = x_coords
+                            gm.y_coords = y_coords
+                            ok = True
+
+                if not ok:
+
+
+def _get_xy_coords(dataset: xr.Dataset,
+                   x_dim: str,
+                   y_dim: str) \
+        -> Optional[Tuple[xr.DataArray,
+                          xr.DataArray,
+                          Optional[GridMappingSchema]]]:
+    x_dims = (x_dim,)
+    y_dims = (y_dim,)
+    yx_dims = (y_dim, x_dim)
+
+    # 1D-coordinate variables named after their dimensions
+    if x_dim in dataset.coords and y_dim in dataset.coords:
+        x_coords = dataset.coords[x_dim]
+        y_coords = dataset.coords[y_dim]
+        if x_coords.dims == x_dims and y_coords.dims == y_dims:
+            return x_coords, y_coords, None
+
+    # 1D-coordinate variables identified by "standard_name"
+    for gms in GM_SCHEMAS:
+        x_name, y_name = gms.standard_names
+        x_coords = None
+        y_coords = None
+        for var_name, var in dataset.coords.items():
+            standard_name = var.attrs.get("standard_name")
+            if standard_name == x_name and var.dims == x_dims:
+                x_coords = var
+            if standard_name == y_name and var.dims == y_dims:
+                y_coords = var
+        if x_coords is not None and y_coords is not None:
+            return x_coords, y_coords, gms
+
+    # 2D-coordinate variables identified by "standard_name"
+    for gms in GM_SCHEMAS:
+        x_name, y_name = gms.standard_names
+        x_coords = None
+        y_coords = None
+        for var_name, var in dataset.coords.items():
+            standard_name = var.attrs.get("standard_name")
+            if standard_name == x_name and var.dims == yx_dims:
+                x_coords = var
+            if standard_name == y_name and var.dims == yx_dims:
+                y_coords = var
+        if x_coords is not None and y_coords is not None:
+            return x_coords, y_coords, gms
+
+    # 1D-coordinate variables identified by common variable names
+    for gms in GM_SCHEMAS:
+        for x_name, y_name in gms.common_var_names:
+            x_coords = dataset.get(x_name)
+            y_coords = dataset.get(y_name)
+            if x_coords is not None and y_coords is not None \
+                    and x_coords.dims == x_dims \
+                    and y_coords.dims == y_dims:
+                return x_coords, y_coords, gms
+
+    # 2D-coordinate variables identified by common variable names
+    for gms in GM_SCHEMAS:
+        for x_name, y_name in gms.common_var_names:
+            x_coords = dataset.get(x_name)
+            y_coords = dataset.get(y_name)
+            if x_coords is not None and y_coords is not None \
+                    and x_coords.dims == yx_dims \
+                    and y_coords.dims == yx_dims:
+                return x_coords, y_coords, gms
+
+    return None
+
+def _get_raw_grid_mappings(dataset):
+    grid_mappings = dict()
+    # Find any grid mappings by parsing variable attributes to CRS
     #
-    for var_name, var in dataset.variables.items():
-        grid_mapping_var_name = var.attrs.get('grid_mapping')
-        if grid_mapping_var_name \
-                and grid_mapping_var_name not in grid_mapping_proxies \
-                and grid_mapping_var_name in dataset:
-            grid_mapping_var = dataset[grid_mapping_var_name]
-            gmp = _parse_crs_from_attrs(grid_mapping_var.attrs)
-            grid_mapping_proxies[grid_mapping_var_name] = gmp
-
-    # If no grid mapping variables found,
-    # try if CRS is encoded in some variable's attributes
-    #
-    if not grid_mapping_proxies:
-        for var_name, var in dataset.variables.items():
-            gmp = _parse_crs_from_attrs(var.attrs)
-            if gmp is not None:
-                grid_mapping_proxies[var_name] = gmp
-                break
-
-    # If no grid mapping variables found,
-    # try if CRS is encoded in dataset attributes
-    #
-    if not grid_mapping_proxies:
-        gmp = _parse_crs_from_attrs(dataset.attrs)
-        if gmp is not None:
-            grid_mapping_proxies[None] = gmp
-
-    # Find coordinate variables.
-    #
-
-    latitude_longitude_coords = GridCoords()
-    rotated_latitude_longitude_coords = GridCoords()
-    projected_coords = GridCoords()
-
-    potential_coord_vars = _find_potential_coord_vars(dataset)
-
-    # Find coordinate variables that use a CF standard_name.
-    #
-    coords_standard_names = (
-        (latitude_longitude_coords,
-         'longitude', 'latitude'),
-        (rotated_latitude_longitude_coords,
-         'grid_longitude', 'grid_latitude'),
-        (projected_coords,
-         'projection_x_coordinate', 'projection_y_coordinate')
-    )
-    for var_name in potential_coord_vars:
-        var = dataset[var_name]
-        if var.ndim not in (1, 2):
+    for var_name, var in dataset.data_vars.items():
+        try:
+            crs = pyproj.crs.CRS.from_cf(var.attrs)
+        except pyproj.crs.CRSError:
             continue
-        standard_name = var.attrs.get('standard_name')
-        for coords, x_name, y_name in coords_standard_names:
-            if coords.x is None and standard_name == x_name:
-                coords.x = var
-            if coords.y is None and standard_name == y_name:
-                coords.y = var
-
-    # Find coordinate variables by common naming convention.
+        grid_mappings[var_name] = GridMappingTemplate(var, crs)
+    # Add spatial variables to corresponding grid mapping
+    # by their CF 'grid_mapping' attribute
     #
-    coords_var_names = (
-        (latitude_longitude_coords,
-         ('lon', 'longitude'),
-         ('lat', 'latitude')),
-        (rotated_latitude_longitude_coords,
-         ('rlon', 'rlongitude'),
-         ('rlat', 'rlatitude')),
-        (projected_coords,
-         ('x', 'xc', 'transformed_x'),
-         ('y', 'yc', 'transformed_y'))
-    )
-    for var_name in potential_coord_vars:
-        var = dataset[var_name]
-        if var.ndim not in (1, 2):
+    for var_name, var in dataset.data_vars.items():
+        if var_name in grid_mappings:
             continue
-        for coords, x_names, y_names in coords_var_names:
-            if coords.x is None and var_name in x_names:
-                coords.x = var
-            if coords.y is None and var_name in y_names:
-                coords.y = var
+        if var.ndim < 2:
+            continue
+        gm_var_name = var.attrs.get('grid_mapping')
+        if not gm_var_name or gm_var_name not in grid_mappings:
+            continue
+        gm = grid_mappings[gm_var_name]
+        gm.ref_vars.append(var)
 
-    # Assign found coordinates to grid mappings
-    #
-    for gmp in grid_mapping_proxies.values():
-        if gmp.name == 'latitude_longitude':
-            gmp.coords = latitude_longitude_coords
-        elif gmp.name == 'rotated_latitude_longitude':
-            gmp.coords = rotated_latitude_longitude_coords
+    if len(grid_mappings) > 1:
+        # We have more than one grid mapping.
+        # Just keep the referenced grid mappings.
+        ref_grid_mappings = filter(lambda gm: bool(gm.ref_var_names),
+                                   grid_mappings.values())
+        if ref_grid_mappings:
+            grid_mappings = {gm.var_name: gm for gm in ref_grid_mappings}
         else:
-            gmp.coords = projected_coords
+            # There are no referenced grid mappings.
+            # So we cannot unambiguously tell which variable uses which
+            # grid mappings. Therefore, we choose any:
+            gm = next(iter(grid_mappings.values()))
+            grid_mappings = {gm.var_name: gm}
 
-    _complement_grid_mapping_coords(latitude_longitude_coords,
-                                    'latitude_longitude',
-                                    missing_latitude_longitude_crs
-                                    or CRS_WGS84,
-                                    grid_mapping_proxies)
-    _complement_grid_mapping_coords(rotated_latitude_longitude_coords,
-                                    'rotated_latitude_longitude',
-                                    missing_rotated_latitude_longitude_crs,
-                                    grid_mapping_proxies)
-    _complement_grid_mapping_coords(projected_coords,
-                                    None,
-                                    missing_projected_crs,
-                                    grid_mapping_proxies)
-
-    # Collect complete grid mappings
-    complete_grid_mappings = dict()
-    for var_name, gmp in grid_mapping_proxies.items():
-        if gmp.coords is not None \
-                and gmp.coords.x is not None \
-                and gmp.coords.y is not None \
-                and gmp.coords.x.size >= 2 \
-                and gmp.coords.y.size >= 2 \
-                and gmp.coords.x.ndim == gmp.coords.y.ndim:
-            if gmp.coords.x.ndim == 1:
-                gmp.tile_size = _find_dataset_tile_size(
-                    dataset,
-                    gmp.coords.x.dims[0],
-                    gmp.coords.y.dims[0]
-                )
-                complete_grid_mappings[var_name] = gmp
-            elif gmp.coords.x.ndim == 2 \
-                    and gmp.coords.x.dims == gmp.coords.y.dims:
-                gmp.tile_size = _find_dataset_tile_size(
-                    dataset,
-                    gmp.coords.x.dims[1],
-                    gmp.coords.x.dims[0]
-                )
-                complete_grid_mappings[var_name] = gmp
-        elif emit_warnings:
-            warnings.warn(f'CRS "{gmp.name}": '
-                          f'missing x- and/or y-coordinates '
-                          f'(grid mapping variable "{var_name}": '
-                          f'grid_mapping_name="{gmp.name}")')
-
-    return complete_grid_mappings
-
-
-def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) \
-        -> Optional[GridMappingProxy]:
-    # noinspection PyBroadException
-    try:
-        crs = pyproj.crs.CRS.from_cf(attrs)
-    except pyproj.crs.CRSError:
-        return None
-    return GridMappingProxy(crs=crs,
-                            name=attrs.get('grid_mapping_name'))
+    return grid_mappings
 
 
 def _complement_grid_mapping_coords(
