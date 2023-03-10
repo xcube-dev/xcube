@@ -2,8 +2,21 @@
 
 ### Enhancements
 
-
-
+* xcube's spatial resampling functions `resample_in_space()`,
+  `affine_transform_dataset()`,  and `rectify_dataset()` exported 
+  from module `xcube.core.resampling` now encode the target grid mapping 
+  into the resampled datasets. (#822) 
+  
+  This new default behaviour can be switched off by keyword argument 
+  `encode_cf=False`. 
+  The grid mapping name can be set by keyword argument `gm_name`. 
+  Note, a grid mapping will not be encoded, if 
+  - `gm_name` is not given
+  - and the target CRS is geographic WGS-84 
+  - and the spatial 1-D coordinate variables are named "lon" and "lat"
+    according to their dimensions
+  - and are evenly spaced. 
+  
 * Added Notebook 
   [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
   that explains how xcube Viewer can now be utilised in JupyterLab
