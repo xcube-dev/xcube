@@ -103,45 +103,17 @@ def get_dataset_grid_mapping_templates(dataset: xr.Dataset) \
 
     grid_mappings = _get_raw_grid_mappings(dataset)
 
-    if grid_mappings:
-        for gm in grid_mappings.values():
-            if gm.ref_vars:
-                ref_var = gm.ref_vars[0]
-                y_dim, x_dim = ref_var[-2:]
-                ok = False
-                if x_dim in dataset.coords and y_dim in dataset.coords:
-                    x_coords = dataset.coords[x_dim]
-                    y_coords = dataset.coords[y_dim]
-                    if x_coords.ndim == 1 and y_coords.ndim == 1:
-                        gm.x_coords = x_coords
-                        gm.y_coords = y_coords
-                        ok = True
-                if not ok:
-                    for gms in GM_SCHEMAS:
-                        x_name, y_name = gms.standard_names
-                        x_coords = None
-                        y_coords = None
-                        for var_name, var in dataset.coords.items():
-                            standard_name = var.attrs.get("standard_name")
-                            if standard_name == x_name \
-                                    and var.ndim == 1 \
-                                    and var.dims[0] == x_dim:
-                                x_coords = var
-                            if standard_name == y_name \
-                                    and var.ndim == 1 \
-                                    and var.dims[0] == y_dim:
-                                y_coords = var
-                        if x_coords is not None and y_coords is not None:
-                            gm.x_coords = x_coords
-                            gm.y_coords = y_coords
-                            ok = True
-
-                if not ok:
+    for gm in grid_mappings.values():
+        if gm.ref_vars:
+            ref_var = gm.ref_vars[0]
+            x_dim, y_dim = ref_var.dims[-1], ref_var.dims[-2],
+            x_coors, y_coords, gms = _get_xy_coords(dataset, x_dim, y_dim)
+            gm.x_coords, gm.y_coords = x_coors, y_coords
 
 
 def _get_xy_coords(dataset: xr.Dataset,
-                   x_dim: str,
-                   y_dim: str) \
+                   x_dim: Hashable,
+                   y_dim: Hashable) \
         -> Optional[Tuple[xr.DataArray,
                           xr.DataArray,
                           Optional[GridMappingSchema]]]:
@@ -175,7 +147,7 @@ def _get_xy_coords(dataset: xr.Dataset,
         x_name, y_name = gms.standard_names
         x_coords = None
         y_coords = None
-        for var_name, var in dataset.coords.items():
+        for var_name, var in dataset.data_vars.items():
             standard_name = var.attrs.get("standard_name")
             if standard_name == x_name and var.dims == yx_dims:
                 x_coords = var
