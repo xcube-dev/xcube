@@ -316,17 +316,17 @@ class DatasetsContext(ResourcesContext):
             # Determine common prefixes of paths (and call them roots)
             roots = _get_roots(paths)
             for root in roots:
-                abs_root = root
                 fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system,
                                                       file_system)
-                if not is_absolute_path(abs_root):
-                    abs_root = f"{base_dir}/{root}"
-                store_params_for_root = store_params.copy()
-                store_params_for_root['root'] = abs_root
+                store_params_with_root = store_params.copy()
+                if fs_protocol == "file" and not is_absolute_path(root):
+                    store_params_with_root['root'] = f"{base_dir}/{root}"
+                else:
+                    store_params_with_root['root'] = root
                 # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
                     store_id=fs_protocol,
-                    store_params=store_params_for_root
+                    store_params=store_params_with_root
                 )
                 store_instance_id = data_store_pool. \
                     get_store_instance_id(data_store_config)
@@ -340,10 +340,11 @@ class DatasetsContext(ResourcesContext):
                     data_store_pool.add_store_config(store_instance_id,
                                                      data_store_config)
                 for config in config_list:
-                    if config['Path'].startswith(root) and \
+                    path = config['Path']
+                    if path.startswith(root) and \
                             config.get('StoreInstanceId') is None:
                         config['StoreInstanceId'] = store_instance_id
-                        new_path = config['Path'][len(root):]
+                        new_path = path[len(root):]
                         while new_path.startswith("/") or \
                                 new_path.startswith("\\"):
                             new_path = new_path[1:]

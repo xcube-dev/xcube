@@ -50,21 +50,22 @@ class CoordsGridMapping(GridMapping, abc.ABC):
     variables and a CRS.
     """
 
-    def __init__(self,
-                 /,
-                 x_coords: xr.DataArray,
-                 y_coords: xr.DataArray,
-                 **kwargs):
-        self._x_coords = x_coords
-        self._y_coords = y_coords
-        super().__init__(**kwargs)
-
     @property
     def x_coords(self):
+        assert isinstance(self._x_coords, xr.DataArray)
         return self._x_coords
 
     @property
     def y_coords(self):
+        assert isinstance(self._y_coords, xr.DataArray)
+        return self._y_coords
+
+    def _new_x_coords(self) -> xr.DataArray:
+        # Should never come here
+        return self._x_coords
+
+    def _new_y_coords(self) -> xr.DataArray:
+        # Should never come here
         return self._y_coords
 
 
@@ -264,6 +265,10 @@ def new_grid_mapping_from_coords(
     y_min = _to_int_or_float(y_coords.min() - y_res_05)
     x_max = _to_int_or_float(x_coords.max() + x_res_05)
     y_max = _to_int_or_float(y_coords.max() + y_res_05)
+
+    if cls is Coords1DGridMapping and is_regular:
+        from .regular import RegularGridMapping
+        cls = RegularGridMapping
 
     return cls(x_coords=x_coords,
                y_coords=y_coords,
