@@ -5,9 +5,9 @@ import numpy as np
 import numpy.testing as npt
 import xarray as xr
 
-from xcube.util.expression import transpile_expr
-from xcube.util.expression import compute_expr
 from xcube.util.expression import compute_array_expr
+from xcube.util.expression import compute_expr
+from xcube.util.expression import transpile_expr
 
 
 class ComputeArrayExprTest(unittest.TestCase):
@@ -143,21 +143,22 @@ class ComputeExprTest(unittest.TestCase):
     def test_invalid_exprs(self):
         with self.assertRaises(ValueError) as cm:
             compute_expr('20. -')
-        self.assertEqual("failed computing expression '20. -': "
-                         "unexpected EOF while parsing (<string>, line 1)",
-                         f'{cm.exception}')
+        self.assertTrue(f'{cm.exception}'.startswith(
+            "failed computing expression '20. -': "
+        ))
 
         with self.assertRaises(ValueError) as cm:
             compute_expr('2 - a')
-        self.assertEqual("failed computing expression '2 - a': "
-                         "name 'a' is not defined",
-                         f'{cm.exception}')
+        self.assertTrue(f'{cm.exception}'.startswith(
+            "failed computing expression '2 - a': "
+        ))
 
         with self.assertRaises(ValueError) as cm:
             compute_expr('b < 1', result_name="mask of 'CHL'")
-        self.assertEqual("failed computing mask of 'CHL' from "
-                         "expression 'b < 1': name 'b' is not defined",
-                         f'{cm.exception}')
+        self.assertTrue(f'{cm.exception}'.startswith(
+            "failed computing mask of 'CHL' from "
+            "expression 'b < 1': "
+        ))
 
 
 class TranspileExprTest(unittest.TestCase):

@@ -19,12 +19,11 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import collections
+import collections.abc
 import unittest
 from typing import Optional, Union, Mapping, Any
 
 from test.webapi.helpers import get_api_ctx
-from xcube.server.api import Context
 from xcube.webapi.viewer.context import ViewerContext
 
 
@@ -38,7 +37,7 @@ class ViewerContextTest(unittest.TestCase):
 
     def test_config_items_ok(self):
         ctx = get_viewer_ctx()
-        self.assertIsInstance(ctx.config_items, collections.Mapping)
+        self.assertIsInstance(ctx.config_items, collections.abc.Mapping)
 
     def test_config_path_ok(self):
         ctx = get_viewer_ctx()

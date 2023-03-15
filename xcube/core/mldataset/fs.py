@@ -18,19 +18,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import collections
+
+import collections.abc
 import json
 import math
 import pathlib
 import warnings
-from typing import Any, Optional, List, Union, Mapping, Dict, Tuple, Sequence
+from functools import cached_property
+from typing import Any, Optional, List, Union, Mapping, Dict, Sequence
 
 import fsspec
 import fsspec.core
 import numpy as np
 import xarray as xr
 import zarr
-from functools import cached_property
 
 # noinspection PyUnresolvedReferences
 import xcube.core.zarrstore
@@ -118,7 +119,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         if self.fs.exists(path):
             with self.fs.open(f"{self._path}/.zlevels") as fp:
                 spec = json.load(fp)
-            if not isinstance(spec, collections.Mapping):
+            if not isinstance(spec, collections.abc.Mapping):
                 raise TypeError('Unexpected .zlevels file.'
                                 ' Must be a JSON object.')
         # TODO (forman): validate JSON object
