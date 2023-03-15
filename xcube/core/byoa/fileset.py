@@ -257,15 +257,38 @@ class FileSet(JsonObject):
         if fs.isdir(root):
             temp_dir = new_temp_dir(prefix=TEMP_FILE_PREFIX,
                                     suffix=temp_file_suffix)
-            # Note, AbstractFileSystem.get() behaves
-            # unpredictably. Sometimes it will create a new directory
-            # named after root in temp_dir (e.g. this is the case
-            # if temp_dir exists). To avoid this, we add a non-existing
-            # directory here:
-            temp_dir += "/data"
-            # TODO: replace by loop so we can apply includes/excludes
-            #   before downloading actual files. See impl of fs.get().
-            fs.get(root + "/*", temp_dir, recursive=True)
+
+            # Note, actually want to use
+            #    fs.get(root + "/*", temp_dir, recursive=True)
+            # here, but fs.get() behaves unpredictably with
+            # fsspec=2023.3.0 and s3fs=2023.3.0.
+            # Sometimes it will create a new subdirectory in temp_dir
+            # named after last path element of root, sometimes not.
+            # Behaviour randomly changes if
+            #   - temp_dir exists or not
+            #   - root or temp_dir paths end with a slash
+            #   - whether root or temp_dir are absolute path or not.
+            #
+            # See https://github.com/dcs4cop/xcube/issues/828
+            #
+            # Workaround used here is to manually download the directory.
+
+            def get_files(source: str, target: str):
+                source_items = fs.listdir(source, detail=True)
+                for source_item in source_items:
+                    source_path = source_item["name"]
+                    source_type = source_item["type"]
+                    source_name = source_path.replace("\\", "/") \
+                        .split("/")[-1]
+                    target_path = os.path.join(target, source_name)
+                    if source_type == "file":
+                        fs.get_file(source_path, target_path)
+                    elif source_type == "directory":
+                        os.mkdir(target_path)
+                        get_files(source_path, target_path)
+
+            get_files(root, temp_dir)
+
             return FileSet(temp_dir,
                            sub_path=self.sub_path,
                            includes=self.includes,
