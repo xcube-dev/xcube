@@ -1,9 +1,9 @@
-## Changes in 1.0.1 (in development)
+## Changes in 1.0.1
 
 ### Fixes
 
 * Fixed recurring issue where xcube server was unable to locate Python
-  code downloaded from S3 when configuring dynamically computed dataset
+  code downloaded from S3 when configuring dynamically computed datasets
   (configuration `FileSystem: memory`) or augmenting existing datasets 
   by dynamically computed variables (configuration `Augmentation`). (#828)
 
