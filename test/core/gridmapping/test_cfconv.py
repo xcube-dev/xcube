@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping.cfconv import find_grid_mapping_for_var
+from xcube.core.gridmapping.cfconv import find_grid_mapping_for_data_var
 
 CRS_WGS84 = pyproj.crs.CRS(4326)
 CRS_UTM_33N = pyproj.crs.CRS(32633)
@@ -67,7 +67,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_UTM_33N, gm.crs)
         self.assertEqual(("a", "b"), gm.xy_var_names)
@@ -89,7 +89,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
         with pytest.raises(ValueError,
                            match="invalid coordinates in"
                                  " grid mapping value 'crs: a b'"):
-            find_grid_mapping_for_var(ds, "sst")
+            find_grid_mapping_for_data_var(ds, "sst")
 
     def test_with_gm_var_fails_with_invalid_crs(self):
         ds = xr.Dataset(
@@ -107,7 +107,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
         with pytest.raises(ValueError,
                            match="variable 'crs' is not"
                                  " a valid grid mapping"):
-            find_grid_mapping_for_var(ds, "sst")
+            find_grid_mapping_for_data_var(ds, "sst")
 
     def test_with_gm_var_fails_with_invalid_gm_var(self):
         ds = xr.Dataset(
@@ -125,7 +125,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
         with pytest.raises(ValueError,
                            match="grid mapping variable 'crs'"
                                  " not found in dataset"):
-            find_grid_mapping_for_var(ds, "sst")
+            find_grid_mapping_for_data_var(ds, "sst")
 
     def test_with_gm_var_and_standard_name_lat_lon(self):
         ds = xr.Dataset(
@@ -146,7 +146,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_WGS84, gm.crs)
         self.assertEqual(("a", "b"), gm.xy_var_names)
@@ -171,7 +171,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_ROTATED_POLE.to_cf(), gm.crs.to_cf())
         self.assertEqual(("a", "b"), gm.xy_var_names)
@@ -196,7 +196,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_UTM_33N, gm.crs)
         self.assertEqual(("a", "b"), gm.xy_var_names)
@@ -217,7 +217,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_UTM_33N, gm.crs)
         self.assertEqual(("a", "b"), gm.xy_var_names)
@@ -238,7 +238,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_UTM_33N, gm.crs)
         self.assertEqual(("x", "y"), gm.xy_var_names)
@@ -259,7 +259,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(dim="lat"),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_WGS84, gm.crs)
         self.assertEqual(("lon", "lat"), gm.xy_var_names)
@@ -278,7 +278,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "b": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_UTM_33N, gm.crs)
         self.assertEqual(("a", "b"), gm.xy_var_names)
@@ -296,7 +296,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_WGS84, gm.crs)
         self.assertEqual(("x", "y"), gm.xy_var_names)
@@ -315,7 +315,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(dim="lat"),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_WGS84, gm.crs)
         self.assertEqual(("lon", "lat"), gm.xy_var_names)
@@ -331,7 +331,7 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "b": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_var(ds, "sst")
+        gm = find_grid_mapping_for_data_var(ds, "sst")
         self.assertIsInstance(gm, GridMapping)
         self.assertEqual(CRS_WGS84, gm.crs)
         self.assertEqual(("a", "b"), gm.xy_var_names)

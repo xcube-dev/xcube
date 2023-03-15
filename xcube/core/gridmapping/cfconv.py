@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Optional, Union, Sequence, Tuple
+from typing import Optional, Sequence, Tuple, Dict, Hashable, List
 
 import pyproj
 import pyproj.exceptions
@@ -28,35 +28,89 @@ import xarray as xr
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from .base import CRS_WGS84
-from .base import GridMapping
-from .coords import new_grid_mapping_from_coords
+
+DimPair = Tuple[Hashable, Hashable]
+CoordsPair = Tuple[xr.DataArray, xr.DataArray]
+GridMappingTuple = Tuple[pyproj.CRS, str, CoordsPair]
 
 
-def find_grid_mapping_for_var(dataset: xr.Dataset,
-                              var_name: str) -> Optional[GridMapping]:
+def find_grid_mappings_for_data_vars(dataset: xr.Dataset) \
+        -> Dict[Hashable, GridMappingTuple]:
+    grid_mappings = find_grid_mappings_for_dataset(dataset)
+    vars_to_grid_mappings: Dict[Hashable, GridMappingTuple] = {}
+    for var_name, var in dataset.data_vars.items():
+        if var.ndim < 2:
+            continue
+        for gmt in grid_mappings:
+            _, _, xy_coords = gmt
+            x_dim, y_dim = _get_xy_dims_from_xy_coords(xy_coords)
+            if x_dim in var.dims and y_dim in var.dims:
+                vars_to_grid_mappings[var_name] = gmt
+                break
+    return vars_to_grid_mappings
+
+
+def find_grid_mappings_for_dataset(dataset: xr.Dataset) \
+        -> List[GridMappingTuple]:
+    dims_to_grid_mappings: Dict[DimPair, GridMappingTuple] = {}
+    for var_name, var in dataset.data_vars.items():
+        found = False
+        for x_dim, y_dim in dims_to_grid_mappings.keys():
+            if x_dim in var.dims and y_dim in var.dims:
+                found = True
+                break
+        if not found:
+            gmt = find_grid_mapping_for_data_var(dataset, var_name)
+            _, _, xy_coords = gmt
+            xy_dims = _get_xy_dims_from_xy_coords(xy_coords)
+            dims_to_grid_mappings[xy_dims] = gmt
+    return list(dims_to_grid_mappings.values())
+
+
+def _get_xy_dims_from_xy_coords(xy_coords: CoordsPair) -> DimPair:
+    x_coords, y_coords = xy_coords
+    if x_coords.ndim == 1:
+        # 1-D coordinates
+        assert y_coords.ndim == 1
+        return x_coords.dims[0], y_coords.dims[0]
+    else:
+        # 2-D coordinates
+        assert x_coords.ndim == 2
+        assert x_coords.dims == y_coords.dims
+        return x_coords.dims[1], x_coords.dims[0]
+
+
+def find_grid_mapping_for_data_var(
+        dataset: xr.Dataset,
+        var_name: Hashable
+) -> Optional[GridMappingTuple]:
     assert_instance(dataset, xr.Dataset, "dataset")
-    assert_instance(var_name, str, "var_name")
+    assert_instance(var_name, Hashable, "var_name")
     assert_true(var_name in dataset,
                 message=f"variable {var_name!r} not found in dataset")
 
     var = dataset[var_name]
+    if var.ndim < 2:
+        return None
 
     gm_value = var.attrs.get("grid_mapping")
     if isinstance(gm_value, str) and gm_value:
         crs, gm_name, xy_coords = _find_grid_mapping_for_var_with_gm_value(
             dataset, var, gm_value
         )
+        force_xy_coords = True
     else:
         crs, gm_name, xy_coords = CRS_WGS84, "latitude_longitude", None
+        force_xy_coords = False
 
     if xy_coords is None:
         xy_coords = _find_coordinates_for_crs_and_gm_name(
-            dataset, var, gm_name
+            dataset, var, gm_name, force_xy_coords
         )
+        if xy_coords is None:
+            return None
 
-    return new_grid_mapping_from_coords(x_coords=xy_coords[0],
-                                        y_coords=xy_coords[1],
-                                        crs=crs)
+    return crs, gm_name, xy_coords
 
 
 def _find_grid_mapping_for_var_with_gm_value(
@@ -65,7 +119,7 @@ def _find_grid_mapping_for_var_with_gm_value(
         gm_value: str
 ) -> Tuple[pyproj.CRS,
            str,
-           Optional[Tuple[xr.DataArray, xr.DataArray]]]:
+           Optional[CoordsPair]]:
     xy_coords = None
 
     if ":" in gm_value:
@@ -100,7 +154,8 @@ def _find_grid_mapping_for_var_with_gm_value(
 def _find_coordinates_for_crs_and_gm_name(
         dataset: xr.Dataset,
         var: xr.DataArray,
-        gm_name: str
+        gm_name: str,
+        force: bool
 ) -> Optional[Tuple[xr.DataArray, xr.DataArray]]:
     other_vars = [dataset[var_name]
                   for var_name in dataset.variables.keys()
@@ -145,9 +200,11 @@ def _find_coordinates_for_crs_and_gm_name(
 
     # Check: also try _find_2d_coord_var_by_common_names()?
 
-    raise ValueError(f"cannot determine grid mapping"
-                     f" coordinates for variable {var.name!r}")
-
+    if force:
+        raise ValueError(f"cannot determine grid mapping"
+                         f" coordinates for variable {var.name!r}"
+                         f" with dimensions {var.dims!r}")
+    return None
 
 def _find_1d_coord_var_by_common_names(
         coords: Sequence[xr.DataArray],
