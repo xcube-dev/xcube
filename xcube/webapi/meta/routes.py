@@ -46,10 +46,15 @@ class OpenApiHtmlHandler(ApiHandler):
         summary='Show API documentation'
     )
     def get(self):
+        include_all = self.request.get_query_arg('all', default=False)
         html_template = pkgutil.get_data('xcube.webapi.meta',
-                                         'res/openapi.html').decode('utf-8')
+                                         'data/openapi.html').decode('utf-8')
         self.response.finish(Template(html_template).substitute(
-            open_api_url=self.request.url_for_path('openapi.json')
+            open_api_url=self.request.url_for_path(
+                'openapi.json',
+                query='all=1' if include_all else None,
+                reverse=True
+            )
         ))
 
 
@@ -60,7 +65,11 @@ class OpenApiJsonHandler(ApiHandler):
         summary='Get API documentation as OpenAPI 3.0 JSON document'
     )
     def get(self):
-        self.response.finish(self.ctx.open_api_doc)
+        include_all = self.request.get_query_arg('all', default=False)
+        self.response.finish(
+            self.ctx.get_open_api_doc(include_all=include_all),
+            content_type='application/vnd.oai.openapi+json;version=3.0'
+        )
 
 
 @api.route("/maintenance/fail")

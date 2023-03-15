@@ -1,0 +1,2 @@
+body{margin:0;padding:0;width:100vw;height:100vh;font-family:"Roboto","Segoe UI","sans-serif"}.map{height:100%}@-webkit-keyframes hint{0%,to{opacity:1%}10%{opacity:1%}90%{opacity:1%}}@keyframes hint{0%,to{opacity:1%}10%{opacity:1%}90%{opacity:1%}}.hint_wrap{-webkit-animation:hint 4s linear none;animation:hint 4s linear none;opacity:1%;transition:all .3s ease-in-out;color:orange;position:absolute;bottom:8px;right:16px;zIndex:10}.hint_wrap:hover{opacity:1%}
+/*# sourceMappingURL=main.8beec6ca.chunk.css.map */

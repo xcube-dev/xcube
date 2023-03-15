@@ -27,7 +27,7 @@ import os.path
 import warnings
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Tuple, Callable, Collection, \
-    Set, Mapping
+    Set, Mapping, Union
 
 import numpy as np
 import pandas as pd
@@ -35,7 +35,8 @@ import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
-from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset, \
+    IdentityMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_python_code
@@ -48,6 +49,9 @@ from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
+from xcube.server.config import is_absolute_path
+from xcube.util.assertions import assert_given
+from xcube.util.assertions import assert_instance
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_custom_colormap
@@ -184,6 +188,50 @@ class DatasetsContext(ResourcesContext):
                                  dict(Identifier=ml_dataset.ds_id,
                                       Hidden=True)))
 
+    def add_dataset(self,
+                    dataset: Union[xr.Dataset, MultiLevelDataset],
+                    ds_id: Optional[str] = None,
+                    title: Optional[str] = None):
+        assert_instance(dataset, (xr.Dataset, MultiLevelDataset), 'dataset')
+        if isinstance(dataset, xr.Dataset):
+            ml_dataset = BaseMultiLevelDataset(dataset, ds_id=ds_id)
+        else:
+            ml_dataset = dataset
+            if ds_id:
+                ml_dataset = IdentityMultiLevelDataset(dataset, ds_id=ds_id)
+            dataset = ml_dataset.base_dataset
+        ds_id = ml_dataset.ds_id
+        dataset_configs = self.get_dataset_configs()
+        for index, dataset_config in enumerate(dataset_configs):
+            if dataset_config["Identifier"] == ds_id:
+                del dataset_configs[index]
+                break
+        dataset_config = dict(Identifier=ds_id,
+                              Title=title or dataset.attrs.get("title",
+                                                               ds_id))
+        self._dataset_cache[ds_id] = ml_dataset, dataset_config
+        self._dataset_configs.append(dataset_config)
+        return ds_id
+
+    def remove_dataset(self, ds_id: str):
+        assert_instance(ds_id, str, 'ds_id')
+        assert_given(ds_id, 'ds_id')
+        if ds_id in self._dataset_cache:
+            del self._dataset_cache[ds_id]
+            # TODO: remove from self._dataset_configs
+
+    def add_ml_dataset(self,
+                       ml_dataset: MultiLevelDataset,
+                       ds_id: Optional[str] = None,
+                       title: Optional[str] = None):
+        if ds_id:
+            ml_dataset.ds_id = ds_id
+        else:
+            ds_id = ml_dataset.ds_id
+        self._set_dataset_entry((ml_dataset,
+                                 dict(Identifier=ds_id,
+                                      Title=title)))
+
     def get_dataset(self,
                     ds_id: str,
                     expected_var_names: Collection[str] = None) -> xr.Dataset:
@@ -268,20 +316,17 @@ class DatasetsContext(ResourcesContext):
             # Determine common prefixes of paths (and call them roots)
             roots = _get_roots(paths)
             for root in roots:
-                abs_root = root
-                # For local file systems:
-                # Determine absolute root from base dir
                 fs_protocol = FS_TYPE_TO_PROTOCOL.get(file_system,
                                                       file_system)
-                if fs_protocol == 'file' and not os.path.isabs(abs_root):
-                    abs_root = os.path.join(base_dir, abs_root)
-                    abs_root = os.path.normpath(abs_root)
-                store_params_for_root = store_params.copy()
-                store_params_for_root['root'] = abs_root
+                store_params_with_root = store_params.copy()
+                if fs_protocol == "file" and not is_absolute_path(root):
+                    store_params_with_root['root'] = f"{base_dir}/{root}"
+                else:
+                    store_params_with_root['root'] = root
                 # See if there already is a store with this configuration
                 data_store_config = DataStoreConfig(
                     store_id=fs_protocol,
-                    store_params=store_params_for_root
+                    store_params=store_params_with_root
                 )
                 store_instance_id = data_store_pool. \
                     get_store_instance_id(data_store_config)
@@ -295,10 +340,11 @@ class DatasetsContext(ResourcesContext):
                     data_store_pool.add_store_config(store_instance_id,
                                                      data_store_config)
                 for config in config_list:
-                    if config['Path'].startswith(root) and \
+                    path = config['Path']
+                    if path.startswith(root) and \
                             config.get('StoreInstanceId') is None:
                         config['StoreInstanceId'] = store_instance_id
-                        new_path = config['Path'][len(root):]
+                        new_path = path[len(root):]
                         while new_path.startswith("/") or \
                                 new_path.startswith("\\"):
                             new_path = new_path[1:]
@@ -532,7 +578,8 @@ class DatasetsContext(ResourcesContext):
                     custom_colormap = load_custom_colormap(
                         custom_cmap_path
                     )
-                    custom_colormaps[custom_cmap_path] = custom_colormap
+                    if custom_colormap is not None:
+                        custom_colormaps[custom_cmap_path] = custom_colormap
                 if custom_colormap is not None:
                     color_mappings[var_name] = {
                         "ColorBar": custom_colormap.cm_name,
@@ -615,8 +662,12 @@ class DatasetsContext(ResourcesContext):
                 augmentation,
                 f"'Augmentation' of dataset configuration {ds_id}"
             )
-            input_parameters = augmentation.get('InputParameters')
-            callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
+            input_parameters = augmentation.get('InputParameters', {})
+            input_parameters = self.eval_config_value(input_parameters)
+            callable_name = augmentation.get('Class')
+            is_factory = callable_name is not None
+            if not is_factory:
+                callable_name = augmentation.get('Function', COMPUTE_VARIABLES)
             ml_dataset = augment_ml_dataset(
                 ml_dataset,
                 script_path,
@@ -624,6 +675,7 @@ class DatasetsContext(ResourcesContext):
                 self.get_ml_dataset,
                 self.set_ml_dataset,
                 input_parameters=input_parameters,
+                is_factory=is_factory,
                 exception_type=ApiError.InvalidServerConfig
             )
         return ml_dataset
@@ -786,29 +838,36 @@ def _open_ml_dataset_from_python_code(
     ds_id = dataset_config.get('Identifier')
     path = ctx.get_config_path(dataset_config,
                                f"dataset configuration {ds_id}")
-    callable_name = dataset_config.get('Function', COMPUTE_DATASET)
+    callable_name = dataset_config.get('Class')
+    is_factory = callable_name is not None
+    if not is_factory:
+        callable_name = dataset_config.get('Function', COMPUTE_DATASET)
     input_dataset_ids = dataset_config.get('InputDatasets', [])
     input_parameters = dataset_config.get('InputParameters', {})
+    input_parameters = ctx.eval_config_value(input_parameters)
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(
         dataset_config
     )
     if chunk_cache_capacity:
         warnings.warn(
             'chunk cache size is not effective for'
-            ' datasets computed from scripts')
+            ' datasets computed from scripts'
+        )
     for input_dataset_id in input_dataset_ids:
         if not ctx.get_dataset_config(input_dataset_id):
             raise ApiError.InvalidServerConfig(
-                f"Invalid dataset configuration {ds_id!r}: "
-                f"Input dataset {input_dataset_id!r} of"
-                f" callable {callable_name!r} "
-                f"must reference another dataset")
+                f"Invalid dataset configuration {ds_id!r}:"
+                f" Input dataset {input_dataset_id!r} of"
+                f" callable {callable_name!r}"
+                f" must reference another dataset"
+            )
     return open_ml_dataset_from_python_code(
         path,
         callable_name=callable_name,
         input_ml_dataset_ids=input_dataset_ids,
         input_ml_dataset_getter=ctx.get_ml_dataset,
         input_parameters=input_parameters,
+        is_factory=is_factory,
         ds_id=ds_id,
         exception_type=ApiError.InvalidServerConfig
     )

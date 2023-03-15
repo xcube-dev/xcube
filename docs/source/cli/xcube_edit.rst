@@ -5,6 +5,10 @@
 ``xcube edit``
 ==================
 
+**Please note**, the ``xcube edit`` command has been deprecated since
+xcube 0.13. It will be removed in later versions of xcube.
+Please use ``xcube patch`` instead.
+
 Synopsis
 ========
 

@@ -52,7 +52,7 @@ class ServerTest(unittest.TestCase):
         self.assertIs(framework, server.framework)
         self.assertIsInstance(server.apis, tuple)
         self.assertIs(server.apis, server.apis)
-        self.assertIsInstance(server.open_api_doc, dict)
+        self.assertIsInstance(server.get_open_api_doc(), dict)
         self.assertIsInstance(server.ctx, ServerContext)
         self.assertIs(server.ctx, server.ctx)
 
@@ -110,6 +110,7 @@ class ServerTest(unittest.TestCase):
                          server.ctx.config)
 
     def test_config_schema_effectively_merged(self):
+        self.maxDiff = None
         extension_registry = mock_extension_registry([
             (
                 "datasets",
@@ -166,7 +167,8 @@ class ServerTest(unittest.TestCase):
                     'base_dir': {
                         'type': 'string',
                         'title': 'Base directory used to resolve relative '
-                                 'local paths.',
+                                 'local paths. Can be a local filesystem '
+                                 'path or an absolute URL.',
                     },
                     'address': {
                         'type': 'string',
@@ -179,21 +181,51 @@ class ServerTest(unittest.TestCase):
                         'default': 8080,
                     },
                     'url_prefix': {
+                        'type': 'string',
                         'title': 'Prefix to be prepended to all URL '
-                                 'route paths.',
-                        'type': 'string'
+                                 'route paths. Can be an '
+                                 'absolute URL or a relative URL '
+                                 'path.',
+                    },
+                    'reverse_url_prefix': {
+                        'type': 'string',
+                        'title': 'Prefix to be prepended to '
+                                 'reverse URL paths returned by '
+                                 'server responses. Can be an '
+                                 'absolute URL or a relative URL '
+                                 'path.',
                     },
                     'static_routes': {
                         'type': 'array',
                         'title': 'Static content routes',
                         'items': {
-                            'type': 'array',
-                            'items': [{'minLength': 1,
-                                       'title': 'URL path',
-                                       'type': 'string'},
-                                      {'minLength': 1,
-                                       'title': 'Local path',
-                                       'type': 'string'}],
+                            'type': 'object',
+                            'required': ['path', 'dir_path'],
+                            'properties': {
+                                'path': {
+                                    'type': 'string',
+                                    'minLength': 1,
+                                    'title': 'The URL path',
+                                },
+                                'dir_path': {
+                                    'type': 'string',
+                                    'minLength': 1,
+                                    'title': 'A local directory path',
+                                },
+                                'default_filename': {
+                                    'type': 'string',
+                                    'examples': ['index.html'],
+                                    'minLength': 1,
+                                    'title': 'Optional default filename',
+                                },
+                                'openapi_metadata': {
+                                    'type': 'object',
+                                    'additionalProperties': True,
+                                    'title': 'Optional OpenAPI operation '
+                                             'metadata',
+                                },
+                            },
+                            'additionalProperties': False,
                         },
                     },
                     'trace_perf': {
@@ -406,7 +438,7 @@ class ServerContextTest(unittest.TestCase):
         self.assertIsInstance(server_ctx.config, FrozenDict)
         self.assertEqual(config, server_ctx.config)
         self.assertEqual((), server_ctx.apis)
-        self.assertIsInstance(server_ctx.open_api_doc, dict)
+        self.assertIsInstance(server_ctx.get_open_api_doc(), dict)
 
     def test_on_update_and_on_dispose(self):
         server = mock_server()

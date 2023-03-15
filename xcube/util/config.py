@@ -1,23 +1,23 @@
 # The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import datetime
 import fnmatch
@@ -26,8 +26,9 @@ import json
 import os
 import os.path
 import string
-from typing import Any, Dict, Optional, Iterable, Tuple, List
+from typing import Any, Dict, Optional, Iterable, Tuple, List, Type
 
+import fsspec
 import yaml
 
 from xcube.constants import LOG
@@ -154,34 +155,45 @@ def merge_config(first_dict: Dict, *more_dicts):
     return output_dict
 
 
-def load_configs(*config_paths: str) -> Dict[str, Any]:
+def load_configs(
+        *config_paths: str,
+        exception_type: Type[Exception] = ValueError
+) -> Dict[str, Any]:
     config_dicts = []
     for config_path in config_paths:
-        if not os.path.isfile(config_path):
-            raise ValueError(f'Cannot find configuration {config_path!r}')
-        config_dict = load_json_or_yaml_config(config_path)
+        config_dict = load_json_or_yaml_config(
+            config_path,
+            exception_type=exception_type
+        )
         config_dicts.append(config_dict)
     config = merge_config(*config_dicts)
     return config
 
 
-def load_json_or_yaml_config(config_path: str) -> Dict[str, Any]:
+def load_json_or_yaml_config(
+        config_path: str,
+        exception_type: Type[Exception] = ValueError
+) -> Dict[str, Any]:
     try:
         config_dict = _load_json_or_yaml_config(config_path)
         LOG.info(f'Configuration loaded: {config_path}')
+    except FileNotFoundError as e:
+        raise exception_type(
+            f'Cannot find configuration {config_path!r}'
+        ) from e
     except yaml.YAMLError as e:
-        raise ValueError(
+        raise exception_type(
             f'YAML in {config_path!r} is invalid: {e}'
         ) from e
     except OSError as e:
-        raise ValueError(
+        raise exception_type(
             f'Cannot load configuration from'
             f' {config_path!r}: {e}'
         ) from e
     if config_dict is None:
         return {}
     if not isinstance(config_dict, dict):
-        raise ValueError(
+        raise exception_type(
             f'Invalid configuration format in'
             f' {config_path!r}: dictionary expected'
         )
@@ -189,7 +201,7 @@ def load_json_or_yaml_config(config_path: str) -> Dict[str, Any]:
 
 
 def _load_json_or_yaml_config(config_file: str) -> Any:
-    with open(config_file, 'r') as fp:
+    with fsspec.open(config_file, mode='r') as fp:
         file_content = fp.read()
     template = string.Template(file_content)
     file_content = template.safe_substitute(os.environ)

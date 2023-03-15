@@ -23,6 +23,7 @@ import os.path
 import unittest
 from typing import Union, Mapping, Any
 
+import pytest
 import xarray as xr
 
 from test.webapi.helpers import get_api_ctx
@@ -226,6 +227,112 @@ class DatasetsContextTest(unittest.TestCase):
         }
         self.assertIsNotNone(store_params)
         self.assertEqual(expected_dict, store_params)
+
+    def test_computed_ml_dataset_ok(self):
+        ctx = get_datasets_ctx(server_config='config-class.yml')
+        ds1 = ctx.get_ml_dataset("ds-1")
+        ds2 = ctx.get_ml_dataset("ds-2")
+        self.assertEqual(set(ds1.base_dataset.coords),
+                         set(ds2.base_dataset.coords))
+        self.assertEqual(set(ds1.base_dataset.data_vars),
+                         set(ds2.base_dataset.data_vars))
+
+    def test_computed_ml_dataset_call_fails(self):
+        ctx = get_datasets_ctx(server_config='config-class.yml')
+        with pytest.raises(
+                ApiError.InvalidServerConfig,
+                match="HTTP status 580:"
+                      " Invalid in-memory dataset descriptor 'ds-3':"
+                      " broken_ml_dataset_factory_1\\(\\)"
+                      " takes 0 positional arguments but 1 was given"
+        ):
+            ctx.get_ml_dataset("ds-3")
+
+    def test_computed_ml_dataset_illegal_return(self):
+        ctx = get_datasets_ctx(server_config='config-class.yml')
+        with pytest.raises(
+                ApiError.InvalidServerConfig,
+                match="Invalid in-memory dataset descriptor 'ds-4':"
+                      " 'script:broken_ml_dataset_factory_2' must return"
+                      " instance of xcube.core.mldataset.MultiLevelDataset,"
+                      " but was <class 'xarray.core.dataset.Dataset'>"
+        ):
+            ctx.get_ml_dataset("ds-4")
+
+    def test_interpolate_config_value(self):
+        ctx = get_datasets_ctx()
+
+        self.assertEqual(
+            f"{ctx.base_dir}",
+            ctx.eval_config_value(
+                "${base_dir}"
+            )
+        )
+
+        self.assertEqual(
+            f"{ctx.base_dir}/test.yaml",
+            ctx.eval_config_value(
+                "${base_dir}/test.yaml"
+            )
+        )
+
+        self.assertEqual(
+            f"{ctx.base_dir}/configs/../test.yaml",
+            ctx.eval_config_value(
+                "${base_dir}/configs/../test.yaml"
+            )
+        )
+
+        self.assertEqual(
+            f"{ctx.base_dir}/test.yaml".replace("\\", "/"),
+            ctx.eval_config_value(
+                "${resolve_config_path('configs/../test.yaml')}"
+            )
+        )
+
+        self.assertIs(
+            ctx,
+            ctx.eval_config_value(
+                "${ctx}"
+            )
+        )
+
+        self.assertEqual(13, ctx.eval_config_value(13))
+        self.assertEqual(True, ctx.eval_config_value(True))
+
+        self.assertEqual(
+            [f"{ctx.base_dir}/test.yaml", 13, True],
+            ctx.eval_config_value(
+                ["${base_dir}/test.yaml", 13, True]
+            )
+        )
+
+        self.assertEqual(
+            dict(path=f"{ctx.base_dir}/test.yaml", count=13, check=True),
+            ctx.eval_config_value(
+                dict(path="${base_dir}/test.yaml", count=13, check=True)
+            )
+        )
+
+    def test_tokenize_value(self):
+        ctx = get_datasets_ctx()
+
+        self.assertEqual(["Hallo!"],
+                         list(ctx._tokenize_value("Hallo!")))
+
+        self.assertEqual([('base_dir',)],
+                         list(ctx._tokenize_value("${base_dir}")))
+
+        self.assertEqual([('base_dir',), "/../test"],
+                         list(ctx._tokenize_value("${base_dir}/../test")))
+
+        self.assertEqual(["file://", ('base_dir',), "/test"],
+                         list(ctx._tokenize_value("file://${base_dir}/test")))
+
+        self.assertEqual([("resolve_config_path('../test')",)],
+                         list(ctx._tokenize_value(
+                             "${resolve_config_path('../test')}"
+                         )))
 
 
 class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):

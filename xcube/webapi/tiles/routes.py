@@ -23,107 +23,85 @@ from xcube.server.api import ApiHandler
 from .api import api
 from .context import TilesContext
 from .controllers import compute_ml_dataset_tile
+from ..datasets import PATH_PARAM_DATASET_ID
+from ..datasets import PATH_PARAM_VAR_NAME
+from ..datasets import QUERY_PARAM_CBAR
+from ..datasets import QUERY_PARAM_CRS
+from ..datasets import QUERY_PARAM_VMAX
+from ..datasets import QUERY_PARAM_VMIN
+
+PATH_PARAM_X = {
+    "name": "x",
+    "in": "path",
+    "description": "The tile grid's x-coordinate",
+    "schema": {
+        "type": "integer",
+    }
+}
+
+PATH_PARAM_Y = {
+    "name": "y",
+    "in": "path",
+    "description": "The tile grid's y-coordinate",
+    "schema": {
+        "type": "integer",
+    }
+}
+
+PATH_PARAM_Z = {
+    "name": "z",
+    "in": "path",
+    "description": "The tile grid's z-coordinate",
+    "schema": {
+        "type": "integer",
+    }
+}
+
+QUERY_PARAM_TIME = {
+    "name": "time",
+    "in": "query",
+    "description": "Optional time coordinate using format"
+                   " \"YYYY-MM-DD hh:mm:ss\"",
+    "schema": {
+        "type": "string",
+        "format": "datetime"
+    }
+}
+
+QUERY_PARAM_FORMAT = {
+    "name": "format",
+    "in": "query",
+    "description": "Image format",
+    "schema": {
+        "type": "string",
+        "enum": ["png", "image/png"],
+        "default": "png"
+    }
+}
+
+QUERY_PARAM_RETINA = {
+    "name": "retina",
+    "in": "query",
+    "description": "Returns tiles of size"
+                   " 512 instead of 256",
+    "schema": {
+        "type": "boolean"
+    }
+}
 
 TILE_PARAMETERS = [
-    {
-        "name": "datasetId",
-        "in": "path",
-        "description": "Dataset identifier",
-        "schema": {
-            "type": "string",
-        }
-    },
-    {
-        "name": "varName",
-        "in": "path",
-        "description": "Name of variable in dataset",
-        "schema": {
-            "type": "string",
-        }
-    },
-    {
-        "name": "z",
-        "in": "path",
-        "description": "The tile grid's z-coordinate",
-        "schema": {
-            "type": "integer",
-        }
-    },
-    {
-        "name": "y",
-        "in": "path",
-        "description": "The tile grid's y-coordinate",
-        "schema": {
-            "type": "integer",
-        }
-    },
-    {
-        "name": "x",
-        "in": "path",
-        "description": "The tile grid's x-coordinate",
-        "schema": {
-            "type": "integer",
-        }
-    },
-    {
-        "name": "crs",
-        "in": "query",
-        "description": "The tile grid's spatial CRS",
-        "schema": {
-            "type": "string",
-            "enum": ["EPSG:3857", "CRS84"],
-            "default": "CRS84"
-        }
-    },
-    {
-        "name": "vmin",
-        "in": "query",
-        "description": "Minimum value of variable" 
-                       " for color mapping",
-        "schema": {
-            "type": "number",
-            "default": 0
-        }
-    },
-    {
-        "name": "vmax",
-        "in": "query",
-        "description": "Maximum value of variable" 
-                       " for color mapping",
-        "schema": {
-            "type": "number",
-            "default": 1
-        }
-    },
-    {
-        "name": "cbar",
-        "in": "query",
-        "description": "Name of the color bar" 
-                       " for color mapping",
-        "schema": {
-            "type": "string",
-            "default": "bone"
-        }
-    },
-    {
-        "name": "format",
-        "in": "query",
-        "description": "Image format",
-        "schema": {
-            "type": "string",
-            "enum": ["png", "image/png"],
-            "default": "png"
-        }
-    },
-    {
-        "name": "retina",
-        "in": "query",
-        "description": "Returns tiles of size" 
-                       " 512 instead of 256",
-        "schema": {
-            "type": "boolean"
-        }
-    },
+    PATH_PARAM_DATASET_ID,
+    PATH_PARAM_VAR_NAME,
+    PATH_PARAM_Z,
+    PATH_PARAM_Y,
+    PATH_PARAM_X,
+    QUERY_PARAM_CRS,
+    QUERY_PARAM_VMIN,
+    QUERY_PARAM_VMAX,
+    QUERY_PARAM_CBAR,
+    QUERY_PARAM_TIME,
+    QUERY_PARAM_FORMAT,
+    QUERY_PARAM_RETINA,
 ]
 
 

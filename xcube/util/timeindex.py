@@ -23,6 +23,11 @@
 
 The utilities in this module check and, where necessary, modify time indexers
 to ensure that they are compatible with the variables they are indexing.
+"Compatibility" in this case refers to timezone-awareness: a timezone-aware
+indexer cannot index a timezone-naive variable, and vice versa. Since xcube
+processes data from external sources, we need a generalized way to ensure
+this compatibility before attempting an indexing operation. See
+https://github.com/dcs4cop/xcube/issues/605 for more background information.
 """
 
 from typing import Dict, Any, Union, Hashable
@@ -31,6 +36,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import logging
+import warnings
 
 logger = logging.getLogger('xcube')
 
@@ -111,6 +117,36 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
     if time_value is None:
         return None
 
+    if isinstance(time_value, np.ndarray):
+        # Sometimes a provided indexer is not a scalar, but a 0-dimensional
+        # singleton ndarray containing the scalar indexing value itself.
+        # In this case we unwrap the value and call the function recursively.
+        if time_value.shape == ():
+            # We use [()] rather than .item() here, since the contents may
+            # well be a datetime64. In that case we want to preserve the
+            # numpy array scalar type rather than converting to a native
+            # Python integer.
+            contents = time_value[()]
+            new_contents = _ensure_timestamp_compatible(
+                var, contents, time_name
+            )
+            return (
+                time_value if contents == new_contents
+                else np.array(new_contents)
+            )
+        else:
+            warnings.warn('Indexer is a multi-element ndarray; '
+                          'leaving it unmodified')
+            return time_value
+
+    cant_determine_warning_template = (
+        "We can't determine whether the {} has a time zone. We will "
+        "therefore omit the check on whether the time indexer and the "
+        "variable are incompatible in terms of timezone awareness. This may "
+        "result in an error when an indexing operation is carried out. If "
+        "such an error occurs after this warning, make sure that the {} "
+        "timezone information."
+    )
     if hasattr(time_value, 'tzinfo'):
         timestamp = time_value
         time_value_tzinfo = time_value.tzinfo
@@ -119,8 +155,12 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
             timestamp = pd.Timestamp(time_value)
             time_value_tzinfo = timestamp.tzinfo
         except (TypeError, ValueError):
-            logger.warning('Can\'t determine indexer timezone; leaving it '
-                           'unmodified.')
+            warnings.warn(
+                cant_determine_warning_template.format(
+                    'time indexer', 'time indexer has'
+                )
+            )
+            warnings.warn(f'Indexer: {time_value}')
             return time_value
 
     if _has_datetime64_time(var, time_name):
@@ -142,22 +182,38 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         if hasattr(first_time_value, 'tzinfo'):
             array_timezone = first_time_value.tzinfo
         else:
-            logger.warning(
-                'Can\'t determine array timezone; leaving indexer unmodified.'
+            warnings.warn(
+                cant_determine_warning_template.format(
+                    'time co-ordinate of the variable',
+                    'data in the time co-ordinate have'
+                )
             )
+            warnings.warn(f'First time value: {first_time_value}')
             return time_value
 
+    cant_convert_warning_template = (
+        "The time indexer has no {0} method, so we can't convert it to a "
+        "timezone-{1} value in order to make it compatible with the time "
+        "co-ordinate of the variable. This may result in an indexing error. "
+        "If such an error occurs after this warning, make sure that the time "
+        "indexer and time co-ordinate are compatible (both timezone-naive or "
+        "both timezone-aware) or that the indexer has a {0} method."
+    )
     if array_timezone is None and time_value_tzinfo is not None:
         if hasattr(timestamp, 'tz_convert'):
             return timestamp.tz_convert(None)
         else:
-            logger.warning('Indexer lacks tz_convert; leaving it unmodified.')
+            warnings.warn(
+                cant_convert_warning_template.format('tz_convert', 'naive')
+            )
             return time_value
     elif array_timezone is not None and time_value_tzinfo is None:
         if hasattr(timestamp, 'tz_localize'):
             return timestamp.tz_localize(array_timezone)
         else:
-            logger.warning('Indexer lacks tz_localize; leaving it unmodified.')
+            warnings.warn(
+                cant_convert_warning_template.format('tz_localize', 'aware')
+            )
             return time_value
     else:
         return time_value

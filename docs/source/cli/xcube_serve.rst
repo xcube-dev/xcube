@@ -23,75 +23,73 @@ Serve data cubes via web service.
 
 ::
 
-    Usage: xcube serve [OPTIONS] [CUBE]...
+    Usage: xcube serve [OPTIONS] [PATHS...]
 
-      Serve data cubes via web service.
+      Run the xcube Server for the given configuration and/or the given raster
+      dataset paths given by PATHS.
 
-      Serves data cubes by a RESTful API and a OGC WMTS 1.0 RESTful and KVP
-      interface. The RESTful API documentation can be found at
-      https://app.swaggerhub.com/apis/bcdev/xcube-server.
+      Each of the PATHS arguments can point to a raster dataset such as a Zarr
+      directory (*.zarr), an xcube multi-level Zarr dataset (*.levels), a NetCDF
+      file (*.nc), or a GeoTIFF/COG file (*.tiff).
+
+      If one of PATHS is a directory that is not a dataset itself, it is scanned
+      for readable raster datasets.
+
+      The --show ASSET option can be used to inspect the current configuration of
+      the server. ASSET is one of:
+
+      apis            outputs the list of APIs provided by the server
+      endpoints       outputs the list of all endpoints provided by the server
+      openapi         outputs the OpenAPI document representing this server
+      config          outputs the effective server configuration
+      configschema    outputs the JSON Schema for the server configuration
+
+      The ASSET may be suffixed by ".yaml" or ".json" forcing the respective
+      output format. The default format is YAML.
+
+      Note, if --show  is provided, the ASSET will be shown and the program will
+      exit immediately.
 
     Options:
-      -A, --address ADDRESS    Service address. Defaults to 'localhost'.
-      -P, --port PORT          Port number where the service will listen on.
-                               Defaults to 8080.
-      --prefix PREFIX          Service URL prefix. May contain template patterns
-                               such as "${version}" or "${name}". For example
-                               "${name}/api/${version}". Will be used to prefix
-                               all API operation routes and in any URLs returned
-                               by the service.
-      --revprefix REVPREFIX    Service reverse URL prefix. May contain template
-                               patterns such as "${version}" or "${name}". For
-                               example "${name}/api/${version}". Defaults to
-                               PREFIX, if any. Will be used only in URLs returned
-                               by the service e.g. the tile URLs returned by the
-                               WMTS service.
-      -u, --update PERIOD      Service will update after given seconds of
-                               inactivity. Zero or a negative value will disable
-                               update checks. Defaults to 2.0.
-      -S, --styles STYLES      Color mapping styles for variables. Used only, if
-                               one or more CUBE arguments are provided and CONFIG
-                               is not given. Comma-separated list with elements of
-                               the form <var>=(<vmin>,<vmax>) or
-                               <var>=(<vmin>,<vmax>,"<cmap>")
-      -c, --config CONFIG      Use datasets configuration file CONFIG. Cannot be
-                               used if CUBES are provided. If not given and also
-                               CUBES are not provided, the configuration may be
-                               given by environment variable
-                               XCUBE_SERVE_CONFIG_FILE.
-      -b, --base-dir BASE_DIR  Base directory used to resolve relative dataset
-                               paths in CONFIG and relative CUBES paths. Defaults
-                               to value of environment variable
-                               XCUBE_SERVE_BASE_DIR, if given, otherwise defaults
-                               to the parent directory of CONFIG.
-      --tilecache SIZE         In-memory tile cache size in bytes. Unit suffixes
-                               'K', 'M', 'G' may be used. Defaults to '512M'. The
-                               special value 'OFF' disables tile caching.
-      --tilemode MODE          Tile computation mode. This is an internal option
-                               used to switch between different tile computation
-                               implementations. Defaults to 0.
-      -s, --show               Run viewer app. Requires setting the environment
-                               variable XCUBE_VIEWER_PATH to a valid xcube-viewer
-                               deployment or build directory. Refer to
-                               https://github.com/dcs4cop/xcube-viewer for more
-                               information.
-      -q, --quiet              Disable output of log messages to the console
-                               entirely. Note, this will also suppress error and
-                               warning messages.
-      -v, --verbose            Enable output of log messages to the console. Has
-                               no effect if --quiet/-q is used. May be given
-                               multiple times to control the level of log
-                               messages, i.e., -v refers to level INFO, -vv to
-                               DETAIL, -vvv to DEBUG, -vvvv to TRACE. If omitted,
-                               the log level of the console is WARNING.
-      --traceperf              Log extra performance diagnostics using log level
-                               DEBUG.
-      --aws-prof PROFILE       To publish remote CUBEs, use AWS credentials from
-                               section [PROFILE] found in ~/.aws/credentials.
-      --aws-env                To publish remote CUBEs, use AWS credentials from
-                               environment variables AWS_ACCESS_KEY_ID and
-                               AWS_SECRET_ACCESS_KEY
-      --help                   Show this message and exit.
+      --framework FRAMEWORK           Web server framework. Defaults to "tornado"
+      -p, --port PORT                 Service port number. Defaults to 8080
+      -a, --address ADDRESS           Service address. Defaults to "0.0.0.0".
+      -c, --config CONFIG             Configuration YAML or JSON file.  If
+                                      multiple configuration files are passed, they will be merged in
+                                      order.
+      --base-dir BASE_DIR             Directory used to resolve relative paths in
+                                      CONFIG files. Defaults to the parent
+                                      directory of (last) CONFIG file.
+      --prefix URL_PREFIX             Prefix path to be used for all endpoint
+                                      URLs. May include template variables, e.g.,
+                                      "api/{version}".
+      --revprefix REVERSE_URL_PREFIX  Prefix path to be used for reverse endpoint
+                                      URLs that may be reported by server
+                                      responses. May include template variables,
+                                      e.g., "/proxy/{port}". Defaults to value of
+                                      URL_PREFIX.
+      --traceperf                     Whether to output extra performance logs.
+      --update-after TIME             Check for server configuration updates every
+                                      TIME seconds.
+      --stop-after TIME               Unconditionally stop service after TIME
+                                      seconds.
+      --show ASSET                    Show ASSET and exit. Possible values for
+                                      ASSET are 'apis', 'endpoints', 'openapi',
+                                      'config', 'configschema' optionally suffixed
+                                      by '.yaml' or '.json'.
+      --open-viewer                   After starting the server, open xcube Viewer
+                                      in a browser tab.
+      -q, --quiet                     Disable output of log messages to the
+                                      console entirely. Note, this will also
+                                      suppress error and warning messages.
+      -v, --verbose                   Enable output of log messages to the
+                                      console. Has no effect if --quiet/-q is
+                                      used. May be given multiple times to control
+                                      the level of log messages, i.e., -v refers
+                                      to level INFO, -vv to DETAIL, -vvv to DEBUG,
+                                      -vvvv to TRACE. If omitted, the log level of
+                                      the console is WARNING.
+      --help                          Show this message and exit.
 
 
 Configuration File
@@ -124,7 +122,7 @@ Leveled xcube datasets are configured this way:
     Datasets:
 
       - Identifier: my_multi_level_dataset
-        Title: "My Multi-Level Dataset"
+        Title: My Multi-Level Dataset
         FileSystem: file
         Path: my_multi_level_dataset.levels
 
@@ -139,13 +137,13 @@ and the it is referred to by the non-hidden, actual dataset using the ``TimeSeri
     Datasets:
 
       - Identifier: my_dataset
-        Title: "My Dataset"
+        Title: My Dataset
         FileSystem: file
         Path: my_dataset.zarr
         TimeSeriesDataset: my_dataset_opt_for_ts
 
       - Identifier: my_dataset_opt_for_ts
-        Title: "My Dataset optimized for Time-Series"
+        Title: My Dataset optimized for Time-Series
         FileSystem: file
         Path: my_ts_opt_dataset.zarr
         Hidden: True
@@ -201,19 +199,82 @@ Dataset Attribution may be added to the server via *DatasetAttribution*.
       - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
       - "© by EU H2020 CyanoAlert project"
 
+.. _base directory:
+
+Base Directory [optional]
+------------------------------
+
+A typical xcube server configuration comprises many paths, and
+relative paths of known configuration parameters are resolved against
+the ``base_dir`` configuration parameter.
+
+.. code:: yaml
+
+    base_dir: s3://<bucket>/<path-to-your>/<resources>/
+
+However, for values of
+parameters passed to user functions that represent paths in user code,
+this cannot be done automatically. For such situations, expressions
+can be used. An expression is any string between ``"${"` and `"}"`` in a
+configuration value. An expression can contain the variables
+``base_dir`` (a string), ``ctx`` the current server context
+(type ``xcube.webapi.datasets.DatasetsContext``), as well as the function
+``resolve_config_path(path)`` that is used to make a path absolut with
+respect to ``base_dir`` and to normalize it. For example
+
+.. code:: yaml
+
+    Augmentation:
+    Path: augmentation/metadata.py
+    Function: metadata:update_metadata
+    InputParameters:
+        bands_config: ${resolve_config_path("../common/bands.yaml")}
+
+
+.. _viewer configuration:
+
+Viewer Configuration [optional]
+------------------------------
+
+The xcube server endpoint ``/viewer/config/{*path}`` allows
+for configuring the viewer accessible via endpoint ``/viewer``.
+The actual source for the configuration items is configured by xcube
+server configuration using the new entry ``Viewer/Configuration/Path``,
+for example:
+
+.. code:: yaml
+
+    Viewer:
+      Configuration:
+        Path: s3://<bucket>/<viewer-config-dir-path>
+
+*Path* [mandatory]
+must be an absolute filesystem path or a S3 path as in the example above.
+It points to a directory that is expected to contain the the viewer configuration file `config.json` 
+among other configuration resources, such as custom ``favicon.ico`` or ``logo.png``.
+The file ``config.json`` should conform to the
+[configuration JSON Schema](https://github.com/dcs4cop/xcube-viewer/blob/master/src/resources/config.schema.json). 
+All its values are optional, if not provided, 
+[default values](https://github.com/dcs4cop/xcube-viewer/blob/master/src/resources/config.json) 
+are used instead. 
 
 .. _datasets:
 
 Datasets [mandatory]
 --------------------
-In order to publish selected xcube datasets via xcube serve the datasets need to be specified in the configuration
-file of the server. Several xcube datasets may be served within one server, by providing a list of information
-concerning the xcube datasets.
+
+In order to publish selected xcube datasets via ``xcube serve``,
+the datasets need to be described in the server configuration.
 
 .. _remotely stored xcube datasets:
 
-Remotely Stored xcube Datasets
------------------------------
+Remotely stored xcube Datasets
+------------------------------
+
+The following configuration snippet demonstrates how to
+publish static (persistent) xcube datasets stored in
+S3-compatible object storage:
+
 .. code:: yaml
 
     Datasets:
@@ -222,8 +283,8 @@ Remotely Stored xcube Datasets
         BoundingBox: [0.0, 50, 5.0, 52.5]
         FileSystem: s3
         Endpoint: "https://s3.eu-central-1.amazonaws.com"
-        Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
-        Region: "eu-central-1"
+        Path: xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr
+        Region: eu-central-1
         Anonymous: true
         Style: default
         ChunkCacheSize: 250M
@@ -248,7 +309,7 @@ Credentials may be saved either in a file called .aws/credentials with content l
 Or they may be exported as environment variables AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID.
 
 Further down an example for a `locally stored xcube datasets`_ will be given,
-as well as an example of a `on-the-fly generation of xcube datasets`_.
+as well as an example of `dynamic xcube datasets`_.
 
 *Identifier* [mandatory]
 is a unique ID for each xcube dataset, it is ment for machine-to-machine interaction
@@ -291,23 +352,24 @@ configuring the *RequiredScopes* entry whose value is a list of required scopes,
 
 .. _locally stored xcube datasets:
 
-Locally Stored xcube Datasets
+Locally stored xcube Datasets
 -----------------------------
 
-To serve a locally stored dataset the configuration of it would look like the example below:
+The following configuration snippet demonstrates how to
+publish static (persistent) xcube datasets stored in the local filesystem:
 
 .. code:: yaml
 
       - Identifier: local
-        Title: "Local OLCI L2C cube for region SNS"
+        Title: Local OLCI L2C cube for region SNS
         BoundingBox: [0.0, 50, 5.0, 52.5]
         FileSystem: file
         Path: cube-1-250-250.zarr
         Style: default
         TimeSeriesDataset: local_ts
         Augmentation:
-          Path: "compute_extra_vars.py"
-          Function: "compute_variables"
+          Path: compute_extra_vars.py
+          Function: compute_variables
           InputParameters:
             factor_chl: 0.2
             factor_tsm: 0.7
@@ -333,7 +395,7 @@ datacube will not appear among the displayed datasets in xcube viewer.
 
   # Will not appear at all, because it is a "hidden" resource
   - Identifier: local_ts
-    Title: "'local' optimized for time-series"
+    Title: 'local' optimized for time-series
     BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: file
     Path: cube-5-100-200.zarr
@@ -350,13 +412,14 @@ can only be used when providing `authentication`_. By passing the *IsSubstitute*
 a dataset disappears for authorized requests. This might be useful for showing a demo dataset in the viewer for
 user who are not logged in.
 
-.. _on-the-fly generation of xcube datasets:
+.. _dynamic xcube datasets:
 
-On-the-fly Generation of xcube Datasets
----------------------------------------
+Dynamic xcube Datasets
+----------------------
 
-There is the possibility of generating resampled xcube datasets on-the-fly, e.g. in order to
-obtain daily or weekly averages of a xcube dataset.
+There is the possibility to define dynamic xcube datasets
+that are computed on-the-fly. Given here is an example that
+obtains daily or weekly averages of an xcube dataset named "local".
 
 .. code:: yaml
 
@@ -364,11 +427,11 @@ obtain daily or weekly averages of a xcube dataset.
     Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
     BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: memory
-    Path: "resample_in_time.py"
-    Function: "compute_dataset"
+    Path: resample_in_time.py
+    Function: compute_dataset
     InputDatasets: ["local"]
     InputParameters:
-      period: "1W"
+      period: 1W
       incl_stdev: True
     Style: default
     PlaceGroups:
@@ -378,18 +441,45 @@ obtain daily or weekly averages of a xcube dataset.
       IsSubstitute: True
 
 *FileSystem* [mandatory]
-is defined as "memory" for the on-the-fly generated dataset.
+must be "memory" for dynamically generated datasets.
 
 *Path* [mandatory]
-leads to the resample python module. There might be several functions specified in the
-python module, therefore the particular *Function* needs to be included into the configuration.
+points to a Python module. Can be a Python file, a package, or a Zip file.
+
+*Function* [mandatory, mutually exclusive with *Class*]
+references a function in the Python file given by *Path*. Must be suffixed
+by colon-separated module name, if *Path* references a package or Zip file.
+The function receives one or more datasets of type ``xarray.Dataset``
+as defined by *InputDatasets* and optional keyword-arguments as
+given by *InputParameters*, if any. It must return a new ``xarray.Dataset``
+with same spatial coordinates as the inputs.
+If "resample_in_time.py" is compressed among any other modules in a zip archive, the original module name
+must be indicated by the prefix to the function name:
+
+.. code:: yaml
+
+    Path: modules.zip
+    Function: resample_in_time:compute_dataset
+    InputDatasets: ["local"]
+
+
+*Class* [mandatory, mutually exclusive with *Function*]
+references a callable in the Python file given by *Path*. Must be suffixed
+by colon-separated module name, if *Path* references a package or Zip file.
+The callable is either a class derived from
+``xcube.core.mldataset.MultiLevelDataset`` or a function that returns
+an instance of ``xcube.core.mldataset.MultiLevelDataset``.
+The callable receives one or more datasets of type
+``xcube.core.mldataset.MultiLevelDataset`` as defined by *InputDatasets*
+and optional keyword-arguments as given by *InputParameters*, if any.
 
 *InputDatasets* [mandatory]
-specifies the dataset to be resampled.
+specifies the input datasets passed to *Function* or *Class*.
 
-*InputParameter* [mandatory]
-defines which kind of resampling should be performed.
-In the example a weekly average is computed.
+*InputParameters* [mandatory]
+specifies optional keyword arguments passed to *Function* or *Class*.
+In the example, *InputParameters* defines which kind of resampling
+should be performed.
 
 Again, the dataset may be associated with place groups.
 
@@ -406,9 +496,9 @@ Place groups may be stored e.g. in shapefiles or a geoJson.
     PlaceGroups:
       - Identifier: outside-cube
         Title: Points outside the cube
-        Path: "places/outside-cube.geojson"
+        Path: places/outside-cube.geojson
         PropertyMapping:
-          image: "${base_url}/images/outside-cube/${ID}.jpg"
+          image: ${resolve_config_path("images/outside-cube/${ID}.jpg")}
 
 
 *Identifier* [mandatory]
@@ -459,7 +549,7 @@ while an image is provided by the place feature's ``IMG_URL`` property:
 
 
 The values on the right side may either **be** feature property names or **contain** them as placeholders in the form
-``${PROPERTY}``. A special placeholder is ``${base_url}`` which is replaced by the server's current base URL.
+``${PROPERTY}``.
 
 .. _styles:
 
@@ -479,13 +569,13 @@ within the xcube viewer.
       - Identifier: default
         ColorMappings:
           conc_chl:
-            ColorBar: "plasma"
+            ColorBar: plasma
             ValueRange: [0., 24.]
           conc_tsm:
-            ColorBar: "PuBuGn"
+            ColorBar: PuBuGn
             ValueRange: [0., 100.]
           kd489:
-            ColorBar: "jet"
+            ColorBar: jet
             ValueRange: [0., 6.]
           rgb:
             Red:
@@ -512,12 +602,25 @@ The default value ranges are determined by:
 The colorbar name can be set using the
 
 * xcube-specific variable attribute ``color_bar_name``;
-* Otherwise, the default colorbar name will be ``"viridis"``.
+* Otherwise, the default colorbar name will be ``viridis``.
 
 The special name *rgb* may be used to generate an RGB-image
 from any other three dataset variables used for the individual
 *Red*, *Green* and *Blue* channels of the resulting image.
 An example is shown in the configuration above.
+
+Colormaps may be reversed by using name suffix "_r".
+They also can have alpha blending indicated by name suffix "_alpha".
+Both, reversed and alpha blending is possible as well and can be configured by name suffix "_r_alpha".
+
+.. code:: yaml
+
+    Styles:
+      - Identifier: default
+        ColorMappings:
+          conc_chl:
+            ColorBar: plasma_r_alpha
+            ValueRange: [0., 24.]
 
 .. _example:
 
@@ -568,8 +671,9 @@ Datasets, which are stored in the same location, may be configured in the config
             #  endpoint_url: https://s3.eu-central-1.amazonaws.com
         Datasets:
           - Path: "*2.zarr"
-            Style: "default"
+            Style: default
             # ChunkCacheSize: 1G
+
 
 *Identifier* [mandatory]
 is a unique ID for each DataStore.
@@ -604,11 +708,39 @@ Example Stores
     [I 190924 17:08:54 service:158] service running, listening on localhost:8080, try http://localhost:8080/datasets
     [I 190924 17:08:54 service:159] press CTRL+C to stop service
 
+.. _example azure blob storage filesystem stores:
+
+Example Azure Blob Storage filesystem Stores
+============================================
+
+xcube server includes support for Azure Blob Storage filesystem by a data store `abfs`.
+This enables access to data cubes (`.zarr` or `.levels`) in Azure blob storage as shown here:
+
+
+.. code:: yaml
+
+    DataStores:
+      - Identifier: siec
+        StoreId: abfs
+        StoreParams:
+          root: my_blob_container
+          max_depth: 1
+          storage_options:
+            anon: true
+            account_name: "xxx"
+            account_key': "xxx"
+            # or
+            # connection_string: "xxx"
+        Datasets:
+          - Path: "*.levels"
+            Style: default
+
+
 Web API
 =======
 
-The xcube server has a dedicated `Web API Documentation <https://app.swaggerhub.com/apis-docs/bcdev/xcube-server>`_
-on SwaggerHub. It also allows you to explore the API of existing xcube-servers.
+The xcube server has a dedicated self describing Web API Documentation. After starting the server, you can check the
+various functions provided by xcube Web API. To explore the functions, open ``<base-url>/openapi.html``.
 
 The xcube server implements the OGC WMTS RESTful and KVP architectural styles of the
 `OGC WMTS 1.0.0 specification <http://www.opengeospatial.org/standards/wmts>`_. The following operations are supported:

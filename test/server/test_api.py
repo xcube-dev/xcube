@@ -200,7 +200,7 @@ class ApiContextTest(unittest.TestCase):
         self.assertIsInstance(api_ctx.config, FrozenDict)
         self.assertEqual(config, api_ctx.config)
         self.assertEqual((), api_ctx.apis)
-        self.assertIsInstance(api_ctx.open_api_doc, dict)
+        self.assertIsInstance(api_ctx.get_open_api_doc(), dict)
 
     def test_async_exec(self):
         framework = MockFramework()
@@ -276,6 +276,20 @@ class ApiHandlerTest(unittest.TestCase):
 
 
 class ApiRequestTest(unittest.TestCase):
+
+    def test_urls(self):
+        request = MockApiRequest(dict(details='1'),
+                                 reverse_url_prefix='/proxy/9192')
+        self.assertEqual('http://localhost:8080/datasets?details=1',
+                         request.url)
+        self.assertEqual('http://localhost:8080',
+                         request.base_url)
+        self.assertEqual('http://localhost:8080/proxy/9192',
+                         request.reverse_base_url)
+        self.assertEqual('http://localhost:8080/places',
+                         request.url_for_path('places'))
+        self.assertEqual('http://localhost:8080/proxy/9192/places',
+                         request.url_for_path('places', reverse=True))
 
     def test_query_args(self):
         request = MockApiRequest(query_args=dict(details=['1']))

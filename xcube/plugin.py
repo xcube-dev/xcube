@@ -91,6 +91,7 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
 _FS_STORAGE_ITEMS = (
     ('file', 'local filesystem'),
     ('s3', 'AWS S3 compatible object storage'),
+    ('abfs', 'Azure blob compatible object storage'),
     ('memory', 'in-memory filesystem')
 )
 
@@ -225,8 +226,11 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         'datasets',
         'tiles',
         'timeseries',
+        'volumes',
+        'ows.stac',
         'ows.wmts',
         's3',
+        'viewer',
     ]
     for api_name in server_api_names:
         ext_registry.add_extension(

@@ -51,11 +51,6 @@ from ..places.controllers import find_places
 _CRS84 = pyproj.CRS.from_string('CRS84')
 
 
-# TODO (forman): Is this really still in use?
-class CubeIsNotDisplayable(ValueError):
-    pass
-
-
 def find_dataset_places(ctx: DatasetsContext,
                         place_group_id: str,
                         ds_id: str,
@@ -147,8 +142,8 @@ def get_datasets(ctx: DatasetsContext,
                                     granted_scopes=granted_scopes)
                     )
                 filtered_dataset_dicts.append(dataset_dict)
-            except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
-                LOG.warning(f'Skipping dataset {ds_id}: {e}')
+            except Exception as e:
+                LOG.warning(f'Skipping dataset {ds_id}: {e}', exc_info=True)
         dataset_dicts = filtered_dataset_dicts
 
     if point:

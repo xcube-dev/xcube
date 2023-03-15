@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Type, Dict, Optional, Any
+from typing import Type, Dict, Optional, Any, Sequence
 
 import fsspec
 
@@ -31,6 +31,7 @@ from .impl.dataset import DatasetZarrFsDataAccessor
 from .impl.fs import FileFsAccessor
 from .impl.fs import MemoryFsAccessor
 from .impl.fs import S3FsAccessor
+from .impl.fs import AzureFsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
 from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
@@ -59,7 +60,7 @@ def register_fs_accessor_class(
     _FS_ACCESSOR_CLASSES[protocol] = fs_accessor_class
 
 
-for cls in (FileFsAccessor, S3FsAccessor, MemoryFsAccessor):
+for cls in (FileFsAccessor, S3FsAccessor, AzureFsAccessor, MemoryFsAccessor):
     register_fs_accessor_class(cls)
 
 
@@ -188,10 +189,22 @@ def new_fs_data_store(
         root: str = '',
         max_depth: Optional[int] = 1,
         read_only: bool = False,
+        includes: Optional[Sequence[str]] = None,
+        excludes: Optional[Sequence[str]] = None,
         storage_options: Dict[str, Any] = None
 ) -> FsDataStore:
     """
     Create a new instance of a filesystem-based data store.
+
+    The data store is capable of filtering the data identifiers reported
+    by ``get_data_ids()``. For this purpose the optional keywords
+    `excludes` and `includes` are used which can both take the form of
+    a wildcard pattern or a sequence of wildcard patterns:
+
+    * ``excludes``: if given and if any pattern matches the identifier,
+      the identifier is not reported.
+    * ``includes``: if not given or if any pattern matches the identifier,
+      the identifier is reported.
 
     :param protocol: The filesystem protocol,
         for example "file", "s3", "memory".
@@ -201,6 +214,12 @@ def new_fs_data_store(
         Defaults to 1.
     :param read_only: Whether this is a read-only store.
         Defaults to False.
+    :param includes: Optional sequence of wildcards that include
+        certain filesystem paths. Affects the data identifiers (paths)
+        returned by `get_data_ids()`. By default, all paths are included.
+    :param excludes: Optional sequence of wildcards that exclude
+        certain filesystem paths. Affects the data identifiers (paths)
+        returned by `get_data_ids()`. By default, no paths are excluded.
     :param storage_options: Options specific to the underlying filesystem
         identified by *protocol*.
         Used to instantiate the filesystem.
@@ -212,6 +231,8 @@ def new_fs_data_store(
                     for k, v in dict(root=root,
                                      max_depth=max_depth,
                                      read_only=read_only,
+                                     includes=includes,
+                                     excludes=excludes,
                                      storage_options=storage_options).items()
                     if v is not None}
     assert_valid_params(store_params,

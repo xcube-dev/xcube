@@ -38,23 +38,35 @@ from .helpers import _to_int_or_float
 class RegularGridMapping(GridMapping):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        kwargs.pop('is_regular', None)
+        super().__init__(is_regular=True, **kwargs)
         self._xy_coords = None
+
+    def _new_x_coords(self) -> xr.DataArray:
+        self._assert_regular()
+        x_res = self.x_res
+        x1, x2 = self.x_min + x_res / 2, self.x_max - x_res / 2
+        x_name, _ = self.xy_dim_names
+        return xr.DataArray(da.linspace(x1, x2,
+                                        self.width,
+                                        chunks=self.tile_width),
+                            dims=self.xy_dim_names[0])
+
+    def _new_y_coords(self) -> xr.DataArray:
+        self._assert_regular()
+        y_res = self.y_res
+        y1, y2 = self.y_min + y_res / 2, self.y_max - y_res / 2
+        if not self.is_j_axis_up:
+            y1, y2 = y2, y1
+        return xr.DataArray(da.linspace(y1, y2,
+                                        self.height,
+                                        chunks=self.tile_height),
+                            dims=self.xy_dim_names[1])
 
     def _new_xy_coords(self) -> xr.DataArray:
         self._assert_regular()
-        x_res_05, y_res_05 = self.x_res / 2, self.y_res / 2
-        x1, x2 = self.x_min + x_res_05, self.x_max - x_res_05
-        y1, y2 = self.y_min + y_res_05, self.y_max - y_res_05
-        if not self.is_j_axis_up:
-            y1, y2 = y2, y1
-        x_name, y_name = self.xy_dim_names
-        x_coords_1d = xr.DataArray(da.linspace(x1, x2, self.width,
-                                               chunks=self.tile_width),
-                                   dims=x_name)
-        y_coords_1d = xr.DataArray(da.linspace(y1, y2, self.height,
-                                               chunks=self.tile_height),
-                                   dims=y_name)
+        x_coords_1d = self.x_coords
+        y_coords_1d = self.y_coords
         y_coords_2d, x_coords_2d = xr.broadcast(y_coords_1d, x_coords_1d)
         xy_coords = xr.concat([x_coords_2d, y_coords_2d],
                               dim='coord').chunk((2,
@@ -104,7 +116,6 @@ def new_regular_grid_mapping(
         xy_res=(x_res, y_res),
         xy_var_names=_default_xy_var_names(crs),
         xy_dim_names=_default_xy_dim_names(crs),
-        is_regular=True,
         is_lon_360=x_max > 180,
         is_j_axis_up=is_j_axis_up
     )

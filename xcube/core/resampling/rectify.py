@@ -1,23 +1,23 @@
 # The MIT License (MIT)
-# Copyright (c) 2020 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 from typing import Mapping, Optional, Sequence, Tuple, Union
 
@@ -29,6 +29,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_spatial_subset
 from xcube.util.dask import compute_array_from_func
+from .cf import maybe_encode_grid_mapping
 
 
 def rectify_dataset(source_ds: xr.Dataset,
@@ -37,6 +38,8 @@ def rectify_dataset(source_ds: xr.Dataset,
                     source_gm: GridMapping = None,
                     xy_var_names: Tuple[str, str] = None,
                     target_gm: GridMapping = None,
+                    encode_cf: bool = True,
+                    gm_name: Optional[str] = None,
                     tile_size: Union[int, Tuple[int, int]] = None,
                     is_j_axis_up: bool = None,
                     output_ij_names: Tuple[str, str] = None,
@@ -65,18 +68,23 @@ def rectify_dataset(source_ds: xr.Dataset,
     or *tile_size* is given, and the number of tiles is
     greater than one in the output's x- or y-direction, then the
     returned dataset will be composed of lazy, chunked dask
-    arrays. Otherwise the returned dataset will be composed
+    arrays. Otherwise, the returned dataset will be composed
     of ordinary numpy arrays.
 
     :param source_ds: Source dataset grid mapping.
     :param var_names: Optional variable name or sequence of
         variable names.
-    :param source_gm: Target dataset grid mapping.
+    :param source_gm: Source dataset grid mapping.
     :param xy_var_names: Optional tuple of the x- and y-coordinate
         variables in *source_ds*. Ignored if *source_gm* is given.
-    :param target_gm: Optional output geometry. If not given,
+    :param target_gm: Optional target geometry. If not given,
         output geometry will be computed to spatially fit *dataset*
         and to retain its spatial resolution.
+    :param encode_cf: Whether to encode the target grid mapping
+        into the resampled dataset in a CF-compliant way.
+        Defaults to ``True``.
+    :param gm_name: Name for the grid mapping variable.
+        Defaults to "crs". Used only if *encode_cf* is ``True``.
     :param tile_size: Optional tile size for the output.
     :param is_j_axis_up: Whether y coordinates are increasing with
         positive image j axis.
@@ -173,7 +181,12 @@ def rectify_dataset(source_ds: xr.Dataset,
                                                dims=dst_dims,
                                                coords=dst_ij_coords)
 
-    return xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs)
+    return maybe_encode_grid_mapping(encode_cf,
+                                     xr.Dataset(dst_vars,
+                                                coords=dst_ds_coords,
+                                                attrs=src_attrs),
+                                     target_gm,
+                                     gm_name)
 
 
 def _select_variables(
