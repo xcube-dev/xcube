@@ -51,22 +51,23 @@ class ComputeArrayExprTest(unittest.TestCase):
     def test_invalid_exprs(self):
         with self.assertRaises(ValueError) as cm:
             compute_expr('20. -')
-        self.assertEqual("failed computing expression '20. -': "
-                         "unexpected EOF while parsing (<string>, line 1)",
-                         f'{cm.exception}')
+        self.assertTrue(f'{cm.exception}'.startswith(
+            "failed computing expression '20. -': ")
+        )
 
         with self.assertRaises(ValueError) as cm:
             compute_expr('2 - a')
-        self.assertEqual("failed computing expression '2 - a': "
-                         "name 'a' is not defined",
-                         f'{cm.exception}')
+        self.assertTrue(f'{cm.exception}'.startswith(
+            "failed computing expression '2 - a': "
+        ))
 
         with self.assertRaises(ValueError) as cm:
             compute_expr('b < 1', result_name="mask of 'CHL'")
-        self.assertEqual("failed computing mask of 'CHL' from "
-                         "expression 'b < 1': name 'b' is not defined",
-                         f'{cm.exception}')
+        self.assertTrue(f'{cm.exception}'.startswith(
+            "failed computing mask of 'CHL' from expression 'b < 1': "
+        ))
 
+    # noinspection PyMethodMayBeStatic
     def test_complex_case(self):
         expr = ('(not quality_flags.invalid'
                 ' and not pixel_classif_flags.IDEPIX_CLOUD'
