@@ -153,6 +153,8 @@ def _find_1d_coord_var_by_common_names(
         coords: Sequence[xr.DataArray],
         common_xy_names: Sequence[Tuple[str, str]],
 ) -> Optional[Tuple[xr.DataArray, xr.DataArray]]:
+
+    # Priority 1: find var by "axis" attribute
     x_coords = None
     y_coords = None
     for var in coords:
@@ -163,6 +165,7 @@ def _find_1d_coord_var_by_common_names(
     if x_coords is not None and y_coords is not None:
         return x_coords, y_coords
 
+    # Priority 2: find var where dim name == common name == var name
     x_coords = None
     y_coords = None
     for var in coords:
@@ -174,6 +177,7 @@ def _find_1d_coord_var_by_common_names(
     if x_coords is not None and y_coords is not None:
         return x_coords, y_coords
 
+    # Priority 3: find var where dim name == common name
     x_coords = None
     y_coords = None
     for var in coords:
@@ -208,8 +212,8 @@ def _parse_crs(dataset: xr.Dataset,
         return (pyproj.CRS.from_cf(gm_var.attrs),
                 gm_var.attrs.get("grid_mapping_name"))
     except pyproj.exceptions.CRSError as e:
-        raise ValueError(f"illegal value for"
-                         f" grid mapping variable {gm_var_name!r}") from e
+        raise ValueError(f"variable {gm_var_name!r}"
+                         f" is not a valid grid mapping") from e
 
 
 def _is_valid_1d_coord_var(data_var: xr.DataArray,
