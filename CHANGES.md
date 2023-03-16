@@ -1,3 +1,6 @@
+## Changes in 1.0.2 (in development)
+
+
 ## Changes in 1.0.1
 
 ### Fixes
