@@ -471,3 +471,123 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
         dataset.attrs.update(to_json_value(dataset.attrs))
         for var in dataset.variables.values():
             var.attrs.update(to_json_value(var.attrs))
+
+
+KERCHUNK_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        # log_access=JsonBooleanSchema(
+        #     default=False
+        # ),
+        # cache_size=JsonIntegerSchema(
+        #     minimum=0,
+        # ),
+        # group=JsonStringSchema(
+        #     description='Group path.'
+        #                 ' (a.k.a. path in zarr terminology.).',
+        #     min_length=1,
+        # ),
+        # chunks=JsonObjectSchema(
+        #     description='Optional chunk sizes along each dimension.'
+        #                 ' Chunk size values may be None, "auto"'
+        #                 ' or an integer value.',
+        #     examples=[{'time': None, 'lat': 'auto', 'lon': 90},
+        #               {'time': 1, 'y': 512, 'x': 512}],
+        #     additional_properties=True,
+        # ),
+        # decode_cf=JsonBooleanSchema(
+        #     description='Whether to decode these variables,'
+        #                 ' assuming they were saved according to'
+        #                 ' CF conventions.',
+        #     default=True,
+        # ),
+        # mask_and_scale=JsonBooleanSchema(
+        #     description='If True, replace array values equal'
+        #                 ' to attribute "_FillValue" with NaN. '
+        #                 ' Use "scale_factor" and "add_offset"'
+        #                 ' attributes to compute actual values.',
+        #     default=True,
+        # ),
+        # decode_times=JsonBooleanSchema(
+        #     description='If True, decode times encoded in the'
+        #                 ' standard NetCDF datetime format '
+        #                 'into datetime objects. Otherwise,'
+        #                 ' leave them encoded as numbers.',
+        #     default=True,
+        # ),
+        # decode_coords=JsonBooleanSchema(
+        #     description='If True, decode the \"coordinates\"'
+        #                 ' attribute to identify coordinates in '
+        #                 'the resulting dataset.',
+        #     default=True,
+        # ),
+        # drop_variables=JsonArraySchema(
+        #     items=JsonStringSchema(min_length=1),
+        # ),
+        # consolidated=JsonBooleanSchema(
+        #     description='Whether to open the store using'
+        #                 ' Zarr\'s consolidated metadata '
+        #                 'capability. Only works for stores that'
+        #                 ' have already been consolidated.',
+        #     default=False,
+        # ),
+    ),
+    required=[],
+    additional_properties=False
+)
+
+
+class DatasetKerchunkFsDataAccessor(DatasetFsDataAccessor):
+    """
+    Opener/writer extension name: "dataset:kerchunk:<protocol>"
+    """
+
+    @classmethod
+    def get_format_id(cls) -> str:
+        return 'kerchunk'
+
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def get_open_data_params_schema(self, data_id: str = None) \
+            -> JsonObjectSchema:
+        return self.add_storage_options_to_params_schema(
+            KERCHUNK_OPEN_DATA_PARAMS_SCHEMA
+        )
+
+    def open_data(self,
+                  data_id: str,
+                  **open_params) -> xr.Dataset:
+        assert_instance(data_id, str, name='data_id')
+        fs, root, open_params = self.load_fs(open_params)
+        # zarr_store = fs.get_mapper(data_id)
+        ref = fs.open(data_id, compression='zstd')
+        kerchunk_store = fsspec.get_mapper(
+            "reference://", fo=ref, target_protocol="http",
+            remote_options=open_params, target_options={"compression": 'zstd'}
+        )
+        try:
+            dataset = xr.open_zarr(kerchunk_store,
+                                   consolidated=False,
+                                   **open_params)
+        except ValueError as e:
+            raise DataStoreError(f'Failed to open'
+                                 f' dataset {data_id!r}: {e}') from e
+
+        dataset.zarr_store.set(kerchunk_store)
+        return dataset
+
+    # noinspection PyMethodMayBeStatic
+    def get_write_data_params_schema(self) -> JsonObjectSchema:
+        raise NotImplementedError("Writing as Kerchunk not possible")
+
+    def write_data(self,
+                   data: xr.Dataset,
+                   data_id: str,
+                   replace=False,
+                   **write_params) -> str:
+        raise NotImplementedError("Writing as Kerchunk not possible")
+
+    def delete_data(self,
+                    data_id: str,
+                    **delete_params):
+        fs, root, delete_params = self.load_fs(delete_params)
+        delete_params.pop('recursive', None)
+        fs.delete(data_id, recursive=True, **delete_params)

@@ -86,6 +86,8 @@ _FILENAME_EXT_TO_FORMAT = {
     '.geotiff': 'geotiff',
     '.shp': 'shapefile',
     '.geojson': 'geojson',
+    '.json': 'kerchunk',
+    '.zstd': 'kerchunk'
 }
 
 _FORMAT_TO_DATA_TYPE_ALIASES = {
@@ -95,6 +97,7 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
     'geotiff': (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
     'geojson': (GEO_DATA_FRAME_TYPE.alias,),
     'shapefile': (GEO_DATA_FRAME_TYPE.alias,),
+    'kerchunk': (DATASET_TYPE.alias,)
 }
 
 _DataId = str
