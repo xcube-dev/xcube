@@ -23,7 +23,7 @@ import json
 import socket
 import threading
 from pathlib import Path
-from typing import Optional, Union, Mapping, Any, Tuple
+from typing import Optional, Union, Mapping, Any, Tuple, Dict
 
 import tornado.ioloop
 import xarray as xr
@@ -104,7 +104,7 @@ class Viewer:
             # noinspection PyBroadException
             try:
                 self._server.stop()
-            except:
+            except BaseException:
                 pass
         self._server = None
         self._io_loop = None
@@ -112,12 +112,18 @@ class Viewer:
     def add_dataset(self,
                     dataset: Union[xr.Dataset, MultiLevelDataset],
                     ds_id: Optional[str] = None,
-                    title: Optional[str] = None):
+                    title: Optional[str] = None,
+                    style: Optional[str] = None,
+                    color_mappings: Dict[str, Dict[str, Any]] = None):
         if not self._check_server_running():
             return
         datasets_ctx: DatasetsContext = \
             self._server.ctx.get_api_ctx('datasets')
-        return datasets_ctx.add_dataset(dataset, ds_id=ds_id, title=title)
+        return datasets_ctx.add_dataset(dataset,
+                                        ds_id=ds_id,
+                                        title=title,
+                                        style=style,
+                                        color_mappings=color_mappings)
 
     def remove_dataset(self, ds_id: str):
         if not self._check_server_running():
@@ -139,10 +145,11 @@ class Viewer:
             )
         except ImportError as e:
             print(f"Error: {e}; Trying to open Viewer in web browser...")
+            # noinspection PyBroadException
             try:
                 import webbrowser
                 webbrowser.open_new_tab(self.viewer_url)
-            except:
+            except BaseException:
                 print("Failed too.")
 
     def info(self):
