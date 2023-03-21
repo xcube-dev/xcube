@@ -99,6 +99,11 @@ class Viewer:
     def is_server_running(self) -> bool:
         return self._server is not None
 
+    @property
+    def datasets_ctx(self) -> DatasetsContext:
+        assert self.is_server_running
+        return self._server.ctx.get_api_ctx('datasets')
+
     def stop_server(self):
         if self._server is not None:
             # noinspection PyBroadException
@@ -117,20 +122,16 @@ class Viewer:
                     color_mappings: Dict[str, Dict[str, Any]] = None):
         if not self._check_server_running():
             return
-        datasets_ctx: DatasetsContext = \
-            self._server.ctx.get_api_ctx('datasets')
-        return datasets_ctx.add_dataset(dataset,
-                                        ds_id=ds_id,
-                                        title=title,
-                                        style=style,
-                                        color_mappings=color_mappings)
+        return self.datasets_ctx.add_dataset(dataset,
+                                             ds_id=ds_id,
+                                             title=title,
+                                             style=style,
+                                             color_mappings=color_mappings)
 
     def remove_dataset(self, ds_id: str):
         if not self._check_server_running():
             return
-        datasets_ctx: DatasetsContext = \
-            self._server.ctx.get_api_ctx('datasets')
-        datasets_ctx.remove_dataset(ds_id)
+        self.datasets_ctx.remove_dataset(ds_id)
 
     def show(self,
              width: Union[int, str] = "100%",

@@ -228,7 +228,11 @@ class DatasetsContext(ResourcesContext):
         assert_given(ds_id, 'ds_id')
         if ds_id in self._dataset_cache:
             del self._dataset_cache[ds_id]
-            # TODO: remove from self._dataset_configs
+        self._dataset_configs = [
+            dc
+            for dc in self._dataset_configs
+            if dc["Identifier"] != ds_id
+        ]
 
     def add_ml_dataset(self,
                        ml_dataset: MultiLevelDataset,
