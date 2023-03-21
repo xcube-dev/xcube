@@ -135,7 +135,7 @@ class Viewer:
             If not given, an identifier will be generated and returned.
         :param title: Optional dataset title.
             Overrides a title given by dataset metadata.
-        :param style: Optional name of a style that must exists
+        :param style: Optional name of a style that must exist
             in the server configuration.
         :param color_mappings: Maps a variable name to a specific
             color mapping that is a dictionary comprising a "ValueRange"
