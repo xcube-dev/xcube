@@ -85,26 +85,32 @@ class Viewer:
 
     @property
     def server_config(self) -> Mapping[str, Any]:
+        """The server configuration used by this viewer."""
         return self._server_config
 
     @property
     def server_url(self):
+        """The URL of the server used by this viewer."""
         return self._server_url
 
     @property
     def viewer_url(self):
+        """The URL of this viewer."""
         return self._viewer_url
 
     @property
     def is_server_running(self) -> bool:
+        """Whether the server is running."""
         return self._server is not None
 
     @property
     def datasets_ctx(self) -> DatasetsContext:
+        """Gets the context for the server's "datasets" API."""
         assert self.is_server_running
         return self._server.ctx.get_api_ctx('datasets')
 
     def stop_server(self):
+        """Stops this viewer's server."""
         if self._server is not None:
             # noinspection PyBroadException
             try:
@@ -120,6 +126,23 @@ class Viewer:
                     title: Optional[str] = None,
                     style: Optional[str] = None,
                     color_mappings: Dict[str, Dict[str, Any]] = None):
+        """
+        Add a dataset to this viewer.
+
+        :param dataset: The dataset to me added. Must be an instance of
+            ``xarray.Dataset`` or ``xcube.core.mldataset.MultiLevelDataset``.
+        :param ds_id: Optional dataset identifier.
+            If not given, an identifier will be generated and returned.
+        :param title: Optional dataset title.
+            Overrides a title given by dataset metadata.
+        :param style: Optional name of a style that must exists
+            in the server configuration.
+        :param color_mappings: Maps a variable name to a specific
+            color mapping that is a dictionary comprising a "ValueRange"
+            (a pair of numbers) and a "ColorBar"
+            (a matplotlib color bar name).
+        :return: The dataset identifier.
+        """
         if not self._check_server_running():
             return
         return self.datasets_ctx.add_dataset(dataset,
@@ -129,6 +152,11 @@ class Viewer:
                                              color_mappings=color_mappings)
 
     def remove_dataset(self, ds_id: str):
+        """
+        Remove a dataset from this viewer.
+
+        :param ds_id: The identifier of the dataset to be removed.
+        """
         if not self._check_server_running():
             return
         self.datasets_ctx.remove_dataset(ds_id)
@@ -136,6 +164,15 @@ class Viewer:
     def show(self,
              width: Union[int, str] = "100%",
              height: Union[str, int] = 800):
+        """
+        Show this viewer as an iframe.
+        Intended to be used in a Jupyter notebook.
+        If used outside a Jupyter notebook the viewer will be shown
+        as a new browser tab.
+
+        :param width: The width of the viewer's iframe.
+        :param height: The height of the viewer's iframe.
+        """
         try:
             from IPython.core.display import HTML
             return HTML(
@@ -154,6 +191,7 @@ class Viewer:
                 print("Failed too.")
 
     def info(self):
+        """Output viewer info."""
         # Consider outputting this as HTML if in Notebook
         print(f"Server: {self.server_url}")
         print(f"Viewer: {self.viewer_url}")
