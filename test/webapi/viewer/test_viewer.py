@@ -107,7 +107,7 @@ class ViewerTest(unittest.TestCase):
             self.assertEqual(expected_server_url,
                              viewer.server_url)
 
-            expected_viewer_url = f"{expected_server_url}/viewer" \
+            expected_viewer_url = f"{expected_server_url}/viewer/" \
                                   f"?serverUrl={expected_server_url}"
             self.assertEqual(expected_viewer_url,
                              viewer.viewer_url)
