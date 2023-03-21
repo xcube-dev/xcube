@@ -11,7 +11,8 @@ def init_plugin(ext_registry: ExtensionRegistry):
     ext_registry.add_extension(component=object(), point='test.util.test_plugin', name='ext3')
 
 
-def init_plugin_bad():
+# noinspection PyUnusedLocal
+def init_plugin_bad(ext_registry: ExtensionRegistry):
     raise RuntimeError()
 
 
