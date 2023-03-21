@@ -38,7 +38,9 @@ class ViewerContext(ResourcesContext):
 
     @cached_property
     def config_path(self) -> Optional[str]:
+        if "Viewer" not in self.config:
+            return None
         return self.get_config_path(
-            self.config.get("Viewer", {}).get("Configuration", {}),
+            self.config["Viewer"].get("Configuration", {}),
             "'Configuration' item of 'Viewer'"
         )

@@ -37,6 +37,8 @@ class FsStoreSubset:
 
             cls.fs, cls.root = cls.get_fs_root()
 
+            cls.fs.delete(cls.root, recursive=True)
+
             dir_path = f'{cls.root}/l1b'
             cls.fs.mkdir(dir_path)
             for i in range(3):

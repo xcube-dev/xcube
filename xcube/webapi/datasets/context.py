@@ -188,10 +188,14 @@ class DatasetsContext(ResourcesContext):
                                  dict(Identifier=ml_dataset.ds_id,
                                       Hidden=True)))
 
-    def add_dataset(self,
-                    dataset: Union[xr.Dataset, MultiLevelDataset],
-                    ds_id: Optional[str] = None,
-                    title: Optional[str] = None):
+    def add_dataset(
+            self,
+            dataset: Union[xr.Dataset, MultiLevelDataset],
+            ds_id: Optional[str] = None,
+            title: Optional[str] = None,
+            style: Optional[str] = None,
+            color_mappings: Dict[str, Dict[str, Any]] = None
+    ):
         assert_instance(dataset, (xr.Dataset, MultiLevelDataset), 'dataset')
         if isinstance(dataset, xr.Dataset):
             ml_dataset = BaseMultiLevelDataset(dataset, ds_id=ds_id)
@@ -209,6 +213,12 @@ class DatasetsContext(ResourcesContext):
         dataset_config = dict(Identifier=ds_id,
                               Title=title or dataset.attrs.get("title",
                                                                ds_id))
+        if style is not None:
+            dataset_config.update(dict(Style=style))
+        if color_mappings is not None:
+            style = style or ds_id
+            dataset_config.update(dict(Style=style))
+            self._cm_styles[style] = color_mappings
         self._dataset_cache[ds_id] = ml_dataset, dataset_config
         self._dataset_configs.append(dataset_config)
         return ds_id
@@ -218,7 +228,11 @@ class DatasetsContext(ResourcesContext):
         assert_given(ds_id, 'ds_id')
         if ds_id in self._dataset_cache:
             del self._dataset_cache[ds_id]
-            # TODO: remove from self._dataset_configs
+        self._dataset_configs = [
+            dc
+            for dc in self._dataset_configs
+            if dc["Identifier"] != ds_id
+        ]
 
     def add_ml_dataset(self,
                        ml_dataset: MultiLevelDataset,
