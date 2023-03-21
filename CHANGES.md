@@ -1,11 +1,16 @@
 ## Changes in 1.0.2 (in development)
 
+* xcube is now compatible with Python 3.10. (#583)
+
 * The `Viewer.add_dataset()` method of the xcube JupyterLab integration 
   has been enhanced by two optional keyword arguments `style` and 
   `color_mappings` to allow for customized, initial color mapping
   of dataset variables. The example notebook 
   [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
   has been updated to reflect the enhancement.
+
+* Fixed an issue with new xcube data store `abfs` 
+  for the Azure Blob filesystem. (#798)
 
 ## Changes in 1.0.1
 
