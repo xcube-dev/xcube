@@ -86,7 +86,7 @@
     set to the value of `gm_name`.
   
 * Added Notebook 
-  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl-2.ipynb)
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
   that explains how xcube Viewer can now be utilised in JupyterLab
   using the new (still experimental) xcube JupyterLab extension
   [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
@@ -280,12 +280,6 @@
   
 * Added convenience method `DataStore.list_data_ids()` that works 
   like `get_data_ids()`, but returns a list instead of an iterator. (#776)
-
-* Added Notebook 
-  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl-2.ipynb)
-  that explains how xcube Viewer can now be utilised in JupyterLab
-  using the new (still experimental) xcube JupyterLab extension
-  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
 
 * Replaced usages of deprecated numpy dtype `numpy.bool` 
   by Python type `bool`. 
