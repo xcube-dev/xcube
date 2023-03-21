@@ -1,5 +1,11 @@
 ## Changes in 1.0.2 (in development)
 
+* The `Viewer.add_dataset()` method of the xcube JupyterLab integration 
+  has been enhanced by two optional keyword arguments `style` and 
+  `color_mappings` to allow for customized, initial color mapping
+  of dataset variables. The example notebook 
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
+  has been updated to reflect the enhancement.
 
 ## Changes in 1.0.1
 
@@ -274,12 +280,6 @@
   
 * Added convenience method `DataStore.list_data_ids()` that works 
   like `get_data_ids()`, but returns a list instead of an iterator. (#776)
-
-* Added Notebook 
-  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
-  that explains how xcube Viewer can now be utilised in JupyterLab
-  using the new (still experimental) xcube JupyterLab extension
-  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
 
 * Replaced usages of deprecated numpy dtype `numpy.bool` 
   by Python type `bool`. 
