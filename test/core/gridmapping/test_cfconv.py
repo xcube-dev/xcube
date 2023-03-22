@@ -284,6 +284,19 @@ class FindGridMappingForVarTest(unittest.TestCase):
         self.assertEqual(("a", "b"), gm.xy_var_names)
         self.assertEqual(("x", "y"), gm.xy_dim_names)
 
+    def test_with_gm_var_but_without_spatial_var(self):
+        ds = xr.Dataset(
+            data_vars={
+                "crs": self.new_crs_var(CRS_UTM_33N),
+            },
+            coords={
+                "x": self.new_x_coord_var(),
+                "y": self.new_y_coord_var(),
+            }
+        )
+        gm = find_grid_mapping_for_data_var(ds, "crs")
+        self.assertIsNone(gm)
+
     def test_without_gm_var_and_common_dim_and_var_name(self):
         ds = xr.Dataset(
             data_vars={

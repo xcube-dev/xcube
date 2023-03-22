@@ -61,9 +61,10 @@ def find_grid_mappings_for_dataset(dataset: xr.Dataset) \
                 break
         if not found:
             gmt = find_grid_mapping_for_data_var(dataset, var_name)
-            _, _, xy_coords = gmt
-            xy_dims = _get_xy_dims_from_xy_coords(xy_coords)
-            dims_to_grid_mappings[xy_dims] = gmt
+            if gmt is not None:
+                _, _, xy_coords = gmt
+                xy_dims = _get_xy_dims_from_xy_coords(xy_coords)
+                dims_to_grid_mappings[xy_dims] = gmt
     return list(dims_to_grid_mappings.values())
 
 
