@@ -1,5 +1,7 @@
 ## Changes in 1.0.2 (in development)
 
+* Includes xcube-viewer version 1.0.1-dev.1. 
+
 * xcube is now compatible with Python 3.10. (#583)
 
 * The `Viewer.add_dataset()` method of the xcube JupyterLab integration 
