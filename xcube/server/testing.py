@@ -19,7 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import asyncio
 import json
 import socket
 import threading
@@ -29,7 +28,6 @@ from contextlib import closing
 from typing import Dict, Optional, Any, Union, Tuple
 
 import urllib3
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
@@ -54,7 +52,6 @@ class ServerTestCase(unittest.TestCase, ABC):
             'address': 'localhost'
         })
         self.add_config(config)
-        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         er = self.get_extension_registry()
         self.add_extension(er)
         self.server = Server(framework=TornadoFramework(), config=config,
