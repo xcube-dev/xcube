@@ -9,6 +9,7 @@ env:
   APP_NAME: xcube
   ORG_NAME: bcdev
   IMG_REG_NAME: quay.io
+  XCUBE_TESTS_WAIT_FOR_STARTUP: "1"
 
 jobs:
   unittest:

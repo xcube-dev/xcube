@@ -170,7 +170,6 @@ class TornadoFramework(Framework):
         url_prefix = get_url_prefix(config)
         tornado_settings = config.get("tornado", {})
 
-        asyncio.set_event_loop(asyncio.new_event_loop())
         self.application.listen(port, address=address, **tornado_settings)
 
         address_ = "127.0.0.1" if address == "0.0.0.0" else address

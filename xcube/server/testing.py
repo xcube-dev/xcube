@@ -20,8 +20,10 @@
 # DEALINGS IN THE SOFTWARE.
 
 import json
+import os
 import socket
 import threading
+import time
 import unittest
 from abc import ABC
 from contextlib import closing
@@ -61,6 +63,12 @@ class ServerTestCase(unittest.TestCase, ABC):
         tornado.start()
 
         self.http = urllib3.PoolManager()
+
+        wait_for_server = os.environ.get('XCUBE_TESTS_WAIT_FOR_STARTUP',
+                                         '0') == '1'
+        if wait_for_server:
+            time.sleep(10)
+
 
     def tearDown(self) -> None:
         self.server.stop()
