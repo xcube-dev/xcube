@@ -1,6 +1,6 @@
 ## Changes in 1.0.2 (in development)
 
-* Includes xcube-viewer version 1.0.1-dev.1. 
+* Includes xcube-viewer version 1.0.1-dev.2. 
 
 * xcube is now compatible with Python 3.10. (#583)
 
