@@ -1,6 +1,7 @@
-## Changes in 1.0.2 (in development)
+## Changes in 1.0.2
 
-* Includes xcube-viewer version 1.0.1-dev.2. 
+* Bundled latest 
+  [xcube-viewer 1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.0.1).
 
 * xcube is now compatible with Python 3.10. (#583)
 
