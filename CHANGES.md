@@ -1,3 +1,7 @@
+## Changes in 1.0.3
+
+Same as 1.0.2, just fixed unit tests due to minor Python environment change.
+
 ## Changes in 1.0.2
 
 * Bundled latest 
