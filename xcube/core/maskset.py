@@ -230,4 +230,8 @@ def _convert_flag_var_attribute_value(attr_value, attr_name):
     if not (hasattr(attr_value, 'dtype') and hasattr(attr_value, 'shape')):
         raise TypeError(f'attribute {attr_name!r} must be an integer array')
 
+    # handle (strange, meaningless) case of single flag value
+    if attr_value.shape == ():
+        return np.array([attr_value], attr_value.dtype)
+
     return attr_value

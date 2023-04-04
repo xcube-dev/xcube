@@ -244,7 +244,9 @@ def _process_input(input_processor: InputProcessor,
     # noinspection PyShadowingNames
     def step1a(input_slice):
         nonlocal grid_mapping
-        grid_mapping = GridMapping.from_dataset(input_slice)
+        # preliminary preference for pixel geocoding in case there are several geocodings
+        grid_mapping = GridMapping.from_dataset(input_slice,
+                                                prefer_is_regular=False)
         subset = select_spatial_subset(input_slice,
                                        xy_bbox=output_geom.xy_bbox,
                                        xy_border=output_geom.x_res,
