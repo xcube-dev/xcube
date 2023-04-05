@@ -110,13 +110,10 @@ def get_datasets(ctx: DatasetsContext,
             if ds_title and isinstance(ds_title, str):
                 dataset_dict['title'] = ds_title
 
-        if 'BoundingBox' in dataset_config:
-            ds_bbox = dataset_config['BoundingBox']
-            if ds_bbox \
-                    and len(ds_bbox) == 4 \
-                    and all(map(lambda c: isinstance(c, (float, int)),
-                                ds_bbox)):
-                dataset_dict['bbox'] = ds_bbox
+        ds_bbox = dataset_config.get('BoundingBox')
+        if ds_bbox is not None:
+            # Note, it has already been validated that ds_bbox is valid
+            dataset_dict['bbox'] = ds_bbox
 
         LOG.info(f'Collected dataset {ds_id}')
         dataset_dicts.append(dataset_dict)
@@ -202,16 +199,19 @@ def get_dataset(ctx: DatasetsContext,
     transformer = pyproj.Transformer.from_crs(crs, _CRS84, always_xy=True)
     dataset_bounds = get_dataset_bounds(ds)
 
-    if "bbox" not in dataset_dict:
+    ds_bbox = dataset_config.get('BoundingBox')
+    if ds_bbox is not None:
+        # Note, JSON-Schema already verified that ds_bbox is valid.
+        # 'BoundingBox' is always given in geographical coordinates.
+        ds_bbox = list(ds_bbox)
+    else:
+        x1, y1, x2, y2 = dataset_bounds
         if not crs.is_geographic:
-            x1, y1, x2, y2 = dataset_bounds
             (x1, x2), (y1, y2) = transformer.transform((x1, x2), (y1, y2))
-            dataset_dict["bbox"] = [x1, y1, x2, y2]
-        else:
-            dataset_dict["bbox"] = list(dataset_bounds)
+        ds_bbox = [x1, y1, x2, y2]
 
-    dataset_dict['geometry'] = get_bbox_geometry(dataset_bounds,
-                                                 transformer)
+    dataset_dict['bbox'] = list(ds_bbox)
+    dataset_dict['geometry'] = get_bbox_geometry(dataset_bounds, transformer)
     dataset_dict['spatialRef'] = crs.to_string()
 
     variable_dicts = []

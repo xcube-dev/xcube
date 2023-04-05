@@ -24,9 +24,9 @@ from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.webapi.common.schemas import BOOLEAN_SCHEMA
-from xcube.webapi.common.schemas import BOUNDING_BOX_SCHEMA
 from xcube.webapi.common.schemas import CHUNK_SIZE_SCHEMA
 from xcube.webapi.common.schemas import FILE_SYSTEM_SCHEMA
+from xcube.webapi.common.schemas import GEO_BOUNDING_BOX_SCHEMA
 from xcube.webapi.common.schemas import IDENTIFIER_SCHEMA
 from xcube.webapi.common.schemas import PATH_SCHEMA
 from xcube.webapi.common.schemas import STRING_SCHEMA
@@ -72,7 +72,7 @@ ACCESS_CONTROL_SCHEMA = JsonObjectSchema(
 COMMON_DATASET_PROPERTIES = dict(
     Title=STRING_SCHEMA,
     TimeSeriesDataset=IDENTIFIER_SCHEMA,
-    BoundingBox=BOUNDING_BOX_SCHEMA,
+    BoundingBox=GEO_BOUNDING_BOX_SCHEMA,
     ChunkCacheSize=CHUNK_SIZE_SCHEMA,
     Augmentation=AUGMENTATION_SCHEMA,
     Style=IDENTIFIER_SCHEMA,

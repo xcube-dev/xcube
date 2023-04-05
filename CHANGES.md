@@ -1,3 +1,8 @@
+## Changes in 1.0.4 (in development)
+
+* Setting a dataset's `BoundingBox` in the server configuration 
+  is now recognised when requesting the dataset details. (#845)
+
 ## Changes in 1.0.3
 
 Same as 1.0.2, just fixed unit tests due to minor Python environment change.
