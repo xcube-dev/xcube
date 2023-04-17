@@ -9,6 +9,13 @@
   determines the order of variables and the subset of variables to be 
   reported. (#835) 
 
+* In Pandas 2.0, the `base` parameter of temporal groupings/aggregations 
+  has been removed. Therefore, the following xcube deprecations have been 
+  introduced:
+  - The optional `--base/-b` of the `xcube resample` CLI tool.
+  - The keyword argument `base` of the  `xcube.core.resample.resample_in_time` 
+    function.
+
 ## Changes in 1.0.3
 
 Same as 1.0.2, just fixed unit tests due to minor Python environment change.
