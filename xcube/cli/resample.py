@@ -18,7 +18,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Sequence, Dict, Any
+
+from typing import Sequence, Dict, Any, Optional
 
 import click
 
@@ -44,7 +45,7 @@ OUTPUT_FORMAT_NAMES = [FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM]
 DEFAULT_OUTPUT_PATH = 'out.zarr'
 DEFAULT_RESAMPLING_METHOD = 'mean'
 DEFAULT_RESAMPLING_FREQUENCY = '1D'
-DEFAULT_RESAMPLING_BASE = 0
+DEFAULT_RESAMPLING_BASE = None  # Deprecated since 1.0.4!
 DEFAULT_INTERPOLATION_KIND = 'linear'
 
 
@@ -81,10 +82,8 @@ DEFAULT_INTERPOLATION_KIND = 'linear'
 @click.option('--offset', '-O',
               help='Offset used to adjust the resampled time labels. Uses same syntax as frequency. '
                    'Some Pandas date offset strings are supported as well.')
-@click.option('--base', '-B', type=int, default=DEFAULT_RESAMPLING_BASE,
-              help='For frequencies that evenly subdivide 1 day, the origin of the aggregated intervals. '
-                   "For example, for '24H' frequency, base could range from 0 through 23. "
-                   f'Defaults to {DEFAULT_RESAMPLING_BASE!r}.')
+@click.option('--base', '-B', type=int,
+              help='Deprecated since xcube 1.0.4. No longer used.')
 @click.option('--kind', '-K', type=str, default=DEFAULT_INTERPOLATION_KIND,
               help="Interpolation kind which will be used if upsampling method is 'interpolation'. "
                    f"May be one of {', '.join(map(repr, INTERPOLATION_KINDS))} where "
@@ -111,7 +110,6 @@ def resample(cube,
              method,
              frequency,
              offset,
-             base,
              kind,
              tolerance,
              quiet,
@@ -121,6 +119,9 @@ def resample(cube,
     Resample data along the time dimension.
     """
     configure_cli_output(quiet=quiet, verbosity=verbosity)
+
+    if base is not None:
+        warnings.warn("Option 'base' is deprecated and no longer used.")
 
     input_path = cube
     config_files = config
@@ -142,8 +143,6 @@ def resample(cube,
         config['frequency'] = frequency
     if offset:
         config['offset'] = offset
-    if offset:
-        config['base'] = base
     if kind:
         config['interp_kind'] = kind
     if tolerance:
@@ -180,7 +179,6 @@ def _resample_in_time(input_path: str = None,
                       methods: Sequence[str] = (DEFAULT_RESAMPLING_METHOD,),
                       frequency: str = DEFAULT_RESAMPLING_FREQUENCY,
                       offset: str = None,
-                      base: int = DEFAULT_RESAMPLING_BASE,
                       interp_kind: str = DEFAULT_INTERPOLATION_KIND,
                       tolerance: str = None,
                       dry_run: bool = False,
@@ -202,7 +200,6 @@ def _resample_in_time(input_path: str = None,
                                   frequency=frequency,
                                   method=methods,
                                   offset=offset,
-                                  base=base,
                                   interp_kind=interp_kind,
                                   tolerance=tolerance,
                                   time_chunk_size=1,
