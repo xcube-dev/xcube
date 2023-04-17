@@ -28,6 +28,7 @@ from test.webapi.helpers import get_api_ctx
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
 from xcube.webapi.datasets.context import DatasetsContext
+from xcube.webapi.datasets.controllers import filter_variable_names
 from xcube.webapi.datasets.controllers import find_dataset_places
 from xcube.webapi.datasets.controllers import get_color_bars
 from xcube.webapi.datasets.controllers import get_dataset
@@ -41,7 +42,7 @@ def get_datasets_ctx(server_config=None) -> DatasetsContext:
 
 
 class DatasetsControllerTestBase(unittest.TestCase):
-    
+
     def assertDatasetsOk(self,
                          response: Any,
                          expected_count: Optional[int] = None):
@@ -496,3 +497,45 @@ class DatasetLegendTest(unittest.TestCase):
                          ' Invalid color legend parameter(s)',
                          f'{cm.exception}')
 
+
+class DatasetsVariableNamesFilter(unittest.TestCase):
+    names = [
+        "c2rcc_flags",
+        "quality_flags",
+        "conc_tsm",
+        "kd489",
+        "conc_chl",
+        "chl_category",
+        "chl_tsm_sum",
+    ]
+
+    def test_same(self):
+        filtered_names = filter_variable_names(self.names, ["*"])
+        self.assertEqual(self.names, filtered_names)
+
+    def test_ordered(self):
+
+        filtered_names = filter_variable_names(self.names, [
+            "conc_chl",
+            "conc_tsm",
+            "chl_tsm_sum",
+            "*",
+        ])
+
+        self.assertEqual(len(self.names), len(filtered_names))
+        self.assertEqual(["conc_chl",
+                          "conc_tsm",
+                          "chl_tsm_sum"],
+                         filtered_names[0:3])
+
+    def test_subset(self):
+        filtered_names = filter_variable_names(self.names, [
+            "conc_*",
+            "chl_*",
+        ])
+
+        self.assertEqual(4, len(filtered_names))
+        self.assertEqual({"conc_chl", "conc_tsm"},
+                         set(filtered_names[0:2]))
+        self.assertEqual({"chl_tsm_sum", "chl_category"},
+                         set(filtered_names[2:4]))

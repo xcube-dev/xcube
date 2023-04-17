@@ -3,6 +3,11 @@
 * Setting a dataset's `BoundingBox` in the server configuration 
   is now recognised when requesting the dataset details. (#845)
 
+* It is now possible to enforce the order of variables reported by 
+  xcube server. The new server configuration key `Variables` can be added 
+  to dataset configurations. Is a list of wildcard patterns that 
+  determine the variables' order. (#835) 
+
 ## Changes in 1.0.3
 
 Same as 1.0.2, just fixed unit tests due to minor Python environment change.

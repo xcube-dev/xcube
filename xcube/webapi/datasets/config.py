@@ -40,6 +40,14 @@ ATTRIBUTION_SCHEMA = JsonComplexSchema(
     ]
 )
 
+VARIABLES_SCHEMA = JsonArraySchema(
+    items=IDENTIFIER_SCHEMA,
+    min_items=1,
+    description="Names of variables to be published."
+                " Names may use wildcard characters '*' and '?'."
+                " Also determines the order of variables."
+)
+
 VALUE_RANGE_SCHEMA = JsonArraySchema(items=[
     JsonNumberSchema(),
     JsonNumberSchema()
@@ -71,6 +79,7 @@ ACCESS_CONTROL_SCHEMA = JsonObjectSchema(
 
 COMMON_DATASET_PROPERTIES = dict(
     Title=STRING_SCHEMA,
+    Variables=VARIABLES_SCHEMA,
     TimeSeriesDataset=IDENTIFIER_SCHEMA,
     BoundingBox=GEO_BOUNDING_BOX_SCHEMA,
     ChunkCacheSize=CHUNK_SIZE_SCHEMA,
