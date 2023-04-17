@@ -1,4 +1,4 @@
-## Changes in 1.0.4 (in development)
+## Changes in 1.0.4 
 
 * Setting a dataset's `BoundingBox` in the server configuration 
   is now recognised when requesting the dataset details. (#845)
@@ -9,12 +9,15 @@
   determines the order of variables and the subset of variables to be 
   reported. (#835) 
 
-* In Pandas 2.0, the `base` parameter of temporal groupings/aggregations 
-  has been removed. Therefore, the following xcube deprecations have been 
-  introduced:
+* Pinned Pandas dependency to lower than 2.0 because of incompatibility 
+  with both xarray and xcube 
+  (see https://github.com/pydata/xarray/issues/7716). 
+  Therefore, the following xcube deprecations have been introduced:
   - The optional `--base/-b` of the `xcube resample` CLI tool.
   - The keyword argument `base` of the  `xcube.core.resample.resample_in_time` 
     function.
+
+* Bundled [xcube-viewer 1.0.2](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.0.2).
 
 ## Changes in 1.0.3
 
