@@ -19,7 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Sequence, Dict, Any, Optional
+import warnings
+from typing import Sequence, Dict, Any
 
 import click
 
@@ -110,6 +111,7 @@ def resample(cube,
              method,
              frequency,
              offset,
+             base,
              kind,
              tolerance,
              quiet,
