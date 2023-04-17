@@ -202,7 +202,7 @@ Dataset Attribution may be added to the server via *DatasetAttribution*.
 .. _base directory:
 
 Base Directory [optional]
-------------------------------
+-------------------------
 
 A typical xcube server configuration comprises many paths, and
 relative paths of known configuration parameters are resolved against
@@ -349,6 +349,32 @@ the *PlaceGroupRef*. The configuration of *PlaceGroups* is described in section 
 *AccessControl* [optional]
 can only be used when providing `authentication`_. Datasets may be protected by
 configuring the *RequiredScopes* entry whose value is a list of required scopes, e.g. "read:datasets".
+
+*Variables* [optional]
+enforces the order of variables reported by xcube server.
+Is a list of wildcard patterns that
+determines the order of variables and the subset of variables to be
+reported.
+
+The following example reports only variables whose name starts with "conc\_":
+
+.. code:: yaml
+  Datasets:
+    - Path: demo.zarr
+      Variables:
+        - "conc_*"
+
+The next example reports all variables but ensures that ``conc_chl``
+and ``conc_tsm`` are the first ones:
+
+.. code:: yaml
+  Datasets:
+    - Path: demo.zarr
+      Variables:
+        - conc_chl
+        - conc_tsm
+        - "*"
+
 
 .. _locally stored xcube datasets:
 

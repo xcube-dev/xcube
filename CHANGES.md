@@ -5,8 +5,9 @@
 
 * It is now possible to enforce the order of variables reported by 
   xcube server. The new server configuration key `Variables` can be added 
-  to dataset configurations. Is a list of wildcard patterns that 
-  determine the variables' order. (#835) 
+  to `Datasets` configurations. Is a list of wildcard patterns that 
+  determines the order of variables and the subset of variables to be 
+  reported. (#835) 
 
 ## Changes in 1.0.3
 
