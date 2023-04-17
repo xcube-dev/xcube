@@ -3,6 +3,12 @@
 * Setting a dataset's `BoundingBox` in the server configuration 
   is now recognised when requesting the dataset details. (#845)
 
+* It is now possible to enforce the order of variables reported by 
+  xcube server. The new server configuration key `Variables` can be added 
+  to `Datasets` configurations. Is a list of wildcard patterns that 
+  determines the order of variables and the subset of variables to be 
+  reported. (#835) 
+
 * In Pandas 2.0, the `base` parameter of temporal groupings/aggregations 
   has been removed. Therefore, the following xcube deprecations have been 
   introduced:

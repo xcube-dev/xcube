@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
+import fnmatch
 import functools
 import io
 import json
@@ -223,13 +223,23 @@ def get_dataset(ctx: DatasetsContext,
               tiling_scheme.min_level,
               tiling_scheme.max_level)
 
-    for var_name, var in ds.data_vars.items():
-        var_name = str(var_name)
-        dims = var.dims
-        if len(dims) < 2 \
-                or dims[-2] != y_name \
-                or dims[-1] != x_name:
-            continue
+    spatial_var_names = [str(var_name)
+                         for var_name, var in ds.data_vars.items()
+                         if (len(var.dims) >= 2
+                             and var.dims[-2] == y_name
+                             and var.dims[-1] == x_name)]
+
+    var_name_patterns = dataset_config.get('Variables')
+    if var_name_patterns:
+        spatial_var_names = filter_variable_names(spatial_var_names,
+                                                  var_name_patterns)
+        if not spatial_var_names:
+            LOG.warning(f'No variable matched any of the patterns given'
+                        f' in the "Variables" filter.'
+                        f' You may specify a wildcard "*" as last item.')
+
+    for var_name in spatial_var_names:
+        var = ds.data_vars[var_name]
 
         if can_authenticate \
                 and not can_read_all_variables \
@@ -242,7 +252,7 @@ def get_dataset(ctx: DatasetsContext,
         variable_dict = dict(
             id=f'{ds_id}.{var_name}',
             name=var_name,
-            dims=list(dims),
+            dims=list(var.dims),
             shape=list(var.shape),
             dtype=str(var.dtype),
             units=var.attrs.get('units', ''),
@@ -328,6 +338,21 @@ def get_dataset(ctx: DatasetsContext,
                                                            del_features=True)
 
     return dataset_dict
+
+
+def filter_variable_names(var_names: List[str],
+                          var_name_patterns: List[str]) -> List[str]:
+    filtered_var_names = []
+    filtered_var_names_set = set()
+    for var_name_pattern in var_name_patterns:
+        for var_name in var_names:
+            if var_name in filtered_var_names_set:
+                continue
+            if var_name == var_name_pattern \
+                    or fnmatch.fnmatch(var_name, var_name_pattern):
+                filtered_var_names.append(var_name)
+                filtered_var_names_set.add(var_name)
+    return filtered_var_names
 
 
 def get_bbox_geometry(dataset_bounds: Tuple[float, float, float, float],

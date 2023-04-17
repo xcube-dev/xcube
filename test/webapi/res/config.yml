@@ -5,6 +5,13 @@ Datasets:
   - Identifier: demo
     Title: xcube-server Demonstration L2C Cube
     Path: ../../../examples/serve/demo/cube-1-250-250.zarr
+    Variables:
+      - "conc_chl"
+      - "chl_category"
+      - "conc_tsm"
+      - "chl_tsm_sum"
+      - "kd489"
+      - "*"
     Style: default
     Attribution: © by EU H2020 CyanoAlert project
 
@@ -12,6 +19,13 @@ Datasets:
     Title: xcube-server Demonstration L3 Cube
     FileSystem: memory
     Path: script.py
+    Variables:
+      - "conc_chl"
+      - "chl_category"
+      - "conc_tsm"
+      - "chl_tsm_sum"
+      - "kd489"
+      - "*"
     Function: compute_dataset
     InputDatasets: ["demo"]
     InputParameters:
