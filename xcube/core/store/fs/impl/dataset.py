@@ -475,6 +475,13 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
 
 KERCHUNK_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
+        compression=JsonStringSchema(
+            description='Compression used to compress the kerchunk file.'
+        ),
+        target_protocol=JsonStringSchema(
+            description='Protocol used to access the target files.'
+        )
+
         # log_access=JsonBooleanSchema(
         #     default=False
         # ),
@@ -558,10 +565,15 @@ class DatasetKerchunkFsDataAccessor(DatasetFsDataAccessor):
         assert_instance(data_id, str, name='data_id')
         fs, root, open_params = self.load_fs(open_params)
         # zarr_store = fs.get_mapper(data_id)
-        ref = fs.open(data_id, compression='zstd')
+        compression = open_params.get("compression")
+        ref = fs.open(data_id, compression=compression)
+        target_options = {}
+        if compression is not None:
+            target_options['compression'] = compression
+        target_protocol = open_params.get('target_protocol')
         kerchunk_store = fsspec.get_mapper(
-            "reference://", fo=ref, target_protocol="http",
-            remote_options=open_params, target_options={"compression": 'zstd'}
+            "reference://", fo=ref, target_protocol=target_protocol,
+            remote_options=open_params, target_options=target_options
         )
         try:
             dataset = xr.open_zarr(kerchunk_store,

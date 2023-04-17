@@ -26,6 +26,7 @@ import fsspec
 from .accessor import FsAccessor
 from .accessor import FsDataAccessor
 from .impl.dataset import DatasetGeoTiffFsDataAccessor
+from .impl.dataset import DatasetKerchunkFsDataAccessor
 from .impl.dataset import DatasetNetcdfFsDataAccessor
 from .impl.dataset import DatasetZarrFsDataAccessor
 from .impl.fs import FileFsAccessor
@@ -123,6 +124,7 @@ def register_fs_data_accessor_class(
 for cls in (
         DatasetZarrFsDataAccessor,
         DatasetNetcdfFsDataAccessor,
+        DatasetKerchunkFsDataAccessor,
         DatasetGeoTiffFsDataAccessor,
         DatasetLevelsFsDataAccessor,
         MultiLevelDatasetGeoTiffFsDataAccessor,

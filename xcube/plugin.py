@@ -108,6 +108,8 @@ _FS_DATA_ACCESSOR_ITEMS = (
      'xarray.Dataset in GeoTIFF or COG format'),
     ('mldataset', 'geotiff',
      'xcube.core.mldataset.MultiLevelDataset in GeoTIFF or COG format'),
+    ('dataset', 'kerchunk',
+     'xarray.Dataset in Zarr wrapping Kerchunk format'),
     ('geodataframe', 'shapefile',
      'gpd.GeoDataFrame in ESRI Shapefile format'),
     ('geodataframe', 'geojson',
