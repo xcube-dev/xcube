@@ -1,3 +1,6 @@
+## Changes in 1.0.5 (in development)
+
+
 ## Changes in 1.0.4 
 
 * Setting a dataset's `BoundingBox` in the server configuration 
