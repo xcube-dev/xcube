@@ -1,5 +1,12 @@
 ## Changes in 1.0.5 (in development)
 
+* When running xcube in a JupyterLab, the class
+  `xcube.webapi.viewer.Viewer` can be used to programmatically 
+  launch a xcube Viewer UI. 
+  The class now recognizes an environment variable `XCUBE_JUPYTER_LAB_URL` 
+  that contains a JupyterLab's public base URL. To work properly, the 
+  [jupyter-server-proxy](https://jupyter-server-proxy.readthedocs.io/) 
+  extension must be installed and enabled.
 
 ## Changes in 1.0.4 
 
