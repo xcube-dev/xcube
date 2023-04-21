@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from ..accessor import COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES
@@ -175,6 +176,42 @@ class AzureFsAccessor(FsAccessor):
                                 ' account name and key'
                                 ' because they are both contained'
                                 ' in the string.'
+                ),
+                **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
+            ),
+            additional_properties=True,
+        )
+
+
+class FtpFsAccessor(FsAccessor):
+    @classmethod
+    def get_protocol(cls) -> str:
+        return 'ftp'
+
+    @classmethod
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                host=JsonStringSchema(
+                    title='FTP host',
+                    description='The remote server name/ip to connect to',
+                    min_length=1
+                ),
+                port=JsonIntegerSchema(
+                    minimum=0,
+                    maximum=65535,
+                    title='FTP port',
+                    description='Port to connect with'
+                ),
+                username=JsonStringSchema(
+                    min_length=1,
+                    title='User name',
+                    description='If authenticating, the user\'s identifier'
+                ),
+                password=JsonStringSchema(
+                    min_length=1,
+                    title='User password',
+                    description='User\'s password on the server, if using',
                 ),
                 **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
             ),
