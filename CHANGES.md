@@ -1,3 +1,6 @@
+## Changes in 1.0.6 (in development)
+
+
 ## Changes in 1.0.5
 
 * When running xcube in a JupyterLab, the class
