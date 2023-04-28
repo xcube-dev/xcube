@@ -1,5 +1,6 @@
 ## Changes in 1.0.6 (in development)
 
+* Updated [xcube Dataset Specification](docs/source/cubespec.md). 
 * Bundled [xcube-viewer 1.1.0-dev.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0-dev.1).
 
 ## Changes in 1.0.5
