@@ -117,6 +117,7 @@ data variables `CHL` (chlorophyll) if type `float32` and a variable
 ```
 
 ---
+
 **xcube implementation note**: 
 When writing datasets as multi-level datasets and the `agg_methods` 
 parameter is missing, or a data variable's name is not contained in
@@ -125,6 +126,7 @@ an integer data type and `median` for a floating point data type.
 In xcube Server, when opening datasets and converting them into 
 multi-level datasets on-the-fly, `agg_methods` is `first` for all 
 data variables for best performance. 
+
 ---
 
 
