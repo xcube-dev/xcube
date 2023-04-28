@@ -1,6 +1,8 @@
 xcube Multi-Resolution Datasets
 ===============================
 
+Version 1.0 Draft, 2023-04-28
+
 Definition
 ----------
 
