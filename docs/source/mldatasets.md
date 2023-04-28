@@ -37,9 +37,7 @@ by convention. The directory entries are Zarr datasets
 
 1. that are representations of regular xarray datasets named after 
    their zero-based level index, `{level}.zarr`;
-2. that comply with the xcube dataset convention.
-
-TODO (forman): link to xcube dataset convention
+2. that comply with the [xcube Dataset Convention](./cubespec.md).
 
 The following is a multi-resolution dataset with three levels:
 
