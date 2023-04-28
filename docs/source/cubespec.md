@@ -208,8 +208,8 @@ where each wavelength will be represented by a separate variable named
 
 ## Metadata Consolidation
 
-Datasets should provide consolidated dataset metadata in their root
-directories. This allows reading the metadata of datasets with many 
+Datasets using Zarr format should provide consolidated dataset metadata in 
+their root directories. This allows reading the metadata of datasets with many 
 variables more efficiently, especially when data is stored in Object Storage
 and every metadata file would need to fetched via an individual HTTP request. 
 
