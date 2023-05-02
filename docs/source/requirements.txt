@@ -6,4 +6,5 @@ mock
 recommonmark==0.7.1
 # listing packages below within autodoc_mock_imports of conf.py seems not to be sufficient:
 pandas
+geopandas
 jsonschema

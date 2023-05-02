@@ -78,6 +78,7 @@ intersphinx_mapping = {
     'matplotlib': ('http://matplotlib.org/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
+    'geopandas': ('https://geopandas.org/en/stable/', None),
     'python': ('https://docs.python.org/3/', None),
     'xarray': ('http://xarray.pydata.org/en/stable/', None),
     'zarr': ('https://zarr.readthedocs.io/en/stable/', None),
@@ -131,11 +132,15 @@ autodoc_inherit_docstrings = True
 autodoc_typehints = 'signature'
 autodoc_mock_imports = ['affine',
                         'blas',
+                        'botocore',
+                        'cftime',
                         'click',
                         'cmocean',
                         'dask',
+                        'deprecated',
                         'distutils'
                         'fiona',
+                        'fsspec',
                         'gdal',
                         'geopandas'
                         'jsonschema'
@@ -150,6 +155,7 @@ autodoc_mock_imports = ['affine',
                         'pyproj',
                         'pyyaml',
                         'rasterio',
+                        'rfc3339_validator',
                         's3fs',
                         'scipy',
                         'setuptools',
