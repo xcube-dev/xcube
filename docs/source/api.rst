@@ -36,10 +36,23 @@ Cube data extraction
 
 .. autofunction:: xcube.core.timeseries.get_time_series
 
+Cube resampling
+===============
+
+.. autofunction:: xcube.core.resampling.affine_transform_dataset
+
+.. autofunction:: xcube.core.resampling.resample_ndimage
+
+.. autofunction:: xcube.core.resampling.encode_grid_mapping
+
+.. autofunction:: xcube.core.resampling.rectify_dataset
+
+.. autofunction:: xcube.core.resampling.resample_in_space
+
+.. autofunction:: xcube.core.resampling.resample_in_time
+
 Cube manipulation
 =================
-
-.. autofunction:: xcube.core.resample.resample_in_time
 
 .. autofunction:: xcube.core.vars2dim.vars_to_dim
 

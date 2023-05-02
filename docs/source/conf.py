@@ -141,12 +141,13 @@ autodoc_mock_imports = [
     'cmocean',
     'dask',
     'deprecated',
-    'distutils'
+    'distributed',
+    'distutils',
     'fiona',
     'fsspec',
     'gdal',
-    'geopandas'
-    'jsonschema'
+    'geopandas',
+    'jsonschema',
     'matplotlib',
     'netcdf4',
     'numba',
