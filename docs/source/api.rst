@@ -2,12 +2,51 @@
 Python API
 ==========
 
-Cube I/O
-========
+Data Store Framework
+====================
 
-.. autofunction:: xcube.core.dsio.open_cube
+Functions
+---------
 
-.. autofunction:: xcube.core.dsio.write_cube
+.. autofunction:: xcube.core.store.new_data_store
+
+.. autofunction:: xcube.core.store.new_fs_data_store
+
+.. autofunction:: xcube.core.store.find_data_store_extensions
+
+.. autofunction:: xcube.core.store.get_data_store_class
+
+.. autofunction:: xcube.core.store.get_data_store_params_schema
+
+Classes
+-------
+
+.. autoclass:: xcube.core.store.DataStore
+    :members:
+
+.. autoclass:: xcube.core.store.MutableDataStore
+    :members:
+
+.. autoclass:: xcube.core.store.DataStoreError
+    :members:
+
+.. autoclass:: xcube.core.store.DataDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.DatasetDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.MultiLevelDatasetDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.DatasetDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.VariableDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.GeoDataFrameDescriptor
+    :members:
 
 Cube generation
 ===============
@@ -117,9 +156,6 @@ Utilities
 =========
 
 .. autofunction:: xcube.core.geom.convert_geometry
-
-.. autoclass:: xcube.core.store.CubeStore
-    :members:
 
 .. autoclass:: xcube.core.schema.CubeSchema
     :members:

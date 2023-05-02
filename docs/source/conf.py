@@ -162,6 +162,7 @@ autodoc_mock_imports = [
     'pyyaml',
     'rasterio',
     'rfc3339_validator',
+    'rioxarray',
     's3fs',
     'scipy',
     'setuptools',
