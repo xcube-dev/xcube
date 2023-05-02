@@ -145,7 +145,7 @@ autodoc_mock_imports = [
     'fiona',
     'fsspec',
     'gdal',
-    # 'geopandas'
+    'geopandas'
     'jsonschema'
     'matplotlib',
     'netcdf4',
