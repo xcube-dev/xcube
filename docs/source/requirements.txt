@@ -4,7 +4,6 @@
 #sphinx-autodoc-annotation==1.0-1
 #recommonmark==0.7.1
 
-python==3.10
 sphinx
 sphinx_rtd_theme
 sphinx-argparse
