@@ -117,7 +117,7 @@ To increase imaging performance, xcube datasets can be converted to multi-resolu
 :doc:`xcube_level` tool. In the configuration, the format must be set to ``'levels'``.
 Leveled xcube datasets are configured this way:
 
-.. code:: yaml
+.. code-block:: yaml
 
     Datasets:
 
@@ -132,7 +132,7 @@ To increase time-series extraction performance, xcube datasets may be rechunked 
 dimension using the :doc:`xcube_chunk` tool. In the xcube server configuration a hidden dataset is given,
 and the it is referred to by the non-hidden, actual dataset using the ``TimeSeriesDataset`` setting:
 
-.. code:: yaml
+.. code-block:: yaml
 
     Datasets:
 
@@ -171,7 +171,7 @@ may be protected by adding Authentication to the server configuration. In order 
 *Audience* needs to be provided. Here authentication by `Auth0`_ is used.
 Please note the trailing slash in the "Authority" URL.
 
-.. code:: yaml
+.. code-block:: yaml
 
     Authentication:
       Authority: https://xcube-dev.eu.auth0.com/
@@ -180,7 +180,7 @@ Please note the trailing slash in the "Authority" URL.
 Example of OIDC configuration for Keycloak.
 Please note that there is no trailing slash in the "Authority" URL.
 
-.. code:: yaml
+.. code-block:: yaml
 
     Authentication:
       Authority: https://kc.brockmann-consult.de/auth/realms/AVL
@@ -193,7 +193,7 @@ Dataset Attribution [optional]
 
 Dataset Attribution may be added to the server via *DatasetAttribution*.
 
-.. code:: yaml
+.. code-block:: yaml
 
     DatasetAttribution:
       - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
@@ -208,7 +208,7 @@ A typical xcube server configuration comprises many paths, and
 relative paths of known configuration parameters are resolved against
 the ``base_dir`` configuration parameter.
 
-.. code:: yaml
+.. code-block:: yaml
 
     base_dir: s3://<bucket>/<path-to-your>/<resources>/
 
@@ -222,7 +222,7 @@ configuration value. An expression can contain the variables
 ``resolve_config_path(path)`` that is used to make a path absolut with
 respect to ``base_dir`` and to normalize it. For example
 
-.. code:: yaml
+.. code-block:: yaml
 
     Augmentation:
     Path: augmentation/metadata.py
@@ -242,7 +242,7 @@ The actual source for the configuration items is configured by xcube
 server configuration using the new entry ``Viewer/Configuration/Path``,
 for example:
 
-.. code:: yaml
+.. code-block:: yaml
 
     Viewer:
       Configuration:
@@ -275,7 +275,7 @@ The following configuration snippet demonstrates how to
 publish static (persistent) xcube datasets stored in
 S3-compatible object storage:
 
-.. code:: yaml
+.. code-block:: yaml
 
     Datasets:
       - Identifier: remote
@@ -358,7 +358,8 @@ reported.
 
 The following example reports only variables whose name starts with "conc\_":
 
-.. code:: yaml
+.. code-block:: yaml
+
   Datasets:
     - Path: demo.zarr
       Variables:
@@ -367,7 +368,8 @@ The following example reports only variables whose name starts with "conc\_":
 The next example reports all variables but ensures that ``conc_chl``
 and ``conc_tsm`` are the first ones:
 
-.. code:: yaml
+.. code-block:: yaml
+
   Datasets:
     - Path: demo.zarr
       Variables:
@@ -384,7 +386,7 @@ Locally stored xcube Datasets
 The following configuration snippet demonstrates how to
 publish static (persistent) xcube datasets stored in the local filesystem:
 
-.. code:: yaml
+.. code-block:: yaml
 
       - Identifier: local
         Title: Local OLCI L2C cube for region SNS
@@ -417,7 +419,7 @@ as well. By using this parameter a time optimized datacube will be used for gene
 of this time optimized datacube is shown below. By adding *Hidden* with *true* to the dataset configuration, the time optimized
 datacube will not appear among the displayed datasets in xcube viewer.
 
-.. code:: yaml
+.. code-block:: yaml
 
   # Will not appear at all, because it is a "hidden" resource
   - Identifier: local_ts
@@ -447,7 +449,7 @@ There is the possibility to define dynamic xcube datasets
 that are computed on-the-fly. Given here is an example that
 obtains daily or weekly averages of an xcube dataset named "local".
 
-.. code:: yaml
+.. code-block:: yaml
 
   - Identifier: local_1w
     Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
@@ -482,7 +484,7 @@ with same spatial coordinates as the inputs.
 If "resample_in_time.py" is compressed among any other modules in a zip archive, the original module name
 must be indicated by the prefix to the function name:
 
-.. code:: yaml
+.. code-block:: yaml
 
     Path: modules.zip
     Function: resample_in_time:compute_dataset
@@ -517,7 +519,7 @@ Place Groups [optional]
 Place groups are specified in a similar manner compared to specifying datasets within a server.
 Place groups may be stored e.g. in shapefiles or a geoJson.
 
-.. code:: yaml
+.. code-block:: yaml
 
     PlaceGroups:
       - Identifier: outside-cube
@@ -564,7 +566,7 @@ The possible well-known properties are:
 In the following example, a place's label is provided by the place feature's ``NAME`` property,
 while an image is provided by the place feature's ``IMG_URL`` property:
 
-.. code:: yaml
+.. code-block:: yaml
 
     PlaceGroups:
         Identifier: my_group
@@ -589,7 +591,7 @@ as well as the value ranges. For xcube viewer version 0.3.0 or
 higher the colorbars and the value ranges may be adjusted by the user
 within the xcube viewer.
 
-.. code:: yaml
+.. code-block:: yaml
 
     Styles:
       - Identifier: default
@@ -639,7 +641,7 @@ Colormaps may be reversed by using name suffix "_r".
 They also can have alpha blending indicated by name suffix "_alpha".
 Both, reversed and alpha blending is possible as well and can be configured by name suffix "_r_alpha".
 
-.. code:: yaml
+.. code-block:: yaml
 
     Styles:
       - Identifier: default
@@ -683,7 +685,7 @@ DataStores [mandatory]
 Datasets, which are stored in the same location, may be configured in the configuration file using *DataStores*.
 
 
-.. code:: yaml
+.. code-block:: yaml
 
     DataStores:
       - Identifier: edc
@@ -743,7 +745,7 @@ xcube server includes support for Azure Blob Storage filesystem by a data store 
 This enables access to data cubes (`.zarr` or `.levels`) in Azure blob storage as shown here:
 
 
-.. code:: yaml
+.. code-block:: yaml
 
     DataStores:
       - Identifier: siec

@@ -67,7 +67,7 @@ def get_cube_values_for_points(
         Must include "{name}" which will be replaced by the index'
         dimension name.
     :param include_refs: Whether to include point (reference) values from
-    *points* in return value.
+        *points* in return value.
     :param ref_name_pattern: A naming pattern for the computed point data
         columns. Must include "{name}" which will be replaced by the point's
         attribute name.
