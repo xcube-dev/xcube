@@ -23,7 +23,7 @@ cubes from EO data.
    api
    webapi
    viewer
-   datastores
+   dataaccess
    generator
 
 .. toctree::
