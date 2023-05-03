@@ -18,15 +18,19 @@ Useful references related to this document include:
    [xcube-cci](https://github.com/dcs4cop/xcube-sh/), and
    [xcube-cds](https://github.com/dcs4cop/xcube-cds)
  - The
-   [`xcube.util.jsonschema`](https://github.com/dcs4cop/xcube/blob/master/xcube/util/jsonschema.py) source code
+   [`xcube.util.jsonschema`](https://github.com/dcs4cop/xcube/blob/master/xcube/util/jsonschema.py) 
+   source code
 
 ## Naming Identifiers
 
-This section explains various identifiers used by the xcube data store framework and defines their format.
+This section explains various identifiers used by the xcube data store 
+framework and defines their format.
 
-In the DataStore framework, identifiers are used to denote data sources, data stores, and data accessors.
-Data store, data opener, and data writer identifiers are used to register the component as extension in a package's plugin.py.
-Identifiers MUST be unambiguous in the scope of the data store. 
+In the data store framework, identifiers are used to denote data sources, 
+data stores, and data accessors.
+Data store, data opener, and data writer identifiers are used to register the 
+component as extension in a package's `plugin.py`. Identifiers MUST be 
+unambiguous in the scope of the data store. 
 They SHOULD be unambiguous across the entirety of data stores. 
 
 There are no further restrictions for data source and data store identifiers.
@@ -70,9 +74,10 @@ Every implementation of the `xcube.core.store.DataOpener` or
 allowed arguments to `open_data` for each dataset supported by the
 `DataOpener` or `DataStore`. The description is provided as a
 `JsonObjectSchema` object corresponding to a [JSON
-Schema](https://json-schema.org/). The intention is that this description should be
-full and detailed enough to allow the automatic construction of a user
-interface for access to the available datasets. Note that, under this system:
+Schema](https://json-schema.org/). The intention is that this description 
+should be full and detailed enough to allow the automatic construction of a 
+user interface for access to the available datasets. Note that, under this 
+system:
 
   1. Every dataset provided by an opener can support a different set of
      open parameters.
@@ -110,8 +115,8 @@ be fully represented by splitting datasets in this manner. In these cases:
 
 While an opener is free to define any open parameters for any of its datasets,
 there are some common parameters which are likely to be used by the majority
-of datasets. Furthermore, there are some parameters which are fundamental for the 
-description of a dataset and therefore MUST be included in a schema 
+of datasets. Furthermore, there are some parameters which are fundamental for 
+the description of a dataset and therefore MUST be included in a schema 
 (these parameters are denoted explicitly in the list below). In case that an 
 opener does not support varying values of one of these parameters, a constant 
 value must defined. This may be achieved by the JSON schema's `const` property 
@@ -130,22 +135,25 @@ annotations.
    This parameter MUST be included in an opener parameters schema.
    
  - `bbox: Union[str,Tuple[float, float, float, float]]`
-   The bounding box for the requested data, in the order xmin, ymin, xmax, ymax. 
-   Must be given in the units of the specified spatial coordinate reference system `crs`.
-   This parameter MUST be included in an opener parameters schema. 
+   The bounding box for the requested data, in the order xmin, ymin, xmax, 
+   ymax. Must be given in the units of the specified spatial coordinate 
+   reference system `crs`. This parameter MUST be included in an opener 
+   parameters schema. 
    
  - `crs: str`  
-   The identifier for the spatial coordinate reference system of geographic data.
+   The identifier for the spatial coordinate reference system of geographic 
+   data.
    
  - `spatial_res: float`  
    The requested spatial resolution (x and y) of the returned data.
-   Must be given in the units of the specified spatial coordinate reference system `crs`.
+   Must be given in the units of the specified spatial coordinate reference 
+   system `crs`.
    This parameter MUST be included in an opener parameters schema. 
    
  - `time_range: Tuple[Optional[str], Optional[str]]`  
    The requested time range for the data to be returned.
-   The first member of the tuple is the start time; the second is the end time.
-   See section
+   The first member of the tuple is the start time; the second is the end 
+   time. See section
    ‘[Date, time, and duration specifications](#sec-datespec)’.
    This parameter MUST be included in an opener parameters schema.
    If a date without a time is given as the start time,
@@ -166,9 +174,9 @@ annotations.
    xcube](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
    If a store supports this parameter and if a dataset is opened with this
    parameter set to `True`, the store MUST return a specification-compliant
-   xcube dataset. If this parameter is not supported or if a dataset is opened with
-   this parameter set to `False`, the caller MUST NOT assume that the returned
-   data conform to the xcube specification.
+   xcube dataset. If this parameter is not supported or if a dataset is opened 
+   with this parameter set to `False`, the caller MUST NOT assume that the 
+   returned data conform to the xcube specification.
 
 ### Semantics of list-valued parameters
 
