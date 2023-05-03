@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import os
 import unittest
 from typing import Optional, Mapping, Any
 
@@ -117,6 +118,26 @@ class ViewerTest(unittest.TestCase):
             self.assertIn(reverse_url_prefix, viewer.server_url)
             self.assertIn(viewer.server_url, viewer.viewer_url)
 
+    def test_urls_with_jl_env_var(self):
+        env_var_key = "XCUBE_JUPYTER_LAB_URL"
+        env_var_value = os.environ.get(env_var_key)
+        os.environ[env_var_key] = "http://xcube-test-lab/"
+
+        try:
+            viewer = self.get_viewer()
+            self.assertTrue(viewer.server_url.startswith(
+                "http://xcube-test-lab/proxy/"
+            ))
+            self.assertTrue(viewer.viewer_url.startswith(
+                "http://xcube-test-lab/proxy/"
+            ))
+            self.assertTrue("/viewer/" in viewer.viewer_url)
+        finally:
+            if env_var_value is not None:
+                os.environ[env_var_key] = env_var_value
+            else:
+                del os.environ[env_var_key]
+
     def test_add_and_remove_dataset(self):
         viewer = self.get_viewer()
 
@@ -187,3 +208,4 @@ class ViewerTest(unittest.TestCase):
                           "Title": "My SST",
                           "Style": ds_id},
                          ds_config)
+

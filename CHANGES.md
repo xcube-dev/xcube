@@ -1,4 +1,4 @@
-## Changes in 1.0.5 (in development)
+## Changes in 1.0.6 (in development)
 
 * Included support for FTP filesystem by adding a new data store `ftp`. 
 
@@ -38,6 +38,19 @@
       - Path: "*.levels"
         Style: default
   ``` 
+
+## Changes in 1.0.5
+
+* When running xcube in a JupyterLab, the class
+  `xcube.webapi.viewer.Viewer` can be used to programmatically 
+  launch a xcube Viewer UI. 
+  The class now recognizes an environment variable `XCUBE_JUPYTER_LAB_URL` 
+  that contains a JupyterLab's public base URL for a given user. 
+  To work properly, the 
+  [jupyter-server-proxy](https://jupyter-server-proxy.readthedocs.io/) 
+  extension must be installed and enabled.
+
+* Bundled [xcube-viewer 1.0.2.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.0.2.1).
 
 ## Changes in 1.0.4 
 
