@@ -19,15 +19,15 @@
 [xcube-sh]: https://github.com/dcs4cop/xcube-sh
 [xcube-smos]: https://github.com/dcs4cop/xcube-smos
 
-[API reference]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#data-store-framework
-[DataStore]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataStore
-[MutableDataStore]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.MutableDataStore
-[DataOpener]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataOpener
-[DataWriter]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataOpener
-[DataDescriptor]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataDescriptor
-[DatasetDescriptor]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DatasetDescriptor
-[GenericZarrStore]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.zarrstore.GenericZarrStore
-[MultiLevelDataset]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.mldataset.MultiLevelDataset
+[API reference]: https://xcube.readthedocs.io/en/latest/api.html#data-store-framework
+[DataStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataStore
+[MutableDataStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.MutableDataStore
+[DataOpener]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataOpener
+[DataWriter]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataOpener
+[DataDescriptor]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataDescriptor
+[DatasetDescriptor]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DatasetDescriptor
+[GenericZarrStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.zarrstore.GenericZarrStore
+[MultiLevelDataset]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.mldataset.MultiLevelDataset
 
 # Data Access
 
