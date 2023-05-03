@@ -457,8 +457,8 @@ to register it with xcube. If your package name matches the pattern
 in the package's `plugin` module (hence `{package}.plugin.init_plugin()`). 
 
 Alternatively, the package can have any name, but then it must register 
-a [setuptools entry point] in the slot "xcube_plugins".
-
+a [setuptools entry point] in the slot "xcube_plugins". In this case the 
+function `init_plugin()` can also be placed anywhere in your code.
 If you use `setup.cfg`:
 
 ```
@@ -467,7 +467,7 @@ xcube_plugins =
     {your_name} = {your_package}.plugin:init_plugin
 ```
 
-If you are still using `setup.py`:
+If you are (still) using `setup.py`:
 
 ```python
 from setuptools import setup
