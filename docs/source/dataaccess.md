@@ -1,17 +1,33 @@
+[xcube.core.store]: https://github.com/dcs4cop/xcube/tree/master/xcube/core/store
 [xcube Dataset Convention]: ./cubespec.md
+[xcube Multi-Level Dataset Convention]: ./mldatasets.md
+[xcube Data Store Conventions]: ./storeconv.md
 [xarray.Dataset]: https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html
+[geopandas.GeoDataFrame]: https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html
+[Dask arrays]: https://docs.dask.org/en/stable/array.html
+[JSON Object Schema]: https://json-schema.org/understanding-json-schema/reference/object.html
+[setuptools entry point]: https://setuptools.pypa.io/en/latest/userguide/entry_point.html
+
 [ESA Climate Data Centre]: https://climate.esa.int/en/odp/
 [Sentinel Hub]: https://www.sentinel-hub.com/
-[xcube.core.store]: https://github.com/dcs4cop/xcube/tree/master/xcube/core/store
-[Dask arrays]: https://docs.dask.org/en/stable/array.html
-[multi-resolution dataset]: ./mldatasets.md
-[geopandas.GeoDataFrame]: https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html
-[JSON Object Schema]: https://json-schema.org/understanding-json-schema/reference/object.html
+[Copernicus Marine Service]: https://marine.copernicus.eu/
+[Copernicus Climate Data Store]: https://cds.climate.copernicus.eu/
+
+[xcube-cci]: https://github.com/dcs4cop/xcube-cci
+[xcube-cds]: https://github.com/dcs4cop/xcube-cds
+[xcube-cmems]: https://github.com/dcs4cop/xcube-cmems
+[xcube-sh]: https://github.com/dcs4cop/xcube-sh
+[xcube-smos]: https://github.com/dcs4cop/xcube-smos
+
+[API reference]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#data-store-framework
 [DataStore]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataStore
 [MutableDataStore]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.MutableDataStore
-[Copernicus Marine Service]: https://marine.copernicus.eu/
-[API reference]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#data-store-framework
-[Copernicus Climate Data Store]: https://cds.climate.copernicus.eu/
+[DataOpener]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataOpener
+[DataWriter]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataOpener
+[DataDescriptor]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DataDescriptor
+[DatasetDescriptor]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.store.DatasetDescriptor
+[GenericZarrStore]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.zarrstore.GenericZarrStore
+[MultiLevelDataset]: https://xcube.readthedocs.io/en/forman-xxx-datastore_docu/api.html#xcube.core.mldataset.MultiLevelDataset
 
 # Data Access
 
@@ -50,9 +66,10 @@ This allows data cubes to be virtually of any size.
 Data stores can provide the data using different Python in-memory 
 representations or data types.
 The most common representation for a data cube is an [xarray.Dataset]
-instance, multi-resolution data cubes would be represented as a 
-[multi-resolution dataset] instance. Vector data is usually provided as 
-an instance of [geopandas.GeoDataFrame].
+instance, multi-resolution data cubes would be represented as a xcube 
+[MultiLevelDataset] instance 
+(see also [xcube Multi-Level Dataset Convention]). 
+Vector data is usually provided as an instance of [geopandas.GeoDataFrame].
 
 Data stores can also be writable. All read-only data stores share the same 
 functional interface share the same functional interface and so do writable
@@ -69,16 +86,20 @@ package, see also its [API reference].
 The [DataStore] abstract base class is the primary user interface for 
 accessing data in xcube. The most important operations of a data store are:
 
-* `list_data_ids()` - enumerate the datasets of a data store;
-* `search_data(...)` - search for datasets in the data store;
-* `describe_data(id)` - describe a given dataset in terms of its metadata;
-* `open_data(id, ...)` - open a given dataset.
+* `list_data_ids()` - enumerate the datasets of a data store by returning
+  their data identifiers;
+* `describe_data(data_id)` - describe a given dataset in terms of its metadata
+  by returning a specific [DataDescriptor], e.g., a [DatasetDescriptor];
+* `search_data(...)` - search for datasets in the data store and return a
+   [DataDescriptor] iterator;
+* `open_data(data_id, ...)` - open a given dataset and return, e.g., 
+  an [xarray.Dataset] instance.
 
 The [MutableDataStore] abstract base class represents a writable data 
 store and extends [DataStore] by the following operations:
 
-* `write_data(dataset, id, ...)` - write a dataset to the data store;
-* `delete_data(id)` - delete a dataset from the data store;
+* `write_data(dataset, data_id, ...)` - write a dataset to the data store;
+* `delete_data(data_id)` - delete a dataset from the data store;
 
 Above, the ellipses `...` are used to indicate store-specific parameters
 that are passed as keyword-arguments. For a given data store instance, 
@@ -101,12 +122,12 @@ Since data stores are xcube extensions, additional data stores can be added
 by xcube plugins. The data store framework provides a number of global 
 functions that can be used to access the available data stores: 
 
-* `find_data_store_extensions() -> List[Extension]` - get a list of 
+* `find_data_store_extensions() -> list[Extension]` - get a list of 
   xcube data store extensions;
 * `new_data_store(store_id, ...) -> DataStore` - instantiate a data store with 
   store-specific parameters;
-* `get_data_store_params_schema(store_id) -> Schema` - describe the store-specific 
-  parameters that must/can be passed to `new_data_store()` 
+* `get_data_store_params_schema(store_id) -> Schema` - describe the 
+  store-specific parameters that must/can be passed to `new_data_store()` 
   as [JSON Object Schema].
 
 The following example outputs all installed data stores:
@@ -120,7 +141,7 @@ for ex in find_data_store_extensions():
     print(store_id, "-", store_md.get("description"))
 ```
 
-If one of the installed data stores is, e.g. `"sentinelhub"`, you could
+If one of the installed data stores is, e.g. `sentinelhub`, you could
 further introspect its specific parameters and datasets as shown in the 
 following example:  
 
@@ -228,7 +249,7 @@ The following `storage_options` can be used for the `abfs` data store:
 
 All filesystem data stores can open datasets from various data formats. 
 Datasets in Zarr, GeoTIFF / COG, or NetCDF format will be provided either by
-[xarray.Dataset] or [multi-resolution dataset] instances.
+[xarray.Dataset] or xcube [MultiLevelDataset] instances.
 Datasets stored in GeoJSON or ESRI Shapefile will yield 
 [geopandas.GeoDataFrame] instances.
 
@@ -262,6 +283,9 @@ Common parameters for opening [xarray.Dataset] instances:
 
 The data store `cciodp` provides the datasets of 
 the [ESA Climate Data Centre]. 
+
+This data store is provided by the xcube plugin [xcube-cci].
+You can install it using `conda install -c conda-forge xcube-cci`.
 
 Data store parameters:
 
@@ -298,11 +322,18 @@ the same as for the filesystem-based data stores described above.
 ### ESA SMOS
 
 A data store for ESA SMOS data is currently under development 
-and will be released soon. 
+and will be released soon.
+
+This data store is provided by the xcube plugin [xcube-smos].
+Once available, you will be able to install it using 
+`conda install -c conda-forge xcube-smos`.
 
 ### Copernicus Climate Data Store `cds`
 
 The data store `cds` provides datasets of the [Copernicus Climate Data Store].
+
+This data store is provided by the xcube plugin [xcube-cds].
+You can install it using `conda install -c conda-forge xcube-cds`.
 
 Data store parameters:
 
@@ -324,6 +355,9 @@ Common parameters for opening [xarray.Dataset] instances:
 
 The data store `cmems` provides datasets of the [Copernicus Marine Service]. 
 
+This data store is provided by the xcube plugin [xcube-cmems].
+You can install it using `conda install -c conda-forge xcube-cmems`.
+
 Data store parameters:
 
 * `cmems_username: str` - CMEMS API username
@@ -342,6 +376,9 @@ Common parameters for opening [xarray.Dataset] instances:
 
 The data store `sentinelhub` provides the datasets of the 
 [Sentinel Hub] API. 
+
+This data store is provided by the xcube plugin [xcube-sh].
+You can install it using `conda install -c conda-forge xcube-sh`.
 
 Data store parameters:
 
@@ -387,9 +424,90 @@ Common parameters for opening [xarray.Dataset] instances:
 * `max_cache_size: int` - Maximum chunk cache size in bytes.
 
 
-## Developing a new data store
+## Developing new data stores
 
-TODO  
+### Implementing the data store
+
+New data stores can be developed by implementing the xcube [DataStore]
+interface for read-only data store, or the [MutableDataStore] interface for
+writable data stores, and should follow the [xcube Data Store Conventions].
+
+If a data store supports combinations of Python data types, external storages  
+types, and/or data formats it should consider the following design pattern:
 
 ![DataStore and MutableDataStore](uml/datastore-uml.png)
 
+Here, we implement a dedicated [DataOpener] for a suitable combination of 
+supported Python data types, external storages types, and/or data formats.
+The [DataStore], which implements the [DataOpener] interface delegates
+to specialized [DataOpener] implementations based on the open
+parameters passed to the `open_data()` method. The same holds for the 
+[DataWriter] implementations for a [MutableDataStore].
+
+New data stores that are backed by some cloud-based data API can 
+make use the xcube [GenericZarrStore] to implement the lazy fetching
+of data array chunks from the API.
+
+### Registering the data store
+
+To register the new data store with xcube, it must be provided as
+a Python package. Based on the package's name there are to ways 
+to register it with xcube. If your package name matches the pattern 
+`xcube_*`, then you would need to provide a function `init_plugin()` 
+in the package's `plugin` module (hence `{package}.plugin.init_plugin()`). 
+
+Alternatively, the package can have any name, but then it must register 
+a [setuptools entry point] in the slot "xcube_plugins".
+
+If you use `setup.cfg`:
+
+```
+[options.entry_points]
+xcube_plugins =
+    {your_name} = {your_package}.plugin:init_plugin
+```
+
+If you are still using `setup.py`:
+
+```python
+from setuptools import setup
+
+setup(
+    # ...,
+    entry_points={
+        'xcube_plugins': [
+            '{your_name} = {your_package}.plugin:init_plugin',
+        ]
+    }
+)
+```
+
+The function `init_plugin` will be implemented as follows:
+
+```python
+from xcube.constants import EXTENSION_POINT_DATA_OPENERS
+from xcube.constants import EXTENSION_POINT_DATA_STORES
+from xcube.constants import EXTENSION_POINT_DATA_WRITERS
+from xcube.util import extension
+
+def init_plugin(ext_registry: extension.ExtensionRegistry):
+
+    # register your DataStore extension
+    ext_registry.add_extension(
+        loader=extension.import_component(
+            '{your_package}.store:{YourStoreClass}'),
+        point=EXTENSION_POINT_DATA_STORES,
+        name="{your_store_id}",
+        description='{your store description}'
+    )
+
+    # register any extra DataOpener (EXTENSION_POINT_DATA_OPENERS)
+    # or DataWriter (EXTENSION_POINT_DATA_WRITERS) extensions (optional)
+    ext_registry.add_extension(
+        loader=extension.import_component(
+            '{your_package}.opener:{YourOpenerClass}'),
+        point=EXTENSION_POINT_DATA_OPENERS, 
+        name="{your_opener_id}",
+        description='{your opener description}'
+    )
+```

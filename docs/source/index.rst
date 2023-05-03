@@ -31,6 +31,7 @@ cubes from EO data.
    :maxdepth: 1
 
    cubespec
+   storeconv
    devguide
    plugins
 

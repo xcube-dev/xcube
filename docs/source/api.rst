@@ -27,6 +27,15 @@ Classes
 .. autoclass:: xcube.core.store.MutableDataStore
     :members:
 
+.. autoclass:: xcube.core.store.DataOpener
+    :members:
+
+.. autoclass:: xcube.core.store.DataSearcher
+    :members:
+
+.. autoclass:: xcube.core.store.DataWriter
+    :members:
+
 .. autoclass:: xcube.core.store.DataStoreError
     :members:
 
@@ -75,7 +84,7 @@ Cube data extraction
 
 .. autofunction:: xcube.core.timeseries.get_time_series
 
-Cube resampling
+Cube Resampling
 ===============
 
 .. autofunction:: xcube.core.resampling.affine_transform_dataset
@@ -90,7 +99,7 @@ Cube resampling
 
 .. autofunction:: xcube.core.resampling.resample_in_time
 
-Cube manipulation
+Cube Manipulation
 =================
 
 .. autofunction:: xcube.core.vars2dim.vars_to_dim
@@ -101,7 +110,7 @@ Cube manipulation
 
 .. autofunction:: xcube.core.optimize.optimize_dataset
 
-Cube subsetting
+Cube Subsetting
 ===============
 
 .. autofunction:: xcube.core.select.select_variables_subset
@@ -109,7 +118,7 @@ Cube subsetting
 .. autofunction:: xcube.core.geom.clip_dataset_by_geometry
 
 
-Cube masking
+Cube Masking
 ============
 
 .. autofunction:: xcube.core.geom.mask_dataset_by_geometry
@@ -124,7 +133,7 @@ Rasterisation of Features
 .. autofunction:: xcube.core.geom.rasterize_features
 
 
-Cube metadata
+Cube Metadata
 =============
 
 .. autofunction:: xcube.core.edit.edit_metadata
@@ -143,17 +152,56 @@ Cube verification
 
 .. autofunction:: xcube.core.verify.verify_cube
 
-Multi-resolution pyramids
+Multi-Resolution Datasets
 =========================
 
-.. autofunction:: xcube.core.level.compute_levels
+.. autoclass:: xcube.core.mldataset.MultiLevelDataset
+    :members:
 
-.. autofunction:: xcube.core.level.read_levels
+.. autoclass:: xcube.core.mldataset.BaseMultiLevelDataset
+    :members:
 
-.. autofunction:: xcube.core.level.write_levels
+.. autoclass:: xcube.core.mldataset.CombinedMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.ComputedMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.FsMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.IdentityMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.LazyMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.MappedMultiLevelDataset
+    :members:
+
+Zarr Store
+==========
+
+.. autoclass:: xcube.core.zarrstore.ZarrStoreHolder
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.GenericZarrStore
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.GenericArray
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.CachedZarrStore
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.DiagnosticZarrStore
+    :members:
 
 Utilities
 =========
+
+.. autoclass:: xcube.core.gridmapping.GridMapping
+    :members:
 
 .. autofunction:: xcube.core.geom.convert_geometry
 
