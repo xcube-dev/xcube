@@ -65,7 +65,39 @@ def find_grid_mappings_for_dataset(dataset: xr.Dataset) \
                 _, _, xy_coords = gmt
                 xy_dims = _get_xy_dims_from_xy_coords(xy_coords)
                 dims_to_grid_mappings[xy_dims] = gmt
-    return list(dims_to_grid_mappings.values())
+
+    grid_mapping_tuples = list(dims_to_grid_mappings.values())
+
+    lat_lon_2d_gmt = _find_lat_lon_2d_gmt(
+        dataset,
+        tuple(dims_to_grid_mappings.keys()) or (("x", "y"),)
+    )
+    if lat_lon_2d_gmt is not None:
+        grid_mapping_tuples.append(lat_lon_2d_gmt)
+
+    return grid_mapping_tuples
+
+
+def _find_lat_lon_2d_gmt(dataset: xr.Dataset,
+                         xy_dims: Tuple[DimPair]) \
+        -> Optional[GridMappingTuple]:
+    for x_dim, y_dim in xy_dims:
+        yx_dims = y_dim, x_dim
+        for lon_name, lat_name in (('lon', 'lat'),
+                                   ('longitude', 'latitude')):
+            lon_coords = dataset.coords.get(lon_name)
+            lat_coords = dataset.coords.get(lat_name)
+            if lon_coords is None or lat_coords is None:
+                lon_coords = dataset.data_vars.get(lon_name)
+                lat_coords = dataset.data_vars.get(lat_name)
+            if lon_coords is not None \
+                    and lat_coords is not None \
+                    and lon_coords.dims == yx_dims \
+                    and lat_coords.dims == yx_dims:
+                return (CRS_WGS84,
+                        "latitude_longitude",
+                        (lon_coords, lat_coords))
+    return None
 
 
 def _get_xy_dims_from_xy_coords(xy_coords: CoordsPair) -> DimPair:

@@ -1,11 +1,12 @@
 import unittest
+from typing import Tuple
 
 import numpy as np
 import pyproj
 import pytest
 import xarray as xr
 
-from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping import GridMapping, CRS_CRS84
 from xcube.core.gridmapping.cfconv import find_grid_mapping_for_data_var
 
 CRS_WGS84 = pyproj.crs.CRS(4326)
@@ -20,6 +21,31 @@ CRS_ROTATED_POLE = pyproj.crs.CRS.from_cf(
 class FindGridMappingForVarTest(unittest.TestCase):
     w = 20
     h = 10
+
+    def assert_grid_mapping_tuple_tuple_ok(
+            self,
+            actual_gmt,
+            expected_crs: pyproj.CRS,
+            expected_gm_name: str,
+            expected_xy_names: Tuple[str, str],
+            expected_xy_dims: Tuple[str, str],
+            expected_xy_sizes: Tuple[int, int]
+    ):
+        self.assertIsInstance(actual_gmt, tuple)
+        self.assertEqual(3, len(actual_gmt))
+        crs, gm_name, xy_coords = actual_gmt
+        self.assertEqual(expected_crs.to_cf(), crs.to_cf())
+        self.assertEqual(expected_gm_name, gm_name)
+        self.assertIsInstance(xy_coords, tuple)
+        self.assertEqual(2, len(xy_coords))
+        x, y = xy_coords
+        self.assertIsInstance(x, xr.DataArray)
+        self.assertIsInstance(y, xr.DataArray)
+        self.assertEqual(1, x.ndim)
+        self.assertEqual(1, y.ndim)
+        self.assertEqual(expected_xy_dims, (x.dims[0], y.dims[0]))
+        self.assertEqual(expected_xy_names, (x.name, y.name))
+        self.assertEqual(expected_xy_sizes, (x.size, y.size))
 
     def new_data_var(self,
                      shape=None,
@@ -67,11 +93,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_UTM_33N, gm.crs)
-        self.assertEqual(("a", "b"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_UTM_33N,
+            "transverse_mercator",
+            ("a", "b"),
+            ("x", "y"),
+            (20, 10)
+        )
 
     def test_with_gm_var_fails_with_invalid_coords(self):
         ds = xr.Dataset(
@@ -146,11 +176,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_WGS84, gm.crs)
-        self.assertEqual(("a", "b"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_WGS84,
+            "latitude_longitude",
+            ("a", "b"),
+            ("x", "y"),
+            (20, 10)
+        )
 
     def test_with_gm_var_and_standard_name_rot_lat_lon(self):
         ds = xr.Dataset(
@@ -171,11 +205,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_ROTATED_POLE.to_cf(), gm.crs.to_cf())
-        self.assertEqual(("a", "b"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_ROTATED_POLE,
+            "rotated_latitude_longitude",
+            ("a", "b"),
+            ("x", "y"),
+            (20, 10)
+        )
 
     def test_with_gm_var_and_standard_name_projected(self):
         ds = xr.Dataset(
@@ -196,11 +234,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_UTM_33N, gm.crs)
-        self.assertEqual(("a", "b"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_UTM_33N,
+            "transverse_mercator",
+            ("a", "b"),
+            ("x", "y"),
+            (20, 10)
+        )
 
     def test_with_gm_var_and_axis(self):
         ds = xr.Dataset(
@@ -217,11 +259,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_UTM_33N, gm.crs)
-        self.assertEqual(("a", "b"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_UTM_33N,
+            "transverse_mercator",
+            ("a", "b"),
+            ("x", "y"),
+            (20, 10)
+        )
 
     def test_with_gm_var_and_common_dim_and_var_name(self):
         ds = xr.Dataset(
@@ -238,11 +284,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_UTM_33N, gm.crs)
-        self.assertEqual(("x", "y"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_UTM_33N,
+            "transverse_mercator",
+            ("x", "y"),
+            ("x", "y"),
+            (20, 10)
+        )
 
         ds = xr.Dataset(
             data_vars={
@@ -259,11 +309,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(dim="lat"),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_WGS84, gm.crs)
-        self.assertEqual(("lon", "lat"), gm.xy_var_names)
-        self.assertEqual(("lon", "lat"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_WGS84,
+            "latitude_longitude",
+            ("lon", "lat"),
+            ("lon", "lat"),
+            (20, 10)
+        )
 
     def test_with_gm_var_and_common_dim_name(self):
         ds = xr.Dataset(
@@ -278,11 +332,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "b": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_UTM_33N, gm.crs)
-        self.assertEqual(("a", "b"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_UTM_33N,
+            "transverse_mercator",
+            ("a", "b"),
+            ("x", "y"),
+            (20, 10)
+        )
 
     def test_with_gm_var_but_without_spatial_var(self):
         ds = xr.Dataset(
@@ -294,8 +352,8 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "crs")
-        self.assertIsNone(gm)
+        gmt = find_grid_mapping_for_data_var(ds, "crs")
+        self.assertIsNone(gmt)
 
     def test_without_gm_var_and_common_dim_and_var_name(self):
         ds = xr.Dataset(
@@ -309,11 +367,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "y": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_WGS84, gm.crs)
-        self.assertEqual(("x", "y"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_WGS84,
+            "latitude_longitude",
+            ("x", "y"),
+            ("x", "y"),
+            (20, 10)
+        )
 
         ds = xr.Dataset(
             data_vars={
@@ -328,11 +390,15 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "lat": self.new_y_coord_var(dim="lat"),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_WGS84, gm.crs)
-        self.assertEqual(("lon", "lat"), gm.xy_var_names)
-        self.assertEqual(("lon", "lat"), gm.xy_dim_names)
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_WGS84,
+            "latitude_longitude",
+            ("lon", "lat"),
+            ("lon", "lat"),
+            (20, 10)
+        )
 
     def test_without_gm_var_and_common_dim_name(self):
         ds = xr.Dataset(
@@ -344,9 +410,12 @@ class FindGridMappingForVarTest(unittest.TestCase):
                 "b": self.new_y_coord_var(),
             }
         )
-        gm = find_grid_mapping_for_data_var(ds, "sst")
-        self.assertIsInstance(gm, GridMapping)
-        self.assertEqual(CRS_WGS84, gm.crs)
-        self.assertEqual(("a", "b"), gm.xy_var_names)
-        self.assertEqual(("x", "y"), gm.xy_dim_names)
-
+        gmt = find_grid_mapping_for_data_var(ds, "sst")
+        self.assert_grid_mapping_tuple_tuple_ok(
+            gmt,
+            CRS_WGS84,
+            "latitude_longitude",
+            ("a", "b"),
+            ("x", "y"),
+            (20, 10)
+        )
