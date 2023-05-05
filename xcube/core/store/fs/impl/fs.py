@@ -200,6 +200,7 @@ class FtpFsAccessor(FsAccessor):
                 port=JsonIntegerSchema(
                     minimum=0,
                     maximum=65535,
+                    default=21,
                     title='FTP port',
                     description='Port to connect with'
                 ),
