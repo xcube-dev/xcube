@@ -1,5 +1,11 @@
 ## Changes in 1.0.6 (in development)
 
+* Updated [xcube Dataset Specification](docs/source/cubespec.md). 
+
+* Bundled [xcube-viewer 1.1.0-dev.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0-dev.1).
+
+* Fixed various issues with the auto-generated Python API documentation.
+
 * Included support for FTP filesystem by adding a new data store `ftp`. 
 
   These changes will enable access to data cubes (`.zarr` or `.levels`) 
