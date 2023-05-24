@@ -66,6 +66,7 @@
       },
       "time": {
         "type": "temporal",
+        "description": "time",
         "values": [
           "2017-01-22T00:00:00Z",
           "2017-01-29T00:00:00Z",
@@ -926,7 +927,11 @@
         "shape": [
           3
         ],
-        "attrs": {}
+        "attrs": {
+          "bounds": "time_bnds",
+          "long_name": "time",
+          "standard_name": "time"
+        }
       }
     ],
     "xcube:attrs": {
