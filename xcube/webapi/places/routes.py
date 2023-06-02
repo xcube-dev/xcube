@@ -42,6 +42,9 @@ class PlaceGroupsHandler(ApiHandler[PlacesContext]):
         )
         self.response.finish({"placeGroups": place_groups})
 
+    def post(self):
+        self.ctx.add_place_groups(self.request.json)
+
 
 # noinspection PyPep8Naming
 @api.route('/places/{placeGroupId}')

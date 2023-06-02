@@ -41,6 +41,7 @@ class PlacesContext(ResourcesContext):
 
     def __init__(self, server_ctx: Context):
         super().__init__(server_ctx)
+        self._geo_db_place_groups = []
         self._place_group_cache: Dict[str, PlaceGroup] = dict()
 
     def on_dispose(self):
@@ -111,7 +112,11 @@ class PlacesContext(ResourcesContext):
                                                  is_global=is_global,
                                                  load_features=load_features)
             place_groups.append(place_group)
+        place_groups.append(self._geo_db_place_groups)
         return place_groups
+
+    def add_place_groups(self, json):
+        self._geo_db_place_groups.append(json)
 
     def _load_place_group(self,
                           place_group_config: Dict[str, Any],
