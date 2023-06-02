@@ -43,8 +43,7 @@ class ProgressState:
         self._traceback = None
         self._completed_work = 0.
         self._finished = False
-        self._start_time = None
-        self._start_time = time.perf_counter()
+        self._start_time = time.process_time()
         self._total_time = None
 
     @property
@@ -110,7 +109,7 @@ class ProgressState:
 
     def finish(self):
         self._finished = True
-        self._total_time = time.perf_counter() - self._start_time
+        self._total_time = time.process_time() - self._start_time
 
 
 class ProgressObserver(ABC):

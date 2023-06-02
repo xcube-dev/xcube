@@ -75,4 +75,7 @@ ServiceProvider:
         PostalCode: "21502"
         Country: "Germany"
         ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
-
+  WCS-description: "xcube WCS server"
+  WCS-name: "xcube-WCS"
+  WCS-label: "xcube-WCS"
+  keywords: ["OGC", "WCS", "xcube", "datacubes"]

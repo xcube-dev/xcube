@@ -19,13 +19,14 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os
 import unittest
+import importlib.resources as resources
 
 import pyproj
 
 from test.webapi.helpers import get_api_ctx
 from test.webapi.helpers import get_server
+from test.webapi.ows import res as test_res
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
 from xcube.webapi.ows.wmts.context import WmtsContext
@@ -42,11 +43,6 @@ from xcube.webapi.ows.wmts.controllers import (
 )
 
 
-def get_test_res_path(path: str) -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__),
-                                         'res', path))
-
-
 class WmtsControllerTest(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -54,8 +50,8 @@ class WmtsControllerTest(unittest.TestCase):
 
     def test_get_wmts_capabilities_xml_crs84(self):
         self.maxDiff = None
-        with open(get_test_res_path('WMTSCapabilities-CRS84.xml')) as fp:
-            expected_xml = fp.read()
+        expected_xml = resources.read_text(test_res,
+                                           'WMTSCapabilities-CRS84.xml')
         actual_xml = get_wmts_capabilities_xml(self.wmts_ctx,
                                                'http://bibo',
                                                tms_id=WMTS_CRS84_TMS_ID)
@@ -67,8 +63,8 @@ class WmtsControllerTest(unittest.TestCase):
 
     def test_get_wmts_capabilities_xml_web_mercator(self):
         self.maxDiff = None
-        with open(get_test_res_path('WMTSCapabilities-OSM.xml')) as fp:
-            expected_xml = fp.read()
+        expected_xml = resources.read_text(test_res,
+                                           'WMTSCapabilities-OSM.xml')
         actual_xml = get_wmts_capabilities_xml(self.wmts_ctx,
                                                'http://bibo',
                                                WMTS_WEB_MERCATOR_TMS_ID)

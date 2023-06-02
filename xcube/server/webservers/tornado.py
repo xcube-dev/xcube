@@ -394,6 +394,7 @@ class TornadoApiRequest(ApiRequest):
         # print("query:", self._request.query)
 
     def make_query_lower_case(self):
+        # todo this does not always work, reason unclear
         self._is_query_lower_case = True
 
     @functools.cached_property

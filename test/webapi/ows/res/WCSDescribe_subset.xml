@@ -1,0 +1,159 @@
+<?xml version="1.0" ?>
+<CoverageDescription xmlns="http://www.opengis.net/wcs"
+                     xmlns:gml="http://www.opengis.net/gml"
+                     version="1.0.0">
+    <CoverageOffering>
+        <description>Chlorophyll concentration</description>
+        <name>demo.conc_chl</name>
+        <label>Chlorophyll concentration</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+            <temporalDomain>
+                <gml:timePosition>2017-01-16T10:09:21Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-25T09:35:51Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-26T10:50:16Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-28T09:58:11Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-30T10:46:33Z
+                </gml:timePosition>
+            </temporalDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo.conc_chl</name>
+                <label>Chlorophyll concentration</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0001</min>
+                                <max>22.4421</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <description>kd489_stdev</description>
+        <name>demo-1w.kd489_stdev</name>
+        <label>kd489_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+            <temporalDomain>
+                <gml:timePosition>2017-01-22T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-29T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-02-05T00:00:00Z
+                </gml:timePosition>
+            </temporalDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.kd489_stdev</name>
+                <label>kd489_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>2.7701</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
+        </supportedFormats>
+    </CoverageOffering>
+    <CoverageOffering>
+        <description>quality_flags_stdev</description>
+        <name>demo-1w.quality_flags_stdev</name>
+        <label>quality_flags_stdev</label>
+        <lonLatEnvelope>
+            <gml:pos>0 50</gml:pos>
+            <gml:pos>5 52.5</gml:pos>
+        </lonLatEnvelope>
+        <domainSet>
+            <spatialDomain>
+                <gml:Envelope>
+                    <gml:pos>0 50</gml:pos>
+                    <gml:pos>5 52.5</gml:pos>
+                </gml:Envelope>
+            </spatialDomain>
+            <temporalDomain>
+                <gml:timePosition>2017-01-22T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-01-29T00:00:00Z
+                </gml:timePosition>
+                <gml:timePosition>2017-02-05T00:00:00Z
+                </gml:timePosition>
+            </temporalDomain>
+        </domainSet>
+        <rangeSet>
+            <RangeSet>
+                <name>demo-1w.quality_flags_stdev</name>
+                <label>quality_flags_stdev</label>
+                <axisDescription>
+                    <AxisDescription>
+                        <name>Band</name>
+                        <label>Band</label>
+                        <values>
+                            <interval>
+                                <min>0.0000</min>
+                                <max>1883242496.0000</max>
+                            </interval>
+                        </values>
+                    </AxisDescription>
+                </axisDescription>
+            </RangeSet>
+        </rangeSet>
+        <supportedCRSs>
+            <requestResponseCRSs>EPSG:4326</requestResponseCRSs>
+        </supportedCRSs>
+        <supportedFormats>
+            <formats>geotiff</formats>
+            <formats>NetCDF4</formats>
+        </supportedFormats>
+    </CoverageOffering>
+</CoverageDescription>

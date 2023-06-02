@@ -195,6 +195,13 @@ Styles:
           Variable: band_3
           ValueRange: [ 0., 255. ]
 
+
+WebCoverageService:
+  Name: "xcube-WCS"
+  Label: "xcube-WCS"
+  Description: "xcube WCS server"
+  Keywords: ["OGC", "WCS", "xcube", "datacubes"]
+
 ServiceProvider:
   ProviderName: Brockmann Consult GmbH
   ProviderSite: https://www.brockmann-consult.de

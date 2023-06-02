@@ -229,6 +229,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         'volumes',
         'ows.stac',
         'ows.wmts',
+        'ows.wcs',
         's3',
         'viewer',
     ]
