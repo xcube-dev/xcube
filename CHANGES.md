@@ -3,6 +3,7 @@
 * Updated [xcube Dataset Specification](docs/source/cubespec.md). 
 * Bundled [xcube-viewer 1.1.0-dev.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0-dev.1).
 * Fixed various issues with the auto-generated Python API documentation.
+* Fixed rounding of timestamp issue observed in xcube viewer https://github.com/dcs4cop/xcube-viewer/issues/289
 
 ## Changes in 1.0.5
 
