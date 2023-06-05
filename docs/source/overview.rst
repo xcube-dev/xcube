@@ -17,7 +17,8 @@ Overview
 
 *xcube* is an open-source Python package and toolkit that has been developed to provide Earth observation (EO) data in an
 analysis-ready form to users. xcube achieves this by carefully converting EO data sources into self-contained *data cubes*
-that can be published in the cloud.
+that can be published in the cloud. The Python package is expanded and maintained by
+[Brockmann Consult GmbH](https://www.brockmann-consult.de)
 
 Data Cube
 =========
