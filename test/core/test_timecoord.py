@@ -268,6 +268,22 @@ class TimestampToIsoStringTest(unittest.TestCase):
                              pd.to_datetime("04-OCT-2019 10:13:48.538184"),
                              round_fn="floor"))
 
+    def test_it_with_array_round_fn(self):
+        var = [np.datetime64("2018-09-05 10:35:42.564"),
+               np.datetime64("2018-09-06 10:35:42.564"),
+               np.datetime64("2018-09-07 10:35:42.564"),
+               pd.to_datetime("04-OCT-2019 10:13:48.038184")
+               ]
+        expected_values = ["2018-09-05T10:35:42Z",
+                           "2018-09-06T10:35:43Z",
+                           "2018-09-07T10:35:43Z",
+                           "2019-10-04T10:13:49Z"]
+        values = [timestamp_to_iso_string(var[0], round_fn="floor")] +\
+                 list(map(timestamp_to_iso_string, var[1:-1])) +\
+                 [timestamp_to_iso_string(var[-1], round_fn="ceil")]
+        self.assertEqual(expected_values, values)
+
+
     # noinspection PyMethodMayBeStatic
     def test_it_with_invalid_round_fn(self):
         with pytest.raises(ValueError,
