@@ -489,7 +489,7 @@ def get_dataset_coordinates(ctx: DatasetsContext,
         # see https://github.com/dcs4cop/xcube-viewer/issues/289
         assert len(var) > 1, "Dimension length must be greater than 0."
         values = [timestamp_to_iso_string(var.values[0], round_fn="floor")] +\
-                 list(map(timestamp_to_iso_string, var.values[1:-2])) +\
+                 list(map(timestamp_to_iso_string, var.values[1:-1])) +\
                  [timestamp_to_iso_string(var.values[-1], round_fn="ceil")]
     return dict(name=dim_name,
                 size=len(values),
