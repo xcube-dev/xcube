@@ -53,7 +53,7 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                        {
                            "name": "startDate",
                            "in": "query",
-                           "description": "Start date",
+                           "description": "Start timestamp",
                            "schema": {
                                "type": "string",
                                "format": "datetime"
@@ -62,10 +62,19 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                        {
                            "name": "endDate",
                            "in": "query",
-                           "description": "End date",
+                           "description": "End timestamp",
                            "schema": {
                                "type": "string",
                                "format": "datetime"
+                           }
+                       },
+                       {
+                           "name": "tolerance",
+                           "in": "query",
+                           "description": "Time tolerance in seconds that"
+                                          " expands the given time range",
+                           "schema": {
+                               "type": "string",
                            }
                        },
                        {
@@ -91,6 +100,9 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
         end_date = self.request.get_query_arg('endDate',
                                               type=pd.Timestamp,
                                               default=None)
+        tolerance = self.request.get_query_arg('tolerance',
+                                               type=float,
+                                               default=1.0)
         max_valids = self.request.get_query_arg('maxValids',
                                                 type=int,
                                                 default=None)
@@ -103,6 +115,7 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                                                 agg_methods,
                                                 start_date,
                                                 end_date,
+                                                tolerance,
                                                 max_valids)
         self.response.set_header('Content-Type', 'application/json')
         await self.response.finish(dict(result=result))

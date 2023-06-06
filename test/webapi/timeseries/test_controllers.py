@@ -59,6 +59,47 @@ class TimeSeriesControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
             {'mean': 20.12085723876953, 'time': '2017-01-28T09:58:11Z'}]
         self.assertAlmostEqualDeep(expected_result, actual_result)
 
+    def test_get_time_series_with_tolerance(self):
+        ctx = get_timeseries_ctx()
+        actual_result = get_time_series(
+            ctx, 'demo', 'conc_tsm',
+            dict(type="Point",
+                 coordinates=[2.1, 51.4]),
+            start_date=np.datetime64(
+                '2017-01-16T10:10:00Z'
+            ),
+            end_date=np.datetime64(
+                '2017-01-28T09:55:00Z'
+            ),
+            tolerance=0
+        )
+        # Outer values missing!
+        # see https://github.com/dcs4cop/xcube/issues/860
+        expected_result = [
+            {'mean': None, 'time': '2017-01-25T09:35:51Z'},
+            {'mean': None, 'time': '2017-01-26T10:50:17Z'},
+        ]
+        self.assertAlmostEqualDeep(expected_result, actual_result)
+
+        actual_result = get_time_series(
+            ctx, 'demo', 'conc_tsm',
+            dict(type="Point",
+                 coordinates=[2.1, 51.4]),
+            start_date=np.datetime64(
+                '2017-01-16T10:00:00Z'
+            ),
+            end_date=np.datetime64(
+                '2017-01-28T09:55:00Z'
+            ),
+            tolerance=5 * 60   # 5 minutes
+        )
+        expected_result = [
+            {'mean': 3.534773588180542, 'time': '2017-01-16T10:09:22Z'},
+            {'mean': None, 'time': '2017-01-25T09:35:51Z'},
+            {'mean': None, 'time': '2017-01-26T10:50:17Z'},
+            {'mean': 20.12085723876953, 'time': '2017-01-28T09:58:11Z'}]
+        self.assertAlmostEqualDeep(expected_result, actual_result)
+
     def test_get_time_series_for_point_out_of_bounds(self):
         ctx = get_timeseries_ctx()
         actual_result = get_time_series(ctx, 'demo', 'conc_tsm',

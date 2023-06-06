@@ -52,6 +52,7 @@ def get_time_series(
         agg_methods: Union[str, Sequence[str]] = None,
         start_date: Optional[np.datetime64] = None,
         end_date: Optional[np.datetime64] = None,
+        tolerance: Optional[float] = 1.0,
         max_valids: Optional[int] = None,
         incl_ancillary_vars: bool = False
 ) -> Union[TimeSeries, TimeSeriesCollection]:
@@ -94,6 +95,13 @@ def get_time_series(
         include values of ancillary variables, if any.
     :return: Time-series data structure.
     """
+    if tolerance:
+        timedelta = pd.Timedelta(tolerance, unit='seconds')
+        if start_date is not None:
+            start_date -= timedelta
+        if end_date is not None:
+            end_date += timedelta
+
     agg_methods = timeseries.normalize_agg_methods(
         agg_methods, exception_type=ApiError.BadRequest
     )
