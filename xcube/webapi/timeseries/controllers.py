@@ -52,6 +52,7 @@ def get_time_series(
         agg_methods: Union[str, Sequence[str]] = None,
         start_date: Optional[np.datetime64] = None,
         end_date: Optional[np.datetime64] = None,
+        tolerance: Optional[float] = 1.0,
         max_valids: Optional[int] = None,
         incl_ancillary_vars: bool = False
 ) -> Union[TimeSeries, TimeSeriesCollection]:
@@ -83,6 +84,8 @@ def get_time_series(
         for geometries that cover a spatial area.
     :param start_date: An optional start date.
     :param end_date: An optional end date.
+    :param tolerance: Time tolerance in seconds that expands
+        the given time range. Defaults to one second.
     :param max_valids: Optional number of valid points.
         If it is None (default),
         also missing values are returned as NaN;
@@ -94,6 +97,13 @@ def get_time_series(
         include values of ancillary variables, if any.
     :return: Time-series data structure.
     """
+    if tolerance:
+        timedelta = pd.Timedelta(tolerance, unit='seconds')
+        if start_date is not None:
+            start_date -= timedelta
+        if end_date is not None:
+            end_date += timedelta
+
     agg_methods = timeseries.normalize_agg_methods(
         agg_methods, exception_type=ApiError.BadRequest
     )

@@ -1,9 +1,26 @@
 ## Changes in 1.0.6 (in development)
 
 * Updated [xcube Dataset Specification](docs/source/cubespec.md). 
+
 * Bundled [xcube-viewer 1.1.0-dev.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0-dev.1).
+
 * Fixed various issues with the auto-generated Python API documentation.
+
+* Fixed rounding of timestamp issue observed in xcube viewer https://github.com/dcs4cop/xcube-viewer/issues/289.
+   xcube server now rounds the time dimension labels for a dataset as follows (rounding frequency is always 1 second):
+   - First timesstamp: floor(time[0])
+   - Last timesstamp: ceil(time[-1])
+   - In-between timestamps: round(time[1: -1])
+
+* Fixed a problem where time series requests may have missed outer values
+  of a requested time range. Introduced query parameter `tolerance` for
+  endpoint `/timeseries/{datasetId}/{varName}` which is
+  the number of seconds by which the given time range is expanded. Its 
+  default value is one second to overcome rounding problems with 
+  microsecond fractions. (#860)
+
 * Updated installation instructions (#859)
+
 
 ## Changes in 1.0.5
 

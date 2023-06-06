@@ -479,15 +479,18 @@ def get_dataset_coordinates(ctx: DatasetsContext,
                             ds_id: str,
                             dim_name: str) -> Dict:
     ds, var = ctx.get_dataset_and_coord_variable(ds_id, dim_name)
-    values = list()
     if np.issubdtype(var.dtype, np.floating):
-        converter = float
+        values = list(map(float, var.values))
     elif np.issubdtype(var.dtype, np.integer):
-        converter = int
+        values = list(map(int, var.values))
+    elif len(var) == 1:
+        values = [timestamp_to_iso_string(var.values[0], round_fn="floor")]
     else:
-        converter = timestamp_to_iso_string
-    for value in var.values:
-        values.append(converter(value))
+        # see https://github.com/dcs4cop/xcube-viewer/issues/289
+        assert len(var) > 1, "Dimension length must be greater than 0."
+        values = [timestamp_to_iso_string(var.values[0], round_fn="floor")] +\
+                 list(map(timestamp_to_iso_string, var.values[1:-1])) +\
+                 [timestamp_to_iso_string(var.values[-1], round_fn="ceil")]
     return dict(name=dim_name,
                 size=len(values),
                 dtype=str(var.dtype),
