@@ -18,6 +18,42 @@
   default value is one second to overcome rounding problems with 
   microsecond fractions. (#860)
 
+* Included support for FTP filesystem by adding a new data store `ftp`. 
+
+  These changes will enable access to data cubes (`.zarr` or `.levels`) 
+  in FTP storage as shown here: 
+  
+  ```python
+  store = new_data_store(
+      "ftp",                     # FTP filesystem protocol
+      root="path/to/files",      # Path on FTP server
+      storage_options= {'host':  'ftp.xxx',  # The url to the ftp server
+                        'port': 21           # Port, defaults to 21  
+                        # Optionally, use 
+                        # 'username': 'xxx'
+                        # 'password': 'xxx'}  
+  )
+  store.list_data_ids()
+  ```
+  Note that there is no anon parameter, as the store will assume no anonymity
+  if no username and password are set.
+  
+  Same configuration for xcube Server:
+
+  ```yaml
+  DataStores:
+  - Identifier: siec
+    StoreId: ftp
+    StoreParams:
+      root: my_path_on_the_host
+      max_depth: 1
+      storage_options:
+        host: "ftp.xxx"
+        port: xxx
+        username: "xxx"
+        password': "xxx"
+  ``` 
+
 ## Changes in 1.0.5
 
 * When running xcube in a JupyterLab, the class
