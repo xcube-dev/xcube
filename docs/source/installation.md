@@ -69,7 +69,7 @@ by default takes the name `xcube`. Then, to activate the environment and
 install xcube from the repository:
 
 ```bash    
-conda activate xcube
+mamba activate xcube
 pip install --no-deps --editable .
 ```
 
@@ -83,49 +83,61 @@ installed packages.)
 
 To update the install to the latest repository version and update the
 environment to reflect to any changes in `environment.yml`:
-    
-    $ conda activate xcube
-    $ git pull --force
-    $ conda env update -n xcube --file environment.yml --prune
-    
+
+```bash
+mamba activate xcube
+git pull --force
+mamba env update -n xcube --file environment.yml --prune
+```
+
 To install `pytest` and run the unit test suite:
     
-    $ conda install pytest
-    $ pytest
-    
+```bash
+mamba install pytest
+pytest
+```
+
 To analyse test coverage (after installing pytest as above):
 
-    $ pytest --cov=xcube
+```bash
+pytest --cov=xcube
+```
 
 To produce an HTML
 [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html):
 
-    $ pytest --cov-report html --cov=xcube
+```bash
+pytest --cov-report html --cov=xcube
+```
 
 ## Docker
 
 To start a demo using docker use the following commands
 
-    $ docker build -t [your name] .
-    $ docker run [your name]
-    
-
-$ docker run -d -p [host port]:8080 [your name]
+```bash
+docker build -t [your name] .
+docker run [your name]
+docker run -d -p [host port]:8080 [your name]
+```
     
 Example 1:
 
-    $  docker build -t xcube:0.10.0 .
-    $  docker run xcube:0.10.0
+```bash
+docker build -t xcube:0.10.0 .
+docker run xcube:0.10.0
+```
 
 This will create the docker container and list the functionality of the 
 `xcube` cli.
 
 Example 2:
 
-    $  docker build -t xcube:0.10.0 .
-    $  docker run -d -p 8001:8080 xcube:0.10.0 "xcube serve -v --address 0.0.0.0 --port 8080 -c /home/xcube/examples/serve/demo/config.yml"
-    $  docker ps
+```bash
+docker build -t xcube:0.10.0 .
+docker run -d -p 8001:8080 xcube:0.10.0 "xcube serve -v --address 0.0.0.0 --port 8080 -c /home/xcube/examples/serve/demo/config.yml"
+docker ps
+```
 
-This will have started a service in the background which can be accessed 
+This will start a service in the background which can be accessed 
 through port 8001, as the startup of a service is configured as default
 behaviour.
