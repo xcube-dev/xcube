@@ -84,6 +84,8 @@ def get_time_series(
         for geometries that cover a spatial area.
     :param start_date: An optional start date.
     :param end_date: An optional end date.
+    :param tolerance: Time tolerance in seconds that expands
+        the given time range. Defaults to one second.
     :param max_valids: Optional number of valid points.
         If it is None (default),
         also missing values are returned as NaN;

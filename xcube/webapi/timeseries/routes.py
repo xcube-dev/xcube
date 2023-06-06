@@ -75,6 +75,7 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                                           " expands the given time range",
                            "schema": {
                                "type": "string",
+                               "default": 1.0,
                            }
                        },
                        {
