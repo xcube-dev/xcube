@@ -3,6 +3,7 @@ import unittest
 
 import numpy as np
 import pyproj
+import pytest
 import xarray as xr
 
 import xcube.core.new
@@ -40,12 +41,10 @@ class DatasetGridMappingTest(unittest.TestCase):
         gm1 = GridMapping.from_dataset(dataset)
         self.assertEqual(pyproj.CRS.from_string('epsg:25832'), gm1.crs)
         dataset = dataset.drop_vars('crs')
-        gm2 = GridMapping.from_dataset(dataset)
-        self.assertEqual(GEO_CRS, gm2.crs)
-        gm3 = GridMapping.from_dataset(dataset, crs=gm1.crs)
-        self.assertEqual(gm1.crs, gm3.crs)
-        self.assertEqual(('x', 'y'), gm3.xy_var_names)
-        self.assertEqual(('x', 'y'), gm3.xy_dim_names)
+        with pytest.raises(ValueError,
+                           match="grid mapping variable 'crs'"
+                                 " not found in dataset"):
+            GridMapping.from_dataset(dataset)
 
     def test_from_regular_cube_no_chunks_and_chunks(self):
         dataset = xcube.core.new.new_cube(variables=dict(rad=0.5))

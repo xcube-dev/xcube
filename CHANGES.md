@@ -1,5 +1,8 @@
 ## Changes in 1.0.6 (in development)
 
+* Reimplemented the logic to detect a dataset's grid mapping
+  in module `xcube.core.gridmapping.cfconv`.
+
 * Updated [xcube Dataset Specification](docs/source/cubespec.md). 
 * Bundled [xcube-viewer 1.1.0-dev.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0-dev.1).
 * Fixed various issues with the auto-generated Python API documentation.

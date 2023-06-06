@@ -20,14 +20,13 @@
 # SOFTWARE.
 
 from typing import Optional, Union, Tuple
-import warnings
 
 import pyproj
 import xarray as xr
 
 from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
-from .cfconv import get_dataset_grid_mapping_proxies
+from .cfconv import find_grid_mappings_for_dataset
 from .coords import new_grid_mapping_from_coords
 from .helpers import _normalize_crs
 
@@ -54,21 +53,14 @@ def new_grid_mapping_from_dataset(
     else:
         prefer_crs = crs
 
-    grid_mapping_proxies = get_dataset_grid_mapping_proxies(
-        dataset,
-        emit_warnings=emit_warnings,
-        missing_projected_crs=crs,
-        missing_rotated_latitude_longitude_crs=crs,
-        missing_latitude_longitude_crs=crs,
-    ).values()
-
+    grid_mapping_tuples = find_grid_mappings_for_dataset(dataset)
     grid_mappings = [
-        new_grid_mapping_from_coords(x_coords=gmp.coords.x,
-                                     y_coords=gmp.coords.y,
-                                     crs=gmp.crs,
-                                     tile_size=tile_size or gmp.tile_size,
+        new_grid_mapping_from_coords(x_coords=x_coords,
+                                     y_coords=y_coords,
+                                     crs=crs,
+                                     tile_size=tile_size,
                                      tolerance=tolerance)
-        for gmp in grid_mapping_proxies
+        for crs, _, (x_coords, y_coords) in grid_mapping_tuples
     ]
 
     if len(grid_mappings) > 1:

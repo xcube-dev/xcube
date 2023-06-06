@@ -1,370 +1,324 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
-import warnings
-from collections.abc import MutableMapping
-from typing import Optional, Dict, Any, Hashable, Union, Set, List, Tuple
+from typing import Optional, Sequence, Tuple, Dict, Hashable, List
 
-import numpy as np
 import pyproj
+import pyproj.exceptions
 import xarray as xr
-import zarr
-import zarr.convenience
 
-from xcube.core.schema import get_dataset_chunks
 from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_true
 from .base import CRS_WGS84
 
-class GridCoords:
-    """
-    Grid coordinates comprising x and y of
-    type xarray.DataArray.
-    """
-
-    def __init__(self):
-        self.x: Optional[xr.DataArray] = None
-        self.y: Optional[xr.DataArray] = None
+DimPair = Tuple[Hashable, Hashable]
+CoordsPair = Tuple[xr.DataArray, xr.DataArray]
+GridMappingTuple = Tuple[pyproj.CRS, str, CoordsPair]
 
 
-class GridMappingProxy:
-    """
-    Grid mapping comprising *crs* of type pyproj.crs.CRS,
-    grid coordinates, an optional name, coordinates, and a
-    tile size (= spatial chunk sizes).
-    """
-
-    def __init__(self,
-                 crs: Optional[pyproj.crs.CRS] = None,
-                 name: Optional[str] = None,
-                 coords: Optional[GridCoords] = None,
-                 tile_size: Optional[Tuple[int, int]] = None):
-        self.crs = crs
-        self.name = name
-        self.coords = coords
-        self.tile_size = tile_size
-
-
-def get_dataset_grid_mapping_proxies(
-        dataset: xr.Dataset,
-        *,
-        missing_latitude_longitude_crs: pyproj.crs.CRS = None,
-        missing_rotated_latitude_longitude_crs: pyproj.crs.CRS = None,
-        missing_projected_crs: pyproj.crs.CRS = None,
-        emit_warnings: bool = False
-) -> Dict[Union[Hashable, None], GridMappingProxy]:
-    """
-    Find grid mappings encoded as described in the CF conventions
-    [Horizontal Coordinate Reference Systems, Grid Mappings, and Projections]
-    (http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#grid-mappings-and-projections).
-
-    :param dataset:
-    :param missing_latitude_longitude_crs:
-    :param missing_rotated_latitude_longitude_crs:
-    :param missing_projected_crs:
-    :param emit_warnings:
-    :return:
-    """
-    grid_mapping_proxies: Dict[Union[Hashable, None],
-                               GridMappingProxy] = dict()
-
-    # Find any grid mapping variables by CF 'grid_mapping' attribute
-    #
-    for var_name, var in dataset.variables.items():
-        grid_mapping_var_name = var.attrs.get('grid_mapping')
-        if grid_mapping_var_name \
-                and grid_mapping_var_name not in grid_mapping_proxies \
-                and grid_mapping_var_name in dataset:
-            grid_mapping_var = dataset[grid_mapping_var_name]
-            gmp = _parse_crs_from_attrs(grid_mapping_var.attrs)
-            grid_mapping_proxies[grid_mapping_var_name] = gmp
-
-    # If no grid mapping variables found,
-    # try if CRS is encoded in some variable's attributes
-    #
-    if not grid_mapping_proxies:
-        for var_name, var in dataset.variables.items():
-            gmp = _parse_crs_from_attrs(var.attrs)
-            if gmp is not None:
-                grid_mapping_proxies[var_name] = gmp
+def find_grid_mappings_for_data_vars(dataset: xr.Dataset) \
+        -> Dict[Hashable, GridMappingTuple]:
+    grid_mappings = find_grid_mappings_for_dataset(dataset)
+    vars_to_grid_mappings: Dict[Hashable, GridMappingTuple] = {}
+    for var_name, var in dataset.data_vars.items():
+        if var.ndim < 2:
+            continue
+        for gmt in grid_mappings:
+            _, _, xy_coords = gmt
+            x_dim, y_dim = _get_xy_dims_from_xy_coords(xy_coords)
+            if x_dim in var.dims and y_dim in var.dims:
+                vars_to_grid_mappings[var_name] = gmt
                 break
+    return vars_to_grid_mappings
 
-    # If no grid mapping variables found,
-    # try if CRS is encoded in dataset attributes
-    #
-    if not grid_mapping_proxies:
-        gmp = _parse_crs_from_attrs(dataset.attrs)
-        if gmp is not None:
-            grid_mapping_proxies[None] = gmp
 
-    # Find coordinate variables.
-    #
+def find_grid_mappings_for_dataset(dataset: xr.Dataset) \
+        -> List[GridMappingTuple]:
+    dims_to_grid_mappings: Dict[DimPair, GridMappingTuple] = {}
+    for var_name, var in dataset.data_vars.items():
+        found = False
+        for x_dim, y_dim in dims_to_grid_mappings.keys():
+            if x_dim in var.dims and y_dim in var.dims:
+                found = True
+                break
+        if not found:
+            gmt = find_grid_mapping_for_data_var(dataset, var_name)
+            if gmt is not None:
+                _, _, xy_coords = gmt
+                xy_dims = _get_xy_dims_from_xy_coords(xy_coords)
+                dims_to_grid_mappings[xy_dims] = gmt
 
-    latitude_longitude_coords = GridCoords()
-    rotated_latitude_longitude_coords = GridCoords()
-    projected_coords = GridCoords()
+    grid_mapping_tuples = list(dims_to_grid_mappings.values())
 
-    potential_coord_vars = _find_potential_coord_vars(dataset)
-
-    # Find coordinate variables that use a CF standard_name.
-    #
-    coords_standard_names = (
-        (latitude_longitude_coords,
-         'longitude', 'latitude'),
-        (rotated_latitude_longitude_coords,
-         'grid_longitude', 'grid_latitude'),
-        (projected_coords,
-         'projection_x_coordinate', 'projection_y_coordinate')
+    lat_lon_2d_gmt = _find_lat_lon_2d_gmt(
+        dataset,
+        tuple(dims_to_grid_mappings.keys()) or (("x", "y"),)
     )
-    for var_name in potential_coord_vars:
-        var = dataset[var_name]
-        if var.ndim not in (1, 2):
-            continue
-        standard_name = var.attrs.get('standard_name')
-        for coords, x_name, y_name in coords_standard_names:
-            if coords.x is None and standard_name == x_name:
-                coords.x = var
-            if coords.y is None and standard_name == y_name:
-                coords.y = var
+    if lat_lon_2d_gmt is not None:
+        grid_mapping_tuples.append(lat_lon_2d_gmt)
 
-    # Find coordinate variables by common naming convention.
-    #
-    coords_var_names = (
-        (latitude_longitude_coords,
-         ('lon', 'longitude'),
-         ('lat', 'latitude')),
-        (rotated_latitude_longitude_coords,
-         ('rlon', 'rlongitude'),
-         ('rlat', 'rlatitude')),
-        (projected_coords,
-         ('x', 'xc', 'transformed_x'),
-         ('y', 'yc', 'transformed_y'))
-    )
-    for var_name in potential_coord_vars:
-        var = dataset[var_name]
-        if var.ndim not in (1, 2):
-            continue
-        for coords, x_names, y_names in coords_var_names:
-            if coords.x is None and var_name in x_names:
-                coords.x = var
-            if coords.y is None and var_name in y_names:
-                coords.y = var
-
-    # Assign found coordinates to grid mappings
-    #
-    for gmp in grid_mapping_proxies.values():
-        if gmp.name == 'latitude_longitude':
-            gmp.coords = latitude_longitude_coords
-        elif gmp.name == 'rotated_latitude_longitude':
-            gmp.coords = rotated_latitude_longitude_coords
-        else:
-            gmp.coords = projected_coords
-
-    _complement_grid_mapping_coords(latitude_longitude_coords,
-                                    'latitude_longitude',
-                                    missing_latitude_longitude_crs
-                                    or CRS_WGS84,
-                                    grid_mapping_proxies)
-    _complement_grid_mapping_coords(rotated_latitude_longitude_coords,
-                                    'rotated_latitude_longitude',
-                                    missing_rotated_latitude_longitude_crs,
-                                    grid_mapping_proxies)
-    _complement_grid_mapping_coords(projected_coords,
-                                    None,
-                                    missing_projected_crs,
-                                    grid_mapping_proxies)
-
-    # Collect complete grid mappings
-    complete_grid_mappings = dict()
-    for var_name, gmp in grid_mapping_proxies.items():
-        if gmp.coords is not None \
-                and gmp.coords.x is not None \
-                and gmp.coords.y is not None \
-                and gmp.coords.x.size >= 2 \
-                and gmp.coords.y.size >= 2 \
-                and gmp.coords.x.ndim == gmp.coords.y.ndim:
-            if gmp.coords.x.ndim == 1:
-                gmp.tile_size = _find_dataset_tile_size(
-                    dataset,
-                    gmp.coords.x.dims[0],
-                    gmp.coords.y.dims[0]
-                )
-                complete_grid_mappings[var_name] = gmp
-            elif gmp.coords.x.ndim == 2 \
-                    and gmp.coords.x.dims == gmp.coords.y.dims:
-                gmp.tile_size = _find_dataset_tile_size(
-                    dataset,
-                    gmp.coords.x.dims[1],
-                    gmp.coords.x.dims[0]
-                )
-                complete_grid_mappings[var_name] = gmp
-        elif emit_warnings:
-            warnings.warn(f'CRS "{gmp.name}": '
-                          f'missing x- and/or y-coordinates '
-                          f'(grid mapping variable "{var_name}": '
-                          f'grid_mapping_name="{gmp.name}")')
-
-    return complete_grid_mappings
+    return grid_mapping_tuples
 
 
-def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) \
-        -> Optional[GridMappingProxy]:
-    # noinspection PyBroadException
-    try:
-        crs = pyproj.crs.CRS.from_cf(attrs)
-    except pyproj.crs.CRSError:
-        return None
-    return GridMappingProxy(crs=crs,
-                            name=attrs.get('grid_mapping_name'))
-
-
-def _complement_grid_mapping_coords(
-        coords: GridCoords,
-        grid_mapping_name: Optional[str],
-        missing_crs: Optional[pyproj.crs.CRS],
-        grid_mappings: Dict[Optional[str], GridMappingProxy]
-):
-    if coords.x is not None or coords.y is not None:
-        grid_mapping = next((grid_mapping
-                             for grid_mapping in grid_mappings.values()
-                             if grid_mapping_name is None
-                             or grid_mapping_name == grid_mapping.name),
-                            None)
-        if grid_mapping is None and missing_crs is not None:
-            grid_mapping = GridMappingProxy(crs=missing_crs,
-                                            name=grid_mapping_name)
-            grid_mappings[None] = grid_mapping
-
-        if grid_mapping is not None:
-            if grid_mapping.coords is None:
-                grid_mapping.coords = coords
-            # Edge case from GeoTIFF with CRS-84 with 1D
-            # coordinates named "x" and "y" as read by rioxarray
-            if grid_mapping.coords.x is None:
-                grid_mapping.coords.x = coords.x
-            if grid_mapping.coords.y is None:
-                grid_mapping.coords.y = coords.y
-
-
-def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
-    """
-    Find potential coordinate variables.
-
-    We need this function as we can not rely on xarray.Dataset.coords,
-    because 2D coordinate arrays are most likely not indicated as such
-    in many datasets.
-    """
-
-    # Collect bounds variables. We must exclude them.
-    bounds_vars = set()
-    for k in dataset.variables:
-        var = dataset[k]
-
-        # Bounds variable as recommended through CF conventions
-        bounds_k = var.attrs.get('bounds')
-        if bounds_k is not None and bounds_k in dataset:
-            bounds_vars.add(bounds_k)
-
-        # Bounds variable by naming convention,
-        # e.g. "lon_bnds" or "lat_bounds"
-        k_splits = str(k).rsplit("_", maxsplit=1)
-        if len(k_splits) == 2:
-            k_base, k_suffix = k_splits
-            if k_suffix in ('bnds', 'bounds') and k_base in dataset:
-                bounds_vars.add(k)
-
-    potential_coord_vars = []
-
-    # First consider any CF global attribute "coordinates"
-    coordinates = dataset.attrs.get('coordinates')
-    if coordinates is not None:
-        for var_name in coordinates.split():
-            if _is_potential_coord_var(dataset, bounds_vars, var_name):
-                potential_coord_vars.append(var_name)
-
-    # Then consider any other 1D/2D variables
-    for var_name in dataset.variables:
-        if var_name not in potential_coord_vars \
-                and _is_potential_coord_var(dataset, bounds_vars, var_name):
-            potential_coord_vars.append(var_name)
-
-    return potential_coord_vars
-
-
-def _is_potential_coord_var(dataset: xr.Dataset,
-                            bounds_var_names: Set[str],
-                            var_name: Hashable) -> bool:
-    if var_name in dataset:
-        var = dataset[var_name]
-        return var.ndim in (1, 2) and var_name not in bounds_var_names
-    return False
-
-
-def _find_dataset_tile_size(dataset: xr.Dataset,
-                            x_dim_name: Hashable,
-                            y_dim_name: Hashable) \
-        -> Optional[Tuple[int, int]]:
-    """Find the most likely tile size in *dataset*"""
-    dataset_chunks = get_dataset_chunks(dataset)
-    tile_width = dataset_chunks.get(x_dim_name)
-    tile_height = dataset_chunks.get(y_dim_name)
-    if tile_width is not None and tile_height is not None:
-        return tile_width, tile_height
+def _find_lat_lon_2d_gmt(dataset: xr.Dataset,
+                         xy_dims: Tuple[DimPair]) \
+        -> Optional[GridMappingTuple]:
+    for x_dim, y_dim in xy_dims:
+        yx_dims = y_dim, x_dim
+        for lon_name, lat_name in (('lon', 'lat'),
+                                   ('longitude', 'latitude')):
+            lon_coords = dataset.coords.get(lon_name)
+            lat_coords = dataset.coords.get(lat_name)
+            if lon_coords is None or lat_coords is None:
+                lon_coords = dataset.data_vars.get(lon_name)
+                lat_coords = dataset.data_vars.get(lat_name)
+            if lon_coords is not None \
+                    and lat_coords is not None \
+                    and lon_coords.dims == yx_dims \
+                    and lat_coords.dims == yx_dims:
+                return (CRS_WGS84,
+                        "latitude_longitude",
+                        (lon_coords, lat_coords))
     return None
 
 
-def add_spatial_ref(dataset_store: zarr.convenience.StoreLike,
-                    crs: pyproj.CRS,
-                    crs_var_name: Optional[str] = 'spatial_ref',
-                    xy_dim_names: Optional[Tuple[str, str]] = None):
-    """
-    Helper function that allows adding a spatial reference to an
-    existing Zarr dataset.
+def _get_xy_dims_from_xy_coords(xy_coords: CoordsPair) -> DimPair:
+    x_coords, y_coords = xy_coords
+    if x_coords.ndim == 1:
+        # 1-D coordinates
+        assert y_coords.ndim == 1
+        return x_coords.dims[0], y_coords.dims[0]
+    else:
+        # 2-D coordinates
+        assert x_coords.ndim == 2
+        assert x_coords.dims == y_coords.dims
+        return x_coords.dims[1], x_coords.dims[0]
 
-    :param dataset_store: The dataset's existing Zarr store or path.
-    :param crs: The spatial coordinate reference system.
-    :param crs_var_name: The name of the variable that will hold the
-        spatial reference. Defaults to "spatial_ref".
-    :param xy_dim_names: The names of the x and y dimensions.
-        Defaults to ("x", "y").
-    """
-    assert_instance(dataset_store, (MutableMapping, str), name='group_store')
-    assert_instance(crs_var_name, str, name='crs_var_name')
-    x_dim_name, y_dim_name = xy_dim_names or ('x', 'y')
 
-    spatial_attrs = crs.to_cf()
-    spatial_attrs['_ARRAY_DIMENSIONS'] = []  # Required by xarray
-    group = zarr.open(dataset_store, mode='r+')
-    spatial_ref = group.array(crs_var_name,
-                              0,
-                              shape=(),
-                              dtype=np.uint8,
-                              fill_value=0)
-    spatial_ref.attrs.update(**spatial_attrs)
+def find_grid_mapping_for_data_var(
+        dataset: xr.Dataset,
+        var_name: Hashable
+) -> Optional[GridMappingTuple]:
+    assert_instance(dataset, xr.Dataset, "dataset")
+    assert_instance(var_name, Hashable, "var_name")
+    assert_true(var_name in dataset,
+                message=f"variable {var_name!r} not found in dataset")
 
-    for item_name, item in group.items():
-        if item_name != crs_var_name:
-            dims = item.attrs.get('_ARRAY_DIMENSIONS')
-            if dims and len(dims) >= 2 \
-                    and dims[-2] == y_dim_name \
-                    and dims[-1] == x_dim_name:
-                item.attrs['grid_mapping'] = crs_var_name
+    var = dataset[var_name]
+    if var.ndim < 2:
+        return None
 
-    zarr.convenience.consolidate_metadata(dataset_store)
+    gm_value = var.attrs.get("grid_mapping")
+    if isinstance(gm_value, str) and gm_value:
+        crs, gm_name, xy_coords = _find_grid_mapping_for_var_with_gm_value(
+            dataset, var, gm_value
+        )
+        force_xy_coords = True
+    else:
+        crs, gm_name, xy_coords = CRS_WGS84, "latitude_longitude", None
+        force_xy_coords = False
+
+    if xy_coords is None:
+        xy_coords = _find_coordinates_for_crs_and_gm_name(
+            dataset, var, gm_name, force_xy_coords
+        )
+        if xy_coords is None:
+            return None
+
+    return crs, gm_name, xy_coords
+
+
+def _find_grid_mapping_for_var_with_gm_value(
+        dataset: xr.Dataset,
+        var: xr.DataArray,
+        gm_value: str
+) -> Tuple[pyproj.CRS,
+           str,
+           Optional[CoordsPair]]:
+    xy_coords = None
+
+    if ":" in gm_value:
+        # gm_value has format "<gm_var_name>: <x_name> <y_name>"
+        gm_var_name, coord_var_names = gm_value.split(":", maxsplit=1)
+        coord_var_names = coord_var_names.split()
+        if len(coord_var_names) == 2:
+            x_name, y_name = coord_var_names
+            # Check CF, whether the following is correct:
+            # if gm_name in ("latitude_longitude",
+            #                "rotated_latitude_longitude"):
+            #     x_name, y_name = y_name, x_name
+            x_coords = dataset.get(x_name)
+            y_coords = dataset.get(y_name)
+            if ((_is_valid_1d_coord_var(var, x_coords)
+                 and _is_valid_1d_coord_var(var, y_coords))
+                    or (_is_valid_2d_coord_var(var, x_coords)
+                        and _is_valid_2d_coord_var(var, y_coords))):
+                xy_coords = x_coords, y_coords
+        if xy_coords is None:
+            raise ValueError(f"invalid coordinates in"
+                             f" grid mapping value {gm_value!r}")
+    else:
+        # gm_value has format "<gm_var_name>"
+        gm_var_name = gm_value
+
+    crs, gm_name = _parse_crs(dataset, gm_var_name)
+
+    return crs, gm_name, xy_coords
+
+
+def _find_coordinates_for_crs_and_gm_name(
+        dataset: xr.Dataset,
+        var: xr.DataArray,
+        gm_name: str,
+        force: bool
+) -> Optional[Tuple[xr.DataArray, xr.DataArray]]:
+    other_vars = [dataset[var_name]
+                  for var_name in dataset.variables.keys()
+                  if var_name != var.name]
+
+    valid_1d_coord_vars = [
+        other_var for other_var in other_vars
+        if _is_valid_1d_coord_var(var, other_var)
+    ]
+
+    if gm_name == "latitude_longitude":
+        x_name, y_name = "longitude", "latitude"
+    elif gm_name == "rotated_latitude_longitude":
+        x_name, y_name = "grid_longitude", "grid_latitude"
+    else:
+        x_name, y_name = "projection_x_coordinate", "projection_y_coordinate"
+
+    x_coords = _find_coord_var_by_standard_name(valid_1d_coord_vars, x_name)
+    y_coords = _find_coord_var_by_standard_name(valid_1d_coord_vars, y_name)
+    if x_coords is not None and y_coords is not None:
+        return x_coords, y_coords
+
+    valid_2d_coord_vars = [
+        other_var for other_var in other_vars
+        if _is_valid_2d_coord_var(var, other_var)
+    ]
+    x_coords = _find_coord_var_by_standard_name(valid_2d_coord_vars, x_name)
+    y_coords = _find_coord_var_by_standard_name(valid_2d_coord_vars, y_name)
+    if x_coords is not None and y_coords is not None \
+            and x_coords.dims == y_coords.dims:
+        return x_coords, y_coords
+
+    xy_coords = _find_1d_coord_var_by_common_names(
+        valid_1d_coord_vars,
+        (("lon", "lat"),
+         ("longitude", "latitude"),
+         ("x", "y"),
+         ("xc", "yc")),
+    )
+    if xy_coords is not None:
+        return xy_coords
+
+    # Check: also try _find_2d_coord_var_by_common_names()?
+
+    if force:
+        raise ValueError(f"cannot determine grid mapping"
+                         f" coordinates for variable {var.name!r}"
+                         f" with dimensions {var.dims!r}")
+    return None
+
+def _find_1d_coord_var_by_common_names(
+        coords: Sequence[xr.DataArray],
+        common_xy_names: Sequence[Tuple[str, str]],
+) -> Optional[Tuple[xr.DataArray, xr.DataArray]]:
+
+    # Priority 1: find var by "axis" attribute
+    x_coords = None
+    y_coords = None
+    for var in coords:
+        if var.attrs.get("axis") == "X":
+            x_coords = var
+        if var.attrs.get("axis") == "Y":
+            y_coords = var
+    if x_coords is not None and y_coords is not None:
+        return x_coords, y_coords
+
+    # Priority 2: find var where dim name == common name == var name
+    x_coords = None
+    y_coords = None
+    for var in coords:
+        for x_name, y_name in common_xy_names:
+            if var.dims[0] == x_name and var.name == x_name:
+                x_coords = var
+            if var.dims[0] == y_name and var.name == y_name:
+                y_coords = var
+    if x_coords is not None and y_coords is not None:
+        return x_coords, y_coords
+
+    # Priority 3: find var where dim name == common name
+    x_coords = None
+    y_coords = None
+    for var in coords:
+        for x_name, y_name in common_xy_names:
+            if var.dims[0] == x_name:
+                x_coords = var
+            if var.dims[0] == y_name:
+                y_coords = var
+    if x_coords is not None and y_coords is not None:
+        return x_coords, y_coords
+
+    return None
+
+
+def _find_coord_var_by_standard_name(
+        coords: Sequence[xr.DataArray],
+        standard_name: str
+) -> Optional[xr.DataArray]:
+    for var in coords:
+        if var.attrs.get("standard_name") == standard_name:
+            return var
+    return None
+
+
+def _parse_crs(dataset: xr.Dataset,
+               gm_var_name: str) -> Tuple[pyproj.CRS, Optional[str]]:
+    if gm_var_name not in dataset:
+        raise ValueError(f"grid mapping variable {gm_var_name!r}"
+                         f" not found in dataset")
+    gm_var = dataset[gm_var_name]
+    try:
+        return (pyproj.CRS.from_cf(gm_var.attrs),
+                gm_var.attrs.get("grid_mapping_name"))
+    except pyproj.exceptions.CRSError as e:
+        raise ValueError(f"variable {gm_var_name!r}"
+                         f" is not a valid grid mapping") from e
+
+
+def _is_valid_1d_coord_var(data_var: xr.DataArray,
+                           coord_var: Optional[xr.DataArray]) -> bool:
+    return (coord_var is not None
+            and coord_var.ndim == 1
+            and coord_var.dims[0] in data_var.dims)
+
+
+def _is_valid_2d_coord_var(data_var: xr.DataArray,
+                           coord_var: Optional[xr.DataArray]) -> bool:
+    return (coord_var is not None
+            and coord_var.ndim == 2
+            and coord_var.dims[0] in data_var.dims
+            and coord_var.dims[1] in data_var.dims)
+
+
+
