@@ -1,4 +1,4 @@
-name: xcube
+name: rtd-xcube
 channels:
   - conda-forge
   - defaults
@@ -17,7 +17,7 @@ dependencies:
   - fiona >=1.8
   - fontconfig
   - fsspec >=2021.6
-  - gdal >=3.0,<3.6.3
+  - gdal >=3.0
   - geopandas >=0.8
   - jdcal >=1.4
   - jsonschema >=3.2
@@ -55,3 +55,11 @@ dependencies:
   - pytest >=4.4
   - pytest-cov >=2.6
   - requests-mock >=1.8
+  # RTD specials
+  - pip:
+      - sphinx
+      - sphinx_rtd_theme
+      - sphinx-argparse
+      - sphinx-autodoc-annotation
+      - recommonmark
+      - mock
