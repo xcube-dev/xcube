@@ -110,3 +110,24 @@ class TimeSeriesRoutesTest(RoutesTestCase):
                  ']}'
         )
         self.assertResponseOK(response)
+
+    def test_fetch_timeseries_tolerance(self):
+        response = self.fetch(
+            '/timeseries/demo/conc_chl?tolerance=60',
+            method="POST",
+            body='{"type": "Point", "coordinates": [1, 51]}'
+        )
+        self.assertResponseOK(response)
+
+        response = self.fetch(
+            '/timeseries/demo/conc_chl?tolerance=2D',
+            method="POST",
+            body='{"type": "Point", "coordinates": [1, 51]}'
+        )
+        self.assertBadRequestResponse(
+            response,
+            'HTTP 400:'
+            ' Bad Request ('
+            "Query parameter 'tolerance' must have type 'float'."
+            ')'
+        )

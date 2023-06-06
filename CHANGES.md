@@ -1,8 +1,17 @@
 ## Changes in 1.0.6 (in development)
 
 * Updated [xcube Dataset Specification](docs/source/cubespec.md). 
+
 * Bundled [xcube-viewer 1.1.0-dev.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0-dev.1).
+
 * Fixed various issues with the auto-generated Python API documentation.
+
+* Fixed a problem where time series requests may have missed outer values
+  of a requested time range. Introduced query parameter `tolerance` for
+  endpoint `/timeseries/{datasetId}/{varName}` which is
+  the number of seconds by which the given time range is expanded. Its 
+  default value is one second to overcome rounding problems with 
+  microsecond fractions. (#860)
 
 ## Changes in 1.0.5
 
