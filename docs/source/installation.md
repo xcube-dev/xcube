@@ -1,45 +1,77 @@
 # Installation
 
-xcube can be installed from a released conda package, or directly from a
-copy of the source code repository.
+## Prerequisites
 
-The first two sections below give instructions for installation using conda,
-available as part of the [miniconda
-distribution](https://docs.conda.io/en/latest/miniconda.html). If installation
-using conda proves to be unacceptably slow, mamba can be used instead (see
-[Installation using mamba](#installation-using-mamba)).
+xcube releases are packaged as conda packages in the
+[conda-forge](https://conda-forge.org/) channel. It is recommended to install
+xcube into a conda environment using the
+[mamba package manager](https://github.com/mamba-org/mamba), which will
+also automatically install and manage xcube’s dependencies.
+You can find [installation instructions for mamba itself
+here](https://mamba.readthedocs.io/en/latest/installation.html), if you
+don’t already have it installed.
 
-## Installation from the conda package
+Note that, while it is technically possible to use the conda package manager
+as an alternative to mamba, we do not recommend this: xcube uses a large
+number of dependencies from the conda-forge channel, and it can take conda
+several hours to resolve these dependencies during installation.
 
-Into a currently active, existing conda environment (>= Python 3.7)
+## Overview of insetallation methods
 
-    $ conda install -c conda-forge xcube
+There are two main ways to install the xcube package:
 
-Into a new conda environment named `xcube`:
-    
-    $ conda create -c conda-forge -n xcube xcube
+1.  **Install an official release** from a conda-forge package, using the mamba
+    package manager. This method is recommended for most users.
+2.  Use mamba to install only xcube’s dependencies, but not xcube itself.
+    Then **clone the xcube git repository** and install directly from your
+    local repository. You should use this method if you intend to participate
+    in the development of xcube, or if you need to use features that are
+    so new that they are not yet available in an officially release conda-forge
+    package.
 
-The argument to the `-n` option can be changed to create a differently
-named environment.
+These methods are described in more detail in the following sections.
+
+## Installation from the conda-forge package
+
+To install the latest release of xcube into a new conda environment called
+`xcube`, run the following command.
+
+```bash
+mamba create --name xcube --channel conda-forge xcube
+```
+
+You can give the environment a different name by providing a different argument
+to the `--name` option.
+
+To install xcube into an existing, currently activated conda environment,
+use the following command.
+
+```bash
+mamba install --channel conda-forge xcube
+```
 
 ## Installation from the source code repository
 
 First, clone the repository and create a conda environment from it:
-    
-    $ git clone https://github.com/dcs4cop/xcube.git
-    $ cd xcube
-    $ conda env create
+
+```bash
+git clone https://github.com/dcs4cop/xcube.git
+cd xcube
+mamba env create
+```
 
 From this point on, all instructions assume that your current directory is the
 root of the xcube repository.
 
-The `conda env create` command above creates an environment according to
+The `mamba env create` command above creates an environment according to
 the specifications in the `environment.yml` file in the repository, which
 by default takes the name `xcube`. Then, to activate the environment and
 install xcube from the repository:
-    
-    $ conda activate xcube
-    $ pip install --no-deps --editable .
+
+```bash    
+conda activate xcube
+pip install --no-deps --editable .
+```
 
 The second command installs xcube in ‘editable mode’, meaning that it will
 be run directly from the repository, and changes to the code in the repository
@@ -69,30 +101,6 @@ To produce an HTML
 [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html):
 
     $ pytest --cov-report html --cov=xcube
-
-## Installation using mamba
-
-[Mamba](https://github.com/mamba-org/mamba) is a dramatically faster drop-in
-replacement for the conda tool. Mamba itself can be installed using conda.
-If installation using conda proves to be unacceptably slow, it is recommended
-to install mamba, as follows:
-
-    $ conda create -n xcube python=3.8
-    $ conda activate xcube
-    $ conda install -c conda-forge mamba
-
-This creates a conda environment called `xcube`, activates the environment,
-and installs mamba in it. To install xcube from its conda-forge package, you
-can now use:
-
-    $ mamba install -c conda-forge xcube
-
-Alternatively, to install xcube directly from the repository:
-
-    $ git clone https://github.com/dcs4cop/xcube.git
-    $ cd xcube
-    $ mamba env create
-    $ pip install --no-deps --editable .
 
 ## Docker
 
