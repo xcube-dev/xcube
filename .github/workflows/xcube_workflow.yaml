@@ -86,13 +86,21 @@ jobs:
     needs: build-docker-image
     name: update-xcube-tag
     steps:
+      - name: Get installation token
+        id: get_installation_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.TOKEN_PROVIDER_APP_ID }}
+          private_key: ${{ secrets.TOKEN_PROVIDER_KEY }}
+          repository: bc-org/k8s-configs
+          # the installationId of the GitHub app we are using
+          installationId: 36950178
       - name: git-checkout
         uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: bc-org/k8s-configs
-          token: ${{ secrets.API_TOKEN_GITHUB }}
-          path: k8s
+      - name: checkout-k8s
+        run: |
+          git clone https://x-access-token:${{ steps.get_installation_token.outputs.token }}@github.com/bc-org/k8s-configs.git
+          mv k8s-configs k8s
       - name: get-release-tag
         id: release
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
@@ -138,13 +146,10 @@ jobs:
       - name: Pushes to another repository
         # Don't run if run locally and should be ignored
         if: ${{ steps.deployment-phase.outputs.phase != 'ignore' && !env.ACT }}
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
-        with:
-          source-directory: 'k8s'
-          destination-github-username: 'bc-org'
-          destination-repository-name: 'k8s-configs'
-          user-email: bcdev@brockmann-consult.de
-          target-branch: main
-          commit-message: ${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }} and ${{ steps.release.outputs.hash }}
+        run: |
+          cd ./k8s
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -m "${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }}" and ${{ steps.release.outputs.hash }}
+          git remote set-url origin https://x-access-token:${{ steps.get_installation_token.outputs.token }}@github.com/bc-org/k8s-configs.git
+          git push origin main
