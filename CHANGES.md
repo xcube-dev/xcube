@@ -4,6 +4,8 @@
 
 * Bundled [xcube-viewer 1.1.0](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0).
 
+* Updated installation instructions (#859)
+
 * Included support for FTP filesystem by adding a new data store `ftp`. 
 
   These changes will enable access to data cubes (`.zarr` or `.levels`) 
