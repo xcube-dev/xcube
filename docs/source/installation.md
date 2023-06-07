@@ -11,10 +11,13 @@ You can find [installation instructions for mamba itself
 here](https://mamba.readthedocs.io/en/latest/installation.html), if you
 don’t already have it installed.
 
-Note that, while it is technically possible to use the conda package manager
-as an alternative to mamba, we do not recommend this: xcube uses a large
-number of dependencies from the conda-forge channel, and it can take conda
-several hours to resolve these dependencies during installation.
+In addition to mamba, there are alternative package managers available for
+conda environments:
+
+1. The original `conda` tool. When considering this tool, please note that
+   package installation and management with conda may be significantly slower 
+   than with mamba.
+2. The `micromamba` tool, a minimalistic, self-contained version of mamba.
 
 ## Overview of insetallation methods
 
