@@ -19,7 +19,7 @@ conda environments:
    than with mamba.
 2. The `micromamba` tool, a minimalistic, self-contained version of mamba.
 
-## Overview of insetallation methods
+## Overview of installation methods
 
 There are two main ways to install the xcube package:
 
