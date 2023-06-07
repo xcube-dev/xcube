@@ -150,6 +150,6 @@ jobs:
           cd ./k8s
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git commit -m "${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }}" and ${{ steps.release.outputs.hash }}
+          git commit -m "${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }} and ${{ steps.release.outputs.hash }}"
           git remote set-url origin https://x-access-token:${{ steps.get_installation_token.outputs.token }}@github.com/bc-org/k8s-configs.git
           git push origin main
