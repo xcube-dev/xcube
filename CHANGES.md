@@ -45,6 +45,8 @@
 * Updated [xcube Dataset Specification](docs/source/cubespec.md).
   (addressing #844)
 
+* Added [xcube Data Access](docs/source/dataaccess.md) documentation.
+
 ### Fixes 
 
 * Fixed various issues with the auto-generated Python API documentation.
@@ -62,6 +64,9 @@
     - Last times stamp: `ceil(time[-1])`
     - In-between time stamps: `round(time[1: -1])`
 
+### Other changes
+
+* Pinned `gdal` dependency to `>=3.0, <3.6.3` due to incompatibilities.
 
 ## Changes in 1.0.5
 
