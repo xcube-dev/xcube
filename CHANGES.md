@@ -1,3 +1,9 @@
+## Changes in 1.1.1
+
+* Bundled new build of [xcube-viewer 1.1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0)
+  that will correctly respect a given xcube server from loaded from the 
+  viewer configuration.
+
 ## Changes in 1.1.0
 
 ### Enhancements
