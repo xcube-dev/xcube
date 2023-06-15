@@ -92,7 +92,8 @@ _FS_STORAGE_ITEMS = (
     ('file', 'local filesystem'),
     ('s3', 'AWS S3 compatible object storage'),
     ('abfs', 'Azure blob compatible object storage'),
-    ('memory', 'in-memory filesystem')
+    ('memory', 'in-memory filesystem'),
+    ('ftp', 'FTP filesystem')
 )
 
 _FS_DATA_ACCESSOR_ITEMS = (

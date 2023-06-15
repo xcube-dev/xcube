@@ -19,14 +19,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import cftime
 import datetime
-from typing import Optional, Sequence, Tuple, Union
+import re
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 
+import cftime
 import numpy as np
 import pandas as pd
-import re
 import xarray as xr
+
+from xcube.util.assertions import assert_in
 
 REF_DATETIME_STR = '1970-01-01 00:00:00'
 REF_DATETIME = pd.to_datetime(REF_DATETIME_STR, utc=True)
@@ -42,7 +47,8 @@ _RE_TO_DATETIME_FORMATS = patterns = [(re.compile(14 * '\\d'), '%Y%m%d%H%M%S'),
                                       (re.compile(4 * '\\d'), '%Y')]
 
 
-def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.Dataset:
+def add_time_coords(dataset: xr.Dataset,
+                    time_range: Tuple[float, float]) -> xr.Dataset:
     t1, t2 = time_range
     if t1 != t2:
         t_center = (t1 + t2) / 2
@@ -50,7 +56,8 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
         t_center = t1
     dataset = dataset.expand_dims('time')
     dataset = dataset.assign_coords(time=(['time'],
-                                          from_time_in_days_since_1970([t_center])))
+                                          from_time_in_days_since_1970(
+                                              [t_center])))
     time_var = dataset.coords['time']
     time_var.attrs['long_name'] = 'time'
     time_var.attrs['standard_name'] = 'time'
@@ -65,7 +72,8 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     if t1 != t2:
         time_var.attrs['bounds'] = 'time_bnds'
         dataset = dataset.assign_coords(
-            time_bnds=(['time', 'bnds'], from_time_in_days_since_1970([t1, t2]).reshape(1, 2))
+            time_bnds=(['time', 'bnds'],
+                       from_time_in_days_since_1970([t1, t2]).reshape(1, 2))
         )
         time_bnds_var = dataset.coords['time_bnds']
         time_bnds_var.attrs['long_name'] = 'time'
@@ -82,7 +90,8 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
     return dataset
 
 
-def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool = True) \
+def get_time_range_from_data(dataset: xr.Dataset,
+                             maybe_consider_metadata: bool = True) \
         -> Tuple[Optional[float], Optional[float]]:
     """
     Determines a time range from a dataset by inspecting its time_bounds or time data arrays.
@@ -127,7 +136,8 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool 
                                                       maybe_consider_metadata)
     time_diff = time.diff(dim=time.dims[0]).values
     time_res = time_diff[0]
-    time_regular = all([time_res - diff == np.timedelta64(0) for diff in time_diff[1:]])
+    time_regular = all(
+        [time_res - diff == np.timedelta64(0) for diff in time_diff[1:]])
     if time_regular:
         return data_start - time_res / 2, data_end + time_res / 2
     return _maybe_return_time_range_from_metadata(dataset,
@@ -139,11 +149,14 @@ def get_time_range_from_data(dataset: xr.Dataset, maybe_consider_metadata: bool 
 def _maybe_return_time_range_from_metadata(dataset: xr.Dataset,
                                            data_start_time: float,
                                            data_end_time: float,
-                                           maybe_consider_metadata: bool) -> Tuple[float, float]:
+                                           maybe_consider_metadata: bool) -> \
+Tuple[float, float]:
     if maybe_consider_metadata:
         attr_start_time, attr_end_time = get_time_range_from_attrs(dataset)
-        attr_start_time = pd.to_datetime(attr_start_time, infer_datetime_format=False, utc=True)
-        attr_end_time = pd.to_datetime(attr_end_time, infer_datetime_format=False, utc=True)
+        attr_start_time = pd.to_datetime(attr_start_time,
+                                         infer_datetime_format=False, utc=True)
+        attr_end_time = pd.to_datetime(attr_end_time,
+                                       infer_datetime_format=False, utc=True)
         if attr_start_time is not None and attr_end_time is not None:
             try:
                 if attr_start_time < data_start_time and attr_end_time > data_end_time:
@@ -166,17 +179,21 @@ def _get_time_range_from_time_bounds(dataset: xr.Dataset, time_bounds_name: str)
         return time_bnds[0, 0].values, time_bnds[-1, 1].values
 
 
-def get_time_range_from_attrs(dataset: xr.Dataset) -> Tuple[Optional[str], Optional[str]]:
+def get_time_range_from_attrs(dataset: xr.Dataset) -> Tuple[
+    Optional[str], Optional[str]]:
     return get_start_time_from_attrs(dataset), get_end_time_from_attrs(dataset)
 
 
 def get_start_time_from_attrs(dataset: xr.Dataset) -> Optional[str]:
-    return _get_attr(dataset, ['time_coverage_start', 'time_start', 'start_time', 'start_date'])
+    return _get_attr(dataset,
+                     ['time_coverage_start', 'time_start', 'start_time',
+                      'start_date'])
 
 
 def get_end_time_from_attrs(dataset: xr.Dataset) -> Optional[str]:
-    return _get_attr(dataset, ['time_coverage_end', 'time_stop', 'time_end', 'stop_time',
-                               'end_time', 'stop_date', 'end_date'])
+    return _get_attr(dataset,
+                     ['time_coverage_end', 'time_stop', 'time_end', 'stop_time',
+                      'end_time', 'stop_date', 'end_date'])
 
 
 def _get_attr(dataset: xr.Dataset, names: Sequence[str]) -> Optional[str]:
@@ -187,39 +204,48 @@ def _get_attr(dataset: xr.Dataset, names: Sequence[str]) -> Optional[str]:
 
 def remove_time_part_from_isoformat(datetime_str: str) -> str:
     date_length = 10  # for example len("2010-02-04") == 10
-    if len(datetime_str) > date_length and datetime_str[date_length] in ('T', ' '):
+    if len(datetime_str) > date_length and datetime_str[date_length] in (
+    'T', ' '):
         return datetime_str[0: date_length]
     return datetime_str
 
 
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
-    date_time = pd.to_datetime(time_str, format=pattern, infer_datetime_format=False, utc=True)
+    date_time = pd.to_datetime(time_str, format=pattern,
+                               infer_datetime_format=False, utc=True)
     timedelta = date_time - REF_DATETIME
     return timedelta.days + timedelta.seconds / SECONDS_PER_DAY + \
-           timedelta.microseconds / MICROSECONDS_PER_DAY
+        timedelta.microseconds / MICROSECONDS_PER_DAY
 
 
-def from_time_in_days_since_1970(time_value: Union[float, Sequence[float]]) -> np.ndarray:
+def from_time_in_days_since_1970(
+        time_value: Union[float, Sequence[float]]) -> np.ndarray:
     if isinstance(time_value, int) or isinstance(time_value, float):
-        return pd.to_datetime(time_value, utc=True, unit='d', origin='unix').round(freq='ms') \
+        return pd.to_datetime(time_value, utc=True, unit='d',
+                              origin='unix').round(freq='ms') \
             .to_datetime64()
     else:
         return np.array(list(map(from_time_in_days_since_1970, time_value)))
 
 
-def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime], freq='S'):
+def timestamp_to_iso_string(time: Union[np.datetime64, datetime.datetime],
+                            freq: str = 'S',
+                            round_fn: str = 'round'):
     """
     Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00
     to an ISO-format string.
 
-    :param time: UTC timestamp given as time delta since since 1970-01-01 00:00:00 in the units
+    :param time: UTC timestamp given as time delta since 1970-01-01 00:00:00 in the units
         given by the numpy datetime64 type, so it can be as nanos, millis,
         seconds since 1970-01-01 00:00:00.
     :param freq: time rounding resolution. See pandas.Timestamp.round().
+    :param round_fn: time rounding function. Defaults to pandas.Timestamp.round().
     :return: ISO-format string.
     """
     # All times are UTC (Z = Zulu Time Zone = UTC)
-    return pd.Timestamp(time).round(freq).isoformat() + 'Z'
+    assert_in(round_fn, ("ceil", "floor", "round"), name="round_fn")
+    timestamp = pd.Timestamp(time)
+    return getattr(timestamp, round_fn)(freq).isoformat() + 'Z'
 
 
 def find_datetime_format(line: str) -> Tuple[Optional[str], int, int]:

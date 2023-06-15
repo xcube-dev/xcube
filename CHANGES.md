@@ -1,8 +1,78 @@
-## Changes in 1.0.6 (in development)
+## Changes in 1.1.1
 
-* Updated [xcube Dataset Specification](docs/source/cubespec.md). 
-* Bundled [xcube-viewer 1.1.0-dev.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0-dev.1).
+* Bundled new build of [xcube-viewer 1.1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0)
+  that will correctly respect a given xcube server from loaded from the 
+  viewer configuration.
+
+## Changes in 1.1.0
+
+### Enhancements
+
+* Bundled [xcube-viewer 1.1.0](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0).
+
+* Updated installation instructions (#859)
+
+* Included support for FTP filesystem by adding a new data store `ftp`. 
+
+  These changes will enable access to data cubes (`.zarr` or `.levels`) 
+  in FTP storage as shown here: 
+  
+  ```python
+  store = new_data_store(
+      "ftp",                     # FTP filesystem protocol
+      root="path/to/files",      # Path on FTP server
+      storage_options= {'host':  'ftp.xxx',  # The url to the ftp server
+                        'port': 21           # Port, defaults to 21  
+                        # Optionally, use 
+                        # 'username': 'xxx'
+                        # 'password': 'xxx'}  
+  )
+  store.list_data_ids()
+  ```
+  Note that there is no anon parameter, as the store will assume no anonymity
+  if no username and password are set.
+  
+  Same configuration for xcube Server:
+
+  ```yaml
+  DataStores:
+  - Identifier: siec
+    StoreId: ftp
+    StoreParams:
+      root: my_path_on_the_host
+      max_depth: 1
+      storage_options:
+        host: "ftp.xxx"
+        port: xxx
+        username: "xxx"
+        password': "xxx"
+  ``` 
+
+* Updated [xcube Dataset Specification](docs/source/cubespec.md).
+  (addressing #844)
+
+* Added [xcube Data Access](docs/source/dataaccess.md) documentation.
+
+### Fixes 
+
 * Fixed various issues with the auto-generated Python API documentation.
+
+* Fixed a problem where time series requests may have missed outer values
+  of a requested time range. (#860)
+  - Introduced query parameter `tolerance` for
+    endpoint `/timeseries/{datasetId}/{varName}` which is
+    the number of seconds by which the given time range is expanded. Its 
+    default value is one second to overcome rounding problems with 
+    microsecond fractions. (#860)
+  - We now round the time dimension labels for a dataset as 
+    follows (rounding frequency is 1 second by default):
+    - First times stamp: `floor(time[0])`
+    - Last times stamp: `ceil(time[-1])`
+    - In-between time stamps: `round(time[1: -1])`
+
+### Other changes
+
+* Pinned `gdal` dependency to `>=3.0, <3.6.3` due to incompatibilities.
 
 ## Changes in 1.0.5
 
