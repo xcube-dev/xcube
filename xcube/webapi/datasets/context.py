@@ -727,7 +727,8 @@ class DatasetsContext(ResourcesContext):
             dataset_config.get("PlaceGroups", []),
             base_url,
             is_global=False,
-            load_features=load_features
+            load_features=load_features,
+            qualifiers=[ds_id]
         )
 
         for place_group in place_groups:

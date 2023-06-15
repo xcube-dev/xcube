@@ -19,7 +19,6 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-
 from typing import Any, Dict, List, Optional, Callable, Iterator
 from typing import Sequence
 
@@ -41,7 +40,7 @@ class PlacesContext(ResourcesContext):
 
     def __init__(self, server_ctx: Context):
         super().__init__(server_ctx)
-        self._externally_configured_place_groups: List[PlaceGroup] = list()
+        self._additional_place_groups: Dict[str, List[PlaceGroup]] = dict()
         self._place_group_cache: Dict[str, PlaceGroup] = dict()
 
     def on_dispose(self):
@@ -104,7 +103,8 @@ class PlacesContext(ResourcesContext):
                           place_group_configs: List,
                           base_url: str,
                           is_global: bool = False,
-                          load_features: bool = False) -> List[PlaceGroup]:
+                          load_features: bool = False,
+                          qualifiers: List[str] = list()) -> List[PlaceGroup]:
         place_groups = []
         for place_group_config in place_group_configs:
             place_group = self._load_place_group(place_group_config,
@@ -112,12 +112,19 @@ class PlacesContext(ResourcesContext):
                                                  is_global=is_global,
                                                  load_features=load_features)
             place_groups.append(place_group)
-        for place_group in self._externally_configured_place_groups:
-            place_groups.append(place_group)
+        for q in [qualifier for qualifier in qualifiers
+                  if qualifier in self._additional_place_groups]:
+            for place_group in self._additional_place_groups[q]:
+                place_groups.append(place_group)
         return place_groups
 
-    def add_place_group(self, place_group: PlaceGroup):
-        self._externally_configured_place_groups.append(place_group)
+    def add_place_group(self,
+                        place_group: PlaceGroup,
+                        qualifiers: List[str] = list()):
+        for qualifier in qualifiers:
+            if qualifier not in self._additional_place_groups:
+                self._additional_place_groups[qualifier] = []
+            self._additional_place_groups[qualifier].append(place_group)
 
     def _load_place_group(self,
                           place_group_config: Dict[str, Any],
