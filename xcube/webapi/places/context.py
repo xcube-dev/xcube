@@ -41,7 +41,7 @@ class PlacesContext(ResourcesContext):
 
     def __init__(self, server_ctx: Context):
         super().__init__(server_ctx)
-        self._geo_db_place_groups = []
+        self._externally_configured_place_groups: List[PlaceGroup] = list()
         self._place_group_cache: Dict[str, PlaceGroup] = dict()
 
     def on_dispose(self):
@@ -101,7 +101,7 @@ class PlacesContext(ResourcesContext):
         )
 
     def load_place_groups(self,
-                          place_group_configs: Dict,
+                          place_group_configs: List,
                           base_url: str,
                           is_global: bool = False,
                           load_features: bool = False) -> List[PlaceGroup]:
@@ -112,11 +112,12 @@ class PlacesContext(ResourcesContext):
                                                  is_global=is_global,
                                                  load_features=load_features)
             place_groups.append(place_group)
-        place_groups.append(self._geo_db_place_groups)
+        for place_group in self._externally_configured_place_groups:
+            place_groups.append(place_group)
         return place_groups
 
-    def add_place_groups(self, json):
-        self._geo_db_place_groups.append(json)
+    def add_place_group(self, place_group: PlaceGroup):
+        self._externally_configured_place_groups.append(place_group)
 
     def _load_place_group(self,
                           place_group_config: Dict[str, Any],
@@ -137,11 +138,7 @@ class PlacesContext(ResourcesContext):
             return self.get_global_place_group(place_group_id, base_url,
                                                load_features=load_features)
 
-        place_group_id = place_group_config.get("Identifier")
-        if not place_group_id:
-            raise ApiError.InvalidServerConfig(
-                "Missing 'Identifier' entry in a 'PlaceGroups' item"
-            )
+        place_group_id = self.get_place_group_id_safe(place_group_config)
 
         place_group = self.get_cached_place_group(place_group_id)
         if place_group is None:
@@ -171,13 +168,8 @@ class PlacesContext(ResourcesContext):
                 join = dict(path=join_path, property=join_property,
                             encoding=join_encoding)
 
-            property_mapping = place_group_config.get("PropertyMapping")
-            if property_mapping:
-                property_mapping = dict(property_mapping)
-                for key, value in property_mapping.items():
-                    if isinstance(value, str) and '${base_url}' in value:
-                        property_mapping[key] = value.replace('${base_url}',
-                                                              base_url)
+            property_mapping = self.get_property_mapping(base_url,
+                                                         place_group_config)
 
             place_group = dict(type="FeatureCollection",
                                features=None,
@@ -188,26 +180,48 @@ class PlacesContext(ResourcesContext):
                                sourceEncoding=source_encoding,
                                join=join)
 
-            sub_place_group_configs = place_group_config.get("Places")
-            if sub_place_group_configs:
-                raise ApiError.InvalidServerConfig(
-                    "Invalid 'Places' entry in a 'PlaceGroups' item:"
-                    " not implemented yet"
-                )
-
-            # sub_place_group_configs = place_group_config.get("Places")
-            # if sub_place_group_configs:
-            #     sub_place_groups = self._load_place_groups(
-            #         sub_place_group_configs
-            #     )
-            #     place_group["placeGroups"] = sub_place_groups
-
+            self.check_sub_group_configs(place_group_config)
             self.set_cached_place_group(place_group_id, place_group)
 
         if load_features:
             self.load_place_group_features(place_group)
 
         return place_group
+
+    @staticmethod
+    def get_place_group_id_safe(place_group_config):
+        place_group_id = place_group_config.get("Identifier")
+        if not place_group_id:
+            raise ApiError.InvalidServerConfig(
+                "Missing 'Identifier' entry in a 'PlaceGroups' item"
+            )
+        return place_group_id
+
+    @staticmethod
+    def check_sub_group_configs(place_group_config):
+        sub_place_group_configs = place_group_config.get("Places")
+        if sub_place_group_configs:
+            raise ApiError.InvalidServerConfig(
+                "Invalid 'Places' entry in a 'PlaceGroups' item:"
+                " not implemented yet"
+            )
+        # sub_place_group_configs = place_group_config.get("Places")
+        # if sub_place_group_configs:
+        #     sub_place_groups = self._load_place_groups(
+        #         sub_place_group_configs
+        #     )
+        #     place_group["placeGroups"] = sub_place_groups
+
+    @staticmethod
+    def get_property_mapping(base_url, place_group_config):
+        property_mapping = place_group_config.get("PropertyMapping")
+        if property_mapping:
+            property_mapping = dict(property_mapping)
+            for key, value in property_mapping.items():
+                if isinstance(value, str) and '${base_url}' in value:
+                    property_mapping[key] = value.replace('${base_url}',
+                                                          base_url)
+        return property_mapping
 
     def load_place_group_features(self, place_group: PlaceGroup) \
             -> List[Dict[str, Any]]:
