@@ -377,8 +377,6 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     @classmethod
     def create_env_session(cls, fs):
         if isinstance(fs, s3fs.S3FileSystem):
-            # Create an AWSSession object as Passing abstract session keyword
-            # arguments is deprecated
             aws_session = AWSSession(
                 aws_secret_access_key=fs.secret,
                 aws_access_key_id=fs.key,
