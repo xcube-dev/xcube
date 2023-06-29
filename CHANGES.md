@@ -2,7 +2,7 @@
 
 ### Fixes
 
-* Fixed issue where geotiff access from a protected s3 bucket was denied (#864)
+* Fixed issue where geotiff access from a protected s3 bucket was denied (#863)
 
 ## Changes in 1.1.1
 
