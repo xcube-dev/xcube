@@ -1,3 +1,9 @@
+## Changes in 1.1.2
+
+### Fixes
+
+* Fixed issue with geotiff access from protected s3 bucket
+
 ## Changes in 1.1.1
 
 * Bundled new build of [xcube-viewer 1.1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0)

@@ -28,6 +28,7 @@ import rioxarray
 import s3fs
 import xarray as xr
 import zarr
+from rasterio.session import AWSSession
 
 from xcube.core.zarrstore import LoggingZarrStore
 # Note, we need the following reference to register the
@@ -376,13 +377,18 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     @classmethod
     def create_env_session(cls, fs):
         if isinstance(fs, s3fs.S3FileSystem):
-            return rasterio.env.Env(aws_secret_access_key=fs.token,
-                                    aws_access_key_id=fs.key,
-                                    aws_session_token=fs.token,
-                                    region_name=fs.client_kwargs.get(
-                                        'region_name',
-                                        'eu-central-1'
-                                    ),
+            # Create an AWSSession object as Passing abstract session keyword
+            # arguments is deprecated
+            aws_session = AWSSession(
+                aws_secret_access_key=fs.secret,
+                aws_access_key_id=fs.key,
+                aws_session_token=fs.token,
+                region_name=fs.client_kwargs.get(
+                    'region_name',
+                    'eu-central-1'
+                ),
+            )
+            return rasterio.env.Env(session=aws_session,
                                     aws_no_sign_request=bool(fs.anon)
                                     )
         else:
