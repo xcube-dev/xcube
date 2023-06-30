@@ -1,4 +1,4 @@
-## Changes in 1.1.2 (in development)
+## Changes in 1.1.2
 
 ### Fixes
 
