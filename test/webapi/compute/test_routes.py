@@ -22,7 +22,7 @@
 from ..helpers import RoutesTestCase
 
 
-class ComputeOperationsTest(RoutesTestCase):
+class ComputeRoutesTest(RoutesTestCase):
 
     def test_fetch_compute_operations(self):
         result, status = self.fetch_json('/compute/operations')

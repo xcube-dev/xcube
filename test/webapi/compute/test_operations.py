@@ -18,30 +18,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import inspect
-from typing import Callable, Any, Dict, List
 
-from .context import ComputeContext
-from .op import get_operations
+from unittest import TestCase
 
+import xarray as xr
 
-def get_compute_operations(ctx: ComputeContext):
-    ops = get_operations()
-    return {"operations": [encode_op(k, v) for k, v in ops.items()]}
+from xcube.core.new import new_cube
+from xcube.webapi.compute.operations import spatial_subset
 
 
-def encode_op(op_id: str, op: Callable) -> Dict[str, Any]:
-    members = dict(inspect.getmembers(op))
-    print(members)
-    return {
-        "operationId": op_id,
-        "parameters": []
-    }
+class ComputeOperationsTest(TestCase):
 
-
-def encode_op_params(op_id: str, op: Callable) -> List[Dict[str, Any]]:
-    return []
-
-
-def encode_op_param(param_name: str, op: Callable) -> List[Dict[str, Any]]:
-    return {}
+    def test_spatial_subset(self):
+        dataset = new_cube()
+        cube_subset = spatial_subset(dataset, bbox=(0, 0, 10, 20))
+        self.assertIsInstance(cube_subset, xr.Dataset)

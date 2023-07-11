@@ -21,12 +21,18 @@
 
 
 import unittest
-from xcube.webapi.compute.controllers import get_compute_operations
 
+from xcube.webapi.compute.controllers import get_compute_operations
+from xcube.webapi.compute.op import get_operations
 from .test_context import get_compute_ctx
 
 
-class ComputeControllerTest(unittest.TestCase):
+class ComputeControllersTest(unittest.TestCase):
+
+    def test_operations_registered(self):
+        ops = get_operations()
+        self.assertIn("spatial_subset", ops)
+        self.assertTrue(callable(ops["spatial_subset"]))
 
     def test_get_compute_operations(self):
         result = get_compute_operations(get_compute_ctx())
