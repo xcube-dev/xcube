@@ -222,6 +222,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     server_api_names = [
         'meta',
         'auth',
+        'compute',
         'places',
         'styles',
         'datasets',
