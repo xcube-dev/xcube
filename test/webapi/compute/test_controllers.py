@@ -21,19 +21,62 @@
 
 
 import unittest
+from typing import List
 
 from xcube.webapi.compute.controllers import get_compute_operations
-from xcube.webapi.compute.op import get_operations
 from .test_context import get_compute_ctx
 
 
 class ComputeControllersTest(unittest.TestCase):
-
-    def test_operations_registered(self):
-        ops = get_operations()
-        self.assertIn("spatial_subset", ops)
-        self.assertTrue(callable(ops["spatial_subset"]))
-
     def test_get_compute_operations(self):
         result = get_compute_operations(get_compute_ctx())
-        self.assertEqual({"operations": []}, result)
+        self.assertIsInstance(result, dict)
+        self.assertIn("operations", result)
+        self.assertIsInstance(result["operations"], list)
+        self.assertTrue(len(result["operations"]) > 0)
+
+    def test_spatial_subset_operation_description(self):
+        result = get_compute_operations(get_compute_ctx())
+        operations: List = result["operations"]
+
+        operations_map = {op.get('operationId'): op for op in operations}
+        self.assertIn('spatial_subset', operations_map)
+
+        op = operations_map['spatial_subset']
+        self.assertIsInstance(op, dict)
+
+        self.assertEqual('spatial_subset', op.get('operationId'))
+        self.assertEqual('Create a spatial subset'
+                         ' from given dataset.',
+                         op.get('description'))
+        self.assertIn("parametersSchema", op)
+
+        schema = op.get("parametersSchema")
+        self.assertIsInstance(schema, dict)
+
+        self.assertEqual('object',
+                         schema.get('type'))
+        self.assertEqual(False,
+                         schema.get('additionalProperties'))
+        self.assertEqual({'dataset', 'bbox'},
+                         set(schema.get('required', [])))
+        self.assertEqual(
+            {
+                'dataset': {
+                    'type': 'string',
+                    'title': 'Dataset identifier',
+                },
+                'bbox': {
+                    'type': 'array',
+                    'items': [{'type': 'number'},
+                              {'type': 'number'},
+                              {'type': 'number'},
+                              {'type': 'number'}],
+                    'title': 'Bounding box',
+                    'description': 'Bounding box using the '
+                                   'dataset\'s CRS '
+                                   'coordinates',
+                },
+            },
+            schema.get('properties')
+        )

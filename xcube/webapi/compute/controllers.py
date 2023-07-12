@@ -18,30 +18,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import inspect
 from typing import Callable, Any, Dict, List
 
 from .context import ComputeContext
-from .op import get_operations
+from .op import get_operations, get_op_params_schema
 
 
 def get_compute_operations(ctx: ComputeContext):
     ops = get_operations()
-    return {"operations": [encode_op(k, v) for k, v in ops.items()]}
-
-
-def encode_op(op_id: str, op: Callable) -> Dict[str, Any]:
-    members = dict(inspect.getmembers(op))
-    print(members)
     return {
-        "operationId": op_id,
-        "parameters": []
+        "operations": [encode_op(op_id, f) for op_id, f in ops.items()]
     }
 
 
-def encode_op_params(op_id: str, op: Callable) -> List[Dict[str, Any]]:
-    return []
-
-
-def encode_op_param(param_name: str, op: Callable) -> List[Dict[str, Any]]:
-    return {}
+def encode_op(op_id: str, f: Callable) -> Dict[str, Any]:
+    op_json = {
+        "operationId": op_id,
+        "parametersSchema": get_op_params_schema(f)
+    }
+    doc = inspect.getdoc(f)
+    if doc:
+        op_json.update(description=doc)
+    return op_json

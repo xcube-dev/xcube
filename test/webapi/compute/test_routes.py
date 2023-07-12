@@ -26,5 +26,7 @@ class ComputeRoutesTest(RoutesTestCase):
 
     def test_fetch_compute_operations(self):
         result, status = self.fetch_json('/compute/operations')
-        self.assertEqual({"operations": []}, result)
+        self.assertIsInstance(result, dict)
+        self.assertIsInstance(result.get("operations"), list)
+        self.assertTrue(len(result.get("operations")) > 0)
         self.assertEqual(200, status)

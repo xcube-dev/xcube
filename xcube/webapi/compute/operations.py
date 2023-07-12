@@ -3,12 +3,23 @@ from typing import Tuple
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-from .op import op
+from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonNumberSchema
+
+from .op import op, op_param
 
 
-@op()
+@op
+@op_param("bbox",
+          title="Bounding box",
+          description="Bounding box using the dataset's CRS coordinates",
+          schema=JsonArraySchema(items=[JsonNumberSchema(),
+                                        JsonNumberSchema(),
+                                        JsonNumberSchema(),
+                                        JsonNumberSchema()]))
 def spatial_subset(dataset: xr.Dataset,
                    bbox: Tuple[float, float, float, float]) -> xr.Dataset:
+    """Create a spatial subset from given dataset."""
     x1, y1, x2, y2 = bbox
     gm = GridMapping.from_dataset(dataset)
     x_name, y_name = gm.xy_dim_names
