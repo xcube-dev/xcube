@@ -19,40 +19,36 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import importlib
 import inspect
-from typing import Callable, Any, Dict, List
+from typing import Callable, Any, Dict
 
 from xcube.server.api import ApiError
 
 from .context import ComputeContext
-from .op import get_operations
-from .op import get_op_params_schema
-
-importlib.import_module("xcube.webapi.compute.operations")
+from .op.info import OpInfo
 
 
 def get_compute_operations(ctx: ComputeContext):
-    ops = get_operations()
+    ops = ctx.op_registry.ops
     return {
         "operations": [encode_op(op_id, f) for op_id, f in ops.items()]
     }
 
 
 def get_compute_operation(ctx: ComputeContext, op_id: str):
-    ops = get_operations()
-    f = ops.get(op_id)
-    if f is None:
+    op = ctx.op_registry.get_op(op_id)
+    if op is None:
         raise ApiError.NotFound(f'operation {op_id!r} not found')
-    return encode_op(op_id, f)
+    return encode_op(op_id, op)
 
 
-def encode_op(op_id: str, f: Callable) -> Dict[str, Any]:
+def encode_op(op_id: str, op: Callable) -> Dict[str, Any]:
+    op_info = OpInfo.get_op_info(op)
     op_json = {
         "operationId": op_id,
-        "parametersSchema": get_op_params_schema(f)
+        "parametersSchema": op_info.params_schema
     }
-    doc = inspect.getdoc(f)
+    doc = inspect.getdoc(op)
     if doc:
         op_json.update(description=doc)
     return op_json

@@ -6,10 +6,11 @@ from xcube.core.gridmapping import GridMapping
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonNumberSchema
 
-from .op import op, op_param
+from xcube.webapi.compute.op.decorator import operation
+from xcube.webapi.compute.op.decorator import op_param
 
 
-@op
+@operation
 @op_param("bbox",
           title="Bounding box",
           description="Bounding box using the dataset's CRS coordinates",

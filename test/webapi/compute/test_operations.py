@@ -24,13 +24,13 @@ from unittest import TestCase
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.webapi.compute.op import get_operations
+from xcube.webapi.compute.op.registry import OP_REGISTRY
 from xcube.webapi.compute.operations import spatial_subset
 
 
 class ComputeOperationsTest(TestCase):
     def test_operations_registered(self):
-        ops = get_operations()
+        ops = OP_REGISTRY.ops
         self.assertIn("spatial_subset", ops)
         self.assertTrue(callable(ops["spatial_subset"]))
 
