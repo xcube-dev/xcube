@@ -30,3 +30,10 @@ class ComputeRoutesTest(RoutesTestCase):
         self.assertIsInstance(result.get("operations"), list)
         self.assertTrue(len(result.get("operations")) > 0)
         self.assertEqual(200, status)
+
+    def test_fetch_compute_operation(self):
+        result, status = self.fetch_json('/compute/operations/spatial_subset')
+        self.assertIsInstance(result, dict)
+        self.assertIsInstance(result.get("operationId"), str)
+        self.assertEqual('spatial_subset', result.get("operationId"))
+        self.assertEqual(200, status)

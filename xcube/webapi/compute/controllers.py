@@ -19,11 +19,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import importlib
 import inspect
 from typing import Callable, Any, Dict, List
 
+from xcube.server.api import ApiError
+
 from .context import ComputeContext
-from .op import get_operations, get_op_params_schema
+from .op import get_operations
+from .op import get_op_params_schema
+
+importlib.import_module("xcube.webapi.compute.operations")
 
 
 def get_compute_operations(ctx: ComputeContext):
@@ -31,6 +37,14 @@ def get_compute_operations(ctx: ComputeContext):
     return {
         "operations": [encode_op(op_id, f) for op_id, f in ops.items()]
     }
+
+
+def get_compute_operation(ctx: ComputeContext, op_id: str):
+    ops = get_operations()
+    f = ops.get(op_id)
+    if f is None:
+        raise ApiError.NotFound(f'operation {op_id!r} not found')
+    return encode_op(op_id, f)
 
 
 def encode_op(op_id: str, f: Callable) -> Dict[str, Any]:

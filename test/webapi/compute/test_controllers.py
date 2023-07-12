@@ -21,9 +21,10 @@
 
 
 import unittest
-from typing import List
+from typing import List, Any
 
 from xcube.webapi.compute.controllers import get_compute_operations
+from xcube.webapi.compute.controllers import get_compute_operation
 from .test_context import get_compute_ctx
 
 
@@ -35,7 +36,7 @@ class ComputeControllersTest(unittest.TestCase):
         self.assertIsInstance(result["operations"], list)
         self.assertTrue(len(result["operations"]) > 0)
 
-    def test_spatial_subset_operation_description(self):
+    def test_get_compute_operations_entry(self):
         result = get_compute_operations(get_compute_ctx())
         operations: List = result["operations"]
 
@@ -43,6 +44,13 @@ class ComputeControllersTest(unittest.TestCase):
         self.assertIn('spatial_subset', operations_map)
 
         op = operations_map['spatial_subset']
+        self.assert_spatial_subset_op_ok(op)
+
+    def test_get_compute_operation_entry(self):
+        op = get_compute_operation(get_compute_ctx(), 'spatial_subset')
+        self.assert_spatial_subset_op_ok(op)
+
+    def assert_spatial_subset_op_ok(self, op: Any):
         self.assertIsInstance(op, dict)
 
         self.assertEqual('spatial_subset', op.get('operationId'))

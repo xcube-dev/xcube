@@ -23,11 +23,11 @@ from xcube.server.api import ApiHandler
 from .api import api
 from .context import ComputeContext
 from .controllers import get_compute_operations
+from .controllers import get_compute_operation
 
 
 @api.route('/compute/operations')
 class ComputeOperationsHandler(ApiHandler[ComputeContext]):
-    """List the available operations."""
 
     @api.operation(
         operation_id="getComputeOperations",
@@ -35,4 +35,57 @@ class ComputeOperationsHandler(ApiHandler[ComputeContext]):
         parameters=[]
     )
     def get(self):
+        self.response.finish(get_compute_operations(self.ctx))
+
+
+# noinspection PyPep8Naming
+@api.route('/compute/operations/{operationId}')
+class ComputeOperationHandler(ApiHandler[ComputeContext]):
+    """List the available operations."""
+
+    @api.operation(
+        operation_id="getComputeOperationInfo",
+        summary="Get the details of a given compute operation.",
+        parameters=[]
+    )
+    def get(self, operationId):
+        self.response.finish(get_compute_operation(self.ctx, operationId))
+
+
+# noinspection PyPep8Naming
+@api.route('/compute/jobs')
+class ComputeJobsHandler(ApiHandler[ComputeContext]):
+
+    @api.operation(
+        operation_id="getComputeJobs",
+        summary="Get recent compute jobs.",
+    )
+    def get(self):
+        self.response.finish({"jobs": []})
+
+    @api.operation(
+        operation_id="addComputeJob",
+        summary="Start a new compute job.",
+    )
+    def put(self):
+        self.response.finish(get_compute_operations(self.ctx))
+
+
+# noinspection PyPep8Naming
+@api.route('/compute/jobs/{jobId}')
+class ComputeJobHandler(ApiHandler[ComputeContext]):
+    """List the available operations."""
+
+    @api.operation(
+        operation_id="getComputeJob",
+        summary="Get details about a compute job.",
+    )
+    def get(self, jobId: str):
+        self.response.finish({"jobId": jobId})
+
+    @api.operation(
+        operation_id="cancelComputeJob",
+        summary="Cancel an existing compute job.",
+    )
+    def delete(self, jobId: str):
         self.response.finish(get_compute_operations(self.ctx))
