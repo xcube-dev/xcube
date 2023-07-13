@@ -39,7 +39,7 @@ PY_INPUT = {
 }
 
 NP_INPUT = {
-    'np_bool': np.bool(True),
+    'np_bool': True,
     'np_int8': np.int8(1),
     'np_uint8': np.uint8(2),
     'np_int16': np.int16(3),
@@ -62,7 +62,7 @@ INPUT = {
 EXPECTED_PY_OUTPUT = {**PY_INPUT}
 
 EXPECTED_NP_OUTPUT = {
-    'np_bool': bool(np.bool(True)),
+    'np_bool': True,
     'np_int8': int(np.int8(1)),
     'np_uint8': int(np.uint8(2)),
     'np_int16': int(np.int16(3)),
@@ -160,6 +160,12 @@ class ToJsonValueTest(unittest.TestCase):
         array = numpy.array([], dtype=np.float32)
         self.assertIsNot(array, to_json_value(array))
         self.assertEqual([], to_json_value(array))
+
+        array = numpy.array(["2020-01-02 10:00:05",
+                             "2020-01-03 14:10:36"], dtype=np.datetime64)
+        self.assertIsNot(array, to_json_value(array))
+        self.assertEqual(['2020-01-02T10:00:05Z',
+                          '2020-01-03T14:10:36Z'], to_json_value(array))
 
     # noinspection PyMethodMayBeStatic
     def test_fails_correctly(self):

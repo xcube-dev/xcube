@@ -97,8 +97,8 @@ class MaskSet:
         store it in a dictionary.
 
         :param dataset: The dataset
-        :return: A mapping of flag names to ``MaskSet``. Will be empty if there
-        are no flag variables in *dataset*.
+        :return: A mapping of flag names to ``MaskSet``.
+            Will be empty if there are no flag variables in *dataset*.
         """
         masks = {}
         for var_name in dataset.variables:

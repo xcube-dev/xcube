@@ -105,14 +105,15 @@ class ColormapRegistryTest(TestCase):
         self.assertEqual('Perceptually Uniform Sequential',
                          colormap.cat_name)
         self.assertEqual('viridis', colormap.cm_name)
-        self.assertEqual('iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZ'
-                         'AAAAzklEQVR4nO2TQZLFIAhEX7dXmyPM/Y8SZwEqMcnU'
-                         '3/9QZTU8GszC6Ee/HQlk5FAsJIENqVGv/piZ3uqf3nX6'
-                         'Vtd+l8D8UwNOLhZL3+BLh796OXvMdWaqtrrqnZ/tjvuZ'
-                         'T/0XxnN/5f25z9X7tIMTKzV7/5yrME3NHoPlUzvplgOe'
-                         'vOcz6ZO5eCqzOmark1nHDQveHuuYaazZkTcdmE110HJu'
-                         '6doR3tgfPHyL51zNc0fd2xjf0vPukUPL36YBTcpcWArF'
-                         'yY0RTca88cYbXxt/gUOJC8yRF1kAAAAASUVORK5CYII=',
+        self.assertEqual('iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA'
+                         'xWXB3AAAAxElEQVR4nI2TQZLEIAwDW+Jr84T5/1'
+                         'PCHGzAkGRrDynZbclwIPro25FARg7FQhLYkBr9m'
+                         'o/M9Fb/9K6vH32ddwnMHz3g5GKx9A2+dPirl91j'
+                         '7pmpOvqqT36OM54z//XfGO/zVff3OXfv2w42Vnr'
+                         'O+V6rME3NGYPlU9v0qAFP3vOZ9MlcPJVZHXP0ya'
+                         'zrgQVvr31kGis76qYLc6guWuaWrh3hjf3Bw7d45'
+                         'mqdO+rexrhLz7NHDS1/mwY0KWthKRQnN0Y0mR+s'
+                         'DYkJKNzLygAAAABJRU5ErkJggg==',
                          colormap.cmap_png_base64)
 
     def test_to_json(self):
@@ -144,15 +145,16 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("Ocean", colormap.cat_name)
         self.assertEqual("thermal", colormap.cm_name)
-        self.assertEqual('iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZ'
-                         'AAAA2klEQVR4nO2S6xHDMAiDP+FROkL3Xy30RwBju52g'
-                         '8V0OIcnyKxqvtwsD5SfAUPZNE6M4VR2hJTdQeBX6UhlY'
-                         '8xgDY8V24A15pMuIXcQHJo4qwOQYIHlojpT6zWnzqDxR'
-                         'o+/+zFZbR7H2Tx3WvMPf1qDvq+17zz/m7TV97YxHbefE'
-                         'W27ve+7Oe9xZZu3cdXCdr17XokurfvYOcmTXxHJkE2P3'
-                         '2ei8eVxww1WJecRlBxZr/cndj+T5MKULbzqm5pnY56MF'
-                         'jnkmPH7cb7xXzvR49RRO3njGM57xt+MDC391Pt11tkYA'
-                         'AAAASUVORK5CYII=',
+        self.assertEqual('iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA'
+                         'xWXB3AAAAz0lEQVR4nHWSyZUEIQxDv0woHULnn1'
+                         'p5DiWDgekDz7IkxKrx+aYIUA0BgapvmhiT06zDW'
+                         'nED2SvrW2UQzRMMgh3HhQ+UTlfgXXhAiKsKCCUB'
+                         'SGktkUp/OR0eTY+r++6vbLV15LV/6rDnXf62Bn1'
+                         'fbd9n/jXvrOVrZ7xqOyfZcnvfc08+fWeVdXLPxX'
+                         'V+9no2Xdr1u09QongWVqJYmHjPRucjfcENz4rn4'
+                         'cs2Fnv9yb2PlPUwUxfZdELNs3CuRzP2vBDpj/sf'
+                         'nzNneXL2TFz8H4K3dTwq9eoAAAAAAElFTkSuQmC'
+                         'C',
                          colormap.cmap_png_base64)
 
     def test_load_snap_cpd_colormap(self):
@@ -220,13 +222,12 @@ class ColormapTest(TestCase):
         self.assertIsInstance(base64, str)
         self.assertIs(base64, self.colormap.cmap_png_base64)
         self.assertEqual(
-            'iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZAAAA'
-            'yUlEQVR4nO2SsWFEIQxDZY+VGW7o7HVBSgEGG7gidT6NZenJ'
-            'Ffb1+paZwdzh3mfsNnbP+5U1eNLmdnR8dnMe93HllsbizTYe'
-            'qYdxG7VnmNyhDYWrHqq36eppy3VqZH/wSDvihhYLXffZy/tF'
-            'e2jwzMPX0OKH2TXCU2WgNMHimQSkWVjx8CDCGOzywLiz9J6J'
-            'p3dkJDQmpO5PpuZzUrMvVi76mpwg7V7K/qDZqt/34TWBwTf2'
-            'rCWuCSSht8Af3ee7/6vnPe95//T9Ai79U+7uqc9UAAAAAElF'
-            'TkSuQmCC',
+            'iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAA'
+            'u0lEQVR4nJWMwQEDIAwCScbqDB26e7VCHxpN1D76gsARezxf'
+            'MjOYO9y7xm3j9nxfWYMnb27Hxuc29/EfV255LN5s45F2GL9R'
+            'd4bJHd5QuJqhZpuvmbZep0fOB490I35osdD1nrt8X7yHB88+'
+            'cg0v/tDuEZkqAyUFS2YSkLSw4pFBhDHYlYHxZ/m9E8/s6Eho'
+            'KKSeT6b2U6m5FysXe01OkPYsdX94tpr3e2RNYPCNvWuJawJJ'
+            '6C3wo7u+hS8PX1PsPRnqDgAAAABJRU5ErkJggg==',
             base64
         )

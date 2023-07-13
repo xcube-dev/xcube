@@ -1,23 +1,23 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 from abc import ABC
 from typing import Tuple, Optional
@@ -28,6 +28,7 @@ import rioxarray
 import s3fs
 import xarray as xr
 import zarr
+from rasterio.session import AWSSession
 
 from xcube.core.zarrstore import LoggingZarrStore
 # Note, we need the following reference to register the
@@ -36,6 +37,7 @@ from xcube.core.zarrstore import LoggingZarrStore
 from xcube.core.zarrstore import ZarrStoreHolder
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
+from xcube.util.fspath import is_local_fs
 from xcube.util.jsonencoder import to_json_value
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -45,7 +47,6 @@ from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from xcube.util.temp import new_temp_file
 from ..accessor import FsDataAccessor
-from ..helpers import is_local_fs
 from ...datatype import DATASET_TYPE
 from ...datatype import DataType
 from ...error import DataStoreError
@@ -376,13 +377,16 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     @classmethod
     def create_env_session(cls, fs):
         if isinstance(fs, s3fs.S3FileSystem):
-            return rasterio.env.Env(aws_secret_access_key=fs.token,
-                                    aws_access_key_id=fs.key,
-                                    aws_session_token=fs.token,
-                                    region_name=fs.client_kwargs.get(
-                                        'region_name',
-                                        'eu-central-1'
-                                    ),
+            aws_session = AWSSession(
+                aws_secret_access_key=fs.secret,
+                aws_access_key_id=fs.key,
+                aws_session_token=fs.token,
+                region_name=fs.client_kwargs.get(
+                    'region_name',
+                    'eu-central-1'
+                ),
+            )
+            return rasterio.env.Env(session=aws_session,
                                     aws_no_sign_request=bool(fs.anon)
                                     )
         else:

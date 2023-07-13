@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2023 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -20,11 +20,11 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-import glob
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional, Callable, Iterator
 from typing import Sequence
 
 import fiona
+import fsspec
 
 from xcube.server.api import ApiError
 from xcube.server.api import Context
@@ -140,10 +140,13 @@ class PlacesContext(ResourcesContext):
 
         place_group = self.get_cached_place_group(place_group_id)
         if place_group is None:
-            place_group_title = place_group_config.get("Title", place_group_id)
+            place_group_title = place_group_config.get("Title",
+                                                       place_group_id)
             place_path_wc = self.get_config_path(place_group_config,
                                                  f"'PlaceGroups' item")
-            source_paths = glob.glob(place_path_wc)
+            fs, place_path = fsspec.core.url_to_fs(place_path_wc)
+            source_paths = [fs.unstrip_protocol(p)
+                            for p in fs.glob(place_path)]
             source_encoding = place_group_config.get("CharacterEncoding",
                                                      "utf-8")
 
@@ -206,14 +209,16 @@ class PlacesContext(ResourcesContext):
         features = place_group.get('features')
         if features is not None:
             return features
-        source_files = place_group['sourcePaths']
+        source_paths = place_group['sourcePaths']
         source_encoding = place_group['sourceEncoding']
         features = []
-        for source_file in source_files:
-            with self.measure_time(f'Loading features from file {source_file}'):
-                with fiona.open(source_file,
-                                encoding=source_encoding) as feature_collection:
-                    for feature in feature_collection:
+        for source_path in source_paths:
+            with self.measure_time(
+                    f'Loading features from file {source_path}'):
+                with fiona.open(source_path,
+                                encoding=source_encoding) \
+                        as feature_collection:
+                    for feature in self._to_geo_interface(feature_collection):
                         self._remove_feature_id(feature)
                         feature["id"] = self.new_feature_id()
                         features.append(feature)
@@ -225,8 +230,11 @@ class PlacesContext(ResourcesContext):
             join_encoding = join['encoding']
             with fiona.open(join_path,
                             encoding=join_encoding) as feature_collection:
+                self._to_geo_interface(feature_collection)
                 indexed_join_features = self._get_indexed_features(
-                    feature_collection, join_property)
+                    list(self._to_geo_interface(feature_collection)),
+                    join_property
+                )
             for feature in features:
                 properties = feature.get('properties')
                 if isinstance(properties, dict) \
@@ -241,6 +249,24 @@ class PlacesContext(ResourcesContext):
 
         place_group['features'] = features
         return features
+
+    @classmethod
+    def _to_geo_interface(cls, feature_collection: Iterator[Any]) \
+            -> Iterator[Dict[str, Any]]:
+        for feature in feature_collection:
+            # fiona >=1.9 returns features of type fiona.model.Feature
+            # rather than JSON-serializable dictionaries.
+            if hasattr(feature, '__geo_interface__'):
+                # We fall back on the traditional geo-interface:
+                feature = feature.__geo_interface__
+                # Fiona =1.9.0 adds empty "geometries" field
+                # to any "geometry", we fix this too:
+                geometry = feature.get('geometry')
+                if geometry \
+                        and "geometries" in geometry \
+                        and geometry.get("type") != "GeometryCollection":
+                    del geometry["geometries"]
+            yield feature
 
     @classmethod
     def _get_indexed_features(cls,

@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
+import fnmatch
 import functools
 import io
 import json
@@ -49,11 +49,6 @@ from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
 
 _CRS84 = pyproj.CRS.from_string('CRS84')
-
-
-# TODO (forman): Is this really still in use?
-class CubeIsNotDisplayable(ValueError):
-    pass
 
 
 def find_dataset_places(ctx: DatasetsContext,
@@ -115,13 +110,10 @@ def get_datasets(ctx: DatasetsContext,
             if ds_title and isinstance(ds_title, str):
                 dataset_dict['title'] = ds_title
 
-        if 'BoundingBox' in dataset_config:
-            ds_bbox = dataset_config['BoundingBox']
-            if ds_bbox \
-                    and len(ds_bbox) == 4 \
-                    and all(map(lambda c: isinstance(c, (float, int)),
-                                ds_bbox)):
-                dataset_dict['bbox'] = ds_bbox
+        ds_bbox = dataset_config.get('BoundingBox')
+        if ds_bbox is not None:
+            # Note, it has already been validated that ds_bbox is valid
+            dataset_dict['bbox'] = ds_bbox
 
         LOG.info(f'Collected dataset {ds_id}')
         dataset_dicts.append(dataset_dict)
@@ -147,8 +139,8 @@ def get_datasets(ctx: DatasetsContext,
                                     granted_scopes=granted_scopes)
                     )
                 filtered_dataset_dicts.append(dataset_dict)
-            except (DatasetIsNotACubeError, CubeIsNotDisplayable) as e:
-                LOG.warning(f'Skipping dataset {ds_id}: {e}')
+            except Exception as e:
+                LOG.warning(f'Skipping dataset {ds_id}: {e}', exc_info=True)
         dataset_dicts = filtered_dataset_dicts
 
     if point:
@@ -207,16 +199,19 @@ def get_dataset(ctx: DatasetsContext,
     transformer = pyproj.Transformer.from_crs(crs, _CRS84, always_xy=True)
     dataset_bounds = get_dataset_bounds(ds)
 
-    if "bbox" not in dataset_dict:
+    ds_bbox = dataset_config.get('BoundingBox')
+    if ds_bbox is not None:
+        # Note, JSON-Schema already verified that ds_bbox is valid.
+        # 'BoundingBox' is always given in geographical coordinates.
+        ds_bbox = list(ds_bbox)
+    else:
+        x1, y1, x2, y2 = dataset_bounds
         if not crs.is_geographic:
-            x1, y1, x2, y2 = dataset_bounds
             (x1, x2), (y1, y2) = transformer.transform((x1, x2), (y1, y2))
-            dataset_dict["bbox"] = [x1, y1, x2, y2]
-        else:
-            dataset_dict["bbox"] = list(dataset_bounds)
+        ds_bbox = [x1, y1, x2, y2]
 
-    dataset_dict['geometry'] = get_bbox_geometry(dataset_bounds,
-                                                 transformer)
+    dataset_dict['bbox'] = list(ds_bbox)
+    dataset_dict['geometry'] = get_bbox_geometry(dataset_bounds, transformer)
     dataset_dict['spatialRef'] = crs.to_string()
 
     variable_dicts = []
@@ -228,13 +223,23 @@ def get_dataset(ctx: DatasetsContext,
               tiling_scheme.min_level,
               tiling_scheme.max_level)
 
-    for var_name, var in ds.data_vars.items():
-        var_name = str(var_name)
-        dims = var.dims
-        if len(dims) < 2 \
-                or dims[-2] != y_name \
-                or dims[-1] != x_name:
-            continue
+    spatial_var_names = [str(var_name)
+                         for var_name, var in ds.data_vars.items()
+                         if (len(var.dims) >= 2
+                             and var.dims[-2] == y_name
+                             and var.dims[-1] == x_name)]
+
+    var_name_patterns = dataset_config.get('Variables')
+    if var_name_patterns:
+        spatial_var_names = filter_variable_names(spatial_var_names,
+                                                  var_name_patterns)
+        if not spatial_var_names:
+            LOG.warning(f'No variable matched any of the patterns given'
+                        f' in the "Variables" filter.'
+                        f' You may specify a wildcard "*" as last item.')
+
+    for var_name in spatial_var_names:
+        var = ds.data_vars[var_name]
 
         if can_authenticate \
                 and not can_read_all_variables \
@@ -247,7 +252,7 @@ def get_dataset(ctx: DatasetsContext,
         variable_dict = dict(
             id=f'{ds_id}.{var_name}',
             name=var_name,
-            dims=list(dims),
+            dims=list(var.dims),
             shape=list(var.shape),
             dtype=str(var.dtype),
             units=var.attrs.get('units', ''),
@@ -333,6 +338,21 @@ def get_dataset(ctx: DatasetsContext,
                                                            del_features=True)
 
     return dataset_dict
+
+
+def filter_variable_names(var_names: List[str],
+                          var_name_patterns: List[str]) -> List[str]:
+    filtered_var_names = []
+    filtered_var_names_set = set()
+    for var_name_pattern in var_name_patterns:
+        for var_name in var_names:
+            if var_name in filtered_var_names_set:
+                continue
+            if var_name == var_name_pattern \
+                    or fnmatch.fnmatch(var_name, var_name_pattern):
+                filtered_var_names.append(var_name)
+                filtered_var_names_set.add(var_name)
+    return filtered_var_names
 
 
 def get_bbox_geometry(dataset_bounds: Tuple[float, float, float, float],
@@ -459,15 +479,18 @@ def get_dataset_coordinates(ctx: DatasetsContext,
                             ds_id: str,
                             dim_name: str) -> Dict:
     ds, var = ctx.get_dataset_and_coord_variable(ds_id, dim_name)
-    values = list()
     if np.issubdtype(var.dtype, np.floating):
-        converter = float
+        values = list(map(float, var.values))
     elif np.issubdtype(var.dtype, np.integer):
-        converter = int
+        values = list(map(int, var.values))
+    elif len(var) == 1:
+        values = [timestamp_to_iso_string(var.values[0], round_fn="floor")]
     else:
-        converter = timestamp_to_iso_string
-    for value in var.values:
-        values.append(converter(value))
+        # see https://github.com/dcs4cop/xcube-viewer/issues/289
+        assert len(var) > 1, "Dimension length must be greater than 0."
+        values = [timestamp_to_iso_string(var.values[0], round_fn="floor")] +\
+                 list(map(timestamp_to_iso_string, var.values[1:-1])) +\
+                 [timestamp_to_iso_string(var.values[-1], round_fn="ceil")]
     return dict(name=dim_name,
                 size=len(values),
                 dtype=str(var.dtype),

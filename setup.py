@@ -72,7 +72,14 @@ setup(
     license='MIT',
     author='xcube Development Team',
     packages=packages,
-    package_data={'xcube.webapi.meta': ['res/openapi.html']},
+    package_data={
+        'xcube.webapi.meta': [
+            'data/openapi.html'
+        ],
+        'xcube.webapi.viewer': [
+            'data/*', 'data/**/*'
+        ]
+    },
     entry_points={
         'console_scripts': [
             # xcube's CLI

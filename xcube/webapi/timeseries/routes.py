@@ -25,6 +25,8 @@ from xcube.server.api import ApiHandler
 from .api import api
 from .context import TimeSeriesContext
 from .controllers import get_time_series
+from ..datasets import PATH_PARAM_DATASET_ID
+from ..datasets import PATH_PARAM_VAR_NAME
 
 
 # noinspection PyPep8Naming
@@ -34,22 +36,8 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                    summary="Get the time-series for a variable"
                            " and given GeoJSON object.",
                    parameters=[
-                       {
-                           "name": "datasetId",
-                           "in": "path",
-                           "description": "Dataset identifier",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
-                       {
-                           "name": "varName",
-                           "in": "path",
-                           "description": "Name of variable in dataset",
-                           "schema": {
-                               "type": "string",
-                           }
-                       },
+                       PATH_PARAM_DATASET_ID,
+                       PATH_PARAM_VAR_NAME,
                        {
                            "name": "aggMethods",
                            "in": "query",
@@ -65,7 +53,7 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                        {
                            "name": "startDate",
                            "in": "query",
-                           "description": "Start date",
+                           "description": "Start timestamp",
                            "schema": {
                                "type": "string",
                                "format": "datetime"
@@ -74,10 +62,20 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                        {
                            "name": "endDate",
                            "in": "query",
-                           "description": "End date",
+                           "description": "End timestamp",
                            "schema": {
                                "type": "string",
                                "format": "datetime"
+                           }
+                       },
+                       {
+                           "name": "tolerance",
+                           "in": "query",
+                           "description": "Time tolerance in seconds that"
+                                          " expands the given time range",
+                           "schema": {
+                               "type": "string",
+                               "default": 1.0,
                            }
                        },
                        {
@@ -103,6 +101,9 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
         end_date = self.request.get_query_arg('endDate',
                                               type=pd.Timestamp,
                                               default=None)
+        tolerance = self.request.get_query_arg('tolerance',
+                                               type=float,
+                                               default=1.0)
         max_valids = self.request.get_query_arg('maxValids',
                                                 type=int,
                                                 default=None)
@@ -115,6 +116,7 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                                                 agg_methods,
                                                 start_date,
                                                 end_date,
+                                                tolerance,
                                                 max_valids)
         self.response.set_header('Content-Type', 'application/json')
         await self.response.finish(dict(result=result))

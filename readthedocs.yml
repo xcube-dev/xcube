@@ -1,24 +1,17 @@
-# readthedocs.yml
-# Read the Docs configuration file
+# Read-the-Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-# Required
 version: 2
 
-# Build documentation in the docs/ directory with Sphinx
+build:
+  os: "ubuntu-20.04"
+  tools:
+    python: "mambaforge-4.10"
+
 sphinx:
   configuration: docs/source/conf.py
 
-# The path to the Conda environment file, relative to the root of the project.
-#conda:
-#  environment: docs/source/environment.yml
+conda:
+  environment: rtd-environment.yml
 
-# The path to the pip requirements file.
-# Optionally set the version of Python and requirements required to build your docs
-python:
-  install:
-    - requirements: docs/source/requirements.txt
-    - method: setuptools
-      path: .
-# Optionally build your docs in additional formats such as PDF and ePub
 formats: all

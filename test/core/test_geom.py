@@ -376,7 +376,7 @@ class DatasetGeometryTest(unittest.TestCase):
                 [0, 0, 0, 1, 1, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0],
             ],
-            dtype=np.bool
+            dtype=bool
         )
         np.testing.assert_array_almost_equal(
             actual_mask_values,
@@ -438,6 +438,16 @@ class GetDatasetGeometryTest(unittest.TestCase):
 class GetDatasetBoundsTest(unittest.TestCase):
     def test_nominal(self):
         ds1, ds2 = _get_nominal_datasets()
+        bounds = get_dataset_bounds(ds1)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+        bounds = get_dataset_bounds(ds2)
+        self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
+
+    def test_longitude_latitude(self):
+        ds1, ds2 = _get_nominal_datasets()
+        ds1 = ds1.rename(dict(lon='longitude', lat='latitude'))
+        ds2 = ds2.rename(dict(lon='longitude', lat='latitude'))
+
         bounds = get_dataset_bounds(ds1)
         self.assertEqual((-25.0, -15.0, 15.0, 15.0), bounds)
         bounds = get_dataset_bounds(ds2)

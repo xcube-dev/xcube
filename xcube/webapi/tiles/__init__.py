@@ -19,6 +19,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-# noinspection PyUnresolvedReferences
+from .routes import PATH_PARAM_X
+from .routes import PATH_PARAM_Y
+from .routes import PATH_PARAM_Z
+from .routes import QUERY_PARAM_TIME
+from .routes import QUERY_PARAM_FORMAT
+from .routes import QUERY_PARAM_RETINA
 from .routes import api
-

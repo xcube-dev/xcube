@@ -16,7 +16,15 @@ DatasetAttribution:
   - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
   - "© by EU H2020 CyanoAlert project"
 
-DatasetChunkCacheSize: 100M
+#DatasetChunkCacheSize: 100M
+
+## You may want to specify a location of your server resources.
+#base_dir: s3://<bucket>/<path-to-your>/<resources>/
+
+## You may want to specify a remote location of your viewer resources.
+#Viewer:
+#  Configuration:
+#    Path: s3://<bucket>/<path-to-your-viewer>/<resources>
 
 Datasets:
   # The first dataset "./cube-1-250-250.levels" is a tile-optimized
@@ -26,15 +34,22 @@ Datasets:
   # $ xcube level ./cube-1-250-250.zarr
   #
   - Identifier: local
-    Title: "Local OLCI L2C cube for region SNS"
+    Title: Local OLCI L2C cube for region SNS
     BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: file
     Path: cube-1-250-250.levels
     Style: default
     TimeSeriesDataset: local_ts
+    Variables:
+      - "conc_chl"
+      - "chl_category"
+      - "conc_tsm"
+      - "chl_tsm_sum"
+      - "kd489"
+      - "*"
     Augmentation:
-      Path: "compute_extra_vars.py"
-      Function: "compute_variables"
+      Path: compute_extra_vars.py
+      Function: compute_variables
       InputParameters:
         factor_chl: 0.2
         factor_tsm: 0.7
@@ -78,11 +93,11 @@ Datasets:
     Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
     BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: memory
-    Path: "resample_in_time.py"
-    Function: "compute_dataset"
-    InputDatasets: ["local"]
+    Path: resample_in_time.py
+    Function: compute_dataset
+    InputDatasets: [local]
     InputParameters:
-      period: "1W"
+      period: 1W
       incl_stdev: True
     Style: default
     PlaceGroups:
@@ -111,13 +126,13 @@ Datasets:
 #        - read:datasets
 
   - Identifier: cog_local
-    Title: "COG example"
+    Title: COG example
     FileSystem: file
     Path: sample-cog.tif
     Style: tif_style
 
   - Identifier: geotiff_local
-    Title: "GeoTIFF example"
+    Title: GeoTIFF example
     FileSystem: file
     Path: sample-geotiff.tif
     Style: tif_style
@@ -125,28 +140,28 @@ Datasets:
 PlaceGroups:
   - Identifier: inside-cube
     Title: Places inside the cube
-    Path: "places/inside-cube.geojson"
+    Path: places/inside-cube.geojson
     Join:
-      Property: "ID"
-      Path: "places/inside-cube-media.geojson"
+      Property: ID
+      Path: places/inside-cube-media.geojson
     PropertyMapping:
-      image: "${base_url}/images/inside-cube/${image}"
+      image: ${resolve_config_path("images/inside-cube/${image}")}
   - Identifier: outside-cube
     Title: Places outside the cube
-    Path: "places/outside-cube.geojson"
+    Path: places/outside-cube.geojson
     PropertyMapping:
-      image: "${base_url}/images/outside-cube/${ID}.jpg"
+      image: ${resolve_config_path("images/outside-cube/${ID}.jpg")}
 
 Styles:
   - Identifier: default
     ColorMappings:
       conc_chl:
-        ColorBar: "plasma"
+        ColorBar: plasma
         ValueRange: [0., 24.]
       conc_tsm:
-        ColorFile: "cc_tsm.cpd"
+        ColorFile: cc_tsm.cpd
       kd489:
-        ColorBar: "jet"
+        ColorBar: jet
         ValueRange: [0., 6.]
       rgb:
         Red:
@@ -161,13 +176,13 @@ Styles:
   - Identifier: tif_style
     ColorMappings:
       band_1:
-        ColorBar: "bone"
+        ColorBar: bone
         ValueRange: [ 0., 255. ]
       band_2:
-        ColorBar: "bone"
+        ColorBar: bone
         ValueRange: [ 0., 255. ]
       band_3:
-        ColorBar: "bone"
+        ColorBar: bone
         ValueRange: [ 0., 255. ]
       rgb:
         Red:
@@ -181,19 +196,19 @@ Styles:
           ValueRange: [ 0., 255. ]
 
 ServiceProvider:
-  ProviderName: "Brockmann Consult GmbH"
-  ProviderSite: "https://www.brockmann-consult.de"
+  ProviderName: Brockmann Consult GmbH
+  ProviderSite: https://www.brockmann-consult.de
   ServiceContact:
-    IndividualName: "Norman Fomferra"
-    PositionName: "Senior Software Engineer"
+    IndividualName: Norman Fomferra
+    PositionName: Senior Software Engineer
     ContactInfo:
       Phone:
-        Voice: "+49 4152 889 303"
-        Facsimile: "+49 4152 889 330"
+        Voice: +49 40 696 389 300
+        Facsimile: +49 40 696 389 399
       Address:
-        DeliveryPoint: "HZG / GITZ"
-        City: "Geesthacht"
-        AdministrativeArea: "Herzogtum Lauenburg"
-        PostalCode: "21502"
-        Country: "Germany"
-        ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
+        DeliveryPoint: Chrysanderstr. 1
+        City: Hamburg
+        AdministrativeArea: Hamburg
+        PostalCode: 21029
+        Country: Germany
+        ElectronicMailAddress: info@brockmann-consult.de

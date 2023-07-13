@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import warnings
 from typing import Dict, Any, Sequence, Union
 
 import numpy as np
@@ -33,7 +34,7 @@ def resample_in_time(dataset: xr.Dataset,
                      frequency: str,
                      method: Union[str, Sequence[str]],
                      offset=None,
-                     base: int = 0,
+                     base=None,
                      tolerance=None,
                      interp_kind=None,
                      time_chunk_size=None,
@@ -69,9 +70,8 @@ def resample_in_time(dataset: xr.Dataset,
         resampling methods.
     :param offset: Offset used to adjust the resampled time labels.
         Uses same syntax as *frequency*.
-    :param base: For frequencies that evenly subdivide 1 day,
-        the "origin" of the aggregated intervals. For example,
-        for '24H' frequency, base could range from 0 through 23.
+    :param base: Deprecated since xcube 1.0.4.
+        No longer used as of pandas 2.0.
     :param time_chunk_size: If not None, the chunk size to be
         used for the "time" dimension.
     :param var_names: Variable names to include.
@@ -87,6 +87,9 @@ def resample_in_time(dataset: xr.Dataset,
     if not cube_asserted:
         assert_cube(dataset)
 
+    if base is not None:
+        warnings.warn("Keyword 'base' is deprecated and no longer used.")
+
     if frequency == 'all':
         time_gap = np.array(dataset.time[-1]) - np.array(dataset.time[0])
         days = int((np.timedelta64(time_gap, 'D')
@@ -100,8 +103,7 @@ def resample_in_time(dataset: xr.Dataset,
                                  closed='left',
                                  label='left',
                                  time=frequency,
-                                 loffset=offset,
-                                 base=base)
+                                 loffset=offset)
 
     if isinstance(method, str):
         methods = [method]

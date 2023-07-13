@@ -2,9 +2,8 @@ import itertools
 import json
 import math
 import unittest
-from collections.abc import MutableMapping, Mapping
-from typing import Dict, KeysView, Iterator, Sequence, Any, Callable, \
-    Union
+from collections.abc import MutableMapping
+from typing import Dict, KeysView, Iterator, Sequence, Any
 
 import cftime
 import numpy as np
@@ -14,11 +13,11 @@ import xarray as xr
 from test.sampledata import create_highroc_dataset
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
+from xcube.core.select import select_label_subset
 from xcube.core.select import select_spatial_subset
 from xcube.core.select import select_subset
 from xcube.core.select import select_temporal_subset
 from xcube.core.select import select_variables_subset
-from xcube.core.select import select_label_subset
 
 
 class SelectVariablesSubsetTest(unittest.TestCase):
@@ -98,9 +97,6 @@ class SelectSpatialSubsetTest(unittest.TestCase):
         ds1 = new_cube(inverse_y=True)
         ds2 = select_spatial_subset(ds1, xy_bbox=(40., 40., 42., 42.),
                                     grid_mapping=GridMapping.from_dataset(ds1))
-        self.assertEqual(((2,), (2,)), (ds2.lon.shape, ds2.lat.shape))
-        ds2 = select_spatial_subset(ds1, xy_bbox=(40., 40., 42., 42.),
-                                    geo_coding=GridMapping.from_dataset(ds1))
         self.assertEqual(((2,), (2,)), (ds2.lon.shape, ds2.lat.shape))
 
 

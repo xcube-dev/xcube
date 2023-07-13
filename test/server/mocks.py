@@ -30,6 +30,7 @@ from xcube.server.api import ApiContext
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import ApiStaticRoute
 from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
@@ -85,7 +86,7 @@ class MockFramework(Framework):
         return None
 
     def add_static_routes(self,
-                          static_routes: Sequence[Tuple[str, str]],
+                          static_routes: Sequence[ApiStaticRoute],
                           url_prefix: str):
         self.add_static_routes_count += 1
 
@@ -138,8 +139,11 @@ class MockApiContext(ApiContext):
 class MockApiRequest(ApiRequest):
 
     def __init__(self,
-                 query_args: Optional[Mapping[str, Sequence[str]]] = None):
+                 query_args: Optional[Mapping[str, Sequence[str]]] = None,
+                 reverse_url_prefix: str = ''):
+        self._base_url = 'http://localhost:8080'
         self._query_args = query_args or {}
+        self._reverse_url_prefix = reverse_url_prefix
 
     @property
     def query(self) -> Mapping[str, Sequence[str]]:
@@ -150,8 +154,14 @@ class MockApiRequest(ApiRequest):
         args = self._query_args.get(name, [])
         return [type(arg) for arg in args] if type is not None else args
 
-    def url_for_path(self, path: str, query: Optional[str] = None) -> str:
-        return ''
+    def url_for_path(self, path: str,
+                     query: Optional[str] = None,
+                     reverse: bool = False) -> str:
+        if path and not path.startswith('/'):
+            path = '/' + path
+        prefix = self._reverse_url_prefix if reverse else ''
+        return f'{self._base_url}{prefix}{path}' \
+               + (f'?{query}' if query else '')
 
     @property
     def headers(self) -> Mapping[str, str]:
@@ -159,15 +169,21 @@ class MockApiRequest(ApiRequest):
 
     @property
     def url(self) -> str:
-        return ''
+        query = '&'.join([
+            '&'.join([
+                f'{key}={value}' for value in values
+            ])
+            for key, values in self.query.items()
+        ])
+        return self.url_for_path('datasets', query=query)
 
     @property
     def body(self) -> bytes:
-        return bytes({})
+        return bytes('{"dataset": []}')
 
     @property
     def json(self) -> JSON:
-        return {}
+        return dict(datasets=[])
 
     def make_query_lower_case(self):
         pass
@@ -180,8 +196,10 @@ class MockApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
         pass
 
-    def write(self, data: Union[str, bytes, JSON]):
+    def write(self, data: Union[str, bytes, JSON],
+              content_type: Optional[str] = None):
         pass
 
-    def finish(self, data: Union[str, bytes, JSON] = None):
+    def finish(self, data: Union[str, bytes, JSON] = None,
+              content_type: Optional[str] = None):
         pass

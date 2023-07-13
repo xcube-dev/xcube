@@ -384,8 +384,8 @@ def mask_dataset_by_geometry(
     mask_data = da.map_blocks(
         _mask_block,
         chunks=chunks,
-        dtype=np.bool,
-        meta=np.array((), dtype=np.bool),
+        dtype=bool,
+        meta=np.array((), dtype=bool),
         geometry=intersection_geometry,
         x_offset=x_min,
         y_offset=y_max,
@@ -713,7 +713,7 @@ def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray],
 
 
 def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
-                       xy_var_names: Tuple[str, str] = None) -> Bounds:
+                       xy_var_names: Optional[Tuple[str, str]] = None) -> Bounds:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     x_name, y_name = xy_var_names

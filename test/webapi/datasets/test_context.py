@@ -259,6 +259,81 @@ class DatasetsContextTest(unittest.TestCase):
         ):
             ctx.get_ml_dataset("ds-4")
 
+    def test_interpolate_config_value(self):
+        ctx = get_datasets_ctx()
+
+        self.assertEqual(
+            f"{ctx.base_dir}",
+            ctx.eval_config_value(
+                "${base_dir}"
+            )
+        )
+
+        self.assertEqual(
+            f"{ctx.base_dir}/test.yaml",
+            ctx.eval_config_value(
+                "${base_dir}/test.yaml"
+            )
+        )
+
+        self.assertEqual(
+            f"{ctx.base_dir}/configs/../test.yaml",
+            ctx.eval_config_value(
+                "${base_dir}/configs/../test.yaml"
+            )
+        )
+
+        self.assertEqual(
+            f"{ctx.base_dir}/test.yaml".replace("\\", "/"),
+            ctx.eval_config_value(
+                "${resolve_config_path('configs/../test.yaml')}"
+            )
+        )
+
+        self.assertIs(
+            ctx,
+            ctx.eval_config_value(
+                "${ctx}"
+            )
+        )
+
+        self.assertEqual(13, ctx.eval_config_value(13))
+        self.assertEqual(True, ctx.eval_config_value(True))
+
+        self.assertEqual(
+            [f"{ctx.base_dir}/test.yaml", 13, True],
+            ctx.eval_config_value(
+                ["${base_dir}/test.yaml", 13, True]
+            )
+        )
+
+        self.assertEqual(
+            dict(path=f"{ctx.base_dir}/test.yaml", count=13, check=True),
+            ctx.eval_config_value(
+                dict(path="${base_dir}/test.yaml", count=13, check=True)
+            )
+        )
+
+    def test_tokenize_value(self):
+        ctx = get_datasets_ctx()
+
+        self.assertEqual(["Hallo!"],
+                         list(ctx._tokenize_value("Hallo!")))
+
+        self.assertEqual([('base_dir',)],
+                         list(ctx._tokenize_value("${base_dir}")))
+
+        self.assertEqual([('base_dir',), "/../test"],
+                         list(ctx._tokenize_value("${base_dir}/../test")))
+
+        self.assertEqual(["file://", ('base_dir',), "/test"],
+                         list(ctx._tokenize_value("file://${base_dir}/test")))
+
+        self.assertEqual([("resolve_config_path('../test')",)],
+                         list(ctx._tokenize_value(
+                             "${resolve_config_path('../test')}"
+                         )))
+
 
 class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
 

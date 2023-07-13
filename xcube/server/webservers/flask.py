@@ -23,6 +23,7 @@ import concurrent.futures
 from typing import Sequence, Union, Callable, Optional, Any, Awaitable, Tuple
 
 from xcube.server.api import ApiRoute
+from xcube.server.api import ApiStaticRoute
 from xcube.server.api import Context
 from xcube.server.api import ReturnT
 from xcube.server.framework import Framework
@@ -41,7 +42,7 @@ class FlaskFramework(Framework):
         return None
 
     def add_static_routes(self,
-                          static_routes: Sequence[Tuple[str, str]],
+                          static_routes: Sequence[ApiStaticRoute],
                           url_prefix: str):
         raise NotImplementedError()
 

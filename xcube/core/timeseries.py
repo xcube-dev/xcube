@@ -133,10 +133,9 @@ def get_time_series(
         return None
 
     if start_date is not None or end_date is not None:
-        safe_start_date, safe_end_date = \
-            ensure_time_index_compatible(dataset, (start_date, end_date))
-        # noinspection PyTypeChecker
-        dataset = dataset.sel(time=slice(safe_start_date, safe_end_date))
+        date_slice = slice(start_date, end_date)
+        safe_slice = ensure_time_index_compatible(dataset, date_slice)
+        dataset = dataset.sel(time=safe_slice)
 
     x_name, y_name = grid_mapping.xy_dim_names
     if isinstance(geometry, shapely.geometry.Point):

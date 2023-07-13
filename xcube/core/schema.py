@@ -263,9 +263,12 @@ def get_cube_schema(cube: xr.Dataset) -> CubeSchema:
                       chunks=first_chunks)
 
 
-def get_dataset_xy_var_names(coords: Union[xr.Dataset, xr.DataArray, Mapping[Hashable, xr.DataArray]],
+def get_dataset_xy_var_names(coords: Union[xr.Dataset,
+                                           xr.DataArray,
+                                           Mapping[Hashable, xr.DataArray]],
                              must_exist: bool = False,
-                             dataset_arg_name: str = 'dataset') -> Optional[Tuple[str, str]]:
+                             dataset_arg_name: str = 'dataset') \
+        -> Optional[Tuple[str, str]]:
     if hasattr(coords, 'coords'):
         coords = coords.coords
     x_var_name = None
@@ -294,7 +297,9 @@ def get_dataset_xy_var_names(coords: Union[xr.Dataset, xr.DataArray, Mapping[Has
         if x_var_name and y_var_name:
             return str(x_var_name), str(y_var_name)
 
-    for x_var_name, y_var_name in (('lon', 'lat'), ('x', 'y')):
+    for x_var_name, y_var_name in (('lon', 'lat'),
+                                   ('longitude', 'latitude'),
+                                   ('x', 'y')):
         if x_var_name in coords and y_var_name in coords:
             x_var = coords[x_var_name]
             y_var = coords[y_var_name]
@@ -302,7 +307,8 @@ def get_dataset_xy_var_names(coords: Union[xr.Dataset, xr.DataArray, Mapping[Has
                 return x_var_name, y_var_name
 
     if must_exist:
-        raise ValueError(f'{dataset_arg_name} has no valid spatial coordinate variables')
+        raise ValueError(f'{dataset_arg_name}'
+                         f' has no valid spatial coordinate variables')
 
 
 def get_dataset_time_var_name(dataset: Union[xr.Dataset, xr.DataArray],

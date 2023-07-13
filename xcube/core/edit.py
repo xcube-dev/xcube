@@ -26,6 +26,7 @@ from typing import Callable, Type
 
 import xarray as xr
 import zarr
+from deprecated import deprecated
 
 from xcube.core.optimize import optimize_dataset
 from xcube.core.update import update_dataset_attrs
@@ -36,6 +37,7 @@ _NO_MANUAL_EDIT = ['geospatial_lon_min', 'geospatial_lon_max', 'geospatial_lon_u
                    'time_coverage_start', 'time_coverage_end']
 
 
+@deprecated('Replaced by CLI tool "xcube patch".', version="0.13.0")
 def edit_metadata(input_path: str,
                   output_path: str = None,
                   metadata_path: str = None,

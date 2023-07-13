@@ -149,8 +149,8 @@ class Coords1DGridMappingTest(unittest.TestCase):
                             reuse_coords=True)
         self.assertIn("a", cv2)
         self.assertIn("b", cv2)
-        self.assertEqual(np.float32, cv2["a"].dtype)
-        self.assertEqual(np.float32, cv2["b"].dtype)
+        self.assertEqual(np.dtype(np.float32), cv2["a"].dtype)
+        self.assertEqual(np.dtype(np.float32), cv2["b"].dtype)
 
 
 class Coords2DGridMappingTest(unittest.TestCase):

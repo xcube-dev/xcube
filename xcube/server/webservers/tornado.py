@@ -26,7 +26,7 @@ import logging
 import traceback
 import urllib.parse
 from typing import (Any, Optional, Sequence, Union, Callable, Type,
-                    Awaitable, Mapping, Tuple)
+                    Awaitable, Mapping)
 
 import tornado.escape
 import tornado.httputil
@@ -36,13 +36,16 @@ import tornado.web
 from xcube.constants import LOG
 from xcube.constants import LOG_LEVEL_DETAIL
 from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler, ArgT
+from xcube.server.api import ApiHandler
 from xcube.server.api import ApiRequest
 from xcube.server.api import ApiResponse
 from xcube.server.api import ApiRoute
+from xcube.server.api import ApiStaticRoute
+from xcube.server.api import ArgT
 from xcube.server.api import Context
 from xcube.server.api import JSON
 from xcube.server.api import ReturnT
+from xcube.server.config import get_reverse_url_prefix
 from xcube.server.config import get_url_prefix
 from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
@@ -62,9 +65,11 @@ class TornadoFramework(Framework):
 
     def __init__(self,
                  application: Optional[tornado.web.Application] = None,
-                 io_loop: Optional[tornado.ioloop.IOLoop] = None):
+                 io_loop: Optional[tornado.ioloop.IOLoop] = None,
+                 shared_io_loop: bool = False):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
+        self._shared_io_loop = io_loop is not None and shared_io_loop
         self.configure_logging()
 
     @property
@@ -112,17 +117,27 @@ class TornadoFramework(Framework):
         return self._io_loop or tornado.ioloop.IOLoop.current()
 
     def add_static_routes(self,
-                          static_routes: Sequence[Tuple[str, str]],
+                          api_routes: Sequence[ApiStaticRoute],
                           url_prefix: str):
-        if static_routes:
-            handlers = [
-                (
-                    f'{url_prefix}{url_path}/(.*)',
-                    tornado.web.StaticFileHandler,
-                    {'path': local_path}
-                )
-                for url_path, local_path in static_routes
-            ]
+        handlers = []
+        for api_route in api_routes:
+            base_url = f'{url_prefix}{api_route.path}'
+            default_filename = api_route.default_filename
+            handlers.append((
+                f'{base_url}',
+                tornado.web.RedirectHandler,
+                {'url': f'{base_url}/'}
+            ))
+            handlers.append((
+                f'{base_url}/(.*)',
+                tornado.web.StaticFileHandler,
+                {'path': api_route.dir_path,
+                 'default_filename': default_filename}
+            ))
+            LOG.log(LOG_LEVEL_DETAIL, f'Added static route'
+                                      f' {api_route.path!r}'
+                                      f' from API {api_route.api_name!r}')
+        if handlers:
             self.application.add_handlers(".*$", handlers)
 
     def add_routes(self,
@@ -164,10 +179,12 @@ class TornadoFramework(Framework):
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
 
-        self.io_loop.start()
+        if not self._shared_io_loop:
+            self.io_loop.start()
 
     def stop(self, ctx: Context):
-        self.io_loop.stop()
+        if not self._shared_io_loop:
+            self.io_loop.stop()
 
     def call_later(self,
                    delay: Union[int, float],
@@ -295,7 +312,9 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         ctx: Context = server_ctx.get_api_ctx(api_route.api_name)
         self._api_handler: ApiHandler = api_route.handler_cls(
             ctx,
-            TornadoApiRequest(request, get_url_prefix(server_ctx.config)),
+            TornadoApiRequest(request,
+                              get_url_prefix(server_ctx.config),
+                              get_reverse_url_prefix(server_ctx.config)),
             TornadoApiResponse(self),
             **api_route.handler_kwargs
         )
@@ -361,9 +380,11 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
 class TornadoApiRequest(ApiRequest):
     def __init__(self,
                  request: tornado.httputil.HTTPServerRequest,
-                 url_prefix: str = ''):
+                 url_prefix: str = '',
+                 reverse_url_prefix: str = ''):
         self._request = request
         self._url_prefix = url_prefix
+        self._reverse_url_prefix = reverse_url_prefix
         self._is_query_lower_case = False
         # print("full_url:", self._request.full_url())
         # print("protocol:", self._request.protocol)
@@ -403,16 +424,29 @@ class TornadoApiRequest(ApiRequest):
 
     def url_for_path(self,
                      path: str,
-                     query: Optional[str] = None) -> str:
-        protocol = self._request.protocol
-        host = self._request.host
+                     query: Optional[str] = None,
+                     reverse: bool = False) -> str:
+        """Get the URL for given *path* and *query*.
+        If the *reverse* flag is set, the configuration parameter
+        ``reverse_url_prefix``, if provided, is used to construct the URL,
+        otherwise only ``url_prefix``, if provided, is used.
+        """
         prefix = self._url_prefix
+        if reverse:
+            prefix = self._reverse_url_prefix or prefix
         uri = ""
         if path:
             uri = path if path.startswith("/") else "/" + path
         if query:
             uri += "?" + query
-        return f"{protocol}://{host}{prefix}{uri}"
+        if "://" in prefix:
+            # Absolute prefix
+            return f"{prefix}{uri}"
+        else:
+            # Relative prefix
+            protocol = self._request.protocol
+            host = self._request.host
+            return f"{protocol}://{host}{prefix}{uri}"
 
     @property
     def url(self) -> str:
@@ -446,9 +480,22 @@ class TornadoApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
         self._handler.set_status(status_code, reason=reason)
 
-    def write(self, data: Union[str, bytes, JSON]):
-        self._handler.write(data)
+    def write(self, 
+              data: Union[str, bytes, JSON],
+              content_type: Optional[str] = None):
+        if data is not None:
+            self._handler.write(data)
+        # https://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+        # "If the given chunk is a dictionary, we write it as JSON and set the
+        # Content-Type of the response to be application/json. (if you want to
+        # send JSON as a different Content-Type, call set_header after calling
+        # write())."
+        if content_type is not None:
+            self._handler.set_header('Content-Type', content_type)
 
-    def finish(self, data: Union[str, bytes, JSON] = None):
-        return self._handler.finish(data)
+    def finish(self, 
+               data: Union[str, bytes, JSON] = None,
+               content_type: Optional[str] = None):
+        self.write(data, content_type)
+        return self._handler.finish()
 

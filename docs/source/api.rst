@@ -2,12 +2,60 @@
 Python API
 ==========
 
-Cube I/O
-========
+Data Store Framework
+====================
 
-.. autofunction:: xcube.core.dsio.open_cube
+Functions
+---------
 
-.. autofunction:: xcube.core.dsio.write_cube
+.. autofunction:: xcube.core.store.new_data_store
+
+.. autofunction:: xcube.core.store.new_fs_data_store
+
+.. autofunction:: xcube.core.store.find_data_store_extensions
+
+.. autofunction:: xcube.core.store.get_data_store_class
+
+.. autofunction:: xcube.core.store.get_data_store_params_schema
+
+Classes
+-------
+
+.. autoclass:: xcube.core.store.DataStore
+    :members:
+
+.. autoclass:: xcube.core.store.MutableDataStore
+    :members:
+
+.. autoclass:: xcube.core.store.DataOpener
+    :members:
+
+.. autoclass:: xcube.core.store.DataSearcher
+    :members:
+
+.. autoclass:: xcube.core.store.DataWriter
+    :members:
+
+.. autoclass:: xcube.core.store.DataStoreError
+    :members:
+
+.. autoclass:: xcube.core.store.DataDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.DatasetDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.MultiLevelDatasetDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.DatasetDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.VariableDescriptor
+    :members:
+
+.. autoclass:: xcube.core.store.GeoDataFrameDescriptor
+    :members:
 
 Cube generation
 ===============
@@ -36,10 +84,23 @@ Cube data extraction
 
 .. autofunction:: xcube.core.timeseries.get_time_series
 
-Cube manipulation
-=================
+Cube Resampling
+===============
 
-.. autofunction:: xcube.core.resample.resample_in_time
+.. autofunction:: xcube.core.resampling.affine_transform_dataset
+
+.. autofunction:: xcube.core.resampling.resample_ndimage
+
+.. autofunction:: xcube.core.resampling.encode_grid_mapping
+
+.. autofunction:: xcube.core.resampling.rectify_dataset
+
+.. autofunction:: xcube.core.resampling.resample_in_space
+
+.. autofunction:: xcube.core.resampling.resample_in_time
+
+Cube Manipulation
+=================
 
 .. autofunction:: xcube.core.vars2dim.vars_to_dim
 
@@ -49,7 +110,7 @@ Cube manipulation
 
 .. autofunction:: xcube.core.optimize.optimize_dataset
 
-Cube subsetting
+Cube Subsetting
 ===============
 
 .. autofunction:: xcube.core.select.select_variables_subset
@@ -57,7 +118,7 @@ Cube subsetting
 .. autofunction:: xcube.core.geom.clip_dataset_by_geometry
 
 
-Cube masking
+Cube Masking
 ============
 
 .. autofunction:: xcube.core.geom.mask_dataset_by_geometry
@@ -72,7 +133,7 @@ Rasterisation of Features
 .. autofunction:: xcube.core.geom.rasterize_features
 
 
-Cube metadata
+Cube Metadata
 =============
 
 .. autofunction:: xcube.core.edit.edit_metadata
@@ -91,25 +152,63 @@ Cube verification
 
 .. autofunction:: xcube.core.verify.verify_cube
 
-Multi-resolution pyramids
+Multi-Resolution Datasets
 =========================
 
-.. autofunction:: xcube.core.level.compute_levels
+.. autoclass:: xcube.core.mldataset.MultiLevelDataset
+    :members:
 
-.. autofunction:: xcube.core.level.read_levels
+.. autoclass:: xcube.core.mldataset.BaseMultiLevelDataset
+    :members:
 
-.. autofunction:: xcube.core.level.write_levels
+.. autoclass:: xcube.core.mldataset.CombinedMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.ComputedMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.FsMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.IdentityMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.LazyMultiLevelDataset
+    :members:
+
+.. autoclass:: xcube.core.mldataset.MappedMultiLevelDataset
+    :members:
+
+Zarr Store
+==========
+
+.. autoclass:: xcube.core.zarrstore.ZarrStoreHolder
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.GenericZarrStore
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.GenericArray
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.CachedZarrStore
+    :members:
+
+.. autoclass:: xcube.core.zarrstore.DiagnosticZarrStore
+    :members:
 
 Utilities
 =========
 
-.. autofunction:: xcube.core.geom.convert_geometry
-
-.. autoclass:: xcube.core.store.CubeStore
+.. autoclass:: xcube.core.gridmapping.GridMapping
     :members:
+
+.. autofunction:: xcube.core.geom.convert_geometry
 
 .. autoclass:: xcube.core.schema.CubeSchema
     :members:
+
+.. autofunction:: xcube.util.dask.new_cluster
 
 Plugin Development
 ==================

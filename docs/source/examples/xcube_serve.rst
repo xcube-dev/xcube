@@ -32,42 +32,14 @@ To run the server using a particular xcube dataset path and styling information 
 Test it
 =======
 
-After starting the server, check the various functions provided by xcube Web API.
-
-* Datasets:
-    * `Get datasets <http://localhost:8080/datasets>`_
-    * `Get dataset details <http://localhost:8080/datasets/local>`_
-    * `Get dataset coordinates <http://localhost:8080/datasets/local/coords/time>`_
-* Color bars:
-    * `Get color bars <http://localhost:8080/colorbars>`_
-    * `Get color bars (HTML) <http://localhost:8080/colorbars.html>`_
-* WMTS:
-    * `Get WMTS KVP Capabilities (XML) <http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetCapabilities>`_
-    * `Get WMTS KVP local tile (PNG) <http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png>`_
-    * `Get WMTS KVP remote tile (PNG) <http://localhost:8080/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png>`_
-    * `Get WMTS REST Capabilities (XML) <http://localhost:8080/wmts/1.0.0/WMTSCapabilities.xml>`_
-    * `Get WMTS REST local tile (PNG) <http://localhost:8080/wmts/1.0.0/tile/local/conc_chl/0/0/1.png>`_
-    * `Get WMTS REST remote tile (PNG) <http://localhost:8080/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png>`_
-* Tiles
-    * `Get tile (PNG) <http://localhost:8080/datasets/local/vars/conc_chl/tiles/0/1/0.png>`_
-    * `Get tile grid for OpenLayers 4.x <http://localhost:8080/datasets/local/vars/conc_chl/tilegrid?tiles=ol4>`_
-    * `Get tile grid for Cesium 1.x <http://localhost:8080/datasets/local/vars/conc_chl/tilegrid?tiles=cesium>`_
-    * `Get legend for layer (PNG) <http://localhost:8080/datasets/local/vars/conc_chl/legend.png>`_
-* Time series service (preliminary & unstable, will likely change soon)
-    * `Get time stamps per dataset <http://localhost:8080/ts>`_
-    * `Get time series for single point <http://localhost:8080/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29>`_
-* Places service (preliminary & unstable, will likely change soon>`_
-    * `Get all features <http://localhost:8080/places/all>`_
-    * `Get all features of collection "inside-cube" <http://localhost:8080/features/inside-cube>`_
-    * `Get all features for dataset "local" <http://localhost:8080/places/all/local>`_
-    * `Get all features of collection "inside-cube" for dataset "local" <http://localhost:8080/places/inside-cube/local>`_
-
+After starting the server, you can check the various functions provided by xcube Web API. To explore the functions, open
+``<base-url>/openapi.html``.
 
 xcube Viewer
 ============
 
 xcube datasets published through ``xcube serve`` can be visualised using the `xcube-viewer`_ web application.
-To do so, run ``xcube serve`` with the ``--show`` flag.
+To do so, run ``xcube serve`` with the ``--open-viewer`` flag.
 
 In order make this option usable, xcube-viewer must be installed and build:
 
@@ -95,17 +67,17 @@ In order make this option usable, xcube-viewer must be installed and build:
 
     > SET XCUBE_VIEWER_PATH=/abs/path/to/xcube-viewer/build
 
-4. Then run ``xcube serve --show``:
+4. Then run ``xcube serve --open-viewer``:
 
 ::
 
-    $ xcube serve --show --styles conc_chl=(0,20,"viridis") examples/serve/demo/cube-1-250-250.zarr
+    $ xcube serve --open-viewer --styles conc_chl=(0,20,"viridis") examples/serve/demo/cube-1-250-250.zarr
 
 Viewing the generated xcube dataset described in the example :doc:`xcube_gen`:
 
 ::
 
-    $ xcube serve --show --styles "analysed_sst=(280,290,'plasma')" demo_SST_xcube-optimized.zarr
+    $ xcube serve --open-viewer --styles "analysed_sst=(280,290,'plasma')" demo_SST_xcube-optimized.zarr
 
 .. image:: ../_static/screenshot_xcube_viewer_sst_docu.png
   :width: 800

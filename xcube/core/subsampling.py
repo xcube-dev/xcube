@@ -41,7 +41,7 @@ def subsample_dataset(
         dataset: xr.Dataset,
         step: int,
         xy_dim_names: Optional[Tuple[str, str]] = None,
-        agg_methods: AggMethods = None
+        agg_methods: Optional[AggMethods] = None
 ) -> xr.Dataset:
     """
     Subsample *dataset* with given integer subsampling *step*.
@@ -60,6 +60,8 @@ def subsample_dataset(
         "auto", "first", "min", "max", "mean", "median".
         If "auto", the default, "first" is used for integer variables
         and "mean" for floating point variables.
+    :return: The subsampled dataset or a tuple comprising the
+        subsampled dataset and the effective aggregation methods.
     """
     assert_instance(dataset, xr.Dataset, name='dataset')
     assert_instance(step, int, name='step')
@@ -67,11 +69,15 @@ def subsample_dataset(
 
     x_name, y_name = xy_dim_names or ('y', 'x')
 
+    agg_methods = get_dataset_agg_methods(dataset,
+                                          xy_dim_names=xy_dim_names,
+                                          agg_methods=agg_methods)
+
     new_data_vars = dict()
     new_coords = None  # used to collect coordinates from coarsen
     for var_name, var in dataset.data_vars.items():
-        if x_name in var.dims or y_name in var.dims:
-            agg_method = find_agg_method(agg_methods, var_name, var.dtype)
+        if var_name in agg_methods:
+            agg_method = agg_methods[var_name]
             if agg_method == 'first':
                 slices = get_variable_subsampling_slices(
                     var, step, xy_dim_names=xy_dim_names
@@ -125,7 +131,25 @@ def subsample_dataset(
                       attrs=dataset.attrs)
 
 
-def assert_valid_agg_methods(agg_methods: AggMethods):
+def get_dataset_agg_methods(dataset: xr.Dataset,
+                            xy_dim_names: Optional[Tuple[str, str]] = None,
+                            agg_methods: Optional[AggMethods] = None):
+    assert_instance(dataset, xr.Dataset, name='dataset')
+    assert_valid_agg_methods(agg_methods)
+
+    x_name, y_name = xy_dim_names or ('y', 'x')
+
+    dataset_agg_methods = dict()
+
+    for var_name, var in dataset.data_vars.items():
+        if x_name in var.dims or y_name in var.dims:
+            agg_method = find_agg_method(agg_methods, var_name, var.dtype)
+            dataset_agg_methods[str(var_name)] = agg_method
+
+    return dataset_agg_methods
+
+
+def assert_valid_agg_methods(agg_methods: Optional[AggMethods]):
     """Assert that the given *agg_methods* are valid."""
     assert_instance(agg_methods,
                     (type(None), str, collections.abc.Mapping),

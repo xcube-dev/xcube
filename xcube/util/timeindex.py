@@ -160,6 +160,7 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
                     'time indexer', 'time indexer has'
                 )
             )
+            warnings.warn(f'Indexer: {time_value}')
             return time_value
 
     if _has_datetime64_time(var, time_name):
@@ -187,6 +188,7 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
                     'data in the time co-ordinate have'
                 )
             )
+            warnings.warn(f'First time value: {first_time_value}')
             return time_value
 
     cant_convert_warning_template = (
