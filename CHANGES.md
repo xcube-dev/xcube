@@ -1,5 +1,18 @@
 ## Changes in 1.1.3 (in development)
 
+### Fixes
+
+* Fixed Windows-only bug in `xcube serve --config <path>`: 
+  If config `path` is provided with back-slashes, a missing `base_dir` 
+  config parameter is now correctly set to the parent directory of `path`. 
+  Before, the current working directory was used.
+
+### Other changes
+
+* Updated AppVeyor and GitHub workflow configurations to use micromamba rather
+  than mamba (#785)
+
+
 ## Changes in 1.1.2
 
 ### Fixes
