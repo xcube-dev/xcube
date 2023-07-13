@@ -66,8 +66,8 @@ class ComputeJobsHandler(ApiHandler[ComputeContext]):
         })
 
     @api.operation(
-        operation_id="addComputeJob",
-        summary="Start a new compute job.",
+        operation_id="scheduleComputeJob",
+        summary="Schedule a new compute job.",
     )
     def put(self):
         job_request = self.request.json

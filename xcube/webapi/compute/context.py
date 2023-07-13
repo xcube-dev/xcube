@@ -18,15 +18,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
+import functools
 import importlib
 import concurrent.futures
 import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import xarray as xr
 
-from xcube.server.api import Context
+from xcube.server.api import Context, ApiError
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.datasets.context import DatasetsContext
 from xcube.webapi.places import PlacesContext
@@ -38,8 +38,34 @@ from .op.registry import OP_REGISTRY
 # Register default operations:
 importlib.import_module("xcube.webapi.compute.operations")
 
-
 LocalExecutor = concurrent.futures.ThreadPoolExecutor
+
+# TODO: create module 'job' and define better job types (classes).
+#   We use dicts for time being.
+
+Job = Dict[str, Any]
+Jobs = Dict[int, Job]
+
+JobRequest = Dict[str, Any]
+
+JobFuture = concurrent.futures.Future
+JobFutures = Dict[int, JobFuture]
+
+JOB_INIT = "init"
+JOB_SCHEDULED = "scheduled"
+JOB_STARTED = "started"
+JOB_COMPLETED = "completed"
+JOB_FAILED = "failed"
+JOB_CANCELLED = "cancelled"
+
+JOB_STATUSES = {
+    JOB_INIT,
+    JOB_SCHEDULED,
+    JOB_STARTED,
+    JOB_COMPLETED,
+    JOB_FAILED,
+    JOB_CANCELLED
+}
 
 
 class ComputeContext(ResourcesContext):
@@ -62,8 +88,8 @@ class ComputeContext(ResourcesContext):
         max_workers = compute_config.get("MaxWorkers", 3)
 
         self.next_job_id = 0
-        self.jobs: Dict[int, Any] = {}
-        self.job_futures: Dict[int, concurrent.futures.Future] = {}
+        self.jobs: Jobs = {}
+        self.job_futures: JobFutures = {}
         self.job_executor = LocalExecutor(max_workers=max_workers,
                                           thread_name_prefix='xcube-job-')
 
@@ -82,56 +108,72 @@ class ComputeContext(ResourcesContext):
     def places_ctx(self) -> PlacesContext:
         return self._places_ctx
 
-    def schedule_job(self, job_request: Dict[str, Any]):
+    def schedule_job(self, job_request: JobRequest) -> Job:
         """Schedule a new job given by *job_request*,
         which is expected to be validated already.
 
         Job status transitions:
-            scheduled
-            scheduled --> cancelled
-            scheduled --> running
-            scheduled --> running --> completed
-            scheduled --> running --> failed
-            scheduled --> running --> cancelled
+
+        init --> pending --> cancelled
+                         --> failed
+                         --> running --> completed
+                                     --> failed
+                                     --> cancelled
         """
 
         with self.rlock:
             job_id = self.next_job_id
             self.next_job_id += 1
 
-        job = {
-            "id": job_id,
-            "request": job_request,
-            "state": {
-                "status": "scheduled"
-            },
-            "createTime": datetime.datetime.utcnow().isoformat(),
-            "startTime": None,
-        }
-
-        LOG.info(f"Scheduled job #{job_id}")
+        # Note, the order of following statements is crucial
+        job = new_job(job_id, job_request)
         self.jobs[job_id] = job
-        job_future = self.job_executor.submit(self.invoke_job, job_id)
+        set_job_status(job, JOB_SCHEDULED)
+        job_future: JobFuture = \
+            self.job_executor.submit(self._invoke_job, job_id)
         self.job_futures[job_id] = job_future
+        job_future.add_done_callback(
+            functools.partial(self._handle_job_done, job_id)
+        )
 
         return job
 
-    def invoke_job(self, job_id: int):
+    def _handle_job_done(self, job_id: int, job_future: JobFuture):
         job = self.jobs.get(job_id)
         if job is None:
             return
 
-        if job["state"]["status"] == "cancelled":
+        if job_future.cancelled():
+            set_job_status(job, JOB_CANCELLED)
+        else:
+            error = job_future.exception()
+            if error:
+                set_job_status(job, JOB_FAILED, error=error)
+            else:
+                set_job_status(job, JOB_COMPLETED)
+
+        # Make sure we get rid of reference
+        self.job_futures.pop(job_id, None)
+
+    def _invoke_job(self, job_id: int):
+        """After successfully scheduling a job this method call is
+        represented by a Future in self.job_futures.
+
+        Since it is executed concurrently, it cannot return
+        anything to the original requester.
+        For the same reason, raising an ApiError will not set the
+        HTTP response status.
+        """
+        job = self.jobs.get(job_id)
+        if job is None:
             return
 
         job_request = job["request"]
-
         op_id = job_request["operationId"]
-        output_ds_id = job_request["datasetId"]
         parameters = job_request.get("parameters", {})
+        output = job_request.get("output", {})
 
-        LOG.info(f"Started job #{job_id}")
-        job["state"]["status"] = "running"
+        set_job_status(job, JOB_STARTED)
 
         op = self.op_registry.get_op(op_id)
         op_info = OpInfo.get_op_info(op)
@@ -145,37 +187,67 @@ class ComputeContext(ResourcesContext):
                     input_ds = self._datasets_ctx.get_dataset(input_ds_id)
                     parameters[param_name] = input_ds
 
-        try:
-            output_ds = op(**parameters)
-        except Exception as e:
-            LOG.error(f"Job #{job_id} failed:", e)
-            job["state"]["status"] = "failed"
-            job["state"]["error"] = {
-                "message": str(e),
-                "type": type(e).__name__
-            }
-            return
+        output_ds = op(**parameters)
 
-        if job["state"]["status"] == "cancelled":
-            return
-
-        # TODO: get other dataset properties from "output"
-        self.datasets_ctx.add_dataset(
+        ds_id = self.datasets_ctx.add_dataset(
             output_ds,
-            ds_id=output_ds_id
+            ds_id=output.get("datasetId"),
+            title=output.get("title"),
+            style=output.get("style"),
+            color_mappings=output.get("colorMappings"),
         )
 
-        LOG.info(f"Completed job #{job_id}")
-        job["state"]["status"] = "completed"
+        set_job_result(job, {"datasetId": ds_id})
 
-    def cancel_job(self, job_id: int):
+    def cancel_job(self, job_id: int) -> Job:
         job = self.jobs.get(job_id)
         if job is None:
-            return
-
-        LOG.info(f"Job #{job_id} cancelled:")
-        job["state"]["status"] = "cancelled"
+            raise ApiError.NotFound(f'Job #{job_id} not found.')
 
         future = self.job_futures.pop(job_id, None)
-        if future is not None:
+        if future is not None and not future.done():
+            set_job_status(job, JOB_CANCELLED)
             future.cancel()
+
+        return job
+
+
+def new_job(job_id: int, job_request: JobRequest) -> Job:
+    return {
+        "jobId": job_id,
+        "request": job_request,
+        "state": {
+            "status": "init"
+        },
+    }
+
+
+def is_job_status(job: Job, status: str) -> bool:
+    _assert_valid_job_status(status)
+    return job["state"]["status"] == status
+
+
+def set_job_status(job: Job,
+                   status: str,
+                   error: Optional[BaseException] = None):
+    _assert_valid_job_status(status)
+    job_id = job["jobId"]
+    LOG.info(f"Job #{job_id} {status}.", exc_info=error)
+    # Note, we could/should warn/raise on invalid state transitions
+    job["state"]["status"] = status
+    job["state"][f"{status}Time"] = datetime.datetime.utcnow().isoformat()
+    if error is not None:
+        job["state"]["error"] = {
+            "message": str(error),
+            "type": type(error).__name__,
+            # TODO: add traceback
+        }
+
+
+def set_job_result(job: Job, result: Dict[str, Any]):
+    job["result"] = result
+
+
+def _assert_valid_job_status(status):
+    if status not in JOB_STATUSES:
+        raise ValueError(f"illegal job status {status!r}")
