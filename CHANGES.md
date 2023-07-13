@@ -1,5 +1,18 @@
 ## Changes in 1.1.3 (in development)
 
+* Added property `env` to the resource context objects used 
+  by various xcube server APIs. The property provides the OS'
+  environment variables. Hence, it is now possible to write the 
+  following in xcube server configuration files:
+  ```yaml
+  StoreParams: 
+    root: ${ctx.env['USER_STORAGE_BUCKET']}
+    storage_params:
+      anon: false
+      key: ${ctx.env['USER_STORAGE_KEY']}
+      secret: ${ctx.env['USER_STORAGE_SECRET']}
+  ```
+
 ## Changes in 1.1.2
 
 ### Fixes

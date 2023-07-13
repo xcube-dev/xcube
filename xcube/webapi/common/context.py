@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import os
 import threading
 from typing import Any, Dict, List, Optional, Mapping, Iterator, Union, Tuple
 
@@ -54,6 +55,10 @@ class ResourcesContext(ApiContext):
     @property
     def base_dir(self) -> str:
         return self._base_dir
+
+    @property
+    def env(self) -> Mapping[str, str]:
+        return os.environ
 
     @property
     def rlock(self) -> threading.RLock:
