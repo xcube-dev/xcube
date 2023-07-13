@@ -1,5 +1,8 @@
 ## Changes in 1.1.3 (in development)
 
+* Updated AppVeyor and GitHub workflow configurations to use micromamba rather
+  than mamba (#785)
+
 ## Changes in 1.1.2
 
 ### Fixes

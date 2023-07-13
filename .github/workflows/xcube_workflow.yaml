@@ -18,13 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       # Setup miniconda build env
-      - uses: conda-incubator/setup-miniconda@v2.0.0
+      - uses: mamba-org/setup-micromamba@v1
         with:
-          miniconda-version: py39_22.11.1-1
-          mamba-version: "*"
-          channels: conda-forge
-          activate-environment: xcube
+          micromamba-version: '1.4.8-0'
           environment-file: environment.yml
+          init-shell: >-
+            bash
+          cache-environment: true
+          post-cleanup: 'all'
       # Setup xcube
       - name: setup-xcube
         shell: bash -l {0}
