@@ -24,7 +24,7 @@ import importlib
 import inspect
 import concurrent.futures
 import datetime
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, Callable
 
 import xarray as xr
 
@@ -43,8 +43,8 @@ importlib.import_module("xcube.webapi.compute.operations")
 
 LocalExecutor = concurrent.futures.ThreadPoolExecutor
 
-# TODO: create module 'job' and define better job types (classes).
-#   We use dicts for time being.
+# Note, we should create a module 'job' and define better job classes.
+# Here we use dicts for time being.
 
 Job = Dict[str, Any]
 Jobs = Dict[int, Job]
