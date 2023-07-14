@@ -256,6 +256,8 @@ class Api(Generic[ServerContextT]):
                   summary: Optional[str] = None,
                   description: Optional[str] = None,
                   parameters: Optional[List[Dict[str, Any]]] = None,
+                  request_body: Optional[Dict[str, Any]] = None,
+                  responses: Optional[Dict[str, Dict]] = None,
                   tags: Optional[str] = None,
                   **kwargs):
         """
@@ -271,6 +273,8 @@ class Api(Generic[ServerContextT]):
             "summary": summary,
             "description": description,
             "parameters": parameters,
+            "requestBody": request_body or kwargs.pop("requestBody", None),
+            "responses": responses,
             "tags": tags,
         }
         openapi = {k: v for k, v in openapi.items() if v is not None}
