@@ -28,6 +28,7 @@ from typing import Dict, Any, Optional, Callable
 
 import xarray as xr
 
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import Context, ApiError
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.datasets.context import DatasetsContext
@@ -36,7 +37,6 @@ from xcube.constants import LOG
 from .op.info import OpInfo
 from .op.registry import OpRegistry
 from .op.registry import OP_REGISTRY
-from ...core.mldataset import MultiLevelDataset
 
 # Register default operations:
 importlib.import_module("xcube.webapi.compute.operations")

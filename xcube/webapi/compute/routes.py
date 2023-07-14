@@ -19,7 +19,8 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import ApiHandler, ApiError
+from xcube.server.api import ApiError
+from xcube.server.api import ApiHandler
 from .api import api
 from .context import ComputeContext
 from .controllers import get_compute_operations
