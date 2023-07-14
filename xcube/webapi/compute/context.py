@@ -18,11 +18,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import functools
 import importlib
+import inspect
 import concurrent.futures
 import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Callable
 
 import xarray as xr
 
@@ -34,6 +36,7 @@ from xcube.constants import LOG
 from .op.info import OpInfo
 from .op.registry import OpRegistry
 from .op.registry import OP_REGISTRY
+from ...core.mldataset import MultiLevelDataset
 
 # Register default operations:
 importlib.import_module("xcube.webapi.compute.operations")
@@ -125,13 +128,19 @@ class ComputeContext(ResourcesContext):
             job_id = self.next_job_id
             self.next_job_id += 1
 
-        # Note, the order of following statements is crucial
+        # Note, the order of following statements is crucial:
+
+        # Create new job
         job = new_job(job_id, job_request)
+        # Register new job
         self.jobs[job_id] = job
         set_job_status(job, JOB_SCHEDULED)
+        # Schedule job
         job_future: JobFuture = \
             self.job_executor.submit(self._invoke_job, job_id)
+        # Register new job feature
         self.job_futures[job_id] = job_future
+        # Notify when job is completed, failed, or cancelled.
         job_future.add_done_callback(
             functools.partial(self._handle_job_done, job_id)
         )
@@ -176,17 +185,9 @@ class ComputeContext(ResourcesContext):
         set_job_status(job, JOB_STARTED)
 
         op = self.op_registry.get_op(op_id)
-        op_info = OpInfo.get_op_info(op)
-        param_py_types = op_info.effective_param_py_types
+        parameters = self.get_effective_parameters(op, parameters)
 
-        parameters = parameters.copy()
-        for param_name, param_py_type in param_py_types.items():
-            if param_py_type is xr.Dataset:
-                input_ds_id = parameters.get(param_name)
-                if input_ds_id is not None:
-                    input_ds = self._datasets_ctx.get_dataset(input_ds_id)
-                    parameters[param_name] = input_ds
-
+        # Execute the operation!
         output_ds = op(**parameters)
 
         ds_id = self.datasets_ctx.add_dataset(
@@ -210,6 +211,24 @@ class ComputeContext(ResourcesContext):
             future.cancel()
 
         return job
+
+    def get_effective_parameters(self,
+                                 op: Callable,
+                                 parameters: Dict[str, Any]):
+        op_info = OpInfo.get_op_info(op)
+        param_py_types = op_info.effective_param_py_types
+        parameters = parameters.copy()
+        for param_name, param_py_type in param_py_types.items():
+            param_value = parameters.get(param_name)
+            if isinstance(param_value, str) \
+                    and inspect.isclass(param_py_type):
+                if issubclass(param_py_type, xr.Dataset):
+                    parameters[param_name] = \
+                        self._datasets_ctx.get_dataset(param_value)
+                elif issubclass(param_py_type, MultiLevelDataset):
+                    parameters[param_name] = \
+                        self._datasets_ctx.get_ml_dataset(param_value)
+        return parameters
 
 
 def new_job(job_id: int, job_request: JobRequest) -> Job:
