@@ -23,7 +23,7 @@ import time
 from ..helpers import RoutesTestCase
 
 
-class ComputeRoutesTest(RoutesTestCase):
+class ComputeOperationsRoutesTest(RoutesTestCase):
 
     def test_fetch_compute_operations(self):
         ops, status = self.fetch_json('/compute/operations')
@@ -39,7 +39,10 @@ class ComputeRoutesTest(RoutesTestCase):
         self.assertEqual('spatial_subset', op.get("operationId"))
         self.assertEqual(200, status)
 
-    def test_fetch_job_management(self):
+
+class ComputeJobsRoutesTest(RoutesTestCase):
+
+    def test_fetch_job_lifecycle(self):
         job, status = self.fetch_json(
             '/compute/jobs',
             method="PUT",
@@ -90,7 +93,6 @@ class ComputeRoutesTest(RoutesTestCase):
                 # Fails intentionally
                 self.assertEqual("running", job_status)
                 break
-
 
     def assert_job_ok(self, job):
         self.assertIsInstance(job, dict)

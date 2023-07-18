@@ -24,10 +24,11 @@ import importlib
 import inspect
 import concurrent.futures
 import datetime
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, Callable
 
 import xarray as xr
 
+from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import Context, ApiError
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.datasets.context import DatasetsContext
@@ -36,15 +37,14 @@ from xcube.constants import LOG
 from .op.info import OpInfo
 from .op.registry import OpRegistry
 from .op.registry import OP_REGISTRY
-from ...core.mldataset import MultiLevelDataset
 
 # Register default operations:
 importlib.import_module("xcube.webapi.compute.operations")
 
 LocalExecutor = concurrent.futures.ThreadPoolExecutor
 
-# TODO: create module 'job' and define better job types (classes).
-#   We use dicts for time being.
+# Note, we should create a module 'job' and define better job classes.
+# Here we use dicts for time being.
 
 Job = Dict[str, Any]
 Jobs = Dict[int, Job]
