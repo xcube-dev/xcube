@@ -1,5 +1,6 @@
 import inspect
 from typing import Callable, Dict, Any
+from mashumaro.jsonschema import build_json_schema
 
 import xarray as xr
 
@@ -66,13 +67,9 @@ class OpInfo:
                             "title": "Dataset identifier"
                         }
                     elif py_type is not None:
-                        json_type = _PRIMITIVE_PY_TO_JSON_TYPES.get(py_type)
-                        if json_type is None:
-                            # TODO: parse py_type into json_type
-                            json_type = repr(py_type)
-                        param_schema = {
-                            "type": json_type,
-                        }
+                        # TODO: Decide what to do about mapping types with
+                        # non-string keys (not supported in JSON)
+                        param_schema = build_json_schema(py_type).to_dict()
                     else:
                         param_schema = {}
                     properties[param_name] = param_schema
