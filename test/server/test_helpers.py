@@ -21,6 +21,7 @@
 
 import unittest
 
+import time
 import yaml
 
 from xcube.core.dsio import rimraf
@@ -34,6 +35,7 @@ from .test_server import mock_extension_registry
 class ConfigChangeObserverTest(unittest.TestCase):
 
     TEST_CONFIG = "config.yaml"
+    CHECK_AFTER = 0.1
 
     def tearDown(self) -> None:
         rimraf(self.TEST_CONFIG)
@@ -57,7 +59,7 @@ class ConfigChangeObserverTest(unittest.TestCase):
 
         observer = ConfigChangeObserver(server,
                                         [self.TEST_CONFIG],
-                                        0.1)
+                                        self.CHECK_AFTER)
 
         self.assertEqual(0, framework.call_later_count)
         self.assertIs(server_ctx, server.ctx)
@@ -74,5 +76,6 @@ class ConfigChangeObserverTest(unittest.TestCase):
             yaml.safe_dump(config, fp)
 
         observer.check()
+        time.sleep(self.CHECK_AFTER + 2)
         self.assertEqual(3, framework.call_later_count)
         self.assertIsNot(server_ctx, server.ctx)
