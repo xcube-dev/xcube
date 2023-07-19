@@ -14,10 +14,8 @@ from xcube.webapi.compute.op.decorator import op_param
 @op_param("bbox",
           title="Bounding box",
           description="Bounding box using the dataset's CRS coordinates",
-          schema=JsonArraySchema(items=[JsonNumberSchema(),
-                                        JsonNumberSchema(),
-                                        JsonNumberSchema(),
-                                        JsonNumberSchema()]))
+          # The rest of the schema is inferred from the function signature.
+          )
 def spatial_subset(dataset: xr.Dataset,
                    bbox: Tuple[float, float, float, float]) -> xr.Dataset:
     """Create a spatial subset from given dataset."""

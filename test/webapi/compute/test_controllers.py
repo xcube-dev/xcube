@@ -76,7 +76,9 @@ class ComputeControllersTest(unittest.TestCase):
                 },
                 'bbox': {
                     'type': 'array',
-                    'items': [{'type': 'number'},
+                    'minItems': 4,
+                    'maxItems': 4,
+                    'prefixItems': [{'type': 'number'},
                               {'type': 'number'},
                               {'type': 'number'},
                               {'type': 'number'}],
