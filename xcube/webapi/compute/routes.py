@@ -286,15 +286,33 @@ class ComputeJobsHandler(ApiHandler[ComputeContext]):
         responses=JOB_RESPONSES_SCHEMA,
     )
     def put(self):
+        # TODO: build a more complete schema and publish it as OpenAPI?
+        # Currently, the schema is built for the current request and
+        # only contains (and only needs to contain) a parameter schema
+        # for the requested operation. In xcube’s live OpenAPI specification,
+        # the parameters are just an object with no further constraints.
+        # Ideally we’d want to detail the parameters for the various
+        # available operations in the OpenAPI specification. This can be
+        # done with if-then constructs: see
+        # https://json-schema.org/understanding-json-schema/reference/conditionals.html#if-then-else
         job_request = self.request.json
-        # TODO: validate job_request using openapi
         basic_schema = self.put.__openapi__['requestBody']['content'][
             'application/json']['schema']
+        # noinspection PyProtectedMember,PyUnresolvedReferences
+        op_schema = dict(
+            properties=dict(
+                operationId=dict(enum=list(self.ctx.op_registry.ops.keys())),
+                parameters=self.ctx.op_registry.ops[
+                    job_request['operationId']]._op_info.params_schema
+            )
+        )
+        full_schema = {**basic_schema, **op_schema}
         try:
-            jsonschema.validate(job_request, basic_schema)
+            jsonschema.validate(job_request, full_schema)
             self.response.finish(self.ctx.schedule_job(job_request))
         except jsonschema.ValidationError as e:
             raise ApiError.BadRequest(message=f'{e.message} at {e.json_path}')
+
 
 # noinspection PyPep8Naming
 @api.route('/compute/jobs/{jobId}')
