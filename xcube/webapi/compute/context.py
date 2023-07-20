@@ -25,6 +25,7 @@ import inspect
 import concurrent.futures
 import datetime
 from typing import Dict, Any, Optional, Callable
+import traceback
 
 import xarray as xr
 
@@ -138,7 +139,7 @@ class ComputeContext(ResourcesContext):
         # Schedule job
         job_future: JobFuture = \
             self.job_executor.submit(self._invoke_job, job_id)
-        # Register new job feature
+        # Register new job future
         self.job_futures[job_id] = job_future
         # Notify when job is completed, failed, or cancelled.
         job_future.add_done_callback(
@@ -259,7 +260,7 @@ def set_job_status(job: Job,
         job["state"]["error"] = {
             "message": str(error),
             "type": type(error).__name__,
-            # TODO: add traceback
+            "traceback": traceback.extract_tb(error.__traceback__).format()
         }
 
 

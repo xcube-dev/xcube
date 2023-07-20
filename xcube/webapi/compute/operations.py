@@ -3,8 +3,6 @@ from typing import Tuple
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonNumberSchema
 
 from xcube.webapi.compute.op.decorator import operation
 from xcube.webapi.compute.op.decorator import op_param
