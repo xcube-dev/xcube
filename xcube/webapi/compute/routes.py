@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import jsonschema
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
 from .api import api
@@ -172,7 +173,7 @@ JOB_REQUEST_SCHEMA = {
             "type": "string"
         },
         "parameters": {
-            "type": "array",
+            "type": "object",
             "items": {}  # Any
         },
         "output": {
@@ -287,8 +288,13 @@ class ComputeJobsHandler(ApiHandler[ComputeContext]):
     def put(self):
         job_request = self.request.json
         # TODO: validate job_request using openapi
-        self.response.finish(self.ctx.schedule_job(job_request))
-
+        basic_schema = self.put.__openapi__['requestBody']['content'][
+            'application/json']['schema']
+        try:
+            jsonschema.validate(job_request, basic_schema)
+            self.response.finish(self.ctx.schedule_job(job_request))
+        except jsonschema.ValidationError as e:
+            raise ApiError.BadRequest(message=f'{e.message} at {e.json_path}')
 
 # noinspection PyPep8Naming
 @api.route('/compute/jobs/{jobId}')

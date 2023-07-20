@@ -4,7 +4,6 @@ from xcube.util.jsonschema import JsonSchema
 from xcube.util.jsonschema import JsonObjectSchema
 
 from .info import PyType
-from .info import OpInfo
 from .registry import OpRegistry
 from .registry import OP_REGISTRY
 
