@@ -73,10 +73,21 @@ JOB_STATUSES = {
 
 
 class ComputeContext(ResourcesContext):
+    """An xcube API server context for xcube compute operations
+
+    Depends on the availability of `datasets` and `places` contexts
+    in the same server context.
+    """
 
     def __init__(self,
                  server_ctx: Context,
                  op_registry: OpRegistry = OP_REGISTRY):
+        """Create a new compute context
+
+        :param server_ctx: the current server context object
+        :param op_registry: the registry of compute operations to use for
+                            this context
+        """
         super().__init__(server_ctx)
         self._datasets_ctx: DatasetsContext \
             = server_ctx.get_api_ctx("datasets")
@@ -102,14 +113,17 @@ class ComputeContext(ResourcesContext):
 
     @property
     def op_registry(self) -> OpRegistry:
+        """:return: the operation registry used by this compute context"""
         return self._op_registry
 
     @property
     def datasets_ctx(self) -> DatasetsContext:
+        """:return: the datasets context used by this compute context"""
         return self._datasets_ctx
 
     @property
     def places_ctx(self) -> PlacesContext:
+        """:return: the places context used by this compute context"""
         return self._places_ctx
 
     def schedule_job(self, job_request: JobRequest) -> Job:
@@ -202,6 +216,12 @@ class ComputeContext(ResourcesContext):
         set_job_result(job, {"datasetId": ds_id})
 
     def cancel_job(self, job_id: int) -> Job:
+        """Cancel a scheduled job
+
+        :param job_id: the ID number of the job to be cancelled
+        :return: details of the cancelled job as a string-keyed dictionary
+        :raises ApiError: if the specified job cannot be found
+        """
         job = self.jobs.get(job_id)
         if job is None:
             raise ApiError.NotFound(f'Job #{job_id} not found.')
@@ -216,6 +236,12 @@ class ComputeContext(ResourcesContext):
     def get_effective_parameters(self,
                                  op: Callable,
                                  parameters: Dict[str, Any]):
+        """TODO
+
+        :param op:
+        :param parameters:
+        :return:
+        """
         op_info = OpInfo.get_op_info(op)
         param_py_types = op_info.effective_param_py_types
         parameters = parameters.copy()
@@ -243,6 +269,14 @@ def new_job(job_id: int, job_request: JobRequest) -> Job:
 
 
 def is_job_status(job: Job, status: str) -> bool:
+    """Report whether a specified job has the specified status
+
+    :param job: a job specification (string-keyed dictionary)
+    :param status: a string representing a recognized status
+    :return: True if the status is recognized and the specified job has the
+             specified status
+    :raises ValueError: if the status is not recognized
+    """
     _assert_valid_job_status(status)
     return job["state"]["status"] == status
 
@@ -250,6 +284,14 @@ def is_job_status(job: Job, status: str) -> bool:
 def set_job_status(job: Job,
                    status: str,
                    error: Optional[BaseException] = None):
+    """Set the status of a job
+
+    :param job: a job specification (string-keyed dictionary)
+    :param status: a string representing a recognized status
+    :param error: if supplied, annotate the job specification with information
+                  from this exception
+    :raises ValueError: if the status is not recognized
+    """
     _assert_valid_job_status(status)
     job_id = job["jobId"]
     LOG.info(f"Job #{job_id} {status}.", exc_info=error)
@@ -265,6 +307,11 @@ def set_job_status(job: Job,
 
 
 def set_job_result(job: Job, result: Dict[str, Any]):
+    """Set the result of a compute job
+
+    :param job: job specifier (string-keyed dictionary)
+    :param result: results of the job
+    """
     job["result"] = result
 
 

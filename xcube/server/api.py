@@ -265,8 +265,20 @@ class Api(Generic[ServerContextT]):
         API handler's operation,
         i.e. one of the get, post, put, delete, or options methods.
 
-        :return: A decorator function that receives a
-            and returns an ApiHandler's operation.
+        :param operation_id: a string identifier for the operation
+        :param summary: a summary of the operation
+        :param description: A description of the operation. CommonMark syntax
+                            may be used.
+        :param parameters: List of dictionaries, one per parameter, defining
+                           OpenAPI Parameter objects
+        :param request_body: A dictionary defining an OpenAPI Request Body
+                             object
+        :param responses: A dictionary defining an OpenAPI Responses object
+        :param tags: TODO
+        :param kwargs: TODO
+
+        :return: A decorator function that receives and returns an
+                 ApiHandler's operation.
         """
         openapi = {
             "operationId": operation_id or kwargs.pop("operationId", None),
