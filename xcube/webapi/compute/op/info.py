@@ -24,26 +24,57 @@ _PRIMITIVE_JSON_TO_PY_TYPES = {
 
 
 class OpInfo:
+    """Information about a compute operation"""
+
     def __init__(self,
                  params_schema: Dict[str, Any],
                  param_py_types: Dict[str, PyType]):
+        """Create information about a compute operation
+
+        :param params_schema: map of parameter names to their JSON Schema
+                              definitions
+        :param param_py_types: map of parameter names to their Python types
+        """
         self.params_schema = params_schema
         self.param_py_types = param_py_types
 
     def make_op(self, function: Callable) -> Callable:
+        """Add this information instance to a function
+
+        The supplied function is modified in-place (with the addition of an
+        attribute referencing this information instance) and returned.
+
+        :param function: the function to associate with this information
+        :return: the same function (with an attribute added)
+        """
         setattr(function, _ATTR_NAME_OP_INFO, self)
         return function
 
     @classmethod
     def get_op_info(cls, op: Callable) -> "OpInfo":
+        """Get the information object for a specified function
+
+        :param op: the function for which information is requested
+        :return: the function’s associated information object, if present
+        :raises ValueError: if there is no associated information object
+                            (i.e. the function is not an operation)
+        """
         op_info = getattr(op, _ATTR_NAME_OP_INFO, None)
         if not isinstance(op_info, OpInfo):
-            raise ValueError(f"function {op.__name__}() is not yet"
-                             f" registered as operation")
+            raise ValueError(f"function {op.__name__}() is not"
+                             f" registered as an operation")
         return op_info
 
     @classmethod
     def new_op_info(cls, op: Callable) -> "OpInfo":
+        """Create a new operation information object for a function
+
+        The returned information object contains a parameter type dictionary
+        and JSON schema created by analysis of the supplied function.
+
+        :param op: a function
+        :return: operation information for the supplied function
+        """
         members = dict(inspect.getmembers(op))
         annotations = members.get("__annotations__")
         code = members.get("__code__")
@@ -89,6 +120,18 @@ class OpInfo:
 
     @property
     def effective_param_py_types(self) -> Dict[str, PyType]:
+        """Return effective Python types for the operation’s parameters
+
+        For any parameter which has a Python type annotation, that type will
+        be set as the value in the returned mapping. If a parameter has no
+        Python type annotation but a primitive type is defined in the
+        operation’s JSON schema, the corresponding Python type will be used
+        as the value in the returned type dictionary. Otherwise `None` will
+        be used.
+
+        :return: a dictionary mapping operation parameter names to their
+                 effective Python types
+        """
         py_types = self.param_py_types.copy()
         for param_name, param_schema in self.param_schemas.items():
             py_type = py_types.get(param_name)
@@ -101,23 +144,58 @@ class OpInfo:
 
     @property
     def param_schemas(self) -> Dict[str, Any]:
+        """
+        :return: a mapping of parameter names to their JSON schemas
+        """
         return self.params_schema.get("properties", {})
 
     def set_param_schemas(self, schemas: Dict[str, Any]):
+        """Set JSON schemas for operation parameters
+
+        :param schemas: a mapping of parameter names to their JSON schemas
+        """
         self.params_schema["properties"] = schemas
 
     def update_params_schema(self, schema: Dict[str, Any]):
+        """Update the JSON schema for the whole parameters dictionary
+
+        Update the existing parameter dictionary schema with the supplied
+        dictionary. The supplied dictionary should be a valid JSON Schema,
+        with any schemas for the individual parameters in a sub-dictionary
+        under the `properties` key.
+
+        :param schema: the schema with which to update the parameters
+                       dictionary schema
+        """
         self.params_schema.update(schema)
 
     def update_param_schema(self, param_name: str, schema: Dict[str, Any]):
+        """Update the JSON Schema for a single parameter
+
+        :param param_name: name of the parameter
+        :param schema: schema with which to update the parameter’s current
+                       schema
+        """
         param_schemas = self.param_schemas
         param_schema = param_schemas.get(param_name, {})
         param_schema.update(schema)
+        # TODO why are the below lines needed? param_schema is modified in
+        #  place AFAICT.
         param_schemas[param_name] = param_schema
         self.set_param_schemas(param_schemas)
 
-    def get_param_py_type(self, param_name: str):
+    def get_param_py_type(self, param_name: str) -> PyType:
+        """Get the Python type for a parameter
+
+        :param param_name: name of parameter
+        :return: Python type of specified parameter
+        """
         return self.param_py_types[param_name]
 
     def set_param_py_type(self, param_name: str, py_type: PyType):
+        """Set the Python type for a parameter
+
+        :param param_name: name of parameter
+        :param py_type: Python type of specified parameter
+        """
         self.param_py_types[param_name] = py_type

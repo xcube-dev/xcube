@@ -236,11 +236,20 @@ class ComputeContext(ResourcesContext):
     def get_effective_parameters(self,
                                  op: Callable,
                                  parameters: Dict[str, Any]):
-        """TODO
+        """Replace dataset names with datasets in operation parameters
 
-        :param op:
-        :param parameters:
-        :return:
+        This method takes a parameter dictionary for the invocation or an
+        operation and returns a copy of the dictionary with any dataset
+        names replaced by the actual referenced dataset. In other words,
+        for any parameter where the operation expects a `Dataset` or
+        `MultiLevelDataset` and the dictionary supplies a string, the string
+        is replaced by the dataset with the corresponding name in this
+        compute context’s dataset context.
+
+        :param op: an operation
+        :param parameters: parameters with which to execute the operation
+        :return: a copy of the parameters, with dataset names replaced by
+                 datasets
         """
         op_info = OpInfo.get_op_info(op)
         param_py_types = op_info.effective_param_py_types

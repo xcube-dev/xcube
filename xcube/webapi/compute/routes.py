@@ -287,14 +287,14 @@ class ComputeJobsHandler(ApiHandler[ComputeContext]):
     )
     def put(self):
         # TODO: build a more complete schema and publish it as OpenAPI?
-        # Currently, the schema is built for the current request and
-        # only contains (and only needs to contain) a parameter schema
-        # for the requested operation. In xcube’s live OpenAPI specification,
-        # the parameters are just an object with no further constraints.
-        # Ideally we’d want to detail the parameters for the various
-        # available operations in the OpenAPI specification. This can be
-        # done with if-then constructs: see
-        # https://json-schema.org/understanding-json-schema/reference/conditionals.html#if-then-else
+        #  Currently, the schema is built for the current request and only
+        #  contains (and only needs to contain) a parameter schema for the
+        #  requested operation. In xcube’s live OpenAPI specification,
+        #  the parameters are just an object with no further constraints.
+        #  Ideally we’d want to detail the parameters for the various
+        #  available operations in the OpenAPI specification. This can be
+        #  done with if-then constructs: see
+        #  https://json-schema.org/understanding-json-schema/reference/conditionals.html#if-then-else
         job_request = self.request.json
         basic_schema = self.put.__openapi__['requestBody']['content'][
             'application/json']['schema']
