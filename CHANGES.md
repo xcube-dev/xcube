@@ -1,5 +1,8 @@
 ## Changes in 1.1.1
 
+* Server offers the function `add_place_group` in `places/context.py`,
+  which allows plugins to add place groups from external sources.
+
 * Bundled new build of [xcube-viewer 1.1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0)
   that will correctly respect a given xcube server from loaded from the 
   viewer configuration.
