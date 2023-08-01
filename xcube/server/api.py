@@ -274,8 +274,8 @@ class Api(Generic[ServerContextT]):
         :param request_body: A dictionary defining an OpenAPI Request Body
                              object
         :param responses: A dictionary defining an OpenAPI Responses object
-        :param tags: TODO
-        :param kwargs: TODO
+        :param tags: OpenAPI tags
+        :param kwargs: OpenAPI parameters
 
         :return: A decorator function that receives and returns an
                  ApiHandler's operation.
@@ -288,6 +288,7 @@ class Api(Generic[ServerContextT]):
             "requestBody": request_body or kwargs.pop("requestBody", None),
             "responses": responses,
             "tags": tags,
+            **kwargs
         }
         openapi = {k: v for k, v in openapi.items() if v is not None}
 
