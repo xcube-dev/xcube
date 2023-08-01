@@ -44,8 +44,8 @@ importlib.import_module("xcube.webapi.compute.operations")
 
 LocalExecutor = concurrent.futures.ThreadPoolExecutor
 
-# Note, we should create a module 'job' and define better job classes.
-# Here we use dicts for time being.
+# TODO: we should create a module 'job' and define better job classes.
+#   Here we use dicts for time being.
 
 Job = Dict[str, Any]
 Jobs = Dict[int, Job]
@@ -216,7 +216,7 @@ class ComputeContext(ResourcesContext):
         set_job_result(job, {"datasetId": ds_id})
 
     def cancel_job(self, job_id: int) -> Job:
-        """Cancel a scheduled job
+        """Cancel a scheduled job.
 
         :param job_id: the ID number of the job to be cancelled
         :return: details of the cancelled job as a string-keyed dictionary
@@ -236,7 +236,7 @@ class ComputeContext(ResourcesContext):
     def get_effective_parameters(self,
                                  op: Callable,
                                  parameters: Dict[str, Any]):
-        """Replace dataset names with datasets in operation parameters
+        """Replace dataset names with datasets in operation parameters.
 
         This method takes a parameter dictionary for the invocation or an
         operation and returns a copy of the dictionary with any dataset
@@ -278,7 +278,7 @@ def new_job(job_id: int, job_request: JobRequest) -> Job:
 
 
 def is_job_status(job: Job, status: str) -> bool:
-    """Report whether a specified job has the specified status
+    """Report whether a specified job has the specified status.
 
     :param job: a job specification (string-keyed dictionary)
     :param status: a string representing a recognized status
@@ -293,7 +293,7 @@ def is_job_status(job: Job, status: str) -> bool:
 def set_job_status(job: Job,
                    status: str,
                    error: Optional[BaseException] = None):
-    """Set the status of a job
+    """Set the status of a job.
 
     :param job: a job specification (string-keyed dictionary)
     :param status: a string representing a recognized status
@@ -316,7 +316,7 @@ def set_job_status(job: Job,
 
 
 def set_job_result(job: Job, result: Dict[str, Any]):
-    """Set the result of a compute job
+    """Set the result of a compute job.
 
     :param job: job specifier (string-keyed dictionary)
     :param result: results of the job

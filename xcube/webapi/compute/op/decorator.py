@@ -11,7 +11,16 @@ from .registry import OP_REGISTRY
 def operation(_op: Optional[Callable] = None,
               params_schema: Optional[JsonObjectSchema] = None,
               op_registry: OpRegistry = OP_REGISTRY):
-    """Decorator that registers a function as an operation."""
+    """Decorator that registers a function as an operation.
+
+    :param _op: the function to register as an operation
+    :param params_schema: JSON Schema for the function's parameters
+           (a JSON object schema mapping parameter names to their individual
+           schemas)
+    :param op_registry: the registry in which to register the operation
+    :return: the decorated operation, if an operation was supplied;
+       otherwise, a decorator function
+    """
 
     def decorator(op: Callable):
         _assert_decorator_target_ok("operation", op)
@@ -27,7 +36,7 @@ def operation(_op: Optional[Callable] = None,
 
 
 def op_param(name: str,
-             type: Optional[Union[str, List[str]]] = None,
+             json_type: Optional[Union[str, List[str]]] = None,
              py_type: Optional[PyType] = None,
              title: Optional[str] = None,
              description: Optional[str] = None,
@@ -35,11 +44,21 @@ def op_param(name: str,
              required: Optional[bool] = None,
              schema: Optional[JsonSchema] = None,
              op_registry: OpRegistry = OP_REGISTRY):
-    """Decorator that adds schema information to
-    the operation parameter given by *name*.
+    """Decorator that adds schema information to the operation parameter given
+    by *name*.
 
     See also
     https://json-schema.org/draft/2020-12/json-schema-validation.html#name-a-vocabulary-for-basic-meta
+    :param name: name of the parameter to apply schema information to
+    :param json_type: JSON Schema type of the parameter
+    :param py_type: Python type of the parameter
+    :param title: title of the parameter
+    :param description: description of the parameter
+    :param default: default value for the parameter
+    :param required: whether the parameter is required
+    :param schema: JSON Schema describing the parameter
+    :param op_registry: registry in which to register the operation
+    :return: parameterized decorator for a compute operation function
     """
 
     def decorator(op: Callable):
@@ -50,8 +69,8 @@ def op_param(name: str,
             op_param_schema.update(schema.to_dict())
         if py_type is not None:
             op_info.set_param_py_type(name, py_type)
-        if type is not None:
-            op_param_schema.update({"type": type})
+        if json_type is not None:
+            op_param_schema.update({"type": json_type})
         if title is not None:
             op_param_schema.update({"title": title})
         if description is not None:
