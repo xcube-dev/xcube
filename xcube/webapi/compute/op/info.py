@@ -1,8 +1,12 @@
+import collections.abc
 import inspect
+import typing
 from typing import Callable, Dict, Any
 from mashumaro.jsonschema import build_json_schema
 
 import xarray as xr
+
+from xcube.core.mldataset import MultiLevelDataset
 
 PyType = type(type(int))
 
@@ -92,14 +96,25 @@ class OpInfo:
                     py_type = annotations.get(param_name)
                     if py_type is not None:
                         param_py_types[param_name] = py_type
-                    if py_type is xr.Dataset:
-                        param_schema = {
-                            "type": "string",
-                            "title": "Dataset identifier"
-                        }
+                    if inspect.isclass(py_type):
+                        if issubclass(py_type,
+                                      (xr.Dataset, MultiLevelDataset)):
+                            # extract function from get_effective_parameters
+                            param_schema = {
+                                "type": "string",
+                                "title": "Dataset identifier"
+                            }
+                        else:
+                            raise ValueError(
+                                f'Illegal operation parameter class {py_type}.'
+                                f' Classes must be subclasses of Dataset or '
+                                f'MultiLevelDataset.'
+                            )
                     elif py_type is not None:
-                        # TODO: Decide what to do about mapping types with
-                        # non-string keys (not supported in JSON)
+                        if not OpInfo._is_valid_parameter_type(py_type):
+                            raise ValueError(
+                                f'Illegal operation parameter type {py_type}.'
+                            )
                         param_schema = build_json_schema(py_type).to_dict()
                     else:
                         param_schema = {}
@@ -117,6 +132,23 @@ class OpInfo:
                 })
 
         return OpInfo(params_schema, param_py_types)
+
+    @staticmethod
+    def _is_valid_parameter_type(py_type) -> bool:
+        """Raise an exception if the supplied type is not valid for operations
+
+        "Valid" means that it is composed only of sequences, mappings,
+        primitives, and combinations thereof.
+        """
+        pass
+        origin = typing.get_origin(py_type)
+        args = typing.get_args(py_type)
+        if py_type in [int, float, str]:
+            return True
+        elif origin in [dict, collections.abc.Mapping]:
+            return args[0] is str and OpInfo._is_valid_parameter_type(args[1])
+        elif origin in [list, tuple, collections.abc.Sequence]:
+            return all(map(OpInfo._is_valid_parameter_type, args))
 
     @property
     def effective_param_py_types(self) -> Dict[str, PyType]:
@@ -137,6 +169,10 @@ class OpInfo:
             py_type = py_types.get(param_name)
             if py_type is None:
                 json_type = param_schema.get("type")
+                # TODO Document requirement that operations must have type
+                #  annotations
+                # TODO check whether matumosho can do the inverse transform
+                #  for us
                 py_type = _PRIMITIVE_JSON_TO_PY_TYPES.get(json_type)
                 if py_type is not None:
                     py_types[param_name] = py_type
@@ -179,8 +215,7 @@ class OpInfo:
         param_schemas = self.param_schemas
         param_schema = param_schemas.get(param_name, {})
         param_schema.update(schema)
-        # TODO why are the below lines needed? param_schema is modified in
-        #  place AFAICT.
+        # next line needed in case default value was taken in .get above
         param_schemas[param_name] = param_schema
         self.set_param_schemas(param_schemas)
 
