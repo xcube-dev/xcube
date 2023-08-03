@@ -256,7 +256,6 @@ class PlacesContext(ResourcesContext):
             join_encoding = join['encoding']
             with fiona.open(join_path,
                             encoding=join_encoding) as feature_collection:
-                self._to_geo_interface(feature_collection)
                 indexed_join_features = self._get_indexed_features(
                     list(self._to_geo_interface(feature_collection)),
                     join_property
