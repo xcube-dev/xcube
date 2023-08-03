@@ -18,7 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+
 import time
+import xarray as xr
+from xcube.webapi.compute.op.decorator import operation
 
 from ..helpers import RoutesTestCase
 
@@ -150,18 +153,21 @@ class ComputeJobsRoutesTest(RoutesTestCase):
         self.assertEqual(404, status)
 
     def test_cancel_job(self):
+        @operation
+        def slow_identity(dataset: xr.Dataset) -> xr.Dataset:
+            time.sleep(10)  # Ensure the job runs long enough to be cancelled
+            return dataset
+
         job1, status1 = self.fetch_json(
             '/compute/jobs',
             method="PUT",
             body={
-                "operationId": "spatial_subset",
+                "operationId": "slow_identity",
                 "parameters": {
                     "dataset": "demo",
-                    "bbox": [1, 51, 4, 52]
                 },
                 "output": {
-                    "datasetId": "demo_subset",
-                    "title": "My demo subset"
+                    "datasetId": "demo2",
                 }
             }
         )
@@ -172,7 +178,6 @@ class ComputeJobsRoutesTest(RoutesTestCase):
         self.assertEqual(job2['state']['status'], 'cancelled')
 
     def test_mldataset(self):
-        from xcube.webapi.compute.op.decorator import operation
         from xcube.core.mldataset import MultiLevelDataset
 
         @operation
