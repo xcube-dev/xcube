@@ -99,6 +99,8 @@ class ServerTestCase(unittest.TestCase, ABC):
         if path.startswith("/"):
             path = path[1:]
         url = f'http://localhost:{self.port}/{path}'
+        if isinstance(body, dict):
+            body = bytes(json.dumps(body), 'utf-8')
         return self.http.request(method, url, headers=headers, body=body)
 
     def fetch_json(self,

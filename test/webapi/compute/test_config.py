@@ -19,4 +19,30 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-version = '1.2.0.dev0'
+from unittest import TestCase
+
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.webapi.compute.config import CONFIG_SCHEMA
+
+
+class ComputeConfigTest(TestCase):
+    def test_config_schema(self):
+        self.assertIsInstance(CONFIG_SCHEMA, JsonObjectSchema)
+        self.assertEqual(
+            {
+                'type': 'object',
+                'properties': {
+                    'Compute': {
+                        'type': 'object',
+                        'properties': {
+                            'MaxWorkers': {
+                                'type': 'integer',
+                                'minimum': 1,
+                            }
+                        },
+                        'additionalProperties': False,
+                    }
+                },
+            },
+            CONFIG_SCHEMA.to_dict()
+        )

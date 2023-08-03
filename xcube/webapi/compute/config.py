@@ -19,4 +19,21 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-version = '1.2.0.dev0'
+from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonIntegerSchema
+
+
+COMPUTE_CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        MaxWorkers=JsonIntegerSchema(minimum=1),
+        # Executor=JsonObjectSchema(),
+        # OpRegistry=JsonStringSchema(),
+    ),
+    additional_properties=False
+)
+
+CONFIG_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Compute=COMPUTE_CONFIG_SCHEMA,
+    )
+)

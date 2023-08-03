@@ -195,7 +195,9 @@ class DatasetsContext(ResourcesContext):
             title: Optional[str] = None,
             style: Optional[str] = None,
             color_mappings: Dict[str, Dict[str, Any]] = None
-    ):
+    ) -> str:
+        """Add a dataset to the configuration
+        """
         assert_instance(dataset, (xr.Dataset, MultiLevelDataset), 'dataset')
         if isinstance(dataset, xr.Dataset):
             ml_dataset = BaseMultiLevelDataset(dataset, ds_id=ds_id)

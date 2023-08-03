@@ -1,3 +1,24 @@
+## Changes in 1.2.0 (in development)
+
+* Added a new, experimental `/compute` API to xcube server. 
+  It comprises the following endpoints:
+  - `GET compute/operations` - List available operations.
+  - `GET compute/operations/{opId}` - Get details of a given operation.
+  - `PUT compute/jobs` - Start a new job that executes an operation.
+  - `GET compute/jobs` - Get all jobs.
+  - `GET compute/jobs/{jobId}` - Get details of a given job.
+  - `DELETE compute/jobs/{jobId}` - Cancel a given job.
+  
+  The available operations are currently taken from module
+  `xcube.webapi.compute.operations`.
+  
+  To disable the new API use the following server configuration:
+  ```yaml
+  api_spec:
+    excludes: ["compute"] 
+  ...
+  ```
+
 ## Changes in 1.1.3 (in development)
 
 ### Fixes

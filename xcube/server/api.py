@@ -256,6 +256,8 @@ class Api(Generic[ServerContextT]):
                   summary: Optional[str] = None,
                   description: Optional[str] = None,
                   parameters: Optional[List[Dict[str, Any]]] = None,
+                  request_body: Optional[Dict[str, Any]] = None,
+                  responses: Optional[Dict[str, Dict]] = None,
                   tags: Optional[str] = None,
                   **kwargs):
         """
@@ -263,15 +265,30 @@ class Api(Generic[ServerContextT]):
         API handler's operation,
         i.e. one of the get, post, put, delete, or options methods.
 
-        :return: A decorator function that receives a
-            and returns an ApiHandler's operation.
+        :param operation_id: a string identifier for the operation
+        :param summary: a summary of the operation
+        :param description: A description of the operation. CommonMark syntax
+                            may be used.
+        :param parameters: List of dictionaries, one per parameter, defining
+                           OpenAPI Parameter objects
+        :param request_body: A dictionary defining an OpenAPI Request Body
+                             object
+        :param responses: A dictionary defining an OpenAPI Responses object
+        :param tags: OpenAPI tags
+        :param kwargs: OpenAPI parameters
+
+        :return: A decorator function that receives and returns an
+                 ApiHandler's operation.
         """
         openapi = {
             "operationId": operation_id or kwargs.pop("operationId", None),
             "summary": summary,
             "description": description,
             "parameters": parameters,
+            "requestBody": request_body or kwargs.pop("requestBody", None),
+            "responses": responses,
             "tags": tags,
+            **kwargs
         }
         openapi = {k: v for k, v in openapi.items() if v is not None}
 
