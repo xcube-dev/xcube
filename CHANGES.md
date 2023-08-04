@@ -11,7 +11,8 @@
 
 * Updated AppVeyor and GitHub workflow configurations to use micromamba rather
   than mamba (#785)
-
+* `update_dataset_attrs` can now also handle datasets with CRS other than 
+  WGS84 and update the metadata according to CF conventions. 
 
 ## Changes in 1.1.2
 
