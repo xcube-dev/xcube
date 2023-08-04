@@ -614,7 +614,7 @@ class GridMapping(abc.ABC):
 
     def to_dataset_attrs(self) -> Mapping[str, Any]:
         """
-        Get CF-compliant attributes of a dataset.
+        Get spatial dataset attributes as recommended by
         https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended
 
         Defined only for grid mappings with regular x,y coordinates.
