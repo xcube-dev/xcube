@@ -12,7 +12,8 @@
 * Updated AppVeyor and GitHub workflow configurations to use micromamba rather
   than mamba (#785)
 * `update_dataset_attrs` can now also handle datasets with CRS other than 
-  WGS84 and update the metadata according to CF conventions. 
+  WGS84 and update the metadata according to the 
+  [ESIP Attribute Convention for Data Discovery](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended). 
 
 ## Changes in 1.1.2
 
