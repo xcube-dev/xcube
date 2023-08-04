@@ -617,8 +617,6 @@ class GridMapping(abc.ABC):
         Get spatial dataset attributes as recommended by
         https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended
 
-        Defined only for grid mappings with regular x,y coordinates.
-
         :return: dictionary with dataset coordinate attributes.
         """
 

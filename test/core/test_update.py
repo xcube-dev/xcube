@@ -182,46 +182,46 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
+        expected_dict = {'history': 'pipo', 'license': 'MIT',
+                         'Conventions': 'CF-1.7',
+                         'geospatial_lon_units': 'degrees_east',
+                         'geospatial_lon_min': -20, 'geospatial_lon_max': -18,
+                         'geospatial_lon_resolution': 0.25,
+                         'geospatial_lat_units': 'degrees_north',
+                         'geospatial_lat_min': 12, 'geospatial_lat_max': 13.5,
+                         'geospatial_lat_resolution': 0.25,
+                         'geospatial_bounds_crs': 'CRS84',
+                         'geospatial_bounds': 'POLYGON((-20 12, -20 13.5, -18 13.5, -18 12, -20 12))',
+                         'time_coverage_start': '2018-06-01T00:00:00.000000000',
+                         'time_coverage_end': '2018-06-06T00:00:00.000000000'}
+
         self.assertIsNot(ds2, ds1)
-        self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
-        self.assertEqual('MIT', ds2.attrs.get('license'))
-        self.assertEqual('pipo', ds2.attrs.get('history'))
-        self.assertEqual(-20.0, ds2.attrs.get('geospatial_lon_min'))
-        self.assertEqual(-18.0, ds2.attrs.get('geospatial_lon_max'))
-        self.assertEqual(0.25, ds2.attrs.get('geospatial_lon_resolution'))
-        self.assertEqual('degrees_east', ds2.attrs.get('geospatial_lon_units'))
-        self.assertEqual(12.0, ds2.attrs.get('geospatial_lat_min'))
-        self.assertEqual(13.5, ds2.attrs.get('geospatial_lat_max'))
-        self.assertEqual(0.25, ds2.attrs.get('geospatial_lat_resolution'))
-        self.assertEqual('degrees_north', ds2.attrs.get('geospatial_lat_units'))
-        self.assertEqual('2018-06-01T00:00:00.000000000',
-                         ds2.attrs.get('time_coverage_start'))
-        self.assertEqual('2018-06-06T00:00:00.000000000',
-                         ds2.attrs.get('time_coverage_end'))
         self.assertIn('date_modified', ds2.attrs)
+        ds2.attrs.pop('date_modified')
+        self.assertEqual(expected_dict,  ds2.attrs)
 
         ds1 = xr.Dataset(coords=coords_with_bnds)
         ds1.rio.write_crs("epsg:4326", inplace=True,
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
+        expected_dict = {'history': 'pipo', 'license': 'MIT',
+                         'Conventions': 'CF-1.7',
+                         'geospatial_lon_units': 'degrees_east',
+                         'geospatial_lon_min': -20, 'geospatial_lon_max': -18,
+                         'geospatial_lon_resolution': 0.25,
+                         'geospatial_lat_units': 'degrees_north',
+                         'geospatial_lat_min': 12, 'geospatial_lat_max': 13.5,
+                         'geospatial_lat_resolution': 0.25,
+                         'geospatial_bounds_crs': 'CRS84',
+                         'geospatial_bounds': 'POLYGON((-20 12, -20 13.5, -18 13.5, -18 12, -20 12))',
+                         'time_coverage_start': '2018-06-01T00:00:00.000000000',
+                         'time_coverage_end': '2018-06-05T23:00:59.000000000'}
+
         self.assertIsNot(ds2, ds1)
-        self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
-        self.assertEqual('MIT', ds2.attrs.get('license'))
-        self.assertEqual('pipo', ds2.attrs.get('history'))
-        self.assertEqual(-20.0, ds2.attrs.get('geospatial_lon_min'))
-        self.assertEqual(-18.0, ds2.attrs.get('geospatial_lon_max'))
-        self.assertEqual(0.25, ds2.attrs.get('geospatial_lon_resolution'))
-        self.assertEqual('degrees_east', ds2.attrs.get('geospatial_lon_units'))
-        self.assertEqual(12.0, ds2.attrs.get('geospatial_lat_min'))
-        self.assertEqual(13.5, ds2.attrs.get('geospatial_lat_max'))
-        self.assertEqual(0.25, ds2.attrs.get('geospatial_lat_resolution'))
-        self.assertEqual('degrees_north', ds2.attrs.get('geospatial_lat_units'))
-        self.assertEqual('2018-06-01T00:00:00.000000000',
-                         ds2.attrs.get('time_coverage_start'))
-        self.assertEqual('2018-06-05T23:00:59.000000000',
-                         ds2.attrs.get('time_coverage_end'))
         self.assertIn('date_modified', ds2.attrs)
+        ds2.attrs.pop('date_modified')
+        self.assertEqual(expected_dict,  ds2.attrs)
 
     def test_update_global_attributes_3031_crs(self):
         num_x = 5
@@ -255,72 +255,58 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         output_metadata = dict(history='pipo', license='MIT',
                                Conventions='CF-1.7')
 
-        expected_crs = "CRS84"
-
-        expected_bbox = (
-            'POLYGON((-121.99380296455976 -62.293519314442854, -121.99380296455976 '
-            '-62.299510171081884, -121.99083040333379 -62.299510171081884, '
-            '-121.99083040333379 -62.293519314442854, -121.99380296455976 '
-            '-62.293519314442854))')
-
         ds1 = xr.Dataset(coords=coords)
         ds1.rio.write_crs("epsg:3031", inplace=True,
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
+        expected_dict = {'history': 'pipo', 'license': 'MIT',
+                         'Conventions': 'CF-1.7',
+                         'geospatial_lon_units': 'degrees_east',
+                         'geospatial_lon_min': -121.99380296455976,
+                         'geospatial_lon_max': -121.99083040333379,
+                         'geospatial_lon_resolution': 0.0005945389425789926,
+                         'geospatial_lat_units': 'degrees_north',
+                         'geospatial_lat_min': -62.293519314442854,
+                         'geospatial_lat_max': -62.299510171081884,
+                         'geospatial_lat_resolution': 0.0011981728729608676,
+                         'geospatial_bounds_crs': 'CRS84',
+                         'geospatial_bounds': 'POLYGON((-121.99380296455976 -62.293519314442854, -121.99380296455976 -62.299510171081884, -121.99083040333379 -62.299510171081884, -121.99083040333379 -62.293519314442854, -121.99380296455976 -62.293519314442854))',
+                         'time_coverage_start': '2018-06-01T00:00:00.000000000',
+                         'time_coverage_end': '2018-06-06T00:00:00.000000000'}
+
+
         self.assertIsNot(ds2, ds1)
-        self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
-        self.assertEqual('MIT', ds2.attrs.get('license'))
-        self.assertEqual('pipo', ds2.attrs.get('history'))
-        self.assertEqual(-121.99380296455976,
-                         ds2.attrs.get('geospatial_lon_min'))
-        self.assertEqual(-121.99083040333379,
-                         ds2.attrs.get('geospatial_lon_max'))
-        self.assertEqual(0.0005945389425789926,
-                         ds2.attrs.get('geospatial_lon_resolution'))
-        self.assertEqual('degrees_east', ds2.attrs.get('geospatial_lon_units'))
-        self.assertEqual(-62.293519314442854,
-                         ds2.attrs.get('geospatial_lat_min'))
-        self.assertEqual(-62.299510171081884,
-                         ds2.attrs.get('geospatial_lat_max'))
-        self.assertEqual(0.0011981728729608676,
-                         ds2.attrs.get('geospatial_lat_resolution'))
-        self.assertEqual(expected_crs, ds2.attrs.get('geospatial_bounds_crs'))
-        self.assertEqual(expected_bbox, ds2.attrs.get('geospatial_bounds'))
-        self.assertEqual('degrees_north', ds2.attrs.get('geospatial_lat_units'))
-        self.assertEqual('2018-06-01T00:00:00.000000000',
-                         ds2.attrs.get('time_coverage_start'))
-        self.assertEqual('2018-06-06T00:00:00.000000000',
-                         ds2.attrs.get('time_coverage_end'))
         self.assertIn('date_modified', ds2.attrs)
+        ds2.attrs.pop('date_modified')
+        self.assertEqual(expected_dict,  ds2.attrs)
 
         ds1 = xr.Dataset(coords=coords_with_bnds)
         ds1.rio.write_crs("epsg:3031", inplace=True,
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
+        expected_dict = {'Conventions': 'CF-1.7',
+                         'geospatial_bounds': 'POLYGON((-121.99380296455976 -62.293519314442854, '
+                                              '-121.99380296455976 -62.299510171081884, '
+                                              '-121.99083040333379 -62.299510171081884, '
+                                              '-121.99083040333379 -62.293519314442854, '
+                                              '-121.99380296455976 -62.293519314442854))',
+                         'geospatial_bounds_crs': 'CRS84',
+                         'geospatial_lat_max': -62.299510171081884,
+                         'geospatial_lat_min': -62.293519314442854,
+                         'geospatial_lat_resolution': 0.0011981728729608676,
+                         'geospatial_lat_units': 'degrees_north',
+                         'geospatial_lon_max': -121.99083040333379,
+                         'geospatial_lon_min': -121.99380296455976,
+                         'geospatial_lon_resolution': 0.0005945389425789926,
+                         'geospatial_lon_units': 'degrees_east',
+                         'history': 'pipo',
+                         'license': 'MIT',
+                         'time_coverage_end': '2018-06-05T23:00:59.000000000',
+                         'time_coverage_start': '2018-06-01T00:00:00.000000000'}
+
         self.assertIsNot(ds2, ds1)
-        self.assertEqual('CF-1.7', ds2.attrs.get('Conventions'))
-        self.assertEqual('MIT', ds2.attrs.get('license'))
-        self.assertEqual('pipo', ds2.attrs.get('history'))
-        self.assertEqual(-121.99380296455976,
-                         ds2.attrs.get('geospatial_lon_min'))
-        self.assertEqual(-121.99083040333379,
-                         ds2.attrs.get('geospatial_lon_max'))
-        self.assertEqual(0.0005945389425789926,
-                         ds2.attrs.get('geospatial_lon_resolution'))
-        self.assertEqual('degrees_east', ds2.attrs.get('geospatial_lon_units'))
-        self.assertEqual(-62.293519314442854,
-                         ds2.attrs.get('geospatial_lat_min'))
-        self.assertEqual(-62.299510171081884,
-                         ds2.attrs.get('geospatial_lat_max'))
-        self.assertEqual(0.0011981728729608676,
-                         ds2.attrs.get('geospatial_lat_resolution'))
-        self.assertEqual(expected_crs, ds2.attrs.get('geospatial_bounds_crs'))
-        self.assertEqual(expected_bbox, ds2.attrs.get('geospatial_bounds'))
-        self.assertEqual('degrees_north', ds2.attrs.get('geospatial_lat_units'))
-        self.assertEqual('2018-06-01T00:00:00.000000000',
-                         ds2.attrs.get('time_coverage_start'))
-        self.assertEqual('2018-06-05T23:00:59.000000000',
-                         ds2.attrs.get('time_coverage_end'))
         self.assertIn('date_modified', ds2.attrs)
+        ds2.attrs.pop('date_modified')
+        self.assertEqual(expected_dict,  ds2.attrs)

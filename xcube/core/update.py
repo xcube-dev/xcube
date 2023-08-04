@@ -30,16 +30,8 @@ from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.gridmapping import GridMapping
 from xcube.util.config import NameDictPairList
 
-_LON_ATTRS_DATA = ('lon', 'lon_bnds', 'degrees_east',
-                   ('geospatial_lon_min', 'geospatial_lon_max',
-                    'geospatial_lon_units', 'geospatial_lon_resolution'),
-                   float)
-_LAT_ATTRS_DATA = ('lat', 'lat_bnds', 'degrees_north',
-                   ('geospatial_lat_min', 'geospatial_lat_max',
-                    'geospatial_lat_units', 'geospatial_lat_resolution'),
-                   float)
-_TIME_ATTRS_DATA = ('time', 'time_bnds', None,
-                    ('time_coverage_start', 'time_coverage_end', None, None),
+_TIME_ATTRS_DATA = ('time', 'time_bnds',
+                    ('time_coverage_start', 'time_coverage_end'),
                     str)
 
 
@@ -112,8 +104,8 @@ def update_dataset_temporal_attrs(dataset: xr.Dataset,
     if not in_place:
         dataset = dataset.copy()
 
-    for coord_name, coord_bnds_name, coord_units, coord_attr_names, cast in coord_data:
-        coord_min_attr_name, coord_max_attr_name, coord_units_attr_name, coord_res_attr_name = coord_attr_names
+    for coord_name, coord_bnds_name, coord_attr_names, cast in coord_data:
+        coord_min_attr_name, coord_max_attr_name = coord_attr_names
         if update_existing or \
                 coord_min_attr_name not in dataset.attrs or \
                 coord_max_attr_name not in dataset.attrs:
@@ -155,11 +147,6 @@ def update_dataset_temporal_attrs(dataset: xr.Dataset,
                     coord_min, coord_max = coord_v1, coord_v2
                 dataset.attrs[coord_min_attr_name] = cast(coord_min.values)
                 dataset.attrs[coord_max_attr_name] = cast(coord_max.values)
-            if coord_units_attr_name is not None and coord_units is not None:
-                dataset.attrs[coord_units_attr_name] = coord_units
-            if coord_res_attr_name is not None and coord_res is not None:
-                dataset.attrs[
-                    coord_res_attr_name] = coord_res if coord_res > 0 else -coord_res
 
     dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
     return dataset
