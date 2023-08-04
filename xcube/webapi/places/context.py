@@ -24,6 +24,10 @@ from typing import Sequence
 
 import fiona
 import fsspec
+import pyproj
+import shapely
+
+from fiona.collection import Collection
 
 from xcube.server.api import ApiError
 from xcube.server.api import Context
@@ -276,8 +280,13 @@ class PlacesContext(ResourcesContext):
         return features
 
     @classmethod
-    def _to_geo_interface(cls, feature_collection: Iterator[Any]) \
+    def _to_geo_interface(cls, feature_collection: Collection) \
             -> Iterator[Dict[str, Any]]:
+        source_crs = feature_collection.crs
+        target_crs = fiona.crs.from_epsg(4326)
+        if not source_crs == target_crs:
+            project = pyproj.Transformer.from_crs(
+                source_crs, target_crs, always_xy=True).transform
         for feature in feature_collection:
             # fiona >=1.9 returns features of type fiona.model.Feature
             # rather than JSON-serializable dictionaries.
@@ -291,7 +300,12 @@ class PlacesContext(ResourcesContext):
                         and "geometries" in geometry \
                         and geometry.get("type") != "GeometryCollection":
                     del geometry["geometries"]
-            yield feature
+            if not source_crs == target_crs:
+                geometry = feature.get('geometry')
+                shapely_geom = shapely.geometry.shape(geometry)
+                feature['geometry'] = (shapely.ops.transform(
+                    project, shapely_geom).__geo_interface__)
+        yield feature
 
     @classmethod
     def _get_indexed_features(cls,

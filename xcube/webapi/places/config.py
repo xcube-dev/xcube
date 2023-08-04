@@ -44,6 +44,7 @@ PLACE_GROUP_SCHEMA = JsonObjectSchema(
         Path=PATH_SCHEMA,
         Query=STRING_SCHEMA,
         Join=PLACE_GROUP_JOIN_SCHEMA,
+        CharacterEncoding=STRING_SCHEMA,
         PropertyMapping=JsonObjectSchema(
             additional_properties=PATH_SCHEMA
         ),
