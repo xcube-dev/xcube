@@ -81,6 +81,4 @@ class CubeMetadataAdjuster(CubeTransformer):
 
 
 def get_geospatial_attrs(gm: GridMapping) -> Dict[str, Any]:
-    # Note: check if force_geographic is wanted, here it is set for backwards
-    # compatibility
-    return dict(gm.to_attrs(force_geographic=True))
+    return dict(gm.to_dataset_attrs())

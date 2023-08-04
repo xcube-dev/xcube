@@ -612,16 +612,12 @@ class GridMapping(abc.ABC):
                           ij_bboxes)
         return ij_bboxes
 
-    def to_attrs(self,
-                 force_geographic: bool = False) -> Mapping[str, Any]:
+    def to_dataset_attrs(self) -> Mapping[str, Any]:
         """
         Get CF-compliant attributes of a dataset.
         https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended
 
         Defined only for grid mappings with regular x,y coordinates.
-
-        :param force_geographic: Whether to force geographic CRS.
-            Defaults to false.
 
         :return: dictionary with dataset coordinate attributes.
         """
@@ -649,24 +645,14 @@ class GridMapping(abc.ABC):
             lon_res = abs(lon_m2 - lon_m1)
             lat_res = abs(lat_m2 - lat_m1)
 
-        if force_geographic:
-            geospatial_bounds_crs = 'CRS84'
-            geospatial_bounds = (f'POLYGON(('
-                                 f'{lon_min} {lat_min}, '
-                                 f'{lon_min} {lat_max}, '
-                                 f'{lon_max} {lat_max}, '
-                                 f'{lon_max} {lat_min}, '
-                                 f'{lon_min} {lat_min}'
-                                 f'))')
-        else:
-            geospatial_bounds_crs = self.crs.srs
-            geospatial_bounds = (f'POLYGON(('
-                                 f'{x1} {y1}, '
-                                 f'{x1} {y2}, '
-                                 f'{x2} {y2}, '
-                                 f'{x2} {y1}, '
-                                 f'{x1} {y1}'
-                                 f'))')
+        geospatial_bounds_crs = 'CRS84'
+        geospatial_bounds = (f'POLYGON(('
+                             f'{lon_min} {lat_min}, '
+                             f'{lon_min} {lat_max}, '
+                             f'{lon_max} {lat_max}, '
+                             f'{lon_max} {lat_min}, '
+                             f'{lon_min} {lat_min}'
+                             f'))')
 
         return dict(
             geospatial_lon_units='degrees_east',

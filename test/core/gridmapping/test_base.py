@@ -10,6 +10,7 @@ from xcube.core.gridmapping.coords import Coords2DGridMapping
 # noinspection PyProtectedMember
 from xcube.core.gridmapping.helpers import _to_affine
 from xcube.core.gridmapping.regular import RegularGridMapping
+from xcube.core.new import new_cube
 
 GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
@@ -372,3 +373,43 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                       [360, 0, 720, 180],
                       [0, 340, 20, 360],
                       [-1, -1, -1, -1]], dtype=np.int64))
+
+    def test_to_dataset_attrs(self):
+        gm1 = TestGridMapping(**self.kwargs(xy_min=(20, 56),
+                                            size=(400, 200),
+                                            tile_size=(400, 200),
+                                            xy_res=(0.01, 0.01)))
+        transformed_gm = gm1.transform('EPSG:32633')
+
+        self.assertEqual(
+            {
+                'geospatial_bounds': 'POLYGON((20 56, 20 58.0, 24.0 58.0, 24.0 56, 20 56))',
+                'geospatial_bounds_crs': 'CRS84',
+                'geospatial_lat_max': 58.0,
+                'geospatial_lat_min': 56,
+                'geospatial_lat_resolution': 0.01,
+                'geospatial_lat_units': 'degrees_north',
+                'geospatial_lon_max': 24.0,
+                'geospatial_lon_min': 20,
+                'geospatial_lon_resolution': 0.01,
+                'geospatial_lon_units': 'degrees_east'
+            },
+            gm1.to_dataset_attrs())
+
+        self.assertEqual(
+            {
+                'geospatial_bounds': 'POLYGON((19.73859219445214 56.011953311099965, '
+                                     '19.73859219445214 57.96226854502516, 24.490858156706885 '
+                                     '57.96226854502516, 24.490858156706885 '
+                                     '56.011953311099965, 19.73859219445214 '
+                                     '56.011953311099965))',
+                'geospatial_bounds_crs': 'CRS84',
+                'geospatial_lat_max': 57.96226854502516,
+                'geospatial_lat_min': 56.011953311099965,
+                'geospatial_lat_resolution': 0.006391282582157487,
+                'geospatial_lat_units': 'degrees_north',
+                'geospatial_lon_max': 24.490858156706885,
+                'geospatial_lon_min': 19.73859219445214,
+                'geospatial_lon_resolution': 0.01443261852497102,
+                'geospatial_lon_units': 'degrees_east'},
+            transformed_gm.to_dataset_attrs())
