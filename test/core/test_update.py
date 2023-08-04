@@ -63,7 +63,8 @@ class UpdateVariablePropsTest(unittest.TestCase):
                                            ('rtoa_3', {'name': 'refl_toa'})])
         self.assertEqual(
             "variable 'rtoa_2' cannot be renamed into 'refl_toa' because the name is already in use",
-            f'{cm.exception}')
+            f'{cm.exception}'
+        )
 
 
 class UpdateGlobalAttributesTest(unittest.TestCase):
