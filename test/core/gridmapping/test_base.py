@@ -411,5 +411,6 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                 'geospatial_lon_max': 24.490858156706885,
                 'geospatial_lon_min': 19.73859219445214,
                 'geospatial_lon_resolution': 0.01443261852497102,
-                'geospatial_lon_units': 'degrees_east'},
+                'geospatial_lon_units': 'degrees_east'
+            },
             transformed_gm.to_dataset_attrs())
