@@ -178,7 +178,8 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
                                Conventions='CF-1.7')
 
         ds1 = xr.Dataset(coords=coords)
-        ds1.rio.write_crs("epsg:4326", inplace=True,
+        ds1.rio.write_crs("epsg:4326",
+                          inplace=True,
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
@@ -201,7 +202,8 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertEqual(expected_dict,  ds2.attrs)
 
         ds1 = xr.Dataset(coords=coords_with_bnds)
-        ds1.rio.write_crs("epsg:4326", inplace=True,
+        ds1.rio.write_crs("epsg:4326",
+                          inplace=True,
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
@@ -252,11 +254,13 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
                                 x_bnds=(['x', 'bnds'], x_bnds),
                                 **coords)
 
-        output_metadata = dict(history='pipo', license='MIT',
+        output_metadata = dict(history='pipo',
+                               license='MIT',
                                Conventions='CF-1.7')
 
         ds1 = xr.Dataset(coords=coords)
-        ds1.rio.write_crs("epsg:3031", inplace=True,
+        ds1.rio.write_crs("epsg:3031",
+                          inplace=True,
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
@@ -282,7 +286,8 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertEqual(expected_dict,  ds2.attrs)
 
         ds1 = xr.Dataset(coords=coords_with_bnds)
-        ds1.rio.write_crs("epsg:3031", inplace=True,
+        ds1.rio.write_crs("epsg:3031",
+                          inplace=True,
                           grid_mapping_name="crs").reset_coords()
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
