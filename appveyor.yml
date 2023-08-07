@@ -43,7 +43,7 @@ build_script:
   - export MAMBA_EXE=$(pwd)/micromamba
   - . $MAMBA_ROOT_PREFIX/etc/profile.d/micromamba.sh
 
-  # Clone repo, create environment, and install xcube
+  # Create environment from build folder environment.yml and install xcube
   - micromamba create --name xc --file $APPVEYOR_BUILD_FOLDER/environment.yml
   - micromamba activate xc
   - cd $APPVEYOR_BUILD_FOLDER
