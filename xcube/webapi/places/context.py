@@ -216,12 +216,6 @@ class PlacesContext(ResourcesContext):
                 "Invalid 'Places' entry in a 'PlaceGroups' item:"
                 " not implemented yet"
             )
-        # sub_place_group_configs = place_group_config.get("Places")
-        # if sub_place_group_configs:
-        #     sub_place_groups = self._load_place_groups(
-        #         sub_place_group_configs
-        #     )
-        #     place_group["placeGroups"] = sub_place_groups
 
     @staticmethod
     def get_property_mapping(base_url, place_group_config):
