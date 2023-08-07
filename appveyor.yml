@@ -53,6 +53,7 @@ build_script:
   - micromamba install --yes --name xc --channel conda-forge pytest attrs
 
   # Print some diagnostics (useful for debugging)
+  - git status
   - micromamba list
   - xcube --version
   - python -c "from xcube import __version__; print(f'xcube version {__version__}')"
