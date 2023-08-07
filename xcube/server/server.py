@@ -424,15 +424,21 @@ class Server(AsyncExecution):
                                "options"):
                     fn = getattr(route.handler_cls, method, None)
                     openapi_metadata = getattr(fn, '__openapi__', None)
-                    if openapi_metadata is not None:
-                        openapi_metadata = dict(**openapi_metadata)
+                    if isinstance(openapi_metadata, dict):
+                        openapi_metadata = openapi_metadata.copy()
                         if 'tags' not in openapi_metadata:
                             openapi_metadata['tags'] = [api.name]
                         if 'description' not in openapi_metadata:
                             openapi_metadata['description'] = \
                                 getattr(fn, "__doc__", None) or ""
-                        if 'responses' not in openapi_metadata:
-                            openapi_metadata['responses'] = default_responses
+                        responses = openapi_metadata.get("responses")
+                        if responses is None:
+                            responses = default_responses.copy()
+                        elif isinstance(responses, dict):
+                            _responses = default_responses.copy()
+                            _responses.update(responses)
+                            responses = _responses
+                        openapi_metadata['responses'] = responses
                         path[method] = dict(**openapi_metadata)
                 paths[route.path] = path
             for route in api.static_routes:

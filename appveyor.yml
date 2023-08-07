@@ -15,42 +15,54 @@ for:
     only:
       - image: macos
   install:
-    - curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh > miniconda.sh
-    - bash miniconda.sh -b -p $HOME/miniconda
+    - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+    - mv bin/micromamba ./micromamba
 -
   matrix:
     only:
       - image: Ubuntu2004
   install:
-    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - bash miniconda.sh -b -p $HOME/miniconda
+    - wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
 
 build_script:
-  - export PATH="$HOME/miniconda/bin:$PATH"
+  # Diagnostics
+  - echo $PLATFORM
+  - echo $APPVEYOR_BUILD_WORKER_IMAGE
+  - echo $APPVEYOR_BUILD_FOLDER
+  - uname -a
+  - pwd
+  - ls
+
+  # Set up micromamba
+  - ./micromamba shell init -s bash -p ~/micromamba
+  - source ~/.bashrc
+  - source ~/.bash_profile
   - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  # - conda update -q conda # makes travis build fail
-  # Useful for debugging any issues with conda
-  - conda info -a
-  - conda init bash
-  - export CONDA_BASE=$(conda info --base)
-  - source $CONDA_BASE/etc/profile.d/conda.sh
+  - mkdir -p ~/micromamba/pkgs/
+  - export MAMBA_ROOT_PREFIX=~/micromamba
+  - export MAMBA_EXE=$(pwd)/micromamba
+  - . $MAMBA_ROOT_PREFIX/etc/profile.d/micromamba.sh
 
-  # Install mamba as a dramatically faster conda replacement. Specifying a
-  # fixed version makes the installation of mamba itself much faster, and
-  # avoids potential breakage due to changes in mamba behaviour.
-  - conda install -c conda-forge mamba=0.24.0 pip=22.1.2
-
-  # Environments created by mamba can't be referenced by name from conda
-  # (presumably a bug), so we use an explicit path instead.
-  - mamba env create --prefix $HOME/mamba-env --file environment.yml
-  - conda activate $HOME/mamba-env
-  - conda list
-  - env
+  # Create environment from build folder environment.yml and install xcube
+  - micromamba create --name xc --file $APPVEYOR_BUILD_FOLDER/environment.yml
+  - micromamba activate xc
+  - cd $APPVEYOR_BUILD_FOLDER
   - python setup.py install
+
+  # Make sure pytest is installed
+  - micromamba install --yes --name xc --channel conda-forge pytest attrs
+
+  # Print some diagnostics (useful for debugging)
+  - git status
+  - micromamba list
+  - xcube --version
+  - python -c "from xcube import __version__; print(f'xcube version {__version__}')"
+
+  # Run the test suite
+  - pytest -v --cov=xcube
 
   # Setting NUMBA_DISABLE_JIT=1 makes unit tests way too slow, so we accept less code coverage here
   # - export NUMBA_DISABLE_JIT=1
-  - py.test -v --cov=xcube
+  # - py.test -v --cov=xcube
 
 

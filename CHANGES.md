@@ -1,3 +1,45 @@
+## Changes in 1.2.0 (in development)
+
+* Added a new, experimental `/compute` API to xcube server. 
+  It comprises the following endpoints:
+  - `GET compute/operations` - List available operations.
+  - `GET compute/operations/{opId}` - Get details of a given operation.
+  - `PUT compute/jobs` - Start a new job that executes an operation.
+  - `GET compute/jobs` - Get all jobs.
+  - `GET compute/jobs/{jobId}` - Get details of a given job.
+  - `DELETE compute/jobs/{jobId}` - Cancel a given job.
+  
+  The available operations are currently taken from module
+  `xcube.webapi.compute.operations`.
+  
+  To disable the new API use the following server configuration:
+  ```yaml
+  api_spec:
+    excludes: ["compute"] 
+  ...
+  ```
+
+## Changes in 1.1.3 (in development)
+
+### Fixes
+
+* Fixed Windows-only bug in `xcube serve --config <path>`: 
+  If config `path` is provided with back-slashes, a missing `base_dir` 
+  config parameter is now correctly set to the parent directory of `path`. 
+  Before, the current working directory was used.
+
+### Other changes
+
+* Updated AppVeyor and GitHub workflow configurations to use micromamba rather
+  than mamba (#785)
+
+
+## Changes in 1.1.2
+
+### Fixes
+
+* Fixed issue where geotiff access from a protected s3 bucket was denied (#863)
+
 ## Changes in 1.1.1
 
 * Server offers the function `add_place_group` in `places/context.py`,

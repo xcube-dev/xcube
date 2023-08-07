@@ -16,7 +16,9 @@ API, clients can
 * Get spatial image tiles from any variable;
 * Browse datasets and retrieve dataset data and metadata using the STAC API;
 * Get places (GeoJSON features including vector data) that can be associated
-  with xcube datasets.
+  with xcube datasets;
+* Perform compute operations on datasets, with the results calculated on
+  demand and presented as new, dynamically generated datasets.
 
 Later versions of API will also allow for xcube dataset management including
 generation, modification, and deletion of xcube datasets.

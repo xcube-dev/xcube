@@ -19,4 +19,39 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-version = '1.2.0.dev0'
+import unittest
+from typing import Union, Mapping, Any
+
+from test.webapi.helpers import get_api_ctx
+from xcube.server.api import Context
+from xcube.webapi.compute.context import ComputeContext, is_job_status
+
+
+def get_compute_ctx(
+        server_config: Union[str, Mapping[str, Any]] = "config.yml"
+) -> ComputeContext:
+    return get_api_ctx("compute", ComputeContext, server_config)
+
+
+class ComputeContextTest(unittest.TestCase):
+
+    def test_ctx_ok(self):
+        ctx = get_compute_ctx()
+        self.assertIsInstance(ctx.server_ctx, Context)
+        self.assertIsInstance(ctx.datasets_ctx, Context)
+        self.assertIsInstance(ctx.places_ctx, Context)
+
+    def test_is_status_with_valid_status(self):
+        self.assertTrue(
+            is_job_status(
+                dict(state=dict(status='failed')),
+                'failed'
+            )
+        )
+
+    def test_is_status_with_invalid_status(self):
+        with self.assertRaises(ValueError) as test_context:
+            is_job_status(
+                dict(state=dict(status='failed')),
+                'not_a_valid_status'
+            )

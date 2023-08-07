@@ -181,9 +181,7 @@ def serve(framework_name: str,
         base_dir = config["base_dir"]
     elif config_paths:
         # Use base_dir derived from last config file's parent
-        config_path = config_paths[-1]
-        if '\\' in config_path:
-            config_path.replace('\\', '/')
+        config_path = config_paths[-1].replace('\\', '/')
         base_dir = '/'.join(config_path.split('/')[:-1])
     else:
         # base_dir is current working directory
