@@ -28,6 +28,7 @@ build_script:
   # Diagnostics
   - echo $PLATFORM
   - echo $APPVEYOR_BUILD_WORKER_IMAGE
+  - echo $APPVEYOR_BUILD_FOLDER
   - uname -a
   - pwd
   - ls
@@ -43,10 +44,9 @@ build_script:
   - . $MAMBA_ROOT_PREFIX/etc/profile.d/micromamba.sh
 
   # Clone repo, create environment, and install xcube
-  - git clone https://github.com/dcs4cop/xcube $HOME/xcube
-  - micromamba create --name xc --file $HOME/xcube/environment.yml
+  - micromamba create --name xc --file $APPVEYOR_BUILD_FOLDER/environment.yml
   - micromamba activate xc
-  - cd $HOME/xcube
+  - cd $APPVEYOR_BUILD_FOLDER
   - python setup.py install
 
   # Make sure pytest is installed
