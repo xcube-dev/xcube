@@ -136,8 +136,6 @@ Rasterisation of Features
 Cube Metadata
 =============
 
-.. autofunction:: xcube.core.edit.edit_metadata
-
 .. autofunction:: xcube.core.update.update_dataset_attrs
 
 .. autofunction:: xcube.core.update.update_dataset_spatial_attrs
