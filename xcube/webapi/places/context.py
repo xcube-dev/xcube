@@ -19,12 +19,15 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-
 from typing import Any, Dict, List, Optional, Callable, Iterator
 from typing import Sequence
 
 import fiona
 import fsspec
+import pyproj
+import shapely
+
+from fiona.collection import Collection
 
 from xcube.server.api import ApiError
 from xcube.server.api import Context
@@ -41,6 +44,7 @@ class PlacesContext(ResourcesContext):
 
     def __init__(self, server_ctx: Context):
         super().__init__(server_ctx)
+        self._additional_place_groups: Dict[str, List[PlaceGroup]] = dict()
         self._place_group_cache: Dict[str, PlaceGroup] = dict()
 
     def on_dispose(self):
@@ -100,10 +104,11 @@ class PlacesContext(ResourcesContext):
         )
 
     def load_place_groups(self,
-                          place_group_configs: Dict,
+                          place_group_configs: List,
                           base_url: str,
                           is_global: bool = False,
-                          load_features: bool = False) -> List[PlaceGroup]:
+                          load_features: bool = False,
+                          qualifiers: List[str] = list()) -> List[PlaceGroup]:
         place_groups = []
         for place_group_config in place_group_configs:
             place_group = self._load_place_group(place_group_config,
@@ -111,7 +116,19 @@ class PlacesContext(ResourcesContext):
                                                  is_global=is_global,
                                                  load_features=load_features)
             place_groups.append(place_group)
+        for q in [qualifier for qualifier in qualifiers
+                  if qualifier in self._additional_place_groups]:
+            for place_group in self._additional_place_groups[q]:
+                place_groups.append(place_group)
         return place_groups
+
+    def add_place_group(self,
+                        place_group: PlaceGroup,
+                        qualifiers: List[str] = list()):
+        for qualifier in qualifiers:
+            if qualifier not in self._additional_place_groups:
+                self._additional_place_groups[qualifier] = []
+            self._additional_place_groups[qualifier].append(place_group)
 
     def _load_place_group(self,
                           place_group_config: Dict[str, Any],
@@ -132,11 +149,7 @@ class PlacesContext(ResourcesContext):
             return self.get_global_place_group(place_group_id, base_url,
                                                load_features=load_features)
 
-        place_group_id = place_group_config.get("Identifier")
-        if not place_group_id:
-            raise ApiError.InvalidServerConfig(
-                "Missing 'Identifier' entry in a 'PlaceGroups' item"
-            )
+        place_group_id = self.get_place_group_id_safe(place_group_config)
 
         place_group = self.get_cached_place_group(place_group_id)
         if place_group is None:
@@ -166,13 +179,8 @@ class PlacesContext(ResourcesContext):
                 join = dict(path=join_path, property=join_property,
                             encoding=join_encoding)
 
-            property_mapping = place_group_config.get("PropertyMapping")
-            if property_mapping:
-                property_mapping = dict(property_mapping)
-                for key, value in property_mapping.items():
-                    if isinstance(value, str) and '${base_url}' in value:
-                        property_mapping[key] = value.replace('${base_url}',
-                                                              base_url)
+            property_mapping = self.get_property_mapping(base_url,
+                                                         place_group_config)
 
             place_group = dict(type="FeatureCollection",
                                features=None,
@@ -183,26 +191,42 @@ class PlacesContext(ResourcesContext):
                                sourceEncoding=source_encoding,
                                join=join)
 
-            sub_place_group_configs = place_group_config.get("Places")
-            if sub_place_group_configs:
-                raise ApiError.InvalidServerConfig(
-                    "Invalid 'Places' entry in a 'PlaceGroups' item:"
-                    " not implemented yet"
-                )
-
-            # sub_place_group_configs = place_group_config.get("Places")
-            # if sub_place_group_configs:
-            #     sub_place_groups = self._load_place_groups(
-            #         sub_place_group_configs
-            #     )
-            #     place_group["placeGroups"] = sub_place_groups
-
+            self.check_sub_group_configs(place_group_config)
             self.set_cached_place_group(place_group_id, place_group)
 
         if load_features:
             self.load_place_group_features(place_group)
 
         return place_group
+
+    @staticmethod
+    def get_place_group_id_safe(place_group_config):
+        place_group_id = place_group_config.get("Identifier")
+        if not place_group_id:
+            raise ApiError.InvalidServerConfig(
+                "Missing 'Identifier' entry in a 'PlaceGroups' item"
+            )
+        return place_group_id
+
+    @staticmethod
+    def check_sub_group_configs(place_group_config):
+        sub_place_group_configs = place_group_config.get("Places")
+        if sub_place_group_configs:
+            raise ApiError.InvalidServerConfig(
+                "Invalid 'Places' entry in a 'PlaceGroups' item:"
+                " not implemented yet"
+            )
+
+    @staticmethod
+    def get_property_mapping(base_url, place_group_config):
+        property_mapping = place_group_config.get("PropertyMapping")
+        if property_mapping:
+            property_mapping = dict(property_mapping)
+            for key, value in property_mapping.items():
+                if isinstance(value, str) and '${base_url}' in value:
+                    property_mapping[key] = value.replace('${base_url}',
+                                                          base_url)
+        return property_mapping
 
     def load_place_group_features(self, place_group: PlaceGroup) \
             -> List[Dict[str, Any]]:
@@ -230,7 +254,6 @@ class PlacesContext(ResourcesContext):
             join_encoding = join['encoding']
             with fiona.open(join_path,
                             encoding=join_encoding) as feature_collection:
-                self._to_geo_interface(feature_collection)
                 indexed_join_features = self._get_indexed_features(
                     list(self._to_geo_interface(feature_collection)),
                     join_property
@@ -251,8 +274,13 @@ class PlacesContext(ResourcesContext):
         return features
 
     @classmethod
-    def _to_geo_interface(cls, feature_collection: Iterator[Any]) \
+    def _to_geo_interface(cls, feature_collection: Collection) \
             -> Iterator[Dict[str, Any]]:
+        source_crs = feature_collection.crs
+        target_crs = fiona.crs.CRS.from_epsg(4326)
+        if not source_crs == target_crs:
+            project = pyproj.Transformer.from_crs(
+                source_crs, target_crs, always_xy=True).transform
         for feature in feature_collection:
             # fiona >=1.9 returns features of type fiona.model.Feature
             # rather than JSON-serializable dictionaries.
@@ -266,6 +294,11 @@ class PlacesContext(ResourcesContext):
                         and "geometries" in geometry \
                         and geometry.get("type") != "GeometryCollection":
                     del geometry["geometries"]
+            if not source_crs == target_crs:
+                geometry = feature.get('geometry')
+                shapely_geom = shapely.geometry.shape(geometry)
+                feature['geometry'] = (shapely.ops.transform(
+                    project, shapely_geom).__geo_interface__)
             yield feature
 
     @classmethod
