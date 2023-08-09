@@ -380,7 +380,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                                             xy_res=(0.01, 0.01)))
         transformed_gm = gm1.transform('EPSG:32633')
 
-        self.assertEqual(
+        self.assertDictEqual(
             {
                 'geospatial_bounds': 'POLYGON((20 56, 20 58.0, 24.0 58.0, 24.0 56, 20 56))',
                 'geospatial_bounds_crs': 'CRS84',
@@ -395,7 +395,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
             },
             gm1.to_dataset_attrs())
 
-        self.assertEqual(
+        self.assertDictEqual(
             {
                 'geospatial_bounds': 'POLYGON((19.73859219445214 56.011953311099965, '
                                      '19.73859219445214 57.96226854502516, 24.490858156706885 '

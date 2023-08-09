@@ -199,7 +199,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertIsNot(ds2, ds1)
         self.assertIn('date_modified', ds2.attrs)
         ds2.attrs.pop('date_modified')
-        self.assertEqual(expected_dict,  ds2.attrs)
+        self.assertDictEqual(expected_dict,  ds2.attrs)
 
         ds1 = xr.Dataset(coords=coords_with_bnds)
         ds1.rio.write_crs("epsg:4326",
@@ -223,7 +223,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertIsNot(ds2, ds1)
         self.assertIn('date_modified', ds2.attrs)
         ds2.attrs.pop('date_modified')
-        self.assertEqual(expected_dict,  ds2.attrs)
+        self.assertDictEqual(expected_dict,  ds2.attrs)
 
     def test_update_global_attributes_3031_crs(self):
         num_x = 5
@@ -283,7 +283,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertIsNot(ds2, ds1)
         self.assertIn('date_modified', ds2.attrs)
         ds2.attrs.pop('date_modified')
-        self.assertEqual(expected_dict,  ds2.attrs)
+        self.assertDictEqual(expected_dict,  ds2.attrs)
 
         ds1 = xr.Dataset(coords=coords_with_bnds)
         ds1.rio.write_crs("epsg:3031",
@@ -314,4 +314,4 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertIsNot(ds2, ds1)
         self.assertIn('date_modified', ds2.attrs)
         ds2.attrs.pop('date_modified')
-        self.assertEqual(expected_dict,  ds2.attrs)
+        self.assertDictEqual(expected_dict,  ds2.attrs)
