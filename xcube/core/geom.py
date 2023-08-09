@@ -540,9 +540,9 @@ def _clip_dataset_by_geometry(
     dataset_subset = dataset.isel(**{x_var_name: slice(x1, x2),
                                      y_var_name: slice(y1, y2)})
 
-    dataset_subset = update_dataset_spatial_attrs(dataset_subset,
-                                                  update_existing=True,
-                                                  in_place=True)
+    update_dataset_spatial_attrs(dataset_subset,
+                                 update_existing=True,
+                                 in_place=True)
 
     _save_geometry_wkt(dataset_subset,
                        intersection_geometry,
