@@ -85,7 +85,7 @@ def update_dataset_spatial_attrs(dataset: xr.Dataset,
     if update_existing or not all(coord_attr in is_in_attrs for coord_attr in
                                   dataset.attrs):
         # Update dataset with newly retrieved attributes
-        dataset = dataset.assign_attrs(gm.to_dataset_attrs())
+        dataset.attrs.update(gm.to_dataset_attrs())
         dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
     return dataset
 
