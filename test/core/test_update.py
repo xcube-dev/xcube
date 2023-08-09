@@ -279,7 +279,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
                          'time_coverage_start': '2018-06-01T00:00:00.000000000',
                          'time_coverage_end': '2018-06-06T00:00:00.000000000'}
 
-
+        print(ds2.attrs)
         self.assertIsNot(ds2, ds1)
         self.assertIn('date_modified', ds2.attrs)
         ds2.attrs.pop('date_modified')
@@ -310,7 +310,7 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
                          'license': 'MIT',
                          'time_coverage_end': '2018-06-05T23:00:59.000000000',
                          'time_coverage_start': '2018-06-01T00:00:00.000000000'}
-
+        print(ds2.attrs)
         self.assertIsNot(ds2, ds1)
         self.assertIn('date_modified', ds2.attrs)
         ds2.attrs.pop('date_modified')
