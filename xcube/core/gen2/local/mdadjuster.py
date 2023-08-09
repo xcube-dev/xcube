@@ -22,10 +22,8 @@
 from typing import Dict, Any
 
 import pandas as pd
-import pyproj
 import xarray as xr
 
-from xcube.core.gridmapping import CRS_CRS84
 from xcube.core.gridmapping import GridMapping
 from xcube.version import version
 from .transformer import CubeTransformer

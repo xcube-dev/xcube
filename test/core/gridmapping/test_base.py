@@ -10,7 +10,6 @@ from xcube.core.gridmapping.coords import Coords2DGridMapping
 # noinspection PyProtectedMember
 from xcube.core.gridmapping.helpers import _to_affine
 from xcube.core.gridmapping.regular import RegularGridMapping
-from xcube.core.new import new_cube
 
 GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
