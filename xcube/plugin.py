@@ -229,6 +229,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         'tiles',
         'timeseries',
         'volumes',
+        'ows.coverages',
         'ows.stac',
         'ows.wmts',
         's3',
