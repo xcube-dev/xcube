@@ -150,6 +150,7 @@ def new_cluster(
     n_workers: int = 4,
     resource_tags: Optional[Dict[str, str]] = None,
     account: str = None,
+    region: str = 'eu-central-1',
     **kwargs,
 ) -> distributed.deploy.Cluster:
     """Create a new Dask cluster.
@@ -175,6 +176,7 @@ def new_cluster(
     :param account: cluster provider account name
     :param **kwargs: further named arguments will be passed on to the
         cluster creation function
+    :param region: region where workers of the cluster will be deployed
     """
 
     if resource_tags is None:
@@ -229,7 +231,9 @@ def new_cluster(
             name=name,
             software=software,
             use_best_zone=True,
-            compute_purchase_option='spot_with_fallback'
+            compute_purchase_option='spot_with_fallback',
+            shutdown_on_close=True,
+            region=region,
         )
         coiled_params.update(kwargs)
 
