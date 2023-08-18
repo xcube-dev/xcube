@@ -19,7 +19,7 @@
   ...
   ```
 
-### Fixes
+### Other changes
 
 * Added `shutdown_on_close=True` parameter to coiled params to ensure that the 
   clusters are shut down on close. (#881)
