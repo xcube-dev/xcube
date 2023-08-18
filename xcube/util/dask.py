@@ -176,7 +176,7 @@ def new_cluster(
     :param account: cluster provider account name
     :param **kwargs: further named arguments will be passed on to the
         cluster creation function
-    :param region: region where workers of the cluster will be deployed
+    :param region: default region where workers of the cluster will be deployed set to eu-central-1
     """
 
     if resource_tags is None:
