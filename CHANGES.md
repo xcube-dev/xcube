@@ -19,6 +19,15 @@
   ...
   ```
 
+### Other changes
+
+* Added `shutdown_on_close=True` parameter to coiled params to ensure that the 
+  clusters are shut down on close. (#881)
+* Introduced new parameter `region` for utility function `new_cluster` in 
+  `xcube.util.dask` which will ensure coiled creates the dask cluster in the 
+  prefered default region: eu-central-1. (#882)
+  
+
 ## Changes in 1.1.3 (in development)
 
 ### Fixes

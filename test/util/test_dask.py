@@ -130,6 +130,8 @@ class NewClusterTest(unittest.TestCase):
              'environ': None,
              'n_workers': 4,
              'name': None,
+             'region': 'eu-central-1',
+             'shutdown_on_close': True,
              'software': 'my_image-1-2-3',
              'tags': {'cost-center': 'unknown',
                       'creator': 'auto',
