@@ -429,9 +429,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                                transformed_gm_attrs['geospatial_lat_max'])
         self.assertAlmostEqual(0.006391282582157487,
                                transformed_gm_attrs['geospatial_lat_resolution'])
-        self.assertAlmostEqual(expected_polygon_xx.tolist(),
-                               polygon_xx.tolist())
-        self.assertAlmostEqual(expected_polygon_yy.tolist(),
-                               polygon_yy.tolist())
+        self.assertTrue(np.allclose(expected_polygon_xx, polygon_xx))
+        self.assertTrue(np.allclose(expected_polygon_yy, polygon_yy))
         self.assertEqual('degrees_north',
                          transformed_gm_attrs['geospatial_lat_units'])
