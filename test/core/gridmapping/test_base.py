@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 import pyproj
+import shapely.wkt
 import xarray as xr
 
 from test.sampledata import SourceDatasetMixin
@@ -379,6 +380,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                                             tile_size=(400, 200),
                                             xy_res=(0.01, 0.01)))
         transformed_gm = gm1.transform('EPSG:32633')
+        transformed_gm_attrs = transformed_gm.to_dataset_attrs()
 
         self.assertDictEqual(
             {
@@ -395,21 +397,41 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
             },
             gm1.to_dataset_attrs())
 
-        self.assertDictEqual(
-            {
-                'geospatial_bounds': 'POLYGON((19.73859219445214 56.011953311099965, '
-                                     '19.73859219445214 57.96226854502516, 24.490858156706885 '
-                                     '57.96226854502516, 24.490858156706885 '
-                                     '56.011953311099965, 19.73859219445214 '
-                                     '56.011953311099965))',
-                'geospatial_bounds_crs': 'CRS84',
-                'geospatial_lat_max': 57.96226854502516,
-                'geospatial_lat_min': 56.011953311099965,
-                'geospatial_lat_resolution': 0.006391282582157487,
-                'geospatial_lat_units': 'degrees_north',
-                'geospatial_lon_max': 24.490858156706885,
-                'geospatial_lon_min': 19.73859219445214,
-                'geospatial_lon_resolution': 0.01443261852497102,
-                'geospatial_lon_units': 'degrees_east'
-            },
-            transformed_gm.to_dataset_attrs())
+       # Floats cause problems with Appveyor tests - they are slightly
+        # different from locally or with GitHub Unit testing. Therefore, this
+        # workaround.
+        expected_geospatial_bounds = (
+            f'POLYGON((19.73859219445214 56.011953311099965, '
+            f'19.73859219445214 57.96226854502516, '
+            f'24.490858156706885 57.96226854502516, '
+            f'24.490858156706885 56.011953311099965, '
+            f'19.73859219445214 56.011953311099965))')
+
+        expected_polygon = shapely.wkt.loads(expected_geospatial_bounds)
+        expected_polygon_xx, expected_polygon_yy = expected_polygon.exterior.coords.xy
+
+        polygon = shapely.wkt.loads(transformed_gm_attrs[
+                                                  'geospatial_bounds'])
+        polygon_xx, polygon_yy = polygon.exterior.coords.xy
+
+
+        self.assertAlmostEqual(19.73859219445214, 
+                               transformed_gm_attrs['geospatial_lon_min'])
+        self.assertAlmostEqual(24.490858156706885, 
+                               transformed_gm_attrs['geospatial_lon_max'])
+        self.assertAlmostEqual(0.01443261852497102,
+                               transformed_gm_attrs['geospatial_lon_resolution'])
+        self.assertEqual('degrees_east',
+                         transformed_gm_attrs['geospatial_lon_units'])
+        self.assertAlmostEqual(56.011953311099965,
+                               transformed_gm_attrs['geospatial_lat_min'])
+        self.assertAlmostEqual(57.96226854502516,
+                               transformed_gm_attrs['geospatial_lat_max'])
+        self.assertAlmostEqual(0.006391282582157487,
+                               transformed_gm_attrs['geospatial_lat_resolution'])
+        self.assertAlmostEqual(expected_polygon_xx,
+                               polygon_xx)
+        self.assertAlmostEqual(expected_polygon_yy,
+                               polygon_yy)
+        self.assertEqual('degrees_north',
+                         transformed_gm_attrs['geospatial_lat_units'])
