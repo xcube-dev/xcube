@@ -229,7 +229,9 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         ds1.rio.write_crs("epsg:4326",
                           inplace=True,
                           grid_mapping_name="crs").reset_coords()
-        update_dataset_attrs(ds1, global_attrs=output_metadata, in_place=True)
+        ds2 = update_dataset_attrs(ds1,
+                                   global_attrs=output_metadata,
+                                   in_place=False)
 
         expected_dict = {'history': 'pipo', 'license': 'MIT',
                          'Conventions': 'CF-1.7',
@@ -244,9 +246,10 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
                          'time_coverage_start': '2018-06-01T00:00:00.000000000',
                          'time_coverage_end': '2018-06-05T23:00:59.000000000'}
 
-        self.assertIn('date_modified', ds1.attrs)
-        ds1.attrs.pop('date_modified')
-        self.assertDictEqual(expected_dict,  ds1.attrs)
+        self.assertIsNot(ds2, ds1)
+        self.assertIn('date_modified', ds2.attrs)
+        ds2.attrs.pop('date_modified')
+        self.assertDictEqual(expected_dict,  ds2.attrs)
 
     def test_update_global_attributes_3031_crs(self):
         num_x = 5
