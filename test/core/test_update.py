@@ -225,6 +225,29 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         ds2.attrs.pop('date_modified')
         self.assertDictEqual(expected_dict,  ds2.attrs)
 
+        ds1 = xr.Dataset(coords=coords_with_bnds)
+        ds1.rio.write_crs("epsg:4326",
+                          inplace=True,
+                          grid_mapping_name="crs").reset_coords()
+        update_dataset_attrs(ds1, global_attrs=output_metadata, in_place=True)
+
+        expected_dict = {'history': 'pipo', 'license': 'MIT',
+                         'Conventions': 'CF-1.7',
+                         'geospatial_lon_units': 'degrees_east',
+                         'geospatial_lon_min': -20, 'geospatial_lon_max': -18,
+                         'geospatial_lon_resolution': 0.25,
+                         'geospatial_lat_units': 'degrees_north',
+                         'geospatial_lat_min': 12, 'geospatial_lat_max': 13.5,
+                         'geospatial_lat_resolution': 0.25,
+                         'geospatial_bounds_crs': 'CRS84',
+                         'geospatial_bounds': 'POLYGON((-20 12, -20 13.5, -18 13.5, -18 12, -20 12))',
+                         'time_coverage_start': '2018-06-01T00:00:00.000000000',
+                         'time_coverage_end': '2018-06-05T23:00:59.000000000'}
+
+        self.assertIn('date_modified', ds1.attrs)
+        ds1.attrs.pop('date_modified')
+        self.assertDictEqual(expected_dict,  ds1.attrs)
+
     def test_update_global_attributes_3031_crs(self):
         num_x = 5
         num_y = 5
