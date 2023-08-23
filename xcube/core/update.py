@@ -57,10 +57,10 @@ def update_dataset_attrs(dataset: xr.Dataset,
 
     dataset = update_dataset_spatial_attrs(dataset,
                                            update_existing=update_existing,
-                                           in_place=True)
+                                           in_place=in_place)
     dataset = update_dataset_temporal_attrs(dataset,
                                             update_existing=update_existing,
-                                            in_place=True)
+                                            in_place=in_place)
     return dataset
 
 
