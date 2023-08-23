@@ -9,7 +9,10 @@ configuration: Release
 platform:
   - x64
 
-# Do not build feature branch with open Pull Requests
+# Do not build feature branch with open Pull Requests.
+# Note that a feature branch build may still occur on the first push to
+# the branch -- see
+# https://help.appveyor.com/discussions/questions/18437-skip_branch_with_pr-setting-doesnt-work
 skip_branch_with_pr: true
 
 for:
