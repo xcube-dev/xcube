@@ -21,6 +21,7 @@
 
 from xcube.webapi.datasets.context import DatasetsContext
 import xarray as xr
+import pyproj
 
 
 def get_coverage(ctx: DatasetsContext, collection_id: str):
@@ -32,11 +33,18 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     ml_dataset = ctx.get_ml_dataset(collection_id)
     ds = ml_dataset.get_dataset(0)
     assert(isinstance(ds, xr.Dataset))
+    grid_limits = dict(
+        type='GridLimits',
+        srsName=f'http://www.opengis.net/def/crs/OGC/0/Index{len(ds.dims)}D',
+        axisLabels=list(ds.dims),
+        axis=[_get_grid_limits_axis(ds, dim) for dim in ds.dims],
+    )
     grid = dict(
         type='GeneralGridCoverage',
-        srsName='EPSG:4326',  # TODO read from dataset
+        srsName=_get_crs_from_dataset(ds),
         axisLabels=list(ds.dims.keys()),
-        axis=[_get_axis_properties(ds, dim) for dim in ds.dims]
+        axis=[_get_axis_properties(ds, dim) for dim in ds.dims],
+        gridLimits=grid_limits,
     )
     domain_set = dict(
         type='DomainSet',
@@ -57,6 +65,15 @@ def _get_axis_properties(ds: xr.Dataset, dim: str):
     )
 
 
+def _get_grid_limits_axis(ds: xr.Dataset, dim: str):
+    return dict(
+        type='IndexAxis',
+        axisLabel=dim,
+        lowerBound=0,
+        upperBound=len(ds[dim])
+    )
+
+
 def _get_units(ds: xr.Dataset, dim: str):
     coord = ds.coords[dim]
     if hasattr(coord, 'attrs') and 'units' in coord.attrs:
@@ -66,3 +83,9 @@ def _get_units(ds: xr.Dataset, dim: str):
 
 
 def _get_crs_from_dataset(ds: xr.Dataset):
+    for var_name in 'crs', 'spatial_ref':
+        if var_name in ds.variables:
+            var = ds[var_name]
+            if 'spatial_ref' in var.attrs:
+                crs_string = ds.spatial_ref.attrs['spatial_ref']
+                return pyproj.crs.CRS(crs_string).to_string()
