@@ -20,11 +20,12 @@
 # DEALINGS IN THE SOFTWARE.
 
 from xcube.server.api import Api
+from xcube.webapi.ows.coverages.context import CoveragesContext
 
 api = Api(
     'ows.coverages',
     description='OGC API - Coverages',
     required_apis=['datasets'],
-    create_ctx=None,
+    create_ctx=CoveragesContext,
     config_schema=None,
 )
