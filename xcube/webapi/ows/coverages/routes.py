@@ -23,7 +23,8 @@ from xcube.server.api import ApiHandler
 
 from .api import api
 from .context import CoveragesContext
-from .controllers import get_coverage, get_coverage_domainset
+from .controllers import get_coverage, get_coverage_domainset, \
+    get_coverage_rangetype
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -197,3 +198,14 @@ class CatalogRootHandler(ApiHandler[CoveragesContext]):
     async def get(self, collectionId: str):
         domain_set = get_coverage_domainset(self.ctx.datasets_ctx, collectionId)
         return self.response.finish(domain_set)
+
+
+# noinspection PyAbstractClass,PyMethodMayBeStatic
+@api.route("/catalog/collections/{collectionId}/coverage/rangetype")
+class CatalogRootHandler(ApiHandler[CoveragesContext]):
+    # noinspection PyPep8Naming
+    @api.operation(operation_id='coveragesDomainSet',
+                   summary='OGC API - Coverages - range type')
+    async def get(self, collectionId: str):
+        range_type = get_coverage_rangetype(self.ctx.datasets_ctx, collectionId)
+        return self.response.finish(range_type)

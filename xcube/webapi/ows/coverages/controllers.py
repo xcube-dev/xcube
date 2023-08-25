@@ -22,6 +22,7 @@
 from xcube.webapi.datasets.context import DatasetsContext
 import xarray as xr
 import pyproj
+import numpy as np
 
 
 def get_coverage(ctx: DatasetsContext, collection_id: str):
@@ -30,9 +31,7 @@ def get_coverage(ctx: DatasetsContext, collection_id: str):
 
 
 def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
-    ml_dataset = ctx.get_ml_dataset(collection_id)
-    ds = ml_dataset.get_dataset(0)
-    assert(isinstance(ds, xr.Dataset))
+    ds = _get_dataset(ctx, collection_id)
     grid_limits = dict(
         type='GridLimits',
         srsName=f'http://www.opengis.net/def/crs/OGC/0/Index{len(ds.dims)}D',
@@ -51,6 +50,13 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
         generalGrid=grid
     )
     return domain_set
+
+
+def _get_dataset(ctx, collection_id):
+    ml_dataset = ctx.get_ml_dataset(collection_id)
+    ds = ml_dataset.get_dataset(0)
+    assert (isinstance(ds, xr.Dataset))
+    return ds
 
 
 def _get_axis_properties(ds: xr.Dataset, dim: str):
@@ -89,3 +95,51 @@ def _get_crs_from_dataset(ds: xr.Dataset):
             if 'spatial_ref' in var.attrs:
                 crs_string = ds.spatial_ref.attrs['spatial_ref']
                 return pyproj.crs.CRS(crs_string).to_string()
+
+
+def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
+    ds = _get_dataset(ctx, collection_id)
+    result = dict(
+        type='DataRecord',
+        field=[]
+    )
+    for var_name in ds.data_vars:
+        result['field'].append(dict(
+            type='Quantity',
+            name=var_name,
+            description=_get_var_description(ds[var_name]),
+            encodingInfo=dict(
+                dataType=_dtype_to_opengis_datatype(ds[var_name].dtype)
+            )
+        ))
+    return result
+
+
+def _dtype_to_opengis_datatype(dt: np.dtype):
+    nbits = 4 * dt.itemsize
+    int_size_map = {
+        8: 'Byte',
+        16: 'Short',
+        32: 'Int',
+        64: 'Long',
+    }
+    if np.issubdtype(dt, np.floating):
+        opengis_type = f'float{nbits}'
+    elif np.issubdtype(dt, np.signedinteger):
+        opengis_type = f'Signed{int_size_map[nbits]}'
+    elif np.issubdtype(dt, np.unsignedinteger):
+        opengis_type = f'Unsigned{int_size_map[nbits]}'
+    elif 'datetime64' in str(dt):
+        opengis_type = 'http://www.opengis.net/def/bipm/UTC'
+    else:
+        opengis_type = ''  # TODO decide what to do in this case
+    return 'http://www.opengis.net/def/dataType/OGC/0/' + opengis_type
+
+
+def _get_var_description(var):
+    if hasattr(var, 'attrs'):
+        for attr in ['description', 'long_name', 'standard_name', 'name']:
+            if attr in var.attrs:
+                return var.attrs[attr]
+    return var.name
+
