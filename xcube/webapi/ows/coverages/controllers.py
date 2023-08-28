@@ -52,6 +52,11 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     return domain_set
 
 
+def get_collection_metadata(ctx: DatasetsContext, collection_id: str):
+    ds = _get_dataset(ctx, collection_id)
+    return ds.attrs
+
+
 def _get_dataset(ctx, collection_id):
     ml_dataset = ctx.get_ml_dataset(collection_id)
     ds = ml_dataset.get_dataset(0)
@@ -142,4 +147,5 @@ def _get_var_description(var):
             if attr in var.attrs:
                 return var.attrs[attr]
     return var.name
+
 

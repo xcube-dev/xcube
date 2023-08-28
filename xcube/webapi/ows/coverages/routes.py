@@ -24,12 +24,13 @@ from xcube.server.api import ApiHandler
 from .api import api
 from .context import CoveragesContext
 from .controllers import get_coverage, get_coverage_domainset, \
-    get_coverage_rangetype
+    get_coverage_rangetype, get_collection_metadata
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/collections/{collectionId}/coverage")
-class CatalogRootHandler(ApiHandler[CoveragesContext]):
+@api.route('/catalog/collections/{collectionId}/coverage')
+class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
+    # noinspection PyPep8Naming
     @api.operation(operation_id='coveragesCoverage',
                    summary='A coverage in OGC API - Coverages')
     async def get(self, collectionId: str):
@@ -191,8 +192,9 @@ class CatalogRootHandler(ApiHandler[CoveragesContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/collections/{collectionId}/coverage/domainset")
-class CatalogRootHandler(ApiHandler[CoveragesContext]):
+@api.route('/catalog/collections/{collectionId}/coverage/domainset')
+class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
+    # noinspection PyPep8Naming
     @api.operation(operation_id='coveragesDomainSet',
                    summary='OGC API - Coverages - domain set')
     async def get(self, collectionId: str):
@@ -201,11 +203,22 @@ class CatalogRootHandler(ApiHandler[CoveragesContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/collections/{collectionId}/coverage/rangetype")
-class CatalogRootHandler(ApiHandler[CoveragesContext]):
+@api.route('/catalog/collections/{collectionId}/coverage/rangetype')
+class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
     # noinspection PyPep8Naming
     @api.operation(operation_id='coveragesDomainSet',
                    summary='OGC API - Coverages - range type')
     async def get(self, collectionId: str):
         range_type = get_coverage_rangetype(self.ctx.datasets_ctx, collectionId)
         return self.response.finish(range_type)
+
+
+@api.route('/catalog/collections/{collectionId}/coverage/metadata')
+class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
+    # noinspection PyPep8Naming
+    @api.operation(operation_id='coveragesMetadata',
+                   summary='OGC API - Coverages - metadata')
+    async def get(self, collectionId: str):
+        return self.response.finish(get_collection_metadata(
+            self.ctx.datasets_ctx, collectionId
+        ))
