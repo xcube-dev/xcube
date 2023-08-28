@@ -1,4 +1,14 @@
+## Changes in 1.2.1 (in development)
+
+### Enhancements
+
+### Fixes
+
+### Other changes
+
 ## Changes in 1.2.0
+
+### Enhancements
 
 * Added a new, experimental `/compute` API to xcube server. 
   It comprises the following endpoints:
@@ -30,7 +40,7 @@
   which allows plugins to add place groups from external sources.
   
 
-## Changes in 1.1.3 (in development)
+## Changes in 1.1.3
 
 ### Fixes
 
