@@ -1,4 +1,4 @@
-## Changes in 1.2.0 (in development)
+## Changes in 1.2.0
 
 * Added a new, experimental `/compute` API to xcube server. 
   It comprises the following endpoints:
@@ -26,6 +26,8 @@
 * Introduced new parameter `region` for utility function `new_cluster` in 
   `xcube.util.dask` which will ensure coiled creates the dask cluster in the 
   prefered default region: eu-central-1. (#882)
+* Server offers the function `add_place_group` in `places/context.py`,
+  which allows plugins to add place groups from external sources.
   
 
 ## Changes in 1.1.3 (in development)
@@ -50,9 +52,6 @@
 * Fixed issue where geotiff access from a protected s3 bucket was denied (#863)
 
 ## Changes in 1.1.1
-
-* Server offers the function `add_place_group` in `places/context.py`,
-  which allows plugins to add place groups from external sources.
 
 * Bundled new build of [xcube-viewer 1.1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0)
   that will correctly respect a given xcube server from loaded from the 
