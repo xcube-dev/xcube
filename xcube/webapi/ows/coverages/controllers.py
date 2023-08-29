@@ -25,13 +25,33 @@ import pyproj
 import numpy as np
 
 
-def get_coverage(ctx: DatasetsContext, collection_id: str):
-    ml_dataset = ctx.get_ml_dataset(collection_id)
-    return ml_dataset
+def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
+    return {
+        'id': collection_id,
+        'type': 'CoverageByDomainAndRange',
+        'envelope': get_collection_envelope(ctx, collection_id),
+        'domainSet': get_coverage_domainset(ctx, collection_id),
+        'rangeSet': {
+            'type': 'RangeSet',
+            'dataBlock': {
+                'type': 'VDataBlock',
+                'values': [
+                    'string'  # FIXME
+                ]
+            }
+        },
+        'rangeType': get_coverage_rangetype(ctx, collection_id),
+        'metadata': get_collection_metadata(ctx, collection_id)
+    }
+
+
+def get_coverage_as_tiff(ctx: DatasetsContext, collection_id: str):
+    ds = get_dataset(ctx, collection_id)
+    return ds.
 
 
 def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
-    ds = _get_dataset(ctx, collection_id)
+    ds = get_dataset(ctx, collection_id)
     grid_limits = dict(
         type='GridLimits',
         srsName=f'http://www.opengis.net/def/crs/OGC/0/Index{len(ds.dims)}D',
@@ -40,9 +60,9 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     )
     grid = dict(
         type='GeneralGridCoverage',
-        srsName=_get_crs_from_dataset(ds),
+        srsName=get_crs_from_dataset(ds),
         axisLabels=list(ds.dims.keys()),
-        axis=[_get_axis_properties(ds, dim) for dim in ds.dims],
+        axis=get_axes_properties(ds),
         gridLimits=grid_limits,
     )
     domain_set = dict(
@@ -53,18 +73,22 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
 
 
 def get_collection_metadata(ctx: DatasetsContext, collection_id: str):
-    ds = _get_dataset(ctx, collection_id)
+    ds = get_dataset(ctx, collection_id)
     return ds.attrs
 
 
-def _get_dataset(ctx, collection_id):
+def get_dataset(ctx, collection_id):
     ml_dataset = ctx.get_ml_dataset(collection_id)
     ds = ml_dataset.get_dataset(0)
     assert (isinstance(ds, xr.Dataset))
     return ds
 
 
-def _get_axis_properties(ds: xr.Dataset, dim: str):
+def get_axes_properties(ds: xr.Dataset) -> list[dict]:
+    return [_get_axis_properties(ds, dim) for dim in ds.dims]
+
+
+def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict:
     axis = ds.coords[dim]
     return dict(
         type='RegularAxis',
@@ -93,7 +117,7 @@ def _get_units(ds: xr.Dataset, dim: str):
         return 'degrees'
 
 
-def _get_crs_from_dataset(ds: xr.Dataset):
+def get_crs_from_dataset(ds: xr.Dataset):
     for var_name in 'crs', 'spatial_ref':
         if var_name in ds.variables:
             var = ds[var_name]
@@ -103,7 +127,7 @@ def _get_crs_from_dataset(ds: xr.Dataset):
 
 
 def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
-    ds = _get_dataset(ctx, collection_id)
+    ds = get_dataset(ctx, collection_id)
     result = dict(
         type='DataRecord',
         field=[]
@@ -149,3 +173,11 @@ def _get_var_description(var):
     return var.name
 
 
+async def get_collection_envelope(ds_ctx, collection_id):
+    ds = get_dataset(ds_ctx, collection_id)
+    return {
+        'type': 'EnvelopeByAxis',
+        'srsName': get_crs_from_dataset(ds),
+        'axisLabels': list(ds.dims.keys()),
+        'axis': get_axes_properties(ds)
+    }

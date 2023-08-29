@@ -18,13 +18,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+from typing import Collection, Optional
 
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiHandler, ApiRequest
+import re
 
 from .api import api
 from .context import CoveragesContext
-from .controllers import get_coverage, get_coverage_domainset, \
-    get_coverage_rangetype, get_collection_metadata
+from .controllers import get_coverage_as_json, get_coverage_domainset, \
+    get_coverage_rangetype, get_collection_metadata, get_collection_envelope, \
+    get_dataset, get_coverage_as_tiff
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -34,161 +37,20 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     @api.operation(operation_id='coveragesCoverage',
                    summary='A coverage in OGC API - Coverages')
     async def get(self, collectionId: str):
-        accept = self.request.headers.get('Accept').split(',')
-        # TODO Better content negotiation; there are libraries for this.
-        ds = get_coverage(self.ctx.datasets_ctx, collectionId)
-        if 'text/html' in accept:
+        ds_ctx = self.ctx.datasets_ctx
+        content_type = get_content_type(self.request)
+        actual_content_type = get_content_type(self.request)
+        if content_type == 'text/html':
             result = (f'<html><title>Collection</title><body>'
                       f'<p>{collectionId}</p>'
-                      f'<p>{ds.ds_id}</p>'
                       f'</body></html>')
+        elif content_type == 'application/json':
+            result = get_coverage_as_json(ds_ctx, collectionId)
         else:
-            # TODO: replace this placeholder output with actual coverage data
-            result = \
-                {
-                    'id': collectionId,
-                    'type': 'CoverageByDomainAndRange',
-                    'envelope': {
-                        'type': 'EnvelopeByAxis',
-                        'id': 'string',
-                        'srsName': 'string',
-                        'axisLabels': [
-                            'string'
-                        ],
-                        'axis': [
-                            {
-                                'type': 'AxisExtent',
-                                'id': 'string',
-                                'axisLabel': 'string',
-                                'lowerBound': 0,
-                                'upperBound': 0,
-                                'uomLabel': 'string'
-                            }
-                        ]
-                    },
-                    'domainSet': {
-                        'type': 'DomainSet',
-                        'generalGrid': {
-                            'type': 'GeneralGridCoverage',
-                            'id': 'string',
-                            'srsName': 'string',
-                            'axisLabels': [
-                                'string'
-                            ],
-                            'axis': [
-                                {
-                                    'type': 'IndexAxis',
-                                    'id': 'string',
-                                    'axisLabel': 'string',
-                                    'lowerBound': 0,
-                                    'upperBound': 0
-                                },
-                                {
-                                    'type': 'RegularAxis',
-                                    'id': 'string',
-                                    'axisLabel': 'string',
-                                    'lowerBound': 'string',
-                                    'upperBound': 'string',
-                                    'uomLabel': 'string',
-                                    'resolution': 0
-                                },
-                                {
-                                    'type': 'IrregularAxis',
-                                    'id': 'string',
-                                    'axisLabel': 'string',
-                                    'uomLabel': 'string',
-                                    'coordinate': [
-                                        'string'
-                                    ]
-                                }
-                            ],
-                            'displacement': {
-                                'type': 'DisplacementAxisNest',
-                                'id': 'string',
-                                'axisLabel': 'string',
-                                'srsName': 'string',
-                                'axisLabels': [
-                                    'string'
-                                ],
-                                'uomLabels': [
-                                    'string'
-                                ],
-                                'coordinates': [
-                                    [
-                                        'string'
-                                    ]
-                                ]
-                            },
-                            'model': {
-                                'type': 'TransformationBySensorModel',
-                                'id': 'string',
-                                'axisLabels': [
-                                    'string'
-                                ],
-                                'uomLabels': [
-                                    'string'
-                                ],
-                                'sensorModelRef': 'string',
-                                'sensorInstanceRef': 'string'
-                            },
-                            'gridLimits': {
-                                'type': 'GridLimits',
-                                'indexAxis': {
-                                    'type': 'IndexAxis',
-                                    'id': 'string',
-                                    'axisLabel': 'string',
-                                    'lowerBound': 0,
-                                    'upperBound': 0
-                                },
-                                'srsName': 'string',
-                                'axisLabels': [
-                                    'string'
-                                ]
-                            }
-                        }
-                    },
-                    'rangeSet': {
-                        'type': 'RangeSet',
-                        'dataBlock': {
-                            'type': 'VDataBlock',
-                            'values': [
-                                'string'
-                            ]
-                        }
-                    },
-                    'rangeType': {
-                        'type': 'DataRecord',
-                        'field': [
-                            {
-                                'type': 'Quantity',
-                                'id': 'string',
-                                'name': 'string',
-                                'definition': 'string',
-                                'uom': {
-                                    'type': 'UnitReference',
-                                    'id': 'string',
-                                    'code': 'string'
-                                },
-                                'constraint': {
-                                    'type': 'AllowedValues',
-                                    'id': 'string',
-                                    'interval': [
-                                        'string'
-                                    ]
-                                }
-                            }
-                        ],
-                        'interpolationRestriction': {
-                            'type': 'InterpolationRestriction',
-                            'id': 'string',
-                            'allowedInterpolation': [
-                                'string'
-                            ]
-                        }
-                    },
-                    'metadata': {}
-                }
-        return await self.response.finish(result)
+            actual_content_type='image/tiff'
+            result = get_coverage_as_tiff()
+        return await self.response.finish(result,
+                                          content_type=actual_content_type)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -222,3 +84,26 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
         return self.response.finish(get_collection_metadata(
             self.ctx.datasets_ctx, collectionId
         ))
+
+
+def get_content_type(
+        request: ApiRequest, available: Optional[Collection[str]] = None
+    ) -> Optional[str]:
+    if 'f' in request.query:  # overrides headers
+        content_type = request.query['f'][0]
+        return content_type if content_type in available else None
+
+    accept = re.split(', *', request.headers.get('Accept'))
+
+    def parse_part(part: str) -> tuple[float, str]:
+        if ';q=' in part:
+            subparts = part.split(';q=')
+            return float(subparts[1]), subparts[0]
+        else:
+            return 1, part
+    type_specs = sorted([parse_part(part) for part in accept], reverse=True)
+    types = [ts[1] for ts in type_specs]
+    if available is not None:
+        types = list(filter(lambda t: t in available, types))
+    return types[0] if len(types) > 0 else None
+
