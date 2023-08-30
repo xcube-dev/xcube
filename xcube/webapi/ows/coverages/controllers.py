@@ -18,11 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-
+from xcube.server.api import ApiRequest
 from xcube.webapi.datasets.context import DatasetsContext
+import os
+import tempfile
 import xarray as xr
 import pyproj
 import numpy as np
+import rasterio
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
@@ -45,9 +48,35 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
     }
 
 
-def get_coverage_as_tiff(ctx: DatasetsContext, collection_id: str):
+def get_coverage_as_tiff(ctx: DatasetsContext, collection_id: str,
+                         request: ApiRequest, content_type: str):
+    query = request.query
     ds = get_dataset(ctx, collection_id)
-    return ds.
+    if 'bbox' in query:
+        bbox = list(map(float, query['bbox'][0].split(',')))
+        ds = ds.sel(lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3]))
+    if 'datetime' in query:
+        timespec = query['datetime']
+        if '/' in timespec:
+            timefrom, timeto = timespec[0].split('/')
+            ds = ds.sel(time=slice(timefrom, timeto))
+        else:
+            ds = ds.sel(time=timespec, method='nearest').squeeze()
+    if 'properties' in query:
+        vars_to_keep = set(query['properties'][0].split(','))
+        data_vars = set(ds.data_vars)
+        vars_to_drop = list(data_vars - vars_to_keep)
+        ds = ds.drop_vars(vars_to_drop)
+    return dataset_to_tiff(ds)
+
+
+def dataset_to_tiff(ds):
+    with tempfile.TemporaryDirectory() as tempdir:
+        path = os.path.join(tempdir, 'out.tiff')
+        ds.rio.to_raster(path)
+        with open(path, 'rb') as fh:
+            data = fh.read()
+    return data
 
 
 def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
@@ -122,8 +151,9 @@ def get_crs_from_dataset(ds: xr.Dataset):
         if var_name in ds.variables:
             var = ds[var_name]
             if 'spatial_ref' in var.attrs:
-                crs_string = ds.spatial_ref.attrs['spatial_ref']
+                crs_string = ds[var_name].attrs['spatial_ref']
                 return pyproj.crs.CRS(crs_string).to_string()
+    return 'EPSG:4326'
 
 
 def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):

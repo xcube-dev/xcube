@@ -48,7 +48,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
             actual_content_type='image/tiff'
-            result = get_coverage_as_tiff()
+            result = get_coverage_as_tiff(ds_ctx, collectionId, self.request, content_type)
         return await self.response.finish(result,
                                           content_type=actual_content_type)
 
@@ -86,12 +86,24 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
         ))
 
 
+@api.route('/catalog/collections/{collectionId}/coverage/rangeset')
+class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
+    # noinspection PyPep8Naming
+    @api.operation(operation_id='coveragesRangeset',
+                   summary='OGC API - Coverages - rangeset')
+    async def get(self, collectionId: str):
+        self.response.set_status(501)
+        return self.response.finish(
+            'The rangeset endpoint has been deprecated and is not supported.'
+        )
+
+
 def get_content_type(
         request: ApiRequest, available: Optional[Collection[str]] = None
     ) -> Optional[str]:
     if 'f' in request.query:  # overrides headers
         content_type = request.query['f'][0]
-        return content_type if content_type in available else None
+        return content_type if available is None or content_type in available else None
 
     accept = re.split(', *', request.headers.get('Accept'))
 
