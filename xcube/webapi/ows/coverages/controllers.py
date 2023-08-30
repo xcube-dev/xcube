@@ -48,8 +48,8 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
     }
 
 
-def get_coverage_as_tiff(ctx: DatasetsContext, collection_id: str,
-                         request: ApiRequest, content_type: str):
+def get_coverage_data(ctx: DatasetsContext, collection_id: str,
+                      request: ApiRequest, content_type: str):
     query = request.query
     ds = get_dataset(ctx, collection_id)
     if 'bbox' in query:
@@ -67,13 +67,26 @@ def get_coverage_as_tiff(ctx: DatasetsContext, collection_id: str,
         data_vars = set(ds.data_vars)
         vars_to_drop = list(data_vars - vars_to_keep)
         ds = ds.drop_vars(vars_to_drop)
-    return dataset_to_tiff(ds)
+    if content_type in ['image/tiff', 'application/x-geotiff']:
+        return dataset_to_tiff(ds)
+    if content_type in ['application/netcdf', 'application/x-netcdf']:
+        return dataset_to_netcdf(ds)
+    return None
 
 
-def dataset_to_tiff(ds):
+def dataset_to_tiff(ds: xr.Dataset):
     with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.tiff')
         ds.rio.to_raster(path)
+        with open(path, 'rb') as fh:
+            data = fh.read()
+    return data
+
+
+def dataset_to_netcdf(ds: xr.Dataset):
+    with tempfile.TemporaryDirectory() as tempdir:
+        path = os.path.join(tempdir, 'out.nc')
+        ds.to_netcdf(path)
         with open(path, 'rb') as fh:
             data = fh.read()
     return data

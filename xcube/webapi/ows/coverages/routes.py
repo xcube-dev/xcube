@@ -18,16 +18,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-from typing import Collection, Optional
-
-from xcube.server.api import ApiHandler, ApiRequest
 import re
-
+from typing import Collection, Optional
+import fnmatch
+from xcube.server.api import ApiHandler, ApiRequest
 from .api import api
 from .context import CoveragesContext
 from .controllers import get_coverage_as_json, get_coverage_domainset, \
-    get_coverage_rangetype, get_collection_metadata, get_collection_envelope, \
-    get_dataset, get_coverage_as_tiff
+    get_coverage_rangetype, get_collection_metadata, get_coverage_data
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -38,8 +36,11 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
                    summary='A coverage in OGC API - Coverages')
     async def get(self, collectionId: str):
         ds_ctx = self.ctx.datasets_ctx
-        content_type = get_content_type(self.request)
-        actual_content_type = get_content_type(self.request)
+        content_type = get_content_type(
+            self.request,
+            ['image/tiff', 'application/x-geotiff', 'text/html',
+             'application/json', 'application/netcdf', 'application/x-netcdf']
+        )
         if content_type == 'text/html':
             result = (f'<html><title>Collection</title><body>'
                       f'<p>{collectionId}</p>'
@@ -47,10 +48,9 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
         elif content_type == 'application/json':
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
-            actual_content_type='image/tiff'
-            result = get_coverage_as_tiff(ds_ctx, collectionId, self.request, content_type)
+            result = get_coverage_data(ds_ctx, collectionId, self.request, content_type)
         return await self.response.finish(result,
-                                          content_type=actual_content_type)
+                                          content_type=content_type)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -99,7 +99,7 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
 
 
 def get_content_type(
-        request: ApiRequest, available: Optional[Collection[str]] = None
+        request: ApiRequest, available: Collection[str]
     ) -> Optional[str]:
     if 'f' in request.query:  # overrides headers
         content_type = request.query['f'][0]
@@ -113,9 +113,12 @@ def get_content_type(
             return float(subparts[1]), subparts[0]
         else:
             return 1, part
+
     type_specs = sorted([parse_part(part) for part in accept], reverse=True)
     types = [ts[1] for ts in type_specs]
-    if available is not None:
-        types = list(filter(lambda t: t in available, types))
-    return types[0] if len(types) > 0 else None
-
+    for allowed_type in types:
+        for available_type in available:
+            # We (ab)use fnmatch to match * wildcards from accept headers
+            if fnmatch.fnmatch(available_type, allowed_type):
+                return available_type
+    return None
