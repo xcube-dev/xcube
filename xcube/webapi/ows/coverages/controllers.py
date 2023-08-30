@@ -36,20 +36,19 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
         'domainSet': get_coverage_domainset(ctx, collection_id),
         'rangeSet': {
             'type': 'RangeSet',
-            'dataBlock': {
-                'type': 'VDataBlock',
-                'values': [
-                    'string'  # FIXME
-                ]
-            }
+            'dataBlock': {'type': 'VDataBlock', 'values': ['string']},  # FIXME
         },
         'rangeType': get_coverage_rangetype(ctx, collection_id),
-        'metadata': get_collection_metadata(ctx, collection_id)
+        'metadata': get_collection_metadata(ctx, collection_id),
     }
 
 
-def get_coverage_data(ctx: DatasetsContext, collection_id: str,
-                      request: ApiRequest, content_type: str):
+def get_coverage_data(
+    ctx: DatasetsContext,
+    collection_id: str,
+    request: ApiRequest,
+    content_type: str,
+):
     query = request.query
     ds = get_dataset(ctx, collection_id)
     if 'bbox' in query:
@@ -107,10 +106,7 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
         axis=get_axes_properties(ds),
         gridLimits=grid_limits,
     )
-    domain_set = dict(
-        type='DomainSet',
-        generalGrid=grid
-    )
+    domain_set = dict(type='DomainSet', generalGrid=grid)
     return domain_set
 
 
@@ -122,7 +118,7 @@ def get_collection_metadata(ctx: DatasetsContext, collection_id: str):
 def get_dataset(ctx, collection_id):
     ml_dataset = ctx.get_ml_dataset(collection_id)
     ds = ml_dataset.get_dataset(0)
-    assert (isinstance(ds, xr.Dataset))
+    assert isinstance(ds, xr.Dataset)
     return ds
 
 
@@ -138,16 +134,13 @@ def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict:
         lowerBound=axis[0].item(),
         upperBound=axis[-1].item(),
         resolution=abs((axis[-1] - axis[0]).item() / len(axis)),
-        uomLabel=_get_units(ds, dim)
+        uomLabel=_get_units(ds, dim),
     )
 
 
 def _get_grid_limits_axis(ds: xr.Dataset, dim: str):
     return dict(
-        type='IndexAxis',
-        axisLabel=dim,
-        lowerBound=0,
-        upperBound=len(ds[dim])
+        type='IndexAxis', axisLabel=dim, lowerBound=0, upperBound=len(ds[dim])
     )
 
 
@@ -171,30 +164,24 @@ def get_crs_from_dataset(ds: xr.Dataset):
 
 def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
     ds = get_dataset(ctx, collection_id)
-    result = dict(
-        type='DataRecord',
-        field=[]
-    )
+    result = dict(type='DataRecord', field=[])
     for var_name in ds.data_vars:
-        result['field'].append(dict(
-            type='Quantity',
-            name=var_name,
-            description=_get_var_description(ds[var_name]),
-            encodingInfo=dict(
-                dataType=_dtype_to_opengis_datatype(ds[var_name].dtype)
+        result['field'].append(
+            dict(
+                type='Quantity',
+                name=var_name,
+                description=_get_var_description(ds[var_name]),
+                encodingInfo=dict(
+                    dataType=_dtype_to_opengis_datatype(ds[var_name].dtype)
+                ),
             )
-        ))
+        )
     return result
 
 
 def _dtype_to_opengis_datatype(dt: np.dtype):
     nbits = 4 * dt.itemsize
-    int_size_map = {
-        8: 'Byte',
-        16: 'Short',
-        32: 'Int',
-        64: 'Long',
-    }
+    int_size_map = {8: 'Byte', 16: 'Short', 32: 'Int', 64: 'Long'}
     if np.issubdtype(dt, np.floating):
         opengis_type = f'float{nbits}'
     elif np.issubdtype(dt, np.signedinteger):
@@ -222,5 +209,5 @@ async def get_collection_envelope(ds_ctx, collection_id):
         'type': 'EnvelopeByAxis',
         'srsName': get_crs_from_dataset(ds),
         'axisLabels': list(ds.dims.keys()),
-        'axis': get_axes_properties(ds)
+        'axis': get_axes_properties(ds),
     }

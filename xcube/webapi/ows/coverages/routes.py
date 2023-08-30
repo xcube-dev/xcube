@@ -24,43 +24,63 @@ import fnmatch
 from xcube.server.api import ApiHandler, ApiRequest
 from .api import api
 from .context import CoveragesContext
-from .controllers import get_coverage_as_json, get_coverage_domainset, \
-    get_coverage_rangetype, get_collection_metadata, get_coverage_data
+from .controllers import (
+    get_coverage_as_json,
+    get_coverage_domainset,
+    get_coverage_rangetype,
+    get_collection_metadata,
+    get_coverage_data,
+)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route('/catalog/collections/{collectionId}/coverage')
 class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id='coveragesCoverage',
-                   summary='A coverage in OGC API - Coverages')
+    @api.operation(
+        operation_id='coveragesCoverage',
+        summary='A coverage in OGC API - Coverages',
+    )
     async def get(self, collectionId: str):
         ds_ctx = self.ctx.datasets_ctx
         content_type = get_content_type(
             self.request,
-            ['image/tiff', 'application/x-geotiff', 'text/html',
-             'application/json', 'application/netcdf', 'application/x-netcdf']
+            [
+                'image/tiff',
+                'application/x-geotiff',
+                'text/html',
+                'application/json',
+                'application/netcdf',
+                'application/x-netcdf',
+            ],
         )
         if content_type == 'text/html':
-            result = (f'<html><title>Collection</title><body>'
-                      f'<p>{collectionId}</p>'
-                      f'</body></html>')
+            result = (
+                f'<html><title>Collection</title><body>'
+                f'<p>{collectionId}</p>'
+                f'</body></html>'
+            )
         elif content_type == 'application/json':
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
-            result = get_coverage_data(ds_ctx, collectionId, self.request, content_type)
-        return await self.response.finish(result,
-                                          content_type=content_type)
+            result = get_coverage_data(
+                ds_ctx, collectionId, self.request, content_type
+            )
+        return await self.response.finish(result, content_type=content_type)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route('/catalog/collections/{collectionId}/coverage/domainset')
 class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id='coveragesDomainSet',
-                   summary='OGC API - Coverages - domain set')
+    @api.operation(
+        operation_id='coveragesDomainSet',
+        summary='OGC API - Coverages - domain set',
+    )
     async def get(self, collectionId: str):
-        domain_set = get_coverage_domainset(self.ctx.datasets_ctx, collectionId)
+        domain_set = get_coverage_domainset(
+            self.ctx.datasets_ctx, collectionId
+        )
         return self.response.finish(domain_set)
 
 
@@ -68,29 +88,37 @@ class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
 @api.route('/catalog/collections/{collectionId}/coverage/rangetype')
 class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id='coveragesDomainSet',
-                   summary='OGC API - Coverages - range type')
+    @api.operation(
+        operation_id='coveragesDomainSet',
+        summary='OGC API - Coverages - range type',
+    )
     async def get(self, collectionId: str):
-        range_type = get_coverage_rangetype(self.ctx.datasets_ctx, collectionId)
+        range_type = get_coverage_rangetype(
+            self.ctx.datasets_ctx, collectionId
+        )
         return self.response.finish(range_type)
 
 
 @api.route('/catalog/collections/{collectionId}/coverage/metadata')
 class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id='coveragesMetadata',
-                   summary='OGC API - Coverages - metadata')
+    @api.operation(
+        operation_id='coveragesMetadata',
+        summary='OGC API - Coverages - metadata',
+    )
     async def get(self, collectionId: str):
-        return self.response.finish(get_collection_metadata(
-            self.ctx.datasets_ctx, collectionId
-        ))
+        return self.response.finish(
+            get_collection_metadata(self.ctx.datasets_ctx, collectionId)
+        )
 
 
 @api.route('/catalog/collections/{collectionId}/coverage/rangeset')
 class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id='coveragesRangeset',
-                   summary='OGC API - Coverages - rangeset')
+    @api.operation(
+        operation_id='coveragesRangeset',
+        summary='OGC API - Coverages - rangeset',
+    )
     async def get(self, collectionId: str):
         self.response.set_status(501)
         return self.response.finish(
@@ -99,11 +127,15 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
 
 
 def get_content_type(
-        request: ApiRequest, available: Collection[str]
-    ) -> Optional[str]:
+    request: ApiRequest, available: Collection[str]
+) -> Optional[str]:
     if 'f' in request.query:  # overrides headers
         content_type = request.query['f'][0]
-        return content_type if available is None or content_type in available else None
+        return (
+            content_type
+            if available is None or content_type in available
+            else None
+        )
 
     accept = re.split(', *', request.headers.get('Accept'))
 
