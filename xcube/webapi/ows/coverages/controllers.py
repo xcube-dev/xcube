@@ -18,14 +18,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-from xcube.server.api import ApiRequest
-from xcube.webapi.datasets.context import DatasetsContext
 import os
 import tempfile
-import xarray as xr
-import pyproj
+from typing import Mapping, Sequence
+
 import numpy as np
-import rasterio
+import pyproj
+import xarray as xr
+
+from xcube.webapi.datasets.context import DatasetsContext
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
@@ -36,7 +37,7 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
         'domainSet': get_coverage_domainset(ctx, collection_id),
         'rangeSet': {
             'type': 'RangeSet',
-            'dataBlock': {'type': 'VDataBlock', 'values': ['string']},  # FIXME
+            'dataBlock': {'type': 'VDataBlock', 'values': ['TODO']},  # FIXME
         },
         'rangeType': get_coverage_rangetype(ctx, collection_id),
         'metadata': get_collection_metadata(ctx, collection_id),
@@ -46,10 +47,9 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
 def get_coverage_data(
     ctx: DatasetsContext,
     collection_id: str,
-    request: ApiRequest,
+    query: Mapping[str, Sequence[str]],
     content_type: str,
 ):
-    query = request.query
     ds = get_dataset(ctx, collection_id)
     if 'bbox' in query:
         bbox = list(map(float, query['bbox'][0].split(',')))
@@ -203,7 +203,7 @@ def _get_var_description(var):
     return var.name
 
 
-async def get_collection_envelope(ds_ctx, collection_id):
+def get_collection_envelope(ds_ctx, collection_id):
     ds = get_dataset(ds_ctx, collection_id)
     return {
         'type': 'EnvelopeByAxis',

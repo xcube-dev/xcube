@@ -64,7 +64,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
             result = get_coverage_data(
-                ds_ctx, collectionId, self.request, content_type
+                ds_ctx, collectionId, self.request.query, content_type
             )
         return await self.response.finish(result, content_type=content_type)
 
