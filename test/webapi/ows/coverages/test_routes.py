@@ -24,7 +24,22 @@ from ...helpers import RoutesTestCase
 
 class CoveragesRoutesTest(RoutesTestCase):
 
+    def test_fetch_coverage(self):
+        response = self.fetch('/catalog/collections/demo/coverage?f=text/json')
+        self.assertResponseOK(response)
+
+    def test_fetch_domainset(self):
+        response = self.fetch('/catalog/collections/demo/coverage/domainset')
+        self.assertResponseOK(response)
+
+    def test_fetch_rangetype(self):
+        response = self.fetch('/catalog/collections/{collectionId}/coverage/rangetype')
+        self.assertResponseOK(response)
+
+    def test_fetch_metadata(self):
+        response = self.fetch('/catalog/collections/{collectionId}/coverage/metadata')
+        self.assertResponseOK(response)
+
     def test_fetch_rangeset(self):
         response = self.fetch('/catalog/collections/demo/coverage/rangeset')
         self.assertEqual(response.status, 501)
-
