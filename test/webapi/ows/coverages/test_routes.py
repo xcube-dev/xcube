@@ -33,13 +33,13 @@ class CoveragesRoutesTest(RoutesTestCase):
 
     def test_fetch_rangetype(self):
         response = self.fetch(
-            '/catalog/collections/{collectionId}/coverage/rangetype'
+            '/catalog/collections/demo/coverage/rangetype'
         )
         self.assertResponseOK(response)
 
     def test_fetch_metadata(self):
         response = self.fetch(
-            '/catalog/collections/{collectionId}/coverage/metadata'
+            '/catalog/collections/demo/coverage/metadata'
         )
         self.assertResponseOK(response)
 
