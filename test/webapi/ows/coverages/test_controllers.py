@@ -29,31 +29,32 @@ import xarray as xr
 import rioxarray
 
 from test.webapi.ows.coverages.test_context import get_coverages_ctx
-from xcube.webapi.ows.coverages.controllers import get_coverage_as_json, \
-    get_coverage_data
+from xcube.webapi.ows.coverages.controllers import (
+    get_coverage_as_json,
+    get_coverage_data,
+)
 
 
 class CoveragesControllersTest(unittest.TestCase):
-
     def test_get_coverage_as_json(self):
-        result = get_coverage_as_json(get_coverages_ctx().datasets_ctx,
-                                      'demo')
+        result = get_coverage_as_json(get_coverages_ctx().datasets_ctx, 'demo')
         self.assertIsInstance(result, dict)
         path = Path(__file__).parent / 'expected.json'
         # with open(path, mode="w") as fp:
         #     json.dump(result, fp, indent=2)
         with open(path, mode="r") as fp:
-           expected_result = json.load(fp)
+            expected_result = json.load(fp)
         self.assertEqual(expected_result, result)
 
     def test_get_coverage_data_tiff(self):
         query = dict(
             bbox=['52,1,51,2'],
             datetime=['2017-01-25'],
-            properties=['conc_chl']
+            properties=['conc_chl'],
         )
-        result = get_coverage_data(get_coverages_ctx().datasets_ctx,
-                                      'demo', query, 'image/tiff')
+        result = get_coverage_data(
+            get_coverages_ctx().datasets_ctx, 'demo', query, 'image/tiff'
+        )
         with BytesIO(result) as fh:
             da = rioxarray.open_rasterio(fh)
             self.assertIsInstance(da, xr.DataArray)
@@ -65,10 +66,14 @@ class CoveragesControllersTest(unittest.TestCase):
         query = dict(
             bbox=['52,1,51,2'],
             datetime=['2017-01-25'],
-            properties=['conc_chl,kd489']
+            properties=['conc_chl,kd489'],
         )
-        result = get_coverage_data(get_coverages_ctx().datasets_ctx,
-                                      'demo', query, 'application/netcdf')
+        result = get_coverage_data(
+            get_coverages_ctx().datasets_ctx,
+            'demo',
+            query,
+            'application/netcdf',
+        )
         # We can't read this directly from memory: the netcdf4 engine only
         # reads from filesystem paths, the h5netcdf engine (which can read
         # from memory) isn't an xcube dependency, and the scipy engine only
@@ -83,6 +88,14 @@ class CoveragesControllersTest(unittest.TestCase):
             self.assertEqual(list(ds.data_vars), ['conc_chl', 'kd489'])
             self.assertEqual(
                 list(ds.variables),
-                ['lat', 'lat_bnds', 'lon', 'lon_bnds', 'time', 'time_bnds',
-                 'conc_chl', 'kd489']
+                [
+                    'lat',
+                    'lat_bnds',
+                    'lon',
+                    'lon_bnds',
+                    'time',
+                    'time_bnds',
+                    'conc_chl',
+                    'kd489',
+                ],
             )

@@ -23,7 +23,6 @@ from ...helpers import RoutesTestCase
 
 
 class CoveragesRoutesTest(RoutesTestCase):
-
     def test_fetch_coverage(self):
         response = self.fetch('/catalog/collections/demo/coverage?f=text/json')
         self.assertResponseOK(response)
@@ -33,11 +32,15 @@ class CoveragesRoutesTest(RoutesTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_rangetype(self):
-        response = self.fetch('/catalog/collections/{collectionId}/coverage/rangetype')
+        response = self.fetch(
+            '/catalog/collections/{collectionId}/coverage/rangetype'
+        )
         self.assertResponseOK(response)
 
     def test_fetch_metadata(self):
-        response = self.fetch('/catalog/collections/{collectionId}/coverage/metadata')
+        response = self.fetch(
+            '/catalog/collections/{collectionId}/coverage/metadata'
+        )
         self.assertResponseOK(response)
 
     def test_fetch_rangeset(self):
