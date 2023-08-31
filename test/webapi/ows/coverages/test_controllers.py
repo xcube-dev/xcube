@@ -24,14 +24,14 @@ import tempfile
 import unittest
 from io import BytesIO
 from pathlib import Path
-
+import numpy as np
 import xarray as xr
 import rioxarray
 
 from test.webapi.ows.coverages.test_context import get_coverages_ctx
 from xcube.webapi.ows.coverages.controllers import (
     get_coverage_as_json,
-    get_coverage_data,
+    get_coverage_data, get_crs_from_dataset, dtype_to_opengis_datatype,
 )
 
 
@@ -41,7 +41,7 @@ class CoveragesControllersTest(unittest.TestCase):
         self.assertIsInstance(result, dict)
         path = Path(__file__).parent / 'expected.json'
         # with open(path, mode="w") as fp:
-        #     json.dump(result, fp, indent=2)
+        #    json.dump(result, fp, indent=2)
         with open(path, mode="r") as fp:
             expected_result = json.load(fp)
         self.assertEqual(expected_result, result)
@@ -58,9 +58,9 @@ class CoveragesControllersTest(unittest.TestCase):
         with BytesIO(result) as fh:
             da = rioxarray.open_rasterio(fh)
             self.assertIsInstance(da, xr.DataArray)
-            self.assertEqual(da.dims, ('band', 'y', 'x'))
-            self.assertEqual(da.long_name, 'Chlorophyll concentration')
-            self.assertEqual(da.shape, (1, 400, 400))
+            self.assertEqual(('band', 'y', 'x'), da.dims)
+            self.assertEqual('Chlorophyll concentration', da.long_name)
+            self.assertEqual((1, 400, 400), da.shape)
 
     def test_get_coverage_data_netcdf(self):
         query = dict(
@@ -84,10 +84,9 @@ class CoveragesControllersTest(unittest.TestCase):
             with open(path, 'wb') as fh:
                 fh.write(result)
             ds = xr.open_dataset(path)
-            self.assertEqual(ds.dims, {'lat': 400, 'lon': 400, 'bnds': 2})
-            self.assertEqual(list(ds.data_vars), ['conc_chl', 'kd489'])
+            self.assertEqual({'lat': 400, 'lon': 400, 'bnds': 2}, ds.dims)
+            self.assertEqual(['conc_chl', 'kd489'], list(ds.data_vars))
             self.assertEqual(
-                list(ds.variables),
                 [
                     'lat',
                     'lat_bnds',
@@ -98,4 +97,19 @@ class CoveragesControllersTest(unittest.TestCase):
                     'conc_chl',
                     'kd489',
                 ],
+                list(ds.variables),
             )
+
+    def test_get_crs_from_dataset(self):
+        ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'}), }, )
+        self.assertEqual('EPSG:3035', get_crs_from_dataset(ds))
+
+    def test_dtype_to_opengis_datatype(self):
+        expected = [
+            (np.uint16,
+             'http://www.opengis.net/def/dataType/OGC/0/unsignedShort'),
+            (np.int32, 'http://www.opengis.net/def/dataType/OGC/0/signedInt'),
+            (np.datetime64, 'http://www.opengis.net/def/bipm/UTC'),
+        ]
+        for dtype, opengis in expected:
+            self.assertEqual(opengis, dtype_to_opengis_datatype(dtype))

@@ -145,7 +145,7 @@
         "name": "c2rcc_flags",
         "description": "C2RCC quality flags",
         "encodingInfo": {
-          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float32"
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
         }
       },
       {
@@ -153,7 +153,7 @@
         "name": "conc_chl",
         "description": "Chlorophyll concentration",
         "encodingInfo": {
-          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float32"
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
         }
       },
       {
@@ -161,7 +161,7 @@
         "name": "conc_tsm",
         "description": "Total suspended matter dry weight concentration",
         "encodingInfo": {
-          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float32"
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
         }
       },
       {
@@ -169,7 +169,7 @@
         "name": "kd489",
         "description": "Irradiance attenuation coefficient at 489 nm",
         "encodingInfo": {
-          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float32"
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
         }
       },
       {
@@ -177,7 +177,7 @@
         "name": "quality_flags",
         "description": "Classification and quality flags",
         "encodingInfo": {
-          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float32"
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
         }
       }
     ]

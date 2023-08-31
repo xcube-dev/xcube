@@ -172,27 +172,28 @@ def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
                 name=var_name,
                 description=_get_var_description(ds[var_name]),
                 encodingInfo=dict(
-                    dataType=_dtype_to_opengis_datatype(ds[var_name].dtype)
+                    dataType=dtype_to_opengis_datatype(ds[var_name].dtype)
                 ),
             )
         )
     return result
 
 
-def _dtype_to_opengis_datatype(dt: np.dtype):
-    nbits = 4 * dt.itemsize
+def dtype_to_opengis_datatype(dt: np.dtype):
+    nbits = 8 * np.dtype(dt).itemsize
     int_size_map = {8: 'Byte', 16: 'Short', 32: 'Int', 64: 'Long'}
+    prefix = 'http://www.opengis.net/def/dataType/OGC/0/'
     if np.issubdtype(dt, np.floating):
-        opengis_type = f'float{nbits}'
+        opengis_type = f'{prefix}float{nbits}'
     elif np.issubdtype(dt, np.signedinteger):
-        opengis_type = f'Signed{int_size_map[nbits]}'
+        opengis_type = f'{prefix}signed{int_size_map[nbits]}'
     elif np.issubdtype(dt, np.unsignedinteger):
-        opengis_type = f'Unsigned{int_size_map[nbits]}'
+        opengis_type = f'{prefix}unsigned{int_size_map[nbits]}'
     elif 'datetime64' in str(dt):
         opengis_type = 'http://www.opengis.net/def/bipm/UTC'
     else:
         opengis_type = ''  # TODO decide what to do in this case
-    return 'http://www.opengis.net/def/dataType/OGC/0/' + opengis_type
+    return opengis_type
 
 
 def _get_var_description(var):
