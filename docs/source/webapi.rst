@@ -18,7 +18,8 @@ API, clients can
 * Get places (GeoJSON features including vector data) that can be associated
   with xcube datasets;
 * Perform compute operations on datasets, with the results calculated on
-  demand and presented as new, dynamically generated datasets.
+  demand and presented as new, dynamically generated datasets;
+* Retrieve coverages backed by datasets using the OGC API - Coverages API.
 
 Later versions of API will also allow for xcube dataset management including
 generation, modification, and deletion of xcube datasets.
