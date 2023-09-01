@@ -30,6 +30,15 @@ from xcube.webapi.datasets.context import DatasetsContext
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
+    """
+    Return a JSON representation of the specified coverage
+
+    Currently, the range set component is omitted.
+
+    :param ctx: a dataset context
+    :param collection_id: the ID of the collection providing the coverage
+    :return: a JSON representation of the coverage
+    """
     return {
         'id': collection_id,
         'type': 'CoverageByDomainAndRange',

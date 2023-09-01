@@ -36,6 +36,13 @@ from .controllers import (
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route('/catalog/collections/{collectionId}/coverage')
 class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
+    """
+    Return coverage data
+
+    This is the main coverage endpoint: the one that returns the actual
+    data (as opposed to metadata), as TIFF or NetCDF. It can also provide
+    representations in HTML and JSON.
+    """
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesCoverage',
@@ -75,6 +82,12 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route('/catalog/collections/{collectionId}/coverage/domainset')
 class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
+    """
+    Describe the domain set of a coverage
+
+    The domain set is the set of input parameters (e.g. geographical extent,
+    time span) for which the coverage is defined.
+    """
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesDomainSet',
@@ -90,6 +103,13 @@ class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route('/catalog/collections/{collectionId}/coverage/rangetype')
 class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
+    """
+    Describe the range type of a coverage
+
+    The range type describes the types of the data contained in the range
+    of this coverage. For a data cube, these would typically correspond to
+    the types of the variables or bands.
+    """
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesDomainSet',
@@ -104,6 +124,11 @@ class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
 
 @api.route('/catalog/collections/{collectionId}/coverage/metadata')
 class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
+    """
+    Return coverage metadata
+
+    The metadata is taken from the source dataset's attributes
+    """
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesMetadata',
@@ -117,6 +142,12 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
 
 @api.route('/catalog/collections/{collectionId}/coverage/rangeset')
 class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
+    """
+    Handle rangeset endpoint with a "not supported" response
+
+    This endpoint has been deprecated, but we handle it to make clear that
+    its non-implementation is a deliberate decision.
+    """
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesRangeset',
@@ -132,6 +163,18 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
 def negotiate_content_type(
     request: ApiRequest, available: Collection[str]
 ) -> Optional[str]:
+    """
+    Determine a MIME content type based on client and server capabilities
+
+    Client preferences are determined both from the standard HTTP Accept
+    header provided by the client, and by an optional `f` parameter which
+    can override the Accept header.
+
+    :param request: HTTP request with Accept header and/or f parameter
+    :param available: List of MIME types that the server can produce
+    :return: the MIME type that is most acceptable to both client and server,
+             or None if there is no MIME type acceptable to both
+    """
     if 'f' in request.query:  # overrides headers
         content_type = request.query['f'][0]
         return (
