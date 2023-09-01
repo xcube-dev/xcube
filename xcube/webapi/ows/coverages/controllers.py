@@ -46,7 +46,10 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
         'domainSet': get_coverage_domainset(ctx, collection_id),
         'rangeSet': {
             'type': 'RangeSet',
-            'dataBlock': {'type': 'VDataBlock', 'values': ['TODO']},  # FIXME
+            # TODO: Wait for next update to API specification before
+            #  implementing the data block -- not clear yet whether this
+            #  is being deprecated along with the rangeSet endpoint.
+            'dataBlock': {'type': 'VDataBlock', 'values': ['TODO']},
         },
         'rangeType': get_coverage_rangetype(ctx, collection_id),
         'metadata': get_collection_metadata(ctx, collection_id),

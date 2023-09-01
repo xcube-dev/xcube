@@ -18,6 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+import json
 import re
 from typing import Collection, Optional
 import fnmatch
@@ -66,9 +67,9 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             )
         elif content_type == 'text/html':
             result = (
-                f'<html><title>Collection</title><body>'
-                f'<p>{collectionId}</p>'
-                f'</body></html>'
+                '<html><title>Collection</title><body><pre>\n' +
+                json.dumps(get_coverage_as_json(ds_ctx, collectionId), indent=2)
+                + '\n</pre></body></html>'
             )
         elif content_type == 'application/json':
             result = get_coverage_as_json(ds_ctx, collectionId)
@@ -112,7 +113,7 @@ class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
     """
     # noinspection PyPep8Naming
     @api.operation(
-        operation_id='coveragesDomainSet',
+        operation_id='coveragesRangeType',
         summary='OGC API - Coverages - range type',
     )
     async def get(self, collectionId: str):
@@ -145,8 +146,10 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
     """
     Handle rangeset endpoint with a "not supported" response
 
-    This endpoint has been deprecated, but we handle it to make clear that
-    its non-implementation is a deliberate decision.
+    This endpoint has been deprecated
+    (see https://github.com/m-mohr/geodatacube-api/pull/1 ),
+    but we handle it to make clear that its non-implementation is a deliberate
+    decision.
     """
     # noinspection PyPep8Naming
     @api.operation(
