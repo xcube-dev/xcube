@@ -43,18 +43,21 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     )
     async def get(self, collectionId: str):
         ds_ctx = self.ctx.datasets_ctx
-        content_type = get_content_type(
-            self.request,
-            [
-                'image/tiff',
-                'application/x-geotiff',
-                'text/html',
-                'application/json',
-                'application/netcdf',
-                'application/x-netcdf',
-            ],
-        )
-        if content_type == 'text/html':
+        available_types = [
+            'image/tiff',
+            'application/x-geotiff',
+            'text/html',
+            'application/json',
+            'application/netcdf',
+            'application/x-netcdf',
+        ]
+        content_type = negotiate_content_type(self.request, available_types)
+        if content_type is None:
+            self.response.set_status(415)
+            return await self.response.finish(
+                f'Available media types: {", ".join(available_types)}\n'
+            )
+        elif content_type == 'text/html':
             result = (
                 f'<html><title>Collection</title><body>'
                 f'<p>{collectionId}</p>'
@@ -126,7 +129,7 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
         )
 
 
-def get_content_type(
+def negotiate_content_type(
     request: ApiRequest, available: Collection[str]
 ) -> Optional[str]:
     if 'f' in request.query:  # overrides headers

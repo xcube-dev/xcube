@@ -170,7 +170,7 @@ def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
             dict(
                 type='Quantity',
                 name=var_name,
-                description=_get_var_description(ds[var_name]),
+                description=get_dataarray_description(ds[var_name]),
                 encodingInfo=dict(
                     dataType=dtype_to_opengis_datatype(ds[var_name].dtype)
                 ),
@@ -179,7 +179,7 @@ def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
     return result
 
 
-def dtype_to_opengis_datatype(dt: np.dtype):
+def dtype_to_opengis_datatype(dt: np.dtype) -> str:
     nbits = 8 * np.dtype(dt).itemsize
     int_size_map = {8: 'Byte', 16: 'Short', 32: 'Int', 64: 'Long'}
     prefix = 'http://www.opengis.net/def/dataType/OGC/0/'
@@ -196,12 +196,12 @@ def dtype_to_opengis_datatype(dt: np.dtype):
     return opengis_type
 
 
-def _get_var_description(var):
-    if hasattr(var, 'attrs'):
+def get_dataarray_description(da: xr.DataArray):
+    if hasattr(da, 'attrs'):
         for attr in ['description', 'long_name', 'standard_name', 'name']:
-            if attr in var.attrs:
-                return var.attrs[attr]
-    return var.name
+            if attr in da.attrs:
+                return da.attrs[attr]
+    return da.name
 
 
 def get_collection_envelope(ds_ctx, collection_id):

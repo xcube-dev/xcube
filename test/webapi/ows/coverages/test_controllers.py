@@ -31,7 +31,10 @@ import rioxarray
 from test.webapi.ows.coverages.test_context import get_coverages_ctx
 from xcube.webapi.ows.coverages.controllers import (
     get_coverage_as_json,
-    get_coverage_data, get_crs_from_dataset, dtype_to_opengis_datatype,
+    get_coverage_data,
+    get_crs_from_dataset,
+    dtype_to_opengis_datatype,
+    get_dataarray_description,
 )
 
 
@@ -101,15 +104,23 @@ class CoveragesControllersTest(unittest.TestCase):
             )
 
     def test_get_crs_from_dataset(self):
-        ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'}), }, )
+        ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
         self.assertEqual('EPSG:3035', get_crs_from_dataset(ds))
 
     def test_dtype_to_opengis_datatype(self):
         expected = [
-            (np.uint16,
-             'http://www.opengis.net/def/dataType/OGC/0/unsignedShort'),
+            (
+                np.uint16,
+                'http://www.opengis.net/def/dataType/OGC/0/unsignedShort',
+            ),
             (np.int32, 'http://www.opengis.net/def/dataType/OGC/0/signedInt'),
             (np.datetime64, 'http://www.opengis.net/def/bipm/UTC'),
+            (np.object_, ''),
         ]
         for dtype, opengis in expected:
             self.assertEqual(opengis, dtype_to_opengis_datatype(dtype))
+
+    def test_get_dataarray_description(self):
+        name = 'foo'
+        da = xr.DataArray(data=[], coords=[('x', [])], dims=['x'], name=name)
+        self.assertEqual(name, get_dataarray_description(da))
