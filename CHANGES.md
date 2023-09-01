@@ -2,6 +2,8 @@
 
 ### Enhancements
 
+* Added a basic implementation of the draft version of OGC API - Coverages
+
 ### Fixes
 
 ### Other changes
