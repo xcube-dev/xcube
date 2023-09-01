@@ -151,8 +151,7 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
         axis=_get_axes_properties(ds),
         gridLimits=grid_limits,
     )
-    domain_set = dict(type='DomainSet', generalGrid=grid)
-    return domain_set
+    return dict(type='DomainSet', generalGrid=grid)
 
 
 def get_collection_metadata(ctx: DatasetsContext, collection_id: str):
