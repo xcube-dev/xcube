@@ -20,7 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 import os
 import tempfile
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, Optional
 
 import numpy as np
 import pyproj
@@ -58,7 +58,21 @@ def get_coverage_data(
     collection_id: str,
     query: Mapping[str, Sequence[str]],
     content_type: str,
-):
+) -> Optional[bytes]:
+    """
+    Return coverage data from a dataset
+
+    This method currently returns coverage data from a dataset as either
+    TIFF or NetCDF. The bbox, datetime, and properties parameters are
+    currently handled.
+
+    :param ctx: a datasets context
+    :param collection_id: the dataset from which to return the coverage
+    :param query: the HTTP query parameters
+    :param content_type: the MIME type of the desired output format
+    :return: the coverage as bytes in the requested output format, or None
+             if the requested output format is not supported
+    """
     ds = get_dataset(ctx, collection_id)
     if 'bbox' in query:
         bbox = list(map(float, query['bbox'][0].split(',')))
@@ -82,7 +96,13 @@ def get_coverage_data(
     return None
 
 
-def dataset_to_tiff(ds: xr.Dataset):
+def dataset_to_tiff(ds: xr.Dataset) -> bytes:
+    """
+    Return an in-memory TIFF representing a dataset
+
+    :param ds: a dataset
+    :return: TIFF-formatted bytes representing the dataset
+    """
     with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.tiff')
         ds.rio.to_raster(path)
@@ -91,7 +111,13 @@ def dataset_to_tiff(ds: xr.Dataset):
     return data
 
 
-def dataset_to_netcdf(ds: xr.Dataset):
+def dataset_to_netcdf(ds: xr.Dataset) -> bytes:
+    """
+    Return an in-memory NetCDF representing a dataset
+
+    :param ds: a dataset
+    :return: NetCDF-formatted bytes representing the dataset
+    """
     with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.nc')
         ds.to_netcdf(path)
@@ -101,6 +127,16 @@ def dataset_to_netcdf(ds: xr.Dataset):
 
 
 def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
+    """
+    Return the domain set of a dataset-backed coverage
+
+    The domain set is the set of input parameters (e.g. geographical extent,
+    time span) for which a coverage is defined.
+
+    :param ctx: a datasets context
+    :param collection_id: the dataset for which to return the domain set
+    :return: a dictionary representing an OGC API - Coverages domain set
+    """
     ds = get_dataset(ctx, collection_id)
     grid_limits = dict(
         type='GridLimits',
@@ -112,7 +148,7 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
         type='GeneralGridCoverage',
         srsName=get_crs_from_dataset(ds),
         axisLabels=list(ds.dims.keys()),
-        axis=get_axes_properties(ds),
+        axis=_get_axes_properties(ds),
         gridLimits=grid_limits,
     )
     domain_set = dict(type='DomainSet', generalGrid=grid)
@@ -120,18 +156,34 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
 
 
 def get_collection_metadata(ctx: DatasetsContext, collection_id: str):
+    """
+    Return a metadata dictionary for a dataset
+
+    The metadata is taken directly from the dataset attributes.
+
+    :param ctx: a datasets context
+    :param collection_id: the dataset for which to return the metadata
+    :return: a dictionary of metadata keys and values
+    """
     ds = get_dataset(ctx, collection_id)
     return ds.attrs
 
 
-def get_dataset(ctx, collection_id):
+def get_dataset(ctx: DatasetsContext, collection_id: str):
+    """
+    Get a dataset from a datasets context
+
+    :param ctx: a datasets context
+    :param collection_id: the ID of a dataset in the context
+    :return: the dataset
+    """
     ml_dataset = ctx.get_ml_dataset(collection_id)
     ds = ml_dataset.get_dataset(0)
     assert isinstance(ds, xr.Dataset)
     return ds
 
 
-def get_axes_properties(ds: xr.Dataset) -> list[dict]:
+def _get_axes_properties(ds: xr.Dataset) -> list[dict]:
     return [_get_axis_properties(ds, dim) for dim in ds.dims]
 
 
@@ -161,7 +213,16 @@ def _get_units(ds: xr.Dataset, dim: str):
         return 'degrees'
 
 
-def get_crs_from_dataset(ds: xr.Dataset):
+def get_crs_from_dataset(ds: xr.Dataset) -> str:
+    """
+    Return the CRS of a dataset as a string. The CRS is taken from the
+    metadata of the crs or spatial_ref variables, if available.
+    "EPSG:4326" is used as a fallback.
+
+    :param ds: a dataset
+    :return: a string representation of the dataset's CRS, or "EPSG:4326"
+             if the CRS cannot be determined
+    """
     for var_name in 'crs', 'spatial_ref':
         if var_name in ds.variables:
             var = ds[var_name]
@@ -171,7 +232,12 @@ def get_crs_from_dataset(ds: xr.Dataset):
     return 'EPSG:4326'
 
 
-def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
+def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str) -> dict[str, list]:
+    """
+    Return the range type of a dataset
+
+    The range type describes the data types of the dataset's variables
+    """
     ds = get_dataset(ctx, collection_id)
     result = dict(type='DataRecord', field=[])
     for var_name in ds.data_vars:
@@ -189,6 +255,13 @@ def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str):
 
 
 def dtype_to_opengis_datatype(dt: np.dtype) -> str:
+    """
+    Convert a NumPy dtype to an equivalent OpenGIS type identifier string.
+
+    :param dt: a NumPy dtype
+    :return: an equivalent OpenGIS type identifier string, or an empty string
+             if the dtype is not recognized
+    """
     nbits = 8 * np.dtype(dt).itemsize
     int_size_map = {8: 'Byte', 16: 'Short', 32: 'Int', 64: 'Long'}
     prefix = 'http://www.opengis.net/def/dataType/OGC/0/'
@@ -205,19 +278,35 @@ def dtype_to_opengis_datatype(dt: np.dtype) -> str:
     return opengis_type
 
 
-def get_dataarray_description(da: xr.DataArray):
+def get_dataarray_description(da: xr.DataArray) -> str:
+    """
+    Return a string describing a DataArray, either from an attribute or,
+    as a fallback, from its name attribute.
+
+    :param da: a DataArray
+    :return: a string describing the DataArray
+    """
     if hasattr(da, 'attrs'):
         for attr in ['description', 'long_name', 'standard_name', 'name']:
             if attr in da.attrs:
                 return da.attrs[attr]
-    return da.name
+    return str(da.name)
 
 
 def get_collection_envelope(ds_ctx, collection_id):
+    """
+    Return the OGC API - Coverages envelope of a dataset.
+
+    The envelope comprises the extents of all the dataset's dimensions.
+
+    :param ds_ctx: a datasets context
+    :param collection_id: a dataset ID within the given context
+    :return: the envelope of the specified dataset
+    """
     ds = get_dataset(ds_ctx, collection_id)
     return {
         'type': 'EnvelopeByAxis',
         'srsName': get_crs_from_dataset(ds),
         'axisLabels': list(ds.dims.keys()),
-        'axis': get_axes_properties(ds),
+        'axis': _get_axes_properties(ds),
     }
