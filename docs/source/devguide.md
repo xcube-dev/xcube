@@ -343,6 +343,8 @@ Conda-forge packages are produced from a github feedstock repository belonging
 to the conda-forge organization. A repository's feedstock is usually located at 
 `https://github.com/conda-forge/<repo-name>-feedstock`, e.g., 
 `https://github.com/conda-forge/xcube-feedstock`.
+
+Usually, a conda-forge bot will create a feedstock pull request automatically for each new GitHub release, and the maintainers only need to merge it (potentially after some manual improvements). The manual procedure below is only needed if there isn't time to wait for the bot, or if an additional conda-forge build has to be done without a new GitHub release.
 The package is updated by 
 * forking the repository
 * creating a new branch for the changes
