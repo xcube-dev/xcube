@@ -23,6 +23,7 @@ import os.path
 import unittest
 from pathlib import Path
 
+import xcube
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_DESCRIPTION
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_ID
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_TITLE
@@ -38,6 +39,8 @@ from xcube.webapi.ows.stac.controllers import get_conformance
 from xcube.webapi.ows.stac.controllers import get_root
 from .test_context import get_stac_ctx
 
+PATH_PREFIX = '/ogc'
+
 BASE_URL = "http://localhost:8080"
 
 _OGC_PREFIX = 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf'
@@ -50,32 +53,41 @@ EXPECTED_CONFORMANCE = [
     f'{_OGC_PREFIX}/core',
     f'{_OGC_PREFIX}/oas30',
     f'{_OGC_PREFIX}/html',
-    f'{_OGC_PREFIX}/geojson'
+    f'{_OGC_PREFIX}/geojson',
 ]
 
 EXPECTED_COLLECTION = {
     'description': DEFAULT_COLLECTION_DESCRIPTION,
-    'extent': {'spatial': {'bbox': [[-180.0, -90.0, 180.0, 90.0]]},
-               'temporal': {'interval': [['2000-01-01T00:00:00Z', None]]}},
+    'extent': {
+        'spatial': {'bbox': [[-180.0, -90.0, 180.0, 90.0]]},
+        'temporal': {'interval': [['2000-01-01T00:00:00Z', None]]},
+    },
     'id': DEFAULT_COLLECTION_ID,
     'keywords': [],
     'license': 'proprietary',
     'links': [
-        {'href': f'{BASE_URL}/catalog',
-         'rel': 'root',
-         'title': 'root of the STAC catalog',
-         'type': 'application/json'},
-        {'href': f'{BASE_URL}/catalog/collections/{DEFAULT_COLLECTION_ID}',
-         'rel': 'self',
-         'title': 'this collection',
-         'type': 'application/json'},
-        {'href': f'{BASE_URL}/catalog/collections',
-         'rel': 'parent',
-         'title': 'collections list'},
         {
-            'href': f'{BASE_URL}/catalog/collections/{DEFAULT_COLLECTION_ID}/items',
+            'href': f'{BASE_URL}{PATH_PREFIX}',
+            'rel': 'root',
+            'title': 'root of the OGC API and STAC catalog',
+            'type': 'application/json',
+        },
+        {
+            'href': f'{BASE_URL}{PATH_PREFIX}/collections/{DEFAULT_COLLECTION_ID}',
+            'rel': 'self',
+            'title': 'this collection',
+            'type': 'application/json',
+        },
+        {
+            'href': f'{BASE_URL}{PATH_PREFIX}/collections',
+            'rel': 'parent',
+            'title': 'collections list',
+        },
+        {
+            'href': f'{BASE_URL}{PATH_PREFIX}/collections/{DEFAULT_COLLECTION_ID}/items',
             'rel': 'items',
-            'title': 'feature collection of data cube items'}
+            'title': 'feature collection of data cube items',
+        },
     ],
     'providers': [],
     'stac_version': STAC_VERSION,
@@ -91,8 +103,12 @@ EXPECTED_COLLECTION = {
 class StacControllersTest(unittest.TestCase):
     def test_get_collection_item(self):
         self.maxDiff = None
-        result = get_collection_item(get_stac_ctx().datasets_ctx, BASE_URL,
-                                     DEFAULT_COLLECTION_ID, "demo-1w")
+        result = get_collection_item(
+            get_stac_ctx().datasets_ctx,
+            BASE_URL,
+            DEFAULT_COLLECTION_ID,
+            "demo-1w",
+        )
         self.assertIsInstance(result, dict)
         path = Path(__file__).parent / "stac-item.json"
         # with open(path, mode="w") as fp:
@@ -102,8 +118,9 @@ class StacControllersTest(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_get_collection_items(self):
-        result = get_collection_items(get_stac_ctx().datasets_ctx, BASE_URL,
-                                      DEFAULT_COLLECTION_ID)
+        result = get_collection_items(
+            get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
+        )
         self.assertIsInstance(result, dict)
         self.assertIn('features', result)
 
@@ -119,7 +136,6 @@ class StacControllersTest(unittest.TestCase):
             self.assertIsInstance(feature.get('properties'), dict)
             self.assertIsInstance(feature.get('geometry'), dict)
             self.assertIsInstance(feature.get('assets'), dict)
-
             self.assertIsInstance(feature.get('id'), str)
             self.assertIn(feature['id'], {'demo', 'demo-1w'})
             # TODO (forman): add more assertions
@@ -127,81 +143,111 @@ class StacControllersTest(unittest.TestCase):
             # pprint.pprint(feature)
 
     def test_get_collection(self):
-        result = get_collection(get_stac_ctx().datasets_ctx, BASE_URL,
-                                DEFAULT_COLLECTION_ID)
+        result = get_collection(
+            get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
+        )
         self.assertEqual(EXPECTED_COLLECTION, result)
 
     def test_get_collections(self):
         result = get_collections(get_stac_ctx().datasets_ctx, BASE_URL)
         self.assertEqual(
-            {'collections': [EXPECTED_COLLECTION],
-             'links': [{'href': f'{BASE_URL}/catalog',
+            {
+                'collections': [EXPECTED_COLLECTION],
+                'links': [
+                    {
+                        'href': f'{BASE_URL}{PATH_PREFIX}',
                         'rel': 'root',
-                        'title': 'root of the STAC catalog',
-                        'type': 'application/json'},
-                       {'href': f'{BASE_URL}/catalog/collections',
+                        'title': 'root of the OGC API and STAC catalog',
+                        'type': 'application/json',
+                    },
+                    {
+                        'href': f'{BASE_URL}{PATH_PREFIX}/collections',
                         'rel': 'self',
-                        'type': 'application/json'},
-                       {'href': f'{BASE_URL}/catalog', 'rel': 'parent'}]},
-            result
+                        'type': 'application/json',
+                    },
+                    {'href': f'{BASE_URL}{PATH_PREFIX}', 'rel': 'parent'},
+                ],
+            },
+            result,
         )
 
     def test_get_conformance(self):
         result = get_conformance(get_stac_ctx().datasets_ctx)
-        self.assertEqual(
-            {
-                'conformsTo': EXPECTED_CONFORMANCE
-            },
-            result
-        )
+        self.assertEqual({'conformsTo': EXPECTED_CONFORMANCE}, result)
 
     def test_get_root(self):
         result = get_root(get_stac_ctx().datasets_ctx, BASE_URL)
+
         self.assertEqual(
             {
                 'conformsTo': EXPECTED_CONFORMANCE,
                 'description': DEFAULT_CATALOG_DESCRIPTION,
                 'id': DEFAULT_CATALOG_ID,
                 'links': [
-                    {'href': f'{BASE_URL}/catalog',
-                     'rel': 'root',
-                     'title': 'root of the STAC catalog',
-                     'type': 'application/json'},
-                    {'href': f'{BASE_URL}/catalog',
-                     'rel': 'self',
-                     'title': 'this document',
-                     'type': 'application/json'},
-                    {'href': f'{BASE_URL}/openapi.json',
-                     'rel': 'service-desc',
-                     'title': 'the API definition',
-                     'type': 'application/vnd.oai.openapi+json;version=3.0'},
-                    {'href': f'{BASE_URL}/openapi.html',
-                     'rel': 'service-doc',
-                     'title': 'the API documentation',
-                     'type': 'text/html'},
-                    {'href': f'{BASE_URL}/catalog/conformance',
-                     'rel': 'conformance',
-                     'title': 'OGC API conformance classes'
-                              ' implemented by this server',
-                     'type': 'application/json'},
-                    {'href': f'{BASE_URL}/catalog/collections',
-                     'rel': 'data',
-                     'title': 'Information about the feature collections',
-                     'type': 'application/json'},
-                    {'href': f'{BASE_URL}/catalog/search',
-                     'rel': 'search',
-                     'title': 'Search across feature collections',
-                     'type': 'application/json'},
                     {
-                        'href': f'{BASE_URL}/catalog/collections/'
-                                f'{DEFAULT_COLLECTION_ID}',
+                        'href': f'{BASE_URL}{PATH_PREFIX}',
+                        'rel': 'root',
+                        'title': 'root of the OGC API and STAC catalog',
+                        'type': 'application/json',
+                    },
+                    {
+                        'href': f'{BASE_URL}{PATH_PREFIX}',
+                        'rel': 'self',
+                        'title': 'this document',
+                        'type': 'application/json',
+                    },
+                    {
+                        'href': f'{BASE_URL}/openapi.json',
+                        'rel': 'service-desc',
+                        'title': 'the API definition',
+                        'type': 'application/vnd.oai.openapi+json;version=3.0',
+                    },
+                    {
+                        'href': f'{BASE_URL}/openapi.html',
+                        'rel': 'service-doc',
+                        'title': 'the API documentation',
+                        'type': 'text/html',
+                    },
+                    {
+                        'href': f'{BASE_URL}{PATH_PREFIX}/conformance',
+                        'rel': 'conformance',
+                        'title': 'OGC API conformance classes'
+                        ' implemented by this server',
+                        'type': 'application/json',
+                    },
+                    {
+                        'href': f'{BASE_URL}{PATH_PREFIX}/collections',
+                        'rel': 'data',
+                        'title': 'Information about the feature collections',
+                        'type': 'application/json',
+                    },
+                    {
+                        'href': f'{BASE_URL}{PATH_PREFIX}/search',
+                        'rel': 'search',
+                        'title': 'Search across feature collections',
+                        'type': 'application/json',
+                    },
+                    {
+                        'href': f'{BASE_URL}{PATH_PREFIX}/collections/'
+                        f'{DEFAULT_COLLECTION_ID}',
                         'rel': 'child',
                         'title': DEFAULT_COLLECTION_DESCRIPTION,
-                        'type': 'application/json'}
+                        'type': 'application/json',
+                    },
                 ],
                 'stac_version': STAC_VERSION,
                 'title': DEFAULT_CATALOG_TITLE,
-                'type': 'Catalog'
+                'type': 'Catalog',
+                'api_version': '1.0.0',
+                'backend_version': xcube.__version__,
+                'gdc_version': '1.0.0-beta.1',
+                'endpoints': [
+                    {"path": "/collections", "methods": ["GET"]},
+                    {
+                        "path": "/collections/{collection_id}",
+                        "methods": ["GET"],
+                    },
+                ],
             },
-            result
+            result,
         )

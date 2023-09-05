@@ -30,6 +30,8 @@ DEFAULT_COLLECTION_ID = "datacubes"
 DEFAULT_COLLECTION_TITLE = "Data cubes"
 DEFAULT_COLLECTION_DESCRIPTION = "a collection of xcube datasets"
 
+PATH_PREFIX = '/ogc'
+
 COLLECTION_SCHEMA = JsonObjectSchema(
     properties=dict(
         Identifier=JsonStringSchema(default=DEFAULT_COLLECTION_ID),

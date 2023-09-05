@@ -30,10 +30,10 @@ from .controllers import get_collections
 from .controllers import get_conformance
 from .controllers import get_root
 from .controllers import search
-
+from .config import PATH_PREFIX
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/ogc")
+@api.route(PATH_PREFIX + "")
 class CatalogRootHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogRoot",
                    summary="Get the STAC catalog's root.")
@@ -44,7 +44,7 @@ class CatalogRootHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/ogc/conformance")
+@api.route(PATH_PREFIX + "/conformance")
 class CatalogConformanceHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogConformance",
                    summary="Get the STAC catalog's conformance.")
@@ -54,7 +54,7 @@ class CatalogConformanceHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/ogc/collections")
+@api.route(PATH_PREFIX + "/collections")
 class CatalogCollectionsHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollections",
                    summary="Get the STAC catalog's collections.")
@@ -65,7 +65,7 @@ class CatalogCollectionsHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/ogc/collections/{collectionId}")
+@api.route(PATH_PREFIX + "/collections/{collectionId}")
 class CatalogCollectionHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(operation_id="getCatalogCollection",
@@ -78,7 +78,7 @@ class CatalogCollectionHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/ogc/collections/{collectionId}/items")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/items")
 class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(operation_id="getCatalogCollectionItems",
@@ -103,7 +103,7 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/ogc/collections/{collectionId}/items/{featureId}")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/items/{featureId}")
 class CatalogCollectionItemHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(operation_id="getCatalogCollectionItem",
@@ -118,7 +118,7 @@ class CatalogCollectionItemHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/ogc/search")
+@api.route(PATH_PREFIX + "/search")
 class CatalogSearchHandler(ApiHandler[StacContext]):
 
     @api.operation(operation_id="searchCatalogByKeywords",

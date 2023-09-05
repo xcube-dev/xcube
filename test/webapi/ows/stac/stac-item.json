@@ -945,21 +945,21 @@
   "links": [
     {
       "rel": "root",
-      "href": "http://localhost:8080/catalog",
+      "href": "http://localhost:8080/ogc",
       "type": "application/json",
-      "title": "root of the STAC catalog"
+      "title": "root of the OGC API and STAC catalog"
     },
     {
       "rel": "self",
-      "href": "http://localhost:8080/catalog/collections/datacubes/items/demo-1w"
+      "href": "http://localhost:8080/ogc/collections/datacubes/items/demo-1w"
     },
     {
       "rel": "collection",
-      "href": "http://localhost:8080/catalog/collections/datacubes"
+      "href": "http://localhost:8080/ogc/collections/datacubes"
     },
     {
       "rel": "parent",
-      "href": "http://localhost:8080/catalog/collections/datacubes"
+      "href": "http://localhost:8080/ogc/collections/datacubes"
     }
   ],
   "assets": {

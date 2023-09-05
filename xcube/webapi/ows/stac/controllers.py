@@ -24,10 +24,10 @@ import datetime
 from typing import Hashable, Any, Optional, Dict, List, Mapping
 
 import numpy as np
-import pandas as pd
 import pyproj
 import xarray as xr
 
+import xcube
 from xcube.core.gridmapping import CRS_CRS84, GridMapping
 from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
@@ -38,6 +38,7 @@ from .config import DEFAULT_CATALOG_TITLE
 from .config import DEFAULT_COLLECTION_DESCRIPTION
 from .config import DEFAULT_COLLECTION_ID
 from .config import DEFAULT_COLLECTION_TITLE
+from .config import PATH_PREFIX
 from ...datasets.context import DatasetsContext
 
 STAC_VERSION = '1.0.0'
@@ -59,6 +60,21 @@ _CONFORMANCE = [
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson"
 ]
 
+_ENDPOINTS = [
+    {
+      "path": "/collections",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/collections/{collection_id}",
+      "methods": [
+        "GET"
+      ]
+    },
+]
+
 
 # noinspection PyUnusedLocal
 def get_root(ctx: DatasetsContext, base_url: str):
@@ -70,15 +86,15 @@ def get_root(ctx: DatasetsContext, base_url: str):
         "id": c_id,
         "title": c_title,
         "description": c_description,
-        # TODO: api_version
-        # TODO: backend_version
-        # TODO: gdc_version
-        # TODO: endpoints
+        "api_version": "1.0.0",
+        "backend_version": xcube.__version__,
+        "gdc_version": "1.0.0-beta.1",
+        "endpoints": _ENDPOINTS,
         "links": [
             _root_link(base_url),
             {
                 "rel": "self",
-                "href": f'{base_url}/catalog',
+                "href": f'{base_url}/ogc',
                 "type": "application/json",
                 "title": "this document"
             },
@@ -96,26 +112,26 @@ def get_root(ctx: DatasetsContext, base_url: str):
             },
             {
                 "rel": "conformance",
-                "href": f'{base_url}/catalog/conformance',
+                "href": f'{base_url}{PATH_PREFIX}/conformance',
                 "type": "application/json",
                 "title": "OGC API conformance classes"
                          " implemented by this server"
             },
             {
                 "rel": "data",
-                "href": f'{base_url}/catalog/collections',
+                "href": f'{base_url}{PATH_PREFIX}/collections',
                 "type": "application/json",
                 "title": "Information about the feature collections"
             },
             {
                 "rel": "search",
-                "href": f'{base_url}/catalog/search',
+                "href": f'{base_url}{PATH_PREFIX}/search',
                 "type": "application/json",
                 "title": "Search across feature collections"
             },
             {
                 "rel": "child",
-                "href": f'{base_url}/catalog/collections/datacubes',
+                "href": f'{base_url}{PATH_PREFIX}/collections/datacubes',
                 "type": "application/json",
                 "title": DEFAULT_COLLECTION_DESCRIPTION
             }
@@ -126,9 +142,9 @@ def get_root(ctx: DatasetsContext, base_url: str):
 def _root_link(base_url):
     return {
         "rel": "root",
-        "href": f'{base_url}/catalog',
+        "href": f'{base_url}/ogc',
         "type": "application/json",
-        "title": "root of the STAC catalog"
+        "title": "root of the OGC API and STAC catalog"
     }
 
 
@@ -147,11 +163,11 @@ def get_collections(ctx: DatasetsContext, base_url: str):
             {
                 "rel": "self",
                 "type": "application/json",
-                "href": f"{base_url}/catalog/collections"
+                "href": f"{base_url}{PATH_PREFIX}/collections"
             },
             {
                 "rel": "parent",
-                "href": f"{base_url}/catalog"
+                "href": f"{base_url}{PATH_PREFIX}"
             }
         ]
     }
@@ -180,7 +196,7 @@ def get_collection_items(ctx: DatasetsContext,
                                        dataset_id,
                                        full=False)
         features.append(feature)
-    self_href = f"{base_url}/catalog/collections/{collection_id}/items"
+    self_href = f"{base_url}{PATH_PREFIX}/collections/{collection_id}/items"
     links = [
             _root_link(base_url),
             {
@@ -254,17 +270,17 @@ def _get_datasets_collection(ctx: DatasetsContext,
             {
                 "rel": "self",
                 "type": "application/json",
-                "href": f"{base_url}/catalog/collections/{c_id}",
+                "href": f"{base_url}{PATH_PREFIX}/collections/{c_id}",
                 "title": "this collection"
             },
             {
                 "rel": "parent",
-                "href": f"{base_url}/catalog/collections",
+                "href": f"{base_url}{PATH_PREFIX}/collections",
                 "title": "collections list"
             },
             {
                 "rel": "items",
-                "href": f"{base_url}/catalog/collections/{c_id}/items",
+                "href": f"{base_url}{PATH_PREFIX}/collections/{c_id}/items",
                 "title": "feature collection of data cube items"
             }
             # {
@@ -370,16 +386,16 @@ def _get_dataset_feature(ctx: DatasetsContext,
             _root_link(base_url),
             {
                 "rel": "self",
-                "href": f"{base_url}/catalog/collections/{collection_id}"
+                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
                         f"/items/{dataset_id}"
             },
             {
                 "rel": "collection",
-                "href": f"{base_url}/catalog/collections/{collection_id}"
+                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
             },
             {
                 "rel": "parent",
-                "href": f"{base_url}/catalog/collections/{collection_id}"
+                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
             }
         ],
         "assets": {

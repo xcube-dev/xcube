@@ -23,51 +23,53 @@ from typing import Any, Mapping
 
 from ...helpers import RoutesTestCase, get_res_test_dir
 
+from xcube.webapi.ows.stac.routes import PATH_PREFIX
+
 
 class StacRoutesTest(RoutesTestCase):
     """STAC endpoints smoke tests"""
 
     def test_fetch_catalog(self):
-        response = self.fetch('/catalog')
+        response = self.fetch(PATH_PREFIX + '')
         self.assertResponseOK(response)
 
     def test_fetch_catalog_conformance(self):
-        response = self.fetch('/catalog/conformance')
+        response = self.fetch(PATH_PREFIX + '/conformance')
         self.assertResponseOK(response)
 
     def test_fetch_catalog_collections(self):
-        response = self.fetch('/catalog/collections')
+        response = self.fetch(PATH_PREFIX + '/collections')
         self.assertResponseOK(response)
 
     def test_fetch_catalog_collection(self):
-        response = self.fetch('/catalog/collections/datasets')
+        response = self.fetch(PATH_PREFIX + '/collections/datasets')
         self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/catalog/collections/datacubes')
+        response = self.fetch(PATH_PREFIX + '/collections/datacubes')
         self.assertResponseOK(response)
 
     def test_fetch_catalog_collection_items(self):
-        response = self.fetch('/catalog/collections/datacubes/items')
+        response = self.fetch(PATH_PREFIX + '/collections/datacubes/items')
         self.assertResponseOK(response)
-        response = self.fetch('/catalog/collections/datacubes/items'
+        response = self.fetch(PATH_PREFIX + '/collections/datacubes/items'
                               '?limit=1&cursor=1')
         self.assertResponseOK(response)
-        response = self.fetch('/catalog/collections/datasets')
+        response = self.fetch(PATH_PREFIX + '/collections/datasets')
         self.assertResourceNotFoundResponse(response)
 
     def test_fetch_catalog_collection_item(self):
-        response = self.fetch('/catalog/collections/datacubes/items/demo')
+        response = self.fetch(PATH_PREFIX + '/collections/datacubes/items/demo')
         self.assertResponseOK(response)
-        response = self.fetch('/catalog/collections/datacubes/items/demox')
+        response = self.fetch(PATH_PREFIX + '/collections/datacubes/items/demox')
         self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/catalog/collections/datasets/items/demo')
+        response = self.fetch(PATH_PREFIX + '/collections/datasets/items/demo')
         self.assertResourceNotFoundResponse(response)
 
     def test_fetch_catalog_search_by_kw(self):
-        response = self.fetch('/catalog/search', method='GET')
+        response = self.fetch(PATH_PREFIX + '/search', method='GET')
         self.assertResponseOK(response)
 
     def test_fetch_catalog_search_by_json(self):
-        response = self.fetch('/catalog/search', method='POST')
+        response = self.fetch(PATH_PREFIX + '/search', method='POST')
         self.assertResponseOK(response)
 
 
@@ -83,5 +85,5 @@ class StacRoutesTestCog(RoutesTestCase):
             }]}
 
     def test_fetch_catalog_collection_items(self):
-        response = self.fetch('/catalog/collections/datacubes/items')
+        response = self.fetch(PATH_PREFIX + '/collections/datacubes/items')
         self.assertResponseOK(response)
