@@ -70,6 +70,10 @@ def get_root(ctx: DatasetsContext, base_url: str):
         "id": c_id,
         "title": c_title,
         "description": c_description,
+        # TODO: api_version
+        # TODO: backend_version
+        # TODO: gdc_version
+        # TODO: endpoints
         "links": [
             _root_link(base_url),
             {

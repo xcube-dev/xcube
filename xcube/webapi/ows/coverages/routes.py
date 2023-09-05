@@ -35,7 +35,7 @@ from .controllers import (
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route('/catalog/collections/{collectionId}/coverage')
+@api.route('/ogc/collections/{collectionId}/coverage')
 class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     """
     Return coverage data
@@ -81,7 +81,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route('/catalog/collections/{collectionId}/coverage/domainset')
+@api.route('/ogc/collections/{collectionId}/coverage/domainset')
 class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
     """
     Describe the domain set of a coverage
@@ -102,7 +102,7 @@ class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route('/catalog/collections/{collectionId}/coverage/rangetype')
+@api.route('/ogc/collections/{collectionId}/coverage/rangetype')
 class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
     """
     Describe the range type of a coverage
@@ -123,7 +123,7 @@ class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
         return self.response.finish(range_type)
 
 
-@api.route('/catalog/collections/{collectionId}/coverage/metadata')
+@api.route('/ogc/collections/{collectionId}/coverage/metadata')
 class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
     """
     Return coverage metadata
@@ -141,7 +141,7 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
         )
 
 
-@api.route('/catalog/collections/{collectionId}/coverage/rangeset')
+@api.route('/ogc/collections/{collectionId}/coverage/rangeset')
 class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
     """
     Handle rangeset endpoint with a "not supported" response
