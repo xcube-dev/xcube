@@ -78,12 +78,13 @@ def update_dataset_spatial_attrs(dataset: xr.Dataset,
     if not in_place:
         dataset = dataset.copy()
     gm = GridMapping.from_dataset(dataset)
-    is_in_attrs = ['geospatial_lon_min',
-                   'geospatial_lon_max',
-                   'geospatial_lat_min',
-                   'geospatial_lat_max']
-    if update_existing or not all(coord_attr in is_in_attrs for coord_attr in
-                                  dataset.attrs):
+    gs_attrs = {
+        'geospatial_lon_min',
+        'geospatial_lon_max',
+        'geospatial_lat_min',
+        'geospatial_lat_max',
+    }
+    if update_existing or not gs_attrs.issubset(dataset.attrs):
         # Update dataset with newly retrieved attributes
         dataset.attrs.update(gm.to_dataset_attrs())
         dataset.attrs['date_modified'] = datetime.datetime.now().isoformat()
