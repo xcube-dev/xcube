@@ -6,7 +6,10 @@ import xarray as xr
 import rioxarray # this is needed for adding crs to a dataset and used as rio
 
 from test.sampledata import create_highroc_dataset
-from xcube.core.update import update_dataset_attrs
+from xcube.core.update import (
+    update_dataset_attrs,
+    update_dataset_spatial_attrs,
+)
 from xcube.core.update import update_dataset_var_attrs
 
 
@@ -69,7 +72,8 @@ class UpdateVariablePropsTest(unittest.TestCase):
 
 class UpdateGlobalAttributesTest(unittest.TestCase):
 
-    def test_update_global_attributes(self):
+    @staticmethod
+    def _create_coords():
         num_lons = 8
         num_lats = 6
         num_times = 5
@@ -103,6 +107,10 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         output_metadata = dict(history='pipo', license='MIT',
                                Conventions='CF-1.7')
 
+        return coords, coords_with_bnds, output_metadata
+
+    def test_update_global_attributes(self):
+        coords, coords_with_bnds, output_metadata = self._create_coords()
         ds1 = xr.Dataset(coords=coords)
         ds2 = update_dataset_attrs(ds1, global_attrs=output_metadata)
 
@@ -331,3 +339,43 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         self.assertEqual('2018-06-05T23:00:59.000000000',
                          ds2.attrs.get('time_coverage_end'))
         self.assertIn('date_modified', ds2.attrs)
+
+    def test_update_spatial_attrs(self):
+        old_attrs = dict(
+            geospatial_lon_min=1,
+            geospatial_lon_max=2,
+            geospatial_lat_min=3,
+            geospatial_lat_max=4,
+        )
+        new_attrs = dict(
+            geospatial_lon_min=-20,
+            geospatial_lon_max=-18,
+            geospatial_lat_min=12,
+            geospatial_lat_max=13.5,
+        )
+
+        def issubdict(dict1: dict, dict2: dict) -> bool:
+            return set(dict1.items()).issubset(set(dict2.items()))
+
+        def assert_has_attrs(ds: xr.Dataset, attrs: dict) -> bool:
+            self.assertTrue(issubdict(attrs, ds.attrs))
+
+        ds1 = xr.Dataset(coords=self._create_coords()[0], attrs={})
+        assert_has_attrs(update_dataset_spatial_attrs(ds1), new_attrs)
+
+        ds2 = xr.Dataset(coords=self._create_coords()[0], attrs=old_attrs)
+        assert_has_attrs(update_dataset_spatial_attrs(ds2), old_attrs)
+
+        ds3 = xr.Dataset(coords=self._create_coords()[0], attrs=old_attrs)
+        assert_has_attrs(
+            update_dataset_spatial_attrs(ds3, update_existing=True),
+            new_attrs
+        )
+
+        incomplete_attrs = {
+            k: v for k, v in old_attrs.items() if k != 'geospatial_lon_min'
+        }
+        ds4 = xr.Dataset(
+            coords=self._create_coords()[0], attrs=incomplete_attrs
+        )
+        assert_has_attrs(update_dataset_spatial_attrs(ds4), new_attrs)
