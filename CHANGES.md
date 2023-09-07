@@ -7,6 +7,11 @@
 ### Fixes
 
 ### Other changes
+* `update_dataset_attrs` can now also handle datasets with CRS other than 
+  WGS84 and update the metadata according to the 
+  [ESIP Attribute Convention for Data Discovery](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended). 
+* removed deprecated module xcube edit, which has been deprecated since 
+  version 0.13.0
 
 ## Changes in 1.2.0
 
@@ -55,7 +60,6 @@
 
 * Updated AppVeyor and GitHub workflow configurations to use micromamba rather
   than mamba (#785)
-
 
 ## Changes in 1.1.2
 
