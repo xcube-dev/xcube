@@ -1,4 +1,16 @@
-## Changes in 1.2.0 (in development)
+## Changes in 1.2.1 (in development)
+
+### Enhancements
+
+* Added a basic implementation of the draft version of OGC API - Coverages
+
+### Fixes
+
+### Other changes
+
+## Changes in 1.2.0
+
+### Enhancements
 
 * Added a new, experimental `/compute` API to xcube server. 
   It comprises the following endpoints:
@@ -26,7 +38,18 @@
 * removed deprecated module xcube edit, which has been deprecated since 
   version 0.13.0
 
-## Changes in 1.1.3 (in development)
+### Other changes
+
+* Added `shutdown_on_close=True` parameter to coiled params to ensure that the 
+  clusters are shut down on close. (#881)
+* Introduced new parameter `region` for utility function `new_cluster` in 
+  `xcube.util.dask` which will ensure coiled creates the dask cluster in the 
+  prefered default region: eu-central-1. (#882)
+* Server offers the function `add_place_group` in `places/context.py`,
+  which allows plugins to add place groups from external sources.
+  
+
+## Changes in 1.1.3
 
 ### Fixes
 

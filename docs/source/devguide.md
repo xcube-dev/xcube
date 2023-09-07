@@ -342,20 +342,19 @@ These instructions are based on the documentation at
 Conda-forge packages are produced from a github feedstock repository belonging 
 to the conda-forge organization. A repository's feedstock is usually located at 
 `https://github.com/conda-forge/<repo-name>-feedstock`, e.g., 
-https://github.com/conda-forge/xcube-feedstock.
+`https://github.com/conda-forge/xcube-feedstock`.
+
+Usually, a conda-forge bot will create a feedstock pull request automatically for each new GitHub release, and the maintainers only need to merge it (potentially after some manual improvements). The manual procedure below is only needed if there isn't time to wait for the bot, or if an additional conda-forge build has to be done without a new GitHub release.
 The package is updated by 
 * forking the repository
 * creating a new branch for the changes
 * creating a pull request to merge this branch into conda-forge's feedstock repository 
   (this is done automatically if the build number is 0). 
 
-The first of these steps is usually already done. 
-You may find forks at `https://github.com/dcs4cop/<repo-name>-feedstock` . 
-
 In detail, the steps are:
 
-1. Update the dcs4cop fork of the feedstock repository, if it's not already 
-   up to date with conda-forge's upstream repository.
+1. Fork `https://github.com/conda-forge/<repo-name>-feedstock` in your personal GitHub
+   account.
 
 1. Clone the repository locally and create a new branch. The name of the branch 
    is not strictly prescribed, but it's sensible to choose an informative name like 
@@ -391,10 +390,7 @@ In detail, the steps are:
 
 1. Once conda-forge's automated checks have passed, merge the pull request.
 
-1. Merge the newly-merged changes from the master branch on conda-forge back to 
-   the master branch of the dcs4cop fork.
-   This step is not necessarily needed for the release, but it helps to avoid messy
-   parallel branches.
+1. Delete your personal fork of the `xcube-feedstock`-repository.
 
 Once the pull request has been merged, the updated package should usually become 
 available from conda-forge within a couple of hours.

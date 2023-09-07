@@ -19,4 +19,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-version = '1.2.1.dev0'
+from xcube.server.api import Api
+from xcube.webapi.ows.coverages.context import CoveragesContext
+
+api = Api(
+    'ows.coverages',
+    description='OGC API - Coverages',
+    required_apis=['datasets'],
+    create_ctx=CoveragesContext,
+    config_schema=None,
+)
