@@ -45,7 +45,6 @@
       chunk     (Re-)chunk xcube dataset.
       compute   Compute a cube from one or more other cubes.
       dump      Dump contents of an input dataset.
-      edit      Edit the metadata of an xcube dataset.
       extract   Extract cube points.
       gen       Generate xcube dataset.
       grid      Find spatial xcube dataset resolutions and adjust bounding...
