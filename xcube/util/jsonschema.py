@@ -468,7 +468,7 @@ class JsonObjectSchema(JsonSchema):
 
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
-        if self.properties:
+        if self.properties is not None:
             d.update(properties={k: v.to_dict() for k, v in self.properties.items()})
         if self.additional_properties is not None:
             d.update(additionalProperties=self.additional_properties.to_dict() \

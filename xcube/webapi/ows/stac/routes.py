@@ -23,7 +23,7 @@ from xcube.server.api import ApiHandler
 
 from .api import api
 from .context import StacContext
-from .controllers import get_collection
+from .controllers import get_collection, get_collection_queryables
 from .controllers import get_collection_item
 from .controllers import get_collection_items
 from .controllers import get_collections
@@ -134,3 +134,18 @@ class CatalogSearchHandler(ApiHandler[StacContext]):
         # TODO (forman): get search params from request body
         result = search(self.ctx.datasets_ctx, self.request.reverse_base_url)
         return await self.response.finish(result)
+
+
+# noinspection PyAbstractClass,PyMethodMayBeStatic
+@api.route(PATH_PREFIX + "/collections/{collectionId}/queryables")
+class QueryablesHandler(ApiHandler[StacContext]):
+    # noinspection PyPep8Naming
+    @api.operation(operation_id="searchCatalogByKeywords",
+                   summary='Return a JSON Schema defining the supported '
+                           'metadata filters (also called "queryables") '
+                           'for a specific collection.')
+    async def get(self, collectionId):
+        schema = get_collection_queryables(
+            ctx=self.ctx.datasets_ctx, collection_id=collectionId
+        )
+        return await self.response.finish(schema.to_dict())

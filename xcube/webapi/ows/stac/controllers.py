@@ -32,6 +32,7 @@ from xcube.core.gridmapping import CRS_CRS84, GridMapping
 from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
 from xcube.util.jsonencoder import to_json_value
+from xcube.util.jsonschema import JsonObjectSchema, JsonSchema
 from .config import DEFAULT_CATALOG_DESCRIPTION
 from .config import DEFAULT_CATALOG_ID
 from .config import DEFAULT_CATALOG_TITLE
@@ -235,6 +236,16 @@ def get_collection_item(ctx: DatasetsContext,
                         feature_id: str):
     _assert_valid_collection(ctx, collection_id)
     return _get_dataset_feature(ctx, base_url, feature_id, full=True)
+
+
+def get_collection_queryables(
+    ctx: DatasetsContext, collection_id: str
+) -> JsonSchema:
+    _assert_valid_collection(ctx, collection_id)
+    schema = JsonObjectSchema(
+        title=collection_id, properties={}, additional_properties=False
+    )
+    return schema
 
 
 # noinspection PyUnusedLocal
