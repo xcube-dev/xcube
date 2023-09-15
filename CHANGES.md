@@ -12,6 +12,7 @@
   [ESIP Attribute Convention for Data Discovery](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended). 
 * removed deprecated module xcube edit, which has been deprecated since 
   version 0.13.0
+* Update "Development process" section of developer guide.
 
 ## Changes in 1.2.0
 
