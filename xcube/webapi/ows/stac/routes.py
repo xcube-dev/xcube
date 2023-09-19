@@ -23,14 +23,16 @@ from xcube.server.api import ApiHandler
 
 from .api import api
 from .context import StacContext
-from .controllers import get_collection, get_collection_queryables
+from .controllers import get_collection, get_collection_queryables, \
+    get_single_collection_items
 from .controllers import get_collection_item
-from .controllers import get_collection_items
+from .controllers import get_datasets_collection_items
 from .controllers import get_collections
 from .controllers import get_conformance
 from .controllers import get_root
 from .controllers import search
-from .config import PATH_PREFIX
+from .config import PATH_PREFIX, DEFAULT_COLLECTION_TITLE
+
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route(PATH_PREFIX + "")
@@ -87,15 +89,18 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
         get_items_args = dict(
             ctx=self.ctx.datasets_ctx,
             base_url=self.request.reverse_base_url,
-            collection_id=collectionId
+            collection_id=collectionId,
         )
-        if 'limit' in self.request.query:
-            get_items_args['limit'] = \
-                self.request.get_query_arg('limit', type=int)
-        if 'cursor' in self.request.query:
-            get_items_args['cursor'] = \
-                self.request.get_query_arg('cursor', type=int)
-        result = get_collection_items(**get_items_args)
+        if collectionId == DEFAULT_COLLECTION_TITLE:
+            if 'limit' in self.request.query:
+                get_items_args['limit'] = \
+                    self.request.get_query_arg('limit', type=int)
+            if 'cursor' in self.request.query:
+                get_items_args['cursor'] = \
+                    self.request.get_query_arg('cursor', type=int)
+            result = get_datasets_collection_items(**get_items_args)
+        else:
+            result = get_single_collection_items(**get_items_args)
 
         return await self.response.finish(
             result, content_type='application/geo+json'

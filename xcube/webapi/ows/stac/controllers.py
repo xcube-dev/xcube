@@ -157,7 +157,9 @@ def get_conformance(ctx: DatasetsContext):
 def get_collections(ctx: DatasetsContext, base_url: str):
     return {
         "collections": [
-            _get_datasets_collection(ctx, base_url)
+            _get_dataset_collection(ctx, base_url, c['Identifier'])
+            for c in ctx.get_dataset_configs()
+            # _get_datasets_collection(ctx, base_url)
         ],
         "links": [
             _root_link(base_url),
@@ -178,14 +180,34 @@ def get_collection(ctx: DatasetsContext,
                    base_url: str,
                    collection_id: str):
     _assert_valid_collection(ctx, collection_id)
-    return _get_datasets_collection(ctx, base_url, full=True)
+    return _get_dataset_collection(ctx, base_url, collection_id, full=True)
 
 
-def get_collection_items(ctx: DatasetsContext,
-                         base_url: str,
-                         collection_id: str,
-                         limit: int = 100,
-                         cursor: int = 0):
+def get_single_collection_items(
+    ctx: DatasetsContext, base_url: str, collection_id: str
+):
+    feature = _get_dataset_feature(ctx, base_url, collection_id, full=False)
+    self_href = f"{base_url}{PATH_PREFIX}/collections/{collection_id}/items"
+    return {
+        'type': 'FeatureCollection',
+        'features': [feature],
+        'links': [
+            _root_link(base_url),
+            {
+                'rel': 'self',
+                'type': 'application/json',
+                'href': self_href
+            }
+        ],
+        'timeStamp': datetime.datetime.now().astimezone().isoformat()
+    }
+
+
+def get_datasets_collection_items(ctx: DatasetsContext,
+                                  base_url: str,
+                                  collection_id: str,
+                                  limit: int = 100,
+                                  cursor: int = 0):
     _assert_valid_collection(ctx, collection_id)
     all_configs = ctx.get_dataset_configs()
     configs = all_configs[cursor:(cursor + limit)]
@@ -257,7 +279,7 @@ def search(ctx: DatasetsContext, base_url: str):
 # noinspection PyUnusedLocal
 def _get_datasets_collection(ctx: DatasetsContext,
                              base_url: str,
-                             full: bool = False):
+                             full: bool = False) -> dict:
     c_id, c_title, c_description = _get_collection_metadata(ctx.config)
     return {
         "stac_version": STAC_VERSION,
@@ -303,11 +325,69 @@ def _get_datasets_collection(ctx: DatasetsContext,
     }
 
 
+def _get_dataset_collection(
+    ctx: DatasetsContext, base_url: str, dataset_id: str, full: bool = False
+) -> dict:
+    ml_dataset = ctx.get_ml_dataset(dataset_id)
+    dataset = ml_dataset.base_dataset
+    feature = _get_dataset_feature(ctx, base_url, dataset_id, full)
+    time_properties = _get_time_properties(dataset)
+    if {'start_datetime', 'end_datetime'}.issubset(time_properties):
+        time_interval = [
+            time_properties['start_datetime'],
+            time_properties['end_datetime']
+        ]
+    else:
+        time_interval = [
+            time_properties['datetime'],
+            time_properties['datetime']
+        ]
+    return {
+        'description': dataset_id,
+        'extent': {
+            'spatial': {
+                'bbox': feature['bbox']
+            },
+            'temporal': {
+                'interval': [time_interval]
+            }
+        },
+        'id': dataset_id,
+        'keywords': [],
+        'license': 'proprietary',
+        'links': [
+            _root_link(base_url),
+            {
+                'rel': 'self',
+                'type': 'application/json',
+                'href': f'{base_url}{PATH_PREFIX}/collections/{dataset_id}',
+                'title': 'this collection'
+            },
+            {
+                'rel': 'parent',
+                'href': f'{base_url}{PATH_PREFIX}/collections',
+                'title': 'collections list'
+            },
+            {
+                'rel': 'items',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/items',
+                'title': 'feature collection of data cube items'
+            }
+        ],
+        'providers': [],
+        'stac_version': STAC_VERSION,
+        "summaries": {},
+        'title': dataset_id,
+        'type': 'Collection',
+    }
+
+
 # noinspection PyUnusedLocal
 def _get_dataset_feature(ctx: DatasetsContext,
                          base_url: str,
                          dataset_id: str,
-                         full: bool = False):
+                         full: bool = False) -> dict:
     collection_id, _, _ = _get_collection_metadata(ctx.config)
 
     ml_dataset = ctx.get_ml_dataset(dataset_id)
@@ -354,23 +434,6 @@ def _get_dataset_feature(ctx: DatasetsContext,
     #       The "s3" operation is default.
     default_storage_url = f"{base_url}/s3/datasets"
 
-    if 'time' in dataset:
-        time_var = dataset['time']
-        start_time = to_json_value(time_var[0])
-        end_time = to_json_value(time_var[-1])
-        time_properties = {
-            'datetime': start_time
-        } if start_time == end_time else {
-            'datetime': None,
-            'start_datetime': start_time,
-            'end_datetime': end_time
-        }
-    else:
-        time_properties = {
-            # TODO Decide what to use as a fall-back datetime
-            'datetime': '2000-01-01T00:00:00Z'
-        }
-
     return {
         "stac_version": STAC_VERSION,
         "stac_extensions": STAC_EXTENSIONS,
@@ -390,7 +453,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
             "xcube:data_vars": xcube_data_vars,
             "xcube:coords": xcube_coords,
             "xcube:attrs": to_json_value(dataset.attrs),
-            **time_properties
+            **(_get_time_properties(dataset))
         },
         "collection": collection_id,
         "links": [
@@ -455,6 +518,26 @@ def _get_dataset_feature(ctx: DatasetsContext,
             }
         }
     }
+
+
+def _get_time_properties(dataset):
+    if 'time' in dataset:
+        time_var = dataset['time']
+        start_time = to_json_value(time_var[0])
+        end_time = to_json_value(time_var[-1])
+        time_properties = {
+            'datetime': start_time
+        } if start_time == end_time else {
+            'datetime': None,
+            'start_datetime': start_time,
+            'end_datetime': end_time
+        }
+    else:
+        time_properties = {
+            # TODO Decide what to use as a fall-back datetime
+            'datetime': '2000-01-01T00:00:00Z'
+        }
+    return time_properties
 
 
 def _get_xc_variables(variables: Mapping[Hashable, xr.DataArray]) \
@@ -642,8 +725,9 @@ def _get_str_attr(attrs: Dict[str, Any], keys: List[str]) -> Optional[str]:
 
 
 def _assert_valid_collection(ctx: DatasetsContext, collection_id: str):
-    c_id, _, _ = _get_collection_metadata(ctx.config)
-    if collection_id != c_id:
+    # c_id, _, _ = _get_collection_metadata(ctx.config)
+    collection_ids = [c['Identifier'] for c in ctx.get_dataset_configs()]
+    if collection_id not in collection_ids:
         raise ApiError.NotFound(f'Collection "{collection_id}" not found')
 
 

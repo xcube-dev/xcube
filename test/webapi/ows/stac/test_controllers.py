@@ -33,7 +33,7 @@ from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_TITLE
 from xcube.webapi.ows.stac.controllers import STAC_VERSION
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item
-from xcube.webapi.ows.stac.controllers import get_collection_items
+from xcube.webapi.ows.stac.controllers import get_datasets_collection_items
 from xcube.webapi.ows.stac.controllers import get_collections
 from xcube.webapi.ows.stac.controllers import get_conformance
 from xcube.webapi.ows.stac.controllers import get_root
@@ -118,7 +118,7 @@ class StacControllersTest(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_get_collection_items(self):
-        result = get_collection_items(
+        result = get_datasets_collection_items(
             get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
         )
         self.assertIsInstance(result, dict)
