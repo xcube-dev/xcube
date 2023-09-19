@@ -52,13 +52,22 @@ STAC_EXTENSIONS = [
 _MAX_NUM_VALUES = 1000
 
 _CONFORMANCE = [
-    "https://api.stacspec.org/v1.0.0-rc.2/core",
-    "https://api.stacspec.org/v1.0.0-rc.2/ogcapi-features",
-    "https://api.stacspec.org/v1.0.0-rc.1/collections",
-    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
-    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
-    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html",
-    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson"
+    'https://api.geodatacube.example/1.0.0-beta',
+    'https://api.stacspec.org/v1.0.0/core',
+    'https://api.stacspec.org/v1.0.0/collections',
+    'https://api.stacspec.org/v1.0.0/ogcapi-features',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/cisjson',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30'
 ]
 
 _ENDPOINTS = [
