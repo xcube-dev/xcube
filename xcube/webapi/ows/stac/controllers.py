@@ -71,25 +71,12 @@ _CONFORMANCE = [
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30'
 ]
 
-_ENDPOINTS = [
-    {
-      "path": "/collections",
-      "methods": [
-        "GET"
-      ]
-    },
-    {
-      "path": "/collections/{collection_id}",
-      "methods": [
-        "GET"
-      ]
-    },
-]
-
 
 # noinspection PyUnusedLocal
 def get_root(ctx: DatasetsContext, base_url: str):
     c_id, c_title, c_description = _get_catalog_metadata(ctx.config)
+    endpoint_lists = [a.endpoints() for a in ctx.apis
+                      if a.name in {'ows.stac', 'ows.coverages'}]
     return {
         "type": "Catalog",
         "stac_version": STAC_VERSION,
@@ -100,7 +87,7 @@ def get_root(ctx: DatasetsContext, base_url: str):
         "api_version": "1.0.0",
         "backend_version": xcube.__version__,
         "gdc_version": "1.0.0-beta.1",
-        "endpoints": _ENDPOINTS,
+        "endpoints": list(itertools.chain.from_iterable(endpoint_lists)),
         "links": [
             _root_link(base_url),
             {
