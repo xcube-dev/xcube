@@ -648,7 +648,7 @@ def _get_dc_additional_dimension(
         asset["range"] = [to_json_value(var[0]), to_json_value(var[-1])]
         if var.size > 1:
             diff_var = np.diff(var)
-            if np.issubdtype(var.dtype, np.numeric) \
+            if np.issubdtype(var.dtype, np.number) \
                     and np.allclose(np.diff(diff_var), 0):
                 asset["step"] = to_json_value(diff_var[0])
         if "step" not in asset and var.size < _MAX_NUM_VALUES:
