@@ -22,6 +22,7 @@
 
 import datetime
 from typing import Hashable, Any, Optional, Dict, List, Mapping
+import itertools
 
 import numpy as np
 import pyproj

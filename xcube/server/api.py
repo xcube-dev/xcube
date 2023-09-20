@@ -359,6 +359,16 @@ class Api(Generic[ServerContextT]):
         """
         return self._on_stop(server_ctx)
 
+    def endpoints(self) -> list[dict[str, Union[str, list[str]]]]:
+        """Describe endpoints provided by this API
+
+        Returns a list of dictionaries of the form
+        {'path': '/some/path', 'methods': ['get', 'post']}
+
+        :return: a list of dictionaries, each describing an endpoint
+        """
+        return [route.path_and_methods() for route in self.routes]
+
     def _handle_event(self, server_ctx: "Context"):
         """Do nothing."""
 
@@ -661,6 +671,21 @@ class ApiHandler(Generic[ServerContextT], ABC):
         """The response that provides the handler's output."""
         return self._response
 
+    @classmethod
+    def defined_methods(cls) -> list[str]:
+        """List the methods handled by this handler
+
+        Any method with an __openapi__ attribute is assumed to be
+        handled.
+
+        :return: a list of the method names handled by this handler
+        """
+        return [
+            name
+            for name in ['head', 'get', 'post', 'put', 'delete', 'options']
+            if hasattr(getattr(cls, name), '__openapi__')
+        ]
+
     # HTTP methods
 
     def head(self, *args, **kwargs):
@@ -746,6 +771,19 @@ class ApiRoute:
         if self.handler_kwargs:
             args += f", handler_kwargs={self.handler_kwargs!r}"
         return f"ApiRoute({args})"
+
+    def path_and_methods(self) -> dict[str, Union[str, list[str]]]:
+        """Describe the path and methods of this route
+
+        Returns a dictionary of the form
+        {'path': '/this/routes/path', 'methods': ['get', 'post']}
+
+        :return: a dictionary describing this route
+        """
+        return {
+            'path': self.path,
+            'methods': self.handler_cls.defined_methods()
+        }
 
 
 class ApiStaticRoute:
