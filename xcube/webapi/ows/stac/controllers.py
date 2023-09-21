@@ -173,13 +173,13 @@ def get_collections(ctx: DatasetsContext, base_url: str):
     }
 
 
-def get_collection(ctx: DatasetsContext,
-                   base_url: str,
-                   collection_id: str):
+def get_collection(ctx: DatasetsContext, base_url: str, collection_id: str):
     all_datasets_collection_id, _, _ = _get_collection_metadata(ctx.config)
     collection_ids = [c['Identifier'] for c in ctx.get_dataset_configs()]
     if collection_id in collection_ids:
-        return _get_single_dataset_collection(ctx, base_url, collection_id, full=True)
+        return _get_single_dataset_collection(
+            ctx, base_url, collection_id, full=True
+        )
     elif collection_id == all_datasets_collection_id:
         return _get_datasets_collection(ctx, base_url, full=True)
     else:
@@ -355,9 +355,7 @@ def _get_single_dataset_collection(
 ) -> dict:
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
-    feature = _get_dataset_feature(
-        ctx, base_url, dataset_id, dataset_id, DEFAULT_FEATURE_ID, full
-    )
+    grid_bbox = GridBbox(ml_dataset.grid_mapping)
     time_properties = _get_time_properties(dataset)
     if {'start_datetime', 'end_datetime'}.issubset(time_properties):
         time_interval = [
@@ -369,11 +367,12 @@ def _get_single_dataset_collection(
             time_properties['datetime'],
             time_properties['datetime']
         ]
-    return {
+    result = {
+        'assets': _get_assets(ctx, base_url, dataset_id),
         'description': dataset_id,
         'extent': {
             'spatial': {
-                'bbox': feature['bbox']
+                'bbox': grid_bbox.as_bbox()
             },
             'temporal': {
                 'interval': [time_interval]
@@ -404,14 +403,16 @@ def _get_single_dataset_collection(
         ],
         'providers': [],
         'stac_version': STAC_VERSION,
-        "summaries": {},
+        'summaries': {},
         'title': dataset_id,
         'type': 'Collection',
     }
+    result.update(_get_cube_properties(ctx, dataset_id))
+    return result
 
 
 class GridBbox:
-    def __init__(self, grid_mapping):
+    def __init__(self, grid_mapping: GridMapping):
         transformer = pyproj.Transformer.from_crs(
             grid_mapping.crs,
             CRS_CRS84,
@@ -421,7 +422,7 @@ class GridBbox:
         (self.x1, self.x2), (self.y1, self.y2) = (
             transformer.transform((bbox[0], bbox[2]), (bbox[1], bbox[3])))
 
-    def as_bbox(self):
+    def as_bbox(self) -> list:
         return [self.x1, self.y1, self.x2, self.y2]
 
     def as_geometry(self) -> dict[str, Union[str, list]]:
