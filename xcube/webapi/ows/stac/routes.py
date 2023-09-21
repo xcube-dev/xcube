@@ -129,6 +129,7 @@ class CatalogCollectionItemHandler(ApiHandler[StacContext]):
             result, content_type='application/geo+json'
         )
 
+
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route(PATH_PREFIX + "/search")
 class CatalogSearchHandler(ApiHandler[StacContext]):

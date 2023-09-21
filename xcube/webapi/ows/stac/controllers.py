@@ -21,7 +21,7 @@
 
 
 import datetime
-from typing import Hashable, Any, Optional, Dict, List, Mapping
+from typing import Hashable, Any, Optional, Dict, List, Mapping, Union
 import itertools
 
 import numpy as np
@@ -154,7 +154,7 @@ def get_conformance(ctx: DatasetsContext):
 def get_collections(ctx: DatasetsContext, base_url: str):
     return {
         "collections": [
-            _get_dataset_collection(ctx, base_url, c['Identifier'])
+            _get_single_dataset_collection(ctx, base_url, c['Identifier'])
             for c in ctx.get_dataset_configs()
             # _get_datasets_collection(ctx, base_url)
         ],
@@ -179,7 +179,7 @@ def get_collection(ctx: DatasetsContext,
     all_datasets_collection_id, _, _ = _get_collection_metadata(ctx.config)
     collection_ids = [c['Identifier'] for c in ctx.get_dataset_configs()]
     if collection_id in collection_ids:
-        return _get_dataset_collection(ctx, base_url, collection_id, full=True)
+        return _get_single_dataset_collection(ctx, base_url, collection_id, full=True)
     elif collection_id == all_datasets_collection_id:
         return _get_datasets_collection(ctx, base_url, full=True)
     else:
@@ -189,7 +189,10 @@ def get_collection(ctx: DatasetsContext,
 def get_single_collection_items(
     ctx: DatasetsContext, base_url: str, collection_id: str
 ):
-    feature = _get_dataset_feature(ctx, base_url, collection_id, full=False)
+    feature = _get_dataset_feature(
+        ctx, base_url, collection_id, collection_id, DEFAULT_FEATURE_ID,
+        full=False
+    )
     self_href = f"{base_url}{PATH_PREFIX}/collections/{collection_id}/items"
     return {
         'type': 'FeatureCollection',
@@ -217,10 +220,9 @@ def get_datasets_collection_items(ctx: DatasetsContext,
     features = []
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
-        feature = _get_dataset_feature(ctx,
-                                       base_url,
-                                       dataset_id,
-                                       full=False)
+        feature = _get_dataset_feature(
+            ctx, base_url, dataset_id, collection_id, dataset_id, full=False
+        )
         features.append(feature)
     self_href = f"{base_url}{PATH_PREFIX}/collections/{collection_id}/items"
     links = [
@@ -266,12 +268,17 @@ def get_collection_item(ctx: DatasetsContext,
     )
     if collection_id == DEFAULT_COLLECTION_ID:
         if feature_id in dataset_ids:
-            return _get_dataset_feature(ctx, base_url, feature_id, full=True)
+            return _get_dataset_feature(
+                ctx, base_url, feature_id, collection_id, feature_id, full=True
+            )
         else:
             raise feature_not_found
     elif collection_id in dataset_ids:
         if feature_id == DEFAULT_FEATURE_ID:
-            return _get_dataset_feature(ctx, base_url, collection_id, full=True)
+            return _get_dataset_feature(
+                ctx, base_url, collection_id, collection_id, feature_id,
+                full=True
+            )
         else:
             raise feature_not_found
     else:
@@ -343,12 +350,14 @@ def _get_datasets_collection(ctx: DatasetsContext,
     }
 
 
-def _get_dataset_collection(
+def _get_single_dataset_collection(
     ctx: DatasetsContext, base_url: str, dataset_id: str, full: bool = False
 ) -> dict:
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
-    feature = _get_dataset_feature(ctx, base_url, dataset_id, full)
+    feature = _get_dataset_feature(
+        ctx, base_url, dataset_id, dataset_id, DEFAULT_FEATURE_ID, full
+    )
     time_properties = _get_time_properties(dataset)
     if {'start_datetime', 'end_datetime'}.issubset(time_properties):
         time_interval = [
@@ -401,30 +410,89 @@ def _get_dataset_collection(
     }
 
 
+class GridBbox:
+    def __init__(self, grid_mapping):
+        transformer = pyproj.Transformer.from_crs(
+            grid_mapping.crs,
+            CRS_CRS84,
+            always_xy=True
+        )
+        bbox = grid_mapping.xy_bbox
+        (self.x1, self.x2), (self.y1, self.y2) = (
+            transformer.transform((bbox[0], bbox[2]), (bbox[1], bbox[3])))
+
+    def as_bbox(self):
+        return [self.x1, self.y1, self.x2, self.y2]
+
+    def as_geometry(self) -> dict[str, Union[str, list]]:
+        return {
+            "type": "Polygon",
+            "coordinates": [
+                [[self.x1, self.y1], [self.x1, self.y2], [self.x2, self.y2],
+                 [self.x2, self.y1], [self.x1, self.y1]],
+            ],
+        }
+
 # noinspection PyUnusedLocal
 def _get_dataset_feature(ctx: DatasetsContext,
                          base_url: str,
                          dataset_id: str,
+                         collection_id: str,
+                         feature_id: str,
                          full: bool = False) -> dict:
-    collection_id, _, _ = _get_collection_metadata(ctx.config)
+    bbox = GridBbox(ctx.get_ml_dataset(dataset_id).grid_mapping)
 
+    return {
+        "stac_version": STAC_VERSION,
+        "stac_extensions": STAC_EXTENSIONS,
+        "type": "Feature",
+        "id": dataset_id,
+        "bbox": bbox.as_bbox(),
+        "geometry": bbox.as_geometry(),
+        "properties": _get_cube_properties(ctx, dataset_id),
+        "collection": collection_id,
+        "links": [
+            _root_link(base_url),
+            {
+                "rel": "self",
+                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
+                        f"/items/{feature_id}"
+            },
+            {
+                "rel": "collection",
+                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
+            },
+            {
+                "rel": "parent",
+                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
+            }
+        ],
+        "assets": _get_assets(ctx, base_url, dataset_id)
+    }
+
+
+def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     grid_mapping = ml_dataset.grid_mapping
     dataset = ml_dataset.base_dataset
 
-    xcube_data_vars = _get_xc_variables(dataset.data_vars)
     cube_dimensions = _get_dc_dimensions(dataset, grid_mapping)
 
-    cube_properties = {
+    return {
         "cube:dimensions": cube_dimensions,
-        "cube:variables": (_get_dc_variables(dataset, cube_dimensions)),
+        "cube:variables": _get_dc_variables(dataset, cube_dimensions),
         "xcube:dims": to_json_value(dataset.dims),
-        "xcube:data_vars": xcube_data_vars,
-        "xcube:coords": (_get_xc_variables(dataset.coords)),
+        "xcube:data_vars": _get_xc_variables(dataset.data_vars),
+        "xcube:coords": _get_xc_variables(dataset.coords),
         "xcube:attrs": to_json_value(dataset.attrs),
         **(_get_time_properties(dataset)),
     }
 
+
+def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
+    ml_dataset = ctx.get_ml_dataset(dataset_id)
+    dataset = ml_dataset.base_dataset
+    xcube_data_vars = _get_xc_variables(dataset.data_vars)
     first_var_name = next(iter(xcube_data_vars))["name"]
     first_var = dataset[first_var_name]
     first_var_extra_dims = first_var.dims[0:-2]
@@ -447,97 +515,53 @@ def _get_dataset_feature(ctx: DatasetsContext,
             ['%s=<%s>' % (d, d) for d in first_var_extra_dims]
         )
 
-    def transform_bbox(grid_mapping) -> \
-            tuple[tuple[float, float], tuple[float, float]]:
-        transformer = pyproj.Transformer.from_crs(
-            grid_mapping.crs,
-            CRS_CRS84,
-            always_xy=True
-        )
-        bbox = grid_mapping.xy_bbox
-        # (x1, x2), (y1, y2)
-        return transformer.transform((bbox[0], bbox[2]), (bbox[1], bbox[3]))
-
-    (x1, x2), (y1, y2) = transform_bbox(grid_mapping)
-
     # TODO: Prefer original storage location.
     #       The "s3" operation is default.
     default_storage_url = f"{base_url}/s3/datasets"
 
     return {
-        "stac_version": STAC_VERSION,
-        "stac_extensions": STAC_EXTENSIONS,
-        "type": "Feature",
-        "id": dataset_id,
-        "bbox": [x1, y1, x2, y2],
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": [
-                [[x1, y1], [x1, y2], [x2, y2], [x2, y1], [x1, y1]],
-            ],
+        "analytic": {
+            "title": f"{dataset_id} data access",
+            "roles": ["data"],
+            "type": "application/zarr",
+            "href": f"{default_storage_url}/{dataset_id}.zarr",
+            "xcube:analytic": {
+                v['name']: {
+                    "title": f"{v['name']} data access",
+                    "roles": ["data"],
+                    "type": "application/zarr",
+                    "href": f"{default_storage_url}/"
+                            f"{dataset_id}.zarr/{v['name']}"
+                }
+                for v in xcube_data_vars
+            }
         },
-        "properties": cube_properties,
-        "collection": collection_id,
-        "links": [
-            _root_link(base_url),
-            {
-                "rel": "self",
-                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
-                        f"/items/{dataset_id}"
-            },
-            {
-                "rel": "collection",
-                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
-            },
-            {
-                "rel": "parent",
-                "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
-            }
-        ],
-        "assets": {
-            "analytic": {
-                "title": f"{dataset_id} data access",
-                "roles": ["data"],
-                "type": "application/zarr",
-                "href": f"{default_storage_url}/{dataset_id}.zarr",
-                "xcube:analytic": {
-                    v['name']: {
-                        "title": f"{v['name']} data access",
-                        "roles": ["data"],
-                        "type": "application/zarr",
-                        "href": f"{default_storage_url}/"
-                                f"{dataset_id}.zarr/{v['name']}"
-                    }
-                    for v in xcube_data_vars
+        "visual": {
+            "title": f"{dataset_id} visualisation",
+            "roles": ["visual"],
+            "type": "image/png",
+            "href": (f"{base_url}/tiles/{dataset_id}/<variable>"
+                     + "/{z}/{y}/{x}"
+                     + tiles_query),
+            "xcube:visual": {
+                v['name']: {
+                    "title": f"{v['name']} visualisation",
+                    "roles": ["visual"],
+                    "type": "image/png",
+                    "href": (
+                            f"{base_url}/tiles/{dataset_id}/{v['name']}"
+                            + "/{z}/{y}/{x}"
+                            + tiles_query),
                 }
-            },
-            "visual": {
-                "title": f"{dataset_id} visualisation",
-                "roles": ["visual"],
-                "type": "image/png",
-                "href": (f"{base_url}/tiles/{dataset_id}/<variable>"
-                         + "/{z}/{y}/{x}"
-                         + tiles_query),
-                "xcube:visual": {
-                    v['name']: {
-                        "title": f"{v['name']} visualisation",
-                        "roles": ["visual"],
-                        "type": "image/png",
-                        "href": (
-                                f"{base_url}/tiles/{dataset_id}/{v['name']}"
-                                + "/{z}/{y}/{x}"
-                                + tiles_query),
-                    }
-                    for v in xcube_data_vars
-                }
-            },
-            "thumbnail": {
-                "title": f"{dataset_id} thumbnail",
-                "roles": ["thumbnail"],
-                "type": "image/png",
-                "href": f"{base_url}/tiles/{dataset_id}/{first_var_name}"
-                        f"/0/0/0{thumbnail_query}"
+                for v in xcube_data_vars
             }
+        },
+        "thumbnail": {
+            "title": f"{dataset_id} thumbnail",
+            "roles": ["thumbnail"],
+            "type": "image/png",
+            "href": f"{base_url}/tiles/{dataset_id}/{first_var_name}"
+                    f"/0/0/0{thumbnail_query}"
         }
     }
 
