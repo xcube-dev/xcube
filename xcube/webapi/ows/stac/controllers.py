@@ -34,7 +34,7 @@ from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
 from xcube.util.jsonencoder import to_json_value
 from xcube.util.jsonschema import JsonObjectSchema, JsonSchema
-from .config import DEFAULT_CATALOG_DESCRIPTION
+from .config import DEFAULT_CATALOG_DESCRIPTION, DEFAULT_FEATURE_ID
 from .config import DEFAULT_CATALOG_ID
 from .config import DEFAULT_CATALOG_TITLE
 from .config import DEFAULT_COLLECTION_DESCRIPTION
@@ -176,8 +176,14 @@ def get_collections(ctx: DatasetsContext, base_url: str):
 def get_collection(ctx: DatasetsContext,
                    base_url: str,
                    collection_id: str):
-    _assert_valid_collection(ctx, collection_id)
-    return _get_dataset_collection(ctx, base_url, collection_id, full=True)
+    all_datasets_collection_id, _, _ = _get_collection_metadata(ctx.config)
+    collection_ids = [c['Identifier'] for c in ctx.get_dataset_configs()]
+    if collection_id in collection_ids:
+        return _get_dataset_collection(ctx, base_url, collection_id, full=True)
+    elif collection_id == all_datasets_collection_id:
+        return _get_datasets_collection(ctx, base_url, full=True)
+    else:
+        raise ApiError.NotFound(f'Collection "{collection_id}" not found')
 
 
 def get_single_collection_items(
@@ -253,8 +259,23 @@ def get_collection_item(ctx: DatasetsContext,
                         base_url: str,
                         collection_id: str,
                         feature_id: str):
-    _assert_valid_collection(ctx, collection_id)
-    return _get_dataset_feature(ctx, base_url, feature_id, full=True)
+    dataset_ids = {c['Identifier'] for c in ctx.get_dataset_configs()}
+
+    feature_not_found = ApiError.NotFound(
+        f'Feature "{feature_id}" not found in collection {collection_id}.'
+    )
+    if collection_id == DEFAULT_COLLECTION_ID:
+        if feature_id in dataset_ids:
+            return _get_dataset_feature(ctx, base_url, feature_id, full=True)
+        else:
+            raise feature_not_found
+    elif collection_id in dataset_ids:
+        if feature_id == DEFAULT_FEATURE_ID:
+            return _get_dataset_feature(ctx, base_url, collection_id, full=True)
+        else:
+            raise feature_not_found
+    else:
+        raise ApiError.NotFound(f'Collection "{collection_id}" not found.')
 
 
 def get_collection_queryables(
@@ -391,11 +412,18 @@ def _get_dataset_feature(ctx: DatasetsContext,
     grid_mapping = ml_dataset.grid_mapping
     dataset = ml_dataset.base_dataset
 
-    xcube_coords = _get_xc_variables(dataset.coords)
     xcube_data_vars = _get_xc_variables(dataset.data_vars)
-
     cube_dimensions = _get_dc_dimensions(dataset, grid_mapping)
-    cube_variables = _get_dc_variables(dataset, cube_dimensions)
+
+    cube_properties = {
+        "cube:dimensions": cube_dimensions,
+        "cube:variables": (_get_dc_variables(dataset, cube_dimensions)),
+        "xcube:dims": to_json_value(dataset.dims),
+        "xcube:data_vars": xcube_data_vars,
+        "xcube:coords": (_get_xc_variables(dataset.coords)),
+        "xcube:attrs": to_json_value(dataset.attrs),
+        **(_get_time_properties(dataset)),
+    }
 
     first_var_name = next(iter(xcube_data_vars))["name"]
     first_var = dataset[first_var_name]
@@ -419,13 +447,18 @@ def _get_dataset_feature(ctx: DatasetsContext,
             ['%s=<%s>' % (d, d) for d in first_var_extra_dims]
         )
 
-    t = pyproj.Transformer.from_crs(
-        grid_mapping.crs,
-        CRS_CRS84,
-        always_xy=True
-    )
-    bbox = grid_mapping.xy_bbox
-    (x1, x2), (y1, y2) = t.transform((bbox[0], bbox[2]), (bbox[1], bbox[3]))
+    def transform_bbox(grid_mapping) -> \
+            tuple[tuple[float, float], tuple[float, float]]:
+        transformer = pyproj.Transformer.from_crs(
+            grid_mapping.crs,
+            CRS_CRS84,
+            always_xy=True
+        )
+        bbox = grid_mapping.xy_bbox
+        # (x1, x2), (y1, y2)
+        return transformer.transform((bbox[0], bbox[2]), (bbox[1], bbox[3]))
+
+    (x1, x2), (y1, y2) = transform_bbox(grid_mapping)
 
     # TODO: Prefer original storage location.
     #       The "s3" operation is default.
@@ -443,15 +476,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
                 [[x1, y1], [x1, y2], [x2, y2], [x2, y1], [x1, y1]],
             ],
         },
-        "properties": {
-            "cube:dimensions": cube_dimensions,
-            "cube:variables": cube_variables,
-            "xcube:dims": to_json_value(dataset.dims),
-            "xcube:data_vars": xcube_data_vars,
-            "xcube:coords": xcube_coords,
-            "xcube:attrs": to_json_value(dataset.attrs),
-            **(_get_time_properties(dataset))
-        },
+        "properties": cube_properties,
         "collection": collection_id,
         "links": [
             _root_link(base_url),
@@ -724,7 +749,10 @@ def _get_str_attr(attrs: Dict[str, Any], keys: List[str]) -> Optional[str]:
 def _assert_valid_collection(ctx: DatasetsContext, collection_id: str):
     # c_id, _, _ = _get_collection_metadata(ctx.config)
     collection_ids = [c['Identifier'] for c in ctx.get_dataset_configs()]
-    if collection_id not in collection_ids:
+    if (
+        collection_id not in collection_ids
+        and collection_id != DEFAULT_COLLECTION_ID
+    ):
         raise ApiError.NotFound(f'Collection "{collection_id}" not found')
 
 

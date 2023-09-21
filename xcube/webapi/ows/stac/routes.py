@@ -19,7 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiHandler, ApiError
 
 from .api import api
 from .context import StacContext
@@ -31,7 +31,10 @@ from .controllers import get_collections
 from .controllers import get_conformance
 from .controllers import get_root
 from .controllers import search
-from .config import PATH_PREFIX, DEFAULT_COLLECTION_TITLE
+from .config import (
+    PATH_PREFIX,
+    DEFAULT_COLLECTION_ID,
+)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
@@ -91,7 +94,7 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
             base_url=self.request.reverse_base_url,
             collection_id=collectionId,
         )
-        if collectionId == DEFAULT_COLLECTION_TITLE:
+        if collectionId == DEFAULT_COLLECTION_ID:
             if 'limit' in self.request.query:
                 get_items_args['limit'] = \
                     self.request.get_query_arg('limit', type=int)
@@ -108,19 +111,23 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/collections/{collectionId}/items/{featureId}")
+@api.route(PATH_PREFIX + '/collections/{collectionId}/items/{featureId}')
 class CatalogCollectionItemHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id="getCatalogCollectionItem",
-                   summary="Get an item of a STAC catalog collection.")
+    @api.operation(
+        operation_id="getCatalogCollectionItem",
+        summary="Get an item of a STAC catalog collection.",
+    )
     async def get(self, collectionId: str, featureId: str):
-        result = get_collection_item(self.ctx.datasets_ctx,
-                                     self.request.reverse_base_url,
-                                     collectionId, featureId)
+        result = get_collection_item(
+            self.ctx.datasets_ctx,
+            self.request.reverse_base_url,
+            collectionId,
+            featureId,
+        )
         return await self.response.finish(
             result, content_type='application/geo+json'
         )
-
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route(PATH_PREFIX + "/search")

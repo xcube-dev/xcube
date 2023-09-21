@@ -29,6 +29,7 @@ DEFAULT_CATALOG_DESCRIPTION = "Catalog of datasets served by xcube."
 DEFAULT_COLLECTION_ID = "datacubes"
 DEFAULT_COLLECTION_TITLE = "Data cubes"
 DEFAULT_COLLECTION_DESCRIPTION = "a collection of xcube datasets"
+DEFAULT_FEATURE_ID = 'datacube'
 
 PATH_PREFIX = '/ogc'
 
