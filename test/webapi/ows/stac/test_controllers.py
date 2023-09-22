@@ -46,14 +46,42 @@ BASE_URL = "http://localhost:8080"
 _OGC_PREFIX = 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf'
 _STAC_PREFIX = 'https://api.stacspec.org'
 
-EXPECTED_CONFORMANCE = [
-    f'{_STAC_PREFIX}/v1.0.0-rc.2/core',
-    f'{_STAC_PREFIX}/v1.0.0-rc.2/ogcapi-features',
-    f'{_STAC_PREFIX}/v1.0.0-rc.1/collections',
-    f'{_OGC_PREFIX}/core',
-    f'{_OGC_PREFIX}/oas30',
-    f'{_OGC_PREFIX}/html',
-    f'{_OGC_PREFIX}/geojson',
+EXPECTED_CONFORMANCE = {
+    'https://api.geodatacube.example/1.0.0-beta',
+    'https://api.stacspec.org/v1.0.0/core',
+    'https://api.stacspec.org/v1.0.0/collections',
+    'https://api.stacspec.org/v1.0.0/ogcapi-features',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
+    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
+    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/cisjson',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30'
+}
+
+EXPECTED_ENDPOINTS = [
+    {'methods': methods, 'path': path}
+    for methods, path in [
+        (['get'], '/ogc/collections/{collectionId}/coverage'),
+        (['get'], '/ogc/collections/{collectionId}/coverage/domainset'),
+        (['get'], '/ogc/collections/{collectionId}/coverage/rangetype'),
+        (['get'], '/ogc/collections/{collectionId}/coverage/metadata'),
+        (['get'], '/ogc/collections/{collectionId}/coverage/rangeset'),
+        (['get'], '/ogc'),
+        (['get'], '/ogc/conformance'),
+        (['get'], '/ogc/collections'),
+        (['get'], '/ogc/collections/{collectionId}'),
+        (['get'], '/ogc/collections/{collectionId}/items'),
+        (['get'], '/ogc/collections/{collectionId}/items/{featureId}'),
+        (['get', 'post'], '/ogc/search'),
+        (['get'], '/ogc/collections/{collectionId}/queryables'),
+    ]
 ]
 
 EXPECTED_COLLECTION = {
@@ -73,7 +101,8 @@ EXPECTED_COLLECTION = {
             'type': 'application/json',
         },
         {
-            'href': f'{BASE_URL}{PATH_PREFIX}/collections/{DEFAULT_COLLECTION_ID}',
+            'href': f'{BASE_URL}{PATH_PREFIX}/collections/'
+                    f'{DEFAULT_COLLECTION_ID}',
             'rel': 'self',
             'title': 'this collection',
             'type': 'application/json',
@@ -84,7 +113,8 @@ EXPECTED_COLLECTION = {
             'title': 'collections list',
         },
         {
-            'href': f'{BASE_URL}{PATH_PREFIX}/collections/{DEFAULT_COLLECTION_ID}/items',
+            'href': f'{BASE_URL}{PATH_PREFIX}/collections/'
+                    f'{DEFAULT_COLLECTION_ID}/items',
             'rel': 'items',
             'title': 'feature collection of data cube items',
         },
@@ -151,36 +181,39 @@ class StacControllersTest(unittest.TestCase):
     def test_get_collections(self):
         result = get_collections(get_stac_ctx().datasets_ctx, BASE_URL)
         self.assertEqual(
-            {
-                'collections': [EXPECTED_COLLECTION],
-                'links': [
-                    {
-                        'href': f'{BASE_URL}{PATH_PREFIX}',
-                        'rel': 'root',
-                        'title': 'root of the OGC API and STAC catalog',
-                        'type': 'application/json',
-                    },
-                    {
-                        'href': f'{BASE_URL}{PATH_PREFIX}/collections',
-                        'rel': 'self',
-                        'type': 'application/json',
-                    },
-                    {'href': f'{BASE_URL}{PATH_PREFIX}', 'rel': 'parent'},
-                ],
-            },
-            result,
+            [
+                {
+                    'href': f'{BASE_URL}{PATH_PREFIX}',
+                    'rel': 'root',
+                    'title': 'root of the OGC API and STAC catalog',
+                    'type': 'application/json',
+                },
+                {
+                    'href': f'{BASE_URL}{PATH_PREFIX}/collections',
+                    'rel': 'self',
+                    'type': 'application/json',
+                },
+                {'href': f'{BASE_URL}{PATH_PREFIX}', 'rel': 'parent'},
+            ],
+            result['links']
+        )
+        self.assertEqual(EXPECTED_COLLECTION, result['collections'][0])
+        self.assertEqual(
+            ['datacubes', 'demo', 'demo-1w'],
+            [collection['id'] for collection in result['collections']]
         )
 
     def test_get_conformance(self):
         result = get_conformance(get_stac_ctx().datasets_ctx)
-        self.assertEqual({'conformsTo': EXPECTED_CONFORMANCE}, result)
+        self.assertEqual(EXPECTED_CONFORMANCE, set(result.get('conformsTo')))
 
     def test_get_root(self):
         result = get_root(get_stac_ctx().datasets_ctx, BASE_URL)
-
+        # Handle conformance separately, since we don't care about the order.
+        conformance = result.pop('conformsTo')
+        self.assertEqual(EXPECTED_CONFORMANCE, set(conformance))
         self.assertEqual(
             {
-                'conformsTo': EXPECTED_CONFORMANCE,
                 'description': DEFAULT_CATALOG_DESCRIPTION,
                 'id': DEFAULT_CATALOG_ID,
                 'links': [
@@ -241,13 +274,7 @@ class StacControllersTest(unittest.TestCase):
                 'api_version': '1.0.0',
                 'backend_version': xcube.__version__,
                 'gdc_version': '1.0.0-beta.1',
-                'endpoints': [
-                    {"path": "/collections", "methods": ["GET"]},
-                    {
-                        "path": "/collections/{collection_id}",
-                        "methods": ["GET"],
-                    },
-                ],
+                'endpoints': EXPECTED_ENDPOINTS,
             },
             result,
         )

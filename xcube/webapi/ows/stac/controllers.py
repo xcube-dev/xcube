@@ -52,24 +52,24 @@ STAC_EXTENSIONS = [
 # of a value of "datacube:dimensions" or "datacube:variables":
 _MAX_NUM_VALUES = 1000
 
-_CONFORMANCE = [
-    'https://api.geodatacube.example/1.0.0-beta',
-    'https://api.stacspec.org/v1.0.0/core',
-    'https://api.stacspec.org/v1.0.0/collections',
-    'https://api.stacspec.org/v1.0.0/ogcapi-features',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
-    'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/cisjson',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30'
-]
+_CONFORMANCE = (
+    ['https://api.geodatacube.example/1.0.0-beta']
+    + [
+        f'https://api.stacspec.org/v1.0.0/{part}'
+        for part in ['core', 'collections', 'ogcapi-features']
+    ]
+    + [
+        f'http://www.opengis.net/spec/ogcapi-{ogcapi}/1.0/conf/{part}'
+        for ogcapi, parts in [
+            ('common-1', ['core', 'json', 'oas30']),
+            ('common-2', ['collections']),
+            ('features-1', ['core', 'oas30', 'html', 'geojson']),
+            ('coverages-1', ['geodata-coverage', 'cisjson', 'coverage-subset',
+                             'oas30']),
+        ]
+        for part in parts
+    ]
+)
 
 
 # noinspection PyUnusedLocal
@@ -153,10 +153,9 @@ def get_conformance(ctx: DatasetsContext):
 
 def get_collections(ctx: DatasetsContext, base_url: str):
     return {
-        "collections": [
+        "collections": [_get_datasets_collection(ctx, base_url)] + [
             _get_single_dataset_collection(ctx, base_url, c['Identifier'])
             for c in ctx.get_dataset_configs()
-            # _get_datasets_collection(ctx, base_url)
         ],
         "links": [
             _root_link(base_url),
