@@ -291,7 +291,7 @@ def get_collection_queryables(
     schema = JsonObjectSchema(
         title=collection_id, properties={}, additional_properties=False
     )
-    return schema
+    return schema.to_dict()
 
 
 # noinspection PyUnusedLocal

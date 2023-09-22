@@ -161,4 +161,4 @@ class QueryablesHandler(ApiHandler[StacContext]):
         schema = get_collection_queryables(
             ctx=self.ctx.datasets_ctx, collection_id=collectionId
         )
-        return await self.response.finish(schema.to_dict())
+        return await self.response.finish(schema)

@@ -21,6 +21,7 @@
 
 from typing import Any, Mapping
 
+from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
 from ...helpers import RoutesTestCase, get_res_test_dir
 
 from xcube.webapi.ows.stac.routes import PATH_PREFIX
@@ -57,9 +58,11 @@ class StacRoutesTest(RoutesTestCase):
         self.assertResourceNotFoundResponse(response)
 
     def test_fetch_catalog_collection_item(self):
-        response = self.fetch(PATH_PREFIX + '/collections/datacubes/items/demo')
+        response = self.fetch(PATH_PREFIX +
+                              '/collections/datacubes/items/demo')
         self.assertResponseOK(response)
-        response = self.fetch(PATH_PREFIX + '/collections/datacubes/items/demox')
+        response = self.fetch(PATH_PREFIX +
+                              '/collections/datacubes/items/demox')
         self.assertResourceNotFoundResponse(response)
         response = self.fetch(PATH_PREFIX + '/collections/datasets/items/demo')
         self.assertResourceNotFoundResponse(response)
@@ -70,6 +73,13 @@ class StacRoutesTest(RoutesTestCase):
 
     def test_fetch_catalog_search_by_json(self):
         response = self.fetch(PATH_PREFIX + '/search', method='POST')
+        self.assertResponseOK(response)
+
+    def test_fetch_collection_queryables(self):
+        response = self.fetch(
+            f'{PATH_PREFIX}/collections/{DEFAULT_COLLECTION_ID}/queryables',
+            method='GET'
+        )
         self.assertResponseOK(response)
 
 

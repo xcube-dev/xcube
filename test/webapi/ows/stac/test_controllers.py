@@ -19,18 +19,21 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import json
-import os.path
 import unittest
 from pathlib import Path
+import functools
 
 import xcube
-from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_DESCRIPTION
+from xcube.server.api import ApiError
+from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_DESCRIPTION, \
+    DEFAULT_FEATURE_ID
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_ID
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_TITLE
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_DESCRIPTION
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_TITLE
-from xcube.webapi.ows.stac.controllers import STAC_VERSION
+from xcube.webapi.ows.stac.controllers import STAC_VERSION, \
+    get_collection_queryables
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item
 from xcube.webapi.ows.stac.controllers import get_datasets_collection_items
@@ -84,7 +87,7 @@ EXPECTED_ENDPOINTS = [
     ]
 ]
 
-EXPECTED_COLLECTION = {
+EXPECTED_DATASETS_COLLECTION = {
     'description': DEFAULT_COLLECTION_DESCRIPTION,
     'extent': {
         'spatial': {'bbox': [[-180.0, -90.0, 180.0, 90.0]]},
@@ -131,7 +134,23 @@ EXPECTED_COLLECTION = {
 
 
 class StacControllersTest(unittest.TestCase):
-    def test_get_collection_item(self):
+
+    @functools.lru_cache
+    def read_json(self, filename):
+        with open(Path(__file__).parent / filename, mode='r') as fp:
+            content = json.load(fp)
+        return content
+
+    @staticmethod
+    def write_json(content, filename):
+        """Convenience function for updating saved expected JSON
+
+        Not used during an ordinary test run.
+        """
+        with open(Path(__file__).parent / filename, mode='w') as fp:
+            json.dump(content, fp, indent=2)
+
+    def test_get_datasets_collection_item(self):
         self.maxDiff = None
         result = get_collection_item(
             get_stac_ctx().datasets_ctx,
@@ -140,12 +159,29 @@ class StacControllersTest(unittest.TestCase):
             "demo-1w",
         )
         self.assertIsInstance(result, dict)
-        path = Path(__file__).parent / "stac-item.json"
-        # with open(path, mode="w") as fp:
-        #     json.dump(result, fp, indent=2)
-        with open(path, mode="r") as fp:
-            expected_result = json.load(fp)
-        self.assertEqual(expected_result, result)
+        self.assertEqual(self.read_json('stac-datacubes-item.json'), result)
+
+    def test_get_single_collection_item(self):
+        self.maxDiff = None
+        result = get_collection_item(
+            get_stac_ctx().datasets_ctx,
+            BASE_URL,
+            "demo-1w",
+            DEFAULT_FEATURE_ID
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual(self.read_json('stac-single-item.json'), result)
+
+    def test_get_collection_item_nonexistent_feature(self):
+        self.assertRaises(
+            ApiError.NotFound,
+            get_collection_item,
+                get_stac_ctx().datasets_ctx,
+                BASE_URL,
+                'demo-1w',
+                'this-feature-does-not-exist'
+
+        )
 
     def test_get_collection_items(self):
         result = get_datasets_collection_items(
@@ -172,11 +208,17 @@ class StacControllersTest(unittest.TestCase):
             # import pprint
             # pprint.pprint(feature)
 
-    def test_get_collection(self):
+    def test_get_datasets_collection(self):
         result = get_collection(
             get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
         )
-        self.assertEqual(EXPECTED_COLLECTION, result)
+        self.assertEqual(EXPECTED_DATASETS_COLLECTION, result)
+
+    def test_get_single_collection(self):
+        result = get_collection(
+            get_stac_ctx().datasets_ctx, BASE_URL, 'demo'
+        )
+        self.assertEqual(self.read_json('demo-collection.json'), result)
 
     def test_get_collections(self):
         result = get_collections(get_stac_ctx().datasets_ctx, BASE_URL)
@@ -197,7 +239,7 @@ class StacControllersTest(unittest.TestCase):
             ],
             result['links']
         )
-        self.assertEqual(EXPECTED_COLLECTION, result['collections'][0])
+        self.assertEqual(EXPECTED_DATASETS_COLLECTION, result['collections'][0])
         self.assertEqual(
             ['datacubes', 'demo', 'demo-1w'],
             [collection['id'] for collection in result['collections']]
@@ -278,3 +320,15 @@ class StacControllersTest(unittest.TestCase):
             },
             result,
         )
+
+    def test_get_collection_queryables(self):
+        result = get_collection_queryables(
+            get_stac_ctx().datasets_ctx, DEFAULT_COLLECTION_ID
+        )
+        self.assertEqual(
+            {'additionalProperties': False,
+             'properties': {},
+             'title': 'datacubes',
+             'type': 'object'},
+            result)
+
