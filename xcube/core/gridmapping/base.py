@@ -53,7 +53,7 @@ from .helpers import scale_xy_res_and_size
 CRS_WGS84 = pyproj.crs.CRS(4326)
 
 # WGS84, axis order: lon, lat
-CRS_CRS84 = pyproj.crs.CRS.from_string("CRS84")
+CRS_CRS84 = pyproj.crs.CRS.from_string("OGC:CRS84")
 
 # Default tolerance for all operations that
 # accept a key-word argument "tolerance":

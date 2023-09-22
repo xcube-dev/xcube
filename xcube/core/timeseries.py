@@ -59,7 +59,7 @@ AGG_METHODS = {
     AGG_COUNT: CAN_COMPUTE
 }
 
-_CRS84 = pyproj.CRS.from_string('CRS84')
+_CRS84 = pyproj.CRS.from_string("OGC:CRS84")
 
 
 def get_time_series(

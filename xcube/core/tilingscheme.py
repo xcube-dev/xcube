@@ -36,11 +36,11 @@ WEB_MERCATOR_CRS_ALIASES = (
     'EPSG:3857',
     'urn:ogc:def:crs:OGC:1.3:EPSG::3857',
 )
-GEOGRAPHIC_CRS_NAME = 'CRS84'
+GEOGRAPHIC_CRS_NAME = 'OGC:CRS84'
 GEOGRAPHIC_CRS_ALIASES = (
     'EPSG:4326',
     'urn:ogc:def:crs:OGC:1.3:EPSG::4326',
-    'CRS84',
+    'OGC:CRS84',
     'urn:ogc:def:crs:OGC:1.3:CRS84',
     'WGS84'
 )

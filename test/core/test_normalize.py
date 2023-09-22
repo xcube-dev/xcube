@@ -22,6 +22,8 @@ from xcube.core.normalize import normalize_coord_vars
 from xcube.core.normalize import normalize_dataset
 from xcube.core.normalize import normalize_missing_time
 
+_CRS84 = pyproj.CRS.from_string("OGC:CRS84")
+
 
 # noinspection PyPep8Naming
 def assertDatasetEqual(expected, actual):
@@ -45,14 +47,14 @@ class DecodeCubeTest(TestCase):
         dataset = new_cube(variables=dict(a=1, b=2, c=3))
         dataset = dataset.assign(
             d=xr.DataArray([8, 9, 10], dims='level'),
-            crs=xr.DataArray(0, attrs=pyproj.CRS.from_string('CRS84').to_cf()),
+            crs=xr.DataArray(0, attrs=_CRS84.to_cf()),
         )
         self.assertEqual({'a', 'b', 'c', 'd', 'crs'}, set(dataset.data_vars))
         cube, grid_mapping, rest = decode_cube(dataset)
         self.assertIsInstance(cube, xr.Dataset)
         self.assertIsInstance(grid_mapping, GridMapping)
         self.assertEqual({'a', 'b', 'c'}, set(cube.data_vars))
-        self.assertEqual(pyproj.CRS.from_string('CRS84'), grid_mapping.crs)
+        self.assertEqual(_CRS84, grid_mapping.crs)
         self.assertIsInstance(rest, xr.Dataset)
         self.assertEqual({'d', 'crs'}, set(rest.data_vars))
 
@@ -61,7 +63,7 @@ class DecodeCubeTest(TestCase):
                            x_name='x', y_name='y')
         dataset = dataset.assign(
             d=xr.DataArray([8, 9, 10], dims='level'),
-            crs=xr.DataArray(0, attrs=pyproj.CRS.from_string('CRS84').to_cf()),
+            crs=xr.DataArray(0, attrs=_CRS84.to_cf()),
         )
         cube, grid_mapping, rest = decode_cube(dataset)
         dataset2 = encode_cube(cube, grid_mapping, rest)

@@ -49,7 +49,7 @@ class SubsampleDatasetTest(unittest.TestCase):
                                 x_res=1.,
                                 y_res=1.,
                                 time_periods=2,
-                                crs='CRS84',
+                                crs='OGC:CRS84',
                                 crs_name='spatial_ref',
                                 variables=dict(var_1=test_data_1,
                                                var_2=test_data_2))
@@ -81,7 +81,6 @@ class SubsampleDatasetTest(unittest.TestCase):
             np.array([1., 3., 5.]),
             np.array([2., 4., 6.]),
         )
-
 
     def test_subsample_dataset_first(self):
         subsampled_dataset = subsample_dataset(self.dataset,

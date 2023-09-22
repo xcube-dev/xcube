@@ -48,7 +48,7 @@ from .context import DatasetsContext
 from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
 
-_CRS84 = pyproj.CRS.from_string('CRS84')
+_CRS84 = pyproj.CRS.from_string("OGC:CRS84")
 
 
 def find_dataset_places(ctx: DatasetsContext,

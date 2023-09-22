@@ -28,6 +28,8 @@ from xcube.core.tilingscheme import get_num_levels
 from xcube.core.tilingscheme import get_unit_factor
 from xcube.core.tilingscheme import subdivide_size
 
+_CRS84 = 'OGC:CRS84'
+
 
 class TilingSchemeTest(unittest.TestCase):
 
@@ -39,7 +41,7 @@ class TilingSchemeTest(unittest.TestCase):
                           'urn:ogc:def:crs:OGC:1.3:EPSG::4326'
                       ))
         self.assertIs(TilingScheme.GEOGRAPHIC,
-                      TilingScheme.for_crs('CRS84'))
+                      TilingScheme.for_crs(_CRS84))
         self.assertIs(TilingScheme.GEOGRAPHIC,
                       TilingScheme.for_crs('urn:ogc:def:crs:OGC:1.3:CRS84'))
         self.assertIs(TilingScheme.GEOGRAPHIC,
@@ -48,7 +50,7 @@ class TilingSchemeTest(unittest.TestCase):
         self.assertIs(TilingScheme.GEOGRAPHIC,
                       TilingScheme.for_crs(TilingScheme.GEOGRAPHIC.crs))
 
-        tiling_scheme = TilingScheme.for_crs('CRS84', tile_size=512)
+        tiling_scheme = TilingScheme.for_crs(_CRS84, tile_size=512)
         self.assertIsNot(TilingScheme.GEOGRAPHIC, tiling_scheme)
         self.assertEqual((512, 512), tiling_scheme.tile_size)
 
@@ -71,7 +73,7 @@ class TilingSchemeTest(unittest.TestCase):
         tiling_scheme = TilingScheme.GEOGRAPHIC
 
         self.assertEqual((2, 1), tiling_scheme.num_level_zero_tiles)
-        self.assertEqual('CRS84', tiling_scheme.crs_name)
+        self.assertEqual(_CRS84, tiling_scheme.crs_name)
         self.assertEqual((256, 256), tiling_scheme.tile_size)
         self.assertEqual(256, tiling_scheme.tile_width)
         self.assertEqual(256, tiling_scheme.tile_height)

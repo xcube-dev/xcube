@@ -29,6 +29,7 @@ from xcube.util.temp import new_temp_dir
 
 ROOT_DIR = 'xcube'
 DATA_PATH = 'testing/data'
+_CRS84 = 'OGC:CRS84'
 
 
 def new_cube_data():
@@ -47,7 +48,7 @@ def new_cube_data():
                     height=height,
                     x_name='x',
                     y_name='y',
-                    crs='CRS84',
+                    crs=_CRS84,
                     crs_name='spatial_ref',
                     time_periods=time_periods,
                     variables=dict(var_a=var_a,
@@ -341,7 +342,7 @@ class FsDataStoresTestMixin(ABC):
             requested_dtype_alias: Optional[str],
             expected_dtype_aliases: Set[str],
             expected_return_type: Union[Type[xr.Dataset],
-                                        Type[MultiLevelDataset]],
+            Type[MultiLevelDataset]],
             expected_descriptor_type: Optional[Union[
                 Type[DatasetDescriptor],
                 Type[MultiLevelDatasetDescriptor]
