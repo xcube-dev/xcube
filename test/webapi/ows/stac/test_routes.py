@@ -48,7 +48,7 @@ class StacRoutesTest(RoutesTestCase):
         response = self.fetch(PATH_PREFIX + '/collections/datacubes')
         self.assertResponseOK(response)
 
-    def test_fetch_catalog_collection_items(self):
+    def test_fetch_catalog_collection_datacubes_items(self):
         response = self.fetch(PATH_PREFIX + '/collections/datacubes/items')
         self.assertResponseOK(response)
         response = self.fetch(PATH_PREFIX + '/collections/datacubes/items'
@@ -56,6 +56,10 @@ class StacRoutesTest(RoutesTestCase):
         self.assertResponseOK(response)
         response = self.fetch(PATH_PREFIX + '/collections/datasets')
         self.assertResourceNotFoundResponse(response)
+
+    def test_fetch_catalog_collection_single_items(self):
+        response = self.fetch(PATH_PREFIX + '/collections/demo/items')
+        self.assertResponseOK(response)
 
     def test_fetch_catalog_collection_item(self):
         response = self.fetch(PATH_PREFIX +

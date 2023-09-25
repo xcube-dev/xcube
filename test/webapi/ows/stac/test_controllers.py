@@ -18,12 +18,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+import datetime
 import json
 import unittest
 from pathlib import Path
 import functools
 
+import xarray as xr
 import xcube
+from xcube.core.gridmapping import GridMapping
+from xcube.core.new import new_cube
 from xcube.server.api import ApiError
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_DESCRIPTION, \
     DEFAULT_FEATURE_ID
@@ -32,8 +36,12 @@ from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_TITLE
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_DESCRIPTION
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_TITLE
-from xcube.webapi.ows.stac.controllers import STAC_VERSION, \
-    get_collection_queryables
+from xcube.webapi.ows.stac.controllers import (
+    STAC_VERSION,
+    get_collection_queryables,
+    get_dc_dimensions,
+    get_single_collection_items,
+)
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item
 from xcube.webapi.ows.stac.controllers import get_datasets_collection_items
@@ -141,14 +149,15 @@ class StacControllersTest(unittest.TestCase):
             content = json.load(fp)
         return content
 
-    @staticmethod
-    def write_json(content, filename):
-        """Convenience function for updating saved expected JSON
-
-        Not used during an ordinary test run.
-        """
-        with open(Path(__file__).parent / filename, mode='w') as fp:
-            json.dump(content, fp, indent=2)
+    # Commented out to keep coverage checkers happy.
+    # @staticmethod
+    # def write_json(content, filename):
+    #     """Convenience function for updating saved expected JSON
+    #
+    #     Not used during an ordinary test run.
+    #     """
+    #     with open(Path(__file__).parent / filename, mode='w') as fp:
+    #         json.dump(content, fp, indent=2)
 
     def test_get_datasets_collection_item(self):
         self.maxDiff = None
@@ -183,7 +192,7 @@ class StacControllersTest(unittest.TestCase):
 
         )
 
-    def test_get_collection_items(self):
+    def test_get_datasets_collection_items(self):
         result = get_datasets_collection_items(
             get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
         )
@@ -207,6 +216,29 @@ class StacControllersTest(unittest.TestCase):
             # TODO (forman): add more assertions
             # import pprint
             # pprint.pprint(feature)
+
+    def test_get_single_collection_items(self):
+        result = get_single_collection_items(
+            get_stac_ctx().datasets_ctx,
+            BASE_URL,
+            "demo-1w",
+        )
+        expected_item = self.read_json('stac-single-item.json')
+        self.assertEqual('FeatureCollection', result['type'])
+        self.assertEqual(
+            {'root', 'self'},
+            set([link['rel'] for link in result['links']])
+        )
+        self.assertLess(
+            datetime.datetime.now().astimezone()
+            - datetime.datetime.fromisoformat(result['timeStamp']),
+            datetime.timedelta(seconds=10)
+        )
+        for key in 'bbox', 'geometry', 'properties', 'assets':
+            self.assertEqual(
+                expected_item[key],
+                result['features'][0][key]
+            )
 
     def test_get_datasets_collection(self):
         result = get_collection(
@@ -332,3 +364,40 @@ class StacControllersTest(unittest.TestCase):
              'type': 'object'},
             result)
 
+    def test_get_dc_dimensions(self):
+        cube = new_cube(variables={'v': 0}).expand_dims({'h': 1})
+        cube['h'] = xr.DataArray([0])
+        dims = get_dc_dimensions(cube, GridMapping.from_dataset(cube))
+
+        expected = {
+            'lon': {
+                'type': 'spatial',
+                'axis': 'x',
+                'description': 'longitude',
+                'unit': 'degrees_east',
+                'extent': [-180, 180],
+                'step': 1,
+                'reference_system': 'EPSG:4326',
+            },
+            'lat': {
+                'type': 'spatial',
+                'axis': 'y',
+                'description': 'latitude',
+                'unit': 'degrees_north',
+                'extent': [-90, 90],
+                'step': 1,
+                'reference_system': 'EPSG:4326',
+            },
+            'time': {
+                'type': 'temporal',
+                'values': [
+                    '2010-01-01T12:00:00Z',
+                    '2010-01-02T12:00:00Z',
+                    '2010-01-03T12:00:00Z',
+                    '2010-01-04T12:00:00Z',
+                    '2010-01-05T12:00:00Z',
+                ],
+            },
+            'dim_name': {'type': 'unknown', 'range': [0, 0], 'values': [0]},  # FIXME
+        }
+        self.assertEqual(expected, dims)
