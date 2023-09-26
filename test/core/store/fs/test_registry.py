@@ -342,7 +342,7 @@ class FsDataStoresTestMixin(ABC):
             requested_dtype_alias: Optional[str],
             expected_dtype_aliases: Set[str],
             expected_return_type: Union[Type[xr.Dataset],
-            Type[MultiLevelDataset]],
+                                        Type[MultiLevelDataset]],
             expected_descriptor_type: Optional[Union[
                 Type[DatasetDescriptor],
                 Type[MultiLevelDatasetDescriptor]

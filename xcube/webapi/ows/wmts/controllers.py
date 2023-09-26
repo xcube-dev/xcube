@@ -52,7 +52,7 @@ OGC_WEB_MERCATOR_URN = 'urn:ogc:def:crs:EPSG::3857'
 OGC_WEB_MERCATOR_WKSS_URN = 'urn:ogc:def:wkss:OGC:1.0:GoogleMapsCompatible'
 
 _STD_PIXEL_SIZE_IN_METERS = 0.28e-3
-_CRS84 = pyproj.CRS.from_string("OGC:CRS84")
+_CRS84 = pyproj.CRS.from_string('OGC:CRS84')
 
 # '/tile/%s/%s/%s/' is the pattern for
 # '/tile/{ds_name}/{var_name}/{tms_id}/'

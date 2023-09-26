@@ -22,7 +22,7 @@ from xcube.core.normalize import normalize_coord_vars
 from xcube.core.normalize import normalize_dataset
 from xcube.core.normalize import normalize_missing_time
 
-_CRS84 = pyproj.CRS.from_string("OGC:CRS84")
+_CRS84 = pyproj.CRS.from_string('OGC:CRS84')
 
 
 # noinspection PyPep8Naming

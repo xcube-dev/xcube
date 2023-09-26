@@ -5,7 +5,7 @@
 * Added a basic implementation of the draft version of OGC API - Coverages
 
 ### Fixes
-* Resolved the issue for CRS84 error due to latest version of gdal
+* Resolved the issue for CRS84 error due to latest version of gdal (#869)
 
 ### Other changes
 * `update_dataset_attrs` can now also handle datasets with CRS other than 
