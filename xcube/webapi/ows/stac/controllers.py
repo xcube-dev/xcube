@@ -476,7 +476,7 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
     grid_mapping = ml_dataset.grid_mapping
     dataset = ml_dataset.base_dataset
 
-    cube_dimensions = get_dc_dimensions(dataset, grid_mapping)
+    cube_dimensions = get_datacube_dimensions(dataset, grid_mapping)
 
     return {
         "cube:dimensions": cube_dimensions,
@@ -610,8 +610,8 @@ def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
     }
 
 
-def get_dc_dimensions(dataset: xr.Dataset,
-                      grid_mapping: GridMapping) -> Dict[str, Any]:
+def get_datacube_dimensions(dataset: xr.Dataset,
+                            grid_mapping: GridMapping) -> Dict[str, Any]:
     """Create the value of the "datacube:dimensions" property
     for the given *dataset*.
     """
@@ -635,8 +635,7 @@ def get_dc_dimensions(dataset: xr.Dataset,
         if dim_name not in {x_dim_name, y_dim_name, "time"} \
                 and dim_name in dataset:
             dc_dimensions.update(
-                # TODO: fix this -- dim_name shouldn't be a literal, surely!?
-                dim_name=_get_dc_additional_dimension(dataset[dim_name])
+                {dim_name: _get_dc_additional_dimension(dataset[dim_name])}
             )
     return dc_dimensions
 

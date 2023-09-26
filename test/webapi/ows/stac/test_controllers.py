@@ -39,7 +39,7 @@ from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_TITLE
 from xcube.webapi.ows.stac.controllers import (
     STAC_VERSION,
     get_collection_queryables,
-    get_dc_dimensions,
+    get_datacube_dimensions,
     get_single_collection_items,
 )
 from xcube.webapi.ows.stac.controllers import get_collection
@@ -364,10 +364,11 @@ class StacControllersTest(unittest.TestCase):
              'type': 'object'},
             result)
 
-    def test_get_dc_dimensions(self):
-        cube = new_cube(variables={'v': 0}).expand_dims({'h': 1})
-        cube['h'] = xr.DataArray([0])
-        dims = get_dc_dimensions(cube, GridMapping.from_dataset(cube))
+    def test_get_datacube_dimensions(self):
+        dim_name = 'a_new_dimension'
+        cube = new_cube(variables={'v': 0}).expand_dims({dim_name: 1})
+        cube[dim_name] = xr.DataArray([0])
+        dims = get_datacube_dimensions(cube, GridMapping.from_dataset(cube))
 
         expected = {
             'lon': {
@@ -398,6 +399,8 @@ class StacControllersTest(unittest.TestCase):
                     '2010-01-05T12:00:00Z',
                 ],
             },
-            'dim_name': {'type': 'unknown', 'range': [0, 0], 'values': [0]},  # FIXME
+            dim_name: {
+                'type': 'unknown', 'range': [0, 0], 'values': [0]
+            }
         }
         self.assertEqual(expected, dims)
