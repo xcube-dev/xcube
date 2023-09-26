@@ -278,7 +278,7 @@ class StacControllersTest(unittest.TestCase):
         )
 
     def test_get_conformance(self):
-        result = get_conformance(get_stac_ctx().datasets_ctx)
+        result = get_conformance()
         self.assertEqual(EXPECTED_CONFORMANCE, set(result.get('conformsTo')))
 
     def test_get_root(self):

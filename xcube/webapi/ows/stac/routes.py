@@ -54,7 +54,7 @@ class CatalogConformanceHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogConformance",
                    summary="Get the STAC catalog's conformance.")
     async def get(self):
-        result = get_conformance(self.ctx.datasets_ctx)
+        result = get_conformance()
         return await self.response.finish(result)
 
 
