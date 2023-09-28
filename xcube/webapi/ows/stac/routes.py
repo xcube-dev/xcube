@@ -19,21 +19,26 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiHandler, ApiError
 
 from .api import api
 from .context import StacContext
-from .controllers import get_collection
+from .controllers import get_collection, get_collection_queryables, \
+    get_single_collection_items
 from .controllers import get_collection_item
-from .controllers import get_collection_items
+from .controllers import get_datasets_collection_items
 from .controllers import get_collections
 from .controllers import get_conformance
 from .controllers import get_root
 from .controllers import search
+from .config import (
+    PATH_PREFIX,
+    DEFAULT_COLLECTION_ID,
+)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog")
+@api.route(PATH_PREFIX + "")
 class CatalogRootHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogRoot",
                    summary="Get the STAC catalog's root.")
@@ -44,17 +49,17 @@ class CatalogRootHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/conformance")
+@api.route(PATH_PREFIX + "/conformance")
 class CatalogConformanceHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogConformance",
                    summary="Get the STAC catalog's conformance.")
     async def get(self):
-        result = get_conformance(self.ctx.datasets_ctx)
+        result = get_conformance()
         return await self.response.finish(result)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/collections")
+@api.route(PATH_PREFIX + "/collections")
 class CatalogCollectionsHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollections",
                    summary="Get the STAC catalog's collections.")
@@ -65,7 +70,7 @@ class CatalogCollectionsHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/collections/{collectionId}")
+@api.route(PATH_PREFIX + "/collections/{collectionId}")
 class CatalogCollectionHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(operation_id="getCatalogCollection",
@@ -78,7 +83,7 @@ class CatalogCollectionHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/collections/{collectionId}/items")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/items")
 class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(operation_id="getCatalogCollectionItems",
@@ -87,15 +92,18 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
         get_items_args = dict(
             ctx=self.ctx.datasets_ctx,
             base_url=self.request.reverse_base_url,
-            collection_id=collectionId
+            collection_id=collectionId,
         )
-        if 'limit' in self.request.query:
-            get_items_args['limit'] = \
-                self.request.get_query_arg('limit', type=int)
-        if 'cursor' in self.request.query:
-            get_items_args['cursor'] = \
-                self.request.get_query_arg('cursor', type=int)
-        result = get_collection_items(**get_items_args)
+        if collectionId == DEFAULT_COLLECTION_ID:
+            if 'limit' in self.request.query:
+                get_items_args['limit'] = \
+                    self.request.get_query_arg('limit', type=int)
+            if 'cursor' in self.request.query:
+                get_items_args['cursor'] = \
+                    self.request.get_query_arg('cursor', type=int)
+            result = get_datasets_collection_items(**get_items_args)
+        else:
+            result = get_single_collection_items(**get_items_args)
 
         return await self.response.finish(
             result, content_type='application/geo+json'
@@ -103,22 +111,27 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/collections/{collectionId}/items/{featureId}")
+@api.route(PATH_PREFIX + '/collections/{collectionId}/items/{featureId}')
 class CatalogCollectionItemHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id="getCatalogCollectionItem",
-                   summary="Get an item of a STAC catalog collection.")
+    @api.operation(
+        operation_id="getCatalogCollectionItem",
+        summary="Get an item of a STAC catalog collection.",
+    )
     async def get(self, collectionId: str, featureId: str):
-        result = get_collection_item(self.ctx.datasets_ctx,
-                                     self.request.reverse_base_url,
-                                     collectionId, featureId)
+        result = get_collection_item(
+            self.ctx.datasets_ctx,
+            self.request.reverse_base_url,
+            collectionId,
+            featureId,
+        )
         return await self.response.finish(
             result, content_type='application/geo+json'
         )
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route("/catalog/search")
+@api.route(PATH_PREFIX + "/search")
 class CatalogSearchHandler(ApiHandler[StacContext]):
 
     @api.operation(operation_id="searchCatalogByKeywords",
@@ -134,3 +147,18 @@ class CatalogSearchHandler(ApiHandler[StacContext]):
         # TODO (forman): get search params from request body
         result = search(self.ctx.datasets_ctx, self.request.reverse_base_url)
         return await self.response.finish(result)
+
+
+# noinspection PyAbstractClass,PyMethodMayBeStatic
+@api.route(PATH_PREFIX + "/collections/{collectionId}/queryables")
+class QueryablesHandler(ApiHandler[StacContext]):
+    # noinspection PyPep8Naming
+    @api.operation(operation_id="searchCatalogByKeywords",
+                   summary='Return a JSON Schema defining the supported '
+                           'metadata filters (also called "queryables") '
+                           'for a specific collection.')
+    async def get(self, collectionId):
+        schema = get_collection_queryables(
+            ctx=self.ctx.datasets_ctx, collection_id=collectionId
+        )
+        return await self.response.finish(schema)

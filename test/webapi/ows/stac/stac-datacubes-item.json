@@ -1,0 +1,1155 @@
+{
+  "stac_version": "1.0.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/datacube/v2.1.0/schema.json"
+  ],
+  "type": "Feature",
+  "id": "demo-1w",
+  "bbox": [
+    0.0,
+    50.0,
+    5.0,
+    52.5
+  ],
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          0.0,
+          50.0
+        ],
+        [
+          0.0,
+          52.5
+        ],
+        [
+          5.0,
+          52.5
+        ],
+        [
+          5.0,
+          50.0
+        ],
+        [
+          0.0,
+          50.0
+        ]
+      ]
+    ]
+  },
+  "properties": {
+    "cube:dimensions": {
+      "lon": {
+        "type": "spatial",
+        "axis": "x",
+        "description": "longitude",
+        "unit": "degrees_east",
+        "extent": [
+          0,
+          5
+        ],
+        "step": 0.0025,
+        "reference_system": "EPSG:4326"
+      },
+      "lat": {
+        "type": "spatial",
+        "axis": "y",
+        "description": "latitude",
+        "unit": "degrees_north",
+        "extent": [
+          50,
+          52.5
+        ],
+        "step": 0.0025,
+        "reference_system": "EPSG:4326"
+      },
+      "time": {
+        "type": "temporal",
+        "description": "time",
+        "values": [
+          "2017-01-22T00:00:00Z",
+          "2017-01-29T00:00:00Z",
+          "2017-02-05T00:00:00Z"
+        ]
+      }
+    },
+    "cube:variables": {
+      "c2rcc_flags": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "C2RCC quality flags"
+      },
+      "conc_chl": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Chlorophyll concentration",
+        "unit": "mg m^-3"
+      },
+      "conc_tsm": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Total suspended matter dry weight concentration",
+        "unit": "g m^-3"
+      },
+      "kd489": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Irradiance attenuation coefficient at 489 nm",
+        "unit": "m^-1"
+      },
+      "quality_flags": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Classification and quality flags"
+      },
+      "c2rcc_flags_stdev": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "C2RCC quality flags"
+      },
+      "conc_chl_stdev": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Chlorophyll concentration",
+        "unit": "mg m^-3"
+      },
+      "conc_tsm_stdev": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Total suspended matter dry weight concentration",
+        "unit": "g m^-3"
+      },
+      "kd489_stdev": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Irradiance attenuation coefficient at 489 nm",
+        "unit": "m^-1"
+      },
+      "quality_flags_stdev": {
+        "type": "data",
+        "dimensions": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "description": "Classification and quality flags"
+      },
+      "lat_bnds": {
+        "type": "auxiliary",
+        "dimensions": [
+          "lat",
+          "bnds"
+        ],
+        "description": "latitude",
+        "unit": "degrees_north"
+      },
+      "lon_bnds": {
+        "type": "auxiliary",
+        "dimensions": [
+          "lon",
+          "bnds"
+        ],
+        "description": "longitude",
+        "unit": "degrees_east"
+      }
+    },
+    "xcube:dims": {
+      "lat": 1000,
+      "bnds": 2,
+      "lon": 2000,
+      "time": 3
+    },
+    "xcube:data_vars": [
+      {
+        "name": "c2rcc_flags",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "flag_coding_name": "c2rcc_flags",
+          "flag_descriptions": "The input spectrum to the atmospheric correction neural net was out of the scope of the training range and the inversion is likely to be wrong\tThe input spectrum to the atmospheric correction neural net out of training range\tOne of the inputs to the IOP retrieval neural net is out of training range\tHigh downwelling transmission is indicating cloudy conditions\tOne of the IOPs is out of range\tApig output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tAdet output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tAgelb output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tBpart output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tBwit output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tApig output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tAdet output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tAgelb output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tBpart output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tBwit output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tThe Rhow input spectrum to IOP neural net is probably not within the training range of the neural net, and the inversion is likely to be wrong.\tKd489 is out of range\tKdmin is out of range\tKdmin is at max\tKdmin is at max\tThe operators valid pixel expression has resolved to true",
+          "flag_masks": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32,
+            64,
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            -2147483648
+          ],
+          "flag_meanings": "Rtosa_OOS Rtosa_OOR Rhow_OOR Cloud_risk Iop_OOR Apig_at_max Adet_at_max Agelb_at_max Bpart_at_max Bwit_at_max Apig_at_min Adet_at_min Agelb_at_min Bpart_at_min Bwit_at_min Rhow_OOS Kd489_OOR Kdmin_OOR Kd489_at_max Kdmin_at_max Valid_PE",
+          "long_name": "C2RCC quality flags"
+        }
+      },
+      {
+        "name": "conc_chl",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "color_table_blue_values": [
+            128,
+            255,
+            255,
+            255,
+            255,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "color_table_green_values": [
+            0,
+            0,
+            102,
+            204,
+            255,
+            128,
+            255,
+            95,
+            0,
+            0
+          ],
+          "color_table_red_values": [
+            0,
+            0,
+            51,
+            0,
+            0,
+            0,
+            255,
+            255,
+            215,
+            150
+          ],
+          "color_table_sample_values": [
+            0.0,
+            0.5,
+            1.0,
+            2.0,
+            3.0,
+            4.5,
+            13.0,
+            25.0,
+            30.0,
+            40.0
+          ],
+          "long_name": "Chlorophyll concentration",
+          "units": "mg m^-3",
+          "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        }
+      },
+      {
+        "name": "conc_tsm",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "long_name": "Total suspended matter dry weight concentration",
+          "units": "g m^-3",
+          "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        }
+      },
+      {
+        "name": "kd489",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "long_name": "Irradiance attenuation coefficient at 489 nm",
+          "units": "m^-1",
+          "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        }
+      },
+      {
+        "name": "quality_flags",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "flag_coding_name": "quality_flags",
+          "flag_descriptions": "",
+          "flag_masks": [
+            -2147483648,
+            1073741824,
+            536870912,
+            268435456,
+            134217728,
+            67108864,
+            33554432,
+            16777216,
+            8388608,
+            4194304,
+            2097152,
+            1048576,
+            524288,
+            262144,
+            131072,
+            65536,
+            32768,
+            16384,
+            8192,
+            4096,
+            2048,
+            1024,
+            512,
+            256,
+            128,
+            64,
+            32,
+            16,
+            8,
+            4,
+            2,
+            1
+          ],
+          "flag_meanings": "land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21",
+          "long_name": "Classification and quality flags"
+        }
+      },
+      {
+        "name": "c2rcc_flags_stdev",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "flag_coding_name": "c2rcc_flags",
+          "flag_descriptions": "The input spectrum to the atmospheric correction neural net was out of the scope of the training range and the inversion is likely to be wrong\tThe input spectrum to the atmospheric correction neural net out of training range\tOne of the inputs to the IOP retrieval neural net is out of training range\tHigh downwelling transmission is indicating cloudy conditions\tOne of the IOPs is out of range\tApig output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tAdet output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tAgelb output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tBpart output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tBwit output of the IOP retrieval neural net is at its maximum. This means that the true value is this value or higher.\tApig output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tAdet output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tAgelb output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tBpart output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tBwit output of the IOP retrieval neural net is at its minimum. This means that the true value is this value or lower.\tThe Rhow input spectrum to IOP neural net is probably not within the training range of the neural net, and the inversion is likely to be wrong.\tKd489 is out of range\tKdmin is out of range\tKdmin is at max\tKdmin is at max\tThe operators valid pixel expression has resolved to true",
+          "flag_masks": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32,
+            64,
+            128,
+            256,
+            512,
+            1024,
+            2048,
+            4096,
+            8192,
+            16384,
+            32768,
+            65536,
+            131072,
+            262144,
+            524288,
+            -2147483648
+          ],
+          "flag_meanings": "Rtosa_OOS Rtosa_OOR Rhow_OOR Cloud_risk Iop_OOR Apig_at_max Adet_at_max Agelb_at_max Bpart_at_max Bwit_at_max Apig_at_min Adet_at_min Agelb_at_min Bpart_at_min Bwit_at_min Rhow_OOS Kd489_OOR Kdmin_OOR Kd489_at_max Kdmin_at_max Valid_PE",
+          "long_name": "C2RCC quality flags"
+        }
+      },
+      {
+        "name": "conc_chl_stdev",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "color_table_blue_values": [
+            128,
+            255,
+            255,
+            255,
+            255,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "color_table_green_values": [
+            0,
+            0,
+            102,
+            204,
+            255,
+            128,
+            255,
+            95,
+            0,
+            0
+          ],
+          "color_table_red_values": [
+            0,
+            0,
+            51,
+            0,
+            0,
+            0,
+            255,
+            255,
+            215,
+            150
+          ],
+          "color_table_sample_values": [
+            0.0,
+            0.5,
+            1.0,
+            2.0,
+            3.0,
+            4.5,
+            13.0,
+            25.0,
+            30.0,
+            40.0
+          ],
+          "long_name": "Chlorophyll concentration",
+          "units": "mg m^-3",
+          "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        }
+      },
+      {
+        "name": "conc_tsm_stdev",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "long_name": "Total suspended matter dry weight concentration",
+          "units": "g m^-3",
+          "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        }
+      },
+      {
+        "name": "kd489_stdev",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "long_name": "Irradiance attenuation coefficient at 489 nm",
+          "units": "m^-1",
+          "valid_pixel_expression": "c2rcc_flags.Valid_PE"
+        }
+      },
+      {
+        "name": "quality_flags_stdev",
+        "dtype": "float64",
+        "dims": [
+          "time",
+          "lat",
+          "lon"
+        ],
+        "chunks": [
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            250,
+            250,
+            250,
+            250
+          ],
+          [
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250,
+            250
+          ]
+        ],
+        "shape": [
+          3,
+          1000,
+          2000
+        ],
+        "attrs": {
+          "flag_coding_name": "quality_flags",
+          "flag_descriptions": "",
+          "flag_masks": [
+            -2147483648,
+            1073741824,
+            536870912,
+            268435456,
+            134217728,
+            67108864,
+            33554432,
+            16777216,
+            8388608,
+            4194304,
+            2097152,
+            1048576,
+            524288,
+            262144,
+            131072,
+            65536,
+            32768,
+            16384,
+            8192,
+            4096,
+            2048,
+            1024,
+            512,
+            256,
+            128,
+            64,
+            32,
+            16,
+            8,
+            4,
+            2,
+            1
+          ],
+          "flag_meanings": "land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21",
+          "long_name": "Classification and quality flags"
+        }
+      }
+    ],
+    "xcube:coords": [
+      {
+        "name": "lat",
+        "dtype": "float64",
+        "dims": [
+          "lat"
+        ],
+        "chunks": null,
+        "shape": [
+          1000
+        ],
+        "attrs": {
+          "bounds": "lat_bnds",
+          "long_name": "latitude",
+          "standard_name": "latitude",
+          "units": "degrees_north"
+        }
+      },
+      {
+        "name": "lat_bnds",
+        "dtype": "float64",
+        "dims": [
+          "lat",
+          "bnds"
+        ],
+        "chunks": [
+          [
+            1000
+          ],
+          [
+            2
+          ]
+        ],
+        "shape": [
+          1000,
+          2
+        ],
+        "attrs": {
+          "long_name": "latitude",
+          "standard_name": "latitude",
+          "units": "degrees_north"
+        }
+      },
+      {
+        "name": "lon",
+        "dtype": "float64",
+        "dims": [
+          "lon"
+        ],
+        "chunks": null,
+        "shape": [
+          2000
+        ],
+        "attrs": {
+          "bounds": "lon_bnds",
+          "long_name": "longitude",
+          "standard_name": "longitude",
+          "units": "degrees_east"
+        }
+      },
+      {
+        "name": "lon_bnds",
+        "dtype": "float64",
+        "dims": [
+          "lon",
+          "bnds"
+        ],
+        "chunks": [
+          [
+            2000
+          ],
+          [
+            2
+          ]
+        ],
+        "shape": [
+          2000,
+          2
+        ],
+        "attrs": {
+          "long_name": "longitude",
+          "standard_name": "longitude",
+          "units": "degrees_east"
+        }
+      },
+      {
+        "name": "time",
+        "dtype": "datetime64[ns]",
+        "dims": [
+          "time"
+        ],
+        "chunks": null,
+        "shape": [
+          3
+        ],
+        "attrs": {
+          "bounds": "time_bnds",
+          "long_name": "time",
+          "standard_name": "time"
+        }
+      }
+    ],
+    "xcube:attrs": {
+      "Conventions": "CF-1.7"
+    },
+    "datetime": null,
+    "start_datetime": "2017-01-22T00:00:00Z",
+    "end_datetime": "2017-02-05T00:00:00Z"
+  },
+  "collection": "datacubes",
+  "links": [
+    {
+      "rel": "root",
+      "href": "http://localhost:8080/ogc",
+      "type": "application/json",
+      "title": "root of the OGC API and STAC catalog"
+    },
+    {
+      "rel": "self",
+      "href": "http://localhost:8080/ogc/collections/datacubes/items/demo-1w"
+    },
+    {
+      "rel": "collection",
+      "href": "http://localhost:8080/ogc/collections/datacubes"
+    },
+    {
+      "rel": "parent",
+      "href": "http://localhost:8080/ogc/collections/datacubes"
+    }
+  ],
+  "assets": {
+    "analytic": {
+      "title": "demo-1w data access",
+      "roles": [
+        "data"
+      ],
+      "type": "application/zarr",
+      "href": "http://localhost:8080/s3/datasets/demo-1w.zarr",
+      "xcube:analytic": {
+        "c2rcc_flags": {
+          "title": "c2rcc_flags data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/c2rcc_flags"
+        },
+        "conc_chl": {
+          "title": "conc_chl data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/conc_chl"
+        },
+        "conc_tsm": {
+          "title": "conc_tsm data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/conc_tsm"
+        },
+        "kd489": {
+          "title": "kd489 data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/kd489"
+        },
+        "quality_flags": {
+          "title": "quality_flags data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/quality_flags"
+        },
+        "c2rcc_flags_stdev": {
+          "title": "c2rcc_flags_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/c2rcc_flags_stdev"
+        },
+        "conc_chl_stdev": {
+          "title": "conc_chl_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/conc_chl_stdev"
+        },
+        "conc_tsm_stdev": {
+          "title": "conc_tsm_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/conc_tsm_stdev"
+        },
+        "kd489_stdev": {
+          "title": "kd489_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/kd489_stdev"
+        },
+        "quality_flags_stdev": {
+          "title": "quality_flags_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/datasets/demo-1w.zarr/quality_flags_stdev"
+        }
+      }
+    },
+    "visual": {
+      "title": "demo-1w visualisation",
+      "roles": [
+        "visual"
+      ],
+      "type": "image/png",
+      "href": "http://localhost:8080/tiles/demo-1w/<variable>/{z}/{y}/{x}?time=<time>",
+      "xcube:visual": {
+        "c2rcc_flags": {
+          "title": "c2rcc_flags visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/c2rcc_flags/{z}/{y}/{x}?time=<time>"
+        },
+        "conc_chl": {
+          "title": "conc_chl visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/conc_chl/{z}/{y}/{x}?time=<time>"
+        },
+        "conc_tsm": {
+          "title": "conc_tsm visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/conc_tsm/{z}/{y}/{x}?time=<time>"
+        },
+        "kd489": {
+          "title": "kd489 visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/kd489/{z}/{y}/{x}?time=<time>"
+        },
+        "quality_flags": {
+          "title": "quality_flags visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/quality_flags/{z}/{y}/{x}?time=<time>"
+        },
+        "c2rcc_flags_stdev": {
+          "title": "c2rcc_flags_stdev visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/c2rcc_flags_stdev/{z}/{y}/{x}?time=<time>"
+        },
+        "conc_chl_stdev": {
+          "title": "conc_chl_stdev visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/conc_chl_stdev/{z}/{y}/{x}?time=<time>"
+        },
+        "conc_tsm_stdev": {
+          "title": "conc_tsm_stdev visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/conc_tsm_stdev/{z}/{y}/{x}?time=<time>"
+        },
+        "kd489_stdev": {
+          "title": "kd489_stdev visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/kd489_stdev/{z}/{y}/{x}?time=<time>"
+        },
+        "quality_flags_stdev": {
+          "title": "quality_flags_stdev visualisation",
+          "roles": [
+            "visual"
+          ],
+          "type": "image/png",
+          "href": "http://localhost:8080/tiles/demo-1w/quality_flags_stdev/{z}/{y}/{x}?time=<time>"
+        }
+      }
+    },
+    "thumbnail": {
+      "title": "demo-1w thumbnail",
+      "roles": [
+        "thumbnail"
+      ],
+      "type": "image/png",
+      "href": "http://localhost:8080/tiles/demo-1w/c2rcc_flags/0/0/0?time=2017-01-22T00:00:00.000000000"
+    }
+  }
+}

@@ -941,25 +941,25 @@
     "start_datetime": "2017-01-22T00:00:00Z",
     "end_datetime": "2017-02-05T00:00:00Z"
   },
-  "collection": "datacubes",
+  "collection": "demo-1w",
   "links": [
     {
       "rel": "root",
-      "href": "http://localhost:8080/catalog",
+      "href": "http://localhost:8080/ogc",
       "type": "application/json",
-      "title": "root of the STAC catalog"
+      "title": "root of the OGC API and STAC catalog"
     },
     {
       "rel": "self",
-      "href": "http://localhost:8080/catalog/collections/datacubes/items/demo-1w"
+      "href": "http://localhost:8080/ogc/collections/demo-1w/items/datacube"
     },
     {
       "rel": "collection",
-      "href": "http://localhost:8080/catalog/collections/datacubes"
+      "href": "http://localhost:8080/ogc/collections/demo-1w"
     },
     {
       "rel": "parent",
-      "href": "http://localhost:8080/catalog/collections/datacubes"
+      "href": "http://localhost:8080/ogc/collections/demo-1w"
     }
   ],
   "assets": {

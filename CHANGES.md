@@ -2,9 +2,13 @@
 
 ### Enhancements
 
-* Added a basic implementation of the draft version of OGC API - Coverages
+* Added a basic implementation of the draft version of OGC API - Coverages.
+* Adapted the STAC implementation to additionally offer datasets as
+  individual collections for better integration with OGC API - Coverages.
 
 ### Fixes
+
+* Fixed incorrect additional variable data in STAC datacube properties.
 
 ### Other changes
 * `update_dataset_attrs` can now also handle datasets with CRS other than 
