@@ -2,10 +2,14 @@
 
 ### Enhancements
 
-* Added a basic implementation of the draft version of OGC API - Coverages
+* Added a basic implementation of the draft version of OGC API - Coverages.
+* Adapted the STAC implementation to additionally offer datasets as
+  individual collections for better integration with OGC API - Coverages.
 
 ### Fixes
 * Resolved the issue for CRS84 error due to latest version of gdal (#869)
+
+* Fixed incorrect additional variable data in STAC datacube properties.
 
 ### Other changes
 * `update_dataset_attrs` can now also handle datasets with CRS other than 
@@ -13,6 +17,7 @@
   [ESIP Attribute Convention for Data Discovery](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended). 
 * removed deprecated module xcube edit, which has been deprecated since 
   version 0.13.0
+* Update "Development process" section of developer guide.
 
 ## Changes in 1.2.0
 
