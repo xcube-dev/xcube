@@ -66,7 +66,7 @@ GEOGCS["WGS 84",
 """
 
 CRS84 = 'OGC:CRS84'
-CRS_CRS84 = pyproj.crs.CRS.from_string('OGC:CRS84')
+CRS_CRS84 = pyproj.crs.CRS.from_string(CRS84)
 
 FORMAT_NAME_ZARR = "zarr"
 FORMAT_NAME_NETCDF4 = "netcdf4"
