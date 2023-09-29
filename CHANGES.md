@@ -7,6 +7,7 @@
   individual collections for better integration with OGC API - Coverages.
 
 ### Fixes
+* Resolved the issue for CRS84 error due to latest version of gdal (#869)
 
 * Fixed incorrect additional variable data in STAC datacube properties.
 

@@ -102,6 +102,7 @@ class CoveragesControllersTest(unittest.TestCase):
                 ],
                 list(ds.variables),
             )
+            ds.close()
 
     def test_get_crs_from_dataset(self):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})

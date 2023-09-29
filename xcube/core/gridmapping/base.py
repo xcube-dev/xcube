@@ -39,6 +39,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
+from xcube.constants import CRS_CRS84
 from .helpers import AffineTransformMatrix
 from .helpers import Number
 from .helpers import _assert_valid_xy_coords
@@ -52,8 +53,6 @@ from .helpers import scale_xy_res_and_size
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)
 
-# WGS84, axis order: lon, lat
-CRS_CRS84 = pyproj.crs.CRS.from_string("CRS84")
 
 # Default tolerance for all operations that
 # accept a key-word argument "tolerance":
