@@ -35,6 +35,7 @@ from xcube.core.tilingscheme import TilingScheme
 from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
 from xcube.webapi.common.xml import Document
 from xcube.webapi.common.xml import Element
+from xcube.constants import CRS_CRS84
 from .context import WmtsContext
 
 WMTS_VERSION = '1.0.0'
@@ -52,7 +53,6 @@ OGC_WEB_MERCATOR_URN = 'urn:ogc:def:crs:EPSG::3857'
 OGC_WEB_MERCATOR_WKSS_URN = 'urn:ogc:def:wkss:OGC:1.0:GoogleMapsCompatible'
 
 _STD_PIXEL_SIZE_IN_METERS = 0.28e-3
-_CRS84 = pyproj.CRS.from_string('OGC:CRS84')
 
 # '/tile/%s/%s/%s/' is the pattern for
 # '/tile/{ds_name}/{var_name}/{tms_id}/'
@@ -621,7 +621,7 @@ def get_crs84_bbox(grid_mapping: GridMapping) \
         -> Tuple[float, float, float, float]:
     if grid_mapping.crs.is_geographic:
         return grid_mapping.xy_bbox
-    t = pyproj.Transformer.from_crs(grid_mapping.crs, _CRS84,
+    t = pyproj.Transformer.from_crs(grid_mapping.crs, CRS_CRS84,
                                     always_xy=True)
     x1, y1, x2, y2 = grid_mapping.xy_bbox
     # TODO (forman): Fixme, this will be wrong

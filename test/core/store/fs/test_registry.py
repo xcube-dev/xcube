@@ -26,10 +26,10 @@ from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
+from xcube.constants import CRS84
 
 ROOT_DIR = 'xcube'
 DATA_PATH = 'testing/data'
-_CRS84 = 'OGC:CRS84'
 
 
 def new_cube_data():
@@ -48,7 +48,7 @@ def new_cube_data():
                     height=height,
                     x_name='x',
                     y_name='y',
-                    crs=_CRS84,
+                    crs=CRS84,
                     crs_name='spatial_ref',
                     time_periods=time_periods,
                     variables=dict(var_a=var_a,

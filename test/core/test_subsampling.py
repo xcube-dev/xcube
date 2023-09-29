@@ -28,6 +28,7 @@ from xcube.core.new import new_cube
 from xcube.core.subsampling import find_agg_method
 from xcube.core.subsampling import get_dataset_agg_methods
 from xcube.core.subsampling import subsample_dataset
+from xcube.constants import CRS84
 
 
 class SubsampleDatasetTest(unittest.TestCase):
@@ -49,7 +50,7 @@ class SubsampleDatasetTest(unittest.TestCase):
                                 x_res=1.,
                                 y_res=1.,
                                 time_periods=2,
-                                crs='OGC:CRS84',
+                                crs=CRS84,
                                 crs_name='spatial_ref',
                                 variables=dict(var_1=test_data_1,
                                                var_2=test_data_2))

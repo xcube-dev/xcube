@@ -1,11 +1,10 @@
 import unittest
 
+from xcube.constants import CRS84
 from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.tilingscheme import TilingScheme
 from .helpers import get_test_dataset
-
-_CRS84 = 'OGC:CRS84'
 
 
 class BaseMultiLevelDatasetTest(unittest.TestCase):
@@ -84,6 +83,6 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         ds = get_test_dataset()
         ml_ds = BaseMultiLevelDataset(ds)
         tiling_scheme = ml_ds.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
-        self.assertEqual(_CRS84, tiling_scheme.crs_name)
+        self.assertEqual(CRS84, tiling_scheme.crs_name)
         self.assertEqual(0, tiling_scheme.min_level)
         self.assertEqual(2, tiling_scheme.max_level)

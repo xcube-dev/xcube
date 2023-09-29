@@ -39,6 +39,7 @@ from xcube.core.store import DataStoreError
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.server.api import ApiError
+from xcube.constants import CRS_CRS84
 from .authutil import READ_ALL_DATASETS_SCOPE
 from .authutil import READ_ALL_VARIABLES_SCOPE
 from .authutil import assert_scopes
@@ -47,8 +48,6 @@ from .context import DatasetConfig
 from .context import DatasetsContext
 from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
-
-_CRS84 = pyproj.CRS.from_string('OGC:CRS84')
 
 
 def find_dataset_places(ctx: DatasetsContext,
@@ -196,7 +195,7 @@ def get_dataset(ctx: DatasetsContext,
     dataset_dict = dict(id=ds_id, title=ds_title)
 
     crs = ml_ds.grid_mapping.crs
-    transformer = pyproj.Transformer.from_crs(crs, _CRS84, always_xy=True)
+    transformer = pyproj.Transformer.from_crs(crs, CRS_CRS84, always_xy=True)
     dataset_bounds = get_dataset_bounds(ds)
 
     ds_bbox = dataset_config.get('BoundingBox')
