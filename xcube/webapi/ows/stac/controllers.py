@@ -477,6 +477,13 @@ def _get_single_dataset_collection(
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                         f'{dataset_id}/items',
                 'title': 'feature collection of data cube items'
+            },
+            {
+                'rel': 'item',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/items/{DEFAULT_FEATURE_ID}',
+                'type': 'application/geo+json',
+                'title': f'Feature for the dataset "{dataset_id}"'
             }
         ],
         'providers': [],
@@ -529,7 +536,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
         "stac_version": STAC_VERSION,
         "stac_extensions": STAC_EXTENSIONS,
         "type": "Feature",
-        "id": dataset_id,
+        "id": feature_id,
         "bbox": bbox.as_bbox(),
         "geometry": bbox.as_geometry(),
         "properties": _get_cube_properties(ctx, dataset_id),
