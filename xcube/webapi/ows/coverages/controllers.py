@@ -19,8 +19,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import os
+import re
 import tempfile
-from typing import Mapping, Sequence, Optional
+from typing import Mapping, Sequence, Optional, Any
 
 import numpy as np
 import pyproj
@@ -77,6 +78,8 @@ def get_coverage_data(
              if the requested output format is not supported
     """
     ds = get_dataset(ctx, collection_id)
+    if 'subset' in query:
+        ds = ds.sel(indexers=_subset_to_indexers(query['subset'][0], ds))
     if 'bbox' in query:
         bbox = list(map(float, query['bbox'][0].split(',')))
         ds = ds.sel(lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3]))
@@ -97,6 +100,25 @@ def get_coverage_data(
     if content_type in ['application/netcdf', 'application/x-netcdf']:
         return dataset_to_netcdf(ds)
     return None
+
+
+def _subset_to_indexers(
+    subset_spec: str, ds: xr.Dataset
+) -> dict[str, Any]:
+    result = {}
+    for part in subset_spec.split(','):
+        axis, low, high = re.match(
+            '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
+        ).groups()
+        if high is None:
+            result[axis] = low
+        else:
+            if (low < high) != (ds[axis][0] < ds[axis][-1]):
+                low, high = high, low
+            result[axis] = slice(
+                None if low == '*' else low, None if high == '*' else high
+            )
+    return result
 
 
 def dataset_to_tiff(ds: xr.Dataset) -> bytes:
@@ -234,7 +256,9 @@ def get_crs_from_dataset(ds: xr.Dataset) -> str:
     return 'EPSG:4326'
 
 
-def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str) -> dict[str, list]:
+def get_coverage_rangetype(
+    ctx: DatasetsContext, collection_id: str
+) -> dict[str, list]:
     """
     Return the range type of a dataset
 
