@@ -268,7 +268,7 @@ def get_datasets_collection_items(
     """
     _assert_valid_collection(ctx, collection_id)
     all_configs = ctx.get_dataset_configs()
-    configs = all_configs[cursor : (cursor + limit)]
+    configs = all_configs[cursor: (cursor + limit)]
     features = []
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
@@ -419,11 +419,15 @@ def _get_datasets_collection(ctx: DatasetsContext,
                 "href": f"{base_url}{PATH_PREFIX}/collections/{c_id}/items",
                 "title": "feature collection of data cube items"
             }
-            # {
-            #     "rel": "license",
-            #     "href": ctx.get_url("TODO"),
-            #     "title": "TODO"
-            # }
+        ] + [
+            {
+                'rel': 'item',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{DEFAULT_COLLECTION_ID}/items/{dataset_id}',
+                'type': 'application/geo+json',
+                'title': f'Feature for the dataset "{dataset_id}"'
+            } for dataset_id in
+            map(lambda c: c['Identifier'], ctx.get_dataset_configs())
         ]
     }
 
