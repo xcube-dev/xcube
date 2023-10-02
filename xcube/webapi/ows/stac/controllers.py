@@ -488,6 +488,13 @@ def _get_single_dataset_collection(
                         f'{dataset_id}/items/{DEFAULT_FEATURE_ID}',
                 'type': 'application/geo+json',
                 'title': f'Feature for the dataset "{dataset_id}"'
+            },
+            {
+                'rel': 'coverage',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/coverage',
+                'title': f'Coverage for the dataset "{dataset_id}" using'
+                         f'OGC API – Coverages'
             }
         ],
         'providers': [],
