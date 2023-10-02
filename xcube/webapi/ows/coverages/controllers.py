@@ -27,6 +27,8 @@ import numpy as np
 import pyproj
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
+from xcube.core.resampling import resample_in_space
 from xcube.webapi.datasets.context import DatasetsContext
 
 
@@ -95,6 +97,11 @@ def get_coverage_data(
         data_vars = set(ds.data_vars)
         vars_to_drop = list(data_vars - vars_to_keep)
         ds = ds.drop_vars(vars_to_drop)
+    if 'crs' in query:
+        target_crs = query['crs'][0]
+        source_gm = GridMapping.from_dataset(ds)
+        target_gm = source_gm.transform(target_crs).to_regular()
+        ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
     if content_type in ['image/tiff', 'application/x-geotiff']:
         return dataset_to_tiff(ds)
     if content_type in ['application/netcdf', 'application/x-netcdf']:
@@ -234,7 +241,9 @@ def _get_units(ds: xr.Dataset, dim: str):
     if hasattr(coord, 'attrs') and 'units' in coord.attrs:
         return coord.attrs['units']
     else:
-        return 'degrees'
+        # TODO: improve this guess -- can we match dataset dimensions to
+        #  projection axes?
+        return pyproj.crs.CRS(get_crs_from_dataset(ds)).axis_info[0].unit_name
 
 
 def get_crs_from_dataset(ds: xr.Dataset) -> str:
