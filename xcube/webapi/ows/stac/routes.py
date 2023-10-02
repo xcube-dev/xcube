@@ -38,7 +38,8 @@ from .config import (
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "")
+@api.route(PATH_PREFIX)
+@api.route(PATH_PREFIX + "/")
 class CatalogRootHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogRoot",
                    summary="Get the STAC catalog's root.")
