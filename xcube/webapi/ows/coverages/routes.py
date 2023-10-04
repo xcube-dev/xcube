@@ -152,7 +152,7 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
 @api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/rangeset/')
 class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
     """
-    Handle rangeset endpoint with a "not supported" response
+    Handle rangeset endpoint with a "not allowed" response
 
     This endpoint has been deprecated
     (see https://github.com/m-mohr/geodatacube-api/pull/1 ),
@@ -165,7 +165,8 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
         summary='OGC API - Coverages - rangeset',
     )
     async def get(self, collectionId: str):
-        self.response.set_status(501)
+        self.response.set_status(405)
+        self.response.set_header('Allow', '')  # no methods supported
         return self.response.finish(
             'The rangeset endpoint has been deprecated and is not supported.'
         )
