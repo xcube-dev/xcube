@@ -21,7 +21,7 @@
 import os
 import re
 import tempfile
-from typing import Mapping, Sequence, Optional, Any
+from typing import Mapping, Sequence, Optional, Any, Literal
 
 import numpy as np
 import pyproj
@@ -107,17 +107,20 @@ def get_coverage_data(
         target_gm = source_gm.transform(target_crs).to_regular()
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
 
-    # We don't
-    if content_type in ['image/tiff', 'application/x-geotiff']:
-        return dataset_to_tiff(ds)
-    if content_type in ['application/netcdf', 'application/x-netcdf']:
+    if content_type in {'geotiff', 'image/tiff', 'application/x-geotiff'}:
+        return dataset_to_image(ds, 'tiff')
+    elif content_type in {'png', 'image/png'}:
+        return dataset_to_image(ds, 'png')
+    elif content_type in {
+        'netcdf',
+        'application/netcdf',
+        'application/x-netcdf',
+    }:
         return dataset_to_netcdf(ds)
     return None
 
 
-def _subset_to_indexers(
-    subset_spec: str, ds: xr.Dataset
-) -> dict[str, Any]:
+def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> dict[str, Any]:
     result = {}
     for part in subset_spec.split(','):
         axis, low, high = re.match(
@@ -134,15 +137,18 @@ def _subset_to_indexers(
     return result
 
 
-def dataset_to_tiff(ds: xr.Dataset) -> bytes:
+def dataset_to_image(
+    ds: xr.Dataset, image_format: Literal['png', 'tiff'] = 'png'
+) -> bytes:
     """
-    Return an in-memory TIFF representing a dataset
+    Return an in-memory bitmap (TIFF or PNG) representing a dataset
 
     :param ds: a dataset
+    :param image_format: image format to generate ("png" or "tiff")
     :return: TIFF-formatted bytes representing the dataset
     """
     with tempfile.TemporaryDirectory() as tempdir:
-        path = os.path.join(tempdir, 'out.tiff')
+        path = os.path.join(tempdir, 'out.' + image_format)
         ds.rio.to_raster(path)
         with open(path, 'rb') as fh:
             data = fh.read()

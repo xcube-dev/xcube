@@ -48,6 +48,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     data (as opposed to metadata), as TIFF or NetCDF. It can also provide
     representations in HTML and JSON.
     """
+
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesCoverage',
@@ -55,13 +56,23 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     )
     async def get(self, collectionId: str):
         ds_ctx = self.ctx.datasets_ctx
+        # The single-component type specifiers aren't RFC2045-compliant,
+        #  but the OGC API - Coverages draft allows them in the f parameter.
+
         available_types = [
+            'png',
+            'image/png',
             'image/tiff',
             'application/x-geotiff',
-            'text/html',
-            'application/json',
+            'geotiff',
             'application/netcdf',
             'application/x-netcdf',
+            'netcdf',
+            'html',
+            'text/html',
+            'json',
+            'application/json',
+            # TODO: support covjson
         ]
         content_type = negotiate_content_type(self.request, available_types)
         if content_type is None:
@@ -71,8 +82,10 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             )
         elif content_type == 'text/html':
             result = (
-                '<html><title>Collection</title><body><pre>\n' +
-                json.dumps(get_coverage_as_json(ds_ctx, collectionId), indent=2)
+                '<html><title>Collection</title><body><pre>\n'
+                + json.dumps(
+                    get_coverage_as_json(ds_ctx, collectionId), indent=2
+                )
                 + '\n</pre></body></html>'
             )
         elif content_type == 'application/json':
@@ -94,6 +107,7 @@ class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
     The domain set is the set of input parameters (e.g. geographical extent,
     time span) for which the coverage is defined.
     """
+
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesDomainSet',
@@ -117,6 +131,7 @@ class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
     of this coverage. For a data cube, these would typically correspond to
     the types of the variables or bands.
     """
+
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesRangeType',
@@ -137,6 +152,7 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
 
     The metadata is taken from the source dataset's attributes
     """
+
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesMetadata',
@@ -159,6 +175,7 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
     but we handle it to make clear that its non-implementation is a deliberate
     decision.
     """
+
     # noinspection PyPep8Naming
     @api.operation(
         operation_id='coveragesRangeset',
