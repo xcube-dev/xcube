@@ -79,6 +79,10 @@ def get_coverage_data(
     :return: the coverage as bytes in the requested output format, or None
              if the requested output format is not supported
     """
+
+    # TODO: support scale-factor, scale-axes, scale-size, subset-crs,
+    #  and bbox-crs
+
     ds = get_dataset(ctx, collection_id)
     if 'subset' in query:
         ds = ds.sel(indexers=_subset_to_indexers(query['subset'][0], ds))
@@ -102,6 +106,8 @@ def get_coverage_data(
         source_gm = GridMapping.from_dataset(ds)
         target_gm = source_gm.transform(target_crs).to_regular()
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
+
+    # We don't
     if content_type in ['image/tiff', 'application/x-geotiff']:
         return dataset_to_tiff(ds)
     if content_type in ['application/netcdf', 'application/x-netcdf']:
