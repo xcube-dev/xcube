@@ -261,10 +261,16 @@ def _get_units(ds: xr.Dataset, dim: str):
     coord = ds.coords[dim]
     if hasattr(coord, 'attrs') and 'units' in coord.attrs:
         return coord.attrs['units']
-    else:
-        # TODO: improve this guess -- can we match dataset dimensions to
-        #  projection axes?
-        return pyproj.crs.CRS(get_crs_from_dataset(ds)).axis_info[0].unit_name
+    if np.issubdtype(coord, np.datetime64):
+        return np.datetime_data(coord)[0]
+    if dim == 'time':
+        # Pure guesswork, but without an attribute or a datetime64 we can't
+        # do much better.
+        return 's'
+    # TODO: improve this guess -- can we match dataset dimensions to
+    #  projection axes?
+    # Fallback for non-time axes: use the unit of the first CRS axis
+    return pyproj.crs.CRS(get_crs_from_dataset(ds)).axis_info[0].unit_name
 
 
 def get_crs_from_dataset(ds: xr.Dataset) -> str:
