@@ -21,7 +21,7 @@
 import os
 import re
 import tempfile
-from typing import Mapping, Sequence, Optional, Any, Literal
+from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple
 
 import numpy as np
 import pyproj
@@ -85,7 +85,11 @@ def get_coverage_data(
 
     ds = get_dataset(ctx, collection_id)
     if 'subset' in query:
-        ds = ds.sel(indexers=_subset_to_indexers(query['subset'][0], ds))
+        indexers = _subset_to_indexers(query['subset'][0], ds)
+        if indexers.indices:
+            ds = ds.sel(indexers=indexers.indices, method='nearest')
+        if indexers.slices:
+            ds = ds.sel(indexers=indexers.slices)
     if 'bbox' in query:
         bbox = list(map(float, query['bbox'][0].split(',')))
         ds = ds.sel(lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3]))
@@ -120,21 +124,26 @@ def get_coverage_data(
     return None
 
 
-def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> dict[str, Any]:
-    result = {}
+_IndexerTuple = NamedTuple(
+    'Indexers', [('indices', dict[str, Any]), ('slices', dict[str, slice])]
+)
+
+
+def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
+    indices, slices = {}, {}
     for part in subset_spec.split(','):
         axis, low, high = re.match(
             '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
         ).groups()
         if high is None:
-            result[axis] = low
+            indices[axis] = low
         else:
             if (low < high) != (ds[axis][0] < ds[axis][-1]):
                 low, high = high, low
-            result[axis] = slice(
+            slices[axis] = slice(
                 None if low == '*' else low, None if high == '*' else high
             )
-    return result
+    return _IndexerTuple(indices, slices)
 
 
 def dataset_to_image(
