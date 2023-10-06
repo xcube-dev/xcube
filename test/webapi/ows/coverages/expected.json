@@ -25,7 +25,7 @@
         "lowerBound": 0,
         "upperBound": 1,
         "resolution": 0.5,
-        "uomLabel": "degrees"
+        "uomLabel": "degree"
       },
       {
         "type": "RegularAxis",
@@ -41,7 +41,7 @@
         "lowerBound": 1484561361834255872,
         "upperBound": 1485773193836892416,
         "resolution": 242366400527308.8,
-        "uomLabel": "degrees"
+        "uomLabel": "ns"
       }
     ]
   },
@@ -71,7 +71,7 @@
           "lowerBound": 0,
           "upperBound": 1,
           "resolution": 0.5,
-          "uomLabel": "degrees"
+          "uomLabel": "degree"
         },
         {
           "type": "RegularAxis",
@@ -87,7 +87,7 @@
           "lowerBound": 1484561361834255872,
           "upperBound": 1485773193836892416,
           "resolution": 242366400527308.8,
-          "uomLabel": "degrees"
+          "uomLabel": "ns"
         }
       ],
       "gridLimits": {

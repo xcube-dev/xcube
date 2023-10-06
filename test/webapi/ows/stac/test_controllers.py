@@ -29,8 +29,10 @@ import xcube
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
-from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_DESCRIPTION, \
-    DEFAULT_FEATURE_ID
+from xcube.webapi.ows.stac.config import (
+    DEFAULT_CATALOG_DESCRIPTION,
+    DEFAULT_FEATURE_ID,
+)
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_ID
 from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_TITLE
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_DESCRIPTION
@@ -73,12 +75,14 @@ EXPECTED_CONFORMANCE = {
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/cisjson',
     'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30'
+    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
 }
 
-EXPECTED_ENDPOINTS = [
-    {'methods': methods, 'path': path}
-    for methods, path in [
+EXPECTED_ENDPOINTS = functools.reduce(
+    lambda endpoint_list, ep: endpoint_list + [
+        {'methods': ep[0], 'path': ep[1] + suffix} for suffix in ('/', '')
+    ],
+    [
         (['get'], '/ogc/collections/{collectionId}/coverage'),
         (['get'], '/ogc/collections/{collectionId}/coverage/domainset'),
         (['get'], '/ogc/collections/{collectionId}/coverage/rangetype'),
@@ -92,8 +96,9 @@ EXPECTED_ENDPOINTS = [
         (['get'], '/ogc/collections/{collectionId}/items/{featureId}'),
         (['get', 'post'], '/ogc/search'),
         (['get'], '/ogc/collections/{collectionId}/queryables'),
-    ]
-]
+    ],
+    []
+)
 
 EXPECTED_DATASETS_COLLECTION = {
     'description': DEFAULT_COLLECTION_DESCRIPTION,
@@ -113,7 +118,7 @@ EXPECTED_DATASETS_COLLECTION = {
         },
         {
             'href': f'{BASE_URL}{PATH_PREFIX}/collections/'
-                    f'{DEFAULT_COLLECTION_ID}',
+            f'{DEFAULT_COLLECTION_ID}',
             'rel': 'self',
             'title': 'this collection',
             'type': 'application/json',
@@ -125,10 +130,19 @@ EXPECTED_DATASETS_COLLECTION = {
         },
         {
             'href': f'{BASE_URL}{PATH_PREFIX}/collections/'
-                    f'{DEFAULT_COLLECTION_ID}/items',
+            f'{DEFAULT_COLLECTION_ID}/items',
             'rel': 'items',
             'title': 'feature collection of data cube items',
         },
+    ]
+    + [
+        {
+            'href': f'http://localhost:8080/ogc/collections/datacubes/items/{dsid}',
+            'rel': 'item',
+            'title': f'Feature for the dataset "{dsid}"',
+            'type': 'application/geo+json',
+        }
+        for dsid in ['demo', 'demo-1w']
     ],
     'providers': [],
     'stac_version': STAC_VERSION,
@@ -142,14 +156,13 @@ EXPECTED_DATASETS_COLLECTION = {
 
 
 class StacControllersTest(unittest.TestCase):
-
     @functools.lru_cache
     def read_json(self, filename):
         with open(Path(__file__).parent / filename, mode='r') as fp:
             content = json.load(fp)
         return content
 
-    # Commented out to keep coverage checkers happy.
+    # # Commented out to keep coverage checkers happy.
     # @staticmethod
     # def write_json(content, filename):
     #     """Convenience function for updating saved expected JSON
@@ -175,8 +188,8 @@ class StacControllersTest(unittest.TestCase):
         result = get_collection_item(
             get_stac_ctx().datasets_ctx,
             BASE_URL,
-            "demo-1w",
-            DEFAULT_FEATURE_ID
+            'demo-1w',
+            DEFAULT_FEATURE_ID,
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(self.read_json('stac-single-item.json'), result)
@@ -185,11 +198,10 @@ class StacControllersTest(unittest.TestCase):
         self.assertRaises(
             ApiError.NotFound,
             get_collection_item,
-                get_stac_ctx().datasets_ctx,
-                BASE_URL,
-                'demo-1w',
-                'this-feature-does-not-exist'
-
+            get_stac_ctx().datasets_ctx,
+            BASE_URL,
+            'demo-1w',
+            'this-feature-does-not-exist',
         )
 
     def test_get_datasets_collection_items(self):
@@ -219,26 +231,20 @@ class StacControllersTest(unittest.TestCase):
 
     def test_get_single_collection_items(self):
         result = get_single_collection_items(
-            get_stac_ctx().datasets_ctx,
-            BASE_URL,
-            "demo-1w",
+            get_stac_ctx().datasets_ctx, BASE_URL, "demo-1w"
         )
         expected_item = self.read_json('stac-single-item.json')
         self.assertEqual('FeatureCollection', result['type'])
         self.assertEqual(
-            {'root', 'self'},
-            set([link['rel'] for link in result['links']])
+            {'root', 'self'}, set([link['rel'] for link in result['links']])
         )
         self.assertLess(
             datetime.datetime.now().astimezone()
             - datetime.datetime.fromisoformat(result['timeStamp']),
-            datetime.timedelta(seconds=10)
+            datetime.timedelta(seconds=10),
         )
         for key in 'bbox', 'geometry', 'properties', 'assets':
-            self.assertEqual(
-                expected_item[key],
-                result['features'][0][key]
-            )
+            self.assertEqual(expected_item[key], result['features'][0][key])
 
     def test_get_datasets_collection(self):
         result = get_collection(
@@ -247,9 +253,7 @@ class StacControllersTest(unittest.TestCase):
         self.assertEqual(EXPECTED_DATASETS_COLLECTION, result)
 
     def test_get_single_collection(self):
-        result = get_collection(
-            get_stac_ctx().datasets_ctx, BASE_URL, 'demo'
-        )
+        result = get_collection(get_stac_ctx().datasets_ctx, BASE_URL, 'demo')
         self.assertEqual(self.read_json('demo-collection.json'), result)
 
     def test_get_collections(self):
@@ -269,12 +273,14 @@ class StacControllersTest(unittest.TestCase):
                 },
                 {'href': f'{BASE_URL}{PATH_PREFIX}', 'rel': 'parent'},
             ],
-            result['links']
+            result['links'],
         )
-        self.assertEqual(EXPECTED_DATASETS_COLLECTION, result['collections'][0])
+        self.assertEqual(
+            EXPECTED_DATASETS_COLLECTION, result['collections'][0]
+        )
         self.assertEqual(
             ['datacubes', 'demo', 'demo-1w'],
-            [collection['id'] for collection in result['collections']]
+            [collection['id'] for collection in result['collections']],
         )
 
     def test_get_conformance(self):
@@ -347,7 +353,7 @@ class StacControllersTest(unittest.TestCase):
                 'type': 'Catalog',
                 'api_version': '1.0.0',
                 'backend_version': xcube.__version__,
-                'gdc_version': '1.0.0-beta.1',
+                'gdc_version': '1.0.0-beta',
                 'endpoints': EXPECTED_ENDPOINTS,
             },
             result,
@@ -358,11 +364,14 @@ class StacControllersTest(unittest.TestCase):
             get_stac_ctx().datasets_ctx, DEFAULT_COLLECTION_ID
         )
         self.assertEqual(
-            {'additionalProperties': False,
-             'properties': {},
-             'title': 'datacubes',
-             'type': 'object'},
-            result)
+            {
+                'additionalProperties': False,
+                'properties': {},
+                'title': 'datacubes',
+                'type': 'object',
+            },
+            result,
+        )
 
     def test_get_datacube_dimensions(self):
         dim_name = 'a_new_dimension'
@@ -399,8 +408,6 @@ class StacControllersTest(unittest.TestCase):
                     '2010-01-05T12:00:00Z',
                 ],
             },
-            dim_name: {
-                'type': 'unknown', 'range': [0, 0], 'values': [0]
-            }
+            dim_name: {'type': 'unknown', 'range': [0, 0], 'values': [0]},
         }
         self.assertEqual(expected, dims)

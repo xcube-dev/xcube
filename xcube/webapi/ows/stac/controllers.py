@@ -493,7 +493,7 @@ def _get_single_dataset_collection(
                 'rel': 'coverage',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                         f'{dataset_id}/coverage',
-                'title': f'Coverage for the dataset "{dataset_id}" using'
+                'title': f'Coverage for the dataset "{dataset_id}" using '
                          f'OGC API – Coverages'
             }
         ],

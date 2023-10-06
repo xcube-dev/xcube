@@ -4,7 +4,7 @@
     "https://stac-extensions.github.io/datacube/v2.1.0/schema.json"
   ],
   "type": "Feature",
-  "id": "demo-1w",
+  "id": "datacube",
   "bbox": [
     0.0,
     50.0,
