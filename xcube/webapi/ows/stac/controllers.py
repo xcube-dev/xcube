@@ -96,7 +96,7 @@ def get_root(ctx: DatasetsContext, base_url: str):
         "description": c_description,
         "api_version": "1.0.0",
         "backend_version": xcube.__version__,
-        "gdc_version": "1.0.0-beta.1",
+        "gdc_version": "1.0.0-beta",
         "endpoints": list(itertools.chain.from_iterable(endpoint_lists)),
         "links": [
             _root_link(base_url),
