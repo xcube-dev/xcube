@@ -22,7 +22,7 @@ import json
 import re
 from typing import Collection, Optional
 import fnmatch
-from xcube.server.api import ApiHandler, ApiRequest
+from xcube.server.api import ApiHandler, ApiRequest, ApiError
 from .api import api
 from .context import CoveragesContext
 from .controllers import (
@@ -76,8 +76,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
         ]
         content_type = negotiate_content_type(self.request, available_types)
         if content_type is None:
-            self.response.set_status(415)
-            return await self.response.finish(
+            raise ApiError.UnsupportedMediaType(
                 f'Available media types: {", ".join(available_types)}\n'
             )
         elif content_type == 'text/html':

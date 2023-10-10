@@ -29,6 +29,7 @@ import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import resample_in_space
+from xcube.server.api import ApiError
 from xcube.webapi.datasets.context import DatasetsContext
 
 
@@ -94,9 +95,9 @@ def get_coverage_data(
         bbox = list(map(float, query['bbox'][0].split(',')))
         ds = ds.sel(lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3]))
     if 'datetime' in query:
-        timespec = query['datetime']
+        timespec = query['datetime'][0]
         if '/' in timespec:
-            timefrom, timeto = timespec[0].split('/')
+            timefrom, timeto = timespec.split('/')
             ds = ds.sel(time=slice(timefrom, timeto))
         else:
             ds = ds.sel(time=timespec, method='nearest').squeeze()
@@ -111,17 +112,27 @@ def get_coverage_data(
         target_gm = source_gm.transform(target_crs).to_regular()
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
 
-    if content_type in {'geotiff', 'image/tiff', 'application/x-geotiff'}:
+    media_types = dict(
+        tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
+        png={'png', 'image/png'},
+        netcdf={'netcdf', 'application/netcdf', 'application/x-netcdf'},
+    )
+    if content_type in media_types['tiff']:
         return dataset_to_image(ds, 'tiff')
-    elif content_type in {'png', 'image/png'}:
+    elif content_type in media_types['png']:
         return dataset_to_image(ds, 'png')
-    elif content_type in {
-        'netcdf',
-        'application/netcdf',
-        'application/x-netcdf',
-    }:
+    elif content_type in media_types['netcdf']:
         return dataset_to_netcdf(ds)
-    return None
+    else:
+        # It's expected that the caller (server API handler) will catch
+        # unhandled types, but we may as well do the right thing if any
+        # do slip through.
+        raise ApiError.UnsupportedMediaType(
+            'Available media types: '
+            + ', '.join(
+                [type_ for value in media_types.values() for type_ in value]
+            )
+        )
 
 
 _IndexerTuple = NamedTuple(
@@ -156,6 +167,13 @@ def dataset_to_image(
     :param image_format: image format to generate ("png" or "tiff")
     :return: TIFF-formatted bytes representing the dataset
     """
+
+    if image_format == 'png':
+        for var in ds.data_vars:
+            # rasterio's PNG driver only supports these data types.
+            if ds[var].dtype not in {np.uint8, np.uint16}:
+                ds[var] = ds[var].astype(np.uint16, casting='unsafe')
+
     with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.' + image_format)
         ds.rio.to_raster(path)
@@ -239,7 +257,7 @@ def _get_axes_properties(ds: xr.Dataset) -> list[dict]:
     return [_get_axis_properties(ds, dim) for dim in ds.dims]
 
 
-def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict:
+def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
     axis = ds.coords[dim]
     return dict(
         type='RegularAxis',
@@ -251,13 +269,13 @@ def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict:
     )
 
 
-def _get_grid_limits_axis(ds: xr.Dataset, dim: str):
+def _get_grid_limits_axis(ds: xr.Dataset, dim: str) -> dict[str, Any]:
     return dict(
         type='IndexAxis', axisLabel=dim, lowerBound=0, upperBound=len(ds[dim])
     )
 
 
-def _get_units(ds: xr.Dataset, dim: str):
+def _get_units(ds: xr.Dataset, dim: str) -> str:
     coord = ds.coords[dim]
     if hasattr(coord, 'attrs') and 'units' in coord.attrs:
         return coord.attrs['units']
