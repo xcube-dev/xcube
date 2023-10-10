@@ -54,7 +54,6 @@ class ServerTestCase(unittest.TestCase, ABC):
             'address': 'localhost'
         })
         self.add_config(config)
-        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         er = self.get_extension_registry()
         self.add_extension(er)
         self.server = Server(framework=TornadoFramework(), config=config,

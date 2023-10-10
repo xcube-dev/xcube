@@ -163,6 +163,12 @@ class TornadoFramework(Framework):
         setattr(self.application, SERVER_CTX_ATTR_NAME, ctx)
 
     def start(self, ctx: Context):
+        if self._shared_io_loop:
+            self._start_service(ctx)
+        else:
+            asyncio.run(self._start(ctx))
+
+    def _start_service(self, ctx: Context):
         config = ctx.config
 
         port = config["port"]
@@ -179,8 +185,10 @@ class TornadoFramework(Framework):
         LOG.info(f"Try {test_url}")
         LOG.info(f"Press CTRL+C to stop service")
 
-        if not self._shared_io_loop:
-            self.io_loop.start()
+    async def _start(self, ctx: Context):
+        self._start_service(ctx)
+        self.io_loop.start()
+        await asyncio.Event().wait()
 
     def stop(self, ctx: Context):
         if not self._shared_io_loop:
