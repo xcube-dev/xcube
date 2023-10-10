@@ -8,8 +8,8 @@
 
 ### Fixes
 * Resolved the issue for CRS84 error due to latest version of gdal (#869)
-
 * Fixed incorrect additional variable data in STAC datacube properties.
+* Fixed access of geotiff datasets from public s3 buckets (#893)
 
 ### Other changes
 * `update_dataset_attrs` can now also handle datasets with CRS other than 

@@ -376,8 +376,10 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
 
     @classmethod
     def create_env_session(cls, fs):
+        aws_unsigned = bool(fs.anon)
         if isinstance(fs, s3fs.S3FileSystem):
             aws_session = AWSSession(
+                aws_unsigned=aws_unsigned,
                 aws_secret_access_key=fs.secret,
                 aws_access_key_id=fs.key,
                 aws_session_token=fs.token,
