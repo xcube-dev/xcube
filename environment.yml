@@ -41,7 +41,7 @@ dependencies:
   - scipy >=1.6.0
   - setuptools >=41.0
   - shapely >=1.6
-  - tornado >=6.0
+  - tornado >=6.0,<6.2 # to avoid max retry errors due to use of deprecated behaviour
   - urllib3 >=1.26
   - werkzeug <2.2  # >=2.2 slows down S3 tests (deps: moto->flask->werkzeug)
   - xarray >=2022.6,<2023.09.0 # because of issue https://github.com/dcs4cop/xcube/issues/897
