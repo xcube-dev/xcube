@@ -35,7 +35,8 @@ from xcube.webapi.ows.coverages.controllers import (
     get_coverage_data,
     get_crs_from_dataset,
     dtype_to_opengis_datatype,
-    get_dataarray_description, _get_units,
+    get_dataarray_description, 
+    _get_units,
 )
 
 
