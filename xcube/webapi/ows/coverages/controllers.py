@@ -92,9 +92,17 @@ def get_coverage_data(
         if indexers.slices:
             ds = ds.sel(indexers=indexers.slices)
     if 'bbox' in query:
+        # TODO: flip latitude if required
+        # TODO: slice according to axis order in dataset
         bbox = list(map(float, query['bbox'][0].split(',')))
-        ds = ds.sel(lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3]))
+        if {'lat', 'lon'}.issubset(ds.variables):
+            ds = ds.sel(lat=slice(bbox[0], bbox[2]),
+                        lon=slice(bbox[1], bbox[3]))
+        else:
+            ds = ds.sel(y=slice(bbox[0], bbox[2]),
+                        x=slice(bbox[1], bbox[3]))
     if 'datetime' in query:
+        # TODO: Raise an exception for non-existent time axis
         timespec = query['datetime'][0]
         if '/' in timespec:
             timefrom, timeto = timespec.split('/')
@@ -102,6 +110,7 @@ def get_coverage_data(
         else:
             ds = ds.sel(time=timespec, method='nearest').squeeze()
     if 'properties' in query:
+        # TODO: Raise an exception for non-existent properties
         vars_to_keep = set(query['properties'][0].split(','))
         data_vars = set(ds.data_vars)
         vars_to_drop = list(data_vars - vars_to_keep)
@@ -147,10 +156,16 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
             '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
         ).groups()
         if high is None:
+            # TODO: parse to float if possible
             indices[axis] = low
         else:
+            # TODO: don't flip longitude
             if (low < high) != (ds[axis][0] < ds[axis][-1]):
                 low, high = high, low
+            if axis != 'time':
+                # TODO: catch parse exception and pass through as string
+                low = float(low)
+                high = float(high)
             slices[axis] = slice(
                 None if low == '*' else low, None if high == '*' else high
             )

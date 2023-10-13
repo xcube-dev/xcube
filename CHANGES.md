@@ -3,14 +3,16 @@
 ### Enhancements
 
 * Added a basic implementation of the draft version of OGC API - Coverages.
+  (#879, #889, #900)
 * Adapted the STAC implementation to additionally offer datasets as
   individual collections for better integration with OGC API - Coverages.
-* Various minor improvements to STAC implementation.
+  (#889)
+* Various minor improvements to STAC implementation. (#900)
 
 ### Fixes
 
 * Resolved the issue for CRS84 error due to latest version of gdal (#869)
-* Fixed incorrect additional variable data in STAC datacube properties.
+* Fixed incorrect additional variable data in STAC datacube properties. (#889)
 
 ### Other changes
 

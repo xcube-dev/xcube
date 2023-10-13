@@ -490,7 +490,7 @@ def _get_single_dataset_collection(
                 'title': f'Feature for the dataset "{dataset_id}"'
             },
             {
-                'rel': 'coverage',
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/coverage',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                         f'{dataset_id}/coverage',
                 'title': f'Coverage for the dataset "{dataset_id}" using '
