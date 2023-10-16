@@ -86,6 +86,9 @@ def get_root(ctx: DatasetsContext, base_url: str):
     # Coverages endpoints along with its own.
     endpoint_lists = [a.endpoints() for a in ctx.apis
                       if a.name in {'ows.stac', 'ows.coverages'}]
+    endpoints = list(itertools.chain.from_iterable(endpoint_lists))
+    for endpoint in endpoints:
+        endpoint['path'] = endpoint['path'][len(PATH_PREFIX):]
 
     return {
         "type": "Catalog",
@@ -97,7 +100,7 @@ def get_root(ctx: DatasetsContext, base_url: str):
         "api_version": "1.0.0",
         "backend_version": xcube.__version__,
         "gdc_version": "1.0.0-beta",
-        "endpoints": list(itertools.chain.from_iterable(endpoint_lists)),
+        "endpoints": endpoints,
         "links": [
             _root_link(base_url),
             {
