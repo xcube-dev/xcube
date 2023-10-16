@@ -56,9 +56,9 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     )
     async def get(self, collectionId: str):
         ds_ctx = self.ctx.datasets_ctx
+
         # The single-component type specifiers aren't RFC2045-compliant,
         #  but the OGC API - Coverages draft allows them in the f parameter.
-
         available_types = [
             'png',
             'image/png',
@@ -79,7 +79,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             raise ApiError.UnsupportedMediaType(
                 f'Available media types: {", ".join(available_types)}\n'
             )
-        elif content_type == 'text/html':
+        elif content_type in {'text/html', 'html'}:
             result = (
                 '<html><title>Collection</title><body><pre>\n'
                 + json.dumps(
@@ -87,7 +87,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
                 )
                 + '\n</pre></body></html>'
             )
-        elif content_type == 'application/json':
+        elif content_type == {'application/json', 'json'}:
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
             result = get_coverage_data(

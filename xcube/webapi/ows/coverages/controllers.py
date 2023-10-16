@@ -96,11 +96,11 @@ def get_coverage_data(
         # TODO: slice according to axis order in dataset
         bbox = list(map(float, query['bbox'][0].split(',')))
         if {'lat', 'lon'}.issubset(ds.variables):
-            ds = ds.sel(lat=slice(bbox[0], bbox[2]),
-                        lon=slice(bbox[1], bbox[3]))
+            ds = ds.sel(
+                lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3])
+            )
         else:
-            ds = ds.sel(y=slice(bbox[0], bbox[2]),
-                        x=slice(bbox[1], bbox[3]))
+            ds = ds.sel(y=slice(bbox[0], bbox[2]), x=slice(bbox[1], bbox[3]))
     if 'datetime' in query:
         # TODO: Raise an exception for non-existent time axis
         timespec = query['datetime'][0]
@@ -274,11 +274,16 @@ def _get_axes_properties(ds: xr.Dataset) -> list[dict]:
 
 def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
     axis = ds.coords[dim]
+    if np.issubdtype(axis.dtype, np.datetime64):
+        lower_bound = np.datetime_as_string(axis[0])
+        upper_bound = np.datetime_as_string(axis[-1])
+    else:
+        lower_bound, upper_bound = axis[0].item(), axis[-1].item(),
     return dict(
         type='RegularAxis',
         axisLabel=dim,
-        lowerBound=axis[0].item(),
-        upperBound=axis[-1].item(),
+        lowerBound=lower_bound,
+        upperBound=upper_bound,
         resolution=abs((axis[-1] - axis[0]).item() / len(axis)),
         uomLabel=_get_units(ds, dim),
     )
