@@ -79,25 +79,24 @@ EXPECTED_CONFORMANCE = {
 }
 
 EXPECTED_ENDPOINTS = functools.reduce(
-    lambda endpoint_list, ep: endpoint_list + [
-        {'methods': ep[0], 'path': ep[1] + suffix} for suffix in ('/', '')
-    ],
+    lambda endpoint_list, ep: endpoint_list
+    + [{'methods': ep[0], 'path': ep[1] + suffix} for suffix in ('/', '')],
     [
-        (['get'], '/ogc/collections/{collectionId}/coverage'),
-        (['get'], '/ogc/collections/{collectionId}/coverage/domainset'),
-        (['get'], '/ogc/collections/{collectionId}/coverage/rangetype'),
-        (['get'], '/ogc/collections/{collectionId}/coverage/metadata'),
-        (['get'], '/ogc/collections/{collectionId}/coverage/rangeset'),
-        (['get'], '/ogc'),
-        (['get'], '/ogc/conformance'),
-        (['get'], '/ogc/collections'),
-        (['get'], '/ogc/collections/{collectionId}'),
-        (['get'], '/ogc/collections/{collectionId}/items'),
-        (['get'], '/ogc/collections/{collectionId}/items/{featureId}'),
-        (['get', 'post'], '/ogc/search'),
-        (['get'], '/ogc/collections/{collectionId}/queryables'),
+        (['get'], '/collections/{collectionId}/coverage'),
+        (['get'], '/collections/{collectionId}/coverage/domainset'),
+        (['get'], '/collections/{collectionId}/coverage/rangetype'),
+        (['get'], '/collections/{collectionId}/coverage/metadata'),
+        (['get'], '/collections/{collectionId}/coverage/rangeset'),
+        (['get'], ''),
+        (['get'], '/conformance'),
+        (['get'], '/collections'),
+        (['get'], '/collections/{collectionId}'),
+        (['get'], '/collections/{collectionId}/items'),
+        (['get'], '/collections/{collectionId}/items/{featureId}'),
+        (['get', 'post'], '/search'),
+        (['get'], '/collections/{collectionId}/queryables'),
     ],
-    []
+    [],
 )
 
 EXPECTED_DATASETS_COLLECTION = {
@@ -164,7 +163,7 @@ class StacControllersTest(unittest.TestCase):
 
     # # Commented out to keep coverage checkers happy.
     # @staticmethod
-    # def write_json(content, filename):
+    # def write_json(filename, content):
     #     """Convenience function for updating saved expected JSON
     #
     #     Not used during an ordinary test run.

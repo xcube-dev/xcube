@@ -87,7 +87,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
                 )
                 + '\n</pre></body></html>'
             )
-        elif content_type == {'application/json', 'json'}:
+        elif content_type in {'application/json', 'json'}:
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
             result = get_coverage_data(

@@ -38,8 +38,8 @@
       {
         "type": "RegularAxis",
         "axisLabel": "time",
-        "lowerBound": 1484561361834255872,
-        "upperBound": 1485773193836892416,
+        "lowerBound": "2017-01-16T10:09:21.834255872",
+        "upperBound": "2017-01-30T10:46:33.836892416",
         "resolution": 242366400527308.8,
         "uomLabel": "ns"
       }
@@ -84,8 +84,8 @@
         {
           "type": "RegularAxis",
           "axisLabel": "time",
-          "lowerBound": 1484561361834255872,
-          "upperBound": 1485773193836892416,
+          "lowerBound": "2017-01-16T10:09:21.834255872",
+          "upperBound": "2017-01-30T10:46:33.836892416",
           "resolution": 242366400527308.8,
           "uomLabel": "ns"
         }

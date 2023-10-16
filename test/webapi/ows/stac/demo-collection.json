@@ -161,7 +161,7 @@
       "title": "Feature for the dataset \"demo\""
     },
     {
-      "rel": "coverage",
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage",
       "href": "http://localhost:8080/ogc/collections/demo/coverage",
       "title": "Coverage for the dataset \"demo\" using OGC API \u2013 Coverages"
     }
