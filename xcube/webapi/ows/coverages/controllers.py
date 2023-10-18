@@ -103,6 +103,7 @@ def get_coverage_data(
             ds = ds.sel(y=slice(bbox[0], bbox[2]), x=slice(bbox[1], bbox[3]))
     if 'datetime' in query:
         # TODO: Raise an exception for non-existent time axis
+        # TODO: Support open ranges
         timespec = query['datetime'][0]
         if '/' in timespec:
             timefrom, timeto = timespec.split('/')

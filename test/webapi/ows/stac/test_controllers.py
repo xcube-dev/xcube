@@ -161,7 +161,7 @@ class StacControllersTest(unittest.TestCase):
             content = json.load(fp)
         return content
 
-    # # Commented out to keep coverage checkers happy.
+    # Commented out to keep coverage checkers happy.
     # @staticmethod
     # def write_json(filename, content):
     #     """Convenience function for updating saved expected JSON
