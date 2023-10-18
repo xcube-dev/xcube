@@ -377,7 +377,9 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     @classmethod
     def create_env_session(cls, fs):
         if isinstance(fs, s3fs.S3FileSystem):
+            aws_unsigned = bool(fs.anon)
             aws_session = AWSSession(
+                aws_unsigned=aws_unsigned,
                 aws_secret_access_key=fs.secret,
                 aws_access_key_id=fs.key,
                 aws_session_token=fs.token,
@@ -387,10 +389,9 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
                 ),
             )
             return rasterio.env.Env(session=aws_session,
-                                    aws_no_sign_request=bool(fs.anon)
+                                    aws_no_sign_request=aws_unsigned
                                     )
-        else:
-            return rasterio.env.NullContextManager()
+        return rasterio.env.NullContextManager()
 
     @classmethod
     def open_dataset_with_rioxarray(cls, file_path, overview_level,

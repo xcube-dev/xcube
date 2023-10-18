@@ -13,6 +13,7 @@
 
 * Resolved the issue for CRS84 error due to latest version of gdal (#869)
 * Fixed incorrect additional variable data in STAC datacube properties. (#889)
+* Fixed access of geotiff datasets from public s3 buckets (#893)
 
 ### Other changes
 
@@ -22,6 +23,8 @@
 * removed deprecated module xcube edit, which has been deprecated since 
   version 0.13.0
 * Update "Development process" section of developer guide.
+* Updated GitHub workflow to build docker image for GitHub releases only and 
+  not on each commit to master.
 
 ## Changes in 1.2.0
 
