@@ -137,7 +137,8 @@ def get_coverage_data(
         # unhandled types, but we may as well do the right thing if any
         # do slip through.
         raise ApiError.UnsupportedMediaType(
-            'Available media types: '
+            f'Unsupported media type {content_type}. '
+            + 'Available media types: '
             + ', '.join(
                 [type_ for value in media_types.values() for type_ in value]
             )
