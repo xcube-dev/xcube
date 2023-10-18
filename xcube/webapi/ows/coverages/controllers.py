@@ -286,7 +286,7 @@ def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
         lowerBound=lower_bound,
         upperBound=upper_bound,
         resolution=abs((axis[-1] - axis[0]).item() / len(axis)),
-        uomLabel=_get_units(ds, dim),
+        uomLabel=get_units(ds, dim),
     )
 
 
@@ -296,20 +296,15 @@ def _get_grid_limits_axis(ds: xr.Dataset, dim: str) -> dict[str, Any]:
     )
 
 
-def _get_units(ds: xr.Dataset, dim: str) -> str:
+def get_units(ds: xr.Dataset, dim: str) -> str:
     coord = ds.coords[dim]
     if hasattr(coord, 'attrs') and 'units' in coord.attrs:
         return coord.attrs['units']
     if np.issubdtype(coord, np.datetime64):
         return np.datetime_data(coord)[0]
-    if dim == 'time':
-        # Pure guesswork, but without an attribute or a datetime64 we can't
-        # do much better.
-        return 's'
-    # TODO: improve this guess -- can we match dataset dimensions to
-    #  projection axes?
-    # Fallback for non-time axes: use the unit of the first CRS axis
-    return pyproj.crs.CRS(get_crs_from_dataset(ds)).axis_info[0].unit_name
+    # TODO: as a fallback for spatial axes, we could try matching dimensions
+    #  to CRS axes and take the unit from the CRS definition.
+    return 'unknown'
 
 
 def get_crs_from_dataset(ds: xr.Dataset) -> str:

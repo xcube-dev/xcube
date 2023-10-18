@@ -35,8 +35,8 @@ from xcube.webapi.ows.coverages.controllers import (
     get_coverage_data,
     get_crs_from_dataset,
     dtype_to_opengis_datatype,
-    get_dataarray_description, 
-    _get_units,
+    get_dataarray_description,
+    get_units,
 )
 
 
@@ -153,6 +153,6 @@ class CoveragesControllersTest(unittest.TestCase):
 
     def test_get_units(self):
         self.assertEqual(
-            's',
-            _get_units(xr.Dataset({'time': [1, 2, 3]}), 'time')
+            'unknown',
+            get_units(xr.Dataset({'time': [1, 2, 3]}), 'time')
         )
