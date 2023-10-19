@@ -70,4 +70,4 @@ class CoveragesRoutesTest(RoutesTestCase):
         response = self.fetch(
             PATH_PREFIX + '/collections/demo/coverage/rangeset'
         )
-        self.assertEqual(response.status, 501)
+        self.assertEqual(response.status, 405)

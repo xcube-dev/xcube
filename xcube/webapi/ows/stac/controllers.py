@@ -86,6 +86,9 @@ def get_root(ctx: DatasetsContext, base_url: str):
     # Coverages endpoints along with its own.
     endpoint_lists = [a.endpoints() for a in ctx.apis
                       if a.name in {'ows.stac', 'ows.coverages'}]
+    endpoints = list(itertools.chain.from_iterable(endpoint_lists))
+    for endpoint in endpoints:
+        endpoint['path'] = endpoint['path'][len(PATH_PREFIX):]
 
     return {
         "type": "Catalog",
@@ -96,8 +99,8 @@ def get_root(ctx: DatasetsContext, base_url: str):
         "description": c_description,
         "api_version": "1.0.0",
         "backend_version": xcube.__version__,
-        "gdc_version": "1.0.0-beta.1",
-        "endpoints": list(itertools.chain.from_iterable(endpoint_lists)),
+        "gdc_version": "1.0.0-beta",
+        "endpoints": endpoints,
         "links": [
             _root_link(base_url),
             {
@@ -268,7 +271,7 @@ def get_datasets_collection_items(
     """
     _assert_valid_collection(ctx, collection_id)
     all_configs = ctx.get_dataset_configs()
-    configs = all_configs[cursor : (cursor + limit)]
+    configs = all_configs[cursor: (cursor + limit)]
     features = []
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
@@ -419,11 +422,15 @@ def _get_datasets_collection(ctx: DatasetsContext,
                 "href": f"{base_url}{PATH_PREFIX}/collections/{c_id}/items",
                 "title": "feature collection of data cube items"
             }
-            # {
-            #     "rel": "license",
-            #     "href": ctx.get_url("TODO"),
-            #     "title": "TODO"
-            # }
+        ] + [
+            {
+                'rel': 'item',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{DEFAULT_COLLECTION_ID}/items/{dataset_id}',
+                'type': 'application/geo+json',
+                'title': f'Feature for the dataset "{dataset_id}"'
+            } for dataset_id in
+            map(lambda c: c['Identifier'], ctx.get_dataset_configs())
         ]
     }
 
@@ -477,6 +484,20 @@ def _get_single_dataset_collection(
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                         f'{dataset_id}/items',
                 'title': 'feature collection of data cube items'
+            },
+            {
+                'rel': 'item',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/items/{DEFAULT_FEATURE_ID}',
+                'type': 'application/geo+json',
+                'title': f'Feature for the dataset "{dataset_id}"'
+            },
+            {
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/coverage',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/coverage',
+                'title': f'Coverage for the dataset "{dataset_id}" using '
+                         f'OGC API – Coverages'
             }
         ],
         'providers': [],
@@ -529,7 +550,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
         "stac_version": STAC_VERSION,
         "stac_extensions": STAC_EXTENSIONS,
         "type": "Feature",
-        "id": dataset_id,
+        "id": feature_id,
         "bbox": bbox.as_bbox(),
         "geometry": bbox.as_geometry(),
         "properties": _get_cube_properties(ctx, dataset_id),

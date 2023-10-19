@@ -845,6 +845,7 @@ class ApiError(Exception):
     InternalServerError: Type["_DerivedApiError"]
     NotImplemented: Type["_DerivedApiError"]
     InvalidServerConfig: Type["_DerivedApiError"]
+    UnsupportedMediaType: Type["_DerivedApiError"]
 
     @property
     def status_code(self) -> int:
@@ -901,6 +902,11 @@ class _Gone(ApiError):
         super().__init__(410, message=message)
 
 
+class _UnsupportedMediaType(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(415, message=message)
+
+
 class _InternalServerError(ApiError):
     def __init__(self, message: Optional[str] = None):
         super().__init__(500, message=message)
@@ -921,6 +927,7 @@ ApiError.Unauthorized = _Unauthorized
 ApiError.Forbidden = _Forbidden
 ApiError.NotFound = _NotFound
 ApiError.MethodNotAllowed = _MethodNotAllowed
+ApiError.UnsupportedMediaType = _UnsupportedMediaType
 ApiError.Conflict = _Conflict
 ApiError.Gone = _Gone
 ApiError.InternalServerError = _InternalServerError

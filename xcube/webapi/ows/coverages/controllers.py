@@ -19,13 +19,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 import os
+import re
 import tempfile
-from typing import Mapping, Sequence, Optional
+from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple
 
 import numpy as np
 import pyproj
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
+from xcube.core.resampling import resample_in_space
+from xcube.server.api import ApiError
 from xcube.webapi.datasets.context import DatasetsContext
 
 
@@ -76,38 +80,119 @@ def get_coverage_data(
     :return: the coverage as bytes in the requested output format, or None
              if the requested output format is not supported
     """
+
+    # TODO: support scale-factor, scale-axes, scale-size, subset-crs,
+    #  and bbox-crs
+
     ds = get_dataset(ctx, collection_id)
+    if 'subset' in query:
+        indexers = _subset_to_indexers(query['subset'][0], ds)
+        if indexers.indices:
+            ds = ds.sel(indexers=indexers.indices, method='nearest')
+        if indexers.slices:
+            ds = ds.sel(indexers=indexers.slices)
     if 'bbox' in query:
+        # TODO: flip latitude if required
+        # TODO: slice according to axis order in dataset
         bbox = list(map(float, query['bbox'][0].split(',')))
-        ds = ds.sel(lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3]))
+        if {'lat', 'lon'}.issubset(ds.variables):
+            ds = ds.sel(
+                lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3])
+            )
+        else:
+            ds = ds.sel(y=slice(bbox[0], bbox[2]), x=slice(bbox[1], bbox[3]))
     if 'datetime' in query:
-        timespec = query['datetime']
+        # TODO: Raise an exception for non-existent time axis
+        # TODO: Support open ranges
+        timespec = query['datetime'][0]
         if '/' in timespec:
-            timefrom, timeto = timespec[0].split('/')
+            timefrom, timeto = timespec.split('/')
             ds = ds.sel(time=slice(timefrom, timeto))
         else:
             ds = ds.sel(time=timespec, method='nearest').squeeze()
     if 'properties' in query:
+        # TODO: Raise an exception for non-existent properties
         vars_to_keep = set(query['properties'][0].split(','))
         data_vars = set(ds.data_vars)
         vars_to_drop = list(data_vars - vars_to_keep)
         ds = ds.drop_vars(vars_to_drop)
-    if content_type in ['image/tiff', 'application/x-geotiff']:
-        return dataset_to_tiff(ds)
-    if content_type in ['application/netcdf', 'application/x-netcdf']:
+    if 'crs' in query:
+        target_crs = query['crs'][0]
+        source_gm = GridMapping.from_dataset(ds)
+        target_gm = source_gm.transform(target_crs).to_regular()
+        ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
+
+    media_types = dict(
+        tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
+        png={'png', 'image/png'},
+        netcdf={'netcdf', 'application/netcdf', 'application/x-netcdf'},
+    )
+    if content_type in media_types['tiff']:
+        return dataset_to_image(ds, 'tiff')
+    elif content_type in media_types['png']:
+        return dataset_to_image(ds, 'png')
+    elif content_type in media_types['netcdf']:
         return dataset_to_netcdf(ds)
-    return None
+    else:
+        # It's expected that the caller (server API handler) will catch
+        # unhandled types, but we may as well do the right thing if any
+        # do slip through.
+        raise ApiError.UnsupportedMediaType(
+            f'Unsupported media type {content_type}. '
+            + 'Available media types: '
+            + ', '.join(
+                [type_ for value in media_types.values() for type_ in value]
+            )
+        )
 
 
-def dataset_to_tiff(ds: xr.Dataset) -> bytes:
+_IndexerTuple = NamedTuple(
+    'Indexers', [('indices', dict[str, Any]), ('slices', dict[str, slice])]
+)
+
+
+def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
+    indices, slices = {}, {}
+    for part in subset_spec.split(','):
+        axis, low, high = re.match(
+            '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
+        ).groups()
+        if high is None:
+            # TODO: parse to float if possible
+            indices[axis] = low
+        else:
+            # TODO: don't flip longitude
+            if (low < high) != (ds[axis][0] < ds[axis][-1]):
+                low, high = high, low
+            if axis != 'time':
+                # TODO: catch parse exception and pass through as string
+                low = float(low)
+                high = float(high)
+            slices[axis] = slice(
+                None if low == '*' else low, None if high == '*' else high
+            )
+    return _IndexerTuple(indices, slices)
+
+
+def dataset_to_image(
+    ds: xr.Dataset, image_format: Literal['png', 'tiff'] = 'png'
+) -> bytes:
     """
-    Return an in-memory TIFF representing a dataset
+    Return an in-memory bitmap (TIFF or PNG) representing a dataset
 
     :param ds: a dataset
+    :param image_format: image format to generate ("png" or "tiff")
     :return: TIFF-formatted bytes representing the dataset
     """
+
+    if image_format == 'png':
+        for var in ds.data_vars:
+            # rasterio's PNG driver only supports these data types.
+            if ds[var].dtype not in {np.uint8, np.uint16}:
+                ds[var] = ds[var].astype(np.uint16, casting='unsafe')
+
     with tempfile.TemporaryDirectory() as tempdir:
-        path = os.path.join(tempdir, 'out.tiff')
+        path = os.path.join(tempdir, 'out.' + image_format)
         ds.rio.to_raster(path)
         with open(path, 'rb') as fh:
             data = fh.read()
@@ -189,30 +274,38 @@ def _get_axes_properties(ds: xr.Dataset) -> list[dict]:
     return [_get_axis_properties(ds, dim) for dim in ds.dims]
 
 
-def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict:
+def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
     axis = ds.coords[dim]
+    if np.issubdtype(axis.dtype, np.datetime64):
+        lower_bound = np.datetime_as_string(axis[0])
+        upper_bound = np.datetime_as_string(axis[-1])
+    else:
+        lower_bound, upper_bound = axis[0].item(), axis[-1].item(),
     return dict(
         type='RegularAxis',
         axisLabel=dim,
-        lowerBound=axis[0].item(),
-        upperBound=axis[-1].item(),
+        lowerBound=lower_bound,
+        upperBound=upper_bound,
         resolution=abs((axis[-1] - axis[0]).item() / len(axis)),
-        uomLabel=_get_units(ds, dim),
+        uomLabel=get_units(ds, dim),
     )
 
 
-def _get_grid_limits_axis(ds: xr.Dataset, dim: str):
+def _get_grid_limits_axis(ds: xr.Dataset, dim: str) -> dict[str, Any]:
     return dict(
         type='IndexAxis', axisLabel=dim, lowerBound=0, upperBound=len(ds[dim])
     )
 
 
-def _get_units(ds: xr.Dataset, dim: str):
+def get_units(ds: xr.Dataset, dim: str) -> str:
     coord = ds.coords[dim]
     if hasattr(coord, 'attrs') and 'units' in coord.attrs:
         return coord.attrs['units']
-    else:
-        return 'degrees'
+    if np.issubdtype(coord, np.datetime64):
+        return np.datetime_data(coord)[0]
+    # TODO: as a fallback for spatial axes, we could try matching dimensions
+    #  to CRS axes and take the unit from the CRS definition.
+    return 'unknown'
 
 
 def get_crs_from_dataset(ds: xr.Dataset) -> str:
@@ -234,7 +327,9 @@ def get_crs_from_dataset(ds: xr.Dataset) -> str:
     return 'EPSG:4326'
 
 
-def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str) -> dict[str, list]:
+def get_coverage_rangetype(
+    ctx: DatasetsContext, collection_id: str
+) -> dict[str, list]:
     """
     Return the range type of a dataset
 

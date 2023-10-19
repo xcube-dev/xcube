@@ -29,12 +29,14 @@ import xarray as xr
 import rioxarray
 
 from test.webapi.ows.coverages.test_context import get_coverages_ctx
+from xcube.server.api import ApiError
 from xcube.webapi.ows.coverages.controllers import (
     get_coverage_as_json,
     get_coverage_data,
     get_crs_from_dataset,
     dtype_to_opengis_datatype,
     get_dataarray_description,
+    get_units,
 )
 
 
@@ -68,8 +70,9 @@ class CoveragesControllersTest(unittest.TestCase):
     def test_get_coverage_data_netcdf(self):
         query = dict(
             bbox=['52,1,51,2'],
-            datetime=['2017-01-25'],
+            datetime=['2017-01-24/2017-01-27'],
             properties=['conc_chl,kd489'],
+            crs=['EPSG:4326'],
         )
         result = get_coverage_data(
             get_coverages_ctx().datasets_ctx,
@@ -87,7 +90,9 @@ class CoveragesControllersTest(unittest.TestCase):
             with open(path, 'wb') as fh:
                 fh.write(result)
             ds = xr.open_dataset(path)
-            self.assertEqual({'lat': 400, 'lon': 400, 'bnds': 2}, ds.dims)
+            self.assertEqual(
+                {'lat': 400, 'lon': 400, 'time': 2, 'bnds': 2}, ds.dims
+            )
             self.assertEqual(['conc_chl', 'kd489'], list(ds.data_vars))
             self.assertEqual(
                 [
@@ -103,6 +108,26 @@ class CoveragesControllersTest(unittest.TestCase):
                 list(ds.variables),
             )
             ds.close()
+
+    def test_get_coverage_data_png(self):
+        query = dict(
+            subset=['lat(51:52),lon(1:2),time(2017-01-25)'],
+            properties=['conc_chl'],
+        )
+        result = get_coverage_data(
+            get_coverages_ctx().datasets_ctx, 'demo', query, 'png'
+        )
+        with BytesIO(result) as fh:
+            da = rioxarray.open_rasterio(fh, driver='PNG')
+            self.assertIsInstance(da, xr.DataArray)
+            self.assertEqual(('band', 'y', 'x'), da.dims)
+            self.assertEqual((1, 400, 400), da.shape)
+
+    def test_get_coverage_unsupported_type(self):
+        with self.assertRaises(ApiError.UnsupportedMediaType):
+            get_coverage_data(
+                get_coverages_ctx().datasets_ctx, 'demo', {}, 'nonexistent'
+            )
 
     def test_get_crs_from_dataset(self):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
@@ -125,3 +150,9 @@ class CoveragesControllersTest(unittest.TestCase):
         name = 'foo'
         da = xr.DataArray(data=[], coords=[('x', [])], dims=['x'], name=name)
         self.assertEqual(name, get_dataarray_description(da))
+
+    def test_get_units(self):
+        self.assertEqual(
+            'unknown',
+            get_units(xr.Dataset({'time': [1, 2, 3]}), 'time')
+        )
