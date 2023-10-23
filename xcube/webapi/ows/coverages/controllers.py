@@ -191,6 +191,8 @@ def dataset_to_image(
             if ds[var].dtype not in {np.uint8, np.uint16}:
                 ds[var] = ds[var].astype(np.uint16, casting='unsafe')
 
+    ds = ds.squeeze()
+
     with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.' + image_format)
         ds.rio.to_raster(path)
