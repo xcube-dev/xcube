@@ -81,8 +81,7 @@ def get_coverage_data(
              if the requested output format is not supported
     """
 
-    # TODO: support scale-factor, scale-axes, scale-size, subset-crs,
-    #  and bbox-crs
+    # TODO: support scale-axes, scale-size, subset-crs, and bbox-crs
 
     ds = get_dataset(ctx, collection_id)
     if 'subset' in query:
@@ -92,9 +91,28 @@ def get_coverage_data(
         if indexers.slices:
             ds = ds.sel(indexers=indexers.slices)
     if 'bbox' in query:
-        # TODO: flip latitude if required
-        # TODO: slice according to axis order in dataset
-        bbox = list(map(float, query['bbox'][0].split(',')))
+        bbox_spec = query['bbox'][0]
+        try:
+            bbox = list(map(float, bbox_spec.split(',')))
+        except ValueError:
+            raise ApiError.BadRequest(f'Invalid bbox "{bbox_spec}"')
+        if len(bbox) not in {4, 6}:
+            raise ApiError.BadRequest(
+                f'Invalid bbox "{bbox_spec}": must have 4 or 6 elements'
+            )
+        dims = [
+            str(d)
+            for d in ds.dims
+            if d in {'lat', 'lon', 'latitude', 'longitude', 'x', 'y'}
+        ]
+        bbox_ndims = len(bbox) // 2
+        for i in range(min(len(dims), bbox_ndims)):
+            dim = dims[i]
+            min_, max_ = _correct_inverted_y_range(
+                ds, dim, (bbox[i], bbox[i + bbox_ndims])
+            )
+            ds = ds.sel({dim: slice(min_, max_)})
+
         if {'lat', 'lon'}.issubset(ds.variables):
             ds = ds.sel(
                 lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3])
@@ -102,12 +120,21 @@ def get_coverage_data(
         else:
             ds = ds.sel(y=slice(bbox[0], bbox[2]), x=slice(bbox[1], bbox[3]))
     if 'datetime' in query:
-        # TODO: Raise an exception for non-existent time axis
-        # TODO: Support open ranges
+        if 'time' not in ds.variables:
+            raise ApiError.BadRequest(
+                f'"datetime" parameter invalid for coverage "{collection_id}",'
+                'which has no time dimension.'
+            )
         timespec = query['datetime'][0]
         if '/' in timespec:
-            timefrom, timeto = timespec.split('/')
-            ds = ds.sel(time=slice(timefrom, timeto))
+            # Format: "<start>/<end>". ".." indicates an open range.
+            time_limits = list(
+                map(
+                    lambda limit: None if limit == '..' else limit,
+                    timespec.split('/'),
+                )
+            )
+            ds = ds.sel(time=slice(*time_limits[:2]))
         else:
             ds = ds.sel(time=timespec, method='nearest').squeeze()
     if 'properties' in query:
@@ -116,10 +143,26 @@ def get_coverage_data(
         data_vars = set(ds.data_vars)
         vars_to_drop = list(data_vars - vars_to_keep)
         ds = ds.drop_vars(vars_to_drop)
+
+    source_gm = GridMapping.from_dataset(ds)
+    target_gm = None
+
     if 'crs' in query:
         target_crs = query['crs'][0]
-        source_gm = GridMapping.from_dataset(ds)
         target_gm = source_gm.transform(target_crs).to_regular()
+    if 'scale-factor' in query:
+        scale_factor_spec = query['scale-factor'][0]
+        try:
+            scale_factor = float(scale_factor_spec)
+        except ValueError:
+            raise ApiError.BadRequest(
+                f'Invalid scale-factor "{scale_factor_spec}"'
+            )
+        if target_gm is None:
+            target_gm = source_gm
+        target_gm = target_gm.scale(scale_factor)
+
+    if target_gm is not None:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
 
     media_types = dict(
@@ -158,20 +201,35 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
             '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
         ).groups()
         if high is None:
-            # TODO: parse to float if possible
-            indices[axis] = low
+            try:
+                # Parse to float if possible
+                indices[axis] = float(low)
+            except ValueError:
+                indices[axis] = low
         else:
-            # TODO: don't flip longitude
-            if (low < high) != (ds[axis][0] < ds[axis][-1]):
-                low, high = high, low
+            low = None if low == '*' else low
+            high = None if high == '*' else high
             if axis != 'time':
-                # TODO: catch parse exception and pass through as string
                 low = float(low)
                 high = float(high)
-            slices[axis] = slice(
-                None if low == '*' else low, None if high == '*' else high
-            )
+                low, high = _correct_inverted_y_range(ds, axis, (low, high))
+            slices[axis] = slice(low, high)
     return _IndexerTuple(indices, slices)
+
+
+def _correct_inverted_y_range(
+    ds: xr.Dataset, axis: str, range: tuple[float, float]
+) -> tuple[float, float]:
+    x0, x1 = range
+    # Make sure latitude slice direction matches axis direction.
+    # (For longitude, a descending-order slice is valid.)
+    if (
+        None not in range
+        and axis in {'lat', 'latitude', 'y'}
+        and (x0 < x1) != (ds[axis][0] < ds[axis][-1])
+    ):
+        x0, x1 = x1, x0
+    return x0, x1
 
 
 def dataset_to_image(
@@ -282,7 +340,7 @@ def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
         lower_bound = np.datetime_as_string(axis[0])
         upper_bound = np.datetime_as_string(axis[-1])
     else:
-        lower_bound, upper_bound = axis[0].item(), axis[-1].item(),
+        lower_bound, upper_bound = axis[0].item(), axis[-1].item()
     return dict(
         type='RegularAxis',
         axisLabel=dim,
