@@ -81,8 +81,6 @@ def get_coverage_data(
              if the requested output format is not supported
     """
 
-    # TODO: support scale-axes, scale-size, subset-crs, and bbox-crs
-
     ds = get_dataset(ctx, collection_id)
     if 'subset' in query:
         indexers = _subset_to_indexers(query['subset'][0], ds)
@@ -161,6 +159,26 @@ def get_coverage_data(
         if target_gm is None:
             target_gm = source_gm
         target_gm = target_gm.scale(scale_factor)
+    if 'scale-axes' in query:
+        # TODO implement scale-axes
+        raise ApiError.NotImplemented(
+            'The scale-axes parameter is not yet supported.'
+        )
+    if 'scale-size' in query:
+        # TODO implement scale-size
+        raise ApiError.NotImplemented(
+            'The scale-size parameter is not yet supported.'
+        )
+    if 'subset-crs' in query:
+        # TODO implement subset-crs
+        raise ApiError.NotImplemented(
+            'The subset-crs parameter is not yet supported.'
+        )
+    if 'bbox-crs' in query:
+        # TODO implement bbox-crs
+        raise ApiError.NotImplemented(
+            'The bbox-crs parameter is not yet supported.'
+        )
 
     if target_gm is not None:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
