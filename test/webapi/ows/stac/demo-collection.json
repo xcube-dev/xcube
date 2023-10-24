@@ -163,16 +163,19 @@
     {
       "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage",
       "href": "http://localhost:8080/ogc/collections/demo/coverage?f=json",
+      "type": "application/json",
       "title": "Coverage for the dataset \"demo\" using OGC API \u2013 Coverages, as JSON"
     },
     {
       "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage",
       "href": "http://localhost:8080/ogc/collections/demo/coverage?f=netcdf",
+      "type": "application/x-netcdf",
       "title": "Coverage for the dataset \"demo\" using OGC API \u2013 Coverages, as NetCDF"
     },
     {
       "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage",
       "href": "http://localhost:8080/ogc/collections/demo/coverage?f=geotiff",
+      "type": "image/tiff; application=geotiff",
       "title": "Coverage for the dataset \"demo\" using OGC API \u2013 Coverages, as GeoTIFF"
     }
   ],

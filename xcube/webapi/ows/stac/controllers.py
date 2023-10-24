@@ -496,6 +496,7 @@ def _get_single_dataset_collection(
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/coverage',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                 f'{dataset_id}/coverage?f=json',
+                'type': 'application/json',
                 'title': f'Coverage for the dataset "{dataset_id}" using '
                 f'OGC API – Coverages, as JSON',
             },
@@ -503,6 +504,7 @@ def _get_single_dataset_collection(
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/coverage',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                 f'{dataset_id}/coverage?f=netcdf',
+                'type': 'application/x-netcdf',
                 'title': f'Coverage for the dataset "{dataset_id}" using '
                 f'OGC API – Coverages, as NetCDF',
             },
@@ -510,6 +512,7 @@ def _get_single_dataset_collection(
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/coverage',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                 f'{dataset_id}/coverage?f=geotiff',
+                'type': 'image/tiff; application=geotiff',
                 'title': f'Coverage for the dataset "{dataset_id}" using '
                 f'OGC API – Coverages, as GeoTIFF',
             },
