@@ -212,6 +212,8 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
         axis, low, high = re.match(
             '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
         ).groups()
+        if axis not in ds.dims:
+            raise ApiError.BadRequest(f'Axis "{axis}" does not exist.')
         if high is None:
             try:
                 # Parse to float if possible
@@ -221,14 +223,15 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
         else:
             low = None if low == '*' else low
             high = None if high == '*' else high
-            if axis != 'time':
+            if axis == 'time':
+                # Remove quotation marks, if present
+                low = low.strip('"')
+                high = high.strip('"')
+            else:
                 low = float(low)
                 high = float(high)
                 low, high = _correct_inverted_y_range(ds, axis, (low, high))
             slices[axis] = slice(low, high)
-    for axis in list(indices) + list(slices):
-        if axis not in ds.dims:
-            raise ApiError.BadRequest(f'Axis "{axis}" does not exist.')
 
     return _IndexerTuple(indices, slices)
 
