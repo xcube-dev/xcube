@@ -400,9 +400,10 @@ def get_crs_from_dataset(ds: xr.Dataset) -> str:
     for var_name in 'crs', 'spatial_ref':
         if var_name in ds.variables:
             var = ds[var_name]
-            if 'spatial_ref' in var.attrs:
-                crs_string = ds[var_name].attrs['spatial_ref']
-                return pyproj.crs.CRS(crs_string).to_string()
+            for attr_name in 'spatial_ref', 'crs_wkt':
+                if attr_name in var.attrs:
+                    crs_string = ds[var_name].attrs[attr_name]
+                    return pyproj.crs.CRS(crs_string).to_string()
     return 'EPSG:4326'
 
 
