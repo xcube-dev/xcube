@@ -226,6 +226,10 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
                 high = float(high)
                 low, high = _correct_inverted_y_range(ds, axis, (low, high))
             slices[axis] = slice(low, high)
+    for axis in list(indices) + list(slices):
+        if axis not in ds.dims:
+            raise ApiError.BadRequest(f'Axis "{axis}" does not exist.')
+
     return _IndexerTuple(indices, slices)
 
 
