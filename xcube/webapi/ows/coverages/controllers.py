@@ -111,12 +111,6 @@ def get_coverage_data(
             )
             ds = ds.sel({dim: slice(min_, max_)})
 
-        if {'lat', 'lon'}.issubset(ds.variables):
-            ds = ds.sel(
-                lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3])
-            )
-        else:
-            ds = ds.sel(y=slice(bbox[0], bbox[2]), x=slice(bbox[1], bbox[3]))
     if 'datetime' in query:
         if 'time' not in ds.variables:
             raise ApiError.BadRequest(
