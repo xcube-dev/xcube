@@ -27,6 +27,7 @@ from typing import Any, Dict, Optional, List, Collection, Iterator, Union
 
 import fsspec
 import fsspec.implementations.zip
+from fsspec.implementations.local import LocalFileSystem
 
 from xcube.core.byoa.constants import TEMP_FILE_PREFIX
 from xcube.util.assertions import assert_given
@@ -66,7 +67,9 @@ class _FileSetDetails:
                                              **(storage_params or {}))
         except (ImportError, OSError) as e:
             raise ValueError(f'Illegal file set {path!r}') from e
-        local_path = root if fs.protocol == 'file' else None
+        local_path = root \
+            if 'file' in fs.protocol or isinstance(fs, LocalFileSystem) \
+            else None
         return _FileSetDetails(fs, root, local_path)
 
     @property

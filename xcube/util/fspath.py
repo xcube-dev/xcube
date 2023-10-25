@@ -30,7 +30,7 @@ def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
     """
     Check whether *fs* is a local filesystem.
     """
-    return fs.protocol == 'file' or isinstance(fs, LocalFileSystem)
+    return 'file' in fs.protocol or isinstance(fs, LocalFileSystem)
 
 
 def get_fs_path_class(fs: fsspec.AbstractFileSystem) \
