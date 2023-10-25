@@ -131,7 +131,7 @@ class CoveragesControllersTest(unittest.TestCase):
 
     def test_get_crs_from_dataset(self):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
-        self.assertEqual('EPSG:3035', get_crs_from_dataset(ds))
+        self.assertEqual('EPSG:3035', get_crs_from_dataset(ds).to_string())
 
     def test_dtype_to_opengis_datatype(self):
         expected = [

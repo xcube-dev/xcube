@@ -82,34 +82,17 @@ def get_coverage_data(
     """
 
     ds = get_dataset(ctx, collection_id)
-    if 'subset' in query:
-        indexers = _subset_to_indexers(query['subset'][0], ds)
-        if indexers.indices:
-            ds = ds.sel(indexers=indexers.indices, method='nearest')
-        if indexers.slices:
-            ds = ds.sel(indexers=indexers.slices)
-    if 'bbox' in query:
-        bbox_spec = query['bbox'][0]
-        try:
-            bbox = list(map(float, bbox_spec.split(',')))
-        except ValueError:
-            raise ApiError.BadRequest(f'Invalid bbox "{bbox_spec}"')
-        if len(bbox) not in {4, 6}:
-            raise ApiError.BadRequest(
-                f'Invalid bbox "{bbox_spec}": must have 4 or 6 elements'
-            )
-        dims = [
-            str(d)
-            for d in ds.dims
-            if d in {'lat', 'lon', 'latitude', 'longitude', 'x', 'y'}
-        ]
-        bbox_ndims = len(bbox) // 2
-        for i in range(min(len(dims), bbox_ndims)):
-            dim = dims[i]
-            min_, max_ = _correct_inverted_y_range(
-                ds, dim, (bbox[i], bbox[i + bbox_ndims])
-            )
-            ds = ds.sel({dim: slice(min_, max_)})
+    native_crs = get_crs_from_dataset(ds)
+
+    # See https://docs.ogc.org/DRAFTS/19-087.html#_parameter_crs
+    final_crs = pyproj.CRS(query['crs'][0]) if 'crs' in query else native_crs
+
+    if 'properties' in query:
+        # TODO: Raise an exception for non-existent properties
+        vars_to_keep = set(query['properties'][0].split(','))
+        data_vars = set(ds.data_vars)
+        vars_to_drop = list(data_vars - vars_to_keep)
+        ds = ds.drop_vars(vars_to_drop)
 
     if 'datetime' in query:
         if 'time' not in ds.variables:
@@ -129,19 +112,23 @@ def get_coverage_data(
             ds = ds.sel(time=slice(*time_limits[:2]))
         else:
             ds = ds.sel(time=timespec, method='nearest').squeeze()
-    if 'properties' in query:
-        # TODO: Raise an exception for non-existent properties
-        vars_to_keep = set(query['properties'][0].split(','))
-        data_vars = set(ds.data_vars)
-        vars_to_drop = list(data_vars - vars_to_keep)
-        ds = ds.drop_vars(vars_to_drop)
+
+    # TODO defaul to CRS84, not EPSG:4326
+    if 'subset' in query:
+        ds = _apply_subsetting(
+            ds, query['subset'][0], query.get('subset-crs', ['EPSG:4326'])[0]
+        )
+
+    if 'bbox' in query:
+        ds = _apply_bbox(
+            ds, query['bbox'][0], query.get('bbox-crs', ['EPSG:4326'])[0]
+        )
 
     source_gm = GridMapping.from_dataset(ds)
     target_gm = None
 
-    if 'crs' in query:
-        target_crs = query['crs'][0]
-        target_gm = source_gm.transform(target_crs).to_regular()
+    if get_crs_from_dataset(ds) != final_crs:
+        target_gm = source_gm.transform(final_crs).to_regular()
     if 'scale-factor' in query:
         scale_factor_spec = query['scale-factor'][0]
         try:
@@ -204,6 +191,57 @@ def get_coverage_data(
 _IndexerTuple = NamedTuple(
     'Indexers', [('indices', dict[str, Any]), ('slices', dict[str, slice])]
 )
+
+
+def _apply_subsetting(
+    ds: xr.Dataset, subset_spec: str, subset_crs: str
+) -> xr.Dataset:
+    indexers = _subset_to_indexers(subset_spec, ds)
+    ds = _reproject_if_needed(ds, subset_crs)
+    if indexers.indices:
+        ds = ds.sel(indexers=indexers.indices, method='nearest')
+    if indexers.slices:
+        ds = ds.sel(indexers=indexers.slices)
+    return ds
+
+
+def _apply_bbox(ds, bbox_spec: str, bbox_crs: str):
+    try:
+        bbox = list(map(float, bbox_spec.split(',')))
+    except ValueError:
+        raise ApiError.BadRequest(f'Invalid bbox "{bbox_spec}"')
+    if len(bbox) not in {4, 6}:
+        raise ApiError.BadRequest(
+            f'Invalid bbox "{bbox_spec}": must have 4 or 6 elements'
+        )
+    dims = [
+        d
+        for d in map(str, ds.dims)
+        if d.lower() in {'lat', 'lon', 'latitude', 'longitude', 'x', 'y'}
+    ]
+    bbox_ndims = len(bbox) // 2
+    for i in range(min(len(dims), bbox_ndims)):
+        dim = dims[i]
+        min_, max_ = _correct_inverted_y_range(
+            ds, dim, (bbox[i], bbox[i + bbox_ndims])
+        )
+        ds = ds.sel({dim: slice(min_, max_)})
+    return ds
+
+
+def _reproject_if_needed(ds: xr.Dataset, target_crs_spec: str):
+    source_crs = get_crs_from_dataset(ds)
+    target_crs = pyproj.CRS(target_crs_spec)
+    if source_crs == target_crs:
+        return ds
+    else:
+        source_gm = GridMapping.from_dataset(ds)
+        target_gm = source_gm.transform(target_crs).to_regular()
+        ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
+        if 'crs' not in ds.variables:
+            ds['crs'] = 0
+        ds.crs.attrs['spatial_ref'] = target_crs.to_epsg()
+        return ds
 
 
 def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
@@ -313,7 +351,7 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     )
     grid = dict(
         type='GeneralGridCoverage',
-        srsName=get_crs_from_dataset(ds),
+        srsName=get_crs_from_dataset(ds).to_string(),
         axisLabels=list(ds.dims.keys()),
         axis=_get_axes_properties(ds),
         gridLimits=grid_limits,
@@ -387,7 +425,7 @@ def get_units(ds: xr.Dataset, dim: str) -> str:
     return 'unknown'
 
 
-def get_crs_from_dataset(ds: xr.Dataset) -> str:
+def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.crs.CRS:
     """
     Return the CRS of a dataset as a string. The CRS is taken from the
     metadata of the crs or spatial_ref variables, if available.
@@ -403,8 +441,8 @@ def get_crs_from_dataset(ds: xr.Dataset) -> str:
             for attr_name in 'spatial_ref', 'crs_wkt':
                 if attr_name in var.attrs:
                     crs_string = ds[var_name].attrs[attr_name]
-                    return pyproj.crs.CRS(crs_string).to_string()
-    return 'EPSG:4326'
+                    return pyproj.CRS(crs_string)
+    return pyproj.CRS('EPSG:4326')
 
 
 def get_coverage_rangetype(
@@ -483,7 +521,7 @@ def get_collection_envelope(ds_ctx, collection_id):
     ds = get_dataset(ds_ctx, collection_id)
     return {
         'type': 'EnvelopeByAxis',
-        'srsName': get_crs_from_dataset(ds),
+        'srsName': get_crs_from_dataset(ds).to_string(),
         'axisLabels': list(ds.dims.keys()),
         'axis': _get_axes_properties(ds),
     }
