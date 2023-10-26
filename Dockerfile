@@ -67,7 +67,7 @@ RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cmems ${XCUBE_CMEMS_VERSION} release; fi;
 
 # TODO: Investigate the missing rasterio in the docker build and delete the below workaround
-# install raterio explicitly as a workaround
+# Install rasterio explicitly as a workaround
 RUN micromamba install rasterio>=1.2 -c conda-forge
 
 RUN micromamba clean --all --force-pkgs-dirs --yes
