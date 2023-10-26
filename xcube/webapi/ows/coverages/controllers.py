@@ -88,11 +88,16 @@ def get_coverage_data(
     final_crs = pyproj.CRS(query['crs'][0]) if 'crs' in query else native_crs
 
     if 'properties' in query:
-        # TODO: Raise an exception for non-existent properties
-        vars_to_keep = set(query['properties'][0].split(','))
-        data_vars = set(ds.data_vars)
-        vars_to_drop = list(data_vars - vars_to_keep)
-        ds = ds.drop_vars(vars_to_drop)
+        requested_vars = set(query['properties'][0].split(','))
+        data_vars = set(map(str, ds.data_vars))
+        unrecognized_vars = requested_vars - data_vars
+        if unrecognized_vars == set():
+            ds = ds.drop_vars(list(data_vars - requested_vars))
+        else:
+            raise ApiError.BadRequest(
+                f'The following properties are not present in the coverage '
+                f'{collection_id}: {", ".join(unrecognized_vars)}'
+            )
 
     if 'datetime' in query:
         if 'time' not in ds.variables:
@@ -113,15 +118,14 @@ def get_coverage_data(
         else:
             ds = ds.sel(time=timespec, method='nearest').squeeze()
 
-    # TODO defaul to CRS84, not EPSG:4326
     if 'subset' in query:
         ds = _apply_subsetting(
-            ds, query['subset'][0], query.get('subset-crs', ['EPSG:4326'])[0]
+            ds, query['subset'][0], query.get('subset-crs', ['OGC:CRS84'])[0]
         )
 
     if 'bbox' in query:
         ds = _apply_bbox(
-            ds, query['bbox'][0], query.get('bbox-crs', ['EPSG:4326'])[0]
+            ds, query['bbox'][0], query.get('bbox-crs', ['OGC:CRS84'])[0]
         )
 
     source_gm = GridMapping.from_dataset(ds)
@@ -149,16 +153,6 @@ def get_coverage_data(
         # TODO implement scale-size
         raise ApiError.NotImplemented(
             'The scale-size parameter is not yet supported.'
-        )
-    if 'subset-crs' in query:
-        # TODO implement subset-crs
-        raise ApiError.NotImplemented(
-            'The subset-crs parameter is not yet supported.'
-        )
-    if 'bbox-crs' in query:
-        # TODO implement bbox-crs
-        raise ApiError.NotImplemented(
-            'The bbox-crs parameter is not yet supported.'
         )
 
     if target_gm is not None:
@@ -205,7 +199,7 @@ def _apply_subsetting(
     return ds
 
 
-def _apply_bbox(ds, bbox_spec: str, bbox_crs: str):
+def _apply_bbox(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
     try:
         bbox = list(map(float, bbox_spec.split(',')))
     except ValueError:
@@ -214,6 +208,7 @@ def _apply_bbox(ds, bbox_spec: str, bbox_crs: str):
         raise ApiError.BadRequest(
             f'Invalid bbox "{bbox_spec}": must have 4 or 6 elements'
         )
+    ds = _reproject_if_needed(ds, bbox_crs)
     dims = [
         d
         for d in map(str, ds.dims)
@@ -229,18 +224,18 @@ def _apply_bbox(ds, bbox_spec: str, bbox_crs: str):
     return ds
 
 
-def _reproject_if_needed(ds: xr.Dataset, target_crs_spec: str):
+def _reproject_if_needed(ds: xr.Dataset, target_crs: str):
     source_crs = get_crs_from_dataset(ds)
-    target_crs = pyproj.CRS(target_crs_spec)
-    if source_crs == target_crs:
+    if source_crs == pyproj.CRS(target_crs):
         return ds
     else:
-        source_gm = GridMapping.from_dataset(ds)
-        target_gm = source_gm.transform(target_crs).to_regular()
+        source_gm = GridMapping.from_dataset(ds).to_regular()
+        target_gm_irregular = source_gm.transform(target_crs)
+        target_gm = target_gm_irregular.to_regular()
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
         if 'crs' not in ds.variables:
             ds['crs'] = 0
-        ds.crs.attrs['spatial_ref'] = target_crs.to_epsg()
+        ds.crs.attrs['spatial_ref'] = target_crs
         return ds
 
 
