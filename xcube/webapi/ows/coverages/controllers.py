@@ -92,7 +92,9 @@ def get_coverage_data(
         data_vars = set(map(str, ds.data_vars))
         unrecognized_vars = requested_vars - data_vars
         if unrecognized_vars == set():
-            ds = ds.drop_vars(list(data_vars - requested_vars))
+            ds = ds.drop_vars(
+                list(data_vars - requested_vars - {'crs', 'spatial_ref'})
+            )
         else:
             raise ApiError.BadRequest(
                 f'The following properties are not present in the coverage '
@@ -124,11 +126,12 @@ def get_coverage_data(
         )
 
     if 'bbox' in query:
-        ds = _apply_bbox(
+        ds = _apply_bbox_2(
             ds, query['bbox'][0], query.get('bbox-crs', ['OGC:CRS84'])[0]
         )
 
-    source_gm = GridMapping.from_dataset(ds)
+    # ds.rio.write_crs(get_crs_from_dataset(ds), inplace=True)
+    source_gm = GridMapping.from_dataset(ds, crs=get_crs_from_dataset(ds))
     target_gm = None
 
     if get_crs_from_dataset(ds) != final_crs:
@@ -157,6 +160,9 @@ def get_coverage_data(
 
     if target_gm is not None:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
+
+    # TODO: if final_crs == bbox-crs != native_crs, reapply the bbox here
+    # since the original one (pre-transform) may have been too large.
 
     media_types = dict(
         tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
@@ -191,7 +197,8 @@ def _apply_subsetting(
     ds: xr.Dataset, subset_spec: str, subset_crs: str
 ) -> xr.Dataset:
     indexers = _subset_to_indexers(subset_spec, ds)
-    ds = _reproject_if_needed(ds, subset_crs)
+    # TODO only reproject if there are spatial indexers
+    # ds = _reproject_if_needed(ds, subset_crs)
     if indexers.indices:
         ds = ds.sel(indexers=indexers.indices, method='nearest')
     if indexers.slices:
@@ -222,6 +229,45 @@ def _apply_bbox(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
         )
         ds = ds.sel({dim: slice(min_, max_)})
     return ds
+
+
+def _apply_bbox_2(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
+    try:
+        bbox = list(map(float, bbox_spec.split(',')))
+    except ValueError:
+        raise ApiError.BadRequest(f'Invalid bbox "{bbox_spec}"')
+    if len(bbox) != 4:
+        # TODO Handle 3D bounding boxes
+        raise ApiError.BadRequest(
+            f'Invalid bbox "{bbox_spec}": must have 4 elements'
+        )
+    crs_ds = get_crs_from_dataset(ds)
+    crs_bbox = pyproj.CRS.from_string(bbox_crs)
+    if crs_ds != crs_bbox:
+        transformer = pyproj.Transformer.from_crs(
+            crs_bbox, crs_ds  # always_xy=True
+        )
+        if bbox[1] > bbox[3]:
+            bbox[1], bbox[3] = bbox[3], bbox[1]
+        bbox = transformer.transform_bounds(*bbox)
+    h_dim = _get_h_dim(ds)
+    v_dim = _get_v_dim(ds)
+    v_slice = _correct_inverted_y_range(ds, v_dim, (bbox[1], bbox[3]))
+    ds = ds.sel({h_dim: slice(bbox[0], bbox[2]),
+                 v_dim: slice(*v_slice)})
+    return ds
+
+
+def _get_h_dim(ds: xr.Dataset):
+    return [
+        d for d in list(map(str, ds.dims)) if d[:2].lower() in {'x', 'lon'}
+    ][0]
+
+
+def _get_v_dim(ds: xr.Dataset):
+    return [
+        d for d in list(map(str, ds.dims)) if d[:2].lower() in {'y', 'lat'}
+    ][0]
 
 
 def _reproject_if_needed(ds: xr.Dataset, target_crs: str):
@@ -270,13 +316,13 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
 
 
 def _correct_inverted_y_range(
-    ds: xr.Dataset, axis: str, range: tuple[float, float]
+    ds: xr.Dataset, axis: str, range_: tuple[float, float]
 ) -> tuple[float, float]:
-    x0, x1 = range
+    x0, x1 = range_
     # Make sure latitude slice direction matches axis direction.
     # (For longitude, a descending-order slice is valid.)
     if (
-        None not in range
+        None not in range_
         and axis in {'lat', 'latitude', 'y'}
         and (x0 < x1) != (ds[axis][0] < ds[axis][-1])
     ):
