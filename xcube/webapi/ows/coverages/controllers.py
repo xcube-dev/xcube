@@ -294,30 +294,45 @@ def _reproject_if_needed(ds: xr.Dataset, target_crs: str):
 def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
     indices, slices = {}, {}
     for part in subset_spec.split(','):
-        axis, low, high = re.match(
-            '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
-        ).groups()
+        # First try matching with quotation marks
+        m = re.match(
+            '^(.*)[(]"([^")]*)"(?::"(.*)")?[)]$', part
+        )
+        if m is None:
+            # If that fails, try without quotation marks
+            m = re.match(
+                '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
+            )
+        if m is None:
+            raise ApiError.BadRequest(
+                f'Unrecognized subset specifier "{part}"'
+            )
+        else:
+            axis, low, high = m.groups()
         if axis not in ds.dims:
             raise ApiError.BadRequest(f'Axis "{axis}" does not exist.')
         if high is None:
-            low = low.strip('"')
-            try:
-                # Parse to float if possible
-                indices[axis] = float(low)
-            except ValueError:
-                indices[axis] = low
+            if axis == 'time':
+                indices[axis] = \
+                    ensure_time_index_compatible(ds, low)
+            else:
+                try:
+                    # Parse to float if possible
+                    indices[axis] = float(low)
+                except ValueError:
+                    indices[axis] = low
         else:
             low = None if low == '*' else low
             high = None if high == '*' else high
             if axis == 'time':
-                # Remove quotation marks, if present
-                low = low.strip('"')
-                high = high.strip('"')
+                slices[axis] = \
+                    ensure_time_index_compatible(ds, slice(low, high))
             else:
+                # TODO Handle non-float arguments
                 low = float(low)
                 high = float(high)
                 low, high = _correct_inverted_y_range(ds, axis, (low, high))
-            slices[axis] = slice(low, high)
+                slices[axis] = slice(low, high)
 
     return _IndexerTuple(indices, slices)
 
