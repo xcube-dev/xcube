@@ -30,6 +30,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import resample_in_space
 from xcube.server.api import ApiError
+from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.webapi.datasets.context import DatasetsContext
 
 
@@ -87,6 +88,9 @@ def get_coverage_data(
     # See https://docs.ogc.org/DRAFTS/19-087.html#_parameter_crs
     final_crs = pyproj.CRS(query['crs'][0]) if 'crs' in query else native_crs
 
+    # TODO: apply a size limit to avoid OOMs from attempting to
+    #  produce arbitrarily large coverages
+
     if 'properties' in query:
         requested_vars = set(query['properties'][0].split(','))
         data_vars = set(map(str, ds.data_vars))
@@ -105,7 +109,7 @@ def get_coverage_data(
         if 'time' not in ds.variables:
             raise ApiError.BadRequest(
                 f'"datetime" parameter invalid for coverage "{collection_id}",'
-                'which has no time dimension.'
+                'which has no "time" dimension.'
             )
         timespec = query['datetime'][0]
         if '/' in timespec:
@@ -116,8 +120,11 @@ def get_coverage_data(
                     timespec.split('/'),
                 )
             )
-            ds = ds.sel(time=slice(*time_limits[:2]))
+            time_slice = slice(*time_limits[:2])
+            time_slice = ensure_time_index_compatible(ds, time_slice)
+            ds = ds.sel(time=time_slice)
         else:
+            timespec = ensure_time_index_compatible(ds, timespec)
             ds = ds.sel(time=timespec, method='nearest').squeeze()
 
     if 'subset' in query:
@@ -253,8 +260,7 @@ def _apply_bbox_2(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
     h_dim = _get_h_dim(ds)
     v_dim = _get_v_dim(ds)
     v_slice = _correct_inverted_y_range(ds, v_dim, (bbox[1], bbox[3]))
-    ds = ds.sel({h_dim: slice(bbox[0], bbox[2]),
-                 v_dim: slice(*v_slice)})
+    ds = ds.sel({h_dim: slice(bbox[0], bbox[2]), v_dim: slice(*v_slice)})
     return ds
 
 
@@ -294,6 +300,7 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
         if axis not in ds.dims:
             raise ApiError.BadRequest(f'Axis "{axis}" does not exist.')
         if high is None:
+            low = low.strip('"')
             try:
                 # Parse to float if possible
                 indices[axis] = float(low)
@@ -349,9 +356,13 @@ def dataset_to_image(
 
     ds = ds.squeeze()
 
-    with tempfile.TemporaryDirectory() as tempdir:
+    with (tempfile.TemporaryDirectory() as tempdir):
         path = os.path.join(tempdir, 'out.' + image_format)
-        ds.rio.to_raster(path)
+        ds = ds.drop_vars(names=['crs', 'spatial_ref'], errors='ignore').squeeze()
+        if len(ds.data_vars) == 1:
+            ds[list(ds.data_vars)[0]].rio.to_raster(path)
+        else:
+            ds.rio.to_raster(path)
         with open(path, 'rb') as fh:
             data = fh.read()
     return data
