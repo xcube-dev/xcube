@@ -106,6 +106,7 @@ def get_coverage_data(
             )
 
     if 'datetime' in query:
+        # TODO double-check that we don't need to support quotation marks
         if 'time' not in ds.variables:
             raise ApiError.BadRequest(
                 f'"datetime" parameter invalid for coverage "{collection_id}",'
