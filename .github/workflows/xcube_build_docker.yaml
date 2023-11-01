@@ -14,15 +14,18 @@ jobs:
     # Build the docker image and push to quay.io
     name: build-docker-image
     steps:
-      - name: git-checkout
-        uses: actions/checkout@v2
-
       # Determine latest release tag
       - name: Get latest release
         id: latest_release
         run: |
             LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/dcs4cop/xcube/releases/latest" | jq -r .tag_name)
             echo "::set-output name=release_tag::$LATEST_RELEASE"
+
+      # checkout the repo with the release tag from previous step
+      - name: git-checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ steps.latest_release.outputs.release_tag }}
 
       # Print some info
       - name: info
