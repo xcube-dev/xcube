@@ -87,6 +87,7 @@ def get_coverage_data(
 
     # See https://docs.ogc.org/DRAFTS/19-087.html#_parameter_crs
     final_crs = pyproj.CRS(query['crs'][0]) if 'crs' in query else native_crs
+    bbox_crs = pyproj.CRS(query.get('bbox-crs', ['OGC:CRS84'])[0])
 
     # TODO: apply a size limit to avoid OOMs from attempting to
     #  produce arbitrarily large coverages
@@ -134,9 +135,7 @@ def get_coverage_data(
         )
 
     if 'bbox' in query:
-        ds = _apply_bbox_2(
-            ds, query['bbox'][0], query.get('bbox-crs', ['OGC:CRS84'])[0]
-        )
+        ds = _apply_bbox(ds, query['bbox'][0], bbox_crs)
 
     # ds.rio.write_crs(get_crs_from_dataset(ds), inplace=True)
     source_gm = GridMapping.from_dataset(ds, crs=get_crs_from_dataset(ds))
@@ -169,8 +168,10 @@ def get_coverage_data(
     if target_gm is not None:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
 
-    # TODO: if final_crs == bbox-crs != native_crs, reapply the bbox here
-    # since the original one (pre-transform) may have been too large.
+    if native_crs != final_crs and 'bbox' in query:
+        # In this case, the transformed native CRS bbox may have been
+        # too big, so we re-crop in the final CRS.
+        ds = _apply_bbox(ds, query['bbox'][0], bbox_crs)
 
     media_types = dict(
         tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
@@ -214,32 +215,9 @@ def _apply_subsetting(
     return ds
 
 
-def _apply_bbox(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
-    try:
-        bbox = list(map(float, bbox_spec.split(',')))
-    except ValueError:
-        raise ApiError.BadRequest(f'Invalid bbox "{bbox_spec}"')
-    if len(bbox) not in {4, 6}:
-        raise ApiError.BadRequest(
-            f'Invalid bbox "{bbox_spec}": must have 4 or 6 elements'
-        )
-    ds = _reproject_if_needed(ds, bbox_crs)
-    dims = [
-        d
-        for d in map(str, ds.dims)
-        if d.lower() in {'lat', 'lon', 'latitude', 'longitude', 'x', 'y'}
-    ]
-    bbox_ndims = len(bbox) // 2
-    for i in range(min(len(dims), bbox_ndims)):
-        dim = dims[i]
-        min_, max_ = _correct_inverted_y_range(
-            ds, dim, (bbox[i], bbox[i + bbox_ndims])
-        )
-        ds = ds.sel({dim: slice(min_, max_)})
-    return ds
-
-
-def _apply_bbox_2(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
+def _apply_bbox(
+    ds: xr.Dataset, bbox_spec: str, bbox_crs: pyproj.CRS
+) -> xr.Dataset:
     try:
         bbox = list(map(float, bbox_spec.split(',')))
     except ValueError:
@@ -250,10 +228,9 @@ def _apply_bbox_2(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
             f'Invalid bbox "{bbox_spec}": must have 4 elements'
         )
     crs_ds = get_crs_from_dataset(ds)
-    crs_bbox = pyproj.CRS.from_string(bbox_crs)
-    if crs_ds != crs_bbox:
+    if crs_ds != bbox_crs:
         transformer = pyproj.Transformer.from_crs(
-            crs_bbox, crs_ds  # always_xy=True
+            bbox_crs, crs_ds, always_xy=True
         )
         if bbox[1] > bbox[3]:
             bbox[1], bbox[3] = bbox[3], bbox[1]
@@ -267,13 +244,13 @@ def _apply_bbox_2(ds: xr.Dataset, bbox_spec: str, bbox_crs: str) -> xr.Dataset:
 
 def _get_h_dim(ds: xr.Dataset):
     return [
-        d for d in list(map(str, ds.dims)) if d[:2].lower() in {'x', 'lon'}
+        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'x', 'lon'}
     ][0]
 
 
 def _get_v_dim(ds: xr.Dataset):
     return [
-        d for d in list(map(str, ds.dims)) if d[:2].lower() in {'y', 'lat'}
+        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'y', 'lat'}
     ][0]
 
 
@@ -296,14 +273,10 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
     indices, slices = {}, {}
     for part in subset_spec.split(','):
         # First try matching with quotation marks
-        m = re.match(
-            '^(.*)[(]"([^")]*)"(?::"(.*)")?[)]$', part
-        )
+        m = re.match('^(.*)[(]"([^")]*)"(?::"(.*)")?[)]$', part)
         if m is None:
             # If that fails, try without quotation marks
-            m = re.match(
-                '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
-            )
+            m = re.match('^(.*)[(]([^:)]*)(?::(.*))?[)]$', part)
         if m is None:
             raise ApiError.BadRequest(
                 f'Unrecognized subset specifier "{part}"'
@@ -314,8 +287,7 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
             raise ApiError.BadRequest(f'Axis "{axis}" does not exist.')
         if high is None:
             if axis == 'time':
-                indices[axis] = \
-                    ensure_time_index_compatible(ds, low)
+                indices[axis] = ensure_time_index_compatible(ds, low)
             else:
                 try:
                     # Parse to float if possible
@@ -326,8 +298,9 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
             low = None if low == '*' else low
             high = None if high == '*' else high
             if axis == 'time':
-                slices[axis] = \
-                    ensure_time_index_compatible(ds, slice(low, high))
+                slices[axis] = ensure_time_index_compatible(
+                    ds, slice(low, high)
+                )
             else:
                 # TODO Handle non-float arguments
                 low = float(low)
@@ -372,9 +345,11 @@ def dataset_to_image(
 
     ds = ds.squeeze()
 
-    with (tempfile.TemporaryDirectory() as tempdir):
+    with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.' + image_format)
-        ds = ds.drop_vars(names=['crs', 'spatial_ref'], errors='ignore').squeeze()
+        ds = ds.drop_vars(
+            names=['crs', 'spatial_ref'], errors='ignore'
+        ).squeeze()
         if len(ds.data_vars) == 1:
             ds[list(ds.data_vars)[0]].rio.to_raster(path)
         else:
