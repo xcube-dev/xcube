@@ -83,11 +83,12 @@ def get_coverage_data(
     """
 
     ds = get_dataset(ctx, collection_id)
-    native_crs = get_crs_from_dataset(ds)
 
-    # See https://docs.ogc.org/DRAFTS/19-087.html#_parameter_crs
+    # See https://docs.ogc.org/DRAFTS/19-087.html
+    native_crs = get_crs_from_dataset(ds)
     final_crs = pyproj.CRS(query['crs'][0]) if 'crs' in query else native_crs
     bbox_crs = pyproj.CRS(query.get('bbox-crs', ['OGC:CRS84'])[0])
+    subset_crs = query.get('subset-crs', ['OGC:CRS84'])[0]
 
     # TODO: apply a size limit to avoid OOMs from attempting to
     #  produce arbitrarily large coverages
@@ -107,7 +108,6 @@ def get_coverage_data(
             )
 
     if 'datetime' in query:
-        # TODO double-check that we don't need to support quotation marks
         if 'time' not in ds.variables:
             raise ApiError.BadRequest(
                 f'"datetime" parameter invalid for coverage "{collection_id}",'
@@ -130,14 +130,21 @@ def get_coverage_data(
             ds = ds.sel(time=timespec, method='nearest').squeeze()
 
     if 'subset' in query:
-        ds = _apply_subsetting(
-            ds, query['subset'][0], query.get('subset-crs', ['OGC:CRS84'])[0]
-        )
+        # TODO: Make sense of subset CRS / axis requirements in the spec
+        # "The axis name SHALL correspond to one of the axis of the Coordinate
+        # Reference System (CRS) of the coverage" but subset-crs allows the
+        # specification of a coverage in a different CRS, potentially with
+        # different axis names.
+        ds = _apply_subsetting(ds, query['subset'][0], subset_crs)
 
     if 'bbox' in query:
         ds = _apply_bbox(ds, query['bbox'][0], bbox_crs)
 
     # ds.rio.write_crs(get_crs_from_dataset(ds), inplace=True)
+
+    # TODO: check for empty dataset here, otherwise it will produce
+    #  a confusing "cannot find any grid mapping in dataset" error.
+
     source_gm = GridMapping.from_dataset(ds, crs=get_crs_from_dataset(ds))
     target_gm = None
 
@@ -200,6 +207,58 @@ def get_coverage_data(
 _IndexerTuple = NamedTuple(
     'Indexers', [('indices', dict[str, Any]), ('slices', dict[str, slice])]
 )
+
+
+def _crs_axis_name_to_dim_name(axis_name: str, ds: xr.Dataset) -> str:
+    # The spec says "The axis name SHALL correspond to one of the axis [sic]
+    # of the Coordinate Reference System (CRS) of the coverage", but does not
+    # define in what manner it must "correspond". The most practical solution
+    # (especially since many CRSs in the wild don't define axis names) seems
+    # to be to be as liberal as possible in try to interpret an axis
+    # specifier, falling back on the name itself if its entry in the CRS
+    # is uninformative or absent.
+
+    crs = get_crs_from_dataset(ds)
+    axis = _get_crs_axis_by_name(crs, axis_name)
+
+    if axis is not None:
+        abbrev = axis.abbrev[:3].lower()
+        if abbrev in {'x', 'e', 'lon'}:
+            return _get_h_dim(ds)
+        if abbrev in {'y', 'n', 'lat'}:
+            return _get_v_dim(ds)
+
+        name = axis.name.lower()
+        if name in {'easting', 'geocentric x'}:
+            return _get_h_dim(ds)
+        if name in {'northing', 'geocentric y'}:
+            return _get_v_dim(ds)
+
+        direction = axis.direction.lower()
+        if direction == 'east':
+            return _get_h_dim(ds)
+        if direction == 'north':
+            return _get_v_dim(ds)
+
+    # If we can't find or parse the axis, we fall back to using the
+    # name itself.
+
+    if axis_name[:3].lower() in {'x', 'e', 'lon', 'eas'}:
+        return _get_h_dim(ds)
+    if axis_name[:3].lower() in {'y', 'n', 'lat', 'nor'}:
+        return _get_v_dim(ds)
+
+    raise ApiError.BadRequest(
+        f"Couldn't find a dataset dimension "
+        f'corresponding to the axis "{axis_name}".'
+    )
+
+
+def _get_crs_axis_by_name(crs: pyproj.CRS, name: str):
+    for axis in crs.axis_info:
+        if axis.abbrev == name or axis.name == name:
+            return axis
+    return None
 
 
 def _apply_subsetting(
@@ -305,8 +364,16 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
                 # TODO Handle non-float arguments
                 low = float(low)
                 high = float(high)
-                low, high = _correct_inverted_y_range(ds, axis, (low, high))
+                low, high = _correct_inverted_y_range(
+                    ds, _crs_axis_name_to_dim_name(axis, ds), (low, high)
+                )
                 slices[axis] = slice(low, high)
+
+    # Transform keys from CRS axis abbreviations to dimension names
+    indices = {
+        _crs_axis_name_to_dim_name(k, ds): v for k, v in indices.items()
+    }
+    slices = {_crs_axis_name_to_dim_name(k, ds): v for k, v in slices.items()}
 
     return _IndexerTuple(indices, slices)
 
@@ -319,7 +386,7 @@ def _correct_inverted_y_range(
     # (For longitude, a descending-order slice is valid.)
     if (
         None not in range_
-        and axis in {'lat', 'latitude', 'y'}
+        and axis[:3].lower() in {'lat', 'nor', 'y'}
         and (x0 < x1) != (ds[axis][0] < ds[axis][-1])
     ):
         x0, x1 = x1, x0
@@ -468,7 +535,7 @@ def get_units(ds: xr.Dataset, dim: str) -> str:
     return 'unknown'
 
 
-def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.crs.CRS:
+def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.CRS:
     """
     Return the CRS of a dataset as a string. The CRS is taken from the
     metadata of the crs or spatial_ref variables, if available.
