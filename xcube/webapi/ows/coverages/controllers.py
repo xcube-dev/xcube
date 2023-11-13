@@ -240,13 +240,22 @@ def _crs_axis_name_to_dim_name(axis_name: str, ds: xr.Dataset) -> str:
         if direction == 'north':
             return _get_v_dim(ds)
 
-    # If we can't find or parse the axis, we fall back to using the
-    # name itself.
+    # If we can't find or parse the axis, we check the provided name against
+    # some commonly used names to decide whether it's horizontal or vertical.
 
     if axis_name[:3].lower() in {'x', 'e', 'lon', 'eas'}:
         return _get_h_dim(ds)
     if axis_name[:3].lower() in {'y', 'n', 'lat', 'nor'}:
         return _get_v_dim(ds)
+
+    # As a final fallback, we look for a dimension with the supplied name
+    # -- first case-sensitive, then case-insensitive.
+
+    if axis_name in ds.dims:
+        return axis_name
+    for d in ds.dims:
+        if str(d).lower() == axis_name.lower():
+            return str(d)
 
     raise ApiError.BadRequest(
         f"Couldn't find a dataset dimension "
@@ -342,8 +351,6 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
             )
         else:
             axis, low, high = m.groups()
-        if axis not in ds.dims:
-            raise ApiError.BadRequest(f'Axis "{axis}" does not exist.')
         if high is None:
             if axis == 'time':
                 indices[axis] = ensure_time_index_compatible(ds, low)
