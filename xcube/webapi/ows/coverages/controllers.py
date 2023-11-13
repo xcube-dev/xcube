@@ -90,9 +90,6 @@ def get_coverage_data(
     bbox_crs = pyproj.CRS(query.get('bbox-crs', ['OGC:CRS84'])[0])
     subset_crs = query.get('subset-crs', ['OGC:CRS84'])[0]
 
-    # TODO: apply a size limit to avoid OOMs from attempting to
-    #  produce arbitrarily large coverages
-
     if 'properties' in query:
         requested_vars = set(query['properties'][0].split(','))
         data_vars = set(map(str, ds.data_vars))
@@ -142,8 +139,7 @@ def get_coverage_data(
 
     # ds.rio.write_crs(get_crs_from_dataset(ds), inplace=True)
 
-    # TODO: check for empty dataset here, otherwise it will produce
-    #  a confusing "cannot find any grid mapping in dataset" error.
+    _assert_coverage_size_ok(ds)
 
     source_gm = GridMapping.from_dataset(ds, crs=get_crs_from_dataset(ds))
     target_gm = None
@@ -201,6 +197,23 @@ def get_coverage_data(
             + ', '.join(
                 [type_ for value in media_types.values() for type_ in value]
             )
+        )
+
+
+def _assert_coverage_size_ok(ds):
+    size_limit = 4000 * 4000
+    h_dim = _get_h_dim(ds)
+    v_dim = _get_v_dim(ds)
+    for d in h_dim, v_dim:
+        size = ds.dims[d]
+        if size == 0:
+            raise ApiError.BadRequest(
+                f'Requested coverage contains no data: {d} has zero size.'
+            )
+    if (h_size := ds.dims[h_dim]) * (y_size := ds.dims[v_dim]) > size_limit:
+        raise ApiError.BadRequest(
+            f'Requested coverage is too large:'
+            f'{h_size} × {y_size} > {size_limit}.'
         )
 
 
