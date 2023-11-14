@@ -201,7 +201,7 @@ def get_coverage_data(
 
 
 def _assert_coverage_size_ok(ds):
-    size_limit = 4000 * 4000
+    size_limit = 4000 * 4000  # TODO make this configurable
     h_dim = _get_h_dim(ds)
     v_dim = _get_v_dim(ds)
     for d in h_dim, v_dim:

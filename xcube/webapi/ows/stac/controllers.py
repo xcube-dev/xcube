@@ -41,6 +41,7 @@ from .config import DEFAULT_COLLECTION_DESCRIPTION
 from .config import DEFAULT_COLLECTION_ID
 from .config import DEFAULT_COLLECTION_TITLE
 from .config import PATH_PREFIX
+from ..coverages.controllers import get_crs_from_dataset
 from ...datasets.context import DatasetsContext
 
 STAC_VERSION = '1.0.0'
@@ -452,6 +453,7 @@ def _get_single_dataset_collection(
             time_properties['datetime'],
             time_properties['datetime']
         ]
+    storage_crs = _crs_to_uri_or_wkt(get_crs_from_dataset(dataset))
     result = {
         'assets': _get_assets(ctx, base_url, dataset_id),
         'description': dataset_id,
@@ -522,9 +524,31 @@ def _get_single_dataset_collection(
         'summaries': {},
         'title': dataset_id,
         'type': 'Collection',
+        'storageCRS': storage_crs,
+        'crs': [
+            storage_crs,
+            _crs_to_uri_or_wkt(pyproj.CRS('OGC:CRS84')),
+            _crs_to_uri_or_wkt(pyproj.CRS('EPSG:4326'))
+            # TODO: decide what else to include in this list.
+            #  Listing all 11396 CRSs currently known to pyproj seems
+            #  impractical.
+        ]
     }
     result.update(_get_cube_properties(ctx, dataset_id))
     return result
+
+
+def _crs_to_uri_or_wkt(crs: pyproj.CRS) -> str:
+    auth_and_code = crs.to_authority()
+    if auth_and_code is not None:
+        authority, code = auth_and_code
+        # TODO check appropriate version for EPSG: 9.9.1 is available,
+        #  but Testbed-19 participants seem to prefer 0.
+        version = dict(OGC='1.3', IAU='2015', EPSG='0').get(authority, '0')
+        return (f'http://www.opengis.net/def/crs/'
+                f'{authority}/{version}/{code}')
+    else:
+        return crs.to_wkt()
 
 
 class GridBbox:
