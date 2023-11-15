@@ -176,6 +176,8 @@ def get_coverage_data(
         # too big, so we re-crop in the final CRS.
         ds = _apply_bbox(ds, query['bbox'][0], bbox_crs)
 
+    # TODO rename axes to match final CRS?
+
     media_types = dict(
         tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
         png={'png', 'image/png'},
@@ -207,10 +209,13 @@ def _assert_coverage_size_ok(ds):
     for d in h_dim, v_dim:
         size = ds.dims[d]
         if size == 0:
+            # TODO This should actually be a 204 (No content) rather than
+            #  a 400, per Requirement 8C.
             raise ApiError.BadRequest(
                 f'Requested coverage contains no data: {d} has zero size.'
             )
     if (h_size := ds.dims[h_dim]) * (y_size := ds.dims[v_dim]) > size_limit:
+        # TODO This should probably be 413 Payload too large
         raise ApiError.BadRequest(
             f'Requested coverage is too large:'
             f'{h_size} × {y_size} > {size_limit}.'
@@ -287,8 +292,19 @@ def _apply_subsetting(
     ds: xr.Dataset, subset_spec: str, subset_crs: str
 ) -> xr.Dataset:
     indexers = _subset_to_indexers(subset_spec, ds)
-    # TODO only reproject if there are spatial indexers
     # ds = _reproject_if_needed(ds, subset_crs)
+    # TODO: turn spatial subset into a bbox:
+    # 1. transform native extent to a whole-dataset bbox in subset_crs
+    # 2. find horizontal and/or vertical ranges in indexers
+    # (just use slices for now)
+    # 3. if horizontal or vertical missing, fill in with values from
+    # whole-dataset bbox
+    # 4. Using slice indexers and maybe whole-dataset bbox, construct
+    # the desired bbox in subset_crs
+    # 5. use pyproj to transform desired bbox from subset_crs to
+    # dataset-native CRS
+    # 6. apply dataset-native bbox using sel
+    # Can reuse _apply_bbox code (with minor refactoring) for 5 and 6.
     if indexers.indices:
         ds = ds.sel(indexers=indexers.indices, method='nearest')
     if indexers.slices:
