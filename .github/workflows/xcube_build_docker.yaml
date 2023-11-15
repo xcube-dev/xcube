@@ -14,24 +14,32 @@ jobs:
     # Build the docker image and push to quay.io
     name: build-docker-image
     steps:
+      # Determine latest release tag
+      - name: Get latest release
+        id: latest_release
+        run: |
+            LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/dcs4cop/xcube/releases/latest" | jq -r .tag_name)
+            echo "::set-output name=release_tag::$LATEST_RELEASE"
+
+      # checkout the repo with the release tag from previous step
       - name: git-checkout
         uses: actions/checkout@v2
-      # Determine release tag from git ref
-      - name: get-release-tag
-        id: release
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+        with:
+          ref: ${{ steps.latest_release.outputs.release_tag }}
+
       # Print some info
       - name: info
         id: info
         run: |
-          echo "TAG: ${{ steps.release.outputs.tag }}"
+          echo "TAG: ${{ steps.latest_release.outputs.release_tag }}"
           echo "EVENT: ${{ github.event_name }}"
+
       # Build and push docker release to quay.io
       - name: push-docker-image-with-release-tag
         uses: mr-smithers-excellent/docker-build-push@v5
         with:
           image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
-          tags: ${{ steps.release.outputs.tag }}
+          tags: ${{ steps.latest_release.outputs.release_tag }}
           registry: ${{ env.IMG_REG_NAME }}
           username: ${{ secrets.IMG_REG_USERNAME }}
           password: ${{ secrets.IMG_REG_PASSWORD }}
