@@ -127,11 +127,6 @@ def get_coverage_data(
             ds = ds.sel(time=timespec, method='nearest').squeeze()
 
     if 'subset' in query:
-        # TODO: Make sense of subset CRS / axis requirements in the spec
-        # "The axis name SHALL correspond to one of the axis of the Coordinate
-        # Reference System (CRS) of the coverage" but subset-crs allows the
-        # specification of a coverage in a different CRS, potentially with
-        # different axis names.
         ds = _apply_subsetting(ds, query['subset'][0], subset_crs)
 
     if 'bbox' in query:
@@ -292,23 +287,68 @@ def _apply_subsetting(
     ds: xr.Dataset, subset_spec: str, subset_crs: str
 ) -> xr.Dataset:
     indexers = _subset_to_indexers(subset_spec, ds)
-    # ds = _reproject_if_needed(ds, subset_crs)
-    # TODO: turn spatial subset into a bbox:
-    # 1. transform native extent to a whole-dataset bbox in subset_crs
-    # 2. find horizontal and/or vertical ranges in indexers
-    # (just use slices for now)
-    # 3. if horizontal or vertical missing, fill in with values from
-    # whole-dataset bbox
-    # 4. Using slice indexers and maybe whole-dataset bbox, construct
-    # the desired bbox in subset_crs
-    # 5. use pyproj to transform desired bbox from subset_crs to
-    # dataset-native CRS
-    # 6. apply dataset-native bbox using sel
-    # Can reuse _apply_bbox code (with minor refactoring) for 5 and 6.
+
+    # TODO: for geographic subsetting, also handle single-value (non-slice)
+    #  and half-open slices.
+
+    # TODO: Separate out the geographic subsetting code,
+    #  and skip it if there are no geographic specifiers.
+
+    # 1. transform native extent to a whole-dataset bbox in subset_crs.
+    # We'll use this to fill in "full extent" values if geographic
+    # subsetting is only specified in one dimension.
+    h_dim = _get_h_dim(ds)
+    v_dim = _get_v_dim(ds)
+    full_bbox_native = [
+        ds[h_dim][0], ds[v_dim][0], ds[h_dim][-1], ds[v_dim][-1]
+    ]
+    _ensure_bbox_y_ascending(full_bbox_native)
+    native_crs = get_crs_from_dataset(ds)
+    if native_crs != subset_crs:
+        transformer = pyproj.Transformer.from_crs(
+            native_crs, subset_crs, always_xy=True
+        )
+        _ensure_bbox_y_ascending(full_bbox_native)
+        full_bbox_subset_crs = transformer.transform_bounds(*full_bbox_native)
+    else:
+        full_bbox_subset_crs = full_bbox_native
+
+    # 2. Find horizontal and/or vertical ranges in indexers (just use slices
+    # for now), falling back to values from whole-dataset bbox if a complete
+    # bbox is not specified.
+    h_range = indexers.slices.get(
+        h_dim, slice(full_bbox_subset_crs[0], full_bbox_subset_crs[2])
+    )
+    v_range = indexers.slices.get(
+        v_dim, slice(full_bbox_subset_crs[1], full_bbox_subset_crs[3])
+    )
+
+    # 3. Using the ranges determined from the indexers and whole-dataset bbox,
+    # construct the requested bbox in the subsetting CRS.
+    bbox_subset_crs = [h_range.start, v_range.start, h_range.stop, v_range.stop]
+
+    # 4. Use pyproj to transform the requested bbox from the subsetting CRS to
+    # the dataset-native CRS.
+    if native_crs != subset_crs:
+        transformer = pyproj.Transformer.from_crs(
+            subset_crs, native_crs, always_xy=True
+        )
+        _ensure_bbox_y_ascending(bbox_subset_crs)
+        bbox_native_crs = transformer.transform_bounds(*bbox_subset_crs)
+    else:
+        bbox_native_crs = bbox_subset_crs
+
+    # 6. Apply the dataset-native bbox using sel.
+    ds = ds.sel(indexers={
+        h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
+        v_dim: slice(*_correct_inverted_y_range(
+            ds, v_dim, (bbox_native_crs[1], bbox_native_crs[3])
+        )),
+    })
+
     if indexers.indices:
         ds = ds.sel(indexers=indexers.indices, method='nearest')
-    if indexers.slices:
-        ds = ds.sel(indexers=indexers.slices)
+
     return ds
 
 
@@ -329,14 +369,18 @@ def _apply_bbox(
         transformer = pyproj.Transformer.from_crs(
             bbox_crs, crs_ds, always_xy=True
         )
-        if bbox[1] > bbox[3]:
-            bbox[1], bbox[3] = bbox[3], bbox[1]
+        _ensure_bbox_y_ascending(bbox)
         bbox = transformer.transform_bounds(*bbox)
     h_dim = _get_h_dim(ds)
     v_dim = _get_v_dim(ds)
     v_slice = _correct_inverted_y_range(ds, v_dim, (bbox[1], bbox[3]))
     ds = ds.sel({h_dim: slice(bbox[0], bbox[2]), v_dim: slice(*v_slice)})
     return ds
+
+
+def _ensure_bbox_y_ascending(bbox: list):
+    if bbox[1] > bbox[3]:
+        bbox[1], bbox[3] = bbox[3], bbox[1]
 
 
 def _get_h_dim(ds: xr.Dataset):
