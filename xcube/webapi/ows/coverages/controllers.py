@@ -88,7 +88,7 @@ def get_coverage_data(
     native_crs = get_crs_from_dataset(ds)
     final_crs = pyproj.CRS(query['crs'][0]) if 'crs' in query else native_crs
     bbox_crs = pyproj.CRS(query.get('bbox-crs', ['OGC:CRS84'])[0])
-    subset_crs = query.get('subset-crs', ['OGC:CRS84'])[0]
+    subset_crs = pyproj.CRS(query.get('subset-crs', ['OGC:CRS84'])[0])
 
     if 'properties' in query:
         requested_vars = set(query['properties'][0].split(','))
@@ -127,10 +127,12 @@ def get_coverage_data(
             ds = ds.sel(time=timespec, method='nearest').squeeze()
 
     if 'subset' in query:
-        ds = _apply_subsetting(ds, query['subset'][0], subset_crs)
+        subset_bbox, ds = _apply_subsetting(ds, query['subset'][0], subset_crs)
+    else:
+        subset_bbox = None
 
     if 'bbox' in query:
-        ds = _apply_bbox(ds, query['bbox'][0], bbox_crs)
+        ds = _apply_bbox_spec(ds, query['bbox'][0], bbox_crs)
 
     # ds.rio.write_crs(get_crs_from_dataset(ds), inplace=True)
 
@@ -166,10 +168,12 @@ def get_coverage_data(
     if target_gm is not None:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
 
+    # In this case, the transformed native CRS bbox[es] may have been
+    # too big, so we re-crop in the final CRS.
     if native_crs != final_crs and 'bbox' in query:
-        # In this case, the transformed native CRS bbox may have been
-        # too big, so we re-crop in the final CRS.
-        ds = _apply_bbox(ds, query['bbox'][0], bbox_crs)
+        ds = _apply_bbox_spec(ds, query['bbox'][0], bbox_crs)
+    if subset_bbox is not None:
+        ds = _apply_bbox(ds, subset_bbox, subset_crs)
 
     # TODO rename axes to match final CRS?
 
@@ -218,7 +222,12 @@ def _assert_coverage_size_ok(ds):
 
 
 _IndexerTuple = NamedTuple(
-    'Indexers', [('indices', dict[str, Any]), ('slices', dict[str, slice])]
+    'Indexers', [
+        ('indices', dict[str, Any]),  # single-valued specifiers
+        ('slices', dict[str, slice]),  # range specifiers
+        ('x', Optional[Any]),  # x / longitude specifier (if any)
+        ('y', Optional[Any]),  # y / latitude specifier (if any)
+    ]
 )
 
 
@@ -284,59 +293,55 @@ def _get_crs_axis_by_name(crs: pyproj.CRS, name: str):
 
 
 def _apply_subsetting(
-    ds: xr.Dataset, subset_spec: str, subset_crs: str
-) -> xr.Dataset:
-    indexers = _subset_to_indexers(subset_spec, ds)
+    ds: xr.Dataset, subset_spec: str, subset_crs: pyproj.CRS
+) -> tuple[list[float], xr.Dataset]:
+    indexers = _parse_subset_specifier(subset_spec, ds)
 
     # TODO: for geographic subsetting, also handle single-value (non-slice)
-    #  and half-open slices.
+    #  indices and half-open slices.
 
-    # TODO: Separate out the geographic subsetting code,
-    #  and skip it if there are no geographic specifiers.
+    # TODO: Return a subsetting bbox for use further along the pipeline
 
+    bbox = None
+    if (indexers.x, indexers.y) != (None, None):
+        bbox, ds = _apply_geographic_subsetting(ds, subset_crs, indexers)
+    if indexers.slices:
+        ds = ds.sel(indexers=indexers.slices)
+    if indexers.indices:
+        ds = ds.sel(indexers=indexers.indices, method='nearest')
+
+    return bbox, ds
+
+
+def _apply_geographic_subsetting(
+        ds, subset_crs, indexers
+) -> tuple[list[float], xr.Dataset]:
     # 1. transform native extent to a whole-dataset bbox in subset_crs.
     # We'll use this to fill in "full extent" values if geographic
     # subsetting is only specified in one dimension.
     h_dim = _get_h_dim(ds)
     v_dim = _get_v_dim(ds)
-    full_bbox_native = [
+    full_bbox_native = list(map(float, [
         ds[h_dim][0], ds[v_dim][0], ds[h_dim][-1], ds[v_dim][-1]
-    ]
+    ]))
     _ensure_bbox_y_ascending(full_bbox_native)
     native_crs = get_crs_from_dataset(ds)
-    if native_crs != subset_crs:
-        transformer = pyproj.Transformer.from_crs(
-            native_crs, subset_crs, always_xy=True
-        )
-        _ensure_bbox_y_ascending(full_bbox_native)
-        full_bbox_subset_crs = transformer.transform_bounds(*full_bbox_native)
-    else:
-        full_bbox_subset_crs = full_bbox_native
+    full_bbox_subset_crs = \
+        _transform_bbox(full_bbox_native, native_crs, subset_crs)
 
-    # 2. Find horizontal and/or vertical ranges in indexers (just use slices
-    # for now), falling back to values from whole-dataset bbox if a complete
-    # bbox is not specified.
-    h_range = indexers.slices.get(
-        h_dim, slice(full_bbox_subset_crs[0], full_bbox_subset_crs[2])
-    )
-    v_range = indexers.slices.get(
-        v_dim, slice(full_bbox_subset_crs[1], full_bbox_subset_crs[3])
-    )
+    # 2. Find horizontal and/or vertical ranges in indexers, falling back to
+    # values from whole-dataset bbox if a complete bbox is not specified.
+    h_range = indexers.x if indexers.x is not None else \
+        slice(full_bbox_subset_crs[0], full_bbox_subset_crs[2])
+    v_range = indexers.y if indexers.y is not None else \
+        slice(full_bbox_subset_crs[1], full_bbox_subset_crs[3])
 
     # 3. Using the ranges determined from the indexers and whole-dataset bbox,
     # construct the requested bbox in the subsetting CRS.
     bbox_subset_crs = [h_range.start, v_range.start, h_range.stop, v_range.stop]
 
-    # 4. Use pyproj to transform the requested bbox from the subsetting CRS to
-    # the dataset-native CRS.
-    if native_crs != subset_crs:
-        transformer = pyproj.Transformer.from_crs(
-            subset_crs, native_crs, always_xy=True
-        )
-        _ensure_bbox_y_ascending(bbox_subset_crs)
-        bbox_native_crs = transformer.transform_bounds(*bbox_subset_crs)
-    else:
-        bbox_native_crs = bbox_subset_crs
+    # 4. Transform requested bbox from subsetting CRS to dataset-native CRS.
+    bbox_native_crs = _transform_bbox(bbox_subset_crs, subset_crs, native_crs)
 
     # 6. Apply the dataset-native bbox using sel.
     ds = ds.sel(indexers={
@@ -345,14 +350,34 @@ def _apply_subsetting(
             ds, v_dim, (bbox_native_crs[1], bbox_native_crs[3])
         )),
     })
-
-    if indexers.indices:
-        ds = ds.sel(indexers=indexers.indices, method='nearest')
-
-    return ds
+    return bbox_subset_crs, ds
 
 
-def _apply_bbox(
+def _find_geographic_parameters(names: list[str]) -> tuple[Optional[str], Optional[str]]:
+    x, y = None, None
+    for name in names:
+        if name.lower()[:3] in ['x', 'e', 'eas', 'lon']:
+            x = name
+        if name.lower()[:3] in ['y', 'n', 'nor', 'lat']:
+            y = name
+    return x, y
+
+
+def _transform_bbox(
+        bbox: list[float], source_crs: pyproj.CRS, dest_crs: pyproj.CRS
+) -> list[float]:
+    if source_crs == dest_crs:
+        return bbox
+    else:
+        transformer = pyproj.Transformer.from_crs(
+            source_crs, dest_crs, always_xy=True
+        )
+        bbox_ = bbox.copy()
+        _ensure_bbox_y_ascending(bbox_)
+        return list(transformer.transform_bounds(*bbox_))
+
+
+def _apply_bbox_spec(
     ds: xr.Dataset, bbox_spec: str, bbox_crs: pyproj.CRS
 ) -> xr.Dataset:
     try:
@@ -364,7 +389,13 @@ def _apply_bbox(
         raise ApiError.BadRequest(
             f'Invalid bbox "{bbox_spec}": must have 4 elements'
         )
+    return _apply_bbox(ds, bbox, bbox_crs)
+
+
+def _apply_bbox(ds: xr.Dataset, bbox: list[float], bbox_crs: pyproj.CRS):
     crs_ds = get_crs_from_dataset(ds)
+
+    # TODO: refactor -- use _transform_bbox
     if crs_ds != bbox_crs:
         transformer = pyproj.Transformer.from_crs(
             bbox_crs, crs_ds, always_xy=True
@@ -410,8 +441,8 @@ def _reproject_if_needed(ds: xr.Dataset, target_crs: str):
         return ds
 
 
-def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
-    indices, slices = {}, {}
+def _parse_subset_specifier(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
+    specifiers = {}
     for part in subset_spec.split(','):
         # First try matching with quotation marks
         m = re.match('^(.*)[(]"([^")]*)"(?::"(.*)")?[)]$', part)
@@ -426,18 +457,18 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
             axis, low, high = m.groups()
         if high is None:
             if axis == 'time':
-                indices[axis] = ensure_time_index_compatible(ds, low)
+                specifiers[axis] = ensure_time_index_compatible(ds, low)
             else:
                 try:
                     # Parse to float if possible
-                    indices[axis] = float(low)
+                    specifiers[axis] = float(low)
                 except ValueError:
-                    indices[axis] = low
+                    specifiers[axis] = low
         else:
             low = None if low == '*' else low
             high = None if high == '*' else high
             if axis == 'time':
-                slices[axis] = ensure_time_index_compatible(
+                specifiers[axis] = ensure_time_index_compatible(
                     ds, slice(low, high)
                 )
             else:
@@ -447,15 +478,21 @@ def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
                 low, high = _correct_inverted_y_range(
                     ds, _crs_axis_name_to_dim_name(axis, ds), (low, high)
                 )
-                slices[axis] = slice(low, high)
+                specifiers[axis] = slice(low, high)
+
+    # Find and extract geographic parameters, if any. These have to be
+    # handled specially, since they refer to axis names in the subsetting
+    # CRS rather than dimension names in the dataset.
+
+    x_param, y_param = _find_geographic_parameters(list(specifiers))
+    x_value = specifiers.pop(x_param) if x_param is not None else None
+    y_value = specifiers.pop(y_param) if y_param is not None else None
 
     # Transform keys from CRS axis abbreviations to dimension names
-    indices = {
-        _crs_axis_name_to_dim_name(k, ds): v for k, v in indices.items()
-    }
-    slices = {_crs_axis_name_to_dim_name(k, ds): v for k, v in slices.items()}
+    indices = {k: v for k, v in specifiers.items() if not isinstance(v, slice)}
+    slices = {k: v for k, v in specifiers.items() if isinstance(v, slice)}
 
-    return _IndexerTuple(indices, slices)
+    return _IndexerTuple(indices, slices, x_value, y_value)
 
 
 def _correct_inverted_y_range(
