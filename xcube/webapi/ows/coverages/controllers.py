@@ -222,12 +222,13 @@ def _assert_coverage_size_ok(ds):
 
 
 _IndexerTuple = NamedTuple(
-    'Indexers', [
+    'Indexers',
+    [
         ('indices', dict[str, Any]),  # single-valued specifiers
         ('slices', dict[str, slice]),  # range specifiers
         ('x', Optional[Any]),  # x / longitude specifier (if any)
         ('y', Optional[Any]),  # y / latitude specifier (if any)
-    ]
+    ],
 )
 
 
@@ -300,8 +301,6 @@ def _apply_subsetting(
     # TODO: for geographic subsetting, also handle single-value (non-slice)
     #  indices and half-open slices.
 
-    # TODO: Return a subsetting bbox for use further along the pipeline
-
     bbox = None
     if (indexers.x, indexers.y) != (None, None):
         bbox, ds = _apply_geographic_subsetting(ds, subset_crs, indexers)
@@ -314,46 +313,64 @@ def _apply_subsetting(
 
 
 def _apply_geographic_subsetting(
-        ds, subset_crs, indexers
+    ds, subset_crs, indexers
 ) -> tuple[list[float], xr.Dataset]:
     # 1. transform native extent to a whole-dataset bbox in subset_crs.
     # We'll use this to fill in "full extent" values if geographic
     # subsetting is only specified in one dimension.
     h_dim = _get_h_dim(ds)
     v_dim = _get_v_dim(ds)
-    full_bbox_native = list(map(float, [
-        ds[h_dim][0], ds[v_dim][0], ds[h_dim][-1], ds[v_dim][-1]
-    ]))
+    full_bbox_native = list(
+        map(float, [ds[h_dim][0], ds[v_dim][0], ds[h_dim][-1], ds[v_dim][-1]])
+    )
     _ensure_bbox_y_ascending(full_bbox_native)
     native_crs = get_crs_from_dataset(ds)
-    full_bbox_subset_crs = \
-        _transform_bbox(full_bbox_native, native_crs, subset_crs)
+    full_bbox_subset_crs = _transform_bbox(
+        full_bbox_native, native_crs, subset_crs
+    )
 
     # 2. Find horizontal and/or vertical ranges in indexers, falling back to
     # values from whole-dataset bbox if a complete bbox is not specified.
-    h_range = indexers.x if indexers.x is not None else \
-        slice(full_bbox_subset_crs[0], full_bbox_subset_crs[2])
-    v_range = indexers.y if indexers.y is not None else \
-        slice(full_bbox_subset_crs[1], full_bbox_subset_crs[3])
+    h_range = (
+        indexers.x
+        if indexers.x is not None
+        else slice(full_bbox_subset_crs[0], full_bbox_subset_crs[2])
+    )
+    v_range = (
+        indexers.y
+        if indexers.y is not None
+        else slice(full_bbox_subset_crs[1], full_bbox_subset_crs[3])
+    )
 
     # 3. Using the ranges determined from the indexers and whole-dataset bbox,
     # construct the requested bbox in the subsetting CRS.
-    bbox_subset_crs = [h_range.start, v_range.start, h_range.stop, v_range.stop]
+    bbox_subset_crs = [
+        h_range.start,
+        v_range.start,
+        h_range.stop,
+        v_range.stop,
+    ]
 
     # 4. Transform requested bbox from subsetting CRS to dataset-native CRS.
     bbox_native_crs = _transform_bbox(bbox_subset_crs, subset_crs, native_crs)
 
     # 6. Apply the dataset-native bbox using sel.
-    ds = ds.sel(indexers={
-        h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
-        v_dim: slice(*_correct_inverted_y_range(
-            ds, v_dim, (bbox_native_crs[1], bbox_native_crs[3])
-        )),
-    })
+    ds = ds.sel(
+        indexers={
+            h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
+            v_dim: slice(
+                *_correct_inverted_y_range(
+                    ds, v_dim, (bbox_native_crs[1], bbox_native_crs[3])
+                )
+            ),
+        }
+    )
     return bbox_subset_crs, ds
 
 
-def _find_geographic_parameters(names: list[str]) -> tuple[Optional[str], Optional[str]]:
+def _find_geographic_parameters(
+    names: list[str],
+) -> tuple[Optional[str], Optional[str]]:
     x, y = None, None
     for name in names:
         if name.lower()[:3] in ['x', 'e', 'eas', 'lon']:
@@ -364,7 +381,7 @@ def _find_geographic_parameters(names: list[str]) -> tuple[Optional[str], Option
 
 
 def _transform_bbox(
-        bbox: list[float], source_crs: pyproj.CRS, dest_crs: pyproj.CRS
+    bbox: list[float], source_crs: pyproj.CRS, dest_crs: pyproj.CRS
 ) -> list[float]:
     if source_crs == dest_crs:
         return bbox
