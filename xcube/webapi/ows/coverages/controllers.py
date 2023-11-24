@@ -82,6 +82,8 @@ def get_coverage_data(
              if the requested output format is not supported
     """
 
+    # TODO: Update implementation to use the CoveragesRequest class
+
     ds = get_dataset(ctx, collection_id)
 
     # See https://docs.ogc.org/DRAFTS/19-087.html
