@@ -66,7 +66,7 @@ def get_coverage_data(
     collection_id: str,
     query: Mapping[str, Sequence[str]],
     content_type: str,
-) -> Optional[bytes]:
+) -> tuple[Optional[bytes], list[float], pyproj.CRS]:
     """
     Return coverage data from a dataset
 
@@ -183,11 +183,11 @@ def get_coverage_data(
         netcdf={'netcdf', 'application/netcdf', 'application/x-netcdf'},
     )
     if content_type in media_types['tiff']:
-        return dataset_to_image(ds, 'tiff')
+        content = dataset_to_image(ds, 'tiff')
     elif content_type in media_types['png']:
-        return dataset_to_image(ds, 'png')
+        content = dataset_to_image(ds, 'png')
     elif content_type in media_types['netcdf']:
-        return dataset_to_netcdf(ds)
+        content = dataset_to_netcdf(ds)
     else:
         # It's expected that the caller (server API handler) will catch
         # unhandled types, but we may as well do the right thing if any
@@ -199,6 +199,8 @@ def get_coverage_data(
                 [type_ for value in media_types.values() for type_ in value]
             )
         )
+    final_bbox = get_bbox_from_ds(ds)
+    return content, final_bbox, final_crs
 
 
 def _assert_coverage_size_ok(ds):
@@ -317,12 +319,7 @@ def _apply_geographic_subsetting(
     # 1. transform native extent to a whole-dataset bbox in subset_crs.
     # We'll use this to fill in "full extent" values if geographic
     # subsetting is only specified in one dimension.
-    h_dim = _get_h_dim(ds)
-    v_dim = _get_v_dim(ds)
-    full_bbox_native = list(
-        map(float, [ds[h_dim][0], ds[v_dim][0], ds[h_dim][-1], ds[v_dim][-1]])
-    )
-    _ensure_bbox_y_ascending(full_bbox_native)
+    full_bbox_native = get_bbox_from_ds(ds)
     native_crs = get_crs_from_dataset(ds)
     full_bbox_subset_crs = _transform_bbox(
         full_bbox_native, native_crs, subset_crs
@@ -354,6 +351,8 @@ def _apply_geographic_subsetting(
     bbox_native_crs = _transform_bbox(bbox_subset_crs, subset_crs, native_crs)
 
     # 6. Apply the dataset-native bbox using sel.
+    h_dim = _get_h_dim(ds)
+    v_dim = _get_v_dim(ds)
     ds = ds.sel(
         indexers={
             h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
@@ -365,6 +364,13 @@ def _apply_geographic_subsetting(
         }
     )
     return bbox_subset_crs, ds
+
+
+def get_bbox_from_ds(ds: xr.Dataset):
+    h, v = ds[_get_h_dim(ds)], ds[_get_v_dim(ds)]
+    bbox = list(map(float, [h[0], v[0], h[-1], v[-1]]))
+    _ensure_bbox_y_ascending(bbox)
+    return bbox
 
 
 def _find_geographic_parameters(

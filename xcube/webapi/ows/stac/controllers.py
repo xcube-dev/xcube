@@ -542,9 +542,7 @@ def _crs_to_uri_or_wkt(crs: pyproj.CRS) -> str:
     auth_and_code = crs.to_authority()
     if auth_and_code is not None:
         authority, code = auth_and_code
-        # TODO check appropriate version for EPSG: 9.9.1 is available,
-        #  but Testbed-19 participants seem to prefer 0.
-        version = dict(OGC='1.3', IAU='2015', EPSG='0').get(authority, '0')
+        version = 0  # per https://docs.ogc.org/pol/09-048r6.html#toc13
         return (f'http://www.opengis.net/def/crs/'
                 f'{authority}/{version}/{code}')
     else:
