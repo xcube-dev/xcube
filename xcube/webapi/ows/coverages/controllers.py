@@ -214,8 +214,7 @@ def _assert_coverage_size_ok(ds):
                 f'Requested coverage contains no data: {d} has zero size.'
             )
     if (h_size := ds.dims[h_dim]) * (y_size := ds.dims[v_dim]) > size_limit:
-        # TODO This should probably be 413 Payload too large
-        raise ApiError.BadRequest(
+        raise ApiError.ContentTooLarge(
             f'Requested coverage is too large:'
             f'{h_size} × {y_size} > {size_limit}.'
         )
@@ -224,10 +223,10 @@ def _assert_coverage_size_ok(ds):
 _IndexerTuple = NamedTuple(
     'Indexers',
     [
-        ('indices', dict[str, Any]),  # single-valued specifiers
-        ('slices', dict[str, slice]),  # range specifiers
-        ('x', Optional[Any]),  # x / longitude specifier (if any)
-        ('y', Optional[Any]),  # y / latitude specifier (if any)
+        ('indices', dict[str, Any]),  # non-geographic single-valued specifiers
+        ('slices', dict[str, slice]),  # non-geographic range specifiers
+        ('x', Optional[Any]),  # x or longitude specifier (if any)
+        ('y', Optional[Any]),  # y or latitude specifier (if any)
     ],
 )
 
