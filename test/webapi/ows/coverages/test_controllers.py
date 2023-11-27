@@ -55,7 +55,7 @@ class CoveragesControllersTest(unittest.TestCase):
     def test_get_coverage_data_tiff(self):
         query = dict(
             bbox=['1,51,2,52'],
-            datetime=['2017-01-25'],
+            datetime=['2017-01-25T00:00:00Z'],
             properties=['conc_chl'],
         )
         content, content_bbox, content_crs = get_coverage_data(
@@ -72,7 +72,7 @@ class CoveragesControllersTest(unittest.TestCase):
         crs = 'EPSG:4326'
         query = dict(
             bbox=['1,51,2,52'],
-            datetime=['2017-01-24/2017-01-27'],
+            datetime=['2017-01-24T00:00:00Z/2017-01-27T00:00:00Z'],
             properties=['conc_chl,kd489'],
             crs=[crs],
         )

@@ -21,7 +21,7 @@
 import os
 import re
 import tempfile
-from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple
+from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple, Union
 
 import numpy as np
 import pyproj
@@ -32,6 +32,7 @@ from xcube.core.resampling import resample_in_space
 from xcube.server.api import ApiError
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.webapi.datasets.context import DatasetsContext
+from xcube.webapi.ows.coverages.util import CoveragesRequest
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
@@ -64,7 +65,7 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
 def get_coverage_data(
     ctx: DatasetsContext,
     collection_id: str,
-    query: Mapping[str, Sequence[str]],
+    query_: Mapping[str, Sequence[str]],
     content_type: str,
 ) -> tuple[Optional[bytes], list[float], pyproj.CRS]:
     """
@@ -86,14 +87,19 @@ def get_coverage_data(
 
     ds = get_dataset(ctx, collection_id)
 
+    try:
+        request = CoveragesRequest(query_)
+    except ValueError as e:
+        raise ApiError.BadRequest(str(e))
+
     # See https://docs.ogc.org/DRAFTS/19-087.html
     native_crs = get_crs_from_dataset(ds)
-    final_crs = pyproj.CRS(query['crs'][0]) if 'crs' in query else native_crs
-    bbox_crs = pyproj.CRS(query.get('bbox-crs', ['OGC:CRS84'])[0])
-    subset_crs = pyproj.CRS(query.get('subset-crs', ['OGC:CRS84'])[0])
+    final_crs = request.crs if request.crs is not None else native_crs
+    bbox_crs = request.bbox_crs
+    subset_crs = request.subset_crs
 
-    if 'properties' in query:
-        requested_vars = set(query['properties'][0].split(','))
+    if request.properties is not None:
+        requested_vars = set(request.properties)
         data_vars = set(map(str, ds.data_vars))
         unrecognized_vars = requested_vars - data_vars
         if unrecognized_vars == set():
@@ -106,35 +112,27 @@ def get_coverage_data(
                 f'{collection_id}: {", ".join(unrecognized_vars)}'
             )
 
-    if 'datetime' in query:
+    if request.datetime is not None:
         if 'time' not in ds.variables:
             raise ApiError.BadRequest(
                 f'"datetime" parameter invalid for coverage "{collection_id}",'
                 'which has no "time" dimension.'
             )
-        timespec = query['datetime'][0]
-        if '/' in timespec:
-            # Format: "<start>/<end>". ".." indicates an open range.
-            time_limits = list(
-                map(
-                    lambda limit: None if limit == '..' else limit,
-                    timespec.split('/'),
-                )
-            )
-            time_slice = slice(*time_limits[:2])
+        if isinstance(request.datetime, tuple):
+            time_slice = slice(*request.datetime)
             time_slice = ensure_time_index_compatible(ds, time_slice)
             ds = ds.sel(time=time_slice)
         else:
-            timespec = ensure_time_index_compatible(ds, timespec)
+            timespec = ensure_time_index_compatible(ds, request.datetime)
             ds = ds.sel(time=timespec, method='nearest').squeeze()
 
-    if 'subset' in query:
-        subset_bbox, ds = _apply_subsetting(ds, query['subset'][0], subset_crs)
+    if request.subset is not None:
+        subset_bbox, ds = _apply_subsetting(ds, request.subset, subset_crs)
     else:
         subset_bbox = None
 
-    if 'bbox' in query:
-        ds = _apply_bbox_spec(ds, query['bbox'][0], bbox_crs)
+    if request.bbox is not None:
+        ds = _apply_bbox(ds, request.bbox, bbox_crs)
 
     # ds.rio.write_crs(get_crs_from_dataset(ds), inplace=True)
 
@@ -145,23 +143,16 @@ def get_coverage_data(
 
     if get_crs_from_dataset(ds) != final_crs:
         target_gm = source_gm.transform(final_crs).to_regular()
-    if 'scale-factor' in query:
-        scale_factor_spec = query['scale-factor'][0]
-        try:
-            scale_factor = float(scale_factor_spec)
-        except ValueError:
-            raise ApiError.BadRequest(
-                f'Invalid scale-factor "{scale_factor_spec}"'
-            )
+    if request.scale_factor is not None:
         if target_gm is None:
             target_gm = source_gm
-        target_gm = target_gm.scale(scale_factor)
-    if 'scale-axes' in query:
+        target_gm = target_gm.scale(request.scale_factor)
+    if request.scale_axes is not None:
         # TODO implement scale-axes
         raise ApiError.NotImplemented(
             'The scale-axes parameter is not yet supported.'
         )
-    if 'scale-size' in query:
+    if request.scale_size:
         # TODO implement scale-size
         raise ApiError.NotImplemented(
             'The scale-size parameter is not yet supported.'
@@ -172,8 +163,8 @@ def get_coverage_data(
 
     # In this case, the transformed native CRS bbox[es] may have been
     # too big, so we re-crop in the final CRS.
-    if native_crs != final_crs and 'bbox' in query:
-        ds = _apply_bbox_spec(ds, query['bbox'][0], bbox_crs)
+    if native_crs != final_crs and request.bbox is not None:
+        ds = _apply_bbox(ds, request.bbox, bbox_crs)
     if subset_bbox is not None:
         ds = _apply_bbox(ds, subset_bbox, subset_crs)
 
@@ -299,7 +290,7 @@ def _get_crs_axis_by_name(crs: pyproj.CRS, name: str):
 
 
 def _apply_subsetting(
-    ds: xr.Dataset, subset_spec: str, subset_crs: pyproj.CRS
+    ds: xr.Dataset, subset_spec: dict, subset_crs: pyproj.CRS
 ) -> tuple[list[float], xr.Dataset]:
     indexers = _parse_subset_specifier(subset_spec, ds)
 
@@ -403,21 +394,6 @@ def _transform_bbox(
         return list(transformer.transform_bounds(*bbox_))
 
 
-def _apply_bbox_spec(
-    ds: xr.Dataset, bbox_spec: str, bbox_crs: pyproj.CRS
-) -> xr.Dataset:
-    try:
-        bbox = list(map(float, bbox_spec.split(',')))
-    except ValueError:
-        raise ApiError.BadRequest(f'Invalid bbox "{bbox_spec}"')
-    if len(bbox) != 4:
-        # TODO Handle 3D bounding boxes
-        raise ApiError.BadRequest(
-            f'Invalid bbox "{bbox_spec}": must have 4 elements'
-        )
-    return _apply_bbox(ds, bbox, bbox_crs)
-
-
 def _apply_bbox(ds: xr.Dataset, bbox: list[float], bbox_crs: pyproj.CRS):
     crs_ds = get_crs_from_dataset(ds)
 
@@ -467,30 +443,23 @@ def _reproject_if_needed(ds: xr.Dataset, target_crs: str):
         return ds
 
 
-def _parse_subset_specifier(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
+def _parse_subset_specifier(
+        subset_spec: dict[str, Union[str, tuple[Optional[str], Optional[str]]]],
+        ds: xr.Dataset) -> _IndexerTuple:
     specifiers = {}
-    for part in subset_spec.split(','):
+    for axis, value in subset_spec.items():
         # First try matching with quotation marks
-        m = re.match('^(.*)[(]"([^")]*)"(?::"(.*)")?[)]$', part)
-        if m is None:
-            # If that fails, try without quotation marks
-            m = re.match('^(.*)[(]([^:)]*)(?::(.*))?[)]$', part)
-        if m is None:
-            raise ApiError.BadRequest(
-                f'Unrecognized subset specifier "{part}"'
-            )
-        else:
-            axis, low, high = m.groups()
-        if high is None:
+        if isinstance(value, str):
             if axis == 'time':
-                specifiers[axis] = ensure_time_index_compatible(ds, low)
+                specifiers[axis] = ensure_time_index_compatible(ds, value)
             else:
                 try:
                     # Parse to float if possible
-                    specifiers[axis] = float(low)
+                    specifiers[axis] = float(value)
                 except ValueError:
-                    specifiers[axis] = low
+                    specifiers[axis] = value
         else:
+            low, high = value
             low = None if low == '*' else low
             high = None if high == '*' else high
             if axis == 'time':
@@ -509,12 +478,11 @@ def _parse_subset_specifier(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
     # Find and extract geographic parameters, if any. These have to be
     # handled specially, since they refer to axis names in the subsetting
     # CRS rather than dimension names in the dataset.
-
     x_param, y_param = _find_geographic_parameters(list(specifiers))
     x_value = specifiers.pop(x_param) if x_param is not None else None
     y_value = specifiers.pop(y_param) if y_param is not None else None
 
-    # Transform keys from CRS axis abbreviations to dimension names
+    # Separate index and slice (i.e. single-value and range) specifiers
     indices = {k: v for k, v in specifiers.items() if not isinstance(v, slice)}
     slices = {k: v for k, v in specifiers.items() if isinstance(v, slice)}
 
