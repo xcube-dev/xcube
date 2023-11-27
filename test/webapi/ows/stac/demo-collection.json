@@ -184,6 +184,11 @@
   "summaries": {},
   "title": "demo",
   "type": "Collection",
+  "storageCRS": "http://www.opengis.net/def/crs/EPSG/0/4326",
+  "crs": [
+    "http://www.opengis.net/def/crs/OGC/0/CRS84",
+    "http://www.opengis.net/def/crs/EPSG/0/4326"
+  ],
   "cube:dimensions": {
     "lon": {
       "type": "spatial",

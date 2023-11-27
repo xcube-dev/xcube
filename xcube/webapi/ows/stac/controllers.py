@@ -454,6 +454,15 @@ def _get_single_dataset_collection(
             time_properties['datetime']
         ]
     storage_crs = _crs_to_uri_or_wkt(get_crs_from_dataset(dataset))
+    available_crss = [
+        _crs_to_uri_or_wkt(pyproj.CRS('OGC:CRS84')),
+        _crs_to_uri_or_wkt(pyproj.CRS('EPSG:4326'))
+        # TODO: decide what else to include in this list.
+        #  Listing all 11396 CRSs currently known to pyproj seems
+        #  impractical.
+    ]
+    if storage_crs not in available_crss:
+        available_crss.append(storage_crs)
     result = {
         'assets': _get_assets(ctx, base_url, dataset_id),
         'description': dataset_id,
@@ -525,14 +534,7 @@ def _get_single_dataset_collection(
         'title': dataset_id,
         'type': 'Collection',
         'storageCRS': storage_crs,
-        'crs': [
-            storage_crs,
-            _crs_to_uri_or_wkt(pyproj.CRS('OGC:CRS84')),
-            _crs_to_uri_or_wkt(pyproj.CRS('EPSG:4326'))
-            # TODO: decide what else to include in this list.
-            #  Listing all 11396 CRSs currently known to pyproj seems
-            #  impractical.
-        ]
+        'crs': available_crss
     }
     result.update(_get_cube_properties(ctx, dataset_id))
     return result

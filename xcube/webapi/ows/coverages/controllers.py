@@ -202,6 +202,8 @@ def get_coverage_data(
             )
         )
     final_bbox = get_bbox_from_ds(ds)
+    if not is_xy(final_crs):
+        final_bbox = final_bbox[1], final_bbox[0], final_bbox[3], final_bbox[2]
     return content, final_bbox, final_crs
 
 
@@ -776,3 +778,23 @@ def get_collection_envelope(ds_ctx, collection_id):
         'axisLabels': list(ds.dims.keys()),
         'axis': _get_axes_properties(ds),
     }
+
+
+def is_xy(crs: pyproj.CRS) -> bool:
+    """Try to determine whether a CRS has x-y axis order"""
+    x_index = None
+    y_index = None
+    x_re = re.compile('^x|lon|east', flags=re.IGNORECASE)
+    y_re = re.compile('^y|lat|north', flags=re.IGNORECASE)
+
+    for i, axis in enumerate(crs.axis_info):
+        for prop in 'name', 'abbrev', 'direction':
+            if x_re.search(getattr(axis, prop)):
+                x_index = i
+            elif y_re.search(getattr(axis, prop)):
+                y_index = i
+
+    if x_index is not None and y_index is not None:
+        return x_index < y_index
+    else:
+        return True  # assume xy

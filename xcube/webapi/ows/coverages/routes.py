@@ -94,13 +94,15 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             result, content_bbox, content_crs = get_coverage_data(
                 ds_ctx, collectionId, self.request.query, content_type
             )
-        # TODO Add Content-Bbox and Content-Crs headers
-        self.response.set_header(
-            'Content-Bbox', ','.join(map(str, content_bbox))
-        )
-        self.response.set_header(
-            'Content-Crs', f'[{content_crs.to_string()}]'
-        )
+
+        if content_bbox is not None:
+            self.response.set_header(
+                'Content-Bbox', ','.join(map(str, content_bbox))
+            )
+        if content_crs is not None:
+            self.response.set_header(
+                'Content-Crs', f'[{content_crs.to_string()}]'
+            )
         return await self.response.finish(result, content_type=content_type)
 
 

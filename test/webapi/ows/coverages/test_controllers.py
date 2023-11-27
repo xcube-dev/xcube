@@ -25,6 +25,7 @@ import unittest
 from io import BytesIO
 from pathlib import Path
 import numpy as np
+import pyproj
 import xarray as xr
 import rioxarray
 
@@ -53,14 +54,14 @@ class CoveragesControllersTest(unittest.TestCase):
 
     def test_get_coverage_data_tiff(self):
         query = dict(
-            bbox=['52,1,51,2'],
+            bbox=['1,51,2,52'],
             datetime=['2017-01-25'],
             properties=['conc_chl'],
         )
-        result = get_coverage_data(
+        content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'image/tiff'
         )
-        with BytesIO(result) as fh:
+        with BytesIO(content) as fh:
             da = rioxarray.open_rasterio(fh)
             self.assertIsInstance(da, xr.DataArray)
             self.assertEqual(('band', 'y', 'x'), da.dims)
@@ -68,27 +69,35 @@ class CoveragesControllersTest(unittest.TestCase):
             self.assertEqual((1, 400, 400), da.shape)
 
     def test_get_coverage_data_netcdf(self):
+        crs = 'EPSG:4326'
         query = dict(
-            bbox=['52,1,51,2'],
+            bbox=['1,51,2,52'],
             datetime=['2017-01-24/2017-01-27'],
             properties=['conc_chl,kd489'],
-            crs=['EPSG:4326'],
+            crs=[crs],
         )
-        result = get_coverage_data(
+        content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx,
             'demo',
             query,
             'application/netcdf',
         )
+
+        self.assertEqual(pyproj.CRS(crs), content_crs)
+        self.assertEqual(4, len(content_bbox))
+        for i in range(4):
+            self.assertAlmostEqual(
+                [51., 1., 52., 2.][i], content_bbox[i], places=2
+            )
+
         # We can't read this directly from memory: the netcdf4 engine only
         # reads from filesystem paths, the h5netcdf engine (which can read
         # from memory) isn't an xcube dependency, and the scipy engine only
         # handles NetCDF 3.
-
         with tempfile.TemporaryDirectory() as tempdir:
             path = os.path.join(tempdir, 'out.nc')
             with open(path, 'wb') as fh:
-                fh.write(result)
+                fh.write(content)
             ds = xr.open_dataset(path)
             self.assertEqual(
                 {'lat': 400, 'lon': 400, 'time': 2, 'bnds': 2}, ds.dims
@@ -114,10 +123,10 @@ class CoveragesControllersTest(unittest.TestCase):
             subset=['lat(51:52),lon(1:2),time(2017-01-25)'],
             properties=['conc_chl'],
         )
-        result = get_coverage_data(
+        content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'png'
         )
-        with BytesIO(result) as fh:
+        with BytesIO(content) as fh:
             da = rioxarray.open_rasterio(fh, driver='PNG')
             self.assertIsInstance(da, xr.DataArray)
             self.assertEqual(('band', 'y', 'x'), da.dims)
