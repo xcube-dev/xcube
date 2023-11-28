@@ -205,9 +205,10 @@ def _assert_coverage_size_ok(ds):
     for d in h_dim, v_dim:
         size = ds.dims[d]
         if size == 0:
-            # TODO This should actually be a 204 (No content) rather than
-            #  a 400, per Requirement 8C.
-            raise ApiError.BadRequest(
+            # Requirement 8C currently specifies a 204 rather than 404 here,
+            # but spec will soon be updated to allow 404 as an alternative.
+            # (J. Jacovella-St-Louis, pers. comm., 2023-11-27).
+            raise ApiError.NotFound(
                 f'Requested coverage contains no data: {d} has zero size.'
             )
     if (h_size := ds.dims[h_dim]) * (y_size := ds.dims[v_dim]) > size_limit:

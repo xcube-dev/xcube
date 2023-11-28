@@ -14,7 +14,7 @@ class CoveragesUtilTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             CoveragesRequest(dict(bbox=['foo,bar,baz']))
         with self.assertRaises(ValueError):
-            CoveragesRequest(dict(bbox=['1.1.,2.2,3.3']))
+            CoveragesRequest(dict(bbox=['1.1,2.2,3.3']))
 
     def test_parse_bbox_crs(self):
         self.assertEqual(
