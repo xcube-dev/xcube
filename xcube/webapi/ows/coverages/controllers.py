@@ -65,7 +65,7 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
 def get_coverage_data(
     ctx: DatasetsContext,
     collection_id: str,
-    query_: Mapping[str, Sequence[str]],
+    query: Mapping[str, Sequence[str]],
     content_type: str,
 ) -> tuple[Optional[bytes], list[float], pyproj.CRS]:
     """
@@ -83,12 +83,10 @@ def get_coverage_data(
              if the requested output format is not supported
     """
 
-    # TODO: Update implementation to use the CoveragesRequest class
-
     ds = get_dataset(ctx, collection_id)
 
     try:
-        request = CoveragesRequest(query_)
+        request = CoveragesRequest(query)
     except ValueError as e:
         raise ApiError.BadRequest(str(e))
 

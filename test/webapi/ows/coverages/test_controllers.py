@@ -87,7 +87,7 @@ class CoveragesControllersTest(unittest.TestCase):
         self.assertEqual(4, len(content_bbox))
         for i in range(4):
             self.assertAlmostEqual(
-                [51., 1., 52., 2.][i], content_bbox[i], places=2
+                [51.0, 1.0, 52.0, 2.0][i], content_bbox[i], places=2
             )
 
         # We can't read this directly from memory: the netcdf4 engine only
@@ -138,9 +138,77 @@ class CoveragesControllersTest(unittest.TestCase):
                 get_coverages_ctx().datasets_ctx, 'demo', {}, 'nonexistent'
             )
 
+    def test_get_coverage_unparseable_request(self):
+        with self.assertRaises(ApiError.BadRequest):
+            get_coverage_data(
+                get_coverages_ctx().datasets_ctx,
+                'demo',
+                {'bbox': ['not a valid bbox specifier']},
+                'application/netcdf',
+            )
+
+    def test_get_coverage_nonexistent_property(self):
+        with self.assertRaises(ApiError.BadRequest):
+            get_coverage_data(
+                get_coverages_ctx().datasets_ctx,
+                'demo',
+                {'properties': ['not_a_real_property']},
+                'application/netcdf',
+            )
+
+    def test_get_coverage_datetime_no_time(self):
+        class CtxMock:
+            def __init__(self, ds: xr.Dataset):
+                self.ds = ds.rename_vars(dict(time='nottime'))
+
+            def get_ml_dataset(self, collection_id):
+                return self
+
+            def get_dataset(self, level):
+                return self.ds
+
+        with self.assertRaises(ApiError.BadRequest):
+            # noinspection PyTypeChecker
+            get_coverage_data(
+                CtxMock(
+                    get_coverages_ctx()
+                    .datasets_ctx.get_ml_dataset('demo')
+                    .get_dataset(0)
+                ),
+                'demo',
+                {'datetime': ['2017-01-16T10:09:21.834255872Z']},
+                'application/netcdf',
+            )
+
     def test_get_crs_from_dataset(self):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
         self.assertEqual('EPSG:3035', get_crs_from_dataset(ds).to_string())
+
+    # def test_get_coverage_transform_and_scale(self):
+    #     content, content_bbox, content_crs = get_coverage_data(
+    #         get_coverages_ctx().datasets_ctx,
+    #         'demo',
+    #         {'crs': ['[EPSG:4326]']},
+    #         'application/netcdf',
+    #     )
+
+    def test_get_coverage_scale_axes(self):
+        with self.assertRaises(ApiError.NotImplemented):
+            get_coverage_data(
+                get_coverages_ctx().datasets_ctx,
+                'demo',
+                {'scale-axes': ['x(2)']},
+                'application/netcdf',
+            )
+
+    def test_get_coverage_scale_size(self):
+        with self.assertRaises(ApiError.NotImplemented):
+            get_coverage_data(
+                get_coverages_ctx().datasets_ctx,
+                'demo',
+                {'scale-size': ['x(2)']},
+                'application/netcdf',
+            )
 
     def test_dtype_to_opengis_datatype(self):
         expected = [
@@ -162,6 +230,5 @@ class CoveragesControllersTest(unittest.TestCase):
 
     def test_get_units(self):
         self.assertEqual(
-            'unknown',
-            get_units(xr.Dataset({'time': [1, 2, 3]}), 'time')
+            'unknown', get_units(xr.Dataset({'time': [1, 2, 3]}), 'time')
         )
