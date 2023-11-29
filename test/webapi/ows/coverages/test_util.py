@@ -25,6 +25,10 @@ class CoveragesUtilTest(unittest.TestCase):
             pyproj.CRS(crs_spec := 'EPSG:4326'),
             CoveragesRequest({'bbox-crs': [crs_spec]}).bbox_crs,
         )
+        self.assertEqual(
+            pyproj.CRS(crs_spec := 'OGC:CRS84'),
+            CoveragesRequest({'bbox-crs': [f'[{crs_spec}]']}).bbox_crs,
+        )
         with self.assertRaises(ValueError):
             CoveragesRequest({'bbox-crs': ['not a CRS specifier']})
 

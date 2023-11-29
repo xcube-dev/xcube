@@ -161,10 +161,10 @@ class CoveragesControllersTest(unittest.TestCase):
             def __init__(self, ds: xr.Dataset):
                 self.ds = ds.rename_vars(dict(time='nottime'))
 
-            def get_ml_dataset(self, collection_id):
+            def get_ml_dataset(self, _):
                 return self
 
-            def get_dataset(self, level):
+            def get_dataset(self, _):
                 return self.ds
 
         with self.assertRaises(ApiError.BadRequest):

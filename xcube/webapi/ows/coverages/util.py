@@ -47,15 +47,15 @@ class CoveragesRequest:
     def __init__(self, query: Mapping[str, Sequence[str]]):
         self.query = query
         self.parse_bbox()
-        self.parse_bbox_crs()
+        self.bbox_crs = self._parse_crs('bbox-crs', 'OGC:CRS84')
         self.parse_properties()
         self.parse_datetime()
         self.parse_subset()
-        self.parse_subset_crs()
+        self.subset_crs = self._parse_crs('subset-crs', 'OGC:CRS84')
         self.parse_scale_factor()
         self.parse_scale_axes()
         self.parse_scale_size()
-        self.parse_crs()
+        self.crs = self._parse_crs('crs')
 
     def parse_bbox(self):
         self.bbox = None
@@ -70,14 +70,6 @@ class CoveragesRequest:
                 raise ValueError(
                     f'Invalid bbox "{bbox_spec}": must have 4 elements'
                 )
-
-    def parse_bbox_crs(self):
-        try:
-            self.bbox_crs = pyproj.CRS(
-                self.query.get('bbox-crs', ['OGC:CRS84'])[0]
-            )
-        except pyproj.exceptions.CRSError as e:
-            raise ValueError(e)
 
     def parse_datetime(self):
         if 'datetime' in self.query:
@@ -118,14 +110,6 @@ class CoveragesRequest:
                     self.subset[axis] = low, high
         else:
             self.subset = None
-
-    def parse_subset_crs(self):
-        try:
-            self.subset_crs = pyproj.CRS(
-                self.query.get('subset-crs', ['OGC:CRS84'])[0]
-            )
-        except pyproj.exceptions.CRSError as e:
-            raise ValueError(e)
 
     def parse_properties(self):
         # https://docs.ogc.org/DRAFTS/19-087.html#_parameter_properties
@@ -170,11 +154,13 @@ class CoveragesRequest:
                 result[m.group(1)] = float(m.group(2))
         return result
 
-    def parse_crs(self):
-        if 'crs' in self.query:
-            try:
-                self.crs = pyproj.CRS(self.query['crs'][0])
-            except pyproj.exceptions.CRSError as e:
-                raise ValueError(e)
-        else:
-            self.crs = None
+    def _parse_crs(self, param, default=None):
+        specifier = self.query[param][0] if param in self.query else default
+        if specifier is None:
+            return None
+        if m := re.match(r'^\[(.*)]$', specifier):
+            specifier = m.group(1)
+        try:
+            return pyproj.CRS(specifier)
+        except pyproj.exceptions.CRSError as e:
+            raise ValueError(e)

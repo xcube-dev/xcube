@@ -443,8 +443,9 @@ def _reproject_if_needed(ds: xr.Dataset, target_crs: str):
 
 
 def _parse_subset_specifier(
-        subset_spec: dict[str, Union[str, tuple[Optional[str], Optional[str]]]],
-        ds: xr.Dataset) -> _IndexerTuple:
+    subset_spec: dict[str, Union[str, tuple[Optional[str], Optional[str]]]],
+    ds: xr.Dataset,
+) -> _IndexerTuple:
     specifiers = {}
     for axis, value in subset_spec.items():
         # First try matching with quotation marks
