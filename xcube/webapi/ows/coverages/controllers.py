@@ -209,8 +209,9 @@ def _assert_coverage_size_ok(ds: xr.Dataset, scale_factor: float):
             raise ApiError.NotFound(
                 f'Requested coverage contains no data: {d} has zero size.'
             )
-    if ((h_size := ds.dims[h_dim] / scale_factor)
-            * (y_size := ds.dims[v_dim] / scale_factor) > size_limit):
+    if (h_size := ds.dims[h_dim] / scale_factor) * (
+        y_size := ds.dims[v_dim] / scale_factor
+    ) > size_limit:
         raise ApiError.ContentTooLarge(
             f'Requested coverage is too large:'
             f'{h_size} × {y_size} > {size_limit}.'
@@ -222,64 +223,10 @@ _IndexerTuple = NamedTuple(
     [
         ('indices', dict[str, Any]),  # non-geographic single-valued specifiers
         ('slices', dict[str, slice]),  # non-geographic range specifiers
-        ('x', Optional[Any]),  # x or longitude specifier (if any)
-        ('y', Optional[Any]),  # y or latitude specifier (if any)
+        ('x', Optional[Union[float, tuple[float, float]]]),  # x or longitude
+        ('y', Optional[Union[float, tuple[float, float]]]),  # y or latitude
     ],
 )
-
-
-def _crs_axis_name_to_dim_name(axis_name: str, ds: xr.Dataset) -> str:
-    # The spec says "The axis name SHALL correspond to one of the axis [sic]
-    # of the Coordinate Reference System (CRS) of the coverage", but does not
-    # define in what manner it must "correspond". The most practical solution
-    # (especially since many CRSs in the wild don't define axis names) seems
-    # to be to be as liberal as possible in try to interpret an axis
-    # specifier, falling back on the name itself if its entry in the CRS
-    # is uninformative or absent.
-
-    crs = get_crs_from_dataset(ds)
-    axis = _get_crs_axis_by_name(crs, axis_name)
-
-    if axis is not None:
-        abbrev = axis.abbrev[:3].lower()
-        if abbrev in {'x', 'e', 'lon'}:
-            return _get_h_dim(ds)
-        if abbrev in {'y', 'n', 'lat'}:
-            return _get_v_dim(ds)
-
-        name = axis.name.lower()
-        if name in {'easting', 'geocentric x'}:
-            return _get_h_dim(ds)
-        if name in {'northing', 'geocentric y'}:
-            return _get_v_dim(ds)
-
-        direction = axis.direction.lower()
-        if direction == 'east':
-            return _get_h_dim(ds)
-        if direction == 'north':
-            return _get_v_dim(ds)
-
-    # If we can't find or parse the axis, we check the provided name against
-    # some commonly used names to decide whether it's horizontal or vertical.
-
-    if axis_name[:3].lower() in {'x', 'e', 'lon', 'eas'}:
-        return _get_h_dim(ds)
-    if axis_name[:3].lower() in {'y', 'n', 'lat', 'nor'}:
-        return _get_v_dim(ds)
-
-    # As a final fallback, we look for a dimension with the supplied name
-    # -- first case-sensitive, then case-insensitive.
-
-    if axis_name in ds.dims:
-        return axis_name
-    for d in ds.dims:
-        if str(d).lower() == axis_name.lower():
-            return str(d)
-
-    raise ApiError.BadRequest(
-        f"Couldn't find a dataset dimension "
-        f'corresponding to the axis "{axis_name}".'
-    )
 
 
 def _get_crs_axis_by_name(crs: pyproj.CRS, name: str):
@@ -296,7 +243,6 @@ def _apply_subsetting(
 
     # TODO: for geographic subsetting, also handle single-value (non-slice)
     #  indices and half-open slices.
-
     bbox = None
     if (indexers.x, indexers.y) != (None, None):
         bbox, ds = _apply_geographic_subsetting(ds, subset_crs, indexers)
@@ -314,7 +260,7 @@ def _parse_subset_specifier(
 ) -> _IndexerTuple:
     specifiers = {}
     for axis, value in subset_spec.items():
-        if isinstance(value, str):
+        if isinstance(value, str):  # single value
             if axis == 'time':
                 specifiers[axis] = ensure_time_index_compatible(ds, value)
             else:
@@ -323,7 +269,7 @@ def _parse_subset_specifier(
                     specifiers[axis] = float(value)
                 except ValueError:
                     specifiers[axis] = value
-        else:
+        else:  # range
             low, high = value
             low = None if low == '*' else low
             high = None if high == '*' else high
@@ -332,17 +278,17 @@ def _parse_subset_specifier(
                     ds, slice(low, high)
                 )
             else:
-                # TODO Handle non-float arguments
                 low = float(low)
                 high = float(high)
-                low, high = _correct_inverted_y_range(
-                    ds, _crs_axis_name_to_dim_name(axis, ds), (low, high)
-                )
-                specifiers[axis] = slice(low, high)
+                if axis.lower()[:3] in ['y', 'n', 'nor', 'lat'] and high < low:
+                    low, high = high, low
+                specifiers[axis] = low, high
 
     # Find and extract geographic parameters, if any. These have to be
     # handled specially, since they refer to axis names in the subsetting
-    # CRS rather than dimension names in the dataset.
+    # CRS rather than dimension names in the dataset. For now, we actually
+    # don't check the CRS axis names, but just look for parameters with
+    # appropriate names (x, y, lat, long, etc.).
     x_param, y_param = _find_geographic_parameters(list(specifiers))
     x_value = specifiers.pop(x_param) if x_param is not None else None
     y_value = specifiers.pop(y_param) if y_param is not None else None
@@ -357,6 +303,9 @@ def _parse_subset_specifier(
 def _apply_geographic_subsetting(
     ds, subset_crs, indexers
 ) -> tuple[list[float], xr.Dataset]:
+    # NB: We use xy axis ordering for the bounding boxes throughout this
+    # function, regardless of what's specified in the CRSs.
+
     # 1. transform native extent to a whole-dataset bbox in subset_crs.
     # We'll use this to fill in "full extent" values if geographic
     # subsetting is only specified in one dimension.
@@ -368,30 +317,26 @@ def _apply_geographic_subsetting(
 
     # 2. Find horizontal and/or vertical ranges in indexers, falling back to
     # values from whole-dataset bbox if a complete bbox is not specified.
-    h_range = (
+    x0, x1 = (
         indexers.x
         if indexers.x is not None
-        else slice(full_bbox_subset_crs[0], full_bbox_subset_crs[2])
+        else (full_bbox_subset_crs[0], full_bbox_subset_crs[2])
     )
-    v_range = (
+    y0, y1 = (
         indexers.y
         if indexers.y is not None
-        else slice(full_bbox_subset_crs[1], full_bbox_subset_crs[3])
+        else (full_bbox_subset_crs[1], full_bbox_subset_crs[3])
     )
 
     # 3. Using the ranges determined from the indexers and whole-dataset bbox,
     # construct the requested bbox in the subsetting CRS.
-    bbox_subset_crs = [
-        h_range.start,
-        v_range.start,
-        h_range.stop,
-        v_range.stop,
-    ]
+    bbox_subset_crs = [x0, y0, x1, y1]
 
     # 4. Transform requested bbox from subsetting CRS to dataset-native CRS.
     bbox_native_crs = _transform_bbox(bbox_subset_crs, subset_crs, native_crs)
 
-    # 6. Apply the dataset-native bbox using sel.
+    # 6. Apply the dataset-native bbox using sel, making sure that y/latitude
+    # slice has the same ordering as the corresponding co-ordinate.
     h_dim = _get_h_dim(ds)
     v_dim = _get_v_dim(ds)
     ds = ds.sel(
@@ -440,8 +385,9 @@ def _transform_bbox(
         return list(transformer.transform_bounds(*bbox_))
 
 
-def _apply_bbox(ds: xr.Dataset, bbox: list[float], bbox_crs: pyproj.CRS,
-                always_xy: bool):
+def _apply_bbox(
+    ds: xr.Dataset, bbox: list[float], bbox_crs: pyproj.CRS, always_xy: bool
+):
     native_crs = get_crs_from_dataset(ds)
 
     if native_crs != bbox_crs:
@@ -452,8 +398,11 @@ def _apply_bbox(ds: xr.Dataset, bbox: list[float], bbox_crs: pyproj.CRS,
         bbox = transformer.transform_bounds(*bbox)
     h_dim = _get_h_dim(ds)
     v_dim = _get_v_dim(ds)
-    x0, y0, x1, y1 = (0, 1, 2, 3) \
-        if (always_xy or is_xy_order(native_crs)) else (1, 0, 3, 2)
+    x0, y0, x1, y1 = (
+        (0, 1, 2, 3)
+        if (always_xy or is_xy_order(native_crs))
+        else (1, 0, 3, 2)
+    )
     v_slice = _correct_inverted_y_range(ds, v_dim, (bbox[y0], bbox[y1]))
     ds = ds.sel({h_dim: slice(bbox[x0], bbox[x1]), v_dim: slice(*v_slice)})
     return ds
