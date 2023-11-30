@@ -95,7 +95,7 @@ class CoveragesUtilTest(unittest.TestCase):
         )
 
     def test_parse_scale_factor(self):
-        self.assertIsNone(CoveragesRequest({}).scale_factor)
+        self.assertEqual(1, CoveragesRequest({}).scale_factor)
         self.assertEqual(
             1.5, CoveragesRequest({'scale-factor': ['1.5']}).scale_factor
         )

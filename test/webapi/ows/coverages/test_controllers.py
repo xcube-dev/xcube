@@ -38,7 +38,7 @@ from xcube.webapi.ows.coverages.controllers import (
     dtype_to_opengis_datatype,
     get_dataarray_description,
     get_units,
-    is_xy,
+    is_xy_order,
 )
 
 
@@ -54,11 +54,12 @@ class CoveragesControllersTest(unittest.TestCase):
         self.assertEqual(expected_result, result)
 
     def test_get_coverage_data_tiff(self):
-        query = dict(
-            bbox=['1,51,2,52'],
-            datetime=['2017-01-25T00:00:00Z'],
-            properties=['conc_chl'],
-        )
+        query = {
+            'bbox': ['51,1,52,2'],
+            'bbox-crs': ['[EPSG:4326]'],
+            'datetime': ['2017-01-25T00:00:00Z'],
+            'properties': ['conc_chl']
+        }
         content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'image/tiff'
         )
@@ -70,13 +71,14 @@ class CoveragesControllersTest(unittest.TestCase):
             self.assertEqual((1, 400, 400), da.shape)
 
     def test_get_coverage_data_netcdf(self):
-        crs = 'EPSG:4326'
-        query = dict(
-            bbox=['1,51,2,52'],
-            datetime=['2017-01-24T00:00:00Z/2017-01-27T00:00:00Z'],
-            properties=['conc_chl,kd489'],
-            crs=[crs],
-        )
+        crs = 'OGC:CRS84'
+        query = {
+            'bbox': ['1,51,2,52'],
+            'datetime': ['2017-01-24T00:00:00Z/2017-01-27T00:00:00Z'],
+            'properties': ['conc_chl,kd489'],
+            'scale-factor': [2],
+            'crs': [crs],
+        }
         content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx,
             'demo',
@@ -88,7 +90,7 @@ class CoveragesControllersTest(unittest.TestCase):
         self.assertEqual(4, len(content_bbox))
         for i in range(4):
             self.assertAlmostEqual(
-                [51.0, 1.0, 52.0, 2.0][i], content_bbox[i], places=2
+                [1.0, 51.0, 2.0, 52.0][i], content_bbox[i], places=2
             )
 
         # We can't read this directly from memory: the netcdf4 engine only
@@ -101,11 +103,11 @@ class CoveragesControllersTest(unittest.TestCase):
                 fh.write(content)
             ds = xr.open_dataset(path)
             self.assertEqual(
-                {'lat': 400, 'lon': 400, 'time': 2, 'bnds': 2}, ds.dims
+                {'lat': 800, 'lon': 800, 'time': 2, 'bnds': 2}, ds.dims
             )
-            self.assertEqual(['conc_chl', 'kd489'], list(ds.data_vars))
+            self.assertEqual({'conc_chl', 'kd489', 'crs'}, set(ds.data_vars))
             self.assertEqual(
-                [
+                {
                     'lat',
                     'lat_bnds',
                     'lon',
@@ -114,8 +116,9 @@ class CoveragesControllersTest(unittest.TestCase):
                     'time_bnds',
                     'conc_chl',
                     'kd489',
-                ],
-                list(ds.variables),
+                    'crs',
+                },
+                set(ds.variables),
             )
             ds.close()
 
@@ -132,6 +135,24 @@ class CoveragesControllersTest(unittest.TestCase):
             self.assertIsInstance(da, xr.DataArray)
             self.assertEqual(('band', 'y', 'x'), da.dims)
             self.assertEqual((1, 400, 400), da.shape)
+
+    def test_get_coverage_no_data(self):
+        with self.assertRaises(ApiError.NotFound):
+            get_coverage_data(
+                get_coverages_ctx().datasets_ctx,
+                'demo',
+                {'bbox': ['170,1,171,2']},
+                'application/netcdf',
+            )
+
+    def test_get_coverage_too_large(self):
+        with self.assertRaises(ApiError.ContentTooLarge):
+            get_coverage_data(
+                get_coverages_ctx().datasets_ctx,
+                'demo',
+                {'scale-factor': ['0.01']},
+                'application/netcdf',
+            )
 
     def test_get_coverage_unsupported_type(self):
         with self.assertRaises(ApiError.UnsupportedMediaType):
@@ -185,14 +206,6 @@ class CoveragesControllersTest(unittest.TestCase):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
         self.assertEqual('EPSG:3035', get_crs_from_dataset(ds).to_string())
 
-    def test_get_coverage_transform_and_scale(self):
-        content, content_bbox, content_crs = get_coverage_data(
-            get_coverages_ctx().datasets_ctx,
-            'demo',
-            {'crs': ['[EPSG:3035]']},
-            'application/netcdf',
-        )
-
     def test_get_coverage_scale_axes(self):
         with self.assertRaises(ApiError.NotImplemented):
             get_coverage_data(
@@ -235,11 +248,15 @@ class CoveragesControllersTest(unittest.TestCase):
         )
 
     def test_is_xy(self):
-        self.assertTrue(is_xy(pyproj.CRS(
-            '''GEOGCRS["a_strange_crs",ENSEMBLE["foo",MEMBER["a"],MEMBER["b"],
+        self.assertTrue(
+            is_xy_order(
+                pyproj.CRS(
+                    '''GEOGCRS["a_strange_crs",ENSEMBLE["foo",MEMBER["a"],MEMBER["b"],
             ELLIPSOID["WGS 84",6378137,298.3,LENGTHUNIT["metre",1]],
             ENSEMBLEACCURACY[2.0]],
             PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.017]],CS[ellipsoidal,2],
             AXIS["u (u)",south,ANGLEUNIT["degree",0.017]],
             AXIS["v (v)",south,ANGLEUNIT["degree",0.017]]]'''
-        )))
+                )
+            )
+        )

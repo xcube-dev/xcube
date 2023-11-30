@@ -127,7 +127,7 @@ class CoveragesRequest:
             except ValueError:
                 raise ValueError(f'Invalid scale-factor {scale_factor_str}')
         else:
-            self.scale_factor = None
+            self.scale_factor = 1
 
     def parse_scale_axes(self):
         self.scale_axes = (
