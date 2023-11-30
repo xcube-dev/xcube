@@ -67,8 +67,7 @@ class CatalogCollectionsHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollections",
                    summary="Get the STAC catalog's collections.")
     async def get(self):
-        result = get_collections(self.ctx.datasets_ctx,
-                                 self.request.reverse_base_url)
+        result = get_collections(self.ctx, self.request.reverse_base_url)
         return await self.response.finish(result)
 
 
@@ -80,7 +79,7 @@ class CatalogCollectionHandler(ApiHandler[StacContext]):
     @api.operation(operation_id="getCatalogCollection",
                    summary="Get a STAC catalog collection.")
     async def get(self, collectionId: str):
-        result = get_collection(self.ctx.datasets_ctx,
+        result = get_collection(self.ctx,
                                 self.request.reverse_base_url,
                                 collectionId)
         return await self.response.finish(result)

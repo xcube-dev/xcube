@@ -38,6 +38,7 @@ from xcube.webapi.ows.coverages.controllers import (
     dtype_to_opengis_datatype,
     get_dataarray_description,
     get_units,
+    is_xy,
 )
 
 
@@ -184,13 +185,13 @@ class CoveragesControllersTest(unittest.TestCase):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
         self.assertEqual('EPSG:3035', get_crs_from_dataset(ds).to_string())
 
-    # def test_get_coverage_transform_and_scale(self):
-    #     content, content_bbox, content_crs = get_coverage_data(
-    #         get_coverages_ctx().datasets_ctx,
-    #         'demo',
-    #         {'crs': ['[EPSG:4326]']},
-    #         'application/netcdf',
-    #     )
+    def test_get_coverage_transform_and_scale(self):
+        content, content_bbox, content_crs = get_coverage_data(
+            get_coverages_ctx().datasets_ctx,
+            'demo',
+            {'crs': ['[EPSG:3035]']},
+            'application/netcdf',
+        )
 
     def test_get_coverage_scale_axes(self):
         with self.assertRaises(ApiError.NotImplemented):
@@ -232,3 +233,13 @@ class CoveragesControllersTest(unittest.TestCase):
         self.assertEqual(
             'unknown', get_units(xr.Dataset({'time': [1, 2, 3]}), 'time')
         )
+
+    def test_is_xy(self):
+        self.assertTrue(is_xy(pyproj.CRS(
+            '''GEOGCRS["a_strange_crs",ENSEMBLE["foo",MEMBER["a"],MEMBER["b"],
+            ELLIPSOID["WGS 84",6378137,298.3,LENGTHUNIT["metre",1]],
+            ENSEMBLEACCURACY[2.0]],
+            PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.017]],CS[ellipsoidal,2],
+            AXIS["u (u)",south,ANGLEUNIT["degree",0.017]],
+            AXIS["v (v)",south,ANGLEUNIT["degree",0.017]]]'''
+        )))

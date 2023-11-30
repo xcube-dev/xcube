@@ -41,6 +41,7 @@ from .config import DEFAULT_COLLECTION_DESCRIPTION
 from .config import DEFAULT_COLLECTION_ID
 from .config import DEFAULT_COLLECTION_TITLE
 from .config import PATH_PREFIX
+from .context import StacContext
 from ..coverages.controllers import get_crs_from_dataset
 from ...datasets.context import DatasetsContext
 
@@ -65,8 +66,10 @@ _CONFORMANCE = (
             ('common-1', ['core', 'json', 'oas30']),
             ('common-2', ['collections']),
             ('features-1', ['core', 'oas30', 'html', 'geojson']),
-            ('coverages-1', ['geodata-coverage', 'cisjson', 'coverage-subset',
-                             'oas30']),
+            (
+                'coverages-1',
+                ['geodata-coverage', 'cisjson', 'coverage-subset', 'oas30'],
+            ),
         ]
         for part in parts
     ]
@@ -85,11 +88,14 @@ def get_root(ctx: DatasetsContext, base_url: str):
 
     # If OGC API - Coverages is present, the STAC controller lists the
     # Coverages endpoints along with its own.
-    endpoint_lists = [a.endpoints() for a in ctx.apis
-                      if a.name in {'ows.stac', 'ows.coverages'}]
+    endpoint_lists = [
+        a.endpoints()
+        for a in ctx.apis
+        if a.name in {'ows.stac', 'ows.coverages'}
+    ]
     endpoints = list(itertools.chain.from_iterable(endpoint_lists))
     for endpoint in endpoints:
-        endpoint['path'] = endpoint['path'][len(PATH_PREFIX):]
+        endpoint['path'] = endpoint['path'][len(PATH_PREFIX) :]
 
     return {
         "type": "Catalog",
@@ -127,7 +133,7 @@ def get_root(ctx: DatasetsContext, base_url: str):
                 "href": f'{base_url}{PATH_PREFIX}/conformance',
                 "type": "application/json",
                 "title": "OGC API conformance classes"
-                         " implemented by this server"
+                " implemented by this server"
             },
             {
                 "rel": "data",
@@ -169,7 +175,7 @@ def get_conformance() -> dict[str, list[str]]:
     return {"conformsTo": _CONFORMANCE}
 
 
-def get_collections(ctx: DatasetsContext, base_url: str) -> dict[str, Any]:
+def get_collections(ctx: StacContext, base_url: str) -> dict[str, Any]:
     """Get all the collections available in the given context
 
     These include a union collection representing all the datasets,
@@ -180,9 +186,10 @@ def get_collections(ctx: DatasetsContext, base_url: str) -> dict[str, Any]:
     :return: a STAC dictionary listing the available collections
     """
     return {
-        "collections": [_get_datasets_collection(ctx, base_url)] + [
+        "collections": [_get_datasets_collection(ctx, base_url)]
+        + [
             _get_single_dataset_collection(ctx, base_url, c['Identifier'])
-            for c in ctx.get_dataset_configs()
+            for c in ctx.datasets_ctx.get_dataset_configs()
         ],
         "links": [
             _root_link(base_url),
@@ -191,16 +198,13 @@ def get_collections(ctx: DatasetsContext, base_url: str) -> dict[str, Any]:
                 "type": "application/json",
                 "href": f"{base_url}{PATH_PREFIX}/collections"
             },
-            {
-                "rel": "parent",
-                "href": f"{base_url}{PATH_PREFIX}"
-            }
+            {"rel": "parent", "href": f"{base_url}{PATH_PREFIX}"}
         ]
     }
 
 
 def get_collection(
-    ctx: DatasetsContext, base_url: str, collection_id: str
+    ctx: StacContext, base_url: str, collection_id: str
 ) -> dict:
     """Return a STAC representation of a collection
 
@@ -210,8 +214,9 @@ def get_collection(
     :return: a STAC object representing the collection, if found
     :raises: ApiError.NotFound if no collection with the given ID exists
     """
+    ds_ctx = ctx.datasets_ctx
     all_datasets_collection_id, _, _ = _get_collection_metadata(ctx.config)
-    collection_ids = [c['Identifier'] for c in ctx.get_dataset_configs()]
+    collection_ids = [c['Identifier'] for c in ds_ctx.get_dataset_configs()]
     if collection_id in collection_ids:
         return _get_single_dataset_collection(
             ctx, base_url, collection_id, full=True
@@ -234,8 +239,12 @@ def get_single_collection_items(
         list containing a feature for the requested dataset
     """
     feature = _get_dataset_feature(
-        ctx, base_url, collection_id, collection_id, DEFAULT_FEATURE_ID,
-        full=False
+        ctx,
+        base_url,
+        collection_id,
+        collection_id,
+        DEFAULT_FEATURE_ID,
+        full=False,
     )
     self_href = f"{base_url}{PATH_PREFIX}/collections/{collection_id}/items"
     return {
@@ -243,13 +252,9 @@ def get_single_collection_items(
         'features': [feature],
         'links': [
             _root_link(base_url),
-            {
-                'rel': 'self',
-                'type': 'application/json',
-                'href': self_href
-            }
+            {'rel': 'self', 'type': 'application/json', 'href': self_href},
         ],
-        'timeStamp': datetime.datetime.now().astimezone().isoformat()
+        'timeStamp': datetime.datetime.now().astimezone().isoformat(),
     }
 
 
@@ -272,7 +277,7 @@ def get_datasets_collection_items(
     """
     _assert_valid_collection(ctx, collection_id)
     all_configs = ctx.get_dataset_configs()
-    configs = all_configs[cursor: (cursor + limit)]
+    configs = all_configs[cursor : (cursor + limit)]
     features = []
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
@@ -363,7 +368,7 @@ def get_collection_item(
 def get_collection_queryables(
     ctx: DatasetsContext, collection_id: str
 ) -> dict:
-    """ Get a JSON schema of queryable parameters for the specified collection
+    """Get a JSON schema of queryable parameters for the specified collection
 
     :param ctx: a datasets context
     :param collection_id: the ID of a collection
@@ -384,10 +389,11 @@ def search(ctx: DatasetsContext, base_url: str):
 
 
 # noinspection PyUnusedLocal
-def _get_datasets_collection(ctx: DatasetsContext,
-                             base_url: str,
-                             full: bool = False) -> dict:
-    c_id, c_title, c_description = _get_collection_metadata(ctx.config)
+def _get_datasets_collection(
+    ctx: StacContext, base_url: str, full: bool = False
+) -> dict:
+    ds_ctx = ctx.datasets_ctx
+    c_id, c_title, c_description = _get_collection_metadata(ds_ctx.config)
     return {
         "stac_version": STAC_VERSION,
         "stac_extensions": STAC_EXTENSIONS,
@@ -427,19 +433,22 @@ def _get_datasets_collection(ctx: DatasetsContext,
             {
                 'rel': 'item',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
-                        f'{DEFAULT_COLLECTION_ID}/items/{dataset_id}',
+                f'{DEFAULT_COLLECTION_ID}/items/{dataset_id}',
                 'type': 'application/geo+json',
                 'title': f'Feature for the dataset "{dataset_id}"'
-            } for dataset_id in
-            map(lambda c: c['Identifier'], ctx.get_dataset_configs())
+            }
+            for dataset_id in map(
+                lambda c: c['Identifier'], ds_ctx.get_dataset_configs()
+            )
         ]
     }
 
 
 def _get_single_dataset_collection(
-    ctx: DatasetsContext, base_url: str, dataset_id: str, full: bool = False
+    ctx: StacContext, base_url: str, dataset_id: str, full: bool = False
 ) -> dict:
-    ml_dataset = ctx.get_ml_dataset(dataset_id)
+    ds_ctx = ctx.datasets_ctx
+    ml_dataset = ds_ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
     grid_bbox = GridBbox(ml_dataset.grid_mapping)
     time_properties = _get_time_properties(dataset)
@@ -453,26 +462,19 @@ def _get_single_dataset_collection(
             time_properties['datetime'],
             time_properties['datetime']
         ]
-    storage_crs = _crs_to_uri_or_wkt(get_crs_from_dataset(dataset))
+    storage_crs = crs_to_uri_or_wkt(get_crs_from_dataset(dataset))
     available_crss = [
-        _crs_to_uri_or_wkt(pyproj.CRS('OGC:CRS84')),
-        _crs_to_uri_or_wkt(pyproj.CRS('EPSG:4326'))
-        # TODO: decide what else to include in this list.
-        #  Listing all 11396 CRSs currently known to pyproj seems
-        #  impractical.
+        crs_to_uri_or_wkt(pyproj.CRS(crs_specifier))
+        for crs_specifier in ctx.available_crss
     ]
     if storage_crs not in available_crss:
         available_crss.append(storage_crs)
     result = {
-        'assets': _get_assets(ctx, base_url, dataset_id),
+        'assets': _get_assets(ds_ctx, base_url, dataset_id),
         'description': dataset_id,
         'extent': {
-            'spatial': {
-                'bbox': grid_bbox.as_bbox()
-            },
-            'temporal': {
-                'interval': [time_interval]
-            }
+            'spatial': {'bbox': grid_bbox.as_bbox()},
+            'temporal': {'interval': [time_interval]}
         },
         'id': dataset_id,
         'keywords': [],
@@ -493,13 +495,13 @@ def _get_single_dataset_collection(
             {
                 'rel': 'items',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
-                        f'{dataset_id}/items',
+                f'{dataset_id}/items',
                 'title': 'feature collection of data cube items'
             },
             {
                 'rel': 'item',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
-                        f'{dataset_id}/items/{DEFAULT_FEATURE_ID}',
+                f'{dataset_id}/items/{DEFAULT_FEATURE_ID}',
                 'type': 'application/geo+json',
                 'title': f'Feature for the dataset "{dataset_id}"'
             },
@@ -536,34 +538,33 @@ def _get_single_dataset_collection(
         'storageCRS': storage_crs,
         'crs': available_crss
     }
-    result.update(_get_cube_properties(ctx, dataset_id))
+    result.update(_get_cube_properties(ds_ctx, dataset_id))
     return result
 
 
-def _crs_to_uri_or_wkt(crs: pyproj.CRS) -> str:
+def crs_to_uri_or_wkt(crs: pyproj.CRS) -> str:
     auth_and_code = crs.to_authority()
     if auth_and_code is not None:
         authority, code = auth_and_code
         version = 0  # per https://docs.ogc.org/pol/09-048r6.html#toc13
-        return (f'http://www.opengis.net/def/crs/'
-                f'{authority}/{version}/{code}')
+        return (
+            f'http://www.opengis.net/def/crs/' f'{authority}/{version}/{code}'
+        )
     else:
         return crs.to_wkt()
 
 
 class GridBbox:
-    """Utility class to transform and manipulate bounding box data
-    """
+    """Utility class to transform and manipulate bounding box data"""
 
     def __init__(self, grid_mapping: GridMapping):
         transformer = pyproj.Transformer.from_crs(
-            grid_mapping.crs,
-            CRS_CRS84,
-            always_xy=True
+            grid_mapping.crs, CRS_CRS84, always_xy=True
         )
         bbox = grid_mapping.xy_bbox
-        (self.x1, self.x2), (self.y1, self.y2) = (
-            transformer.transform((bbox[0], bbox[2]), (bbox[1], bbox[3])))
+        (self.x1, self.x2), (self.y1, self.y2) = transformer.transform(
+            (bbox[0], bbox[2]), (bbox[1], bbox[3])
+        )
 
     def as_bbox(self) -> list:
         return [self.x1, self.y1, self.x2, self.y2]
@@ -572,19 +573,26 @@ class GridBbox:
         return {
             "type": "Polygon",
             "coordinates": [
-                [[self.x1, self.y1], [self.x1, self.y2], [self.x2, self.y2],
-                 [self.x2, self.y1], [self.x1, self.y1]],
+                [
+                    [self.x1, self.y1],
+                    [self.x1, self.y2],
+                    [self.x2, self.y2],
+                    [self.x2, self.y1],
+                    [self.x1, self.y1],
+                ]
             ],
         }
 
 
 # noinspection PyUnusedLocal
-def _get_dataset_feature(ctx: DatasetsContext,
-                         base_url: str,
-                         dataset_id: str,
-                         collection_id: str,
-                         feature_id: str,
-                         full: bool = False) -> dict:
+def _get_dataset_feature(
+    ctx: DatasetsContext,
+    base_url: str,
+    dataset_id: str,
+    collection_id: str,
+    feature_id: str,
+    full: bool = False,
+) -> dict:
     bbox = GridBbox(ctx.get_ml_dataset(dataset_id).grid_mapping)
 
     return {
@@ -601,7 +609,7 @@ def _get_dataset_feature(ctx: DatasetsContext,
             {
                 "rel": "self",
                 "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
-                        f"/items/{feature_id}"
+                f"/items/{feature_id}"
             },
             {
                 "rel": "collection",
@@ -676,7 +684,7 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
                     "roles": ["data"],
                     "type": "application/zarr",
                     "href": f"{default_storage_url}/"
-                            f"{dataset_id}.zarr/{v['name']}"
+                    f"{dataset_id}.zarr/{v['name']}"
                 }
                 for v in xcube_data_vars
             }
@@ -685,29 +693,32 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
             "title": f"{dataset_id} visualisation",
             "roles": ["visual"],
             "type": "image/png",
-            "href": (f"{base_url}/tiles/{dataset_id}/<variable>"
-                     + "/{z}/{y}/{x}"
-                     + tiles_query),
+            "href": (
+                f"{base_url}/tiles/{dataset_id}/<variable>"
+                + "/{z}/{y}/{x}"
+                + tiles_query
+            ),
             "xcube:visual": {
                 v['name']: {
                     "title": f"{v['name']} visualisation",
                     "roles": ["visual"],
                     "type": "image/png",
                     "href": (
-                            f"{base_url}/tiles/{dataset_id}/{v['name']}"
-                            + "/{z}/{y}/{x}"
-                            + tiles_query),
+                        f"{base_url}/tiles/{dataset_id}/{v['name']}"
+                        + "/{z}/{y}/{x}"
+                        + tiles_query
+                    ),
                 }
                 for v in xcube_data_vars
-            }
+            },
         },
         "thumbnail": {
             "title": f"{dataset_id} thumbnail",
             "roles": ["thumbnail"],
             "type": "image/png",
             "href": f"{base_url}/tiles/{dataset_id}/{first_var_name}"
-                    f"/0/0/0{thumbnail_query}"
-        }
+            f"/0/0/0{thumbnail_query}"
+        },
     }
 
 
@@ -716,13 +727,15 @@ def _get_time_properties(dataset):
         time_var = dataset['time']
         start_time = to_json_value(time_var[0])
         end_time = to_json_value(time_var[-1])
-        time_properties = {
-            'datetime': start_time
-        } if start_time == end_time else {
-            'datetime': None,
-            'start_datetime': start_time,
-            'end_datetime': end_time
-        }
+        time_properties = (
+            {'datetime': start_time}
+            if start_time == end_time
+            else {
+                'datetime': None,
+                'start_datetime': start_time,
+                'end_datetime': end_time
+            }
+        )
     else:
         time_properties = {
             # TODO Decide what to use as a fall-back datetime
@@ -731,13 +744,15 @@ def _get_time_properties(dataset):
     return time_properties
 
 
-def _get_xc_variables(variables: Mapping[Hashable, xr.DataArray]) \
-        -> List[Dict[str, Any]]:
+def _get_xc_variables(
+    variables: Mapping[Hashable, xr.DataArray]
+) -> List[Dict[str, Any]]:
     """Create the value of the "xcube:coords" or
     "xcube:data_vars" property for the given *dataset*.
     """
-    return [_get_xc_variable(var_name, var)
-            for var_name, var in variables.items()]
+    return [
+        _get_xc_variable(var_name, var) for var_name, var in variables.items()
+    ]
 
 
 def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
@@ -755,8 +770,9 @@ def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
     }
 
 
-def get_datacube_dimensions(dataset: xr.Dataset,
-                            grid_mapping: GridMapping) -> Dict[str, Any]:
+def get_datacube_dimensions(
+    dataset: xr.Dataset, grid_mapping: GridMapping
+) -> Dict[str, Any]:
     """Create the value of the "datacube:dimensions" property
     for the given *dataset*.
 
@@ -768,21 +784,23 @@ def get_datacube_dimensions(dataset: xr.Dataset,
     x_var_name, y_var_name = grid_mapping.xy_var_names
     dc_dimensions = {
         x_dim_name: _get_dc_spatial_dimension(
-            dataset[x_var_name], "x", grid_mapping,
+            dataset[x_var_name], "x", grid_mapping
         ),
         y_dim_name: _get_dc_spatial_dimension(
-            dataset[y_var_name], "y", grid_mapping,
+            dataset[y_var_name], "y", grid_mapping
         ),
     }
-    if "time" in dataset.dims \
-            and "time" in dataset.coords \
-            and dataset["time"].ndim == 1:
-        dc_dimensions.update(
-            time=_get_dc_temporal_dimension(dataset["time"])
-        )
+    if (
+        "time" in dataset.dims
+        and "time" in dataset.coords
+        and dataset["time"].ndim == 1
+    ):
+        dc_dimensions.update(time=_get_dc_temporal_dimension(dataset["time"]))
     for dim_name in dataset.dims.keys():
-        if dim_name not in {x_dim_name, y_dim_name, "time"} \
-                and dim_name in dataset:
+        if (
+            dim_name not in {x_dim_name, y_dim_name, "time"}
+            and dim_name in dataset
+        ):
             dc_dimensions.update(
                 {dim_name: _get_dc_additional_dimension(dataset[dim_name])}
             )
@@ -790,9 +808,7 @@ def get_datacube_dimensions(dataset: xr.Dataset,
 
 
 def _get_dc_spatial_dimension(
-        var: xr.DataArray,
-        axis: str,
-        grid_mapping: GridMapping
+    var: xr.DataArray, axis: str, grid_mapping: GridMapping
 ) -> Dict[str, Any]:
     """Create a spatial dimension of the "datacube:dimensions" property
     for the given *var* and *axis*.
@@ -810,21 +826,17 @@ def _get_dc_spatial_dimension(
     return asset
 
 
-def _get_dc_temporal_dimension(
-        var: xr.DataArray
-) -> Dict[str, Any]:
+def _get_dc_temporal_dimension(var: xr.DataArray) -> Dict[str, Any]:
     """Create a temporal dimension of the "datacube:dimensions" property
     for the given time *var*.
     """
-    asset = _get_dc_dimension(var, "temporal", axis=None,
-                              drop_unit=True)
+    asset = _get_dc_dimension(var, "temporal", axis=None, drop_unit=True)
     asset["values"] = [to_json_value(t) for t in var.values]
     return asset
 
 
 def _get_dc_additional_dimension(
-        var: xr.DataArray,
-        type: str = "unknown"
+    var: xr.DataArray, type: str = "unknown"
 ) -> Dict[str, Any]:
     """Create an additional dimension of the "datacube:dimensions" property
     for the given *var* and *type*.
@@ -834,8 +846,9 @@ def _get_dc_additional_dimension(
         asset["range"] = [to_json_value(var[0]), to_json_value(var[-1])]
         if var.size > 1:
             diff_var = np.diff(var)
-            if np.issubdtype(var.dtype, np.number) \
-                    and np.allclose(np.diff(diff_var), 0):
+            if np.issubdtype(var.dtype, np.number) and np.allclose(
+                np.diff(diff_var), 0
+            ):
                 asset["step"] = to_json_value(diff_var[0])
         if "step" not in asset and var.size < _MAX_NUM_VALUES:
             asset["values"] = [to_json_value(t) for t in var.values]
@@ -843,10 +856,10 @@ def _get_dc_additional_dimension(
 
 
 def _get_dc_dimension(
-        var: xr.DataArray,
-        type: str,
-        axis: Optional[str] = None,
-        drop_unit: bool = False
+    var: xr.DataArray,
+    type: str,
+    axis: Optional[str] = None,
+    drop_unit: bool = False,
 ) -> Dict[str, Any]:
     """Create a generic dimension of the "datacube:dimensions" property
     for the given *var*, *type*, and optional *axis*.
@@ -870,9 +883,11 @@ def _get_dc_variables(dataset: xr.Dataset, dc_dimensions):
     )
 
 
-def __get_dc_variables(variables: Mapping[Hashable, xr.DataArray],
-                       type: str,
-                       dc_dimensions: Dict[str, Any]):
+def __get_dc_variables(
+    variables: Mapping[Hashable, xr.DataArray],
+    type: str,
+    dc_dimensions: Dict[str, Any],
+):
     """Create a partial value of the "datacube:variables" property
     for the given *variables* and *type*.
     """
@@ -883,10 +898,7 @@ def __get_dc_variables(variables: Mapping[Hashable, xr.DataArray],
     }
 
 
-def _get_dc_variable(
-        var: xr.DataArray,
-        type: str
-) -> Dict[str, Any]:
+def _get_dc_variable(var: xr.DataArray, type: str) -> Dict[str, Any]:
     """Create a generic variable of the "datacube:variables" property
     for the given *var*, *type*, and optional *axis*.
     """
@@ -898,8 +910,9 @@ def _get_dc_variable(
 
 def _set_dc_description(asset, var):
     """Set the "description" property of given asset, if any."""
-    description = _get_str_attr(var.attrs,
-                                ['description', 'title', 'long_name'])
+    description = _get_str_attr(
+        var.attrs, ['description', 'title', 'long_name']
+    )
     if description:
         asset.update(description=description)
 
@@ -931,12 +944,8 @@ def _assert_valid_collection(ctx: DatasetsContext, collection_id: str):
 
 def _get_catalog_metadata(config: ServerConfig):
     stac_config = config.get("STAC", {})
-    catalog_id = stac_config.get(
-        "Identifier", DEFAULT_CATALOG_ID
-    )
-    catalog_title = stac_config.get(
-        "Title", DEFAULT_CATALOG_TITLE
-    )
+    catalog_id = stac_config.get("Identifier", DEFAULT_CATALOG_ID)
+    catalog_title = stac_config.get("Title", DEFAULT_CATALOG_TITLE)
     catalog_description = stac_config.get(
         "Description", DEFAULT_CATALOG_DESCRIPTION
     )
@@ -946,12 +955,8 @@ def _get_catalog_metadata(config: ServerConfig):
 def _get_collection_metadata(config: ServerConfig):
     stac_config = config.get("STAC", {})
     collection_config = stac_config.get("Collection", {})
-    collection_id = collection_config.get(
-        "Identifier", DEFAULT_COLLECTION_ID
-    )
-    collection_title = collection_config.get(
-        "Title", DEFAULT_COLLECTION_TITLE
-    )
+    collection_id = collection_config.get("Identifier", DEFAULT_COLLECTION_ID)
+    collection_title = collection_config.get("Title", DEFAULT_COLLECTION_TITLE)
     collection_description = collection_config.get(
         "Description", DEFAULT_COLLECTION_DESCRIPTION
     )
@@ -959,11 +964,7 @@ def _get_collection_metadata(config: ServerConfig):
 
 
 def _utc_now():
-    return datetime \
-               .datetime \
-               .utcnow() \
-               .replace(microsecond=0) \
-               .isoformat() + 'Z'
+    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'
 
 
 class CollectionNotFoundException(Exception):

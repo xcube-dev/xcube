@@ -24,6 +24,7 @@ import unittest
 from pathlib import Path
 import functools
 
+import pyproj
 import xarray as xr
 import xcube
 from xcube.core.gridmapping import GridMapping
@@ -38,11 +39,12 @@ from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_TITLE
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_DESCRIPTION
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_TITLE
+from xcube.webapi.ows.stac.context import StacContext
 from xcube.webapi.ows.stac.controllers import (
     STAC_VERSION,
     get_collection_queryables,
     get_datacube_dimensions,
-    get_single_collection_items,
+    get_single_collection_items, crs_to_uri_or_wkt,
 )
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item
@@ -247,16 +249,22 @@ class StacControllersTest(unittest.TestCase):
 
     def test_get_datasets_collection(self):
         result = get_collection(
-            get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
+            get_stac_ctx(), BASE_URL, DEFAULT_COLLECTION_ID
         )
         self.assertEqual(EXPECTED_DATASETS_COLLECTION, result)
 
     def test_get_single_collection(self):
-        result = get_collection(get_stac_ctx().datasets_ctx, BASE_URL, 'demo')
+        result = get_collection(get_stac_ctx(), BASE_URL, 'demo')
+        self.assertEqual(self.read_json('demo-collection.json'), result)
+
+    def test_get_single_collection_different_crs(self):
+        testing_ctx = StacContext(get_stac_ctx().server_ctx)
+        testing_ctx._available_crss = ['OGC:CRS84']
+        result = get_collection(testing_ctx, BASE_URL, 'demo')
         self.assertEqual(self.read_json('demo-collection.json'), result)
 
     def test_get_collections(self):
-        result = get_collections(get_stac_ctx().datasets_ctx, BASE_URL)
+        result = get_collections(get_stac_ctx(), BASE_URL)
         self.assertEqual(
             [
                 {
@@ -410,3 +418,12 @@ class StacControllersTest(unittest.TestCase):
             dim_name: {'type': 'unknown', 'range': [0, 0], 'values': [0]},
         }
         self.assertEqual(expected, dims)
+
+    def test_crs_to_uri_or_wkt(self):
+        wkt = '''GEOGCS["a_nonstandard_crs",DATUM["D_WGS_1984",
+        SPHEROID["WGS_1984",6378137.0,298.3]],
+        PRIMEM["Hamburg",9.99],UNIT["Degree",0.017]]'''
+        self.assertEqual(
+            crs := pyproj.CRS.from_wkt(wkt),
+            pyproj.CRS.from_wkt(crs_to_uri_or_wkt(crs))
+        )
