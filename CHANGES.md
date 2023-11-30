@@ -1,4 +1,9 @@
-## Changes in 1.3.1 (in development)
+## Changes in 1.3.2 (in development)
+
+## Changes in 1.3.1
+
+* Updated Dockerfile and GitHub workflows; no changes to the xcube codebase
+  itself
 
 ## Changes in 1.3.0
 

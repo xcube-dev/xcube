@@ -7,7 +7,7 @@ ARG NEW_MAMBA_USER=xcube
 ARG NEW_MAMBA_USER_ID=1000
 ARG NEW_MAMBA_USER_GID=1000
 
-ARG INSTALL_PLUGINS=1
+ARG INSTALL_PLUGINS=0
 
 ENV XCUBE_SH_VERSION=latest
 ENV XCUBE_CCI_VERSION=latest
@@ -65,10 +65,6 @@ RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
 RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cmems ${XCUBE_CMEMS_VERSION} release; fi;
-
-# TODO: Investigate the missing rasterio in the docker build and delete the below workaround
-# Install rasterio explicitly as a workaround
-RUN micromamba install rasterio>=1.2 -c conda-forge
 
 RUN micromamba clean --all --force-pkgs-dirs --yes
 
