@@ -381,9 +381,11 @@ class StacControllersTest(unittest.TestCase):
         )
 
     def test_get_datacube_dimensions(self):
-        dim_name = 'a_new_dimension'
-        cube = new_cube(variables={'v': 0}).expand_dims({dim_name: 1})
-        cube[dim_name] = xr.DataArray([0])
+        dim_name_0 = 'new_dimension_0'
+        dim_name_1 = 'new_dimension_1'
+        cube = (new_cube(variables={'v': 0}).
+                expand_dims({dim_name_0: [2, 4, 6], dim_name_1: 1}))
+        cube[dim_name_1] = xr.DataArray([0])
         dims = get_datacube_dimensions(cube, GridMapping.from_dataset(cube))
 
         expected = {
@@ -415,7 +417,14 @@ class StacControllersTest(unittest.TestCase):
                     '2010-01-05T12:00:00Z',
                 ],
             },
-            dim_name: {'type': 'unknown', 'range': [0, 0], 'values': [0]},
+            dim_name_0: {
+                'type': 'unknown',
+                'range': [2, 6],
+                'step': 2},
+            dim_name_1: {
+                'type': 'unknown',
+                'range': [0, 0],
+                'values': [0]}
         }
         self.assertEqual(expected, dims)
 

@@ -136,15 +136,15 @@ def get_coverage_data(
 
     _assert_coverage_size_ok(ds, request.scale_factor)
 
-    source_gm = GridMapping.from_dataset(ds, crs=get_crs_from_dataset(ds))
+    source_gm = GridMapping.from_dataset(ds, crs=native_crs)
     target_gm = None
 
-    if get_crs_from_dataset(ds) != final_crs:
+    if native_crs != final_crs:
         target_gm = source_gm.transform(final_crs).to_regular()
     if request.scale_factor != 1:
         if target_gm is None:
             target_gm = source_gm
-        target_gm = target_gm.scale(request.scale_factor)
+        target_gm = target_gm.scale(1. / request.scale_factor)
     if request.scale_axes is not None:
         # TODO implement scale-axes
         raise ApiError.NotImplemented(
@@ -165,6 +165,10 @@ def get_coverage_data(
         ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
     if subset_bbox is not None:
         ds = _apply_bbox(ds, subset_bbox, subset_crs, always_xy=True)
+
+    ds.rio.write_crs(final_crs, inplace=True)
+    for var in ds.data_vars.values():
+        var.attrs.pop('grid_mapping', None)
 
     # TODO rename axes to match final CRS?
 
@@ -227,13 +231,6 @@ _IndexerTuple = NamedTuple(
         ('y', Optional[Union[float, tuple[float, float]]]),  # y or latitude
     ],
 )
-
-
-def _get_crs_axis_by_name(crs: pyproj.CRS, name: str):
-    for axis in crs.axis_info:
-        if axis.abbrev == name or axis.name == name:
-            return axis
-    return None
 
 
 def _apply_subsetting(
@@ -424,21 +421,6 @@ def _get_v_dim(ds: xr.Dataset):
     return [
         d for d in list(map(str, ds.dims)) if d[:3].lower() in {'y', 'lat'}
     ][0]
-
-
-def _reproject_if_needed(ds: xr.Dataset, target_crs: str):
-    source_crs = get_crs_from_dataset(ds)
-    if source_crs == pyproj.CRS(target_crs):
-        return ds
-    else:
-        source_gm = GridMapping.from_dataset(ds).to_regular()
-        target_gm_irregular = source_gm.transform(target_crs)
-        target_gm = target_gm_irregular.to_regular()
-        ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
-        if 'crs' not in ds.variables:
-            ds['crs'] = 0
-        ds.crs.attrs['spatial_ref'] = target_crs
-        return ds
 
 
 def _correct_inverted_y_range(

@@ -836,12 +836,12 @@ def _get_dc_temporal_dimension(var: xr.DataArray) -> Dict[str, Any]:
 
 
 def _get_dc_additional_dimension(
-    var: xr.DataArray, type: str = "unknown"
+    var: xr.DataArray, type_: str = "unknown"
 ) -> Dict[str, Any]:
     """Create an additional dimension of the "datacube:dimensions" property
     for the given *var* and *type*.
     """
-    asset = _get_dc_dimension(var, type, axis=None)
+    asset = _get_dc_dimension(var, type_, axis=None)
     if var.ndim == 1:
         asset["range"] = [to_json_value(var[0]), to_json_value(var[-1])]
         if var.size > 1:
@@ -857,14 +857,14 @@ def _get_dc_additional_dimension(
 
 def _get_dc_dimension(
     var: xr.DataArray,
-    type: str,
+    type_: str,
     axis: Optional[str] = None,
     drop_unit: bool = False,
 ) -> Dict[str, Any]:
     """Create a generic dimension of the "datacube:dimensions" property
     for the given *var*, *type*, and optional *axis*.
     """
-    asset = dict(type=type)
+    asset = dict(type=type_)
     if axis is not None:
         asset.update(axis=axis)
     _set_dc_description(asset, var)

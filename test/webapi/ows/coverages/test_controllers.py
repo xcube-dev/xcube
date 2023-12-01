@@ -103,7 +103,7 @@ class CoveragesControllersTest(unittest.TestCase):
                 fh.write(content)
             ds = xr.open_dataset(path)
             self.assertEqual(
-                {'lat': 800, 'lon': 800, 'time': 2, 'bnds': 2}, ds.dims
+                {'lat': 200, 'lon': 200, 'time': 2, 'bnds': 2}, ds.dims
             )
             self.assertEqual({'conc_chl', 'kd489', 'crs'}, set(ds.data_vars))
             self.assertEqual(
@@ -116,17 +116,62 @@ class CoveragesControllersTest(unittest.TestCase):
                     'time_bnds',
                     'conc_chl',
                     'kd489',
-                    'crs',
+                    'crs'
+                },
+                set(ds.variables),
+            )
+            ds.close()
+
+    def test_get_coverage_data_time_slice_subset(self):
+        query = {
+            'bbox': ['1,51,2,52'],
+            'subset': ['time("2017-01-24T00:00:00Z":"2017-01-27T00:00:00Z")'],
+            'properties': ['conc_chl'],
+            'scale-factor': [4],
+        }
+        content, content_bbox, content_crs = get_coverage_data(
+            get_coverages_ctx().datasets_ctx,
+            'demo',
+            query,
+            'application/netcdf',
+        )
+
+        self.assertEqual(4, len(content_bbox))
+        for i in range(4):
+            self.assertAlmostEqual(
+                [51.0, 1.0, 52.0, 2.0][i], content_bbox[i], places=1
+            )
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            path = os.path.join(tempdir, 'out.nc')
+            with open(path, 'wb') as fh:
+                fh.write(content)
+            ds = xr.open_dataset(path)
+            self.assertEqual(
+                {'lat': 100, 'lon': 100, 'time': 2, 'bnds': 2}, ds.dims
+            )
+            self.assertEqual({'conc_chl', 'spatial_ref'}, set(ds.data_vars))
+            self.assertEqual(
+                {
+                    'lat',
+                    'lat_bnds',
+                    'lon',
+                    'lon_bnds',
+                    'time',
+                    'time_bnds',
+                    'conc_chl',
+                    'spatial_ref'
                 },
                 set(ds.variables),
             )
             ds.close()
 
     def test_get_coverage_data_png(self):
-        query = dict(
-            subset=['lat(51:52),lon(1:2),time(2017-01-25)'],
-            properties=['conc_chl'],
-        )
+        query = {
+            'subset': ['lat(52:51),lon(1:2),time(2017-01-25)'],
+            'properties': ['conc_chl'],
+            'scale-factor': ['4'],
+        }
         content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'png'
         )
@@ -134,7 +179,7 @@ class CoveragesControllersTest(unittest.TestCase):
             da = rioxarray.open_rasterio(fh, driver='PNG')
             self.assertIsInstance(da, xr.DataArray)
             self.assertEqual(('band', 'y', 'x'), da.dims)
-            self.assertEqual((1, 400, 400), da.shape)
+            self.assertEqual((1, 100, 100), da.shape)
 
     def test_get_coverage_no_data(self):
         with self.assertRaises(ApiError.NotFound):
