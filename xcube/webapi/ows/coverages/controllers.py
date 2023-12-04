@@ -460,6 +460,8 @@ def dataset_to_image(
 
     with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.' + image_format)
+        # Make dataset representable in an image format by discarding
+        # additional variables and dimensions.
         ds = ds.drop_vars(
             names=['crs', 'spatial_ref'], errors='ignore'
         ).squeeze()
