@@ -9,7 +9,7 @@
   * Support `scale-factor` parameter.
   * Improve handling of bbox parameters.
   * Handle half-open datetime intervals.
-  * Robuster, more standard-compliant parameter parsing and checking.
+  * More robust and standard-compliant parameter parsing and checking.
   * More informative responses for incorrect or unsupported parameters.
   * Omit unnecessary dimensions in TIFF and PNG coverages.
   * Use crs_wkt when determining CRS, if present and needed.
