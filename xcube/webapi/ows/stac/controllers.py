@@ -95,7 +95,7 @@ def get_root(ctx: DatasetsContext, base_url: str):
     ]
     endpoints = list(itertools.chain.from_iterable(endpoint_lists))
     for endpoint in endpoints:
-        endpoint['path'] = endpoint['path'][len(PATH_PREFIX) :]
+        endpoint['path'] = endpoint['path'][len(PATH_PREFIX):]
 
     return {
         "type": "Catalog",
@@ -254,7 +254,7 @@ def get_single_collection_items(
             _root_link(base_url),
             {'rel': 'self', 'type': 'application/json', 'href': self_href},
         ],
-        'timeStamp': datetime.datetime.now().astimezone().isoformat(),
+        'timeStamp': datetime.datetime.now().astimezone().isoformat()
     }
 
 
@@ -433,7 +433,7 @@ def _get_datasets_collection(
             {
                 'rel': 'item',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
-                f'{DEFAULT_COLLECTION_ID}/items/{dataset_id}',
+                        f'{DEFAULT_COLLECTION_ID}/items/{dataset_id}',
                 'type': 'application/geo+json',
                 'title': f'Feature for the dataset "{dataset_id}"'
             }
@@ -511,7 +511,7 @@ def _get_single_dataset_collection(
                         f'{dataset_id}/coverage?f=json',
                 'type': 'application/json',
                 'title': f'Coverage for the dataset "{dataset_id}" using '
-                f'OGC API – Coverages, as JSON',
+                         f'OGC API – Coverages, as JSON',
             },
             {
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/coverage',
@@ -717,8 +717,8 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
             "roles": ["thumbnail"],
             "type": "image/png",
             "href": f"{base_url}/tiles/{dataset_id}/{first_var_name}"
-            f"/0/0/0{thumbnail_query}"
-        },
+                    f"/0/0/0{thumbnail_query}"
+        }
     }
 
 
