@@ -46,18 +46,18 @@ class CoveragesRequest:
 
     def __init__(self, query: Mapping[str, Sequence[str]]):
         self.query = query
-        self.parse_bbox()
+        self._parse_bbox()
         self.bbox_crs = self._parse_crs('bbox-crs', 'OGC:CRS84')
-        self.parse_properties()
-        self.parse_datetime()
-        self.parse_subset()
+        self._parse_properties()
+        self._parse_datetime()
+        self._parse_subset()
         self.subset_crs = self._parse_crs('subset-crs', 'OGC:CRS84')
-        self.parse_scale_factor()
-        self.parse_scale_axes()
-        self.parse_scale_size()
+        self._parse_scale_factor()
+        self._parse_scale_axes()
+        self._parse_scale_size()
         self.crs = self._parse_crs('crs')
 
-    def parse_bbox(self):
+    def _parse_bbox(self):
         self.bbox = None
         if 'bbox' in self.query:
             bbox_spec = self.query['bbox'][0]
@@ -71,7 +71,7 @@ class CoveragesRequest:
                     f'Invalid bbox "{bbox_spec}": must have 4 elements'
                 )
 
-    def parse_datetime(self):
+    def _parse_datetime(self):
         if 'datetime' in self.query:
             datetime_spec = self.query['datetime'][0]
             limits = datetime_spec.split('/')
@@ -88,7 +88,7 @@ class CoveragesRequest:
         else:
             self.datetime = None
 
-    def parse_subset(self):
+    def _parse_subset(self):
         if 'subset' in self.query:
             self.subset = {}
             subset_spec = self.query['subset'][0]
@@ -111,7 +111,7 @@ class CoveragesRequest:
         else:
             self.subset = None
 
-    def parse_properties(self):
+    def _parse_properties(self):
         # https://docs.ogc.org/DRAFTS/19-087.html#_parameter_properties
         # TODO: Support * wildcard (Requirement 13E)
         if 'properties' in self.query:
@@ -119,7 +119,7 @@ class CoveragesRequest:
         else:
             self.properties = None
 
-    def parse_scale_factor(self):
+    def _parse_scale_factor(self):
         if 'scale-factor' in self.query:
             scale_factor_str = self.query['scale-factor'][0]
             try:
@@ -129,14 +129,14 @@ class CoveragesRequest:
         else:
             self.scale_factor = 1
 
-    def parse_scale_axes(self):
+    def _parse_scale_axes(self):
         self.scale_axes = (
             self._parse_scale_specifier('scale-axes')
             if 'scale-axes' in self.query
             else None
         )
 
-    def parse_scale_size(self):
+    def _parse_scale_size(self):
         self.scale_size = (
             self._parse_scale_specifier('scale-size')
             if 'scale-size' in self.query

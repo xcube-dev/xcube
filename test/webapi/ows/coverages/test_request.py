@@ -1,7 +1,7 @@
 import unittest
 import pyproj
 
-from xcube.webapi.ows.coverages.util import CoveragesRequest
+from xcube.webapi.ows.coverages.request import CoveragesRequest
 
 
 class CoveragesUtilTest(unittest.TestCase):

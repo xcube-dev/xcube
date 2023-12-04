@@ -32,7 +32,7 @@ from xcube.core.resampling import resample_in_space
 from xcube.server.api import ApiError
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.webapi.datasets.context import DatasetsContext
-from xcube.webapi.ows.coverages.util import CoveragesRequest
+from xcube.webapi.ows.coverages.request import CoveragesRequest
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
