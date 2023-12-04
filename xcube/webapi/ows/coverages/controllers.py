@@ -110,12 +110,11 @@ def get_coverage_data(
                 f'{collection_id}: {", ".join(unrecognized_vars)}'
             )
 
-    if request.datetime is not None:
-        if 'time' not in ds.variables:
-            raise ApiError.BadRequest(
-                f'"datetime" parameter invalid for coverage "{collection_id}",'
-                'which has no "time" dimension.'
-            )
+    # https://docs.ogc.org/DRAFTS/19-087.html#datetime-parameter-subset-requirements
+    # requirement 7D: "If a datetime parameter is specified requesting a
+    # coverage without any temporal dimension, the parameter SHALL either be
+    # ignored, or a 4xx client error generated." We choose to ignore it.
+    if request.datetime is not None and 'time' in ds.variables:
         if isinstance(request.datetime, tuple):
             time_slice = slice(*request.datetime)
             time_slice = ensure_time_index_compatible(ds, time_slice)

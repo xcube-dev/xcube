@@ -234,17 +234,28 @@ class CoveragesControllersTest(unittest.TestCase):
             def get_dataset(self, _):
                 return self.ds
 
-        with self.assertRaises(ApiError.BadRequest):
-            # noinspection PyTypeChecker
-            get_coverage_data(
-                CtxMock(
-                    get_coverages_ctx()
-                    .datasets_ctx.get_ml_dataset('demo')
-                    .get_dataset(0)
-                ),
-                'demo',
-                {'datetime': ['2017-01-16T10:09:21.834255872Z']},
-                'application/netcdf',
+        # noinspection PyTypeChecker
+        content, content_bbox, content_crs = get_coverage_data(
+            CtxMock(
+                get_coverages_ctx()
+                .datasets_ctx.get_ml_dataset('demo')
+                .get_dataset(0)
+            ),
+            'demo',
+            {
+                'datetime': ['2017-01-16T10:09:21.834255872Z'],
+                'bbox': ['1,51,2,52'],
+            },
+            'application/netcdf',
+        )
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            path = os.path.join(tempdir, 'out.nc')
+            with open(path, 'wb') as fh:
+                fh.write(content)
+            ds = xr.open_dataset(path)
+            self.assertEqual(
+                {'lat': 400, 'lon': 400, 'time': 5, 'bnds': 2}, ds.dims
             )
 
     def test_get_crs_from_dataset(self):
