@@ -495,20 +495,20 @@ def _get_single_dataset_collection(
             {
                 'rel': 'items',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
-                f'{dataset_id}/items',
+                        f'{dataset_id}/items',
                 'title': 'feature collection of data cube items'
             },
             {
                 'rel': 'item',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
-                f'{dataset_id}/items/{DEFAULT_FEATURE_ID}',
+                        f'{dataset_id}/items/{DEFAULT_FEATURE_ID}',
                 'type': 'application/geo+json',
                 'title': f'Feature for the dataset "{dataset_id}"'
             },
             {
                 'rel': 'http://www.opengis.net/def/rel/ogc/1.0/coverage',
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
-                f'{dataset_id}/coverage?f=json',
+                        f'{dataset_id}/coverage?f=json',
                 'type': 'application/json',
                 'title': f'Coverage for the dataset "{dataset_id}" using '
                 f'OGC API – Coverages, as JSON',
@@ -609,7 +609,7 @@ def _get_dataset_feature(
             {
                 "rel": "self",
                 "href": f"{base_url}{PATH_PREFIX}/collections/{collection_id}"
-                f"/items/{feature_id}"
+                        f"/items/{feature_id}"
             },
             {
                 "rel": "collection",
@@ -684,7 +684,7 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
                     "roles": ["data"],
                     "type": "application/zarr",
                     "href": f"{default_storage_url}/"
-                    f"{dataset_id}.zarr/{v['name']}"
+                            f"{dataset_id}.zarr/{v['name']}"
                 }
                 for v in xcube_data_vars
             }
