@@ -79,8 +79,11 @@ def get_coverage_data(
     :param collection_id: the dataset from which to return the coverage
     :param query: the HTTP query parameters
     :param content_type: the MIME type of the desired output format
-    :return: the coverage as bytes in the requested output format, or None
-             if the requested output format is not supported
+    :return: A tuple consisting of: (1) the coverage as bytes in the requested
+             output format, or None if the requested output format is not
+             supported; (2) the bounding box of the returned data, respecting
+             the axis ordering of the CRS (e.g. latitude first for EPSG:4326);
+             (3) the CRS of the returned dataset and bounding box
     """
 
     ds = get_dataset(ctx, collection_id)
@@ -130,8 +133,6 @@ def get_coverage_data(
 
     if request.bbox is not None:
         ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
-
-    # ds.rio.write_crs(get_crs_from_dataset(ds), inplace=True)
 
     _assert_coverage_size_ok(ds, request.scale_factor)
 
@@ -339,7 +340,7 @@ def _apply_geographic_subsetting(
         indexers={
             h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
             v_dim: slice(
-                *_correct_inverted_y_range(
+                *_correct_inverted_y_range_if_necessary(
                     ds, v_dim, (bbox_native_crs[1], bbox_native_crs[3])
                 )
             ),
@@ -372,13 +373,12 @@ def _transform_bbox(
 ) -> list[float]:
     if source_crs == dest_crs:
         return bbox
-    else:
-        transformer = pyproj.Transformer.from_crs(
-            source_crs, dest_crs, always_xy=True
-        )
-        bbox_ = bbox.copy()
-        _ensure_bbox_y_ascending(bbox_)
-        return list(transformer.transform_bounds(*bbox_))
+    transformer = pyproj.Transformer.from_crs(
+        source_crs, dest_crs, always_xy=True
+    )
+    bbox_ = bbox.copy()
+    _ensure_bbox_y_ascending(bbox_)
+    return list(transformer.transform_bounds(*bbox_))
 
 
 def _apply_bbox(
@@ -399,7 +399,9 @@ def _apply_bbox(
         if (always_xy or is_xy_order(native_crs))
         else (1, 0, 3, 2)
     )
-    v_slice = _correct_inverted_y_range(ds, v_dim, (bbox[y0], bbox[y1]))
+    v_slice = _correct_inverted_y_range_if_necessary(
+        ds, v_dim, (bbox[y0], bbox[y1])
+    )
     ds = ds.sel({h_dim: slice(bbox[x0], bbox[x1]), v_dim: slice(*v_slice)})
     return ds
 
@@ -422,7 +424,7 @@ def _get_v_dim(ds: xr.Dataset):
     ][0]
 
 
-def _correct_inverted_y_range(
+def _correct_inverted_y_range_if_necessary(
     ds: xr.Dataset, axis: str, range_: tuple[float, float]
 ) -> tuple[float, float]:
     x0, x1 = range_
