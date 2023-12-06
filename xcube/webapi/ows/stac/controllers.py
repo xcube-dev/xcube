@@ -61,14 +61,17 @@ _CONFORMANCE = (
         for part in ['core', 'collections', 'ogcapi-features']
     ]
     + [
-        f'http://www.opengis.net/spec/ogcapi-{ogcapi}/1.0/conf/{part}'
+        f'http://www.opengis.net/spec/ogcapi-{ogcapi}/conf/{part}'
         for ogcapi, parts in [
-            ('common-1', ['core', 'json', 'oas30']),
-            ('common-2', ['collections']),
-            ('features-1', ['core', 'oas30', 'html', 'geojson']),
+            ('common-1/1.0', ['core', 'landing-page', 'json', 'oas30']),
+            ('common-2/0.0', ['collections']),
+            ('features-1/1.0', ['core', 'oas30', 'html', 'geojson']),
             (
-                'coverages-1',
-                ['geodata-coverage', 'cisjson', 'coverage-subset', 'oas30'],
+                'coverages-1/0.0',
+                [
+                    'core', 'scaling', 'subsetting', 'fieldselection',
+                    'crs', 'geotiff', 'netcdf', 'oas30'
+                ],
             ),
         ]
         for part in parts
