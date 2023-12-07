@@ -134,17 +134,21 @@ def get_coverage_data(
     if request.bbox is not None:
         ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
 
-    _assert_coverage_size_ok(ds, request.scale_factor)
+    # NB: a default scale factor of 1 is not compulsory. We may in future
+    # choose to downscale by default if a large coverage is requested.
+    scale_factor = 1 if request.scale_factor is None else request.scale_factor
+    _assert_coverage_size_ok(ds, scale_factor)
 
     source_gm = GridMapping.from_dataset(ds, crs=native_crs)
     target_gm = None
 
     if native_crs != final_crs:
         target_gm = source_gm.transform(final_crs).to_regular()
-    if request.scale_factor != 1:
+
+    if scale_factor != 1:
         if target_gm is None:
             target_gm = source_gm
-        target_gm = target_gm.scale(1. / request.scale_factor)
+        target_gm = target_gm.scale(1. / scale_factor)
     if request.scale_axes is not None:
         # TODO implement scale-axes
         raise ApiError.NotImplemented(
