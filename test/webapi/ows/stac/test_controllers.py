@@ -24,6 +24,7 @@ import unittest
 from pathlib import Path
 import functools
 
+import pyproj
 import xarray as xr
 import xcube
 from xcube.core.gridmapping import GridMapping
@@ -38,11 +39,13 @@ from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_TITLE
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_DESCRIPTION
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_TITLE
+from xcube.webapi.ows.stac.context import StacContext
 from xcube.webapi.ows.stac.controllers import (
     STAC_VERSION,
     get_collection_queryables,
     get_datacube_dimensions,
-    get_single_collection_items,
+    get_single_collection_items, 
+    crs_to_uri_or_wkt,
 )
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item
@@ -64,18 +67,23 @@ EXPECTED_CONFORMANCE = {
     'https://api.stacspec.org/v1.0.0/core',
     'https://api.stacspec.org/v1.0.0/collections',
     'https://api.stacspec.org/v1.0.0/ogcapi-features',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json',
-    'http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30',
-    'http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/collections',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
     'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/geodata-coverage',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/cisjson',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/coverage-subset',
-    'http://www.opengis.net/spec/ogcapi-coverages-1/1.0/conf/oas30',
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core",
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/landing-page",
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json",
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30",
+    "http://www.opengis.net/spec/ogcapi-common-2/0.0/conf/collections",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/core",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/scaling",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/subsetting",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/fieldselection",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/crs",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/geotiff",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/netcdf",
+    "http://www.opengis.net/spec/ogcapi-coverages-1/0.0/conf/oas30"
 }
 
 EXPECTED_ENDPOINTS = functools.reduce(
@@ -247,16 +255,22 @@ class StacControllersTest(unittest.TestCase):
 
     def test_get_datasets_collection(self):
         result = get_collection(
-            get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
+            get_stac_ctx(), BASE_URL, DEFAULT_COLLECTION_ID
         )
         self.assertEqual(EXPECTED_DATASETS_COLLECTION, result)
 
     def test_get_single_collection(self):
-        result = get_collection(get_stac_ctx().datasets_ctx, BASE_URL, 'demo')
+        result = get_collection(get_stac_ctx(), BASE_URL, 'demo')
+        self.assertEqual(self.read_json('demo-collection.json'), result)
+
+    def test_get_single_collection_different_crs(self):
+        testing_ctx = StacContext(get_stac_ctx().server_ctx)
+        testing_ctx._available_crss = ['OGC:CRS84']
+        result = get_collection(testing_ctx, BASE_URL, 'demo')
         self.assertEqual(self.read_json('demo-collection.json'), result)
 
     def test_get_collections(self):
-        result = get_collections(get_stac_ctx().datasets_ctx, BASE_URL)
+        result = get_collections(get_stac_ctx(), BASE_URL)
         self.assertEqual(
             [
                 {
@@ -373,9 +387,11 @@ class StacControllersTest(unittest.TestCase):
         )
 
     def test_get_datacube_dimensions(self):
-        dim_name = 'a_new_dimension'
-        cube = new_cube(variables={'v': 0}).expand_dims({dim_name: 1})
-        cube[dim_name] = xr.DataArray([0])
+        dim_name_0 = 'new_dimension_0'
+        dim_name_1 = 'new_dimension_1'
+        cube = (new_cube(variables={'v': 0}).
+                expand_dims({dim_name_0: [2, 4, 6], dim_name_1: 1}))
+        cube[dim_name_1] = xr.DataArray([0])
         dims = get_datacube_dimensions(cube, GridMapping.from_dataset(cube))
 
         expected = {
@@ -407,6 +423,22 @@ class StacControllersTest(unittest.TestCase):
                     '2010-01-05T12:00:00Z',
                 ],
             },
-            dim_name: {'type': 'unknown', 'range': [0, 0], 'values': [0]},
+            dim_name_0: {
+                'type': 'unknown',
+                'range': [2, 6],
+                'step': 2},
+            dim_name_1: {
+                'type': 'unknown',
+                'range': [0, 0],
+                'values': [0]}
         }
         self.assertEqual(expected, dims)
+
+    def test_crs_to_uri_or_wkt(self):
+        wkt = '''GEOGCS["a_nonstandard_crs",DATUM["D_WGS_1984",
+        SPHEROID["WGS_1984",6378137.0,298.3]],
+        PRIMEM["Hamburg",9.99],UNIT["Degree",0.017]]'''
+        self.assertEqual(
+            crs := pyproj.CRS.from_wkt(wkt),
+            pyproj.CRS.from_wkt(crs_to_uri_or_wkt(crs))
+        )

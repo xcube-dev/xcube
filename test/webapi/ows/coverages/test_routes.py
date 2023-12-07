@@ -25,7 +25,7 @@ from xcube.webapi.ows.coverages.routes import PATH_PREFIX
 
 
 class CoveragesRoutesTest(RoutesTestCase):
-    def test_fetch_coverage(self):
+    def test_fetch_coverage_json(self):
         response = self.fetch(
             PATH_PREFIX + '/collections/demo/coverage?f=application/json'
         )
@@ -40,6 +40,15 @@ class CoveragesRoutesTest(RoutesTestCase):
         )
         self.assertResponseOK(response)
         self.assertEqual('text/html', response.headers['Content-Type'])
+
+    def test_fetch_coverage_netcdf(self):
+        response = self.fetch(
+            PATH_PREFIX + '/collections/demo/coverage?f=application/netcdf'
+        )
+        self.assertResponseOK(response)
+        self.assertEqual('50.00125,0.00125,52.49875,4.99875',
+                         response.headers['Content-Bbox'])
+        self.assertEqual('[EPSG:4326]', response.headers['Content-Crs'])
 
     def test_fetch_coverage_wrong_media_type(self):
         response = self.fetch(

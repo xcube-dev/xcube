@@ -374,3 +374,8 @@ class ApiErrorTest(unittest.TestCase):
         error = ApiError.InvalidServerConfig()
         self.assertIsInstance(error, ApiError)
         self.assertEqual(580, error.status_code)
+
+    def test_content_too_large(self):
+        error = ApiError.ContentTooLarge()
+        self.assertIsInstance(error, ApiError)
+        self.assertEqual(413, error.status_code)

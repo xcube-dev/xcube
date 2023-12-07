@@ -75,6 +75,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             # TODO: support covjson
         ]
         content_type = negotiate_content_type(self.request, available_types)
+        content_bbox = content_crs = None
         if content_type is None:
             raise ApiError.UnsupportedMediaType(
                 f'Available media types: {", ".join(available_types)}\n'
@@ -90,8 +91,17 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
         elif content_type in {'application/json', 'json'}:
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
-            result = get_coverage_data(
+            result, content_bbox, content_crs = get_coverage_data(
                 ds_ctx, collectionId, self.request.query, content_type
+            )
+
+        if content_bbox is not None:
+            self.response.set_header(
+                'Content-Bbox', ','.join(map(str, content_bbox))
+            )
+        if content_crs is not None:
+            self.response.set_header(
+                'Content-Crs', f'[{content_crs.to_string()}]'
             )
         return await self.response.finish(result, content_type=content_type)
 

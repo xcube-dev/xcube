@@ -1,5 +1,25 @@
 ## Changes in 1.3.2 (in development)
 
+### Enhancements
+
+* STAC
+  * Provide links for multiple coverages data formats
+  * Add `crs` and `crs_storage` properties to STAC data
+* OGC Coverages:
+  * Support `scale-factor` parameter
+  * Improve handling of bbox parameters
+  * Handle half-open datetime intervals
+  * More robust and standard-compliant parameter parsing and checking
+  * More informative responses for incorrect or unsupported parameters
+  * Omit unnecessary dimensions in TIFF and PNG coverages
+  * Use crs_wkt when determining CRS, if present and needed
+  * Change default subsetting and bbox CRS from EPSG:4326 to OGC:CRS84
+  * Implement reprojection for bbox
+  * Ensure datetime parameters match dataset’s timezone awareness
+  * Reimplement subsetting (better standards conformance, cleaner code)
+  * Set Content-Bbox and Content-Crs headers in the HTTP response
+  * Support safe CURIE syntax for CRS specification
+
 ## Changes in 1.3.1
 
 * Updated Dockerfile and GitHub workflows; no changes to the xcube codebase

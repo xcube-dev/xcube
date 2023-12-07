@@ -842,6 +842,7 @@ class ApiError(Exception):
     MethodNotAllowed: Type["_DerivedApiError"]
     Conflict: Type["_DerivedApiError"]
     Gone: Type["_DerivedApiError"]
+    ContentTooLarge: Type["_DerivedApiError"]
     InternalServerError: Type["_DerivedApiError"]
     NotImplemented: Type["_DerivedApiError"]
     InvalidServerConfig: Type["_DerivedApiError"]
@@ -902,6 +903,11 @@ class _Gone(ApiError):
         super().__init__(410, message=message)
 
 
+class _ContentTooLarge(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(413, message=message)
+
+
 class _UnsupportedMediaType(ApiError):
     def __init__(self, message: Optional[str] = None):
         super().__init__(415, message=message)
@@ -933,3 +939,4 @@ ApiError.Gone = _Gone
 ApiError.InternalServerError = _InternalServerError
 ApiError.NotImplemented = _NotImplemented
 ApiError.InvalidServerConfig = _InvalidServerConfig
+ApiError.ContentTooLarge = _ContentTooLarge

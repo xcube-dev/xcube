@@ -21,7 +21,7 @@
 import os
 import re
 import tempfile
-from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple
+from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple, Union
 
 import numpy as np
 import pyproj
@@ -30,7 +30,9 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import resample_in_space
 from xcube.server.api import ApiError
+from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.webapi.datasets.context import DatasetsContext
+from xcube.webapi.ows.coverages.request import CoveragesRequest
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
@@ -65,7 +67,7 @@ def get_coverage_data(
     collection_id: str,
     query: Mapping[str, Sequence[str]],
     content_type: str,
-) -> Optional[bytes]:
+) -> tuple[Optional[bytes], list[float], pyproj.CRS]:
     """
     Return coverage data from a dataset
 
@@ -77,50 +79,98 @@ def get_coverage_data(
     :param collection_id: the dataset from which to return the coverage
     :param query: the HTTP query parameters
     :param content_type: the MIME type of the desired output format
-    :return: the coverage as bytes in the requested output format, or None
-             if the requested output format is not supported
+    :return: A tuple consisting of: (1) the coverage as bytes in the requested
+             output format, or None if the requested output format is not
+             supported; (2) the bounding box of the returned data, respecting
+             the axis ordering of the CRS (e.g. latitude first for EPSG:4326);
+             (3) the CRS of the returned dataset and bounding box
     """
 
-    # TODO: support scale-factor, scale-axes, scale-size, subset-crs,
-    #  and bbox-crs
-
     ds = get_dataset(ctx, collection_id)
-    if 'subset' in query:
-        indexers = _subset_to_indexers(query['subset'][0], ds)
-        if indexers.indices:
-            ds = ds.sel(indexers=indexers.indices, method='nearest')
-        if indexers.slices:
-            ds = ds.sel(indexers=indexers.slices)
-    if 'bbox' in query:
-        # TODO: flip latitude if required
-        # TODO: slice according to axis order in dataset
-        bbox = list(map(float, query['bbox'][0].split(',')))
-        if {'lat', 'lon'}.issubset(ds.variables):
-            ds = ds.sel(
-                lat=slice(bbox[0], bbox[2]), lon=slice(bbox[1], bbox[3])
+
+    try:
+        request = CoveragesRequest(query)
+    except ValueError as e:
+        raise ApiError.BadRequest(str(e))
+
+    # See https://docs.ogc.org/DRAFTS/19-087.html
+    native_crs = get_crs_from_dataset(ds)
+    final_crs = request.crs if request.crs is not None else native_crs
+    bbox_crs = request.bbox_crs
+    subset_crs = request.subset_crs
+
+    if request.properties is not None:
+        requested_vars = set(request.properties)
+        data_vars = set(map(str, ds.data_vars))
+        unrecognized_vars = requested_vars - data_vars
+        if unrecognized_vars == set():
+            ds = ds.drop_vars(
+                list(data_vars - requested_vars - {'crs', 'spatial_ref'})
             )
         else:
-            ds = ds.sel(y=slice(bbox[0], bbox[2]), x=slice(bbox[1], bbox[3]))
-    if 'datetime' in query:
-        # TODO: Raise an exception for non-existent time axis
-        # TODO: Support open ranges
-        timespec = query['datetime'][0]
-        if '/' in timespec:
-            timefrom, timeto = timespec.split('/')
-            ds = ds.sel(time=slice(timefrom, timeto))
+            raise ApiError.BadRequest(
+                f'The following properties are not present in the coverage '
+                f'{collection_id}: {", ".join(unrecognized_vars)}'
+            )
+
+    # https://docs.ogc.org/DRAFTS/19-087.html#datetime-parameter-subset-requirements
+    # requirement 7D: "If a datetime parameter is specified requesting a
+    # coverage without any temporal dimension, the parameter SHALL either be
+    # ignored, or a 4xx client error generated." We choose to ignore it.
+    if request.datetime is not None and 'time' in ds.variables:
+        if isinstance(request.datetime, tuple):
+            time_slice = slice(*request.datetime)
+            time_slice = ensure_time_index_compatible(ds, time_slice)
+            ds = ds.sel(time=time_slice)
         else:
+            timespec = ensure_time_index_compatible(ds, request.datetime)
             ds = ds.sel(time=timespec, method='nearest').squeeze()
-    if 'properties' in query:
-        # TODO: Raise an exception for non-existent properties
-        vars_to_keep = set(query['properties'][0].split(','))
-        data_vars = set(ds.data_vars)
-        vars_to_drop = list(data_vars - vars_to_keep)
-        ds = ds.drop_vars(vars_to_drop)
-    if 'crs' in query:
-        target_crs = query['crs'][0]
-        source_gm = GridMapping.from_dataset(ds)
-        target_gm = source_gm.transform(target_crs).to_regular()
+
+    if request.subset is not None:
+        subset_bbox, ds = _apply_subsetting(ds, request.subset, subset_crs)
+    else:
+        subset_bbox = None
+
+    if request.bbox is not None:
+        ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
+
+    _assert_coverage_size_ok(ds, request.scale_factor)
+
+    source_gm = GridMapping.from_dataset(ds, crs=native_crs)
+    target_gm = None
+
+    if native_crs != final_crs:
+        target_gm = source_gm.transform(final_crs).to_regular()
+    if request.scale_factor != 1:
+        if target_gm is None:
+            target_gm = source_gm
+        target_gm = target_gm.scale(1. / request.scale_factor)
+    if request.scale_axes is not None:
+        # TODO implement scale-axes
+        raise ApiError.NotImplemented(
+            'The scale-axes parameter is not yet supported.'
+        )
+    if request.scale_size:
+        # TODO implement scale-size
+        raise ApiError.NotImplemented(
+            'The scale-size parameter is not yet supported.'
+        )
+
+    if target_gm is not None:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
+
+    # In this case, the transformed native CRS bbox[es] may have been
+    # too big, so we re-crop in the final CRS.
+    if native_crs != final_crs and request.bbox is not None:
+        ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
+    if subset_bbox is not None:
+        ds = _apply_bbox(ds, subset_bbox, subset_crs, always_xy=True)
+
+    ds.rio.write_crs(final_crs, inplace=True)
+    for var in ds.data_vars.values():
+        var.attrs.pop('grid_mapping', None)
+
+    # check: rename axes to match final CRS?
 
     media_types = dict(
         tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
@@ -128,11 +178,11 @@ def get_coverage_data(
         netcdf={'netcdf', 'application/netcdf', 'application/x-netcdf'},
     )
     if content_type in media_types['tiff']:
-        return dataset_to_image(ds, 'tiff')
+        content = dataset_to_image(ds, 'tiff')
     elif content_type in media_types['png']:
-        return dataset_to_image(ds, 'png')
+        content = dataset_to_image(ds, 'png')
     elif content_type in media_types['netcdf']:
-        return dataset_to_netcdf(ds)
+        content = dataset_to_netcdf(ds)
     else:
         # It's expected that the caller (server API handler) will catch
         # unhandled types, but we may as well do the right thing if any
@@ -144,34 +194,249 @@ def get_coverage_data(
                 [type_ for value in media_types.values() for type_ in value]
             )
         )
+    final_bbox = get_bbox_from_ds(ds)
+    if not is_xy_order(final_crs):
+        final_bbox = final_bbox[1], final_bbox[0], final_bbox[3], final_bbox[2]
+    return content, final_bbox, final_crs
+
+
+def _assert_coverage_size_ok(ds: xr.Dataset, scale_factor: float):
+    size_limit = 4000 * 4000  # TODO make this configurable
+    h_dim = _get_h_dim(ds)
+    v_dim = _get_v_dim(ds)
+    for d in h_dim, v_dim:
+        size = ds.dims[d]
+        if size == 0:
+            # Requirement 8C currently specifies a 204 rather than 404 here,
+            # but spec will soon be updated to allow 404 as an alternative.
+            # (J. Jacovella-St-Louis, pers. comm., 2023-11-27).
+            raise ApiError.NotFound(
+                f'Requested coverage contains no data: {d} has zero size.'
+            )
+    if (h_size := ds.dims[h_dim] / scale_factor) * (
+        y_size := ds.dims[v_dim] / scale_factor
+    ) > size_limit:
+        raise ApiError.ContentTooLarge(
+            f'Requested coverage is too large:'
+            f'{h_size} × {y_size} > {size_limit}.'
+        )
 
 
 _IndexerTuple = NamedTuple(
-    'Indexers', [('indices', dict[str, Any]), ('slices', dict[str, slice])]
+    'Indexers',
+    [
+        ('indices', dict[str, Any]),  # non-geographic single-valued specifiers
+        ('slices', dict[str, slice]),  # non-geographic range specifiers
+        ('x', Optional[Union[float, tuple[float, float]]]),  # x or longitude
+        ('y', Optional[Union[float, tuple[float, float]]]),  # y or latitude
+    ],
 )
 
 
-def _subset_to_indexers(subset_spec: str, ds: xr.Dataset) -> _IndexerTuple:
-    indices, slices = {}, {}
-    for part in subset_spec.split(','):
-        axis, low, high = re.match(
-            '^(.*)[(]([^:)]*)(?::(.*))?[)]$', part
-        ).groups()
-        if high is None:
-            # TODO: parse to float if possible
-            indices[axis] = low
-        else:
-            # TODO: don't flip longitude
-            if (low < high) != (ds[axis][0] < ds[axis][-1]):
-                low, high = high, low
-            if axis != 'time':
-                # TODO: catch parse exception and pass through as string
+def _apply_subsetting(
+    ds: xr.Dataset, subset_spec: dict, subset_crs: pyproj.CRS
+) -> tuple[list[float], xr.Dataset]:
+    indexers = _parse_subset_specifier(subset_spec, ds)
+
+    # TODO: for geographic subsetting, also handle single-value (non-slice)
+    #  indices and half-open slices.
+    bbox = None
+    if (indexers.x, indexers.y) != (None, None):
+        bbox, ds = _apply_geographic_subsetting(ds, subset_crs, indexers)
+    if indexers.slices:
+        ds = ds.sel(indexers=indexers.slices)
+    if indexers.indices:
+        ds = ds.sel(indexers=indexers.indices, method='nearest')
+
+    return bbox, ds
+
+
+def _parse_subset_specifier(
+    subset_spec: dict[str, Union[str, tuple[Optional[str], Optional[str]]]],
+    ds: xr.Dataset,
+) -> _IndexerTuple:
+    specifiers = {}
+    for axis, value in subset_spec.items():
+        if isinstance(value, str):  # single value
+            if axis == 'time':
+                specifiers[axis] = ensure_time_index_compatible(ds, value)
+            else:
+                try:
+                    # Parse to float if possible
+                    specifiers[axis] = float(value)
+                except ValueError:
+                    specifiers[axis] = value
+        else:  # range
+            low, high = value
+            low = None if low == '*' else low
+            high = None if high == '*' else high
+            if axis == 'time':
+                specifiers[axis] = ensure_time_index_compatible(
+                    ds, slice(low, high)
+                )
+            else:
                 low = float(low)
                 high = float(high)
-            slices[axis] = slice(
-                None if low == '*' else low, None if high == '*' else high
-            )
-    return _IndexerTuple(indices, slices)
+                if axis.lower()[:3] in ['y', 'n', 'nor', 'lat'] and high < low:
+                    low, high = high, low
+                specifiers[axis] = low, high
+
+    # Find and extract geographic parameters, if any. These have to be
+    # handled specially, since they refer to axis names in the subsetting
+    # CRS rather than dimension names in the dataset. For now, we actually
+    # don't check the CRS axis names, but just look for parameters with
+    # appropriate names (x, y, lat, long, etc.).
+    x_param, y_param = _find_geographic_parameters(list(specifiers))
+    x_value = specifiers.pop(x_param) if x_param is not None else None
+    y_value = specifiers.pop(y_param) if y_param is not None else None
+
+    # Separate index and slice (i.e. single-value and range) specifiers
+    indices = {k: v for k, v in specifiers.items() if not isinstance(v, slice)}
+    slices = {k: v for k, v in specifiers.items() if isinstance(v, slice)}
+
+    return _IndexerTuple(indices, slices, x_value, y_value)
+
+
+def _apply_geographic_subsetting(
+    ds, subset_crs, indexers
+) -> tuple[list[float], xr.Dataset]:
+    # NB: We use xy axis ordering for the bounding boxes throughout this
+    # function, regardless of what's specified in the CRSs.
+
+    # 1. transform native extent to a whole-dataset bbox in subset_crs.
+    # We'll use this to fill in "full extent" values if geographic
+    # subsetting is only specified in one dimension.
+    full_bbox_native = get_bbox_from_ds(ds)
+    native_crs = get_crs_from_dataset(ds)
+    full_bbox_subset_crs = _transform_bbox(
+        full_bbox_native, native_crs, subset_crs
+    )
+
+    # 2. Find horizontal and/or vertical ranges in indexers, falling back to
+    # values from whole-dataset bbox if a complete bbox is not specified.
+    x0, x1 = (
+        indexers.x
+        if indexers.x is not None
+        else (full_bbox_subset_crs[0], full_bbox_subset_crs[2])
+    )
+    y0, y1 = (
+        indexers.y
+        if indexers.y is not None
+        else (full_bbox_subset_crs[1], full_bbox_subset_crs[3])
+    )
+
+    # 3. Using the ranges determined from the indexers and whole-dataset bbox,
+    # construct the requested bbox in the subsetting CRS.
+    bbox_subset_crs = [x0, y0, x1, y1]
+
+    # 4. Transform requested bbox from subsetting CRS to dataset-native CRS.
+    bbox_native_crs = _transform_bbox(bbox_subset_crs, subset_crs, native_crs)
+
+    # 6. Apply the dataset-native bbox using sel, making sure that y/latitude
+    # slice has the same ordering as the corresponding co-ordinate.
+    h_dim = _get_h_dim(ds)
+    v_dim = _get_v_dim(ds)
+    ds = ds.sel(
+        indexers={
+            h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
+            v_dim: slice(
+                *_correct_inverted_y_range_if_necessary(
+                    ds, v_dim, (bbox_native_crs[1], bbox_native_crs[3])
+                )
+            ),
+        }
+    )
+    return bbox_subset_crs, ds
+
+
+def get_bbox_from_ds(ds: xr.Dataset):
+    h, v = ds[_get_h_dim(ds)], ds[_get_v_dim(ds)]
+    bbox = list(map(float, [h[0], v[0], h[-1], v[-1]]))
+    _ensure_bbox_y_ascending(bbox)
+    return bbox
+
+
+def _find_geographic_parameters(
+    names: list[str],
+) -> tuple[Optional[str], Optional[str]]:
+    x, y = None, None
+    for name in names:
+        if name.lower()[:3] in ['x', 'e', 'eas', 'lon']:
+            x = name
+        if name.lower()[:3] in ['y', 'n', 'nor', 'lat']:
+            y = name
+    return x, y
+
+
+def _transform_bbox(
+    bbox: list[float], source_crs: pyproj.CRS, dest_crs: pyproj.CRS
+) -> list[float]:
+    if source_crs == dest_crs:
+        return bbox
+    transformer = pyproj.Transformer.from_crs(
+        source_crs, dest_crs, always_xy=True
+    )
+    bbox_ = bbox.copy()
+    _ensure_bbox_y_ascending(bbox_)
+    return list(transformer.transform_bounds(*bbox_))
+
+
+def _apply_bbox(
+    ds: xr.Dataset, bbox: list[float], bbox_crs: pyproj.CRS, always_xy: bool
+):
+    native_crs = get_crs_from_dataset(ds)
+
+    if native_crs != bbox_crs:
+        transformer = pyproj.Transformer.from_crs(
+            bbox_crs, native_crs, always_xy=always_xy
+        )
+        _ensure_bbox_y_ascending(bbox, always_xy or is_xy_order(bbox_crs))
+        bbox = transformer.transform_bounds(*bbox)
+    h_dim = _get_h_dim(ds)
+    v_dim = _get_v_dim(ds)
+    x0, y0, x1, y1 = (
+        (0, 1, 2, 3)
+        if (always_xy or is_xy_order(native_crs))
+        else (1, 0, 3, 2)
+    )
+    v_slice = _correct_inverted_y_range_if_necessary(
+        ds, v_dim, (bbox[y0], bbox[y1])
+    )
+    ds = ds.sel({h_dim: slice(bbox[x0], bbox[x1]), v_dim: slice(*v_slice)})
+    return ds
+
+
+def _ensure_bbox_y_ascending(bbox: list, xy_order: bool = True):
+    y0, y1 = (1, 3) if xy_order else (0, 2)
+    if bbox[y0] > bbox[y1]:
+        bbox[y0], bbox[y1] = bbox[y1], bbox[y0]
+
+
+def _get_h_dim(ds: xr.Dataset):
+    return [
+        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'x', 'lon'}
+    ][0]
+
+
+def _get_v_dim(ds: xr.Dataset):
+    return [
+        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'y', 'lat'}
+    ][0]
+
+
+def _correct_inverted_y_range_if_necessary(
+    ds: xr.Dataset, axis: str, range_: tuple[float, float]
+) -> tuple[float, float]:
+    x0, x1 = range_
+    # Make sure latitude slice direction matches axis direction.
+    # (For longitude, a descending-order slice is valid.)
+    if (
+        None not in range_
+        and axis[:3].lower() in {'lat', 'nor', 'y'}
+        and (x0 < x1) != (ds[axis][0] < ds[axis][-1])
+    ):
+        x0, x1 = x1, x0
+    return x0, x1
 
 
 def dataset_to_image(
@@ -191,9 +456,19 @@ def dataset_to_image(
             if ds[var].dtype not in {np.uint8, np.uint16}:
                 ds[var] = ds[var].astype(np.uint16, casting='unsafe')
 
+    ds = ds.squeeze()
+
     with tempfile.TemporaryDirectory() as tempdir:
         path = os.path.join(tempdir, 'out.' + image_format)
-        ds.rio.to_raster(path)
+        # Make dataset representable in an image format by discarding
+        # additional variables and dimensions.
+        ds = ds.drop_vars(
+            names=['crs', 'spatial_ref'], errors='ignore'
+        ).squeeze()
+        if len(ds.data_vars) == 1:
+            ds[list(ds.data_vars)[0]].rio.to_raster(path)
+        else:
+            ds.rio.to_raster(path)
         with open(path, 'rb') as fh:
             data = fh.read()
     return data
@@ -234,7 +509,7 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     )
     grid = dict(
         type='GeneralGridCoverage',
-        srsName=get_crs_from_dataset(ds),
+        srsName=get_crs_from_dataset(ds).to_string(),
         axisLabels=list(ds.dims.keys()),
         axis=_get_axes_properties(ds),
         gridLimits=grid_limits,
@@ -280,7 +555,7 @@ def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
         lower_bound = np.datetime_as_string(axis[0])
         upper_bound = np.datetime_as_string(axis[-1])
     else:
-        lower_bound, upper_bound = axis[0].item(), axis[-1].item(),
+        lower_bound, upper_bound = axis[0].item(), axis[-1].item()
     return dict(
         type='RegularAxis',
         axisLabel=dim,
@@ -308,7 +583,7 @@ def get_units(ds: xr.Dataset, dim: str) -> str:
     return 'unknown'
 
 
-def get_crs_from_dataset(ds: xr.Dataset) -> str:
+def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.CRS:
     """
     Return the CRS of a dataset as a string. The CRS is taken from the
     metadata of the crs or spatial_ref variables, if available.
@@ -321,10 +596,11 @@ def get_crs_from_dataset(ds: xr.Dataset) -> str:
     for var_name in 'crs', 'spatial_ref':
         if var_name in ds.variables:
             var = ds[var_name]
-            if 'spatial_ref' in var.attrs:
-                crs_string = ds[var_name].attrs['spatial_ref']
-                return pyproj.crs.CRS(crs_string).to_string()
-    return 'EPSG:4326'
+            for attr_name in 'spatial_ref', 'crs_wkt':
+                if attr_name in var.attrs:
+                    crs_string = ds[var_name].attrs[attr_name]
+                    return pyproj.CRS(crs_string)
+    return pyproj.CRS('EPSG:4326')
 
 
 def get_coverage_rangetype(
@@ -403,7 +679,27 @@ def get_collection_envelope(ds_ctx, collection_id):
     ds = get_dataset(ds_ctx, collection_id)
     return {
         'type': 'EnvelopeByAxis',
-        'srsName': get_crs_from_dataset(ds),
+        'srsName': get_crs_from_dataset(ds).to_string(),
         'axisLabels': list(ds.dims.keys()),
         'axis': _get_axes_properties(ds),
     }
+
+
+def is_xy_order(crs: pyproj.CRS) -> bool:
+    """Try to determine whether a CRS has x-y axis order"""
+    x_index = None
+    y_index = None
+    x_re = re.compile('^x|lon|east', flags=re.IGNORECASE)
+    y_re = re.compile('^y|lat|north', flags=re.IGNORECASE)
+
+    for i, axis in enumerate(crs.axis_info):
+        for prop in 'name', 'abbrev', 'direction':
+            if x_re.search(getattr(axis, prop)):
+                x_index = i
+            elif y_re.search(getattr(axis, prop)):
+                y_index = i
+
+    if x_index is not None and y_index is not None:
+        return x_index < y_index
+    else:
+        return True  # assume xy
