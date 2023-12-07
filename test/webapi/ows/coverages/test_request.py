@@ -4,7 +4,7 @@ import pyproj
 from xcube.webapi.ows.coverages.request import CoveragesRequest
 
 
-class CoveragesUtilTest(unittest.TestCase):
+class CoveragesRequestTest(unittest.TestCase):
     def test_parse_bbox(self):
         self.assertIsNone(CoveragesRequest({}).bbox)
         self.assertEqual(
