@@ -170,7 +170,7 @@ def get_coverage_data(
     for var in ds.data_vars.values():
         var.attrs.pop('grid_mapping', None)
 
-    # TODO rename axes to match final CRS?
+    # check: rename axes to match final CRS?
 
     media_types = dict(
         tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
