@@ -33,7 +33,7 @@ class StacContext(ResourcesContext):
         self._datasets_ctx = server_ctx.get_api_ctx('datasets',
                                                     cls=DatasetsContext)
 
-        # TODO: decide what else to include in this list.
+        # check: determine what else to include in this list.
         #  Listing all 11396 CRSs currently known to pyproj seems
         #  impractical. Make it a configuration option, perhaps?
         self._available_crss = ['OGC:CRS84', 'EPSG:4326']
