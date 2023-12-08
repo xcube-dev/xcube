@@ -206,8 +206,8 @@ def get_coverage_data(
 
 def _assert_coverage_size_ok(ds: xr.Dataset, scale_factor: float):
     size_limit = 4000 * 4000  # TODO make this configurable
-    h_dim = _get_h_dim(ds)
-    v_dim = _get_v_dim(ds)
+    h_dim = get_h_dim(ds)
+    v_dim = get_v_dim(ds)
     for d in h_dim, v_dim:
         size = ds.dims[d]
         if size == 0:
@@ -338,8 +338,8 @@ def _apply_geographic_subsetting(
 
     # 6. Apply the dataset-native bbox using sel, making sure that y/latitude
     # slice has the same ordering as the corresponding co-ordinate.
-    h_dim = _get_h_dim(ds)
-    v_dim = _get_v_dim(ds)
+    h_dim = get_h_dim(ds)
+    v_dim = get_v_dim(ds)
     ds = ds.sel(
         indexers={
             h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
@@ -354,10 +354,15 @@ def _apply_geographic_subsetting(
 
 
 def get_bbox_from_ds(ds: xr.Dataset):
-    h, v = ds[_get_h_dim(ds)], ds[_get_v_dim(ds)]
+    h, v = ds[get_h_dim(ds)], ds[get_v_dim(ds)]
     bbox = list(map(float, [h[0], v[0], h[-1], v[-1]]))
     _ensure_bbox_y_ascending(bbox)
     return bbox
+
+
+def apply_scaling(gm: GridMapping, ds: xr.Dataset, request: CoveragesRequest):
+    # TODO: implement me
+    pass
 
 
 def _find_geographic_parameters(
@@ -396,8 +401,8 @@ def _apply_bbox(
         )
         _ensure_bbox_y_ascending(bbox, always_xy or is_xy_order(bbox_crs))
         bbox = transformer.transform_bounds(*bbox)
-    h_dim = _get_h_dim(ds)
-    v_dim = _get_v_dim(ds)
+    h_dim = get_h_dim(ds)
+    v_dim = get_v_dim(ds)
     x0, y0, x1, y1 = (
         (0, 1, 2, 3)
         if (always_xy or is_xy_order(native_crs))
@@ -416,13 +421,13 @@ def _ensure_bbox_y_ascending(bbox: list, xy_order: bool = True):
         bbox[y0], bbox[y1] = bbox[y1], bbox[y0]
 
 
-def _get_h_dim(ds: xr.Dataset):
+def get_h_dim(ds: xr.Dataset):
     return [
         d for d in list(map(str, ds.dims)) if d[:3].lower() in {'x', 'lon'}
     ][0]
 
 
-def _get_v_dim(ds: xr.Dataset):
+def get_v_dim(ds: xr.Dataset):
     return [
         d for d in list(map(str, ds.dims)) if d[:3].lower() in {'y', 'lat'}
     ][0]
