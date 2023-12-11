@@ -33,6 +33,8 @@ from xcube.server.api import ApiError
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.webapi.datasets.context import DatasetsContext
 from xcube.webapi.ows.coverages.request import CoverageRequest
+from xcube.webapi.ows.coverages.scaling import CoverageScaling
+from xcube.webapi.ows.coverages.util import get_h_dim, get_v_dim
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
@@ -140,27 +142,15 @@ def get_coverage_data(
     _assert_coverage_size_ok(ds, scale_factor)
 
     source_gm = GridMapping.from_dataset(ds, crs=native_crs)
-    target_gm = None
+    target_gm = source_gm
 
     if native_crs != final_crs:
-        target_gm = source_gm.transform(final_crs).to_regular()
+        target_gm = target_gm.transform(final_crs).to_regular()
 
-    if scale_factor != 1:
-        if target_gm is None:
-            target_gm = source_gm
-        target_gm = target_gm.scale(1. / scale_factor)
-    if request.scale_axes is not None:
-        # TODO implement scale-axes
-        raise ApiError.NotImplemented(
-            'The scale-axes parameter is not yet supported.'
-        )
-    if request.scale_size:
-        # TODO implement scale-size
-        raise ApiError.NotImplemented(
-            'The scale-size parameter is not yet supported.'
-        )
+    scaling = CoverageScaling(request, final_crs, ds)
+    target_gm = scaling.apply(target_gm)
 
-    if target_gm is not None:
+    if target_gm is not source_gm:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
 
     # In this case, the transformed native CRS bbox[es] may have been
@@ -419,18 +409,6 @@ def _ensure_bbox_y_ascending(bbox: list, xy_order: bool = True):
     y0, y1 = (1, 3) if xy_order else (0, 2)
     if bbox[y0] > bbox[y1]:
         bbox[y0], bbox[y1] = bbox[y1], bbox[y0]
-
-
-def get_h_dim(ds: xr.Dataset):
-    return [
-        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'x', 'lon'}
-    ][0]
-
-
-def get_v_dim(ds: xr.Dataset):
-    return [
-        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'y', 'lat'}
-    ][0]
 
 
 def _correct_inverted_y_range_if_necessary(

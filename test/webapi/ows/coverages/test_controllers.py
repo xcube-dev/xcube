@@ -76,7 +76,7 @@ class CoveragesControllersTest(unittest.TestCase):
             'bbox': ['1,51,2,52'],
             'datetime': ['2017-01-24T00:00:00Z/2017-01-27T00:00:00Z'],
             'properties': ['conc_chl,kd489'],
-            'scale-factor': [2],
+            'scale-axes': ['lat(2),lon(2)'],
             'crs': [crs],
         }
         content, content_bbox, content_crs = get_coverage_data(
@@ -170,7 +170,7 @@ class CoveragesControllersTest(unittest.TestCase):
         query = {
             'subset': ['lat(52:51),lon(1:2),time(2017-01-25)'],
             'properties': ['conc_chl'],
-            'scale-factor': ['4'],
+            'scale-size': ['lat(100),lon(100)'],
         }
         content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'png'
@@ -261,24 +261,6 @@ class CoveragesControllersTest(unittest.TestCase):
     def test_get_crs_from_dataset(self):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
         self.assertEqual('EPSG:3035', get_crs_from_dataset(ds).to_string())
-
-    def test_get_coverage_scale_axes(self):
-        with self.assertRaises(ApiError.NotImplemented):
-            get_coverage_data(
-                get_coverages_ctx().datasets_ctx,
-                'demo',
-                {'scale-axes': ['x(2)']},
-                'application/netcdf',
-            )
-
-    def test_get_coverage_scale_size(self):
-        with self.assertRaises(ApiError.NotImplemented):
-            get_coverage_data(
-                get_coverages_ctx().datasets_ctx,
-                'demo',
-                {'scale-size': ['x(2)']},
-                'application/netcdf',
-            )
 
     def test_dtype_to_opengis_datatype(self):
         expected = [

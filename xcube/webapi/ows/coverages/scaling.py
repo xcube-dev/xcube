@@ -23,8 +23,9 @@ from typing import Optional
 import pyproj
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
 from xcube.server.api import ApiError
-from xcube.webapi.ows.coverages.controllers import get_h_dim, get_v_dim
+from xcube.webapi.ows.coverages.util import get_h_dim, get_v_dim
 from xcube.webapi.ows.coverages.request import CoverageRequest
 
 
@@ -120,3 +121,9 @@ class CoverageScaling:
             if identifiers & valid_identifiers:
                 return axis.abbrev
         return None
+
+    def apply(self, gm: GridMapping):
+        if self.scale == (1, 1):
+            return gm
+        else:
+            return gm.scale((1 / self.scale[0], 1 / self.scale[1]))
