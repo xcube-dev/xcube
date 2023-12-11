@@ -312,7 +312,7 @@ def _apply_geographic_subsetting(
     # subsetting is only specified in one dimension.
     full_bbox_native = get_bbox_from_ds(ds)
     native_crs = get_crs_from_dataset(ds)
-    full_bbox_subset_crs = _transform_bbox(
+    full_bbox_subset_crs = transform_bbox(
         full_bbox_native, native_crs, subset_crs
     )
 
@@ -334,7 +334,7 @@ def _apply_geographic_subsetting(
     bbox_subset_crs = [x0, y0, x1, y1]
 
     # 4. Transform requested bbox from subsetting CRS to dataset-native CRS.
-    bbox_native_crs = _transform_bbox(bbox_subset_crs, subset_crs, native_crs)
+    bbox_native_crs = transform_bbox(bbox_subset_crs, subset_crs, native_crs)
 
     # 6. Apply the dataset-native bbox using sel, making sure that y/latitude
     # slice has the same ordering as the corresponding co-ordinate.
@@ -377,7 +377,7 @@ def _find_geographic_parameters(
     return x, y
 
 
-def _transform_bbox(
+def transform_bbox(
     bbox: list[float], source_crs: pyproj.CRS, dest_crs: pyproj.CRS
 ) -> list[float]:
     if source_crs == dest_crs:

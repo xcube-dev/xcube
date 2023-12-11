@@ -38,7 +38,7 @@ from xcube.webapi.ows.coverages.controllers import (
     dtype_to_opengis_datatype,
     get_dataarray_description,
     get_units,
-    is_xy_order,
+    is_xy_order, transform_bbox,
 )
 
 
@@ -315,4 +315,10 @@ class CoveragesControllersTest(unittest.TestCase):
             AXIS["v (v)",south,ANGLEUNIT["degree",0.017]]]'''
                 )
             )
+        )
+
+    def test_transform_bbox_same_crs(self):
+        self.assertEqual(
+            bbox := [1, 2, 3, 4],
+            transform_bbox(bbox, crs := pyproj.CRS('EPSG:4326'), crs)
         )
