@@ -1,4 +1,6 @@
+import collections
 import unittest
+from dataclasses import dataclass
 
 import pyproj
 
@@ -25,9 +27,15 @@ class ScalingTest(unittest.TestCase):
                 self.ds.isel(lat=slice(0, 0))
             )
 
-    def test_crs_fallbacks(self):
-        # TODO: implement me
-        pass
+    def test_crs_no_valid_axis(self):
+        @dataclass
+        class CrsMock:
+            axis_info = [object()]
+        # noinspection PyTypeChecker
+        self.assertIsNone(
+            CoverageScaling(CoveragesRequest({}), CrsMock(), self.ds)
+            .get_axis_from_crs(set())
+        )
 
     def test_scale_factor(self):
         scaling = CoverageScaling(
