@@ -25,7 +25,7 @@ import xarray as xr
 
 from xcube.server.api import ApiError
 from xcube.webapi.ows.coverages.controllers import get_h_dim, get_v_dim
-from xcube.webapi.ows.coverages.request import CoveragesRequest
+from xcube.webapi.ows.coverages.request import CoverageRequest
 
 
 class CoverageScaling:
@@ -37,7 +37,7 @@ class CoverageScaling:
     _x_name: str
     _y_name: str
 
-    def __init__(self, request: CoveragesRequest, crs: pyproj.CRS,
+    def __init__(self, request: CoverageRequest, crs: pyproj.CRS,
                  ds: xr.Dataset):
         h_dim = get_h_dim(ds)
         v_dim = get_v_dim(ds)

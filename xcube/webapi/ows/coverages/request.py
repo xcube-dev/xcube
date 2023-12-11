@@ -24,7 +24,7 @@ import pyproj
 import rfc3339_validator
 
 
-class CoveragesRequest:
+class CoverageRequest:
     """A representation of a parsed OGC API - Coverages request
 
     As defined in https://docs.ogc.org/DRAFTS/19-087.html

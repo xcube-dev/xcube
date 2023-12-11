@@ -32,7 +32,7 @@ from xcube.core.resampling import resample_in_space
 from xcube.server.api import ApiError
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.webapi.datasets.context import DatasetsContext
-from xcube.webapi.ows.coverages.request import CoveragesRequest
+from xcube.webapi.ows.coverages.request import CoverageRequest
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
@@ -89,7 +89,7 @@ def get_coverage_data(
     ds = get_dataset(ctx, collection_id)
 
     try:
-        request = CoveragesRequest(query)
+        request = CoverageRequest(query)
     except ValueError as e:
         raise ApiError.BadRequest(str(e))
 
@@ -360,7 +360,7 @@ def get_bbox_from_ds(ds: xr.Dataset):
     return bbox
 
 
-def apply_scaling(gm: GridMapping, ds: xr.Dataset, request: CoveragesRequest):
+def apply_scaling(gm: GridMapping, ds: xr.Dataset, request: CoverageRequest):
     # TODO: implement me
     pass
 

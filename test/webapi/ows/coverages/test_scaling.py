@@ -5,7 +5,7 @@ import pyproj
 
 import xcube.core.new
 from xcube.server.api import ApiError
-from xcube.webapi.ows.coverages.request import CoveragesRequest
+from xcube.webapi.ows.coverages.request import CoverageRequest
 from xcube.webapi.ows.coverages.scaling import CoverageScaling
 
 
@@ -16,13 +16,13 @@ class ScalingTest(unittest.TestCase):
         self.ds = xcube.core.new.new_cube()
 
     def test_default_scaling(self):
-        scaling = CoverageScaling(CoveragesRequest({}), self.epsg4326, self.ds)
+        scaling = CoverageScaling(CoverageRequest({}), self.epsg4326, self.ds)
         self.assertEqual((1, 1), scaling.scale)
 
     def test_no_data(self):
         with self.assertRaises(ApiError.NotFound):
             CoverageScaling(
-                CoveragesRequest({}), self.epsg4326,
+                CoverageRequest({}), self.epsg4326,
                 self.ds.isel(lat=slice(0, 0))
             )
 
@@ -32,13 +32,13 @@ class ScalingTest(unittest.TestCase):
             axis_info = [object()]
         # noinspection PyTypeChecker
         self.assertIsNone(
-            CoverageScaling(CoveragesRequest({}), CrsMock(), self.ds)
+            CoverageScaling(CoverageRequest({}), CrsMock(), self.ds)
             .get_axis_from_crs(set())
         )
 
     def test_scale_factor(self):
         scaling = CoverageScaling(
-            CoveragesRequest({'scale-factor': ['2']}),
+            CoverageRequest({'scale-factor': ['2']}),
             self.epsg4326,
             self.ds
         )
@@ -46,7 +46,7 @@ class ScalingTest(unittest.TestCase):
 
     def test_scale_axes(self):
         scaling = CoverageScaling(
-            CoveragesRequest({'scale-axes': ['Lat(3),Lon(1.2)']}),
+            CoverageRequest({'scale-axes': ['Lat(3),Lon(1.2)']}),
             self.epsg4326,
             self.ds
         )
@@ -55,7 +55,7 @@ class ScalingTest(unittest.TestCase):
 
     def test_scale_size(self):
         scaling = CoverageScaling(
-            CoveragesRequest({'scale-size': ['Lat(90),Lon(240)']}),
+            CoverageRequest({'scale-size': ['Lat(90),Lon(240)']}),
             self.epsg4326,
             self.ds
         )
