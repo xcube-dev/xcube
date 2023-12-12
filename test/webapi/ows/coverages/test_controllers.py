@@ -38,7 +38,8 @@ from xcube.webapi.ows.coverages.controllers import (
     dtype_to_opengis_datatype,
     get_dataarray_description,
     get_units,
-    is_xy_order, transform_bbox,
+    is_xy_order,
+    transform_bbox,
 )
 
 
@@ -58,7 +59,7 @@ class CoveragesControllersTest(unittest.TestCase):
             'bbox': ['51,1,52,2'],
             'bbox-crs': ['[EPSG:4326]'],
             'datetime': ['2017-01-25T00:00:00Z'],
-            'properties': ['conc_chl']
+            'properties': ['conc_chl'],
         }
         content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'image/tiff'
@@ -116,7 +117,7 @@ class CoveragesControllersTest(unittest.TestCase):
                     'time_bnds',
                     'conc_chl',
                     'kd489',
-                    'crs'
+                    'crs',
                 },
                 set(ds.variables),
             )
@@ -160,7 +161,7 @@ class CoveragesControllersTest(unittest.TestCase):
                     'time',
                     'time_bnds',
                     'conc_chl',
-                    'spatial_ref'
+                    'spatial_ref',
                 },
                 set(ds.variables),
             )
@@ -302,5 +303,5 @@ class CoveragesControllersTest(unittest.TestCase):
     def test_transform_bbox_same_crs(self):
         self.assertEqual(
             bbox := [1, 2, 3, 4],
-            transform_bbox(bbox, crs := pyproj.CRS('EPSG:4326'), crs)
+            transform_bbox(bbox, crs := pyproj.CRS('EPSG:4326'), crs),
         )

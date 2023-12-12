@@ -30,7 +30,6 @@ from xcube.webapi.ows.coverages.request import CoverageRequest
 
 
 class CoverageScaling:
-
     _scale: Optional[tuple[float, float]] = None
     _final_size: Optional[tuple[int, int]] = None
     _initial_size: tuple[int, int]
@@ -38,8 +37,9 @@ class CoverageScaling:
     _x_name: str
     _y_name: str
 
-    def __init__(self, request: CoverageRequest, crs: pyproj.CRS,
-                 ds: xr.Dataset):
+    def __init__(
+        self, request: CoverageRequest, crs: pyproj.CRS, ds: xr.Dataset
+    ):
         h_dim = get_h_dim(ds)
         v_dim = get_v_dim(ds)
         for d in h_dim, v_dim:
@@ -100,7 +100,7 @@ class CoverageScaling:
             return x_initial / x_scale, y_initial / y_scale
 
     def _get_xy_values(
-            self, axis_to_value: dict[str, float]
+        self, axis_to_value: dict[str, float]
     ) -> tuple[float, float]:
         x, y = None, None
         for axis in axis_to_value:
@@ -114,10 +114,12 @@ class CoverageScaling:
         for axis in self._crs.axis_info:
             if not hasattr(axis, 'abbrev'):
                 continue
-            identifiers = set(map(
-                lambda attr: getattr(axis, attr, '').lower(),
-                ['name', 'abbrev']
-            ))
+            identifiers = set(
+                map(
+                    lambda attr: getattr(axis, attr, '').lower(),
+                    ['name', 'abbrev'],
+                )
+            )
             if identifiers & valid_identifiers:
                 return axis.abbrev
         return None

@@ -102,18 +102,7 @@ def get_coverage_data(
     subset_crs = request.subset_crs
 
     if request.properties is not None:
-        requested_vars = set(request.properties)
-        data_vars = set(map(str, ds.data_vars))
-        unrecognized_vars = requested_vars - data_vars
-        if unrecognized_vars == set():
-            ds = ds.drop_vars(
-                list(data_vars - requested_vars - {'crs', 'spatial_ref'})
-            )
-        else:
-            raise ApiError.BadRequest(
-                f'The following properties are not present in the coverage '
-                f'{collection_id}: {", ".join(unrecognized_vars)}'
-            )
+        ds = _apply_properties(collection_id, ds, request.properties)
 
     # https://docs.ogc.org/DRAFTS/19-087.html#datetime-parameter-subset-requirements
     # requirement 7D: "If a datetime parameter is specified requesting a
@@ -136,20 +125,12 @@ def get_coverage_data(
     if request.bbox is not None:
         ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
 
-    # NB: a default scale factor of 1 is not compulsory. We may in future
-    # choose to downscale by default if a large coverage is requested.
-    scale_factor = 1 if request.scale_factor is None else request.scale_factor
-    _assert_coverage_size_ok(ds, scale_factor)
-
-    source_gm = GridMapping.from_dataset(ds, crs=native_crs)
-    target_gm = source_gm
-
+    scaling = CoverageScaling(request, final_crs, ds)
+    _assert_coverage_size_ok(scaling)
+    target_gm = source_gm = GridMapping.from_dataset(ds, crs=native_crs)
     if native_crs != final_crs:
         target_gm = target_gm.transform(final_crs).to_regular()
-
-    scaling = CoverageScaling(request, final_crs, ds)
     target_gm = scaling.apply(target_gm)
-
     if target_gm is not source_gm:
         ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
 
@@ -194,25 +175,28 @@ def get_coverage_data(
     return content, final_bbox, final_crs
 
 
-def _assert_coverage_size_ok(ds: xr.Dataset, scale_factor: float):
+def _apply_properties(collection_id, ds, properties):
+    requested_vars = set(properties)
+    data_vars = set(map(str, ds.data_vars))
+    unrecognized_vars = requested_vars - data_vars
+    if unrecognized_vars == set():
+        ds = ds.drop_vars(
+            list(data_vars - requested_vars - {'crs', 'spatial_ref'})
+        )
+    else:
+        raise ApiError.BadRequest(
+            f'The following properties are not present in the coverage '
+            f'{collection_id}: {", ".join(unrecognized_vars)}'
+        )
+    return ds
+
+
+def _assert_coverage_size_ok(scaling: CoverageScaling):
     size_limit = 4000 * 4000  # TODO make this configurable
-    h_dim = get_h_dim(ds)
-    v_dim = get_v_dim(ds)
-    for d in h_dim, v_dim:
-        size = ds.dims[d]
-        if size == 0:
-            # Requirement 8C currently specifies a 204 rather than 404 here,
-            # but spec will soon be updated to allow 404 as an alternative.
-            # (J. Jacovella-St-Louis, pers. comm., 2023-11-27).
-            raise ApiError.NotFound(
-                f'Requested coverage contains no data: {d} has zero size.'
-            )
-    if (h_size := ds.dims[h_dim] / scale_factor) * (
-        y_size := ds.dims[v_dim] / scale_factor
-    ) > size_limit:
+    x, y = scaling.size
+    if (x * y) > size_limit:
         raise ApiError.ContentTooLarge(
-            f'Requested coverage is too large:'
-            f'{h_size} × {y_size} > {size_limit}.'
+            f'Requested coverage is too large:' f'{x} × {y} > {size_limit}.'
         )
 
 
@@ -348,11 +332,6 @@ def get_bbox_from_ds(ds: xr.Dataset):
     bbox = list(map(float, [h[0], v[0], h[-1], v[-1]]))
     _ensure_bbox_y_ascending(bbox)
     return bbox
-
-
-def apply_scaling(gm: GridMapping, ds: xr.Dataset, request: CoverageRequest):
-    # TODO: implement me
-    pass
 
 
 def _find_geographic_parameters(

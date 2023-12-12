@@ -10,7 +10,6 @@ from xcube.webapi.ows.coverages.scaling import CoverageScaling
 
 
 class ScalingTest(unittest.TestCase):
-
     def setUp(self):
         self.epsg4326 = pyproj.CRS('EPSG:4326')
         self.ds = xcube.core.new.new_cube()
@@ -22,25 +21,26 @@ class ScalingTest(unittest.TestCase):
     def test_no_data(self):
         with self.assertRaises(ApiError.NotFound):
             CoverageScaling(
-                CoverageRequest({}), self.epsg4326,
-                self.ds.isel(lat=slice(0, 0))
+                CoverageRequest({}),
+                self.epsg4326,
+                self.ds.isel(lat=slice(0, 0)),
             )
 
     def test_crs_no_valid_axis(self):
         @dataclass
         class CrsMock:
             axis_info = [object()]
+
         # noinspection PyTypeChecker
         self.assertIsNone(
-            CoverageScaling(CoverageRequest({}), CrsMock(), self.ds)
-            .get_axis_from_crs(set())
+            CoverageScaling(
+                CoverageRequest({}), CrsMock(), self.ds
+            ).get_axis_from_crs(set())
         )
 
     def test_scale_factor(self):
         scaling = CoverageScaling(
-            CoverageRequest({'scale-factor': ['2']}),
-            self.epsg4326,
-            self.ds
+            CoverageRequest({'scale-factor': ['2']}), self.epsg4326, self.ds
         )
         self.assertEqual((2, 2), scaling.scale)
 
@@ -48,7 +48,7 @@ class ScalingTest(unittest.TestCase):
         scaling = CoverageScaling(
             CoverageRequest({'scale-axes': ['Lat(3),Lon(1.2)']}),
             self.epsg4326,
-            self.ds
+            self.ds,
         )
         self.assertEqual((1.2, 3), scaling.scale)
         self.assertEqual((300, 60), scaling.size)
@@ -57,7 +57,7 @@ class ScalingTest(unittest.TestCase):
         scaling = CoverageScaling(
             CoverageRequest({'scale-size': ['Lat(90),Lon(240)']}),
             self.epsg4326,
-            self.ds
+            self.ds,
         )
         self.assertEqual((240, 90), scaling.size)
         self.assertEqual((1.5, 2), scaling.scale)
