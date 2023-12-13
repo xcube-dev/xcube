@@ -128,4 +128,5 @@ class CoverageScaling:
         if self.scale == (1, 1):
             return gm
         else:
-            return gm.scale((1 / self.scale[0], 1 / self.scale[1]))
+            return \
+                gm.to_regular().scale((1 / self.scale[0], 1 / self.scale[1]))
