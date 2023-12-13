@@ -130,5 +130,6 @@ class CoverageScaling:
         else:
             regular = gm.to_regular()
             source = regular.size
-            return \
-                regular.scale((self.size[0] / source[0], self.size[1] / source[1]))
+            return regular.scale(
+                (self.size[0] / source[0], self.size[1] / source[1])
+            )

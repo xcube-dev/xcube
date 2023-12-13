@@ -125,8 +125,11 @@ def get_coverage_data(
     if request.bbox is not None:
         ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
 
-    scaling = CoverageScaling(request, final_crs, ds)
-    _assert_coverage_size_ok(scaling)
+    # Do a provisional size check with an approximate scaling before attempting
+    # to determine a grid mapping, so the client gets a comprehensible error
+    # if the coverage is empty or too large.
+    _assert_coverage_size_ok(CoverageScaling(request, final_crs, ds))
+
     transformed_gm = source_gm = GridMapping.from_dataset(ds, crs=native_crs)
     if native_crs != final_crs:
         transformed_gm = transformed_gm.transform(final_crs).to_regular()
@@ -146,8 +149,10 @@ def get_coverage_data(
         if subset_bbox is not None:
             ds = _apply_bbox(ds, subset_bbox, subset_crs, always_xy=True)
 
-    # Apply scaling after bbox, subsetting, and CRS transformation, to make
-    # sure that the final size is correct.
+    # Apply final size check and scaling operation after bbox, subsetting,
+    # and CRS transformation, to make sure that the final size is correct.
+    scaling = CoverageScaling(request, final_crs, ds)
+    _assert_coverage_size_ok(scaling)
     if scaling.scale != (1, 1):
         cropped_gm = GridMapping.from_dataset(ds, crs=final_crs)
         scaled_gm = scaling.apply(cropped_gm)
