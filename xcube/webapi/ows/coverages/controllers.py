@@ -127,19 +127,31 @@ def get_coverage_data(
 
     scaling = CoverageScaling(request, final_crs, ds)
     _assert_coverage_size_ok(scaling)
-    target_gm = source_gm = GridMapping.from_dataset(ds, crs=native_crs)
+    transformed_gm = source_gm = GridMapping.from_dataset(ds, crs=native_crs)
     if native_crs != final_crs:
-        target_gm = target_gm.transform(final_crs).to_regular()
-    target_gm = scaling.apply(target_gm)
-    if target_gm is not source_gm:
-        ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
+        transformed_gm = transformed_gm.transform(final_crs).to_regular()
+    if transformed_gm is not source_gm:
+        # We can't combine the scaling operation with this CRS transformation,
+        # since the size may end up wrong after the re-application of bounding
+        # boxes below.
+        ds = resample_in_space(
+            ds, source_gm=source_gm, target_gm=transformed_gm
+        )
 
-    # In this case, the transformed native CRS bbox[es] may have been
-    # too big, so we re-crop in the final CRS.
-    if native_crs != final_crs and request.bbox is not None:
-        ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
-    if subset_bbox is not None:
-        ds = _apply_bbox(ds, subset_bbox, subset_crs, always_xy=True)
+    if native_crs != final_crs:
+        # If we've resampled into a new CRS, the transformed native-CRS
+        # bbox[es] may have been too big, so we re-crop in the final CRS.
+        if request.bbox is not None:
+            ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
+        if subset_bbox is not None:
+            ds = _apply_bbox(ds, subset_bbox, subset_crs, always_xy=True)
+
+    # Apply scaling after bbox, subsetting, and CRS transformation, to make
+    # sure that the final size is correct.
+    if scaling.scale != (1, 1):
+        cropped_gm = GridMapping.from_dataset(ds, crs=final_crs)
+        scaled_gm = scaling.apply(cropped_gm)
+        ds = resample_in_space(ds, source_gm=cropped_gm, target_gm=scaled_gm)
 
     ds.rio.write_crs(final_crs, inplace=True)
     for var in ds.data_vars.values():
