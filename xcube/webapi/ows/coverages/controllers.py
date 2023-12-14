@@ -25,6 +25,7 @@ from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple, Union
 
 import numpy as np
 import pyproj
+import rasterio
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
@@ -170,9 +171,9 @@ def get_coverage_data(
         netcdf={'netcdf', 'application/netcdf', 'application/x-netcdf'},
     )
     if content_type in media_types['tiff']:
-        content = dataset_to_image(ds, 'tiff')
+        content = dataset_to_image(ds, 'tiff', final_crs)
     elif content_type in media_types['png']:
-        content = dataset_to_image(ds, 'png')
+        content = dataset_to_image(ds, 'png', final_crs)
     elif content_type in media_types['netcdf']:
         content = dataset_to_netcdf(ds)
     else:
@@ -423,7 +424,9 @@ def _correct_inverted_y_range_if_necessary(
 
 
 def dataset_to_image(
-    ds: xr.Dataset, image_format: Literal['png', 'tiff'] = 'png'
+    ds: xr.Dataset,
+    image_format: Literal['png', 'tiff'] = 'png',
+    crs: pyproj.CRS = None,
 ) -> bytes:
     """
     Return an in-memory bitmap (TIFF or PNG) representing a dataset
@@ -452,6 +455,9 @@ def dataset_to_image(
             ds[list(ds.data_vars)[0]].rio.to_raster(path)
         else:
             ds.rio.to_raster(path)
+        if crs is not None:
+            with rasterio.open(path, mode='r+') as src:
+                src.crs = crs
         with open(path, 'rb') as fh:
             data = fh.read()
     return data
