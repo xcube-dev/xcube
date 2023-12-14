@@ -71,6 +71,24 @@ class CoveragesControllersTest(unittest.TestCase):
             self.assertEqual('Chlorophyll concentration', da.long_name)
             self.assertEqual((1, 400, 400), da.shape)
 
+    def test_get_coverage_data_geo_subset(self):
+        query = {
+            'subset': ['Lat(51:52),Lon(1:2)'],
+            'subset-crs': ['[EPSG:4326]'],
+            'datetime': ['2017-01-25T00:00:00Z'],
+            'properties': ['conc_chl'],
+            'crs': ['[OGC:CRS84]']
+        }
+        content, content_bbox, content_crs = get_coverage_data(
+            get_coverages_ctx().datasets_ctx, 'demo', query, 'image/tiff'
+        )
+        with BytesIO(content) as fh:
+            da = rioxarray.open_rasterio(fh)
+            self.assertIsInstance(da, xr.DataArray)
+            self.assertEqual(('band', 'y', 'x'), da.dims)
+            self.assertEqual('Chlorophyll concentration', da.long_name)
+            self.assertEqual((1, 400, 400), da.shape)
+
     def test_get_coverage_data_netcdf(self):
         crs = 'OGC:CRS84'
         query = {

@@ -61,3 +61,14 @@ class ScalingTest(unittest.TestCase):
         )
         self.assertEqual((240, 90), scaling.size)
         self.assertEqual((1.5, 2), scaling.scale)
+
+    def test_apply_identity_scaling(self):
+        # noinspection PyTypeChecker
+        self.assertEqual(
+            gm_mock := object(),
+            CoverageScaling(
+                CoverageRequest({'scale-factor': ['1']}),
+                self.epsg4326,
+                self.ds,
+            ).apply(gm_mock),
+        )
