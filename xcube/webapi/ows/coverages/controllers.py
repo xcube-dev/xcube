@@ -154,7 +154,7 @@ def get_coverage_data(
     # and CRS transformation, to make sure that the final size is correct.
     scaling = CoverageScaling(request, final_crs, ds)
     _assert_coverage_size_ok(scaling)
-    if scaling.scale != (1, 1):
+    if scaling.factor != (1, 1):
         cropped_gm = GridMapping.from_dataset(ds, crs=final_crs)
         scaled_gm = scaling.apply(cropped_gm)
         ds = resample_in_space(ds, source_gm=cropped_gm, target_gm=scaled_gm)
@@ -433,6 +433,7 @@ def dataset_to_image(
 
     :param ds: a dataset
     :param image_format: image format to generate ("png" or "tiff")
+    :param crs: CRS of the dataset
     :return: TIFF-formatted bytes representing the dataset
     """
 

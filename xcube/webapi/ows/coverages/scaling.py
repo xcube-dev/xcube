@@ -30,6 +30,13 @@ from xcube.webapi.ows.coverages.request import CoverageRequest
 
 
 class CoverageScaling:
+    """Representation of a scaling applied to an OGC coverage
+
+    This class represents the scaling specified in an OGC coverage request.
+    It is instantiated using a `CoverageRequest` instance, and can apply
+    itself to a `GridMapping` instance.
+    """
+
     _scale: Optional[tuple[float, float]] = None
     _final_size: Optional[tuple[int, int]] = None
     _initial_size: tuple[int, int]
@@ -40,6 +47,15 @@ class CoverageScaling:
     def __init__(
         self, request: CoverageRequest, crs: pyproj.CRS, ds: xr.Dataset
     ):
+        """Create a new scaling from a coverages request object
+
+        :param request: a request optionally including scaling parameters.
+          If any scaling parameters are present, the returned instance will
+          correspond to them. If no scaling parameters are present, a
+          default scaling will be used (currently 1:1)
+        :param crs: the CRS of the dataset to be scaled
+        :param ds: the dataset to be scaled
+        """
         h_dim = get_h_dim(ds)
         v_dim = get_v_dim(ds)
         for d in h_dim, v_dim:
@@ -82,7 +98,21 @@ class CoverageScaling:
             self._scale = (1, 1)
 
     @property
-    def scale(self) -> tuple[float, float]:
+    def factor(self) -> tuple[float, float]:
+        """Return the two-dimensional scale factor of this scaling
+
+        The components of the scale tuple are expressed as downscaling
+        factors: values greater than 1 imply that the rescaled size
+        of the coverage in the corresponding dimension will be smaller than
+        the original size, and vice versa.
+
+        If the scaling was initially specified as a final size rather than
+        a factor, the factor property is an estimate based on the dataset
+        dimensions; the effective factor may be different when the scaling
+        is applied to a GridMapping.
+
+        :return: a 2-tuple of the x and y scale factors, in that order
+        """
         if self._scale is not None:
             return self._scale
         else:
@@ -92,6 +122,11 @@ class CoverageScaling:
 
     @property
     def size(self) -> tuple[float, float]:
+        """Return the final coverage size produced by this scaling
+
+        :return: a 2-tuple of the scaled x and y sizes, in that order,
+          in pixels
+        """
         if self._final_size is not None:
             return self._final_size
         else:
@@ -110,7 +145,19 @@ class CoverageScaling:
                 y = axis_to_value[axis]
         return x, y
 
-    def get_axis_from_crs(self, valid_identifiers: set[str]):
+    def get_axis_from_crs(self, valid_identifiers: set[str]) -> Optional[str]:
+        """Find an axis abbreviation via a set of possible axis identifiers
+
+        This method operates on the CRS with which this scaling was
+        instantiated. It returns the abbreviation of the first axis in
+        the CRS which has either a name or abbreviation matching any string
+        in the supplied set.
+
+        :param valid_identifiers: a set of axis identifiers
+        :return: the abbreviation of the first axis in this scaling's CRS
+          whose name or abbreviation is in the supplied set, or `None` if
+          no such axis exists
+        """
         for axis in self._crs.axis_info:
             if not hasattr(axis, 'abbrev'):
                 continue
@@ -124,12 +171,27 @@ class CoverageScaling:
                 return axis.abbrev
         return None
 
-    def apply(self, gm: GridMapping):
-        if self.scale == (1, 1):
+    def apply(self, gm: GridMapping) -> GridMapping:
+        """Apply this scaling to a grid mapping
+
+        The supplied grid mapping is regularized before being scaled.
+
+        :param gm: a grid mapping to be scaled
+        :return: the supplied grid mapping, scaled according to this scaling.
+          If this scaling is 1:1, the returned grid mapping may be the
+          original object.
+        """
+        if self.factor == (1, 1):
             return gm
         else:
             regular = gm.to_regular()
             source = regular.size
+            # Even if the scaling was specified as a factor, we calculate
+            # from the (inferred) final size. If a factor was given,
+            # self.size is the final size as calculated from the originally
+            # specified dataset, which is what the client would expect. The
+            # regularized GridMapping might have a different size,
+            # so we don't want to apply a specified factor to it directly.
             return regular.scale(
                 (self.size[0] / source[0], self.size[1] / source[1])
             )

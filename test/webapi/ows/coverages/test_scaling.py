@@ -16,7 +16,7 @@ class ScalingTest(unittest.TestCase):
 
     def test_default_scaling(self):
         scaling = CoverageScaling(CoverageRequest({}), self.epsg4326, self.ds)
-        self.assertEqual((1, 1), scaling.scale)
+        self.assertEqual((1, 1), scaling.factor)
 
     def test_no_data(self):
         with self.assertRaises(ApiError.NotFound):
@@ -42,7 +42,8 @@ class ScalingTest(unittest.TestCase):
         scaling = CoverageScaling(
             CoverageRequest({'scale-factor': ['2']}), self.epsg4326, self.ds
         )
-        self.assertEqual((2, 2), scaling.scale)
+        self.assertEqual((2, 2), scaling.factor)
+        self.assertEqual((180, 90), scaling.size)
 
     def test_scale_axes(self):
         scaling = CoverageScaling(
@@ -50,7 +51,7 @@ class ScalingTest(unittest.TestCase):
             self.epsg4326,
             self.ds,
         )
-        self.assertEqual((1.2, 3), scaling.scale)
+        self.assertEqual((1.2, 3), scaling.factor)
         self.assertEqual((300, 60), scaling.size)
 
     def test_scale_size(self):
@@ -60,7 +61,7 @@ class ScalingTest(unittest.TestCase):
             self.ds,
         )
         self.assertEqual((240, 90), scaling.size)
-        self.assertEqual((1.5, 2), scaling.scale)
+        self.assertEqual((1.5, 2), scaling.factor)
 
     def test_apply_identity_scaling(self):
         # noinspection PyTypeChecker

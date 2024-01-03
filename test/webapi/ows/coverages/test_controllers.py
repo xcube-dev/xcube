@@ -91,6 +91,7 @@ class CoveragesControllersTest(unittest.TestCase):
 
     def test_get_coverage_data_netcdf(self):
         crs = 'OGC:CRS84'
+        # Unscaled size is 400, 400
         query = {
             'bbox': ['1,51,2,52'],
             'datetime': ['2017-01-24T00:00:00Z/2017-01-27T00:00:00Z'],
