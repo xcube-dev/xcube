@@ -25,6 +25,7 @@ from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple, Union
 
 import numpy as np
 import pyproj
+import rasterio
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
@@ -32,7 +33,9 @@ from xcube.core.resampling import resample_in_space
 from xcube.server.api import ApiError
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.webapi.datasets.context import DatasetsContext
-from xcube.webapi.ows.coverages.request import CoveragesRequest
+from xcube.webapi.ows.coverages.request import CoverageRequest
+from xcube.webapi.ows.coverages.scaling import CoverageScaling
+from xcube.webapi.ows.coverages.util import get_h_dim, get_v_dim
 
 
 def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
@@ -89,7 +92,7 @@ def get_coverage_data(
     ds = get_dataset(ctx, collection_id)
 
     try:
-        request = CoveragesRequest(query)
+        request = CoverageRequest(query)
     except ValueError as e:
         raise ApiError.BadRequest(str(e))
 
@@ -100,18 +103,7 @@ def get_coverage_data(
     subset_crs = request.subset_crs
 
     if request.properties is not None:
-        requested_vars = set(request.properties)
-        data_vars = set(map(str, ds.data_vars))
-        unrecognized_vars = requested_vars - data_vars
-        if unrecognized_vars == set():
-            ds = ds.drop_vars(
-                list(data_vars - requested_vars - {'crs', 'spatial_ref'})
-            )
-        else:
-            raise ApiError.BadRequest(
-                f'The following properties are not present in the coverage '
-                f'{collection_id}: {", ".join(unrecognized_vars)}'
-            )
+        ds = _apply_properties(collection_id, ds, request.properties)
 
     # https://docs.ogc.org/DRAFTS/19-087.html#datetime-parameter-subset-requirements
     # requirement 7D: "If a datetime parameter is specified requesting a
@@ -134,37 +126,38 @@ def get_coverage_data(
     if request.bbox is not None:
         ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
 
-    _assert_coverage_size_ok(ds, request.scale_factor)
+    # Do a provisional size check with an approximate scaling before attempting
+    # to determine a grid mapping, so the client gets a comprehensible error
+    # if the coverage is empty or too large.
+    _assert_coverage_size_ok(CoverageScaling(request, final_crs, ds))
 
-    source_gm = GridMapping.from_dataset(ds, crs=native_crs)
-    target_gm = None
+    transformed_gm = source_gm = GridMapping.from_dataset(ds, crs=native_crs)
+    if native_crs != final_crs:
+        transformed_gm = transformed_gm.transform(final_crs).to_regular()
+    if transformed_gm is not source_gm:
+        # We can't combine the scaling operation with this CRS transformation,
+        # since the size may end up wrong after the re-application of bounding
+        # boxes below.
+        ds = resample_in_space(
+            ds, source_gm=source_gm, target_gm=transformed_gm
+        )
 
     if native_crs != final_crs:
-        target_gm = source_gm.transform(final_crs).to_regular()
-    if request.scale_factor != 1:
-        if target_gm is None:
-            target_gm = source_gm
-        target_gm = target_gm.scale(1. / request.scale_factor)
-    if request.scale_axes is not None:
-        # TODO implement scale-axes
-        raise ApiError.NotImplemented(
-            'The scale-axes parameter is not yet supported.'
-        )
-    if request.scale_size:
-        # TODO implement scale-size
-        raise ApiError.NotImplemented(
-            'The scale-size parameter is not yet supported.'
-        )
+        # If we've resampled into a new CRS, the transformed native-CRS
+        # bbox[es] may have been too big, so we re-crop in the final CRS.
+        if request.bbox is not None:
+            ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
+        if subset_bbox is not None:
+            ds = _apply_bbox(ds, subset_bbox, subset_crs, always_xy=True)
 
-    if target_gm is not None:
-        ds = resample_in_space(ds, source_gm=source_gm, target_gm=target_gm)
-
-    # In this case, the transformed native CRS bbox[es] may have been
-    # too big, so we re-crop in the final CRS.
-    if native_crs != final_crs and request.bbox is not None:
-        ds = _apply_bbox(ds, request.bbox, bbox_crs, always_xy=False)
-    if subset_bbox is not None:
-        ds = _apply_bbox(ds, subset_bbox, subset_crs, always_xy=True)
+    # Apply final size check and scaling operation after bbox, subsetting,
+    # and CRS transformation, to make sure that the final size is correct.
+    scaling = CoverageScaling(request, final_crs, ds)
+    _assert_coverage_size_ok(scaling)
+    if scaling.factor != (1, 1):
+        cropped_gm = GridMapping.from_dataset(ds, crs=final_crs)
+        scaled_gm = scaling.apply(cropped_gm)
+        ds = resample_in_space(ds, source_gm=cropped_gm, target_gm=scaled_gm)
 
     ds.rio.write_crs(final_crs, inplace=True)
     for var in ds.data_vars.values():
@@ -178,9 +171,9 @@ def get_coverage_data(
         netcdf={'netcdf', 'application/netcdf', 'application/x-netcdf'},
     )
     if content_type in media_types['tiff']:
-        content = dataset_to_image(ds, 'tiff')
+        content = dataset_to_image(ds, 'tiff', final_crs)
     elif content_type in media_types['png']:
-        content = dataset_to_image(ds, 'png')
+        content = dataset_to_image(ds, 'png', final_crs)
     elif content_type in media_types['netcdf']:
         content = dataset_to_netcdf(ds)
     else:
@@ -200,25 +193,28 @@ def get_coverage_data(
     return content, final_bbox, final_crs
 
 
-def _assert_coverage_size_ok(ds: xr.Dataset, scale_factor: float):
+def _apply_properties(collection_id, ds, properties):
+    requested_vars = set(properties)
+    data_vars = set(map(str, ds.data_vars))
+    unrecognized_vars = requested_vars - data_vars
+    if unrecognized_vars == set():
+        ds = ds.drop_vars(
+            list(data_vars - requested_vars - {'crs', 'spatial_ref'})
+        )
+    else:
+        raise ApiError.BadRequest(
+            f'The following properties are not present in the coverage '
+            f'{collection_id}: {", ".join(unrecognized_vars)}'
+        )
+    return ds
+
+
+def _assert_coverage_size_ok(scaling: CoverageScaling):
     size_limit = 4000 * 4000  # TODO make this configurable
-    h_dim = _get_h_dim(ds)
-    v_dim = _get_v_dim(ds)
-    for d in h_dim, v_dim:
-        size = ds.dims[d]
-        if size == 0:
-            # Requirement 8C currently specifies a 204 rather than 404 here,
-            # but spec will soon be updated to allow 404 as an alternative.
-            # (J. Jacovella-St-Louis, pers. comm., 2023-11-27).
-            raise ApiError.NotFound(
-                f'Requested coverage contains no data: {d} has zero size.'
-            )
-    if (h_size := ds.dims[h_dim] / scale_factor) * (
-        y_size := ds.dims[v_dim] / scale_factor
-    ) > size_limit:
+    x, y = scaling.size
+    if (x * y) > size_limit:
         raise ApiError.ContentTooLarge(
-            f'Requested coverage is too large:'
-            f'{h_size} × {y_size} > {size_limit}.'
+            f'Requested coverage is too large:' f'{x} × {y} > {size_limit}.'
         )
 
 
@@ -308,7 +304,7 @@ def _apply_geographic_subsetting(
     # subsetting is only specified in one dimension.
     full_bbox_native = get_bbox_from_ds(ds)
     native_crs = get_crs_from_dataset(ds)
-    full_bbox_subset_crs = _transform_bbox(
+    full_bbox_subset_crs = transform_bbox(
         full_bbox_native, native_crs, subset_crs
     )
 
@@ -330,12 +326,12 @@ def _apply_geographic_subsetting(
     bbox_subset_crs = [x0, y0, x1, y1]
 
     # 4. Transform requested bbox from subsetting CRS to dataset-native CRS.
-    bbox_native_crs = _transform_bbox(bbox_subset_crs, subset_crs, native_crs)
+    bbox_native_crs = transform_bbox(bbox_subset_crs, subset_crs, native_crs)
 
     # 6. Apply the dataset-native bbox using sel, making sure that y/latitude
     # slice has the same ordering as the corresponding co-ordinate.
-    h_dim = _get_h_dim(ds)
-    v_dim = _get_v_dim(ds)
+    h_dim = get_h_dim(ds)
+    v_dim = get_v_dim(ds)
     ds = ds.sel(
         indexers={
             h_dim: slice(bbox_native_crs[0], bbox_native_crs[2]),
@@ -350,7 +346,7 @@ def _apply_geographic_subsetting(
 
 
 def get_bbox_from_ds(ds: xr.Dataset):
-    h, v = ds[_get_h_dim(ds)], ds[_get_v_dim(ds)]
+    h, v = ds[get_h_dim(ds)], ds[get_v_dim(ds)]
     bbox = list(map(float, [h[0], v[0], h[-1], v[-1]]))
     _ensure_bbox_y_ascending(bbox)
     return bbox
@@ -368,7 +364,7 @@ def _find_geographic_parameters(
     return x, y
 
 
-def _transform_bbox(
+def transform_bbox(
     bbox: list[float], source_crs: pyproj.CRS, dest_crs: pyproj.CRS
 ) -> list[float]:
     if source_crs == dest_crs:
@@ -392,8 +388,8 @@ def _apply_bbox(
         )
         _ensure_bbox_y_ascending(bbox, always_xy or is_xy_order(bbox_crs))
         bbox = transformer.transform_bounds(*bbox)
-    h_dim = _get_h_dim(ds)
-    v_dim = _get_v_dim(ds)
+    h_dim = get_h_dim(ds)
+    v_dim = get_v_dim(ds)
     x0, y0, x1, y1 = (
         (0, 1, 2, 3)
         if (always_xy or is_xy_order(native_crs))
@@ -412,18 +408,6 @@ def _ensure_bbox_y_ascending(bbox: list, xy_order: bool = True):
         bbox[y0], bbox[y1] = bbox[y1], bbox[y0]
 
 
-def _get_h_dim(ds: xr.Dataset):
-    return [
-        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'x', 'lon'}
-    ][0]
-
-
-def _get_v_dim(ds: xr.Dataset):
-    return [
-        d for d in list(map(str, ds.dims)) if d[:3].lower() in {'y', 'lat'}
-    ][0]
-
-
 def _correct_inverted_y_range_if_necessary(
     ds: xr.Dataset, axis: str, range_: tuple[float, float]
 ) -> tuple[float, float]:
@@ -440,13 +424,16 @@ def _correct_inverted_y_range_if_necessary(
 
 
 def dataset_to_image(
-    ds: xr.Dataset, image_format: Literal['png', 'tiff'] = 'png'
+    ds: xr.Dataset,
+    image_format: Literal['png', 'tiff'] = 'png',
+    crs: pyproj.CRS = None,
 ) -> bytes:
     """
     Return an in-memory bitmap (TIFF or PNG) representing a dataset
 
     :param ds: a dataset
     :param image_format: image format to generate ("png" or "tiff")
+    :param crs: CRS of the dataset
     :return: TIFF-formatted bytes representing the dataset
     """
 
@@ -469,6 +456,9 @@ def dataset_to_image(
             ds[list(ds.data_vars)[0]].rio.to_raster(path)
         else:
             ds.rio.to_raster(path)
+        if crs is not None:
+            with rasterio.open(path, mode='r+') as src:
+                src.crs = crs
         with open(path, 'rb') as fh:
             data = fh.read()
     return data

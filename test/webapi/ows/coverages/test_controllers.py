@@ -39,6 +39,7 @@ from xcube.webapi.ows.coverages.controllers import (
     get_dataarray_description,
     get_units,
     is_xy_order,
+    transform_bbox,
 )
 
 
@@ -58,7 +59,25 @@ class CoveragesControllersTest(unittest.TestCase):
             'bbox': ['51,1,52,2'],
             'bbox-crs': ['[EPSG:4326]'],
             'datetime': ['2017-01-25T00:00:00Z'],
-            'properties': ['conc_chl']
+            'properties': ['conc_chl'],
+        }
+        content, content_bbox, content_crs = get_coverage_data(
+            get_coverages_ctx().datasets_ctx, 'demo', query, 'image/tiff'
+        )
+        with BytesIO(content) as fh:
+            da = rioxarray.open_rasterio(fh)
+            self.assertIsInstance(da, xr.DataArray)
+            self.assertEqual(('band', 'y', 'x'), da.dims)
+            self.assertEqual('Chlorophyll concentration', da.long_name)
+            self.assertEqual((1, 400, 400), da.shape)
+
+    def test_get_coverage_data_geo_subset(self):
+        query = {
+            'subset': ['Lat(51:52),Lon(1:2)'],
+            'subset-crs': ['[EPSG:4326]'],
+            'datetime': ['2017-01-25T00:00:00Z'],
+            'properties': ['conc_chl'],
+            'crs': ['[OGC:CRS84]']
         }
         content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'image/tiff'
@@ -72,11 +91,12 @@ class CoveragesControllersTest(unittest.TestCase):
 
     def test_get_coverage_data_netcdf(self):
         crs = 'OGC:CRS84'
+        # Unscaled size is 400, 400
         query = {
             'bbox': ['1,51,2,52'],
             'datetime': ['2017-01-24T00:00:00Z/2017-01-27T00:00:00Z'],
             'properties': ['conc_chl,kd489'],
-            'scale-factor': [2],
+            'scale-axes': ['lat(2),lon(2)'],
             'crs': [crs],
         }
         content, content_bbox, content_crs = get_coverage_data(
@@ -116,7 +136,7 @@ class CoveragesControllersTest(unittest.TestCase):
                     'time_bnds',
                     'conc_chl',
                     'kd489',
-                    'crs'
+                    'crs',
                 },
                 set(ds.variables),
             )
@@ -160,7 +180,7 @@ class CoveragesControllersTest(unittest.TestCase):
                     'time',
                     'time_bnds',
                     'conc_chl',
-                    'spatial_ref'
+                    'spatial_ref',
                 },
                 set(ds.variables),
             )
@@ -170,7 +190,7 @@ class CoveragesControllersTest(unittest.TestCase):
         query = {
             'subset': ['lat(52:51),lon(1:2),time(2017-01-25)'],
             'properties': ['conc_chl'],
-            'scale-factor': ['4'],
+            'scale-size': ['lat(100),lon(100)'],
         }
         content, content_bbox, content_crs = get_coverage_data(
             get_coverages_ctx().datasets_ctx, 'demo', query, 'png'
@@ -262,24 +282,6 @@ class CoveragesControllersTest(unittest.TestCase):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
         self.assertEqual('EPSG:3035', get_crs_from_dataset(ds).to_string())
 
-    def test_get_coverage_scale_axes(self):
-        with self.assertRaises(ApiError.NotImplemented):
-            get_coverage_data(
-                get_coverages_ctx().datasets_ctx,
-                'demo',
-                {'scale-axes': ['x(2)']},
-                'application/netcdf',
-            )
-
-    def test_get_coverage_scale_size(self):
-        with self.assertRaises(ApiError.NotImplemented):
-            get_coverage_data(
-                get_coverages_ctx().datasets_ctx,
-                'demo',
-                {'scale-size': ['x(2)']},
-                'application/netcdf',
-            )
-
     def test_dtype_to_opengis_datatype(self):
         expected = [
             (
@@ -315,4 +317,10 @@ class CoveragesControllersTest(unittest.TestCase):
             AXIS["v (v)",south,ANGLEUNIT["degree",0.017]]]'''
                 )
             )
+        )
+
+    def test_transform_bbox_same_crs(self):
+        self.assertEqual(
+            bbox := [1, 2, 3, 4],
+            transform_bbox(bbox, crs := pyproj.CRS('EPSG:4326'), crs),
         )

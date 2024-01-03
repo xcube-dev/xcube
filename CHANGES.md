@@ -6,7 +6,7 @@
   * Provide links for multiple coverages data formats
   * Add `crs` and `crs_storage` properties to STAC data
 * OGC Coverages:
-  * Support `scale-factor` parameter
+  * Support scaling parameters `scale-factor`, `scale-axes`, and `scale-size`
   * Improve handling of bbox parameters
   * Handle half-open datetime intervals
   * More robust and standard-compliant parameter parsing and checking

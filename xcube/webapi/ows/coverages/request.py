@@ -24,7 +24,7 @@ import pyproj
 import rfc3339_validator
 
 
-class CoveragesRequest:
+class CoverageRequest:
     """A representation of a parsed OGC API - Coverages request
 
     As defined in https://docs.ogc.org/DRAFTS/19-087.html
@@ -127,7 +127,9 @@ class CoveragesRequest:
             except ValueError:
                 raise ValueError(f'Invalid scale-factor {scale_factor_str}')
         else:
-            self.scale_factor = 1
+            # We don't default to 1, since (per the standard) an implementation
+            # may choose to downscale by default.
+            self.scale_factor = None
 
     def _parse_scale_axes(self):
         self.scale_axes = (
