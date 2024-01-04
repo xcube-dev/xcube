@@ -177,6 +177,12 @@
       "href": "http://localhost:8080/ogc/collections/demo/coverage?f=geotiff",
       "type": "image/tiff; application=geotiff",
       "title": "Coverage for the dataset \"demo\" using OGC API \u2013 Coverages, as GeoTIFF"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/schema",
+      "href": "http://localhost:8080/ogc/collections/demo/schema?f=json",
+      "type": "application/json",
+      "title": "Schema (as JSON)"
     }
   ],
   "providers": [],

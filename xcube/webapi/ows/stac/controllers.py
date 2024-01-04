@@ -280,7 +280,7 @@ def get_datasets_collection_items(
     """
     _assert_valid_collection(ctx, collection_id)
     all_configs = ctx.get_dataset_configs()
-    configs = all_configs[cursor : (cursor + limit)]
+    configs = all_configs[cursor: (cursor + limit)]
     features = []
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
@@ -376,13 +376,44 @@ def get_collection_queryables(
     :param ctx: a datasets context
     :param collection_id: the ID of a collection
     :return: a JSON schema of queryable parameters, if the collection was found
-    :raises: ApiError.NotFOund, if the collection was not round
+    :raises: ApiError.NotFound, if the collection was not found
     """
     _assert_valid_collection(ctx, collection_id)
     schema = JsonObjectSchema(
         title=collection_id, properties={}, additional_properties=False
     )
     return schema.to_dict()
+
+
+def get_collection_schema(
+    ctx: DatasetsContext, base_url: str, collection_id: str
+) -> dict:
+    if collection_id == DEFAULT_COLLECTION_ID:
+        # The default collection contains multiple datasets, so a range
+        # schema doesn't make sense.
+        raise ValueError(f'Invalid collection ID {DEFAULT_COLLECTION_ID}')
+    _assert_valid_collection(ctx, collection_id)
+
+    ml_dataset = ctx.get_ml_dataset(collection_id)
+    dataset = ml_dataset.base_dataset
+
+    def get_title(var_name: str) -> str:
+        attrs = dataset[var_name].attrs
+        return attrs['long_name'] if 'long_name' in attrs else var_name
+
+    return {
+        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        '$id': f'{base_url}{PATH_PREFIX}/{collection_id}/schema',
+        'title': collection_id,  # TODO use actual title, if defined
+        'type': 'object',
+        'properties': {
+            var_name: {
+                'title': get_title(var_name),
+                'type': 'number',
+                'x-ogc-property-seq': index + 1,
+            } for index, var_name in enumerate(dataset.data_vars.keys())
+        }
+    }
 
 
 # noinspection PyUnusedLocal
@@ -531,6 +562,13 @@ def _get_single_dataset_collection(
                 'type': 'image/tiff; application=geotiff',
                 'title': f'Coverage for the dataset "{dataset_id}" using '
                 f'OGC API – Coverages, as GeoTIFF',
+            },
+            {
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/schema',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/schema?f=json',
+                'type': 'application/json',
+                'title': 'Schema (as JSON)',
             },
         ],
         'providers': [],

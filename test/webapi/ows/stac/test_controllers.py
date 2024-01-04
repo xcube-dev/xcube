@@ -53,6 +53,8 @@ from xcube.webapi.ows.stac.controllers import get_datasets_collection_items
 from xcube.webapi.ows.stac.controllers import get_collections
 from xcube.webapi.ows.stac.controllers import get_conformance
 from xcube.webapi.ows.stac.controllers import get_root
+from xcube.webapi.ows.stac.controllers import get_collection_schema
+
 from .test_context import get_stac_ctx
 
 PATH_PREFIX = '/ogc'
@@ -103,6 +105,7 @@ EXPECTED_ENDPOINTS = functools.reduce(
         (['get'], '/collections/{collectionId}/items/{featureId}'),
         (['get', 'post'], '/search'),
         (['get'], '/collections/{collectionId}/queryables'),
+        (['get'], '/collections/{collectionId}/schema'),
     ],
     [],
 )
@@ -384,6 +387,39 @@ class StacControllersTest(unittest.TestCase):
                 'type': 'object',
             },
             result,
+        )
+
+    def test_get_collection_schema(self):
+        self.assertEqual({
+            '$id': f'{BASE_URL}{PATH_PREFIX}/demo/schema',
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            'properties': {
+                 'c2rcc_flags': {
+                     'title': 'C2RCC quality flags',
+                     'type': 'number',
+                     'x-ogc-property-seq': 1},
+                 'conc_chl': {
+                     'title': 'Chlorophyll concentration',
+                     'type': 'number',
+                     'x-ogc-property-seq': 2},
+                 'conc_tsm': {
+                     'title': 'Total suspended matter dry weight concentration',
+                     'type': 'number',
+                     'x-ogc-property-seq': 3},
+                 'kd489': {
+                     'title': 'Irradiance attenuation coefficient at 489 nm',
+                     'type': 'number',
+                     'x-ogc-property-seq': 4},
+                 'quality_flags': {
+                    'title': 'Classification and quality flags',
+                    'type': 'number',
+                    'x-ogc-property-seq': 5}},
+            'title': 'demo',
+            'type': 'object',
+        },
+            get_collection_schema(
+                get_stac_ctx().datasets_ctx, BASE_URL, 'demo'
+            )
         )
 
     def test_get_datacube_dimensions(self):

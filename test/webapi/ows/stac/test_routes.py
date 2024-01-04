@@ -86,6 +86,13 @@ class StacRoutesTest(RoutesTestCase):
         )
         self.assertResponseOK(response)
 
+    def test_fetch_collection_schema(self):
+        response = self.fetch(
+            f'{PATH_PREFIX}/collections/demo/schema',
+            method='GET'
+        )
+        self.assertResponseOK(response)
+
 
 class StacRoutesTestCog(RoutesTestCase):
 
