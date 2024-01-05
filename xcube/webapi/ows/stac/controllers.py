@@ -396,23 +396,26 @@ def get_collection_schema(
     _assert_valid_collection(ctx, collection_id)
 
     ml_dataset = ctx.get_ml_dataset(collection_id)
-    dataset = ml_dataset.base_dataset
+    ds = ml_dataset.base_dataset
 
     def get_title(var_name: str) -> str:
-        attrs = dataset[var_name].attrs
+        attrs = ds[var_name].attrs
         return attrs['long_name'] if 'long_name' in attrs else var_name
 
     return {
         '$schema': 'https://json-schema.org/draft/2020-12/schema',
         '$id': f'{base_url}{PATH_PREFIX}/{collection_id}/schema',
-        'title': collection_id,  # TODO use actual title, if defined
+        'title': ds.attrs['title'] if 'title' in ds.attrs else collection_id,
         'type': 'object',
         'properties': {
             var_name: {
                 'title': get_title(var_name),
                 'type': 'number',
                 'x-ogc-property-seq': index + 1,
-            } for index, var_name in enumerate(dataset.data_vars.keys())
+            } for index, var_name in enumerate(
+                # Exclude 0-dimensional vars (usually grid mapping variables)
+                {k: v for k, v in ds.data_vars.items() if v.dims != ()}.keys()
+            )
         }
     }
 

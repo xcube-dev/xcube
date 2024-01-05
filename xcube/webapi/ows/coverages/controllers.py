@@ -603,14 +603,19 @@ def get_coverage_rangetype(
     """
     ds = get_dataset(ctx, collection_id)
     result = dict(type='DataRecord', field=[])
-    for var_name in ds.data_vars:
+    for var_name, variable in ds.data_vars.items():
+        if variable.dims == ():
+            # A 0-dimensional variable is probably a grid mapping variable;
+            # in any case, it doesn't have the dimensions of the cube, so
+            # isn't part of the range.
+            continue
         result['field'].append(
             dict(
                 type='Quantity',
                 name=var_name,
-                description=get_dataarray_description(ds[var_name]),
+                description=get_dataarray_description(variable),
                 encodingInfo=dict(
-                    dataType=dtype_to_opengis_datatype(ds[var_name].dtype)
+                    dataType=dtype_to_opengis_datatype(variable.dtype)
                 ),
             )
         )
