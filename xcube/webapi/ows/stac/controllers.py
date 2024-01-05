@@ -584,6 +584,22 @@ def _get_single_dataset_collection(
                 'type': 'application/json',
                 'title': 'Schema (as JSON)',
             },
+            {
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/'
+                       'coverage-rangetype',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/coverage/rangetype?f=json',
+                'type': 'application/json',
+                'title': 'Range type of the coverage',
+            },
+            {
+                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/'
+                       'coverage-domainset',
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/coverage/domainset?f=json',
+                'type': 'application/json',
+                'title': 'Domain set of the coverage',
+            },
         ],
         'providers': [],
         'stac_version': STAC_VERSION,

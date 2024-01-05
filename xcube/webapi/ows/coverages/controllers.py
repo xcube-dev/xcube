@@ -195,7 +195,10 @@ def get_coverage_data(
 
 def _apply_properties(collection_id, ds, properties):
     requested_vars = set(properties)
-    data_vars = set(map(str, ds.data_vars))
+    data_vars = set(map(
+        # Filter out 0-dimensional variables (usually grid mapping variables)
+        str, {k: v for k, v in ds.data_vars.items() if v.dims != ()}
+    ))
     unrecognized_vars = requested_vars - data_vars
     if unrecognized_vars == set():
         ds = ds.drop_vars(

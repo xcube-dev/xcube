@@ -203,6 +203,18 @@
       "href": "http://localhost:8080/ogc/collections/demo/schema?f=json",
       "type": "application/json",
       "title": "Schema (as JSON)"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage-rangetype",
+      "href": "http://localhost:8080/ogc/collections/demo/coverage/rangetype?f=json",
+      "type": "application/json",
+      "title": "Range type of the coverage"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage-domainset",
+      "href": "http://localhost:8080/ogc/collections/demo/coverage/domainset?f=json",
+      "type": "application/json",
+      "title": "Domain set of the coverage"
     }
   ],
   "providers": [],
