@@ -25,6 +25,7 @@ from typing import Hashable, Any, Optional, Dict, List, Mapping, Union
 import itertools
 
 import numpy as np
+import pandas as pd
 import pyproj
 import xarray as xr
 
@@ -503,12 +504,22 @@ def _get_single_dataset_collection(
     ]
     if storage_crs not in available_crss:
         available_crss.append(storage_crs)
+    gm = GridMapping.from_dataset(dataset)
     result = {
         'assets': _get_assets(ds_ctx, base_url, dataset_id),
         'description': dataset_id,
         'extent': {
-            'spatial': {'bbox': grid_bbox.as_bbox()},
-            'temporal': {'interval': [time_interval]}
+            'spatial': {
+                'bbox': grid_bbox.as_bbox(),
+                'grid': [
+                    {'cellsCount': gm.size[0], 'resolution': gm.xy_res[0]},
+                    {'cellsCount': gm.size[1], 'resolution': gm.xy_res[1]}
+                ]
+            },
+            'temporal': {
+                'interval': [time_interval],
+                'grid': _get_time_grid(dataset)
+            }
         },
         'id': dataset_id,
         'keywords': [],
@@ -623,6 +634,25 @@ class GridBbox:
                 ]
             ],
         }
+
+
+def _get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
+    if 'time' not in ds:
+        return {}
+
+    if ds.dims['time'] < 2:
+        time_is_regular = False
+    else:
+        time_diffs = ds.time.diff(dim='time').astype('uint64')
+        time_is_regular = np.allclose(time_diffs[0], time_diffs)
+
+    return dict([
+        ('cellsCount', ds.dims['time']),
+        ('resolution',
+         pd.Timedelta((ds.time[1] - ds.time[0]).values).isoformat())
+        if time_is_regular else
+        ('coordinates', [pd.Timestamp(t.values).isoformat() for t in ds.time])
+    ])
 
 
 # noinspection PyUnusedLocal
