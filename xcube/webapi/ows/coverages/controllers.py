@@ -599,19 +599,26 @@ def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.CRS:
 def get_coverage_rangetype(
     ctx: DatasetsContext, collection_id: str
 ) -> dict[str, list]:
-    """
-    Return the range type of a dataset
+    """Return the range type of a dataset
 
     The range type describes the data types of the dataset's variables
+    using a format defined in https://docs.ogc.org/is/09-146r6/09-146r6.html
+
+    :param ctx: datasets context
+    :param collection_id: ID of the dataset in the supplied context
+    :return: a dictionary representing the specified dataset's range type
     """
     return get_coverage_rangetype_for_dataset(get_dataset(ctx, collection_id))
 
 
-def get_coverage_rangetype_for_dataset(ds):
-    """
-    Return the range type of a dataset
+def get_coverage_rangetype_for_dataset(ds) -> dict[str, list]:
+    """Return the range type of a dataset
 
     The range type describes the data types of the dataset's variables
+    using a format defined in https://docs.ogc.org/is/09-146r6/09-146r6.html
+
+    :param ds: a dataset
+    :return: a dictionary representing the supplied dataset's range type
     """
     result = dict(type='DataRecord', field=[])
     for var_name, variable in ds.data_vars.items():

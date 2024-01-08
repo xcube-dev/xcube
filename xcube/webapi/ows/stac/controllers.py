@@ -389,6 +389,17 @@ def get_collection_queryables(
 def get_collection_schema(
     ctx: DatasetsContext, base_url: str, collection_id: str
 ) -> dict:
+    """Return a JSON schema for a dataset's data variables
+
+    See links in
+    https://docs.ogc.org/DRAFTS/19-087.html#_collection_schema_response_collectionscollectionidschema
+    for links to a metaschema defining the schema.
+
+    :param ctx: a datasets context
+    :param base_url: the base URL at which this API is being served
+    :param collection_id: the ID of a dataset in the provided context
+    :return: a JSON schema representing the specified dataset's data variables
+    """
     if collection_id == DEFAULT_COLLECTION_ID:
         # The default collection contains multiple datasets, so a range
         # schema doesn't make sense.
@@ -656,6 +667,15 @@ class GridBbox:
 
 
 def get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
+    """Return a dictionary representing the grid for a dataset's time variable
+
+    The dictionary format is defined by the schema at
+    https://github.com/opengeospatial/ogcapi-coverages/blob/master/standard/openapi/schemas/common-geodata/extent.yaml
+
+    :param ds: a dataset
+    :return: a dictionary representation of the grid of the dataset's
+             time variable
+    """
     if 'time' not in ds:
         return {}
 
