@@ -39,7 +39,7 @@ from xcube.webapi.ows.coverages.controllers import (
     get_dataarray_description,
     get_units,
     is_xy_order,
-    transform_bbox,
+    transform_bbox, get_coverage_rangetype_for_dataset,
 )
 
 
@@ -323,4 +323,25 @@ class CoveragesControllersTest(unittest.TestCase):
         self.assertEqual(
             bbox := [1, 2, 3, 4],
             transform_bbox(bbox, crs := pyproj.CRS('EPSG:4326'), crs),
+        )
+
+    def test_get_coverage_rangetype_for_dataset(self):
+        self.assertEqual({
+            'type': 'DataRecord',
+            'field': [{
+                'description': 'v',
+                'encodingInfo':
+                    {'dataType': 'http://www.opengis.net/def/'
+                                 'dataType/OGC/0/signedLong'},
+                'name': 'v',
+                'type': 'Quantity'}
+            ]},
+            get_coverage_rangetype_for_dataset(
+                xr.Dataset({
+                    'x': [1, 2, 3],
+                    'v': (['x'], [0, 0, 0]),
+                    'dimensionless1': ([], None),
+                    'dimensionless2': ([], None)
+                })
+            )
         )

@@ -24,6 +24,7 @@ import unittest
 from pathlib import Path
 import functools
 
+import pandas as pd
 import pyproj
 import xarray as xr
 import xcube
@@ -44,8 +45,8 @@ from xcube.webapi.ows.stac.controllers import (
     STAC_VERSION,
     get_collection_queryables,
     get_datacube_dimensions,
-    get_single_collection_items, 
-    crs_to_uri_or_wkt,
+    get_single_collection_items,
+    crs_to_uri_or_wkt, get_time_grid,
 )
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item
@@ -421,6 +422,25 @@ class StacControllersTest(unittest.TestCase):
                 get_stac_ctx().datasets_ctx, BASE_URL, 'demo'
             )
         )
+
+    def test_get_collection_schema_invalid(self):
+        with self.assertRaises(ValueError):
+            get_collection_schema(
+                get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
+            )
+
+    def test_get_time_grid(self):
+        self.assertEqual(
+            {},
+            get_time_grid(xr.Dataset({'not_time': [1, 2, 3]}))
+        )
+        self.assertEqual(
+            {'cellsCount': 1, 'coordinates': ['2000-01-01T00:00:00']},
+            get_time_grid(
+                xr.Dataset({'time': [pd.Timestamp('2000-01-01T00:00:00Z')]})
+            )
+        )
+
 
     def test_get_datacube_dimensions(self):
         dim_name_0 = 'new_dimension_0'

@@ -604,7 +604,15 @@ def get_coverage_rangetype(
 
     The range type describes the data types of the dataset's variables
     """
-    ds = get_dataset(ctx, collection_id)
+    return get_coverage_rangetype_for_dataset(get_dataset(ctx, collection_id))
+
+
+def get_coverage_rangetype_for_dataset(ds):
+    """
+    Return the range type of a dataset
+
+    The range type describes the data types of the dataset's variables
+    """
     result = dict(type='DataRecord', field=[])
     for var_name, variable in ds.data_vars.items():
         if variable.dims == ():

@@ -521,7 +521,7 @@ def _get_single_dataset_collection(
             },
             'temporal': {
                 'interval': [time_interval],
-                'grid': _get_time_grid(dataset)
+                'grid': get_time_grid(dataset)
             }
         },
         'id': dataset_id,
@@ -655,7 +655,7 @@ class GridBbox:
         }
 
 
-def _get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
+def get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
     if 'time' not in ds:
         return {}
 
