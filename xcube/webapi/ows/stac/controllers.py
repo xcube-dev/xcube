@@ -46,6 +46,11 @@ from .context import StacContext
 from ..coverages.controllers import get_crs_from_dataset
 from ...datasets.context import DatasetsContext
 
+_REL_DOMAINSET = 'http://www.opengis.net/def/rel/ogc/1.0/coverage-domainset'
+_REL_RANGETYPE = 'http://www.opengis.net/def/rel/ogc/1.0/coverage-rangetype'
+_REL_SCHEMA = 'http://www.opengis.net/def/rel/ogc/1.0/schema'
+_JSON_SCHEMA_METASCHEMA = 'https://json-schema.org/draft/2020-12/schema'
+
 STAC_VERSION = '1.0.0'
 STAC_EXTENSIONS = [
     "https://stac-extensions.github.io/datacube/v2.1.0/schema.json"
@@ -414,7 +419,7 @@ def get_collection_schema(
         return attrs['long_name'] if 'long_name' in attrs else var_name
 
     return {
-        '$schema': 'https://json-schema.org/draft/2020-12/schema',
+        '$schema': _JSON_SCHEMA_METASCHEMA,
         '$id': f'{base_url}{PATH_PREFIX}/{collection_id}/schema',
         'title': ds.attrs['title'] if 'title' in ds.attrs else collection_id,
         'type': 'object',
@@ -589,23 +594,21 @@ def _get_single_dataset_collection(
                 f'OGC API – Coverages, as GeoTIFF',
             },
             {
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/schema',
+                'rel': _REL_SCHEMA,
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                         f'{dataset_id}/schema?f=json',
                 'type': 'application/json',
                 'title': 'Schema (as JSON)',
             },
             {
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/'
-                       'coverage-rangetype',
+                'rel': _REL_RANGETYPE,
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                         f'{dataset_id}/coverage/rangetype?f=json',
                 'type': 'application/json',
                 'title': 'Range type of the coverage',
             },
             {
-                'rel': 'http://www.opengis.net/def/rel/ogc/1.0/'
-                       'coverage-domainset',
+                'rel': _REL_DOMAINSET,
                 'href': f'{base_url}{PATH_PREFIX}/collections/'
                         f'{dataset_id}/coverage/domainset?f=json',
                 'type': 'application/json',
