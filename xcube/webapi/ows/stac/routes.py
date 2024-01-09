@@ -24,7 +24,7 @@ from xcube.server.api import ApiHandler, ApiError
 from .api import api
 from .context import StacContext
 from .controllers import get_collection, get_collection_queryables, \
-    get_single_collection_items, 
+    get_single_collection_items, \
     get_collection_schema
 from .controllers import get_collection_item
 from .controllers import get_datasets_collection_items
