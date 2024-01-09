@@ -46,7 +46,8 @@ from xcube.webapi.ows.stac.controllers import (
     get_collection_queryables,
     get_datacube_dimensions,
     get_single_collection_items,
-    crs_to_uri_or_wkt, get_time_grid,
+    crs_to_uri_or_wkt, 
+    get_time_grid,
 )
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item

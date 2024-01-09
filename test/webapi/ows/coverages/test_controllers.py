@@ -39,7 +39,8 @@ from xcube.webapi.ows.coverages.controllers import (
     get_dataarray_description,
     get_units,
     is_xy_order,
-    transform_bbox, get_coverage_rangetype_for_dataset,
+    transform_bbox, 
+    get_coverage_rangetype_for_dataset,
 )
 
 
