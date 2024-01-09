@@ -24,7 +24,8 @@ from xcube.server.api import ApiHandler, ApiError
 from .api import api
 from .context import StacContext
 from .controllers import get_collection, get_collection_queryables, \
-    get_single_collection_items
+    get_single_collection_items, \
+    get_collection_schema
 from .controllers import get_collection_item
 from .controllers import get_datasets_collection_items
 from .controllers import get_collections
@@ -160,12 +161,29 @@ class CatalogSearchHandler(ApiHandler[StacContext]):
 @api.route(PATH_PREFIX + "/collections/{collectionId}/queryables/")
 class QueryablesHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
-    @api.operation(operation_id="searchCatalogByKeywords",
+    @api.operation(operation_id='queryables',
                    summary='Return a JSON Schema defining the supported '
                            'metadata filters (also called "queryables") '
                            'for a specific collection.')
     async def get(self, collectionId):
         schema = get_collection_queryables(
             ctx=self.ctx.datasets_ctx, collection_id=collectionId
+        )
+        return await self.response.finish(schema)
+
+
+# noinspection PyAbstractClass,PyMethodMayBeStatic
+@api.route(PATH_PREFIX + "/collections/{collectionId}/schema")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/schema/")
+class SchemaHandler(ApiHandler[StacContext]):
+    # noinspection PyPep8Naming
+    @api.operation(operation_id='schema',
+                   summary='Return a JSON Schema defining the range '
+                           '(i.e. data variables) of a specific collection.')
+    async def get(self, collectionId):
+        schema = get_collection_schema(
+            ctx=self.ctx.datasets_ctx,
+            base_url=self.request.reverse_base_url,
+            collection_id=collectionId
         )
         return await self.response.finish(schema)

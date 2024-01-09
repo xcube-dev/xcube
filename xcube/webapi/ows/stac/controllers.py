@@ -25,6 +25,7 @@ from typing import Hashable, Any, Optional, Dict, List, Mapping, Union
 import itertools
 
 import numpy as np
+import pandas as pd
 import pyproj
 import xarray as xr
 
@@ -44,6 +45,11 @@ from .config import PATH_PREFIX
 from .context import StacContext
 from ..coverages.controllers import get_crs_from_dataset
 from ...datasets.context import DatasetsContext
+
+_REL_DOMAINSET = 'http://www.opengis.net/def/rel/ogc/1.0/coverage-domainset'
+_REL_RANGETYPE = 'http://www.opengis.net/def/rel/ogc/1.0/coverage-rangetype'
+_REL_SCHEMA = 'http://www.opengis.net/def/rel/ogc/1.0/schema'
+_JSON_SCHEMA_METASCHEMA = 'https://json-schema.org/draft/2020-12/schema'
 
 STAC_VERSION = '1.0.0'
 STAC_EXTENSIONS = [
@@ -280,7 +286,7 @@ def get_datasets_collection_items(
     """
     _assert_valid_collection(ctx, collection_id)
     all_configs = ctx.get_dataset_configs()
-    configs = all_configs[cursor : (cursor + limit)]
+    configs = all_configs[cursor: (cursor + limit)]
     features = []
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
@@ -376,13 +382,58 @@ def get_collection_queryables(
     :param ctx: a datasets context
     :param collection_id: the ID of a collection
     :return: a JSON schema of queryable parameters, if the collection was found
-    :raises: ApiError.NotFOund, if the collection was not round
+    :raises: ApiError.NotFound, if the collection was not found
     """
     _assert_valid_collection(ctx, collection_id)
     schema = JsonObjectSchema(
         title=collection_id, properties={}, additional_properties=False
     )
     return schema.to_dict()
+
+
+def get_collection_schema(
+    ctx: DatasetsContext, base_url: str, collection_id: str
+) -> dict:
+    """Return a JSON schema for a dataset's data variables
+
+    See links in
+    https://docs.ogc.org/DRAFTS/19-087.html#_collection_schema_response_collectionscollectionidschema
+    for links to a metaschema defining the schema.
+
+    :param ctx: a datasets context
+    :param base_url: the base URL at which this API is being served
+    :param collection_id: the ID of a dataset in the provided context
+    :return: a JSON schema representing the specified dataset's data variables
+    """
+    if collection_id == DEFAULT_COLLECTION_ID:
+        # The default collection contains multiple datasets, so a range
+        # schema doesn't make sense.
+        raise ValueError(f'Invalid collection ID {DEFAULT_COLLECTION_ID}')
+    _assert_valid_collection(ctx, collection_id)
+
+    ml_dataset = ctx.get_ml_dataset(collection_id)
+    ds = ml_dataset.base_dataset
+
+    def get_title(var_name: str) -> str:
+        attrs = ds[var_name].attrs
+        return attrs['long_name'] if 'long_name' in attrs else var_name
+
+    return {
+        '$schema': _JSON_SCHEMA_METASCHEMA,
+        '$id': f'{base_url}{PATH_PREFIX}/{collection_id}/schema',
+        'title': ds.attrs['title'] if 'title' in ds.attrs else collection_id,
+        'type': 'object',
+        'properties': {
+            var_name: {
+                'title': get_title(var_name),
+                'type': 'number',
+                'x-ogc-property-seq': index + 1,
+            } for index, var_name in enumerate(
+                # Exclude 0-dimensional vars (usually grid mapping variables)
+                {k: v for k, v in ds.data_vars.items() if v.dims != ()}.keys()
+            )
+        }
+    }
 
 
 # noinspection PyUnusedLocal
@@ -472,12 +523,22 @@ def _get_single_dataset_collection(
     ]
     if storage_crs not in available_crss:
         available_crss.append(storage_crs)
+    gm = GridMapping.from_dataset(dataset)
     result = {
         'assets': _get_assets(ds_ctx, base_url, dataset_id),
         'description': dataset_id,
         'extent': {
-            'spatial': {'bbox': grid_bbox.as_bbox()},
-            'temporal': {'interval': [time_interval]}
+            'spatial': {
+                'bbox': grid_bbox.as_bbox(),
+                'grid': [
+                    {'cellsCount': gm.size[0], 'resolution': gm.xy_res[0]},
+                    {'cellsCount': gm.size[1], 'resolution': gm.xy_res[1]}
+                ]
+            },
+            'temporal': {
+                'interval': [time_interval],
+                'grid': get_time_grid(dataset)
+            }
         },
         'id': dataset_id,
         'keywords': [],
@@ -532,6 +593,27 @@ def _get_single_dataset_collection(
                 'title': f'Coverage for the dataset "{dataset_id}" using '
                 f'OGC API – Coverages, as GeoTIFF',
             },
+            {
+                'rel': _REL_SCHEMA,
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/schema?f=json',
+                'type': 'application/json',
+                'title': 'Schema (as JSON)',
+            },
+            {
+                'rel': _REL_RANGETYPE,
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/coverage/rangetype?f=json',
+                'type': 'application/json',
+                'title': 'Range type of the coverage',
+            },
+            {
+                'rel': _REL_DOMAINSET,
+                'href': f'{base_url}{PATH_PREFIX}/collections/'
+                        f'{dataset_id}/coverage/domainset?f=json',
+                'type': 'application/json',
+                'title': 'Domain set of the coverage',
+            },
         ],
         'providers': [],
         'stac_version': STAC_VERSION,
@@ -585,6 +667,34 @@ class GridBbox:
                 ]
             ],
         }
+
+
+def get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
+    """Return a dictionary representing the grid for a dataset's time variable
+
+    The dictionary format is defined by the schema at
+    https://github.com/opengeospatial/ogcapi-coverages/blob/master/standard/openapi/schemas/common-geodata/extent.yaml
+
+    :param ds: a dataset
+    :return: a dictionary representation of the grid of the dataset's
+             time variable
+    """
+    if 'time' not in ds:
+        return {}
+
+    if ds.dims['time'] < 2:
+        time_is_regular = False
+    else:
+        time_diffs = ds.time.diff(dim='time').astype('uint64')
+        time_is_regular = np.allclose(time_diffs[0], time_diffs)
+
+    return dict([
+        ('cellsCount', ds.dims['time']),
+        ('resolution',
+         pd.Timedelta((ds.time[1] - ds.time[0]).values).isoformat())
+        if time_is_regular else
+        ('coordinates', [pd.Timestamp(t.values).isoformat() for t in ds.time])
+    ])
 
 
 # noinspection PyUnusedLocal

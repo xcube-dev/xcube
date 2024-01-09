@@ -195,7 +195,10 @@ def get_coverage_data(
 
 def _apply_properties(collection_id, ds, properties):
     requested_vars = set(properties)
-    data_vars = set(map(str, ds.data_vars))
+    data_vars = set(map(
+        # Filter out 0-dimensional variables (usually grid mapping variables)
+        str, {k: v for k, v in ds.data_vars.items() if v.dims != ()}
+    ))
     unrecognized_vars = requested_vars - data_vars
     if unrecognized_vars == set():
         ds = ds.drop_vars(
@@ -596,21 +599,41 @@ def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.CRS:
 def get_coverage_rangetype(
     ctx: DatasetsContext, collection_id: str
 ) -> dict[str, list]:
-    """
-    Return the range type of a dataset
+    """Return the range type of a dataset
 
     The range type describes the data types of the dataset's variables
+    using a format defined in https://docs.ogc.org/is/09-146r6/09-146r6.html
+
+    :param ctx: datasets context
+    :param collection_id: ID of the dataset in the supplied context
+    :return: a dictionary representing the specified dataset's range type
     """
-    ds = get_dataset(ctx, collection_id)
+    return get_coverage_rangetype_for_dataset(get_dataset(ctx, collection_id))
+
+
+def get_coverage_rangetype_for_dataset(ds) -> dict[str, list]:
+    """Return the range type of a dataset
+
+    The range type describes the data types of the dataset's variables
+    using a format defined in https://docs.ogc.org/is/09-146r6/09-146r6.html
+
+    :param ds: a dataset
+    :return: a dictionary representing the supplied dataset's range type
+    """
     result = dict(type='DataRecord', field=[])
-    for var_name in ds.data_vars:
+    for var_name, variable in ds.data_vars.items():
+        if variable.dims == ():
+            # A 0-dimensional variable is probably a grid mapping variable;
+            # in any case, it doesn't have the dimensions of the cube, so
+            # isn't part of the range.
+            continue
         result['field'].append(
             dict(
                 type='Quantity',
                 name=var_name,
-                description=get_dataarray_description(ds[var_name]),
+                description=get_dataarray_description(variable),
                 encodingInfo=dict(
-                    dataType=dtype_to_opengis_datatype(ds[var_name].dtype)
+                    dataType=dtype_to_opengis_datatype(variable.dtype)
                 ),
             )
         )

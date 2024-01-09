@@ -5,6 +5,11 @@
 * STAC
   * Provide links for multiple coverages data formats
   * Add `crs` and `crs_storage` properties to STAC data
+  * Add spatial and temporal grid data to collection descriptions
+  * Add a schema endpoint returning a JSON schema of a dataset's data
+    variables
+  * Add links to domain set, range type, and range schema to collection
+    descriptions
 * OGC Coverages:
   * Support scaling parameters `scale-factor`, `scale-axes`, and `scale-size`
   * Improve handling of bbox parameters

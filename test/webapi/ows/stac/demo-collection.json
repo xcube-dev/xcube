@@ -117,6 +117,16 @@
         50.0,
         5.0,
         52.5
+      ],
+      "grid": [
+        {
+          "cellsCount": 2000,
+          "resolution": 0.0025
+        },
+        {
+          "cellsCount": 1000,
+          "resolution": 0.0025
+        }
       ]
     },
     "temporal": {
@@ -125,7 +135,17 @@
           "2017-01-16T10:09:21Z",
           "2017-01-30T10:46:33Z"
         ]
-      ]
+      ],
+      "grid": {
+        "cellsCount": 5,
+        "coordinates": [
+          "2017-01-16T10:09:21.834255872",
+          "2017-01-25T09:35:51.060063488",
+          "2017-01-26T10:50:16.686192896",
+          "2017-01-28T09:58:11.350386176",
+          "2017-01-30T10:46:33.836892416"
+        ]
+      }
     }
   },
   "id": "demo",
@@ -177,6 +197,24 @@
       "href": "http://localhost:8080/ogc/collections/demo/coverage?f=geotiff",
       "type": "image/tiff; application=geotiff",
       "title": "Coverage for the dataset \"demo\" using OGC API \u2013 Coverages, as GeoTIFF"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/schema",
+      "href": "http://localhost:8080/ogc/collections/demo/schema?f=json",
+      "type": "application/json",
+      "title": "Schema (as JSON)"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage-rangetype",
+      "href": "http://localhost:8080/ogc/collections/demo/coverage/rangetype?f=json",
+      "type": "application/json",
+      "title": "Range type of the coverage"
+    },
+    {
+      "rel": "http://www.opengis.net/def/rel/ogc/1.0/coverage-domainset",
+      "href": "http://localhost:8080/ogc/collections/demo/coverage/domainset?f=json",
+      "type": "application/json",
+      "title": "Domain set of the coverage"
     }
   ],
   "providers": [],

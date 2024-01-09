@@ -24,6 +24,7 @@ import unittest
 from pathlib import Path
 import functools
 
+import pandas as pd
 import pyproj
 import xarray as xr
 import xcube
@@ -44,8 +45,9 @@ from xcube.webapi.ows.stac.controllers import (
     STAC_VERSION,
     get_collection_queryables,
     get_datacube_dimensions,
-    get_single_collection_items, 
-    crs_to_uri_or_wkt,
+    get_single_collection_items,
+    crs_to_uri_or_wkt, 
+    get_time_grid,
 )
 from xcube.webapi.ows.stac.controllers import get_collection
 from xcube.webapi.ows.stac.controllers import get_collection_item
@@ -53,6 +55,8 @@ from xcube.webapi.ows.stac.controllers import get_datasets_collection_items
 from xcube.webapi.ows.stac.controllers import get_collections
 from xcube.webapi.ows.stac.controllers import get_conformance
 from xcube.webapi.ows.stac.controllers import get_root
+from xcube.webapi.ows.stac.controllers import get_collection_schema
+
 from .test_context import get_stac_ctx
 
 PATH_PREFIX = '/ogc'
@@ -103,6 +107,7 @@ EXPECTED_ENDPOINTS = functools.reduce(
         (['get'], '/collections/{collectionId}/items/{featureId}'),
         (['get', 'post'], '/search'),
         (['get'], '/collections/{collectionId}/queryables'),
+        (['get'], '/collections/{collectionId}/schema'),
     ],
     [],
 )
@@ -385,6 +390,58 @@ class StacControllersTest(unittest.TestCase):
             },
             result,
         )
+
+    def test_get_collection_schema(self):
+        self.assertEqual({
+            '$id': f'{BASE_URL}{PATH_PREFIX}/demo/schema',
+            '$schema': 'https://json-schema.org/draft/2020-12/schema',
+            'properties': {
+                 'c2rcc_flags': {
+                     'title': 'C2RCC quality flags',
+                     'type': 'number',
+                     'x-ogc-property-seq': 1},
+                 'conc_chl': {
+                     'title': 'Chlorophyll concentration',
+                     'type': 'number',
+                     'x-ogc-property-seq': 2},
+                 'conc_tsm': {
+                     'title': 'Total suspended matter dry weight concentration',
+                     'type': 'number',
+                     'x-ogc-property-seq': 3},
+                 'kd489': {
+                     'title': 'Irradiance attenuation coefficient at 489 nm',
+                     'type': 'number',
+                     'x-ogc-property-seq': 4},
+                 'quality_flags': {
+                    'title': 'Classification and quality flags',
+                    'type': 'number',
+                    'x-ogc-property-seq': 5}},
+            'title': 'demo',
+            'type': 'object',
+        },
+            get_collection_schema(
+                get_stac_ctx().datasets_ctx, BASE_URL, 'demo'
+            )
+        )
+
+    def test_get_collection_schema_invalid(self):
+        with self.assertRaises(ValueError):
+            get_collection_schema(
+                get_stac_ctx().datasets_ctx, BASE_URL, DEFAULT_COLLECTION_ID
+            )
+
+    def test_get_time_grid(self):
+        self.assertEqual(
+            {},
+            get_time_grid(xr.Dataset({'not_time': [1, 2, 3]}))
+        )
+        self.assertEqual(
+            {'cellsCount': 1, 'coordinates': ['2000-01-01T00:00:00']},
+            get_time_grid(
+                xr.Dataset({'time': [pd.Timestamp('2000-01-01T00:00:00Z')]})
+            )
+        )
+
 
     def test_get_datacube_dimensions(self):
         dim_name_0 = 'new_dimension_0'
