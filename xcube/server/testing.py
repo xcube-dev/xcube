@@ -31,6 +31,7 @@ from typing import Dict, Optional, Any, Union, Tuple
 
 import urllib3
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+from urllib3.exceptions import MaxRetryError
 
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
@@ -66,13 +67,20 @@ class ServerTestCase(unittest.TestCase, ABC):
 
         self.http = urllib3.PoolManager()
 
+        # Taking care that server is fully started until tests make requests.
+        # Fixing https://github.com/dcs4cop/xcube/issues/899
+        elapsed_time = 0.0
         while True:
-            # noinspection PyBroadException
+            if elapsed_time > 60:
+                self.fail('Server did not respond after one minute. '
+                          'Failing the test.')
             try:
                 self.fetch('/')
                 break
-            except Exception:
-                time.sleep(0.1)
+            except (MaxRetryError, TimeoutError):
+                sleep_time = 0.1
+                time.sleep(sleep_time)
+                elapsed_time += sleep_time
 
     def tearDown(self) -> None:
         self.server.stop()
