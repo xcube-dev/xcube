@@ -23,6 +23,7 @@ import asyncio
 import json
 import socket
 import threading
+import time
 import unittest
 from abc import ABC
 from contextlib import closing
@@ -64,6 +65,14 @@ class ServerTestCase(unittest.TestCase, ABC):
         tornado.start()
 
         self.http = urllib3.PoolManager()
+
+        while True:
+            # noinspection PyBroadException
+            try:
+                self.fetch('/')
+                break
+            except Exception:
+                time.sleep(0.1)
 
     def tearDown(self) -> None:
         self.server.stop()
