@@ -1,10 +1,425 @@
-## Changes in 0.13.1 (in development)
+## Changes in 1.3.2 (in development)
 
 ### Enhancements
+
+* STAC
+  * Provide links for multiple coverages data formats
+  * Add `crs` and `crs_storage` properties to STAC data
+  * Add spatial and temporal grid data to collection descriptions
+  * Add a schema endpoint returning a JSON schema of a dataset's data
+    variables
+  * Add links to domain set, range type, and range schema to collection
+    descriptions
+
+* OGC Coverages:
+  * Support scaling parameters `scale-factor`, `scale-axes`, and `scale-size`
+  * Improve handling of bbox parameters
+  * Handle half-open datetime intervals
+  * More robust and standard-compliant parameter parsing and checking
+  * More informative responses for incorrect or unsupported parameters
+  * Omit unnecessary dimensions in TIFF and PNG coverages
+  * Use crs_wkt when determining CRS, if present and needed
+  * Change default subsetting and bbox CRS from EPSG:4326 to OGC:CRS84
+  * Implement reprojection for bbox
+  * Ensure datetime parameters match dataset’s timezone awareness
+  * Reimplement subsetting (better standards conformance, cleaner code)
+  * Set Content-Bbox and Content-Crs headers in the HTTP response
+  * Support safe CURIE syntax for CRS specification
 
 * Documented xcube server architecture and added developer 
   guide for API extensions in 
   [serverdevguide](docs/source/serverdevguide.md). 
+
+## Changes in 1.3.1
+
+* Updated Dockerfile and GitHub workflows; no changes to the xcube codebase
+  itself
+
+## Changes in 1.3.0
+
+### Enhancements
+
+* Added a basic implementation of the draft version of OGC API - Coverages.
+  (#879, #889, #900)
+* Adapted the STAC implementation to additionally offer datasets as
+  individual collections for better integration with OGC API - Coverages.
+  (#889)
+* Various minor improvements to STAC implementation. (#900)
+
+### Fixes
+
+* Resolved the issue for CRS84 error due to latest version of gdal (#869)
+* Fixed incorrect additional variable data in STAC datacube properties. (#889)
+* Fixed access of geotiff datasets from public s3 buckets (#893)
+
+### Other changes
+
+* `update_dataset_attrs` can now also handle datasets with CRS other than 
+  WGS84 and update the metadata according to the 
+  [ESIP Attribute Convention for Data Discovery](https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended). 
+* removed deprecated module xcube edit, which has been deprecated since 
+  version 0.13.0
+* Update "Development process" section of developer guide.
+* Updated GitHub workflow to build docker image for GitHub releases only and 
+  not on each commit to master.
+
+## Changes in 1.2.0
+
+### Enhancements
+
+* Added a new, experimental `/compute` API to xcube server. 
+  It comprises the following endpoints:
+  - `GET compute/operations` - List available operations.
+  - `GET compute/operations/{opId}` - Get details of a given operation.
+  - `PUT compute/jobs` - Start a new job that executes an operation.
+  - `GET compute/jobs` - Get all jobs.
+  - `GET compute/jobs/{jobId}` - Get details of a given job.
+  - `DELETE compute/jobs/{jobId}` - Cancel a given job.
+  
+  The available operations are currently taken from module
+  `xcube.webapi.compute.operations`.
+  
+  To disable the new API use the following server configuration:
+  ```yaml
+  api_spec:
+    excludes: ["compute"] 
+  ...
+  ```
+
+### Other changes
+
+* Added `shutdown_on_close=True` parameter to coiled params to ensure that the 
+  clusters are shut down on close. (#881)
+* Introduced new parameter `region` for utility function `new_cluster` in 
+  `xcube.util.dask` which will ensure coiled creates the dask cluster in the 
+  prefered default region: eu-central-1. (#882)
+* Server offers the function `add_place_group` in `places/context.py`,
+  which allows plugins to add place groups from external sources.
+  
+
+## Changes in 1.1.3
+
+### Fixes
+
+* Fixed Windows-only bug in `xcube serve --config <path>`: 
+  If config `path` is provided with back-slashes, a missing `base_dir` 
+  config parameter is now correctly set to the parent directory of `path`. 
+  Before, the current working directory was used.
+
+### Other changes
+
+* Updated AppVeyor and GitHub workflow configurations to use micromamba rather
+  than mamba (#785)
+
+## Changes in 1.1.2
+
+### Fixes
+
+* Fixed issue where geotiff access from a protected s3 bucket was denied (#863)
+
+## Changes in 1.1.1
+
+* Bundled new build of [xcube-viewer 1.1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0)
+  that will correctly respect a given xcube server from loaded from the 
+  viewer configuration.
+
+## Changes in 1.1.0
+
+### Enhancements
+
+* Bundled [xcube-viewer 1.1.0](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.1.0).
+
+* Updated installation instructions (#859)
+
+* Included support for FTP filesystem by adding a new data store `ftp`. 
+
+  These changes will enable access to data cubes (`.zarr` or `.levels`) 
+  in FTP storage as shown here: 
+  
+  ```python
+  store = new_data_store(
+      "ftp",                     # FTP filesystem protocol
+      root="path/to/files",      # Path on FTP server
+      storage_options= {'host':  'ftp.xxx',  # The url to the ftp server
+                        'port': 21           # Port, defaults to 21  
+                        # Optionally, use 
+                        # 'username': 'xxx'
+                        # 'password': 'xxx'}  
+  )
+  store.list_data_ids()
+  ```
+  Note that there is no anon parameter, as the store will assume no anonymity
+  if no username and password are set.
+  
+  Same configuration for xcube Server:
+
+  ```yaml
+  DataStores:
+  - Identifier: siec
+    StoreId: ftp
+    StoreParams:
+      root: my_path_on_the_host
+      max_depth: 1
+      storage_options:
+        host: "ftp.xxx"
+        port: xxx
+        username: "xxx"
+        password': "xxx"
+  ``` 
+
+* Updated [xcube Dataset Specification](docs/source/cubespec.md).
+  (addressing #844)
+
+* Added [xcube Data Access](docs/source/dataaccess.md) documentation.
+
+### Fixes 
+
+* Fixed various issues with the auto-generated Python API documentation.
+
+* Fixed a problem where time series requests may have missed outer values
+  of a requested time range. (#860)
+  - Introduced query parameter `tolerance` for
+    endpoint `/timeseries/{datasetId}/{varName}` which is
+    the number of seconds by which the given time range is expanded. Its 
+    default value is one second to overcome rounding problems with 
+    microsecond fractions. (#860)
+  - We now round the time dimension labels for a dataset as 
+    follows (rounding frequency is 1 second by default):
+    - First times stamp: `floor(time[0])`
+    - Last times stamp: `ceil(time[-1])`
+    - In-between time stamps: `round(time[1: -1])`
+
+### Other changes
+
+* Pinned `gdal` dependency to `>=3.0, <3.6.3` due to incompatibilities.
+
+## Changes in 1.0.5
+
+* When running xcube in a JupyterLab, the class
+  `xcube.webapi.viewer.Viewer` can be used to programmatically 
+  launch a xcube Viewer UI. 
+  The class now recognizes an environment variable `XCUBE_JUPYTER_LAB_URL` 
+  that contains a JupyterLab's public base URL for a given user. 
+  To work properly, the 
+  [jupyter-server-proxy](https://jupyter-server-proxy.readthedocs.io/) 
+  extension must be installed and enabled.
+
+* Bundled [xcube-viewer 1.0.2.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.0.2.1).
+
+## Changes in 1.0.4 
+
+* Setting a dataset's `BoundingBox` in the server configuration 
+  is now recognised when requesting the dataset details. (#845)
+
+* It is now possible to enforce the order of variables reported by 
+  xcube server. The new server configuration key `Variables` can be added 
+  to `Datasets` configurations. Is a list of wildcard patterns that 
+  determines the order of variables and the subset of variables to be 
+  reported. (#835) 
+
+* Pinned Pandas dependency to lower than 2.0 because of incompatibility 
+  with both xarray and xcube 
+  (see https://github.com/pydata/xarray/issues/7716). 
+  Therefore, the following xcube deprecations have been introduced:
+  - The optional `--base/-b` of the `xcube resample` CLI tool.
+  - The keyword argument `base` of the  `xcube.core.resample.resample_in_time` 
+    function.
+
+* Bundled [xcube-viewer 1.0.2](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.0.2).
+
+## Changes in 1.0.3
+
+Same as 1.0.2, just fixed unit tests due to minor Python environment change.
+
+## Changes in 1.0.2
+
+* Bundled latest 
+  [xcube-viewer 1.0.1](https://github.com/dcs4cop/xcube-viewer/releases/tag/v1.0.1).
+
+* xcube is now compatible with Python 3.10. (#583)
+
+* The `Viewer.add_dataset()` method of the xcube JupyterLab integration 
+  has been enhanced by two optional keyword arguments `style` and 
+  `color_mappings` to allow for customized, initial color mapping
+  of dataset variables. The example notebook 
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
+  has been updated to reflect the enhancement.
+
+* Fixed an issue with new xcube data store `abfs` 
+  for the Azure Blob filesystem. (#798)
+
+## Changes in 1.0.1
+
+### Fixes
+
+* Fixed recurring issue where xcube server was unable to locate Python
+  code downloaded from S3 when configuring dynamically computed datasets
+  (configuration `FileSystem: memory`) or augmenting existing datasets 
+  by dynamically computed variables (configuration `Augmentation`). (#828)
+
+
+## Changes in 1.0.0 
+
+### Enhancements
+
+* Added a catalog API compliant to [STAC](https://stacspec.org/en/) to 
+  xcube server. (#455)
+  - It serves a single collection named "datacubes" whose items are the
+    datasets published by the service. 
+  - The collection items make use the STAC 
+    [datacube](https://github.com/stac-extensions/datacube) extension. 
+
+* Simplified the cloud deployment of xcube server/viewer applications (#815). 
+  This has been achieved by the following new xcube server features:
+  - Configuration files can now also be URLs which allows 
+    provisioning from S3-compatible object storage. 
+    For example, it is now possible to invoke xcube server as follows: 
+    ```bash
+    $ xcube serve --config s3://cyanoalert/xcube/demo.yaml ...
+    ```
+  - A new endpoint `/viewer/config/{*path}` allows 
+    for configuring the viewer accessible via endpoint `/viewer`. 
+    The actual source for the configuration items is configured by xcube 
+    server configuration using the new entry `Viewer/Configuration/Path`, 
+    for example:
+    ```yaml
+    Viewer:
+      Configuration:
+        Path: s3://cyanoalert/xcube/viewer-config
+    ```
+  - A typical xcube server configuration comprises many paths, and 
+    relative paths of known configuration parameters are resolved against 
+    the `base_dir` configuration parameter. However, for values of 
+    parameters passed to user functions that represent paths in user code, 
+    this cannot be done automatically. For such situations, expressions 
+    can be used. An expression is any string between `"${"` and `"}"` in a 
+    configuration value. An expression can contain the variables
+    `base_dir` (a string), `ctx` the current server context 
+    (type `xcube.webapi.datasets.DatasetsContext`), as well as the function
+    `resolve_config_path(path)` that is used to make a path absolut with 
+    respect to `base_dir` and to normalize it. For example
+    ```yaml
+    Augmentation:
+      Path: augmentation/metadata.py
+      Function: metadata:update_metadata
+      InputParameters:
+        bands_config: ${resolve_config_path("../common/bands.yaml")}
+    ```
+
+* xcube's spatial resampling functions `resample_in_space()`,
+  `affine_transform_dataset()`,  and `rectify_dataset()` exported 
+  from module `xcube.core.resampling` now encode the target grid mapping 
+  into the resampled datasets. (#822) 
+  
+  This new default behaviour can be switched off by keyword argument 
+  `encode_cf=False`. 
+  The grid mapping name can be set by keyword argument `gm_name`. 
+  If `gm_name` is not given a grid mapping will not be encoded if 
+  all the following conditions are true: 
+  - The target CRS is geographic; 
+  - The spatial dimension names are "lon" and "lat";
+  - The spatial 1-D coordinate variables are named "lon" and "lat" 
+    and are evenly spaced.  
+
+  The encoding of the grid mapping is done according to CF conventions:
+  - The CRS is encoded as attributes of a 0-D data variable named by `gm_name`
+  - All spatial data variables receive an attribute `grid_mapping` that is
+    set to the value of `gm_name`.
+  
+* Added Notebook 
+  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
+  that explains how xcube Viewer can now be utilised in JupyterLab
+  using the new (still experimental) xcube JupyterLab extension
+  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
+  The `xcube-jl-ext` package is also available on PyPI.
+
+* Updated example 
+  [Notebook for CMEMS data store](examples/notebooks/datastores/7_cmems_data_store.ipynb)
+  to reflect changes of parameter names that provide CMEMS API credentials.
+
+* Included support for Azure Blob Storage filesystem by adding a new 
+  data store `abfs`. Many thanks to [Ed](https://github.com/edd3x)!
+  (#752)
+
+  These changes will enable access to data cubes (`.zarr` or `.levels`) 
+  in Azure blob storage as shown here: 
+  
+  ```python
+  store = new_data_store(
+      "abfs",                    # Azure filesystem protocol
+      root="my_blob_container",  # Azure blob container name
+      storage_options= {'anon': True, 
+                        # Alternatively, use 'connection_string': 'xxx'
+                        'account_name': 'xxx', 
+                        'account_key':'xxx'}  
+  )
+  store.list_data_ids()
+  ```
+  
+  Same configuration for xcube Server:
+
+  ```yaml
+  DataStores:
+  - Identifier: siec
+    StoreId: abfs
+    StoreParams:
+      root: my_blob_container
+      max_depth: 1
+      storage_options:
+        anon: true
+        account_name: "xxx"
+        account_key': "xxx"
+        # or
+        # connection_string: "xxx"
+    Datasets:
+      - Path: "*.levels"
+        Style: default
+  ```
+  
+* Added Notebook
+  [8_azure_blob_filesystem.ipynb](examples/notebooks/datastores/8_azure_blob_filesystem.ipynb). 
+  This notebook shows how a new data store instance can connect and list 
+  Zarr files from Azure bolb storage using the new `abfs` data store. 
+
+* xcube's `Dockerfile` no longer creates a conda environment `xcube`.
+  All dependencies are now installed into the `base` environment making it 
+  easier to use the container as an executable for xcube applications.
+  We are now also using a `micromamba` base image instead of `miniconda`.
+  The result is a much faster build and smaller image size.
+
+* Added a `new_cluster` function to `xcube.util.dask`, which can create
+  Dask clusters with various configuration options.
+
+* The xcube multi-level dataset specification has been enhanced. (#802)
+  - When writing multi-level datasets (`*.levels/`) we now create a new 
+    JSON file `.zlevels` that contains the parameters used to create the 
+    dataset.
+  - A new class `xcube.core.mldataset.FsMultiLevelDataset` that represents
+    a multi-level dataset persisted to some filesystem, like 
+    "file", "s3", "memory". It can also write datasets to the filesystem. 
+
+
+* Changed the behaviour of the class 
+  `xcube.core.mldataset.CombinedMultiLevelDataset` to do what we 
+  actually expect:
+  If the keyword argument `combiner_func` is not given or `None` is passed, 
+  a copy of the first dataset is made, which is then subsequently updated 
+  by the remaining datasets using `xarray.Dataset.update()`.
+  The former default was using the `xarray.merge()`, which for some reason
+  can eagerly load Dask array chunks into memory that won't be released. 
+
+### Fixes
+
+* Tiles of datasets with forward slashes in their identifiers
+  (originated from nested directories) now display again correctly
+  in xcube Viewer. Tile URLs have not been URL-encoded in such cases. (#817)
+
+* The xcube server configuration parameters `url_prefix` and 
+  `reverse_url_prefix` can now be absolute URLs. This fixes a problem for 
+  relative prefixes such as `"proxy/8000"` used for xcube server running 
+  inside JupyterLab. Here, the expected returned self-referencing URL was
+  `https://{host}/users/{user}/proxy/8000/{path}` but we got
+  `http://{host}/proxy/8000/{path}`. (#806)
 
 ## Changes in 0.13.0
 
@@ -106,12 +521,6 @@
   
 * Added convenience method `DataStore.list_data_ids()` that works 
   like `get_data_ids()`, but returns a list instead of an iterator. (#776)
-
-* Added Notebook 
-  [xcube-viewer-in-jl.ipynb](examples/notebooks/viewer/xcube-viewer-in-jl.ipynb)
-  that explains how xcube Viewer can now be utilised in JupyterLab
-  using the new (still experimental) xcube JupyterLab extension
-  [xcube-jl-ext](https://github.com/dcs4cop/xcube-jl-ext).
 
 * Replaced usages of deprecated numpy dtype `numpy.bool` 
   by Python type `bool`. 
@@ -231,6 +640,10 @@
 
 * Removed deprecated example `examples/tile`.
 
+### Other Changes
+
+* The utility function `xcube.util.dask.create_cluster()` now also
+  generates the tag `user` for the current user's name.
 
 ## Changes in 0.12.1 
 

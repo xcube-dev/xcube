@@ -20,6 +20,7 @@
 # SOFTWARE.
 
 from xcube.util.jsonschema import JsonBooleanSchema
+from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 from ..accessor import COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES
@@ -131,6 +132,87 @@ class S3FsAccessor(FsAccessor):
                         ),
                     ),
                     additional_properties=True,
+                ),
+                **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
+            ),
+            additional_properties=True,
+        )
+
+
+class AzureFsAccessor(FsAccessor):
+    @classmethod
+    def get_protocol(cls) -> str:
+        return 'abfs'
+
+    @classmethod
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
+
+        return JsonObjectSchema(
+            properties=dict(
+                anon=JsonBooleanSchema(
+                    title='Whether to anonymously connect to'
+                          ' Azure Blob Storage.'
+                ),
+                account_name=JsonStringSchema(
+                    min_length=1,
+                    title='Azure storage account name.',
+                    description='Must be used with the account key parameter.'
+                                ' This is not required when using a'
+                                ' connection string.'
+                                
+                ),
+                account_key=JsonStringSchema(
+                    min_length=1,
+                    title='Azure storage account key.',
+                    description='Must be used with the account'
+                                ' name parameter.'
+                                ' This is not required when using a'
+                                ' connection string'
+                ),
+                connection_string=JsonStringSchema(
+                    min_length=1,
+                    title='Connection string for Azure blob storage.',
+                    description='Use this parameter inplace of both'
+                                ' account name and key'
+                                ' because they are both contained'
+                                ' in the string.'
+                ),
+                **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
+            ),
+            additional_properties=True,
+        )
+
+
+class FtpFsAccessor(FsAccessor):
+    @classmethod
+    def get_protocol(cls) -> str:
+        return 'ftp'
+
+    @classmethod
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                host=JsonStringSchema(
+                    title='FTP host',
+                    description='The remote server name/ip to connect to',
+                    min_length=1
+                ),
+                port=JsonIntegerSchema(
+                    minimum=0,
+                    maximum=65535,
+                    default=21,
+                    title='FTP port',
+                    description='Port to connect with'
+                ),
+                username=JsonStringSchema(
+                    min_length=1,
+                    title='User name',
+                    description='If authenticating, the user\'s identifier'
+                ),
+                password=JsonStringSchema(
+                    min_length=1,
+                    title='User password',
+                    description='User\'s password on the server, if using',
                 ),
                 **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
             ),

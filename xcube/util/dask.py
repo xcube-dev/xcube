@@ -1,9 +1,14 @@
 import itertools
+import os
+import re
 import uuid
-from typing import Callable, Tuple, Any, Sequence, Iterable, Union, List, Mapping
+import warnings
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, \
+    Sequence, Tuple, Union
 
 import dask.array as da
 import dask.array.core as dac
+import distributed
 import numpy as np
 
 IntTuple = Tuple[int, ...]
@@ -11,6 +16,9 @@ SliceTuple = Tuple[slice, ...]
 IntIterable = Iterable[int]
 IntTupleIterable = Iterable[IntTuple]
 SliceTupleIterable = Iterable[SliceTuple]
+
+_CLUSTER_TAGS_ENV_VAR_NAME = 'XCUBE_DASK_CLUSTER_TAGS'
+_CLUSTER_ACCOUNT_ENV_VAR_NAME = 'XCUBE_DASK_CLUSTER_ACCOUNT'
 
 
 def compute_array_from_func(func: Callable[..., np.ndarray],
@@ -133,6 +141,130 @@ def get_chunk_slices(chunk_sizes: Sequence[int]) -> Iterable[slice]:
         start = stop
         stop = start + chunk_sizes[i]
         yield slice(start, stop)
+
+
+def new_cluster(
+    provider: str = 'coiled',
+    name: Optional[str] = None,
+    software: Optional[str] = None,
+    n_workers: int = 4,
+    resource_tags: Optional[Dict[str, str]] = None,
+    account: str = None,
+    region: str = 'eu-central-1',
+    **kwargs,
+) -> distributed.deploy.Cluster:
+    """Create a new Dask cluster.
+
+    Cloud resource tags can be specified in an environment variable
+    XCUBE_DASK_CLUSTER_TAGS in the format
+    ``tag_1=value_1:tag_2=value_2:...:tag_n=value_n``. In case of
+    conflicts, tags specified in ``resource_tags`` will override tags
+    specified by the environment variable.
+
+    The cluster provider account name can be specified in an environment
+    variable ``XCUBE_DASK_CLUSTER_ACCOUNT``. If the ``account`` argument is
+    given to ``new_cluster``, it will override the value from the environment
+    variable.
+
+    :param provider: identifier of the provider to use. Currently, only
+        'coiled' is supported.
+    :param name: name to use as an identifier for the cluster
+    :param software: identifier for the software environment to be used.
+    :param n_workers: number of workers in the cluster
+    :param resource_tags: tags to apply to the cloud resources forming the
+        cluster
+    :param account: cluster provider account name
+    :param **kwargs: further named arguments will be passed on to the
+        cluster creation function
+    :param region: default region where workers of the cluster will be deployed set to eu-central-1
+    """
+
+    if resource_tags is None:
+        resource_tags = {}
+    if _CLUSTER_ACCOUNT_ENV_VAR_NAME in os.environ:
+        account_from_env_var = os.environ[_CLUSTER_ACCOUNT_ENV_VAR_NAME]
+    else:
+        account_from_env_var = None
+        warnings.warn(f'Environment variable {_CLUSTER_ACCOUNT_ENV_VAR_NAME}'
+                      f' not set; cluster account name may be incorrect.')
+
+    cluster_account = (
+        account if account is not None else
+        account_from_env_var if account_from_env_var is not None else
+        'bc'
+    )
+
+    if provider == 'coiled':
+        try:
+            import coiled
+        except ImportError as e:
+            raise ImportError(f"provider 'coiled' requires package"
+                              f"'coiled' to be installed") from e
+        if software is None and 'JUPYTER_IMAGE' in os.environ:
+            # If the JUPYTER_IMAGE environment variable is set, we're
+            # presumably in a Z2JH deployment and can base a
+            # Coiled environment on the same image.
+            # First we construct an identifier from the user image specifier.
+            current_image = os.environ['JUPYTER_IMAGE']
+            software = re.sub(
+                '[:.]',
+                '-',
+                re.search(r'/([^/]+)$', current_image).group(1),
+            )
+            # If the referenced software environment doesn't exist yet as a
+            # Coiled environment, create it from the currently used image.
+            available_environments = \
+                coiled.list_software_environments(account=account).keys()
+            if software not in available_environments:
+                coiled.create_software_environment(
+                    name=software,
+                    container=current_image
+                )
+
+        # If software is (still) None, Coiled will try to mirror the current
+        # environment automagically.
+        coiled_params = dict(
+            n_workers=n_workers,
+            environ=None,
+            tags=_collate_cluster_resource_tags(resource_tags),
+            account=cluster_account,
+            name=name,
+            software=software,
+            use_best_zone=True,
+            compute_purchase_option='spot_with_fallback',
+            shutdown_on_close=True,
+            region=region,
+        )
+        coiled_params.update(kwargs)
+
+        return coiled.Cluster(**coiled_params)
+
+    raise NotImplementedError(f'Unknown provider {provider!r}')
+
+
+def _collate_cluster_resource_tags(extra_tags: Dict[str, str]) \
+        -> Dict[str, str]:
+    fallback_tags = {
+        'cost-center': 'unknown',
+        'environment': 'dev',
+        'creator': 'auto',
+        'purpose': 'xcube dask cluster',
+        'user': (os.environ.get('JUPYTERHUB_USER')  # JupyterHub
+                 or os.environ.get('USER')          # Unixes
+                 or os.environ.get('USERNAME')      # Windows
+                 or os.getlogin()
+                 or '')
+    }
+    if _CLUSTER_TAGS_ENV_VAR_NAME in os.environ:
+        kvps = os.environ[_CLUSTER_TAGS_ENV_VAR_NAME].split(':')
+        env_var_tags = {
+            (parts := kvp.split('=', maxsplit=1))[0]: parts[1] for kvp in kvps
+        }
+    else:
+        warnings.warn(f'Environment variable {_CLUSTER_TAGS_ENV_VAR_NAME}'
+                      f' not set; cluster resource tags may be missing.')
+        env_var_tags = {}
+    return fallback_tags | env_var_tags | extra_tags
 
 
 class _NestedList:

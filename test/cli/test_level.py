@@ -48,7 +48,8 @@ class LevelDataTest(CliDataTest):
         self._assert_result_ok(
             result, [((1, 1, 1, 1, 1), (45, 45, 45, 45), (90, 90, 90, 90)),
                      ((1, 1, 1, 1, 1), (45, 45), (90, 90)),
-                     ((1, 1, 1, 1, 1), (45,), (90,))],
+                     ((1, 1, 1, 1, 1), (45,), (90,)),
+                     ((1, 1, 1, 1, 1), (23,), (45,))],
             LevelDataTest.TEST_OUTPUT,
             'Multi-level dataset written to /test.levels after .*\n'
         )
@@ -89,7 +90,7 @@ class LevelDataTest(CliDataTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
-        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'},
+        self.assertEqual({'.zlevels', '0.zarr', '1.zarr', '2.zarr'},
                          set(os.listdir(LevelDataTest.TEST_OUTPUT)))
 
     def test_level_with_zarr(self):
@@ -100,7 +101,7 @@ class LevelDataTest(CliDataTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
-        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'},
+        self.assertEqual({'.zlevels', '0.zarr', '1.zarr', '2.zarr'},
                          set(os.listdir(LevelDataTest.TEST_OUTPUT)))
 
     def test_level_with_zarr_agg_method(self):
@@ -112,7 +113,7 @@ class LevelDataTest(CliDataTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
-        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'},
+        self.assertEqual({'.zlevels', '0.zarr', '1.zarr', '2.zarr'},
                          set(os.listdir(LevelDataTest.TEST_OUTPUT)))
 
     def test_level_with_zarr_agg_methods(self):
@@ -125,7 +126,7 @@ class LevelDataTest(CliDataTest):
         ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
-        self.assertEqual({'0.zarr', '1.zarr', '2.zarr'},
+        self.assertEqual({'.zlevels', '0.zarr', '1.zarr', '2.zarr'},
                          set(os.listdir(LevelDataTest.TEST_OUTPUT)))
 
     def test_level_with_zarr_link(self):
@@ -137,7 +138,7 @@ class LevelDataTest(CliDataTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
-        self.assertEqual({'0.link', '1.zarr', '2.zarr'},
+        self.assertEqual({'.zlevels', '0.link', '1.zarr', '2.zarr'},
                          set(os.listdir(LevelDataTest.TEST_OUTPUT)))
 
     def test_level_with_zarr_num_levels_max(self):
@@ -149,7 +150,7 @@ class LevelDataTest(CliDataTest):
                                   ])
         self.assertEqual(0, result.exit_code)
         self.assertTrue(os.path.isdir(LevelDataTest.TEST_OUTPUT))
-        self.assertEqual({'0.zarr', '1.zarr'},
+        self.assertEqual({'.zlevels', '0.zarr', '1.zarr'},
                          set(os.listdir(LevelDataTest.TEST_OUTPUT)))
 
     def test_invalid_inputs(self):

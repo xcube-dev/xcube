@@ -22,12 +22,52 @@
 import importlib.resources
 import os
 import pathlib
-from typing import Union
+from typing import Union, Optional
 
 from xcube.constants import LOG
+from xcube.server.api import ApiError
+from xcube.server.api import ApiHandler
 from .api import api
+from .context import ViewerContext
 
 ENV_VAR_XCUBE_VIEWER_PATH = "XCUBE_VIEWER_PATH"
+
+
+@api.route('/viewer/config/{*path}')
+class ViewerConfigHandler(ApiHandler[ViewerContext]):
+    @api.operation(operationId='getViewerConfigurationItem',
+                   summary='Get a configuration item for the xcube viewer.')
+    def get(self, path: Optional[str]):
+        config_items = self.ctx.config_items
+        if config_items is None:
+            raise ApiError.NotFound(f'xcube viewer has'
+                                    f' not been been configured')
+        try:
+            data = config_items[path]
+        except KeyError:
+            raise ApiError.NotFound(f'The item {path!r} was not found'
+                                    f' in viewer configuration')
+        content_type = self.get_content_type(path)
+        self.response.set_header("Content-Length", str(len(data)))
+        if content_type is not None:
+            self.response.set_header("Content-Type", content_type)
+        self.response.write(data)
+
+    @staticmethod
+    def get_content_type(path: str) -> Optional[str]:
+        filename_ext = path.split('/')[-1].split('.')[-1]
+        if filename_ext in ("json", "xml"):
+            return f"application/{filename_ext}; charset=UTF-8"
+        elif filename_ext in ("csv", "html", "css", "js"):
+            return f"text/{filename_ext}; charset=UTF-8"
+        elif filename_ext in ("geojson",):
+            return "application/geo+json; charset=UTF-8"
+        elif filename_ext in ("gif", "png"):
+            return f"image/{filename_ext}"
+        elif filename_ext in ("jpeg", "jpg"):
+            return "image/jpeg"
+        return None
+
 
 _responses = {
     200: {

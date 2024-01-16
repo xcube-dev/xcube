@@ -1,29 +1,34 @@
 # The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
+# Copyright (c) 2023 by the xcube development team and contributors
 #
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 import abc
 import copy
 import math
 import threading
-from typing import Any, Tuple, Optional, Union, Mapping
+from typing import Any
+from typing import Callable
+from typing import Mapping
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import numpy as np
 import pyproj
@@ -34,6 +39,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.dask import get_block_iterators
 from xcube.util.dask import get_chunk_sizes
+from xcube.constants import CRS_CRS84
 from .helpers import AffineTransformMatrix
 from .helpers import Number
 from .helpers import _assert_valid_xy_coords
@@ -47,8 +53,6 @@ from .helpers import scale_xy_res_and_size
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)
 
-# WGS84, axis order: lon, lat
-CRS_CRS84 = pyproj.crs.CRS.from_string("CRS84")
 
 # Default tolerance for all operations that
 # accept a key-word argument "tolerance":
@@ -90,7 +94,10 @@ class GridMapping(abc.ABC):
                  xy_dim_names: Tuple[str, str],
                  is_regular: Optional[bool],
                  is_lon_360: Optional[bool],
-                 is_j_axis_up: Optional[bool]):
+                 is_j_axis_up: Optional[bool],
+                 x_coords: Optional[xr.DataArray] = None,
+                 y_coords: Optional[xr.DataArray] = None,
+                 xy_coords: Optional[xr.DataArray] = None):
 
         width, height = _normalize_int_pair(size, name='size')
         assert_true(width > 1 and height > 1,
@@ -107,6 +114,23 @@ class GridMapping(abc.ABC):
         _assert_valid_xy_names(xy_dim_names, name='xy_dim_names')
         assert_instance(crs, pyproj.crs.CRS, name='crs')
 
+        if x_coords is not None:
+            assert_instance(x_coords, xr.DataArray, name='x_coords')
+            assert_true(x_coords.ndim in (1, 2),
+                        message=f'x_coords.ndim must be 1 or 2,'
+                                f' was {x_coords.ndim}')
+        if y_coords is not None:
+            assert_instance(y_coords, xr.DataArray, name='y_coords')
+            assert_true(y_coords.ndim in (1, 2),
+                        message=f'y_coords.ndim must be 1 or 2,'
+                                f' was {y_coords.ndim}')
+        if xy_coords is not None:
+            assert_instance(xy_coords, xr.DataArray, name='xy_coords')
+            assert_true(xy_coords.shape == (2, height, width),
+                        message=f'xy_coords.shape must be'
+                                f' {(2, height, width)},'
+                                f' was {xy_coords.shape}')
+
         x_min, y_min, x_max, y_max = xy_bbox
         x_res, y_res = _normalize_number_pair(xy_res, name='xy_res')
         assert_true(x_res > 0 and y_res > 0,
@@ -116,7 +140,6 @@ class GridMapping(abc.ABC):
 
         self._size = width, height
         self._tile_size = tile_width, tile_height
-        self._xy_coords = None
         self._xy_bbox = x_min, y_min, x_max, y_max
         self._xy_res = x_res, y_res
         self._crs = crs
@@ -125,6 +148,9 @@ class GridMapping(abc.ABC):
         self._is_regular = is_regular
         self._is_lon_360 = is_lon_360
         self._is_j_axis_up = is_j_axis_up
+        self._x_coords = x_coords
+        self._y_coords = y_coords
+        self._xy_coords = xy_coords
 
     def derive(self,
                /,
@@ -151,7 +177,8 @@ class GridMapping(abc.ABC):
         if tile_size is not None:
             tile_width, tile_height = _normalize_int_pair(tile_size,
                                                           name='tile_size')
-            assert_true(tile_width > 1 and tile_height > 1, 'invalid tile_size')
+            assert_true(tile_width > 1 and tile_height > 1,
+                        'invalid tile_size')
             tile_size = tile_width, tile_height
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
@@ -160,8 +187,16 @@ class GridMapping(abc.ABC):
                         other._xy_coords = other._xy_coords.chunk(
                             other.xy_coords_chunks
                         )
-        if is_j_axis_up is not None:
+        if is_j_axis_up is not None and is_j_axis_up != other._is_j_axis_up:
             other._is_j_axis_up = is_j_axis_up
+            if other._y_coords is not None:
+                other._y_coords = other._y_coords[::-1]
+            if other._xy_coords is not None:
+                other._xy_coords = other._xy_coords[:, ::-1, :]
+                other._xy_coords = other._xy_coords.chunk(
+                    other.xy_coords_chunks
+                )
+
         return other
 
     def scale(self,
@@ -241,19 +276,43 @@ class GridMapping(abc.ABC):
         return self.tile_size[1]
 
     @property
+    def x_coords(self):
+        """The 1D or 2D x-coordinate array of
+        shape (width,) or (height, width).
+        """
+        return self._get_computed_attribute("_x_coords",
+                                            self._new_x_coords)
+
+    @abc.abstractmethod
+    def _new_x_coords(self) -> xr.DataArray:
+        """Create new 1D or 2D x-coordinate array of
+        shape (width,) or (height, width).
+        """
+
+    @property
+    def y_coords(self):
+        """The 1D or 2D y-coordinate array of
+        shape (width,) or (height, width).
+        """
+        return self._get_computed_attribute("_y_coords",
+                                            self._new_y_coords)
+
+    @abc.abstractmethod
+    def _new_y_coords(self) -> xr.DataArray:
+        """Create new 1D or 2D y-coordinate array of
+        shape (width,) or (height, width).
+        """
+
+    @property
     def xy_coords(self) -> xr.DataArray:
         """
         The x,y coordinates as data array of shape (2, height, width).
         Coordinates are given in units of the CRS.
         """
-        if self._xy_coords is None:
-            with self._lock:
-                # Double check for None is by intention
-                if self._xy_coords is None:
-                    xy_coords = self._new_xy_coords()
-                    _assert_valid_xy_coords(xy_coords)
-                    self._xy_coords = xy_coords
-        return self._xy_coords
+        xy_coords = self._get_computed_attribute("_xy_coords",
+                                                 self._new_xy_coords)
+        _assert_valid_xy_coords(xy_coords)
+        return xy_coords
 
     @property
     def xy_coords_chunks(self) -> Tuple[int, int, int]:
@@ -263,6 +322,24 @@ class GridMapping(abc.ABC):
     @abc.abstractmethod
     def _new_xy_coords(self) -> xr.DataArray:
         """Create new coordinate array of shape (2, height, width)."""
+
+    def _get_computed_attribute(self,
+                                name: str,
+                                computer: Callable[[], Any]) -> Any:
+        """Get the value for a computed attribute.
+        Utility to be used by this and derived classes.
+        """
+        value = getattr(self, name)
+        if value is not None:
+            return value
+        with self._lock:
+            # Double null check
+            value = getattr(self, name)
+            if value is not None:
+                return value
+            value = computer()
+            setattr(self, name, value)
+            return value
 
     @property
     def xy_var_names(self) -> Tuple[str, str]:
@@ -534,6 +611,59 @@ class GridMapping(abc.ABC):
                           ij_bboxes)
         return ij_bboxes
 
+    def to_dataset_attrs(self) -> Mapping[str, Any]:
+        """
+        Get spatial dataset attributes as recommended by
+        https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3#Recommended
+
+        :return: dictionary with dataset coordinate attributes.
+        """
+
+        x1, y1, x2, y2 = self.xy_bbox
+
+        if self.crs.is_geographic:
+            lon_min, lat_min, lon_max, lat_max = self.xy_bbox
+            lon_res, lat_res = self.xy_res
+        else:
+            x_res, y_res = self.xy_res
+            # center position
+            xm1 = (x1 + x2) / 2
+            ym1 = (y1 + y2) / 2
+            # center position + delta
+            xm2 = xm1 + x_res
+            ym2 = ym1 + y_res
+            transformer = pyproj.Transformer.from_crs(crs_from=self.crs,
+                                                      crs_to=CRS_CRS84)
+            xx, yy = transformer.transform((x1, x2, xm1, xm2),
+                                           (y1, y2, ym1, ym2))
+            lon_min, lon_max, lon_m1, lon_m2 = xx
+            lat_min, lat_max, lat_m1, lat_m2 = yy
+            # Estimate resolution (note, this may be VERY wrong)
+            lon_res = abs(lon_m2 - lon_m1)
+            lat_res = abs(lat_m2 - lat_m1)
+
+        geospatial_bounds_crs = 'CRS84'
+        geospatial_bounds = (f'POLYGON(('
+                             f'{lon_min} {lat_min}, '
+                             f'{lon_min} {lat_max}, '
+                             f'{lon_max} {lat_max}, '
+                             f'{lon_max} {lat_min}, '
+                             f'{lon_min} {lat_min}'
+                             f'))')
+
+        return dict(
+            geospatial_lon_units='degrees_east',
+            geospatial_lon_min=lon_min,
+            geospatial_lon_max=lon_max,
+            geospatial_lon_resolution=lon_res,
+            geospatial_lat_units='degrees_north',
+            geospatial_lat_min=lat_min,
+            geospatial_lat_max=lat_max,
+            geospatial_lat_resolution=lat_res,
+            geospatial_bounds_crs=geospatial_bounds_crs,
+            geospatial_bounds=geospatial_bounds,
+        )
+
     def to_coords(self,
                   xy_var_names: Tuple[str, str] = None,
                   xy_dim_names: Tuple[str, str] = None,
@@ -733,9 +863,9 @@ class GridMapping(abc.ABC):
                 sx1, sy1, sx2, sy2 = self.xy_bbox
                 ox1, oy1, ox2, oy2 = other.xy_bbox
                 return math.isclose(sx1, ox1, abs_tol=tolerance) \
-                       and math.isclose(sy1, oy1, abs_tol=tolerance) \
-                       and math.isclose(sx2, ox2, abs_tol=tolerance) \
-                       and math.isclose(sy2, oy2, abs_tol=tolerance)
+                    and math.isclose(sy1, oy1, abs_tol=tolerance) \
+                    and math.isclose(sx2, ox2, abs_tol=tolerance) \
+                    and math.isclose(sy2, oy2, abs_tol=tolerance)
         return False
 
     @classmethod

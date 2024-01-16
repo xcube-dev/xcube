@@ -2,8 +2,8 @@
 
 Version 0.2, draft
 
-*IMPORTANT NOTE: Any changes to this doc must be reviewed by dev-team 
-through pull requests.* 
+*IMPORTANT NOTE: Any changes to this doc must be reviewed by dev-team
+through pull requests.*
 
 
 ## Table of Contents
@@ -20,16 +20,16 @@ through pull requests.*
 ## Versioning
 
 We adhere to [PEP-440](https://www.python.org/dev/peps/pep-0440/).
-Therefore, the xcube software version uses the format 
-`<major>.<minor>.<micro>`  for released versions and 
-`<major>.<minor>.<micro>.dev<n>` for versions in development. 
+Therefore, the xcube software version uses the format
+`<major>.<minor>.<micro>`  for released versions and
+`<major>.<minor>.<micro>.dev<n>` for versions in development.
 
-* `<major>` is increased for major enhancements. 
+* `<major>` is increased for major enhancements.
   CLI / API changes may introduce incompatibilities with former version.
 * `<minor>` is increased for new features and and minor enhancements.
-  CLI / API changes are backward compatible with former version.  
+  CLI / API changes are backward compatible with former version.
 * `<micro>` is increased for bug fixes and micro enhancements.
-  CLI / API changes are backward compatible with former version.  
+  CLI / API changes are backward compatible with former version.
 * `<n>` is increased whenever the team (internally) deploys new builds
   of a development snapshot.
 
@@ -100,7 +100,7 @@ Make sure your change
 1. is reflected by the CLI's doc-strings and tools documentation 
    (currently in `README.md`);
 1. follows existing xcube CLI conventions;
-1. follows PEP8 conventions;
+1. follows our [code style](#coding-style) conventions;
 1. is reflected in API and WebAPI, if desired;
 1. is reflected in `CHANGES.md`.
 
@@ -170,7 +170,7 @@ Make sure your change
 1. is covered by unit-tests (package `test/core`); 
 1. is covered by API documentation;
 1. follows existing xcube API conventions;
-1. follows PEP8 conventions;
+1. follows our [code style](#coding-style) conventions;
 1. is reflected in xarray extension class `xcube.core.xarray.DatasetAccessor`;
 1. is reflected in CLI and WebAPI if desired;
 1. is reflected in `CHANGES.md`.
@@ -226,7 +226,7 @@ Make sure your change
 1. is covered by Web API specification and documentation (currently in
    `webapi/res/openapi.yml`);
 1. follows existing xcube Web API conventions;
-1. follows PEP8 conventions;
+1. follows our [code style](#coding-style) conventions;
 1. is reflected in CLI and API, if desired;
 1. is reflected in `CHANGES.md`.
 
@@ -241,34 +241,53 @@ Make sure your change
 
 ## Development Process
 
-1. Make sure there is an issue ticket for your code change work item
-1. Select issue, priorities are as follows 
+1. Make sure there is an issue ticket for your code change work item.
+1. Select issue; priorities are as follows:
    1. "urgent" and ("important" and "bug")
    1. "urgent" and ("important" or "bug")
    1. "urgent"
    1. "important" and "bug"
    1. "important" or "bug"
    1. others
-1. Make sure issue is assigned to you, if unclear agree with team first.
+1. Make sure issue is assigned to you; if unclear, agree with team first.
 1. Add issue label "in progress".
-1. Create development branch named `"<developer>-<issue>-<title>"` 
+1. Clone the GitHub repository to your local machine, if you haven't
+   already done so.
+1. Check out the `master` branch and make sure it's up to date (`git pull`).
+1. Create a development branch named `"<developer>-<issue>-<title>"` 
    (see [below](#development-branches)).
 1. Develop, having in mind the checklists and implementation hints
    above.
    1. In your first commit, refer the issue so it will appear as link 
-      in the issue history
+      in the issue history.
+   1. It is useful to push your first commit to the GitHub repository
+      at once and create a draft pull request for your branch, to make
+      it easier to find online. Also, it will run continuous integration and
+      check the compatibility of your branch with the main branch.
    1. Develop, test, and push to the remote branch as desired. 
    1. In your last commit, utilize checklists above. 
       (You can include the line "closes #`<issue>`" in your commit message
       to auto-close the issue once the PR is merged.)
-1. Create PR if build servers succeed on your branch. If not, fix issue
-   first.  
-   For the PR assign the team for review, agree who is to merge. 
-   Also reviewers should have checklist in mind.
-1. Merge PR after all reviewers are accepted your change. Otherwise go
-   back. 
+1. When your branch is ready to merge (as determined by the checklist), either
+   create a pull request, or, if you had created a draft in the previous step,
+   remove its draft status and invite one or more reviewers. Exactly who
+   should review depends on how potentially dangerous your changes are, who's
+   available, who knows that part of the codebase well, etc. – if unsure,
+   discuss with the team. You can also mention other team members with the
+   `@username` syntax in a PR comment to make sure that they're aware of the
+   PR even if they don't need to review it.
+1. Wait for reviewers to review your PR and respond to comments and
+   suggestions. Reviewers can also commit to your branch with additional
+   changes.
+1. Once all reviewers have given an "accept" review, the PR should be
+   merged. The last reviewer to give an "accept" should perform the merge;
+   if they forget, the PR author should merge.
 1. Remove issue label "in progress".
-1. Delete the development branch.
+1. Delete the feature branch.
+1. If the PR completely solves the associated issue: close the issue, if it
+   wasn't already automatically closed by a keyword in the pull request
+   description, and make sure that there is a link from the issue to the
+   PR (e.g. by adding a "fixed by PR #123" comment on the issue).
 1. If the PR is only partly solving an issue:
    1. Make sure the issue contains a to-do list (checkboxes) to complete
       the issue.
@@ -284,20 +303,21 @@ Make sure your change
 
 ### Target Branch
 
-The `master` branch contains latest developments, including new features and fixes. 
+The `master` branch contains latest developments,
+including new features and fixes.
 Its software version string is always `<major>.<minor>.<micro>.dev<n>`.
 The branch is used to generate major, minor, or maintenance releases.
 That is, either `<major>`, `<minor>`, or `<fix>` is increased.
 Before a release, the last thing we do is to remove the `.dev<n>` suffix, 
-after a release, the first thing we do is to increase the `micro` version and 
-add the `.dev<n>` suffix.  
+after a release, the first thing we do is to increase the `micro` version
+and add the `.dev<n>` suffix.
 
 ### Development Branches
 
 Development branches should be named `<developer>-<issue>-<title>` where
 * `<developer>` is the github name of the code author
-* `<issue>` is the number of the issue in the github issue tracker that is targeted
-  by the works on this branch
+* `<issue>` is the number of the issue in the github issue tracker that is
+  targeted by the work on this branch
 * `<title>` is either the name of the issue or an abbreviated version of it
 
 ## Release Process
@@ -327,7 +347,8 @@ you need to adjust the paths accordingly.
 * In `xcube/version.py` increase version number and append a `.dev0` suffix 
   to the version name so that it is still PEP-440 compatible.
 * Adjust version in `Dockerfile` accordingly.
-* In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
+* In `CHANGES.md` add a new version headline and attach ` (in development)`
+  to it.
 * Push changes to either master or a new maintenance branch (see above).
 * Activate new doc version on ReadTheDocs. 
 
@@ -342,20 +363,19 @@ These instructions are based on the documentation at
 Conda-forge packages are produced from a github feedstock repository belonging 
 to the conda-forge organization. A repository's feedstock is usually located at 
 `https://github.com/conda-forge/<repo-name>-feedstock`, e.g., 
-https://github.com/conda-forge/xcube-feedstock.
+`https://github.com/conda-forge/xcube-feedstock`.
+
+Usually, a conda-forge bot will create a feedstock pull request automatically for each new GitHub release, and the maintainers only need to merge it (potentially after some manual improvements). The manual procedure below is only needed if there isn't time to wait for the bot, or if an additional conda-forge build has to be done without a new GitHub release.
 The package is updated by 
 * forking the repository
 * creating a new branch for the changes
 * creating a pull request to merge this branch into conda-forge's feedstock repository 
   (this is done automatically if the build number is 0). 
 
-The first of these steps is usually already done. 
-You may find forks at `https://github.com/dcs4cop/<repo-name>-feedstock` . 
-
 In detail, the steps are:
 
-1. Update the dcs4cop fork of the feedstock repository, if it's not already 
-   up to date with conda-forge's upstream repository.
+1. Fork `https://github.com/conda-forge/<repo-name>-feedstock` in your personal GitHub
+   account.
 
 1. Clone the repository locally and create a new branch. The name of the branch 
    is not strictly prescribed, but it's sensible to choose an informative name like 
@@ -391,10 +411,7 @@ In detail, the steps are:
 
 1. Once conda-forge's automated checks have passed, merge the pull request.
 
-1. Merge the newly-merged changes from the master branch on conda-forge back to 
-   the master branch of the dcs4cop fork.
-   This step is not necessarily needed for the release, but it helps to avoid messy
-   parallel branches.
+1. Delete your personal fork of the `xcube-feedstock`-repository.
 
 Once the pull request has been merged, the updated package should usually become 
 available from conda-forge within a couple of hours.

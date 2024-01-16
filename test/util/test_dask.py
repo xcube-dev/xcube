@@ -1,4 +1,8 @@
 import unittest
+import unittest.mock
+import os
+import sys
+from builtins import ImportError
 
 import numpy as np
 
@@ -6,6 +10,9 @@ from xcube.util.dask import _NestedList
 from xcube.util.dask import compute_array_from_func
 from xcube.util.dask import get_chunk_sizes
 from xcube.util.dask import get_chunk_slice_tuples
+from xcube.util.dask import new_cluster
+from xcube.util.dask import _CLUSTER_ACCOUNT_ENV_VAR_NAME
+from xcube.util.dask import _CLUSTER_TAGS_ENV_VAR_NAME
 
 
 class DaskTest(unittest.TestCase):
@@ -80,6 +87,76 @@ class DaskTest(unittest.TestCase):
                            slice(75, 100)),
                           (slice(0, 40),)],
                          list(chunk_slices_tuples))
+
+
+class CoiledMock:
+
+    def __init__(self):
+        self.software_name = None
+        self.software_container = None
+        self.cluster_kwargs = None
+
+    @staticmethod
+    def list_software_environments(account=None):
+        return {}
+
+    def create_software_environment(self, name, container):
+        self.software_name = name
+        self.software_container = container
+
+    def Cluster(self, **kwargs):
+        self.cluster_kwargs = kwargs
+        return 'mocked cluster'
+
+
+class NewClusterTest(unittest.TestCase):
+    @unittest.mock.patch.dict(sys.modules, {'coiled': CoiledMock()})
+    @unittest.mock.patch.dict(
+        os.environ,
+          {_CLUSTER_ACCOUNT_ENV_VAR_NAME: 'my_coiled_account',
+           _CLUSTER_TAGS_ENV_VAR_NAME: 'tag1=value1:tag2=value2',
+           'JUPYTER_IMAGE': 'quay.io/my_image:1.2.3'}
+    )
+    def test_new_coiled_cluster(self):
+        cluster = new_cluster(
+            resource_tags=dict(tag2='value2a', tag3='value3')
+        )
+        self.assertEqual('mocked cluster', cluster)
+        coiled_mock = sys.modules['coiled']
+        self.assertEqual('my_image-1-2-3', coiled_mock.software_name)
+        self.assertEqual(
+            {'account': 'my_coiled_account',
+             'compute_purchase_option': 'spot_with_fallback',
+             'environ': None,
+             'n_workers': 4,
+             'name': None,
+             'region': 'eu-central-1',
+             'shutdown_on_close': True,
+             'software': 'my_image-1-2-3',
+             'tags': {'cost-center': 'unknown',
+                      'creator': 'auto',
+                      'environment': 'dev',
+                      'purpose': 'xcube dask cluster',
+                      'user': os.environ.get('USER',
+                                             os.environ.get('USERNAME')),
+                      'tag1': 'value1',
+                      'tag2': 'value2a',
+                      'tag3': 'value3'},
+             'use_best_zone': True},
+            coiled_mock.cluster_kwargs)
+
+    def test_new_coiled_cluster_no_coiled(self):
+        self.assertRaises(ImportError, new_cluster)
+
+    @unittest.mock.patch.dict(sys.modules, {'coiled': CoiledMock()})
+    def test_new_coiled_cluster_no_env_vars(self):
+        self.assertWarnsRegex(UserWarning, 'account name may be incorrect',
+                              new_cluster)
+        self.assertWarnsRegex(UserWarning, 'tags may be missing',
+                              new_cluster)
+
+    def test_new_cluster_unknown_provider(self):
+        self.assertRaises(NotImplementedError, new_cluster, dict(provider='unknown_provider'))
 
 
 class NestedListTest(unittest.TestCase):

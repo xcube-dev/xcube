@@ -1,20 +1,18 @@
 import os
 import os.path
-import os.path
 import unittest
-
-from xcube.core.byoa.constants import TEMP_FILE_PREFIX
-from xcube.core.byoa import FileSet
-import os
-import os.path
 import zipfile
+
+import fsspec
+
+from xcube.core.byoa import FileSet
+from xcube.core.byoa.constants import TEMP_FILE_PREFIX
 from xcube.core.dsio import rimraf
 
 PARENT_DIR = os.path.dirname(__file__)
 
 
 class FileSetToLocalTest(unittest.TestCase):
-
     test_dir = os.path.join(os.path.dirname(__file__), 'test-data')
 
     def setUp(self) -> None:
@@ -46,6 +44,23 @@ class FileSetToLocalTest(unittest.TestCase):
         file_set = FileSet(dir_path)
         local_file_set = file_set.to_local()
         self.assertIs(local_file_set, file_set)
+
+    def test_to_local_from_memory_dir(self):
+        mem_fs: fsspec.AbstractFileSystem = fsspec.filesystem("memory")
+        mem_fs.mkdir("package")
+        mem_fs.touch("package/__init__.py")
+        mem_fs.touch("package/module1.py")
+        mem_fs.mkdir("package/module2")
+        mem_fs.touch("package/module2/__init__.py")
+        file_set = FileSet("memory://package")
+        local_file_set = file_set.to_local()
+        self.assertTrue(os.path.isdir(local_file_set.path))
+        self.assertTrue(os.path.isfile(local_file_set.path
+                                       + "/__init__.py"))
+        self.assertTrue(os.path.isfile(local_file_set.path
+                                       + "/module1.py"))
+        self.assertTrue(os.path.isfile(local_file_set.path
+                                       + "/module2/__init__.py"))
 
     def test_to_local_from_local_flat_zip(self):
         zip_path = self._make_zip()

@@ -18,13 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       # Setup miniconda build env
-      - uses: conda-incubator/setup-miniconda@v2.0.0
+      - uses: mamba-org/setup-micromamba@v1
         with:
-          miniconda-version: py39_22.11.1-1
-          mamba-version: "*"
-          channels: conda-forge
-          activate-environment: xcube
+          micromamba-version: '1.4.8-0'
           environment-file: environment.yml
+          init-shell: >-
+            bash
+          cache-environment: true
+          post-cleanup: 'all'
       # Setup xcube
       - name: setup-xcube
         shell: bash -l {0}
@@ -61,16 +62,19 @@ jobs:
         run: |
           echo "TAG: ${{ steps.release.outputs.tag }}"
           echo "EVENT: ${{ github.event_name }}"
+      # commented out the below step to avoid building docker image for each
+      # commit to master, rather build and push the xcube docker image only on
+      # event type release
       # Build and push docker image 'latest' to quay.io when the event is a 'push' and branch 'master'
-      - uses: mr-smithers-excellent/docker-build-push@v5
-        name: build-push-docker-image-latest
-        if: ${{ github.event_name == 'push' && steps.release.outputs.tag == 'master'  }}
-        with:
-          image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
-          tags: master, latest
-          registry: ${{ env.IMG_REG_NAME }}
-          username: ${{ secrets.IMG_REG_USERNAME }}
-          password: ${{ secrets.IMG_REG_PASSWORD }}
+#      - uses: mr-smithers-excellent/docker-build-push@v5
+#        name: build-push-docker-image-latest
+#        if: ${{ github.event_name == 'push' && steps.release.outputs.tag == 'master'  }}
+#        with:
+#          image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
+#          tags: master, latest
+#          registry: ${{ env.IMG_REG_NAME }}
+#          username: ${{ secrets.IMG_REG_USERNAME }}
+#          password: ${{ secrets.IMG_REG_PASSWORD }}
       # Build and push docker release to quay.io when the event is a 'release'
       - uses: mr-smithers-excellent/docker-build-push@v5
         name: build-push-docker-image-release
@@ -86,13 +90,21 @@ jobs:
     needs: build-docker-image
     name: update-xcube-tag
     steps:
+      - name: Get installation token
+        id: get_installation_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.TOKEN_PROVIDER_APP_ID }}
+          private_key: ${{ secrets.TOKEN_PROVIDER_KEY }}
+          repository: bc-org/k8s-configs
+          # the installationId of the GitHub app we are using
+          installationId: 36950178
       - name: git-checkout
         uses: actions/checkout@v2
-      - uses: actions/checkout@v2
-        with:
-          repository: bc-org/k8s-configs
-          token: ${{ secrets.API_TOKEN_GITHUB }}
-          path: k8s
+      - name: checkout-k8s
+        run: |
+          git clone https://x-access-token:${{ steps.get_installation_token.outputs.token }}@github.com/bc-org/k8s-configs.git
+          mv k8s-configs k8s
       - name: get-release-tag
         id: release
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
@@ -138,13 +150,10 @@ jobs:
       - name: Pushes to another repository
         # Don't run if run locally and should be ignored
         if: ${{ steps.deployment-phase.outputs.phase != 'ignore' && !env.ACT }}
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
-        with:
-          source-directory: 'k8s'
-          destination-github-username: 'bc-org'
-          destination-repository-name: 'k8s-configs'
-          user-email: bcdev@brockmann-consult.de
-          target-branch: main
-          commit-message: ${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }} and ${{ steps.release.outputs.hash }}
+        run: |
+          cd ./k8s
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "${{ github.event.release }}. Set version to ${{ steps.release.outputs.tag }}."
+          git remote set-url origin https://x-access-token:${{ steps.get_installation_token.outputs.token }}@github.com/bc-org/k8s-configs.git
+          git push origin main

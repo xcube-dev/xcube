@@ -19,6 +19,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import json
 import unittest
 from typing import Optional
 
@@ -135,107 +136,114 @@ class ServerTest(unittest.TestCase):
             },
             extension_registry=extension_registry
         )
-        self.assertEqual(
-            {
-                'type': 'object',
-                'additionalProperties': True,
-                'required': ['data_stores'],
-                'properties': {
-                    'api_spec': {
+        expected = {
+            'type': 'object',
+            'additionalProperties': True,
+            'required': ['data_stores'],
+            'properties': {
+                'api_spec': {
+                    'type': 'object',
+                    'title': 'API specification',
+                    'additionalProperties': False,
+                    'description': 'selected = (includes | ALL) - '
+                                   '(excludes | NONE)',
+                    'properties': {
+                        'excludes': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'string',
+                                'minLength': 1,
+                            },
+                        },
+                        'includes': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'string',
+                                'minLength': 1,
+                            },
+                        }
+                    },
+                },
+                'base_dir': {
+                    'type': 'string',
+                    'title': 'Base directory used to resolve relative '
+                             'local paths. Can be a local filesystem '
+                             'path or an absolute URL.',
+                },
+                'address': {
+                    'type': 'string',
+                    'default': '0.0.0.0',
+                    'title': 'Server address.',
+                },
+                'port': {
+                    'type': 'integer',
+                    'title': 'Server port.',
+                    'default': 8080,
+                },
+                'url_prefix': {
+                    'type': 'string',
+                    'title': 'Prefix to be prepended to all URL '
+                             'route paths. Can be an '
+                             'absolute URL or a relative URL '
+                             'path.',
+                },
+                'reverse_url_prefix': {
+                    'type': 'string',
+                    'title': 'Prefix to be prepended to '
+                             'reverse URL paths returned by '
+                             'server responses. Can be an '
+                             'absolute URL or a relative URL '
+                             'path.',
+                },
+                'static_routes': {
+                    'type': 'array',
+                    'title': 'Static content routes',
+                    'items': {
                         'type': 'object',
-                        'title': 'API specification',
-                        'additionalProperties': False,
-                        'description': 'selected = (includes | ALL) - '
-                                       '(excludes | NONE)',
+                        'required': ['path', 'dir_path'],
                         'properties': {
-                            'excludes': {
-                                'type': 'array',
-                                'items': {
-                                    'type': 'string',
-                                    'minLength': 1,
-                                },
+                            'path': {
+                                'type': 'string',
+                                'minLength': 1,
+                                'title': 'The URL path',
                             },
-                            'includes': {
-                                'type': 'array',
-                                'items': {
-                                    'type': 'string',
-                                    'minLength': 1,
-                                },
-                            }
-                        },
-                    },
-                    'base_dir': {
-                        'type': 'string',
-                        'title': 'Base directory used to resolve relative '
-                                 'local paths.',
-                    },
-                    'address': {
-                        'type': 'string',
-                        'default': '0.0.0.0',
-                        'title': 'Server address.',
-                    },
-                    'port': {
-                        'type': 'integer',
-                        'title': 'Server port.',
-                        'default': 8080,
-                    },
-                    'url_prefix': {
-                        'type': 'string',
-                        'title': 'Prefix to be prepended to all URL '
-                                 'route paths.',
-                    },
-                    'reverse_url_prefix': {
-                        'type': 'string',
-                        'title': 'Prefix to be prepended to '
-                                 'reverse URL paths returned by '
-                                 'server responses.',
-                    },
-                    'static_routes': {
-                        'type': 'array',
-                        'title': 'Static content routes',
-                        'items': {
-                            'type': 'object',
-                            'required': ['path', 'dir_path'],
-                            'properties': {
-                                'path': {
-                                    'type': 'string',
-                                    'minLength': 1,
-                                    'title': 'The URL path',
-                                },
-                                'dir_path': {
-                                    'type': 'string',
-                                    'minLength': 1,
-                                    'title': 'A local directory path',
-                                },
-                                'default_filename': {
-                                    'type': 'string',
-                                    'examples': ['index.html'],
-                                    'minLength': 1,
-                                    'title': 'Optional default filename',
-                                },
-                                'openapi_metadata': {
-                                    'type': 'object',
-                                    'additionalProperties': True,
-                                    'title': 'Optional OpenAPI operation '
-                                             'metadata',
-                                },
+                            'dir_path': {
+                                'type': 'string',
+                                'minLength': 1,
+                                'title': 'A local directory path',
                             },
-                            'additionalProperties': False,
+                            'default_filename': {
+                                'type': 'string',
+                                'examples': ['index.html'],
+                                'minLength': 1,
+                                'title': 'Optional default filename',
+                            },
+                            'openapi_metadata': {
+                                'type': 'object',
+                                'properties': {},
+                                'additionalProperties': True,
+                                'title': 'Optional OpenAPI operation '
+                                         'metadata',
+                            },
                         },
+                        'additionalProperties': False,
                     },
-                    'trace_perf': {
-                        'type': 'boolean',
-                        'title': 'Output performance measures',
-                    },
-                    'data_stores': {
-                        'type': 'array',
-                        'items': {'additionalProperties': True,
-                                  'type': 'object'},
+                },
+                'trace_perf': {
+                    'type': 'boolean',
+                    'title': 'Output performance measures',
+                },
+                'data_stores': {
+                    'type': 'array',
+                    'items': {
+                        'properties': {},
+                        'additionalProperties': True,
+                        'type': 'object'
                     },
                 },
             },
-            server.config_schema.to_dict()
-        )
+        }
+        self.assertEqual(expected, server.config_schema.to_dict())
         self.assertIsInstance(server.config_schema, JsonObjectSchema)
 
     def test_config_schema_must_be_object(self):

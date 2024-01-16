@@ -1,67 +1,79 @@
-ARG MINICONDA_VERSION=latest
+# For micromamba image documentation,
+# goto https://hub.docker.com/r/mambaorg/micromamba
+ARG MICROMAMBA_VERSION=1.3.1
+FROM mambaorg/micromamba:${MICROMAMBA_VERSION}
 
-FROM continuumio/miniconda3:${MINICONDA_VERSION}
+ARG NEW_MAMBA_USER=xcube
+ARG NEW_MAMBA_USER_ID=1000
+ARG NEW_MAMBA_USER_GID=1000
 
-ARG INSTALL_PLUGINS=1
-ARG XCUBE_USER_NAME=xcube
+ARG INSTALL_PLUGINS=0
+
 ENV XCUBE_SH_VERSION=latest
 ENV XCUBE_CCI_VERSION=latest
 ENV XCUBE_CDS_VERSION=latest
 ENV XCUBE_CMEMS_VERSION=latest
 
-# Metadata
 LABEL maintainer="xcube-team@brockmann-consult.de"
 LABEL name=xcube
-LABEL conda_env=xcube
 
-# Ensure usage of bash (ensures conda calls succeed)
-SHELL ["/bin/bash", "-c"]
-
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 USER root
-# Update system for security checks
-RUN apt-get -y update && apt-get -y upgrade vim jq curl
 
-SHELL ["/bin/bash", "-c"]
-RUN groupadd -g 1000 ${XCUBE_USER_NAME}
-RUN useradd -u 1000 -g 1000 -ms /bin/bash ${XCUBE_USER_NAME}
-RUN mkdir /workspace && chown ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /workspace
-RUN chown -R ${XCUBE_USER_NAME}:${XCUBE_USER_NAME} /opt/conda
+# Update system and ensure that basic commands are available.
+RUN apt-get -y update && \
+    apt-get -y upgrade vim jq curl wget && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-USER ${XCUBE_USER_NAME}
+# Magic taken from https://hub.docker.com/r/mambaorg/micromamba,
+# section "Changing the user id or name"
+RUN usermod "--login=${NEW_MAMBA_USER}" "--home=/home/${NEW_MAMBA_USER}" \
+        --move-home "-u ${NEW_MAMBA_USER_ID}" "${MAMBA_USER}" && \
+    groupmod "--new-name=${NEW_MAMBA_USER}" \
+             "-g ${NEW_MAMBA_USER_GID}" "${MAMBA_USER}" && \
+    # Update the expected value of MAMBA_USER for the
+    # _entrypoint.sh consistency check.
+    echo "${NEW_MAMBA_USER}" > "/etc/arg_mamba_user" && \
+    :
 
-RUN source activate base && conda update -n base conda && conda init
-RUN source activate base && conda install -n base -c conda-forge mamba==0.24.0 pip=21.3.1
+ENV MAMBA_USER=$NEW_MAMBA_USER
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-# Setup conda environment
-# Copy yml config into image
-COPY environment.yml /tmp/environment.yml
+USER $MAMBA_USER
 
-# Use mamba to create an environment based on the specifications in
-# environment.yml. 
-RUN mamba env create --file /tmp/environment.yml
+# Install xcube dependencies
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/environment.yml
+RUN micromamba install -y -n base -f /tmp/environment.yml \
+    && micromamba clean --all --yes
 
-# Set work directory for xcube installation
-WORKDIR /home/xcube
+# Copy files for xcube source install
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./xcube /tmp/xcube
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./setup.py /tmp/setup.py
 
-# Copy sources into xcube
-COPY . ./
-
-# Setup xcube package.
-RUN source activate xcube && python setup.py install
-
+# Switch into /tmp to install xcube.
 WORKDIR /tmp
-ADD scripts/install_xcube.sh ./
 
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-sh ${XCUBE_SH_VERSION} release; fi;
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
-RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install_xcube.sh xcube-cmems ${XCUBE_CMEMS_VERSION} release; fi;
+# Required to activate env during image build.
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
-# Export web server port
-EXPOSE 8080
+# Install xcube from source.
+RUN python setup.py install
 
-# Run bash in xcube environment, so we can invoke xcube CLI.
-ENTRYPOINT ["conda", "run", "-v", "-n", "xcube", "/bin/bash", "-c"]
+# Install our known xcube plugins.
+COPY --chown=$MAMBA_USER:$MAMBA_USER docker/install-xcube-plugin.sh ./
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-sh ${XCUBE_SH_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cci ${XCUBE_CCI_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cds ${XCUBE_CDS_VERSION} release; fi;
+RUN if [[ ${INSTALL_PLUGINS} == '1' ]]; then bash install-xcube-plugin.sh xcube-cmems ${XCUBE_CMEMS_VERSION} release; fi;
 
-# By default show xcube help 
-CMD ["xcube --help"]
+RUN micromamba clean --all --force-pkgs-dirs --yes
+
+WORKDIR /home/$MAMBA_USER
+
+# The micromamba entrypoint.
+# Allows us to run container as an executable with
+# base environment activated.
+ENTRYPOINT ["/usr/local/bin/_entrypoint.sh"]
+
+# Default command (shell form)
+CMD xcube --help

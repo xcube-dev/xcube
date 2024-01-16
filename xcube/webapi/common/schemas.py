@@ -32,12 +32,23 @@ CHUNK_SIZE_SCHEMA = JsonStringSchema(min_length=2)  # TODO: use pattern
 STRING_SCHEMA = JsonStringSchema()
 PATH_SCHEMA = JsonStringSchema(min_length=1)
 
-BOUNDING_BOX_SCHEMA = JsonArraySchema(items=[
+BOUNDING_BOX_ITEMS = [
     NUMBER_SCHEMA,
     NUMBER_SCHEMA,
     NUMBER_SCHEMA,
     NUMBER_SCHEMA
-])
+]
+
+BOUNDING_BOX_SCHEMA = JsonArraySchema(
+    items=BOUNDING_BOX_ITEMS,
+    description="Spatial bounding box given as [x-min, y-min, x-max, y-max]."
+)
+
+GEO_BOUNDING_BOX_SCHEMA = JsonArraySchema(
+    items=BOUNDING_BOX_ITEMS,
+    description="Spatial bounding box given as [x-min, y-min, x-max, y-max]"
+                " using geographical coordinates."
+)
 
 FILE_SYSTEM_SCHEMA = JsonStringSchema(
     enum=['memory', 'obs', 'local', 's3', 'file']

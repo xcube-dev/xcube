@@ -256,6 +256,8 @@ class Api(Generic[ServerContextT]):
                   summary: Optional[str] = None,
                   description: Optional[str] = None,
                   parameters: Optional[List[Dict[str, Any]]] = None,
+                  request_body: Optional[Dict[str, Any]] = None,
+                  responses: Optional[Dict[str, Dict]] = None,
                   tags: Optional[str] = None,
                   **kwargs):
         """
@@ -263,15 +265,30 @@ class Api(Generic[ServerContextT]):
         API handler's operation,
         i.e. one of the get, post, put, delete, or options methods.
 
-        :return: A decorator function that receives a
-            and returns an ApiHandler's operation.
+        :param operation_id: a string identifier for the operation
+        :param summary: a summary of the operation
+        :param description: A description of the operation. CommonMark syntax
+                            may be used.
+        :param parameters: List of dictionaries, one per parameter, defining
+                           OpenAPI Parameter objects
+        :param request_body: A dictionary defining an OpenAPI Request Body
+                             object
+        :param responses: A dictionary defining an OpenAPI Responses object
+        :param tags: OpenAPI tags
+        :param kwargs: OpenAPI parameters
+
+        :return: A decorator function that receives and returns an
+                 ApiHandler's operation.
         """
         openapi = {
             "operationId": operation_id or kwargs.pop("operationId", None),
             "summary": summary,
             "description": description,
             "parameters": parameters,
+            "requestBody": request_body or kwargs.pop("requestBody", None),
+            "responses": responses,
             "tags": tags,
+            **kwargs
         }
         openapi = {k: v for k, v in openapi.items() if v is not None}
 
@@ -341,6 +358,16 @@ class Api(Generic[ServerContextT]):
         :param server_ctx: The server's current context
         """
         return self._on_stop(server_ctx)
+
+    def endpoints(self) -> list[dict[str, Union[str, list[str]]]]:
+        """Describe endpoints provided by this API
+
+        Returns a list of dictionaries of the form
+        {'path': '/some/path', 'methods': ['get', 'post']}
+
+        :return: a list of dictionaries, each describing an endpoint
+        """
+        return [route.path_and_methods() for route in self.routes]
 
     def _handle_event(self, server_ctx: "Context"):
         """Do nothing."""
@@ -593,11 +620,15 @@ class ApiResponse(ABC):
         """Set the HTTP header *name* to given *value*."""
 
     @abstractmethod
-    def write(self, data: Union[str, bytes, JSON]):
+    def write(self, 
+              data: Union[str, bytes, JSON],
+              content_type: Optional[str] = None):
         """Write data."""
 
     @abstractmethod
-    def finish(self, data: Union[str, bytes, JSON] = None):
+    def finish(self, 
+               data: Union[str, bytes, JSON] = None,
+               content_type: Optional[str] = None):
         """Finish the response (and submit it)."""
 
 
@@ -639,6 +670,21 @@ class ApiHandler(Generic[ServerContextT], ABC):
     def response(self) -> ApiResponse:
         """The response that provides the handler's output."""
         return self._response
+
+    @classmethod
+    def defined_methods(cls) -> list[str]:
+        """List the methods handled by this handler
+
+        Any method with an __openapi__ attribute is assumed to be
+        handled.
+
+        :return: a list of the method names handled by this handler
+        """
+        return [
+            name
+            for name in ['head', 'get', 'post', 'put', 'delete', 'options']
+            if hasattr(getattr(cls, name), '__openapi__')
+        ]
 
     # HTTP methods
 
@@ -726,6 +772,19 @@ class ApiRoute:
             args += f", handler_kwargs={self.handler_kwargs!r}"
         return f"ApiRoute({args})"
 
+    def path_and_methods(self) -> dict[str, Union[str, list[str]]]:
+        """Describe the path and methods of this route
+
+        Returns a dictionary of the form
+        {'path': '/this/routes/path', 'methods': ['get', 'post']}
+
+        :return: a dictionary describing this route
+        """
+        return {
+            'path': self.path,
+            'methods': self.handler_cls.defined_methods()
+        }
+
 
 class ApiStaticRoute:
     """
@@ -747,7 +806,7 @@ class ApiStaticRoute:
         assert_instance(path, str, name="path")
         assert_instance(dir_path, str, name="dir_path")
         assert_true(os.path.abspath(dir_path),
-                    message="dir_path must be an absolute path")
+                    message="dir_path must be an absolute local path")
         assert_instance(default_filename, (type(None), str),
                         name="default_filename")
         assert_instance(api_name, (type(None), str),
@@ -783,9 +842,11 @@ class ApiError(Exception):
     MethodNotAllowed: Type["_DerivedApiError"]
     Conflict: Type["_DerivedApiError"]
     Gone: Type["_DerivedApiError"]
+    ContentTooLarge: Type["_DerivedApiError"]
     InternalServerError: Type["_DerivedApiError"]
     NotImplemented: Type["_DerivedApiError"]
     InvalidServerConfig: Type["_DerivedApiError"]
+    UnsupportedMediaType: Type["_DerivedApiError"]
 
     @property
     def status_code(self) -> int:
@@ -842,6 +903,16 @@ class _Gone(ApiError):
         super().__init__(410, message=message)
 
 
+class _ContentTooLarge(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(413, message=message)
+
+
+class _UnsupportedMediaType(ApiError):
+    def __init__(self, message: Optional[str] = None):
+        super().__init__(415, message=message)
+
+
 class _InternalServerError(ApiError):
     def __init__(self, message: Optional[str] = None):
         super().__init__(500, message=message)
@@ -862,8 +933,10 @@ ApiError.Unauthorized = _Unauthorized
 ApiError.Forbidden = _Forbidden
 ApiError.NotFound = _NotFound
 ApiError.MethodNotAllowed = _MethodNotAllowed
+ApiError.UnsupportedMediaType = _UnsupportedMediaType
 ApiError.Conflict = _Conflict
 ApiError.Gone = _Gone
 ApiError.InternalServerError = _InternalServerError
 ApiError.NotImplemented = _NotImplemented
 ApiError.InvalidServerConfig = _InvalidServerConfig
+ApiError.ContentTooLarge = _ContentTooLarge

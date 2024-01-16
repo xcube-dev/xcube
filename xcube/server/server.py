@@ -22,7 +22,6 @@
 import collections.abc
 import concurrent.futures
 import copy
-import os.path
 from typing import (Optional, Dict, Any, Union,
                     Callable, Sequence, Awaitable, Tuple, Type, List, Mapping)
 
@@ -47,6 +46,7 @@ from .api import ServerConfig
 from .asyncexec import AsyncExecution
 from .config import BASE_SERVER_CONFIG_SCHEMA
 from .config import get_url_prefix
+from .config import resolve_config_path
 from .framework import Framework
 from ..util.frozen import FrozenDict
 
@@ -97,8 +97,8 @@ class Server(AsyncExecution):
         static_routes.extend(self._collect_api_static_routes(apis))
         routes = self._collect_api_routes(apis)
         url_prefix = get_url_prefix(config)
-        framework.add_static_routes(static_routes, url_prefix)
         framework.add_routes(routes, url_prefix)
+        framework.add_static_routes(static_routes, url_prefix)
         self._framework = framework
         self._apis = apis
         self._config_schema = self.get_effective_config_schema(
@@ -268,14 +268,12 @@ class Server(AsyncExecution):
     def _collect_static_routes(cls, config: collections.abc.Mapping) \
             -> List[ApiStaticRoute]:
         static_routes = config.get('static_routes', [])
-        base_dir = config.get('base_dir', os.path.abspath(""))
         api_static_routes = []
         for static_route in static_routes:
             params = dict(**static_route)
             dir_path = params.get("dir_path")
             if dir_path is not None:
-                if not os.path.isabs(dir_path):
-                    dir_path = os.path.join(base_dir, dir_path)
+                dir_path = resolve_config_path(config, dir_path)
                 params["dir_path"] = dir_path
             try:
                 api_static_route = ApiStaticRoute(**params)
@@ -426,15 +424,21 @@ class Server(AsyncExecution):
                                "options"):
                     fn = getattr(route.handler_cls, method, None)
                     openapi_metadata = getattr(fn, '__openapi__', None)
-                    if openapi_metadata is not None:
-                        openapi_metadata = dict(**openapi_metadata)
+                    if isinstance(openapi_metadata, dict):
+                        openapi_metadata = openapi_metadata.copy()
                         if 'tags' not in openapi_metadata:
                             openapi_metadata['tags'] = [api.name]
                         if 'description' not in openapi_metadata:
                             openapi_metadata['description'] = \
                                 getattr(fn, "__doc__", None) or ""
-                        if 'responses' not in openapi_metadata:
-                            openapi_metadata['responses'] = default_responses
+                        responses = openapi_metadata.get("responses")
+                        if responses is None:
+                            responses = default_responses.copy()
+                        elif isinstance(responses, dict):
+                            _responses = default_responses.copy()
+                            _responses.update(responses)
+                            responses = _responses
+                        openapi_metadata['responses'] = responses
                         path[method] = dict(**openapi_metadata)
                 paths[route.path] = path
             for route in api.static_routes:

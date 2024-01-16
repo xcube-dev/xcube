@@ -37,6 +37,7 @@ from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_variables_subset
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.util.assertions import assert_instance
+from xcube.constants import CRS_CRS84
 
 Date = Union[np.datetime64, str]
 
@@ -58,8 +59,6 @@ AGG_METHODS = {
     AGG_MAX: CAN_COMPUTE,
     AGG_COUNT: CAN_COMPUTE
 }
-
-_CRS84 = pyproj.CRS.from_string('CRS84')
 
 
 def get_time_series(
@@ -123,7 +122,7 @@ def get_time_series(
 
     geometry = normalize_geometry(geometry)
     if geometry is not None and not grid_mapping.crs.is_geographic:
-        project = pyproj.Transformer.from_crs(_CRS84,
+        project = pyproj.Transformer.from_crs(CRS_CRS84,
                                               grid_mapping.crs,
                                               always_xy=True).transform
         geometry = shapely.ops.transform(project, geometry)
@@ -133,10 +132,9 @@ def get_time_series(
         return None
 
     if start_date is not None or end_date is not None:
-        safe_start_date, safe_end_date = \
-            ensure_time_index_compatible(dataset, (start_date, end_date))
-        # noinspection PyTypeChecker
-        dataset = dataset.sel(time=slice(safe_start_date, safe_end_date))
+        date_slice = slice(start_date, end_date)
+        safe_slice = ensure_time_index_compatible(dataset, date_slice)
+        dataset = dataset.sel(time=safe_slice)
 
     x_name, y_name = grid_mapping.xy_dim_names
     if isinstance(geometry, shapely.geometry.Point):

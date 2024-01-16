@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
+
 from typing import Sequence, Tuple
 from typing import Type, List
 from typing import Union
@@ -43,6 +45,7 @@ class DataType:
     to the Python data type ``xarray.Dataset```.
     """
 
+    _READTHEDOCS = os.environ.get("READTHEDOCS") == 'True'
     _REGISTERED_DATA_TYPES: List['DataType'] = []
 
     @classmethod
@@ -57,7 +60,9 @@ class DataType:
         :param dtype: The Python data type.
         :param alias: An alias name or list of aliases.
         """
-        assert_instance(dtype, type, name='dtype')
+        assert_instance(dtype,
+                        type if not self._READTHEDOCS else object,
+                        name='dtype')
         if alias is not None:
             assert_instance(alias, (str, tuple, list), name='alias')
         self._dtype = dtype

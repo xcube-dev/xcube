@@ -1,0 +1,188 @@
+{
+  "id": "demo",
+  "type": "CoverageByDomainAndRange",
+  "envelope": {
+    "type": "EnvelopeByAxis",
+    "srsName": "EPSG:4326",
+    "axisLabels": [
+      "lat",
+      "bnds",
+      "lon",
+      "time"
+    ],
+    "axis": [
+      {
+        "type": "RegularAxis",
+        "axisLabel": "lat",
+        "lowerBound": 52.49875,
+        "upperBound": 50.00125,
+        "resolution": 0.0024975000000000023,
+        "uomLabel": "degrees_north"
+      },
+      {
+        "type": "RegularAxis",
+        "axisLabel": "bnds",
+        "lowerBound": 0,
+        "upperBound": 1,
+        "resolution": 0.5,
+        "uomLabel": "unknown"
+      },
+      {
+        "type": "RegularAxis",
+        "axisLabel": "lon",
+        "lowerBound": 0.00125,
+        "upperBound": 4.99875,
+        "resolution": 0.00249875,
+        "uomLabel": "degrees_east"
+      },
+      {
+        "type": "RegularAxis",
+        "axisLabel": "time",
+        "lowerBound": "2017-01-16T10:09:21.834255872",
+        "upperBound": "2017-01-30T10:46:33.836892416",
+        "resolution": 242366400527308.8,
+        "uomLabel": "ns"
+      }
+    ]
+  },
+  "domainSet": {
+    "type": "DomainSet",
+    "generalGrid": {
+      "type": "GeneralGridCoverage",
+      "srsName": "EPSG:4326",
+      "axisLabels": [
+        "lat",
+        "bnds",
+        "lon",
+        "time"
+      ],
+      "axis": [
+        {
+          "type": "RegularAxis",
+          "axisLabel": "lat",
+          "lowerBound": 52.49875,
+          "upperBound": 50.00125,
+          "resolution": 0.0024975000000000023,
+          "uomLabel": "degrees_north"
+        },
+        {
+          "type": "RegularAxis",
+          "axisLabel": "bnds",
+          "lowerBound": 0,
+          "upperBound": 1,
+          "resolution": 0.5,
+          "uomLabel": "unknown"
+        },
+        {
+          "type": "RegularAxis",
+          "axisLabel": "lon",
+          "lowerBound": 0.00125,
+          "upperBound": 4.99875,
+          "resolution": 0.00249875,
+          "uomLabel": "degrees_east"
+        },
+        {
+          "type": "RegularAxis",
+          "axisLabel": "time",
+          "lowerBound": "2017-01-16T10:09:21.834255872",
+          "upperBound": "2017-01-30T10:46:33.836892416",
+          "resolution": 242366400527308.8,
+          "uomLabel": "ns"
+        }
+      ],
+      "gridLimits": {
+        "type": "GridLimits",
+        "srsName": "http://www.opengis.net/def/crs/OGC/0/Index4D",
+        "axisLabels": [
+          "lat",
+          "bnds",
+          "lon",
+          "time"
+        ],
+        "axis": [
+          {
+            "type": "IndexAxis",
+            "axisLabel": "lat",
+            "lowerBound": 0,
+            "upperBound": 1000
+          },
+          {
+            "type": "IndexAxis",
+            "axisLabel": "bnds",
+            "lowerBound": 0,
+            "upperBound": 2
+          },
+          {
+            "type": "IndexAxis",
+            "axisLabel": "lon",
+            "lowerBound": 0,
+            "upperBound": 2000
+          },
+          {
+            "type": "IndexAxis",
+            "axisLabel": "time",
+            "lowerBound": 0,
+            "upperBound": 5
+          }
+        ]
+      }
+    }
+  },
+  "rangeSet": {
+    "type": "RangeSet",
+    "dataBlock": {
+      "type": "VDataBlock",
+      "values": [
+        "TODO"
+      ]
+    }
+  },
+  "rangeType": {
+    "type": "DataRecord",
+    "field": [
+      {
+        "type": "Quantity",
+        "name": "c2rcc_flags",
+        "description": "C2RCC quality flags",
+        "encodingInfo": {
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
+        }
+      },
+      {
+        "type": "Quantity",
+        "name": "conc_chl",
+        "description": "Chlorophyll concentration",
+        "encodingInfo": {
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
+        }
+      },
+      {
+        "type": "Quantity",
+        "name": "conc_tsm",
+        "description": "Total suspended matter dry weight concentration",
+        "encodingInfo": {
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
+        }
+      },
+      {
+        "type": "Quantity",
+        "name": "kd489",
+        "description": "Irradiance attenuation coefficient at 489 nm",
+        "encodingInfo": {
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
+        }
+      },
+      {
+        "type": "Quantity",
+        "name": "quality_flags",
+        "description": "Classification and quality flags",
+        "encodingInfo": {
+          "dataType": "http://www.opengis.net/def/dataType/OGC/0/float64"
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "Conventions": "CF-1.7"
+  }
+}

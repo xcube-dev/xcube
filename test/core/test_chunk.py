@@ -1,4 +1,4 @@
-import collections
+import collections.abc
 import unittest
 
 import numpy as np
@@ -90,7 +90,7 @@ class GetEmptyDatasetChunksTest(unittest.TestCase):
                                    precipitation=0.4,
                                    temperature=275.2)
         empty_dataset_chunks = get_empty_dataset_chunks(dataset)
-        self.assertIsInstance(empty_dataset_chunks, collections.Iterator)
+        self.assertIsInstance(empty_dataset_chunks, collections.abc.Iterator)
         self.assertFalse(isinstance(empty_dataset_chunks, (list, tuple)))
         self.assertEqual([('precipitation', ()),
                           ('temperature', ())],
@@ -102,7 +102,7 @@ class GetEmptyDatasetChunksTest(unittest.TestCase):
                                    temperature=275.2) \
             .chunk(dict(time=1, lat=90, lon=90))
         empty_dataset_chunks = get_empty_dataset_chunks(dataset)
-        self.assertIsInstance(empty_dataset_chunks, collections.Iterator)
+        self.assertIsInstance(empty_dataset_chunks, collections.abc.Iterator)
         self.assertFalse(isinstance(empty_dataset_chunks, (list, tuple)))
         self.assertEqual([('precipitation', ()),
                           ('temperature', ())],
@@ -114,7 +114,7 @@ class GetEmptyDatasetChunksTest(unittest.TestCase):
                                    temperature=np.nan) \
             .chunk(dict(time=1, lat=90, lon=90))
         empty_dataset_chunks = get_empty_dataset_chunks(dataset)
-        self.assertIsInstance(empty_dataset_chunks, collections.Iterator)
+        self.assertIsInstance(empty_dataset_chunks, collections.abc.Iterator)
         self.assertFalse(isinstance(empty_dataset_chunks, (list, tuple)))
         self.assertEqual([('precipitation', ((0, 0, 0),
                                              (0, 0, 1),

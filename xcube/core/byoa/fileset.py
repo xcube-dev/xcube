@@ -27,6 +27,7 @@ from typing import Any, Dict, Optional, List, Collection, Iterator, Union
 
 import fsspec
 import fsspec.implementations.zip
+from fsspec.implementations.local import LocalFileSystem
 
 from xcube.core.byoa.constants import TEMP_FILE_PREFIX
 from xcube.util.assertions import assert_given
@@ -66,7 +67,9 @@ class _FileSetDetails:
                                              **(storage_params or {}))
         except (ImportError, OSError) as e:
             raise ValueError(f'Illegal file set {path!r}') from e
-        local_path = root if fs.protocol == 'file' else None
+        local_path = root \
+            if 'file' in fs.protocol or isinstance(fs, LocalFileSystem) \
+            else None
         return _FileSetDetails(fs, root, local_path)
 
     @property
@@ -249,24 +252,53 @@ class FileSet(JsonObject):
         fs, root = details.fs, details.root
 
         url_path = fsspec.core.strip_protocol(self.path)
-        suffix = ''
-        for suffix in reversed(url_path.split('/')):
-            if suffix != '':
+        temp_file_suffix = ''
+        for temp_file_suffix in reversed(url_path.split('/')):
+            if temp_file_suffix != '':
                 break
 
-        if root.endswith('/'):
+        if fs.isdir(root):
             temp_dir = new_temp_dir(prefix=TEMP_FILE_PREFIX,
-                                    suffix=suffix)
-            # TODO: replace by loop so we can apply includes/excludes
-            #   before downloading actual files. See impl of fs.get().
-            fs.get(root, temp_dir + "/", recursive=True)
+                                    suffix=temp_file_suffix)
+
+            # Note, actually want to use
+            #    fs.get(root + "/*", temp_dir, recursive=True)
+            # here, but fs.get() behaves unpredictably with
+            # fsspec=2023.3.0 and s3fs=2023.3.0.
+            # Sometimes it will create a new subdirectory in temp_dir
+            # named after last path element of root, sometimes not.
+            # Behaviour randomly changes if
+            #   - temp_dir exists or not
+            #   - root or temp_dir paths end with a slash
+            #   - whether root or temp_dir are absolute path or not.
+            #
+            # See https://github.com/dcs4cop/xcube/issues/828
+            #
+            # Workaround used here is to manually download the directory.
+
+            def get_files(source: str, target: str):
+                source_items = fs.listdir(source, detail=True)
+                for source_item in source_items:
+                    source_path = source_item["name"]
+                    source_type = source_item["type"]
+                    source_name = source_path.replace("\\", "/") \
+                        .split("/")[-1]
+                    target_path = os.path.join(target, source_name)
+                    if source_type == "file":
+                        fs.get_file(source_path, target_path)
+                    elif source_type == "directory":
+                        os.mkdir(target_path)
+                        get_files(source_path, target_path)
+
+            get_files(root, temp_dir)
+
             return FileSet(temp_dir,
                            sub_path=self.sub_path,
                            includes=self.includes,
                            excludes=self.excludes)
         else:
             _, temp_file = new_temp_file(prefix=TEMP_FILE_PREFIX,
-                                         suffix=suffix)
+                                         suffix=temp_file_suffix)
             fs.get_file(root, temp_file)
             return FileSet(temp_file,
                            sub_path=self.sub_path,

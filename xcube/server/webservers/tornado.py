@@ -426,27 +426,27 @@ class TornadoApiRequest(ApiRequest):
                      path: str,
                      query: Optional[str] = None,
                      reverse: bool = False) -> str:
-        """Get the reverse URL for given *path* and *query*."""
-
-        # TODO (forman): in some cases, e.g.,
-        #   when running a tornado server (such as xcube server)
-        #   next to a remote Jupyter Server,
-        #   the URL reported by this implementation is wrong.
-        #   For example with reverse prefix "/proxy/8000", we expect
-        #       https://{host}/users/{user}/proxy/8000/{path}
-        #   but we get
-        #       http://{host}/proxy/8000/{path}
-        #   Also note, that protocol degraded from HTTPS to HTTP!
-        #
-        protocol = self._request.protocol
-        host = self._request.host
-        prefix = self._reverse_url_prefix if reverse else self._url_prefix
+        """Get the URL for given *path* and *query*.
+        If the *reverse* flag is set, the configuration parameter
+        ``reverse_url_prefix``, if provided, is used to construct the URL,
+        otherwise only ``url_prefix``, if provided, is used.
+        """
+        prefix = self._url_prefix
+        if reverse:
+            prefix = self._reverse_url_prefix or prefix
         uri = ""
         if path:
             uri = path if path.startswith("/") else "/" + path
         if query:
             uri += "?" + query
-        return f"{protocol}://{host}{prefix}{uri}"
+        if "://" in prefix:
+            # Absolute prefix
+            return f"{prefix}{uri}"
+        else:
+            # Relative prefix
+            protocol = self._request.protocol
+            host = self._request.host
+            return f"{protocol}://{host}{prefix}{uri}"
 
     @property
     def url(self) -> str:
@@ -480,9 +480,22 @@ class TornadoApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
         self._handler.set_status(status_code, reason=reason)
 
-    def write(self, data: Union[str, bytes, JSON]):
-        self._handler.write(data)
+    def write(self, 
+              data: Union[str, bytes, JSON],
+              content_type: Optional[str] = None):
+        if data is not None:
+            self._handler.write(data)
+        # https://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
+        # "If the given chunk is a dictionary, we write it as JSON and set the
+        # Content-Type of the response to be application/json. (if you want to
+        # send JSON as a different Content-Type, call set_header after calling
+        # write())."
+        if content_type is not None:
+            self._handler.set_header('Content-Type', content_type)
 
-    def finish(self, data: Union[str, bytes, JSON] = None):
-        return self._handler.finish(data)
+    def finish(self, 
+               data: Union[str, bytes, JSON] = None,
+               content_type: Optional[str] = None):
+        self.write(data, content_type)
+        return self._handler.finish()
 

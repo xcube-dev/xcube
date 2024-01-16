@@ -91,7 +91,9 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
 _FS_STORAGE_ITEMS = (
     ('file', 'local filesystem'),
     ('s3', 'AWS S3 compatible object storage'),
-    ('memory', 'in-memory filesystem')
+    ('abfs', 'Azure blob compatible object storage'),
+    ('memory', 'in-memory filesystem'),
+    ('ftp', 'FTP filesystem')
 )
 
 _FS_DATA_ACCESSOR_ITEMS = (
@@ -184,7 +186,6 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
         'compute',
         'benchmark',
         'dump',
-        'edit',
         'extract',
         'gen',
         'gen2',
@@ -220,12 +221,15 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
     server_api_names = [
         'meta',
         'auth',
+        'compute',
         'places',
         'styles',
         'datasets',
         'tiles',
         'timeseries',
         'volumes',
+        'ows.coverages',
+        'ows.stac',
         'ows.wmts',
         's3',
         'viewer',
