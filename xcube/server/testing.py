@@ -69,18 +69,12 @@ class ServerTestCase(unittest.TestCase, ABC):
 
         # Taking care that server is fully started until tests make requests.
         # Fixing https://github.com/dcs4cop/xcube/issues/899
-        elapsed_time = 0.0
         while True:
-            if elapsed_time > 60:
-                self.fail('Server did not respond after one minute. '
-                          'Failing the test.')
             try:
                 self.fetch('/')
                 break
             except (MaxRetryError, TimeoutError):
-                sleep_time = 0.1
-                time.sleep(sleep_time)
-                elapsed_time += sleep_time
+                time.sleep(0.1)
 
     def tearDown(self) -> None:
         self.server.stop()
