@@ -67,7 +67,7 @@ class ServerTestCase(unittest.TestCase, ABC):
 
         self.http = urllib3.PoolManager()
 
-        # Taking care that server is fully started until tests make requests.
+        # Taking care that server is fully started before tests make requests.
         # Fixing https://github.com/dcs4cop/xcube/issues/899
         while True:
             try:
