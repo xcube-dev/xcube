@@ -23,6 +23,7 @@ import asyncio
 import json
 import socket
 import threading
+import time
 import unittest
 from abc import ABC
 from contextlib import closing
@@ -30,6 +31,7 @@ from typing import Dict, Optional, Any, Union, Tuple
 
 import urllib3
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+from urllib3.exceptions import MaxRetryError
 
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
@@ -64,6 +66,15 @@ class ServerTestCase(unittest.TestCase, ABC):
         tornado.start()
 
         self.http = urllib3.PoolManager()
+
+        # Taking care that server is fully started before tests make requests.
+        # Fixing https://github.com/dcs4cop/xcube/issues/899
+        while True:
+            try:
+                self.fetch('/')
+                break
+            except (MaxRetryError, TimeoutError):
+                time.sleep(0.1)
 
     def tearDown(self) -> None:
         self.server.stop()
