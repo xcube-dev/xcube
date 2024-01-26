@@ -25,6 +25,10 @@
   * Set Content-Bbox and Content-Crs headers in the HTTP response
   * Support safe CURIE syntax for CRS specification
 
+### Other changes
+
+* Require Python >=3.9 (previously >=3.8)
+
 ## Changes in 1.3.1
 
 * Updated Dockerfile and GitHub workflows; no changes to the xcube codebase
