@@ -10,6 +10,7 @@
     variables
   * Add links to domain set, range type, and range schema to collection
     descriptions
+
 * OGC Coverages:
   * Support scaling parameters `scale-factor`, `scale-axes`, and `scale-size`
   * Improve handling of bbox parameters
@@ -24,6 +25,10 @@
   * Reimplement subsetting (better standards conformance, cleaner code)
   * Set Content-Bbox and Content-Crs headers in the HTTP response
   * Support safe CURIE syntax for CRS specification
+
+* Documented xcube server architecture and added developer 
+  guide for API extensions in 
+  [serverdevguide](docs/source/serverdevguide.md). 
 
 ## Changes in 1.3.1
 
