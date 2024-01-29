@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   # Python
-  - python >=3.8
+  - python >=3.9
   # Required
   - adlfs >=2023.1  # for azure blob filesystem
   - affine >=2.2
