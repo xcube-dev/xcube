@@ -10,7 +10,7 @@
     variables
   * Add links to domain set, range type, and range schema to collection
     descriptions
-* OGC Coverages:
+* OGC API – Coverages:
   * Support scaling parameters `scale-factor`, `scale-axes`, and `scale-size`
   * Improve handling of bbox parameters
   * Handle half-open datetime intervals
@@ -29,6 +29,7 @@
 
 * Make S3 unit tests compatible with moto 5 server (#922)
 * Make some CLI unit tests compatible with pytest 8 (#922)
+* Rename some test classes to avoid spurious warnings (#924)
 
 ### Other changes
 
