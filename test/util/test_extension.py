@@ -129,7 +129,7 @@ class ExtensionRegistryTest(unittest.TestCase):
         self.assertEqual(0, len(result))
 
 
-class TestComponent:
+class _TestComponent:
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -137,32 +137,32 @@ class TestComponent:
 
 class ImportTest(unittest.TestCase):
     def test_import_component(self):
-        loader = import_component('test.util.test_extension:TestComponent')
+        loader = import_component('test.util.test_extension:_TestComponent')
         self.assertTrue(callable(loader))
         extension = Extension('test_point', 'test_component', component='dummy')
         component = loader(extension)
-        self.assertIs(TestComponent, component)
+        self.assertIs(_TestComponent, component)
 
     def test_import_and_transform_component(self):
 
         def transform(imported_component: Any, loaded_extension_: Extension):
             return imported_component(-1, name=loaded_extension_.name)
 
-        loader = import_component('test.util.test_extension:TestComponent',
+        loader = import_component('test.util.test_extension:_TestComponent',
                                   transform=transform)
         self.assertTrue(callable(loader))
         extension = Extension('test_point', 'test_component', component='dummy')
         component = loader(extension)
-        self.assertIsInstance(component, TestComponent)
+        self.assertIsInstance(component, _TestComponent)
         self.assertEqual((-1,), component.args)
         self.assertEqual({'name': 'test_component'}, component.kwargs)
 
     def test_import_component_and_call(self):
-        loader = import_component('test.util.test_extension:TestComponent', call=True, call_args=[42],
+        loader = import_component('test.util.test_extension:_TestComponent', call=True, call_args=[42],
                                   call_kwargs={'help': '!'})
         self.assertTrue(callable(loader))
         extension = Extension('test', 'test', component='x')
         component = loader(extension)
-        self.assertIsInstance(component, TestComponent)
+        self.assertIsInstance(component, _TestComponent)
         self.assertEqual((42,), component.args)
         self.assertEqual({'help': '!'}, component.kwargs)

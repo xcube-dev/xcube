@@ -12,7 +12,7 @@ from xcube.util.progress import observe_dask_progress
 from xcube.util.progress import observe_progress
 
 
-class TestProgressObserver(ProgressObserver):
+class _TestProgressObserver(ProgressObserver):
     def __init__(self, record_errors=False):
         self.record_errors = record_errors
         self.calls = []
@@ -36,7 +36,7 @@ class TestProgressObserver(ProgressObserver):
 class ObserveProgressTest(unittest.TestCase):
 
     def test_observe_progress(self):
-        observer = TestProgressObserver()
+        observer = _TestProgressObserver()
         observer.activate()
 
         with observe_progress('computing', 4) as reporter:
@@ -62,7 +62,7 @@ class ObserveProgressTest(unittest.TestCase):
             observer.calls)
 
     def test_nested_observe_progress(self):
-        observer = TestProgressObserver()
+        observer = _TestProgressObserver()
         observer.deactivate()
         observer.activate()
 
@@ -93,10 +93,10 @@ class ObserveProgressTest(unittest.TestCase):
             observer.calls)
 
     def test_nested_observe_progress_with_new_progress_observers(self):
-        observer = TestProgressObserver()
+        observer = _TestProgressObserver()
         observer.activate()
 
-        nested_observer = TestProgressObserver()
+        nested_observer = _TestProgressObserver()
 
         with observe_progress('computing', 4) as progress_reporter:
             # do something that takes 1 unit
@@ -133,10 +133,10 @@ class ObserveProgressTest(unittest.TestCase):
             nested_observer.calls)
 
     def test_nested_observe_progress_with_add_progress_observers(self):
-        observer = TestProgressObserver()
+        observer = _TestProgressObserver()
         observer.activate()
 
-        nested_observer = TestProgressObserver()
+        nested_observer = _TestProgressObserver()
 
         with observe_progress('computing', 4) as reporter:
             # do something that takes 1 unit
@@ -175,7 +175,7 @@ class ObserveProgressTest(unittest.TestCase):
             nested_observer.calls)
 
     def test_nested_observe_progress_with_exception(self):
-        observer = TestProgressObserver(record_errors=True)
+        observer = _TestProgressObserver(record_errors=True)
         observer.activate()
 
         try:
@@ -235,7 +235,7 @@ class ObserveProgressTest(unittest.TestCase):
         self.assertIsInstance(exc_traceback, list)
 
     def test_dask_progress(self):
-        observer = TestProgressObserver(record_errors=True)
+        observer = _TestProgressObserver(record_errors=True)
         observer.activate()
 
         res = dask.array.random.normal(size=(100, 200), chunks=(25, 50))

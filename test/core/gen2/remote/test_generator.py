@@ -3,7 +3,7 @@ from typing import List, Any, Dict
 
 import requests_mock
 
-from test.util.test_progress import TestProgressObserver
+from test.util.test_progress import _TestProgressObserver
 from xcube.core.gen2 import CostEstimation
 from xcube.core.gen2 import CubeGenerator
 from xcube.core.gen2 import CubeInfoWithCosts
@@ -95,7 +95,7 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
                   }),
               ])
 
-        observer = TestProgressObserver()
+        observer = _TestProgressObserver()
         with new_progress_observers(observer):
             self.generator.generate_cube(self.REQUEST)
 
@@ -130,7 +130,7 @@ class RemoteCubeGeneratorTest(unittest.TestCase):
                               output=['1.that', '2.was', '3.bad']),
               ])
 
-        observer = TestProgressObserver()
+        observer = _TestProgressObserver()
         with new_progress_observers(observer):
             cube_result = self.generator.generate_cube(self.REQUEST)
             self.assertEqual('error', cube_result.status)

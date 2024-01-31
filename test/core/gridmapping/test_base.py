@@ -16,7 +16,7 @@ GEO_CRS = pyproj.crs.CRS(4326)
 NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 
-class TestGridMapping(GridMapping):
+class _TestGridMapping(GridMapping):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -71,7 +71,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         return orig_kwargs
 
     def test_valid(self):
-        gm = TestGridMapping(**self.kwargs())
+        gm = _TestGridMapping(**self.kwargs())
         self.assertEqual((720, 360), gm.size)
         self.assertEqual(720, gm.width)
         self.assertEqual(360, gm.height)
@@ -106,41 +106,41 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_invalids(self):
         with self.assertRaises(ValueError) as cm:
-            TestGridMapping(**self.kwargs(size=(360, 1)))
+            _TestGridMapping(**self.kwargs(size=(360, 1)))
         self.assertEqual('invalid size', f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            TestGridMapping(**self.kwargs(size=(360,)))
+            _TestGridMapping(**self.kwargs(size=(360,)))
         self.assertEqual('not enough values to unpack (expected 2, got 1)', f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            TestGridMapping(**self.kwargs(size=None))
+            _TestGridMapping(**self.kwargs(size=None))
         self.assertEqual('size must be an int or a sequence of two ints', f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            TestGridMapping(**self.kwargs(tile_size=0))
+            _TestGridMapping(**self.kwargs(tile_size=0))
         self.assertEqual('invalid tile_size', f'{cm.exception}')
 
         with self.assertRaises(ValueError) as cm:
-            TestGridMapping(**self.kwargs(xy_res=-0.1))
+            _TestGridMapping(**self.kwargs(xy_res=-0.1))
         self.assertEqual('invalid xy_res', f'{cm.exception}')
 
     def test_scalars(self):
-        gm = TestGridMapping(**self.kwargs(size=360, tile_size=180, xy_res=0.1))
+        gm = _TestGridMapping(**self.kwargs(size=360, tile_size=180, xy_res=0.1))
         self.assertEqual((360, 360), gm.size)
         self.assertEqual((180, 180), gm.tile_size)
         self.assertEqual((0.1, 0.1), gm.xy_res)
 
     def test_not_tiled(self):
-        gm = TestGridMapping(**self.kwargs(tile_size=None))
+        gm = _TestGridMapping(**self.kwargs(tile_size=None))
         self.assertEqual((720, 360), gm.tile_size)
         self.assertEqual(False, gm.is_tiled)
 
     def test_ij_to_xy_transform(self):
-        image_geom = TestGridMapping(**self.kwargs(size=(1200, 1200),
-                                                   xy_min=(0, 0),
-                                                   xy_res=1,
-                                                   crs=NOT_A_GEO_CRS))
+        image_geom = _TestGridMapping(**self.kwargs(size=(1200, 1200),
+                                                    xy_min=(0, 0),
+                                                    xy_res=1,
+                                                    crs=NOT_A_GEO_CRS))
         i2crs = image_geom.ij_to_xy_transform
         self.assertMatrixPoint((0, 0), i2crs, (0, 1200))
         self.assertMatrixPoint((1024, 0), i2crs, (1024, 1200))
@@ -148,19 +148,19 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertMatrixPoint((1024, 1024), i2crs, (1024, 1200 - 1024))
         self.assertEqual(((1, 0, 0), (0.0, -1, 1200)), i2crs)
 
-        image_geom = TestGridMapping(**self.kwargs(size=(1440, 720),
-                                                   xy_min=(-180, -90),
-                                                   xy_res=0.25))
+        image_geom = _TestGridMapping(**self.kwargs(size=(1440, 720),
+                                                    xy_min=(-180, -90),
+                                                    xy_res=0.25))
         i2crs = image_geom.ij_to_xy_transform
         self.assertMatrixPoint((-180, 90), i2crs, (0, 0))
         self.assertMatrixPoint((0, 0), i2crs, (720, 360))
         self.assertMatrixPoint((180, -90), i2crs, (1440, 720))
         self.assertEqual(((0.25, 0.0, -180.0), (0.0, -0.25, 90.0)), i2crs)
 
-        image_geom = TestGridMapping(**self.kwargs(size=(1440, 720),
-                                                   xy_min=(-180, -90),
-                                                   xy_res=0.25,
-                                                   is_j_axis_up=True))
+        image_geom = _TestGridMapping(**self.kwargs(size=(1440, 720),
+                                                    xy_min=(-180, -90),
+                                                    xy_res=0.25,
+                                                    is_j_axis_up=True))
         i2crs = image_geom.ij_to_xy_transform
         self.assertMatrixPoint((-180, -90), i2crs, (0, 0))
         self.assertMatrixPoint((0, 0), i2crs, (720, 360))
@@ -168,10 +168,10 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(((0.25, 0.0, -180.0), (0.0, 0.25, -90.0)), i2crs)
 
     def test_xy_to_ij_transform(self):
-        image_geom = TestGridMapping(**self.kwargs(size=(1200, 1200),
-                                                   xy_min=(0, 0),
-                                                   xy_res=1,
-                                                   crs=NOT_A_GEO_CRS))
+        image_geom = _TestGridMapping(**self.kwargs(size=(1200, 1200),
+                                                    xy_min=(0, 0),
+                                                    xy_res=1,
+                                                    crs=NOT_A_GEO_CRS))
         crs2i = image_geom.xy_to_ij_transform
         self.assertMatrixPoint((0, 0), crs2i, (0, 1200))
         self.assertMatrixPoint((1024, 0), crs2i, (1024, 1200))
@@ -179,17 +179,17 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertMatrixPoint((1024, 1024), crs2i, (1024, 1200 - 1024))
         self.assertEqual(((1, 0, 0), (0.0, -1, 1200)), crs2i)
 
-        image_geom = TestGridMapping(**self.kwargs(size=(1440, 720),
-                                                   xy_res=0.25))
+        image_geom = _TestGridMapping(**self.kwargs(size=(1440, 720),
+                                                    xy_res=0.25))
         crs2i = image_geom.xy_to_ij_transform
         self.assertMatrixPoint((0, 720), crs2i, (-180, -90))
         self.assertMatrixPoint((720, 360), crs2i, (0, 0))
         self.assertMatrixPoint((1440, 0), crs2i, (180, 90))
         self.assertEqual(((4.0, 0.0, 720.0), (0.0, -4.0, 360.0)), crs2i)
 
-        image_geom = TestGridMapping(**self.kwargs(size=(1440, 720),
-                                                   xy_res=0.25,
-                                                   is_j_axis_up=True))
+        image_geom = _TestGridMapping(**self.kwargs(size=(1440, 720),
+                                                    xy_res=0.25,
+                                                    is_j_axis_up=True))
         crs2i = image_geom.xy_to_ij_transform
         self.assertMatrixPoint((0, 0), crs2i, (-180, -90))
         self.assertMatrixPoint((720, 360), crs2i, (0, 0))
@@ -197,13 +197,13 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(((4.0, 0.0, 720.0), (0.0, 4.0, 360.0)), crs2i)
 
     def test_ij_transform_to_and_from(self):
-        gm1 = TestGridMapping(**self.kwargs(size=(1440, 720),
-                                            xy_res=0.25,
-                                            is_j_axis_up=True))
-        gm2 = TestGridMapping(**self.kwargs(size=(1000, 1000),
-                                            xy_min=(10, 50),
-                                            xy_res=0.025,
-                                            is_j_axis_up=True))
+        gm1 = _TestGridMapping(**self.kwargs(size=(1440, 720),
+                                             xy_res=0.25,
+                                             is_j_axis_up=True))
+        gm2 = _TestGridMapping(**self.kwargs(size=(1000, 1000),
+                                             xy_min=(10, 50),
+                                             xy_res=0.025,
+                                             is_j_axis_up=True))
         self.assertEqual(((10.0, 0.0, -7600.0),
                           (0.0, 10.0, -5600.0)),
                          gm1.ij_transform_to(gm2))
@@ -225,7 +225,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         return actual_point
 
     def test_derive(self):
-        gm = TestGridMapping(**self.kwargs())
+        gm = _TestGridMapping(**self.kwargs())
         self.assertEqual((720, 360), gm.size)
         self.assertEqual((360, 180), gm.tile_size)
         self.assertEqual(False, gm.is_j_axis_up)
@@ -239,7 +239,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                                xy_dim_names=('i', 'j'))
 
         self.assertIsNot(gm, derived_gm)
-        self.assertIsInstance(derived_gm, TestGridMapping)
+        self.assertIsInstance(derived_gm, _TestGridMapping)
         self.assertEqual((720, 360), derived_gm.size)
         self.assertEqual((270, 270), derived_gm.tile_size)
         self.assertEqual(True, derived_gm.is_j_axis_up)
@@ -252,7 +252,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                          derived_xy_coords.chunks)
 
     def test_scale(self):
-        gm = TestGridMapping(**self.kwargs())
+        gm = _TestGridMapping(**self.kwargs())
         self.assertEqual((720, 360), gm.size)
         self.assertEqual((360, 180), gm.tile_size)
         self.assertEqual(False, gm.is_j_axis_up)
@@ -276,10 +276,10 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                          scaled_xy_coords.chunks)
 
     def test_transform(self):
-        gm = TestGridMapping(**self.kwargs(xy_min=(20, 56),
-                                           size=(400, 200),
-                                           tile_size=(400, 200),
-                                           xy_res=(0.01, 0.01)))
+        gm = _TestGridMapping(**self.kwargs(xy_min=(20, 56),
+                                            size=(400, 200),
+                                            tile_size=(400, 200),
+                                            xy_res=(0.01, 0.01)))
         transformed_gm = gm.transform('EPSG:32633')
 
         self.assertIsNot(gm, transformed_gm)
@@ -295,12 +295,12 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                          transformed_gm.xy_dim_names)
 
     def test_is_close(self):
-        gm1 = TestGridMapping(**self.kwargs(xy_min=(0, 0),
-                                            size=(400, 200),
-                                            xy_res=(0.01, 0.01)))
-        gm2 = TestGridMapping(**self.kwargs(xy_min=(0, 0),
-                                            size=(400, 200),
-                                            xy_res=(0.01, 0.01)))
+        gm1 = _TestGridMapping(**self.kwargs(xy_min=(0, 0),
+                                             size=(400, 200),
+                                             xy_res=(0.01, 0.01)))
+        gm2 = _TestGridMapping(**self.kwargs(xy_min=(0, 0),
+                                             size=(400, 200),
+                                             xy_res=(0.01, 0.01)))
         self.assertTrue(gm1.is_close(gm1))
         self.assertTrue(gm2.is_close(gm2))
         self.assertTrue(gm1.is_close(gm2))
@@ -308,26 +308,26 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
 
         tolerance = 0.001
 
-        gm2 = TestGridMapping(**self.kwargs(xy_min=(tolerance / 2,
-                                                    tolerance / 2),
-                                            size=(400, 200),
-                                            xy_res=(0.01, 0.01)))
+        gm2 = _TestGridMapping(**self.kwargs(xy_min=(tolerance / 2,
+                                                     tolerance / 2),
+                                             size=(400, 200),
+                                             xy_res=(0.01, 0.01)))
         self.assertTrue(gm1.is_close(gm1, tolerance=tolerance))
         self.assertTrue(gm2.is_close(gm2, tolerance=tolerance))
         self.assertTrue(gm1.is_close(gm2, tolerance=tolerance))
         self.assertTrue(gm2.is_close(gm1, tolerance=tolerance))
 
-        gm2 = TestGridMapping(**self.kwargs(xy_min=(tolerance * 2,
-                                                    tolerance * 2),
-                                            size=(400, 200),
-                                            xy_res=(0.01, 0.01)))
+        gm2 = _TestGridMapping(**self.kwargs(xy_min=(tolerance * 2,
+                                                     tolerance * 2),
+                                             size=(400, 200),
+                                             xy_res=(0.01, 0.01)))
         self.assertTrue(gm1.is_close(gm1, tolerance=tolerance))
         self.assertTrue(gm2.is_close(gm2, tolerance=tolerance))
         self.assertFalse(gm1.is_close(gm2, tolerance=tolerance))
         self.assertFalse(gm2.is_close(gm1, tolerance=tolerance))
 
     def test_ij_bbox_from_xy_bbox(self):
-        gm = TestGridMapping(**self.kwargs())
+        gm = _TestGridMapping(**self.kwargs())
 
         ij_bbox = gm.ij_bbox_from_xy_bbox((-180, -90, 180, 90))
         self.assertEqual((0, 0, 720, 360), ij_bbox)
@@ -351,7 +351,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual((-1, -1, -1, -1), ij_bbox)
 
     def test_ij_bboxes_from_xy_bboxes(self):
-        gm = TestGridMapping(**self.kwargs())
+        gm = _TestGridMapping(**self.kwargs())
 
         ij_bboxes = gm.ij_bboxes_from_xy_bboxes(
             xy_bboxes=np.array([
@@ -375,10 +375,10 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
                       [-1, -1, -1, -1]], dtype=np.int64))
 
     def test_to_dataset_attrs(self):
-        gm1 = TestGridMapping(**self.kwargs(xy_min=(20, 56),
-                                            size=(400, 200),
-                                            tile_size=(400, 200),
-                                            xy_res=(0.01, 0.01)))
+        gm1 = _TestGridMapping(**self.kwargs(xy_min=(20, 56),
+                                             size=(400, 200),
+                                             tile_size=(400, 200),
+                                             xy_res=(0.01, 0.01)))
         transformed_gm = gm1.transform('EPSG:32633')
         transformed_gm_attrs = transformed_gm.to_dataset_attrs()
 

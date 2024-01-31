@@ -25,6 +25,10 @@
   * Set Content-Bbox and Content-Crs headers in the HTTP response
   * Support safe CURIE syntax for CRS specification
 
+### Fixes
+
+* Rename some test classes to avoid spurious warnings (#924)
+
 ### Other changes
 
 * Require Python >=3.9 (previously >=3.8)
