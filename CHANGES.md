@@ -25,6 +25,11 @@
   * Set Content-Bbox and Content-Crs headers in the HTTP response
   * Support safe CURIE syntax for CRS specification
 
+### Fixes
+
+* Make S3 unit tests compatible with moto 5 server (#922)
+* Make some CLI unit tests compatible with pytest 8 (#922)
+
 ### Other changes
 
 * Require Python >=3.9 (previously >=3.8)
