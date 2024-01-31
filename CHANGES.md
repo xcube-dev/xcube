@@ -28,6 +28,7 @@
 ### Fixes
 
 * Make S3 unit tests compatible with moto 5 server (#922)
+* Make some CLI unit tests compatible with pytest 8 (#922)
 
 ### Other changes
 
