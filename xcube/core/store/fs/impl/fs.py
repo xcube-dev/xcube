@@ -146,7 +146,6 @@ class AzureFsAccessor(FsAccessor):
 
     @classmethod
     def get_storage_options_schema(cls) -> JsonObjectSchema:
-
         return JsonObjectSchema(
             properties=dict(
                 anon=JsonBooleanSchema(
@@ -159,7 +158,7 @@ class AzureFsAccessor(FsAccessor):
                     description='Must be used with the account key parameter.'
                                 ' This is not required when using a'
                                 ' connection string.'
-                                
+
                 ),
                 account_key=JsonStringSchema(
                     min_length=1,
@@ -213,6 +212,90 @@ class FtpFsAccessor(FsAccessor):
                     min_length=1,
                     title='User password',
                     description='User\'s password on the server, if using',
+                ),
+                **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
+            ),
+            additional_properties=True,
+        )
+
+
+class ReferenceFsAccessor(FsAccessor):
+    @classmethod
+    def get_protocol(cls) -> str:
+        return 'reference'
+
+    @classmethod
+    def get_storage_options_schema(cls) -> JsonObjectSchema:
+        return JsonObjectSchema(
+            properties=dict(
+                refs=JsonStringSchema(
+                    description=(
+                        "The set of references to use for this instance,"
+                        " with a structure as above. If str referencing a JSON"
+                        " file, will use fsspec.open, in conjunction with"
+                        " target_options and target_protocol to open and parse"
+                        " JSON at this location. If a directory, then assume"
+                        " references are a set of parquet files to be loaded"
+                        " lazily."
+                    )
+                ),
+                target=JsonStringSchema(
+                    description=(
+                        "For any references having target_url as None,"
+                        "this is the default file target to use"
+                    )
+                ),
+                target_protocol=JsonStringSchema(
+                    description=(
+                        "Used for loading the reference file, if it is a path."
+                        " If None, protocol will be derived from the given path"
+                    )
+                ),
+                target_options=JsonObjectSchema(
+                    description=(
+                        "Extra FS options for loading the reference file"
+                        " ``fo``, if given as a path"
+                    ),
+                    additional_properties=True
+                ),
+                remote_protocol=JsonStringSchema(
+                    description=(
+                        "The protocol of the filesystem on which the references"
+                        " will be evaluated (unless fs is provided). If not"
+                        " given, will be derived from the first URL that has a"
+                        " protocol in the templates or in the references, in"
+                        " that order."
+                    )
+                ),
+                remote_options=JsonObjectSchema(
+                    description=(
+                        "kwargs to go with remote_protocol"
+                    ),
+                    additional_properties=True
+                ),
+                max_gap=JsonIntegerSchema(
+                    description="See max_block."
+                ),
+                max_block=JsonIntegerSchema(
+                    description=(
+                        "For merging multiple concurrent requests to the same"
+                        " remote file. Neighboring byte ranges will only be"
+                        " merged when their inter-range gap is <= `max_gap`."
+                        " Default is 64KB. Set to 0 to only merge when it"
+                        " requires no extra bytes. Pass a negative number to"
+                        " disable merging, appropriate for local target files."
+                        " Neighboring byte ranges will only be merged when the"
+                        " size of the aggregated range is <= ``max_block``."
+                        " Default is 256MB."
+                    )
+                ),
+                cache_size=JsonIntegerSchema(
+                    description=(
+                        "Maximum size of LRU cache, where"
+                        " cache_size*record_size denotes the total number of"
+                        " references that can be loaded in memory at once."
+                        " Only used for lazily loaded references."
+                    )
                 ),
                 **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
             ),
