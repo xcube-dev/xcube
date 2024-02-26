@@ -1,10 +1,13 @@
+from abc import ABC, abstractmethod
 import collections.abc
+import glob
+import json
 import os.path
+from pathlib import Path
 import shutil
+from typing import Any, Callable, Dict, Optional, Set, Type, Union, List
 import unittest
 import warnings
-from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 import fsspec
 import numpy as np
@@ -342,7 +345,7 @@ class FsDataStoresTestMixin(ABC):
             requested_dtype_alias: Optional[str],
             expected_dtype_aliases: Set[str],
             expected_return_type: Union[Type[xr.Dataset],
-                                        Type[MultiLevelDataset]],
+            Type[MultiLevelDataset]],
             expected_descriptor_type: Optional[Union[
                 Type[DatasetDescriptor],
                 Type[MultiLevelDatasetDescriptor]
@@ -462,3 +465,91 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
                                  root=root,
                                  max_depth=3,
                                  storage_options=storage_options)
+
+
+try:
+    from kerchunk.netCDF3 import NetCDF3ToZarr
+    from kerchunk.combine import MultiZarrToZarr
+except ImportError:
+    NetCDF3ToZarr = None
+    MultiZarrToZarr = None
+
+
+@unittest.skipIf(NetCDF3ToZarr is None, reason="kerchunk not installed")
+class ReferenceFsDataStoresTest(unittest.TestCase):
+    reference_files: List[str] = []
+
+    @classmethod
+    def setUpClass(cls):
+        data_dir = (Path(__file__).parent / "../../../core/gen/inputdata").resolve()
+        data_file_paths = sorted(glob.glob(str(data_dir / "*-IFR-L4_GHRSST*.nc")))
+        reference_file_paths = [data_file_path + ".json" for data_file_path in
+                                data_file_paths]
+        for data_file_path, reference_file_path in zip(data_file_paths,
+                                                       reference_file_paths):
+            ds = xr.open_dataset(data_file_path)
+            h5chunks = NetCDF3ToZarr(data_file_path)
+            with open(reference_file_path, mode="w") as json_stream:
+                json.dump(h5chunks.translate(), json_stream)
+
+        cube_ref = MultiZarrToZarr(reference_file_paths,
+                                   remote_protocol="file",
+                                   concat_dims=["time"],
+                                   identical_dims=["lat", "lon"])
+        cube_ref_path = str(data_dir / "sst-cube.json")
+        with open(cube_ref_path, "w") as f:
+            json.dump(cube_ref.translate(), f)
+
+        cls.reference_files = [cube_ref_path] + reference_file_paths
+
+    @classmethod
+    def tearDownClass(cls):
+        fs = fsspec.filesystem("file")
+        for reference_file in cls.reference_files:
+            fs.delete(reference_file)
+
+    def test_reference_filesystem(self):
+        cube_ref_path = self.reference_files[0]
+        fs = fsspec.filesystem("reference",
+                               fo=cube_ref_path,
+                               remote_protocol="file")
+        self.assertEqual(
+            {
+                '.zattrs',
+                '.zgroup',
+                'time',
+                'lat',
+                'lon',
+                'analysed_sst',
+                'analysis_error',
+                'mask',
+                'sea_ice_fraction'
+            },
+            set(fs.ls("", detail=False))
+        )
+        zarr_store = fs.get_mapper()
+        cube = xr.open_zarr(zarr_store, consolidated=False)
+        self.assert_cube_ok(cube)
+
+    def test_xr_open_dataset(self):
+        cube_ref_path = self.reference_files[0]
+        cube = xr.open_dataset("reference://",
+                               engine="zarr",
+                               backend_kwargs=dict(
+                                   consolidated=False,
+                                   storage_options=dict(
+                                       fo=cube_ref_path,
+                                       remote_protocol="file"
+                                   )
+                               ))
+        self.assert_cube_ok(cube)
+
+    def assert_cube_ok(self, cube: xr.Dataset):
+        self.assertEqual({'time': 3, 'lat': 1350, 'lon': 1600}, cube.sizes)
+        self.assertEqual({'lon', 'time', 'lat'}, set(cube.coords))
+        self.assertEqual({'analysis_error', 'mask', 'analysed_sst', 'sea_ice_fraction'},
+                         set(cube.data_vars))
+        sst_ts = cube.isel(lat=0, lon=0).compute()
+        np.testing.assert_array_equal(sst_ts.analysed_sst.values,
+                                      np.array([290.02, 289.94, 289.89]))
+
