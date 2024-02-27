@@ -32,7 +32,6 @@ from .impl.fs import AzureFsAccessor
 from .impl.fs import FileFsAccessor
 from .impl.fs import FtpFsAccessor
 from .impl.fs import MemoryFsAccessor
-from .impl.fs import ReferenceFsAccessor
 from .impl.fs import S3FsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
 from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
@@ -67,7 +66,6 @@ for cls in (
         FileFsAccessor,
         FtpFsAccessor,
         MemoryFsAccessor,
-        ReferenceFsAccessor,
         S3FsAccessor,
 ):
     register_fs_accessor_class(cls)

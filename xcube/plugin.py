@@ -69,7 +69,8 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
         ext='zarr', modes={'r', 'w', 'a'}
     )
     ext_registry.add_extension(
-        loader=extension.import_component('xcube.core.dsio:Netcdf4DatasetIO', call=True),
+        loader=extension.import_component('xcube.core.dsio:Netcdf4DatasetIO',
+                                          call=True),
         point=EXTENSION_POINT_DATASET_IOS, name=FORMAT_NAME_NETCDF4,
         description='NetCDF-4 file format',
         ext='nc', modes={'r', 'w', 'a'}
@@ -124,16 +125,25 @@ def _register_data_stores(ext_registry: extension.ExtensionRegistry):
     """
     Register xcube's standard data stores.
     """
-    factory = 'xcube.core.store.fs.registry:get_fs_data_store_class'
-
+    fs_ds_cls_factory = 'xcube.core.store.fs.registry:get_fs_data_store_class'
     for storage_id, storage_description in _FS_STORAGE_ITEMS:
-        loader = extension.import_component(factory, call_args=[storage_id])
+        fs_ds_cls_loader = extension.import_component(fs_ds_cls_factory,
+                                                      call_args=[storage_id])
         ext_registry.add_extension(
             point=EXTENSION_POINT_DATA_STORES,
-            loader=loader,
+            loader=fs_ds_cls_loader,
             name=storage_id,
             description=f'Data store that uses a {storage_description}'
         )
+
+    ref_ds_cls = 'xcube.core.store.ref.store:ReferenceDataStore'
+    ref_ds_cls_loader = extension.import_component(ref_ds_cls)
+    ext_registry.add_extension(
+        point=EXTENSION_POINT_DATA_STORES,
+        loader=ref_ds_cls_loader,
+        name="reference",
+        description=f'Data store that uses Kerchunk references'
+    )
 
 
 def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
@@ -209,7 +219,8 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
 
     for cli_command_name in cli_command_names:
         ext_registry.add_extension(
-            loader=extension.import_component(f'xcube.cli.{cli_command_name}:{cli_command_name}'),
+            loader=extension.import_component(
+                f'xcube.cli.{cli_command_name}:{cli_command_name}'),
             point=EXTENSION_POINT_CLI_COMMANDS,
             name=cli_command_name
         )
@@ -253,9 +264,9 @@ def _register_server_frameworks(ext_registry: extension.ExtensionRegistry):
     for framework_name in server_framework_names:
         ext_registry.add_extension(
             loader=extension.import_component(
-                    f'xcube.server.webservers.{framework_name}'
-                    f':{framework_name.capitalize()}Framework',
-                ),
+                f'xcube.server.webservers.{framework_name}'
+                f':{framework_name.capitalize()}Framework',
+            ),
             point=EXTENSION_POINT_SERVER_FRAMEWORKS,
             name=framework_name
         )

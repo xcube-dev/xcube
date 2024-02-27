@@ -27,6 +27,7 @@ class S3Test(unittest.TestCase):
         os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
         os.environ['AWS_SECURITY_TOKEN'] = 'testing'
         os.environ['AWS_SESSION_TOKEN'] = 'testing'
+        os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
 
         cls._moto_server = subprocess.Popen(MOTOSERVER_ARGS)
         t0 = time.perf_counter()
