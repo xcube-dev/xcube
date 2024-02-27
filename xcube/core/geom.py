@@ -722,8 +722,8 @@ def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
 
     # Note, x_min > x_max then we intersect with the anti-meridian
     x_bnds_name = get_dataset_bounds_var_name(dataset, x_name)
-    if x_bnds_name:
-        x_bnds_var = dataset.coords[x_bnds_name]
+    if x_bnds_name and x_bnds_name in dataset:
+        x_bnds_var = dataset[x_bnds_name]
         x1 = x_bnds_var[0, 0]
         x2 = x_bnds_var[0, 1]
         x3 = x_bnds_var[-1, 0]
@@ -741,8 +741,8 @@ def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
 
     # Note, x-axis may be inverted
     y_bnds_name = get_dataset_bounds_var_name(dataset, y_name)
-    if y_bnds_name:
-        y_bnds_var = dataset.coords[y_bnds_name]
+    if y_bnds_name and y_bnds_name in dataset:
+        y_bnds_var = dataset[y_bnds_name]
         y1 = y_bnds_var[0, 0]
         y2 = y_bnds_var[0, 1]
         y3 = y_bnds_var[-1, 0]
