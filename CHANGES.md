@@ -3,7 +3,7 @@
 ### Enhancements
 
 * Added new `reference` filesystem data store to support 
-  "kerchunked" NetCDF files in object storage. [#928]
+  "kerchunked" NetCDF files in object storage. (#928)
   
   See also
     - [ReferenceFileSystem](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.reference.ReferenceFileSystem)
@@ -35,9 +35,11 @@
 
 ### Fixes
 
-* Make S3 unit tests compatible with moto 5 server (#922)
-* Make some CLI unit tests compatible with pytest 8 (#922)
-* Rename some test classes to avoid spurious warnings (#924)
+* Fixed `KeyError: 'lon_bnds'` raised occasionally when opening 
+  (mostly NetCDF) datasets. (#930)
+* Make S3 unit tests compatible with moto 5 server. (#922)
+* Make some CLI unit tests compatible with pytest 8. (#922)
+* Rename some test classes to avoid spurious warnings. (#924)
 
 ### Other changes
 

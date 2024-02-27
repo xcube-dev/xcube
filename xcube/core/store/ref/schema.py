@@ -1,19 +1,57 @@
+# The MIT License (MIT)
+# Copyright (c) 2020-2024 by the xcube development team and contributors
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of
+# this software and associated documentation files (the "Software"), to deal in
+# the Software without restriction, including without limitation the rights to
+# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+# of the Software, and to permit persons to whom the Software is furnished to do
+# so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 from xcube.core.store.fs.accessor import COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES
 from xcube.util.jsonschema import JsonArraySchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
 REF_STORE_SCHEMA = JsonObjectSchema(
     properties=dict(
-        ref_paths=JsonArraySchema(
+        refs=JsonArraySchema(
             description=(
-                "The list of reference JSON files to use for this"
-                " instance. Files (URLs or local paths) are used in"
-                " conjunction with target_options and target_protocol"
-                " to open and parse JSON at this location."
+                "The list of references to use for this"
+                " instance. Items can be a path / URL to a reference"
+                " JSON file or dictionaries with keys `'ref_path'` and"
+                " `'data_descriptor'`. Reference files (URLs or local paths)"
+                " are used in conjunction with target_options and"
+                " target_protocol to open and parse JSON at this location."
             ),
-            items=JsonStringSchema(),
+            items=JsonComplexSchema(
+                one_of=[
+                    JsonStringSchema(min_length=1),
+                    JsonObjectSchema(
+                        properties=dict(
+                            ref_path=JsonStringSchema(min_length=1),
+                            data_id=JsonStringSchema(min_length=1),
+                            # We could detail data_descriptor a bit more. Not now.
+                            data_descriptor=JsonObjectSchema(
+                                additional_properties=True),
+                        ),
+                        required=["ref_path"]
+                    ),
+                ],
+            ),
             min_items=1,
         ),
         target_protocol=JsonStringSchema(
