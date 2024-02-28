@@ -1,10 +1,10 @@
+from abc import ABC, abstractmethod
 import collections.abc
 import os.path
 import shutil
+from typing import Any, Callable, Dict, Optional, Set, Type, Union
 import unittest
 import warnings
-from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
 
 import fsspec
 import numpy as np
@@ -342,7 +342,7 @@ class FsDataStoresTestMixin(ABC):
             requested_dtype_alias: Optional[str],
             expected_dtype_aliases: Set[str],
             expected_return_type: Union[Type[xr.Dataset],
-                                        Type[MultiLevelDataset]],
+            Type[MultiLevelDataset]],
             expected_descriptor_type: Optional[Union[
                 Type[DatasetDescriptor],
                 Type[MultiLevelDatasetDescriptor]

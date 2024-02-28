@@ -146,7 +146,6 @@ class AzureFsAccessor(FsAccessor):
 
     @classmethod
     def get_storage_options_schema(cls) -> JsonObjectSchema:
-
         return JsonObjectSchema(
             properties=dict(
                 anon=JsonBooleanSchema(
@@ -159,7 +158,7 @@ class AzureFsAccessor(FsAccessor):
                     description='Must be used with the account key parameter.'
                                 ' This is not required when using a'
                                 ' connection string.'
-                                
+
                 ),
                 account_key=JsonStringSchema(
                     min_length=1,
@@ -218,3 +217,4 @@ class FtpFsAccessor(FsAccessor):
             ),
             additional_properties=True,
         )
+

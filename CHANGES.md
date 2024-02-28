@@ -2,7 +2,14 @@
 
 ### Enhancements
 
-* STAC
+* Added new `reference` filesystem data store to support 
+  "kerchunked" NetCDF files in object storage. (#928)
+  
+  See also
+    - [ReferenceFileSystem](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.reference.ReferenceFileSystem)
+    - [kerchunk](https://github.com/fsspec/kerchunk)
+
+* Improved xcube Server's STAC API:
   * Provide links for multiple coverages data formats
   * Add `crs` and `crs_storage` properties to STAC data
   * Add spatial and temporal grid data to collection descriptions
@@ -10,7 +17,8 @@
     variables
   * Add links to domain set, range type, and range schema to collection
     descriptions
-* OGC API – Coverages:
+
+* Improved xcube Server's Coverages API:
   * Support scaling parameters `scale-factor`, `scale-axes`, and `scale-size`
   * Improve handling of bbox parameters
   * Handle half-open datetime intervals
@@ -27,9 +35,11 @@
 
 ### Fixes
 
-* Make S3 unit tests compatible with moto 5 server (#922)
-* Make some CLI unit tests compatible with pytest 8 (#922)
-* Rename some test classes to avoid spurious warnings (#924)
+* Fixed `KeyError: 'lon_bnds'` raised occasionally when opening 
+  (mostly NetCDF) datasets. (#930)
+* Make S3 unit tests compatible with moto 5 server. (#922)
+* Make some CLI unit tests compatible with pytest 8. (#922)
+* Rename some test classes to avoid spurious warnings. (#924)
 
 ### Other changes
 
