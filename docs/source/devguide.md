@@ -331,7 +331,6 @@ you need to adjust the paths accordingly.
 * Make sure that all unit tests pass and that test coverage is 100% 
   (or as near to 100% as practicable).
 * In `xcube/version.py` remove the `.dev` suffix from version name.
-* Adjust version in `Dockerfile`  accordingly.
 * Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
   from the last version headline.
 * Push changes to either master or a new maintenance branch (see above).
@@ -346,7 +345,6 @@ you need to adjust the paths accordingly.
   create a new maintenance branch (see above)
 * In `xcube/version.py` increase version number and append a `.dev0` suffix 
   to the version name so that it is still PEP-440 compatible.
-* Adjust version in `Dockerfile` accordingly.
 * In `CHANGES.md` add a new version headline and attach ` (in development)`
   to it.
 * Push changes to either master or a new maintenance branch (see above).
