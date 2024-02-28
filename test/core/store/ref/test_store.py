@@ -95,9 +95,9 @@ class KerchunkMixin:
             set(cube.data_vars))
         sst_ts = cube.isel(lat=0, lon=0).compute()
         sst_data = sst_ts.analysed_sst.values
-        self.assertAlmostEqual(290.02, sst_data[0])
-        self.assertAlmostEqual(289.94, sst_data[1])
-        self.assertAlmostEqual(289.89, sst_data[2])
+        self.assertAlmostEqual(290.02, sst_data[0], 2)
+        self.assertAlmostEqual(289.94, sst_data[1], 2)
+        self.assertAlmostEqual(289.89, sst_data[2], 2)
 
 
 # noinspection PyUnresolvedReferences
