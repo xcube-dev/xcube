@@ -21,8 +21,7 @@
 
 import os
 import warnings
-from typing import Iterator, Any, Tuple, Container, Union, Dict, List, \
-    Optional
+from typing import Iterator, Any, Tuple, Container, Union, Dict, List
 
 import fsspec
 import xarray as xr

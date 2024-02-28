@@ -21,13 +21,12 @@
 
 import glob
 import json
+import unittest
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List
-import unittest
 
 import fsspec
-import numpy as np
 import pytest
 import xarray as xr
 
@@ -91,11 +90,14 @@ class KerchunkMixin:
     def assert_sst_cube_ok(self, cube: xr.Dataset):
         self.assertEqual({'time': 3, 'lat': 1350, 'lon': 1600}, cube.sizes)
         self.assertEqual({'lon', 'time', 'lat'}, set(cube.coords))
-        self.assertEqual({'analysis_error', 'mask', 'analysed_sst', 'sea_ice_fraction'},
-                         set(cube.data_vars))
+        self.assertEqual(
+            {'analysis_error', 'mask', 'analysed_sst', 'sea_ice_fraction'},
+            set(cube.data_vars))
         sst_ts = cube.isel(lat=0, lon=0).compute()
-        np.testing.assert_array_equal(sst_ts.analysed_sst.values,
-                                      np.array([290.02, 289.94, 289.89]))
+        sst_data = sst_ts.analysed_sst.values
+        self.assertAlmostEqual(290.02, sst_data[0])
+        self.assertAlmostEqual(289.94, sst_data[1])
+        self.assertAlmostEqual(289.89, sst_data[2])
 
 
 # noinspection PyUnresolvedReferences
@@ -129,7 +131,8 @@ class ReferenceDataStoreTestBase(KerchunkMixin, ABC):
 
     def test_get_data_opener_ids(self):
         store = self.get_store()
-        self.assertEqual(("dataset:zarr:reference",), store.get_data_opener_ids())
+        self.assertEqual(("dataset:zarr:reference",),
+                         store.get_data_opener_ids())
 
     def test_get_data_types(self):
         store = self.get_store()
@@ -190,13 +193,15 @@ class ReferenceDataStoreTestBase(KerchunkMixin, ABC):
 
 
 @unittest.skipUnless(has_kerchunk, reason="kerchunk not installed")
-class ReferenceDataStorePathsTest(ReferenceDataStoreTestBase, unittest.TestCase):
+class ReferenceDataStorePathsTest(ReferenceDataStoreTestBase,
+                                  unittest.TestCase):
     def get_store(self) -> DataStore:
         return new_data_store("reference", refs=self.ref_paths)
 
 
 @unittest.skipUnless(has_kerchunk, reason="kerchunk not installed")
-class ReferenceDataStoreDictsTest(ReferenceDataStoreTestBase, unittest.TestCase):
+class ReferenceDataStoreDictsTest(ReferenceDataStoreTestBase,
+                                  unittest.TestCase):
     def get_store(self) -> DataStore:
         store = new_data_store("reference", refs=self.ref_paths)
         refs = [dict(ref_path=ref_path,
@@ -211,7 +216,8 @@ class NormalizeRefTest(unittest.TestCase):
     def test_normalize_str(self):
         self.assertEqual(
             ('sst-cube',
-             {'ref_path': 'https://myrefs.com/sst-cube.json', 'data_descriptor': None}),
+             {'ref_path': 'https://myrefs.com/sst-cube.json',
+              'data_descriptor': None}),
             self.normalize_ref("https://myrefs.com/sst-cube.json")
         )
 
@@ -240,18 +246,22 @@ class NormalizeRefTest(unittest.TestCase):
                  "data_type": "dataset"
              }})
         self.assertEqual("sst-bibo", data_id)
-        self.assertEqual("https://myrefs.com/sst-cube.json", ref_dict.get("ref_path"))
-        self.assertIsInstance(ref_dict.get("data_descriptor"), DatasetDescriptor)
+        self.assertEqual("https://myrefs.com/sst-cube.json",
+                         ref_dict.get("ref_path"))
+        self.assertIsInstance(ref_dict.get("data_descriptor"),
+                              DatasetDescriptor)
         self.assertEqual(
             "sst-bibo",
             ref_dict.get("data_descriptor").data_id
         )
 
     def test_errors(self):
-        with pytest.raises(TypeError, match="item in refs must be a str or a dict"):
+        with pytest.raises(TypeError,
+                           match="item in refs must be a str or a dict"):
             # noinspection PyTypeChecker
             self.normalize_ref(13)
-        with pytest.raises(ValueError, match="missing key ref_path in refs item"):
+        with pytest.raises(ValueError,
+                           match="missing key ref_path in refs item"):
             self.normalize_ref({})
         with pytest.raises(TypeError, match=("value of data_descriptor key"
                                              " in refs item must be a dict or None")):
