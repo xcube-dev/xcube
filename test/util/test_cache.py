@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 import unittest
 
 from xcube.util.cache import CacheStore, Cache, MemoryCacheStore, FileCacheStore, parse_mem_size
@@ -10,7 +11,8 @@ class MemoryCacheStoreTest(unittest.TestCase):
         self.cache_store = MemoryCacheStore()
         stored_value_a, size_a = self.cache_store.store_value('a', 42)
         stored_value_b, size_b = self.cache_store.store_value('b', True)
-        stored_value_c, size_c = self.cache_store.store_value('c', "S" * 256)
+        test_string = "S" * 256
+        stored_value_c, size_c = self.cache_store.store_value('c', test_string)
         stored_value_d, size_d = self.cache_store.store_value('d', 3.14)
         self.stored_value_a = stored_value_a
         self.stored_value_b = stored_value_b
@@ -18,7 +20,9 @@ class MemoryCacheStoreTest(unittest.TestCase):
         self.stored_value_d = stored_value_d
         self.assertEqual(size_a, 28)
         self.assertEqual(size_b, 28)
-        self.assertEqual(size_c, 305)
+        # String sizes changed between Python 3.11 and 3.12, so we don't
+        # hard-code the expected string size.
+        self.assertEqual(size_c, sys.getsizeof(test_string))
         self.assertEqual(size_d, 24)
 
     def test_store_value(self):
