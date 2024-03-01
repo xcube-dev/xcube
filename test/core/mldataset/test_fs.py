@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2023 by the xcube team and contributors
+# Copyright (c) 2023–2024 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -142,13 +142,13 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
                          set(fs.listdir(path, detail=False)))
 
         ml_dataset = FsMultiLevelDataset(path, fs=fs)
-        self.assertEquals(expected_num_levels, ml_dataset.num_levels)
-        self.assertEquals(expected_agg_methods, ml_dataset.agg_methods)
-        self.assertEquals(expected_tile_size, ml_dataset.tile_size)
-        self.assertEquals(use_saved_levels, ml_dataset.use_saved_levels)
-        self.assertEquals(base_dataset_path, ml_dataset.base_dataset_path)
-        self.assertEquals(None, ml_dataset.cache_size)
-        self.assertEquals(num_levels, len(ml_dataset.size_weights))
+        self.assertEqual(expected_num_levels, ml_dataset.num_levels)
+        self.assertEqual(expected_agg_methods, ml_dataset.agg_methods)
+        self.assertEqual(expected_tile_size, ml_dataset.tile_size)
+        self.assertEqual(use_saved_levels, ml_dataset.use_saved_levels)
+        self.assertEqual(base_dataset_path, ml_dataset.base_dataset_path)
+        self.assertEqual(None, ml_dataset.cache_size)
+        self.assertEqual(num_levels, len(ml_dataset.size_weights))
         self.assertTrue(all(ml_dataset.size_weights > 0.0))
         for i in range(num_levels):
             self.assertIsInstance(ml_dataset.get_dataset(i), xr.Dataset)
