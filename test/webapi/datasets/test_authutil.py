@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2022–2024 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -100,7 +100,7 @@ class DatasetScopesTest(unittest.TestCase):
         with self.assertRaises(ApiError.Unauthorized) as cm:
             assert_scopes({'read:dataset:test1.zarr'},
                           None)
-        self.assertEquals(
+        self.assertEqual(
             'HTTP status 401: Missing permission "read:dataset:test1.zarr"',
             f'{cm.exception}'
         )
@@ -108,7 +108,7 @@ class DatasetScopesTest(unittest.TestCase):
         with self.assertRaises(ApiError.Unauthorized) as cm:
             assert_scopes({'read:dataset:test1.zarr'},
                           set())
-        self.assertEquals(
+        self.assertEqual(
             'HTTP status 401: Missing permission "read:dataset:test1.zarr"',
             f'{cm.exception}'
         )
@@ -116,7 +116,7 @@ class DatasetScopesTest(unittest.TestCase):
         with self.assertRaises(ApiError.Unauthorized) as cm:
             assert_scopes({'read:dataset:test1.zarr'},
                           {'read:dataset:test2.zarr'})
-        self.assertEquals(
+        self.assertEqual(
             'HTTP status 401: Missing permission "read:dataset:test1.zarr"',
             f'{cm.exception}'
         )

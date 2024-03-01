@@ -140,14 +140,14 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertIn('a', dataset)
         self.assertIn('b', dataset)
         self.assertIn('c2', dataset)
-        self.assertEquals((10, 10), dataset.a.shape)
-        self.assertEquals((10, 10), dataset.b.shape)
-        self.assertEquals((10, 10), dataset.c2.shape)
+        self.assertEqual((10, 10), dataset.a.shape)
+        self.assertEqual((10, 10), dataset.b.shape)
+        self.assertEqual((10, 10), dataset.c2.shape)
 
         # Assert in-memory (decoding) data types are correct.
-        self.assertEquals(np.float64, dataset.a.dtype)
-        self.assertEquals(np.float64, dataset.b.dtype)
-        self.assertEquals(np.float64, dataset.c2.dtype)
+        self.assertEqual(np.float64, dataset.a.dtype)
+        self.assertEqual(np.float64, dataset.b.dtype)
+        self.assertEqual(np.float64, dataset.c2.dtype)
 
         # Assert external representation (encoding) information
         # is correctly set up.
@@ -160,12 +160,12 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
         self.assertEqual(np.dtype('uint8'), dataset.c2.encoding.get('dtype'))
 
         # Other metadata
-        self.assertEquals({}, dataset.a.attrs)
-        self.assertEquals({'units': 'meters'}, dataset.b.attrs)
-        self.assertEquals({}, dataset.c2.attrs)
-        self.assertEquals((y_name, x_name), dataset.a.dims)
-        self.assertEquals((y_name, x_name), dataset.b.dims)
-        self.assertEquals((y_name, x_name), dataset.c2.dims)
+        self.assertEqual({}, dataset.a.attrs)
+        self.assertEqual({'units': 'meters'}, dataset.b.attrs)
+        self.assertEqual({}, dataset.c2.attrs)
+        self.assertEqual((y_name, x_name), dataset.a.dims)
+        self.assertEqual((y_name, x_name), dataset.b.dims)
+        self.assertEqual((y_name, x_name), dataset.c2.dims)
 
         # Assert actual data is correct
 

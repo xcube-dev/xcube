@@ -1,3 +1,13 @@
+## Changes in 1.4.1 (in development)
+
+### Enhancements
+
+### Fixes
+
+### Other changes
+
+* Minor updates to make xcube compatible with pandas 2 and Python 3.12. (#933)
+
 ## Changes in 1.4.0
 
 ### Enhancements

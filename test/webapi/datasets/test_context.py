@@ -1,5 +1,5 @@
 # The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
+# Copyright (c) 2022–2024 by the xcube team and contributors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -590,7 +590,7 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
                           'Path': 'cube-1-250-250.zarr'}
         with self.assertRaises(ValueError) as cm:
             self.get_datasets_ctx(Datasets=[dataset_config])
-        self.assertRegexpMatches(
+        self.assertRegex(
             f'{cm.exception}',
             'Invalid server configuration:\n.*'
         )

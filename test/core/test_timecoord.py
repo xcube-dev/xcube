@@ -53,7 +53,7 @@ class AddTimeCoordsTest(unittest.TestCase):
                          to_time_in_days_since_1970('2018-06-08T12:00'))
         self.assertEqual(18173.42625622898,
                          to_time_in_days_since_1970(
-                             '04-OCT-2019 10:13:48.538184'))
+                             '2019-10-04T10:13:48.538184'))
 
     def test_from_time_in_days_since_1970(self):
         self.assertEqual('2017-06-07T12:00:00.000000000',
@@ -71,7 +71,7 @@ class AddTimeCoordsTest(unittest.TestCase):
         self.assertEqual('2019-10-04T10:13:48.538000000',
                          str(from_time_in_days_since_1970(
                              to_time_in_days_since_1970(
-                                 '04-OCT-2019 10:13:48.538184'))))
+                                 '2019-10-04T10:13:48.538184'))))
 
 
 class GetTimeRangeTest(unittest.TestCase):
@@ -232,7 +232,7 @@ class TimestampToIsoStringTest(unittest.TestCase):
                              np.datetime64("2018-09-05 10:35:42.164")))
         self.assertEqual("2019-10-04T10:13:49Z",
                          timestamp_to_iso_string(
-                             pd.to_datetime("04-OCT-2019 10:13:48.538184")))
+                             pd.to_datetime("2019-10-04T10:13:48.538184")))
 
     def test_it_with_ceil_round_fn(self):
         self.assertEqual("2018-09-05T00:00:00Z",
@@ -248,7 +248,7 @@ class TimestampToIsoStringTest(unittest.TestCase):
                              round_fn="ceil"))
         self.assertEqual("2019-10-04T10:13:49Z",
                          timestamp_to_iso_string(
-                             pd.to_datetime("04-OCT-2019 10:13:48.538184"),
+                             pd.to_datetime("2019-10-04T10:13:48.538184"),
                              round_fn="ceil"))
 
     def test_it_with_floor_round_fn(self):
@@ -265,14 +265,14 @@ class TimestampToIsoStringTest(unittest.TestCase):
                              round_fn="floor"))
         self.assertEqual("2019-10-04T10:13:48Z",
                          timestamp_to_iso_string(
-                             pd.to_datetime("04-OCT-2019 10:13:48.538184"),
+                             pd.to_datetime("2019-10-04T10:13:48.538184"),
                              round_fn="floor"))
 
     def test_it_with_array_round_fn(self):
         var = [np.datetime64("2018-09-05 10:35:42.564"),
                np.datetime64("2018-09-06 10:35:42.564"),
                np.datetime64("2018-09-07 10:35:42.564"),
-               pd.to_datetime("04-OCT-2019 10:13:48.038184")
+               pd.to_datetime("2019-10-04T10:13:48.038184")
                ]
         expected_values = ["2018-09-05T10:35:42Z",
                            "2018-09-06T10:35:43Z",
@@ -306,7 +306,7 @@ class TimestampToIsoStringTest(unittest.TestCase):
                              freq="H"))
         self.assertEqual("2019-10-04T10:00:00Z",
                          timestamp_to_iso_string(
-                             pd.to_datetime("04-OCT-2019 10:13:48.538184"),
+                             pd.to_datetime("2019-10-04T10:13:48.538184"),
                              freq="H"))
 
 # class TimeStampsTest(unittest.TestCase):
