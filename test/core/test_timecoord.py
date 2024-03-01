@@ -53,7 +53,7 @@ class AddTimeCoordsTest(unittest.TestCase):
                          to_time_in_days_since_1970('2018-06-08T12:00'))
         self.assertEqual(18173.42625622898,
                          to_time_in_days_since_1970(
-                             '04-OCT-2019 10:13:48.538184'))
+                             '2019-10-04T10:13:48.538184'))
 
     def test_from_time_in_days_since_1970(self):
         self.assertEqual('2017-06-07T12:00:00.000000000',
@@ -71,7 +71,7 @@ class AddTimeCoordsTest(unittest.TestCase):
         self.assertEqual('2019-10-04T10:13:48.538000000',
                          str(from_time_in_days_since_1970(
                              to_time_in_days_since_1970(
-                                 '04-OCT-2019 10:13:48.538184'))))
+                                 '2019-10-04T10:13:48.538184'))))
 
 
 class GetTimeRangeTest(unittest.TestCase):
