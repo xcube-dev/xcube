@@ -340,7 +340,7 @@ class CoveragesControllersTest(unittest.TestCase):
             get_coverage_rangetype_for_dataset(
                 xr.Dataset({
                     'x': [1, 2, 3],
-                    'v': (['x'], [0, 0, 0]),
+                    'v': (['x'], np.array([0, 0, 0], dtype=np.int64)),
                     'dimensionless1': ([], None),
                     'dimensionless2': ([], None)
                 })
