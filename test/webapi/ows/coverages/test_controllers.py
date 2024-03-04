@@ -274,10 +274,10 @@ class CoveragesControllersTest(unittest.TestCase):
             path = os.path.join(tempdir, 'out.nc')
             with open(path, 'wb') as fh:
                 fh.write(content)
-            ds = xr.open_dataset(path)
-            self.assertEqual(
-                {'lat': 400, 'lon': 400, 'time': 5, 'bnds': 2}, ds.dims
-            )
+            with xr.open_dataset(path) as ds:
+                self.assertEqual(
+                    {'lat': 400, 'lon': 400, 'time': 5, 'bnds': 2}, ds.dims
+                )
 
     def test_get_crs_from_dataset(self):
         ds = xr.Dataset({'crs': ([], None, {'spatial_ref': '3035'})})
