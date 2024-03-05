@@ -2,6 +2,13 @@
 
 ### Enhancements
 
+* Data stores can now return _data iterators_ from their `open_data()` method.
+  For example, a data store implementation can now return a data cube either
+  with a time dimension of size 100, or could be asked to return 100 cube
+  time slices with dimension size 1 in form of an iterator.
+  This feature has been added to effectively support the new
+  [zappend](https://github.com/bcdev/zappend) tool. (#919)
+
 ### Fixes
 
 * Fix two OGC Collections unit tests that were failing under Windows. (#937)
