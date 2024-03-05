@@ -749,8 +749,8 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
         "cube:dimensions": cube_dimensions,
         "cube:variables": _get_dc_variables(dataset, cube_dimensions),
         "xcube:dims": to_json_value(dataset.dims),
-        "xcube:data_vars": _get_xc_variables(ctx, dataset_id, dataset.data_vars),
-        "xcube:coords": _get_xc_coordinates(dataset.coords),
+        "xcube:data_vars": _get_xc_data_variables(ctx, dataset_id, dataset.data_vars),
+        "xcube:coords": _get_xc_variables(dataset.coords),
         "xcube:attrs": to_json_value(dataset.attrs),
         **(_get_time_properties(dataset)),
     }
@@ -858,15 +858,15 @@ def _get_time_properties(dataset):
     return time_properties
 
 
-def _get_xc_variables(ctx: DatasetsContext, dataset_id: str,variables: Mapping[Hashable, xr.DataArray]) \
+def _get_xc_data_variables(ctx: DatasetsContext, dataset_id: str,variables: Mapping[Hashable, xr.DataArray]) \
         -> List[Dict[str, Any]]:
     """Create the value of the 
     "xcube:data_vars" property for the given *dataset*.
     """
-    return [_get_xc_variable(ctx,dataset_id,var_name, var)
+    return [_get_xc_data_variable(ctx,dataset_id,var_name, var)
             for var_name, var in variables.items()]
 
-def _get_xc_variable(ctx: DatasetsContext, dataset_id: str, var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
+def _get_xc_data_variable(ctx: DatasetsContext, dataset_id: str, var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
     """Create an entry of the value of the 
     "xcube:data_vars" property for the given *dataset*.
     """
@@ -888,16 +888,16 @@ def _get_xc_variable(ctx: DatasetsContext, dataset_id: str, var_name: Hashable, 
     }
     
 
-def _get_xc_coordinates(variables: Mapping[Hashable, xr.DataArray]) \
+def _get_xc_variables(variables: Mapping[Hashable, xr.DataArray]) \
         -> List[Dict[str, Any]]:
     """Create the value of the "xcube:coords" 
     property for the given *dataset*.
     """
-    return [_get_xc_coordinate(var_name, var)
+    return [_get_xc_variable(var_name, var)
             for var_name, var in variables.items()]
     
 
-def _get_xc_coordinate(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
+def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
     """Create an entry of the value of the "xcube:coords"
     property for the given *dataset*.
     """
