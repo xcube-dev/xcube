@@ -413,7 +413,12 @@
         ],
         "flag_meanings": "Rtosa_OOS Rtosa_OOR Rhow_OOR Cloud_risk Iop_OOR Apig_at_max Adet_at_max Agelb_at_max Bpart_at_max Bwit_at_max Apig_at_min Adet_at_min Agelb_at_min Bpart_at_min Bwit_at_min Rhow_OOS Kd489_OOR Kdmin_OOR Kd489_at_max Kdmin_at_max Valid_PE",
         "long_name": "C2RCC quality flags"
-      }
+      },
+      "tileLevelMax": 9,
+      "tileLevelMin": 7,
+      "colorBarName": "bone",
+      "colorBarMax": 1.0,
+      "colorBarMin": 0.0
     },
     {
       "name": "conc_chl",
@@ -505,7 +510,12 @@
         "long_name": "Chlorophyll concentration",
         "units": "mg m^-3",
         "valid_pixel_expression": "c2rcc_flags.Valid_PE"
-      }
+      },
+      "tileLevelMax": 9,
+      "tileLevelMin": 7,
+      "colorBarName": "bone",
+      "colorBarMax": 1.0,
+      "colorBarMin": 0.0
     },
     {
       "name": "conc_tsm",
@@ -549,7 +559,12 @@
         "long_name": "Total suspended matter dry weight concentration",
         "units": "g m^-3",
         "valid_pixel_expression": "c2rcc_flags.Valid_PE"
-      }
+      },
+      "tileLevelMax": 9,
+      "tileLevelMin": 7,
+      "colorBarName": "bone",
+      "colorBarMax": 1.0,
+      "colorBarMin": 0.0
     },
     {
       "name": "kd489",
@@ -593,7 +608,12 @@
         "long_name": "Irradiance attenuation coefficient at 489 nm",
         "units": "m^-1",
         "valid_pixel_expression": "c2rcc_flags.Valid_PE"
-      }
+      },
+      "tileLevelMax": 9,
+      "tileLevelMin": 7,
+      "colorBarName": "bone",
+      "colorBarMax": 1.0,
+      "colorBarMin": 0.0
     },
     {
       "name": "quality_flags",
@@ -672,7 +692,12 @@
         ],
         "flag_meanings": "land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21",
         "long_name": "Classification and quality flags"
-      }
+      },
+      "tileLevelMax": 9,
+      "tileLevelMin": 7,
+      "colorBarName": "bone",
+      "colorBarMax": 1.0,
+      "colorBarMin": 0.0
     }
   ],
   "xcube:coords": [
