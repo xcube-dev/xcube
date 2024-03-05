@@ -759,7 +759,7 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
 def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
-    xcube_data_vars = _get_xc_variables(dataset.data_vars)
+    xcube_data_vars = _get_xc_data_variables(ctx, dataset_id, dataset.data_vars)
     first_var_name = next(iter(xcube_data_vars))["name"]
     first_var = dataset[first_var_name]
     first_var_extra_dims = first_var.dims[0:-2]
