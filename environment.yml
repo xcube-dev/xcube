@@ -43,7 +43,7 @@ dependencies:
   - shapely >=1.6
   - tornado >=6.0
   - urllib3 >=1.26
-  - werkzeug <2.2  # >=2.2 slows down S3 tests (deps: moto->flask->werkzeug)
+  - werkzeug
   - xarray >=2022.6,<2023.09.0 # because of issue https://github.com/dcs4cop/xcube/issues/897
   - zarr >=2.11
   # Required by Coiled
