@@ -31,6 +31,7 @@ import xarray as xr
 
 import xcube
 from xcube.core.gridmapping import CRS_CRS84, GridMapping
+from xcube.core.tilingscheme import TilingScheme
 from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
 from xcube.util.jsonencoder import to_json_value
@@ -748,8 +749,8 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
         "cube:dimensions": cube_dimensions,
         "cube:variables": _get_dc_variables(dataset, cube_dimensions),
         "xcube:dims": to_json_value(dataset.dims),
-        "xcube:data_vars": _get_xc_variables(dataset.data_vars),
-        "xcube:coords": _get_xc_variables(dataset.coords),
+        "xcube:data_vars": _get_xc_variables(ctx, dataset_id, dataset.data_vars),
+        "xcube:coords": _get_xc_coordinates(dataset.coords),
         "xcube:attrs": to_json_value(dataset.attrs),
         **(_get_time_properties(dataset)),
     }
@@ -857,20 +858,48 @@ def _get_time_properties(dataset):
     return time_properties
 
 
-def _get_xc_variables(
-    variables: Mapping[Hashable, xr.DataArray]
-) -> List[Dict[str, Any]]:
-    """Create the value of the "xcube:coords" or
+def _get_xc_variables(ctx: DatasetsContext, dataset_id: str,variables: Mapping[Hashable, xr.DataArray]) \
+        -> List[Dict[str, Any]]:
+    """Create the value of the 
     "xcube:data_vars" property for the given *dataset*.
     """
-    return [
-        _get_xc_variable(var_name, var) for var_name, var in variables.items()
-    ]
+    return [_get_xc_variable(ctx,dataset_id,var_name, var)
+            for var_name, var in variables.items()]
 
-
-def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
-    """Create an entry of the value of the "xcube:coords" or
+def _get_xc_variable(ctx: DatasetsContext, dataset_id: str, var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
+    """Create an entry of the value of the 
     "xcube:data_vars" property for the given *dataset*.
+    """
+    ml_dataset = ctx.get_ml_dataset(dataset_id)
+    tiling_scheme = ml_dataset.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
+    cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(dataset_id, var_name)
+    return {
+        "name": str(var_name),
+        "dtype": str(var.dtype),
+        "dims": to_json_value(var.dims),
+        "chunks": to_json_value(var.chunks) if var.chunks else None,
+        "shape": to_json_value(var.shape),
+        "attrs": to_json_value(var.attrs),
+        "tileLevelMin": tiling_scheme.min_level,
+        "tileLevelMax": tiling_scheme.max_level,
+        "colorBarName": cmap_name,
+        "colorBarMin": cmap_vmin,
+        "colorBarMax": cmap_vmax
+    }
+    
+
+def _get_xc_coordinates(variables: Mapping[Hashable, xr.DataArray]) \
+        -> List[Dict[str, Any]]:
+    """Create the value of the "xcube:coords" 
+    property for the given *dataset*.
+    """
+    return [_get_xc_coordinate(var_name, var)
+            for var_name, var in variables.items()]
+    
+
+def _get_xc_coordinate(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
+    """Create an entry of the value of the "xcube:coords"
+    property for the given *dataset*.
     """
     return {
         "name": str(var_name),
