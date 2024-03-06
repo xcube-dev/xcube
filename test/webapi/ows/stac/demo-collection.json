@@ -419,12 +419,6 @@
       "colorBarName": "bone",
       "colorBarMax": 1.0,
       "colorBarMin": 0.0
-      },
-      "tileLevelMax": 9,
-      "tileLevelMin": 7,
-      "colorBarName": "bone",
-      "colorBarMax": 1.0,
-      "colorBarMin": 0.0
     },
     {
       "name": "conc_chl",
@@ -698,12 +692,6 @@
         ],
         "flag_meanings": "land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21",
         "long_name": "Classification and quality flags"
-      },
-      "tileLevelMax": 9,
-      "tileLevelMin": 7,
-      "colorBarName": "bone",
-      "colorBarMax": 1.0,
-      "colorBarMin": 0.0
       },
       "tileLevelMax": 9,
       "tileLevelMin": 7,
