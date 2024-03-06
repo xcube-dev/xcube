@@ -4,7 +4,7 @@
     "https://stac-extensions.github.io/datacube/v2.1.0/schema.json"
   ],
   "type": "Feature",
-  "id": "demo-1w",
+  "id": "datacube",
   "bbox": [
     0.0,
     50.0,
@@ -267,6 +267,7 @@
         "colorBarName": "bone",
         "colorBarMax": 1.0,
         "colorBarMin": 0.0
+        
       },
       {
         "name": "conc_chl",
@@ -538,12 +539,6 @@
         "colorBarName": "bone",
         "colorBarMax": 1.0,
         "colorBarMin": 0.0
-        },
-        "tileLevelMax": 9,
-        "tileLevelMin": 7,
-        "colorBarName": "bone",
-        "colorBarMax": 1.0,
-        "colorBarMin": 0.0
       },
       {
         "name": "c2rcc_flags_stdev",
@@ -609,12 +604,6 @@
           ],
           "flag_meanings": "Rtosa_OOS Rtosa_OOR Rhow_OOR Cloud_risk Iop_OOR Apig_at_max Adet_at_max Agelb_at_max Bpart_at_max Bwit_at_max Apig_at_min Adet_at_min Agelb_at_min Bpart_at_min Bwit_at_min Rhow_OOS Kd489_OOR Kdmin_OOR Kd489_at_max Kdmin_at_max Valid_PE",
           "long_name": "C2RCC quality flags"
-        },
-        "tileLevelMax": 9,
-        "tileLevelMin": 7,
-        "colorBarName": "bone",
-        "colorBarMax": 1.0,
-        "colorBarMin": 0.0
         },
         "tileLevelMax": 9,
         "tileLevelMin": 7,
@@ -716,12 +705,6 @@
         "colorBarName": "bone",
         "colorBarMax": 1.0,
         "colorBarMin": 0.0
-        },
-        "tileLevelMax": 9,
-        "tileLevelMin": 7,
-        "colorBarName": "bone",
-        "colorBarMax": 1.0,
-        "colorBarMin": 0.0
       },
       {
         "name": "conc_tsm_stdev",
@@ -769,12 +752,6 @@
         "colorBarName": "bone",
         "colorBarMax": 1.0,
         "colorBarMin": 0.0
-        },
-        "tileLevelMax": 9,
-        "tileLevelMin": 7,
-        "colorBarName": "bone",
-        "colorBarMax": 1.0,
-        "colorBarMin": 0.0
       },
       {
         "name": "kd489_stdev",
@@ -816,12 +793,6 @@
           "long_name": "Irradiance attenuation coefficient at 489 nm",
           "units": "m^-1",
           "valid_pixel_expression": "c2rcc_flags.Valid_PE"
-        },
-        "tileLevelMax": 9,
-        "tileLevelMin": 7,
-        "colorBarName": "bone",
-        "colorBarMax": 1.0,
-        "colorBarMin": 0.0
         },
         "tileLevelMax": 9,
         "tileLevelMin": 7,
@@ -904,12 +875,6 @@
           ],
           "flag_meanings": "land coastline fresh_inland_water tidal_region bright straylight_risk invalid cosmetic duplicated sun_glint_risk dubious saturated_Oa01 saturated_Oa02 saturated_Oa03 saturated_Oa04 saturated_Oa05 saturated_Oa06 saturated_Oa07 saturated_Oa08 saturated_Oa09 saturated_Oa10 saturated_Oa11 saturated_Oa12 saturated_Oa13 saturated_Oa14 saturated_Oa15 saturated_Oa16 saturated_Oa17 saturated_Oa18 saturated_Oa19 saturated_Oa20 saturated_Oa21",
           "long_name": "Classification and quality flags"
-        },
-        "tileLevelMax": 9,
-        "tileLevelMin": 7,
-        "colorBarName": "bone",
-        "colorBarMax": 1.0,
-        "colorBarMin": 0.0
         },
         "tileLevelMax": 9,
         "tileLevelMin": 7,
@@ -1027,7 +992,7 @@
     "start_datetime": "2017-01-22T00:00:00Z",
     "end_datetime": "2017-02-05T00:00:00Z"
   },
-  "collection": "datacubes",
+  "collection": "demo-1w",
   "links": [
     {
       "rel": "root",
@@ -1037,15 +1002,15 @@
     },
     {
       "rel": "self",
-      "href": "http://localhost:8080/ogc/collections/datacubes/items/demo-1w"
+      "href": "http://localhost:8080/ogc/collections/demo-1w/items/datacube"
     },
     {
       "rel": "collection",
-      "href": "http://localhost:8080/ogc/collections/datacubes"
+      "href": "http://localhost:8080/ogc/collections/demo-1w"
     },
     {
       "rel": "parent",
-      "href": "http://localhost:8080/ogc/collections/datacubes"
+      "href": "http://localhost:8080/ogc/collections/demo-1w"
     }
   ],
   "assets": {
