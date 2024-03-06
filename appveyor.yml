@@ -1,8 +1,8 @@
 version: '{build}'
 
 image:
+  - Ubuntu2204
   - macos
-  - Ubuntu2004
 
 configuration: Release
 
@@ -26,7 +26,7 @@ for:
 -
   matrix:
     only:
-      - image: Ubuntu2004
+      - image: Ubuntu2204
   install:
     - wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
 
@@ -42,7 +42,7 @@ build_script:
   # Set up micromamba
   - ./micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
-  - source ~/.bash_profile
+  - source ~/.profile
   - hash -r
   - mkdir -p ~/micromamba/pkgs/
   - export MAMBA_ROOT_PREFIX=~/micromamba
