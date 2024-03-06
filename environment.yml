@@ -44,7 +44,7 @@ dependencies:
   - tornado >=6.0
   - urllib3 >=1.26
   - werkzeug
-  - xarray >=2022.6,<2023.09.0 # because of issue https://github.com/dcs4cop/xcube/issues/897
+  - xarray >=2022.6
   - zarr >=2.11
   # Required by Coiled
   # These are very likely transitive deps anyway
