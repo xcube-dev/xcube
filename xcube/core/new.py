@@ -52,7 +52,9 @@ def new_cube(title='Test Cube',
              drop_bounds=False,
              variables=None,
              crs=None,
-             crs_name=None):
+             crs_name=None,
+             time_encoding_dtype="int64"
+             ):
     """
     Create a new empty cube. Useful for creating cubes templates with
     predefined coordinate variables and metadata. The function is also
@@ -102,6 +104,8 @@ def new_cube(title='Test Cube',
         of pyproj.CRS or None
     :param crs_name: Name of the variable that will
         hold the CRS information. Ignored, if *crs* is not given.
+    :param time_encoding_dtype: data type used to encode the time variable when
+        serializing the dataset
     :return: A cube instance
     """
     y_dtype = y_dtype if y_dtype is not None else y_dtype
@@ -163,6 +167,7 @@ def new_cube(title='Test Cube',
     time_var = xr.DataArray(time_data, dims=time_name)
     time_var.encoding['units'] = time_units
     time_var.encoding['calendar'] = time_calendar
+    time_var.encoding["dtype"] = time_encoding_dtype
 
     coords = {x_name: x_var, y_name: y_var, time_name: time_var}
     if not drop_bounds:
@@ -203,6 +208,7 @@ def new_cube(title='Test Cube',
                                      dims=(time_name, bnds_dim))
         time_bnds_var.encoding['units'] = time_units
         time_bnds_var.encoding['calendar'] = time_calendar
+        time_bnds_var.encoding["dtype"] = time_encoding_dtype
 
         time_var.attrs['bounds'] = time_bnds_name
 
