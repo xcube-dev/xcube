@@ -17,6 +17,8 @@
 
 * Minor updates to make xcube compatible with pandas 2 and Python 3.12. (#933)
 
+* Minor updates to make xcube compatible with xarray >=2023.9.0. (#897, #939)
+
 ## Changes in 1.4.0
 
 ### Enhancements

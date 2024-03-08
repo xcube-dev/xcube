@@ -36,11 +36,13 @@ class DumpDatasetTest(unittest.TestCase):
         self.assertIn("    _FillValue:  999.0\n", text)
 
         text = dump_dataset(dataset, ["precipitation"])
-        self.assertIn("<xarray.DataArray 'precipitation' (time: 5, lat: 180, lon: 360)>\n", text)
+        precip_regex = r"<xarray\.DataArray 'precipitation' .*" \
+            r"\(time: 5, lat: 180, lon: 360\)>( Size: 3MB)?\n"
+        self.assertRegex(text, precip_regex)
         self.assertNotIn("Encoding:\n", text)
         self.assertNotIn("    _FillValue:  999.0", text)
 
         text = dump_dataset(dataset, ["precipitation"], show_var_encoding=True)
-        self.assertIn("<xarray.DataArray 'precipitation' (time: 5, lat: 180, lon: 360)>\n", text)
+        self.assertRegex(text, precip_regex)
         self.assertIn("Encoding:\n", text)
         self.assertIn("    _FillValue:  999.0", text)
