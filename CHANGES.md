@@ -1,4 +1,4 @@
-## Changes in 1.4.1 (in development)
+## Changes in 1.4.1
 
 ### Enhancements
 
