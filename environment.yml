@@ -46,10 +46,6 @@ dependencies:
   - werkzeug
   - xarray >=2022.6
   - zarr >=2.11
-  # Required by Coiled
-  # These are very likely transitive deps anyway
-  - lz4
-  - python-blosc
   # Testing
   - flake8 >=3.7
   - moto >=4
