@@ -7,6 +7,8 @@ dependencies:
   # Required
   - adlfs >=2023.1  # for azure blob filesystem
   - affine >=2.2
+  - botocore >=1.34.51
+  - cftime >=1.6.3
   - click >=8.0
   - cmocean >=2.0
   - dask >=2021.6
@@ -14,7 +16,6 @@ dependencies:
   - deprecated >=1.2
   - distributed >=2021.6
   - fiona >=1.8
-  - fontconfig
   - fsspec >=2021.6
   - gdal >=3.0
   - geopandas >=0.8
@@ -23,6 +24,7 @@ dependencies:
   - mashumaro
   - matplotlib-base >=3.0
   - netcdf4 >=1.5
+  - numcodecs >=0.12.1
   - numba >=0.52
   - numpy >=1.16
   - openssl
@@ -33,11 +35,9 @@ dependencies:
   - pyyaml >=5.4
   - rasterio >=1.2
   - requests >=2.25
-  - requests-oauthlib >=1.3
   - rfc3339-validator >=0.1  # for python-jsonschema date-time format validation
   - rioxarray >=0.11
   - s3fs >=2021.6
-  - scipy >=1.6.0
   - setuptools >=41.0
   - shapely >=1.6
   - tornado >=6.0
