@@ -132,9 +132,9 @@ class FsAccessor:
                 root,
                 params
             )
-        except (ValueError, ImportError):
-            raise DataStoreError(f"Cannot instantiate"
-                                 f" filesystem {protocol!r}")
+        except (ValueError, ImportError) as error:
+            raise DataStoreError(
+                f"Cannot instantiate filesystem {protocol!r}: {error}")
 
     @classmethod
     def add_storage_options_to_params_schema(

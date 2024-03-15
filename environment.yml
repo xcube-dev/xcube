@@ -5,7 +5,6 @@ dependencies:
   # Python
   - python >=3.9
   # Required
-  - adlfs >=2023.1  # for azure blob filesystem
   - affine >=2.2
   - botocore >=1.34.51
   - cftime >=1.6.3
