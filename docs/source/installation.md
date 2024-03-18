@@ -144,3 +144,16 @@ docker ps
 This will start a service in the background which can be accessed 
 through port 8001, as the startup of a service is configured as default
 behaviour.
+
+## Installing soft dependencies
+
+In addition to xcube’s ‘hard’ dependencies, which the standard installation
+methods install automatically when required, there are ‘soft’ dependencies.
+These are packages which are not required to install or use xcube, but enable
+additional functionality if they are present. Users who need this functionality
+should install the requisite soft dependencies explicitly. xcube’s current soft
+dependencies are listed below.
+
+- `adlfs`: required by the abfs data store, which is used for access to
+  Azure Blob storage. Trying to create an abfs data store without `adlfs`
+  installed will raise an exception advising that you install it.
