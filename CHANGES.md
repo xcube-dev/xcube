@@ -6,6 +6,28 @@
 ## Changes in 1.4.1
 
 ### Enhancements
+* Improved xcube Server's STAC API:
+  * Added the `tileLevelMin`, `tileLevelMax`, `colorBarName`, `colorBarMax` and `colorBarMin` attributes to the `xcube:data_vars` property returned in a STAC item JSON schema of a dataset's data
+  variables.
+  * The `xcube:data_vars` in a STAC item will display the following example:
+   
+   ```json
+    "xcube:data_vars": [
+                    {
+                    "name": "gpp",
+                    "dtype": "float32",
+                    "dims": [],
+                    "chunks": [],
+                    "shape": [],
+                    "attrs": {},
+                    "tileLevelMax": 11, 
+                    "tileLevelMin": 10,
+                    "colorBarName": "bwr",
+                    "colorBarMax": 0,
+                    "colorBarMin": 20
+                    }
+                  ]
+  ```
 
 * Data stores can now return _data iterators_ from their `open_data()` method.
   For example, a data store implementation can now return a data cube either
