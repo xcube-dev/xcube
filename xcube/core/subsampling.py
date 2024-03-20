@@ -29,19 +29,19 @@ from deprecated import deprecated
 
 from xcube.util.assertions import assert_instance, assert_in, assert_true
 
-AGG_METHODS = 'auto', 'first', 'min', 'max', 'mean', 'median'
-DEFAULT_INT_AGG_METHOD = 'first'
-DEFAULT_FLOAT_AGG_METHOD = 'mean'
+AGG_METHODS = "auto", "first", "min", "max", "mean", "median"
+DEFAULT_INT_AGG_METHOD = "first"
+DEFAULT_FLOAT_AGG_METHOD = "mean"
 
 AggMethod = Union[None, str]
 AggMethods = Union[AggMethod, Mapping[str, AggMethod]]
 
 
 def subsample_dataset(
-        dataset: xr.Dataset,
-        step: int,
-        xy_dim_names: Optional[Tuple[str, str]] = None,
-        agg_methods: Optional[AggMethods] = None
+    dataset: xr.Dataset,
+    step: int,
+    xy_dim_names: Optional[Tuple[str, str]] = None,
+    agg_methods: Optional[AggMethods] = None,
 ) -> xr.Dataset:
     """
     Subsample *dataset* with given integer subsampling *step*.
@@ -63,22 +63,22 @@ def subsample_dataset(
     :return: The subsampled dataset or a tuple comprising the
         subsampled dataset and the effective aggregation methods.
     """
-    assert_instance(dataset, xr.Dataset, name='dataset')
-    assert_instance(step, int, name='step')
+    assert_instance(dataset, xr.Dataset, name="dataset")
+    assert_instance(step, int, name="step")
     assert_valid_agg_methods(agg_methods)
 
-    x_name, y_name = xy_dim_names or ('y', 'x')
+    x_name, y_name = xy_dim_names or ("y", "x")
 
-    agg_methods = get_dataset_agg_methods(dataset,
-                                          xy_dim_names=xy_dim_names,
-                                          agg_methods=agg_methods)
+    agg_methods = get_dataset_agg_methods(
+        dataset, xy_dim_names=xy_dim_names, agg_methods=agg_methods
+    )
 
     new_data_vars = dict()
     new_coords = None  # used to collect coordinates from coarsen
     for var_name, var in dataset.data_vars.items():
         if var_name in agg_methods:
             agg_method = agg_methods[var_name]
-            if agg_method == 'first':
+            if agg_method == "first":
                 slices = get_variable_subsampling_slices(
                     var, step, xy_dim_names=xy_dim_names
                 )
@@ -90,9 +90,7 @@ def subsample_dataset(
                     dim[x_name] = step
                 if y_name in var.dims:
                     dim[y_name] = step
-                var_coarsen = var.coarsen(dim=dim,
-                                          boundary='pad',
-                                          coord_func='min')
+                var_coarsen = var.coarsen(dim=dim, boundary="pad", coord_func="min")
                 new_var: xr.DataArray = getattr(var_coarsen, agg_method)()
                 if new_var.dtype != var.dtype:
                     # We don't want, e.g. "mean", to turn data
@@ -120,24 +118,22 @@ def subsample_dataset(
         # Make sure all variables use the same modified
         # spatial coordinates from coarsen
         new_data_vars = {
-            k: v.assign_coords({
-                d: new_coords[d]
-                for d in v.dims if d in new_coords
-            })
+            k: v.assign_coords({d: new_coords[d] for d in v.dims if d in new_coords})
             for k, v in new_data_vars.items()
         }
 
-    return xr.Dataset(data_vars=new_data_vars,
-                      attrs=dataset.attrs)
+    return xr.Dataset(data_vars=new_data_vars, attrs=dataset.attrs)
 
 
-def get_dataset_agg_methods(dataset: xr.Dataset,
-                            xy_dim_names: Optional[Tuple[str, str]] = None,
-                            agg_methods: Optional[AggMethods] = None):
-    assert_instance(dataset, xr.Dataset, name='dataset')
+def get_dataset_agg_methods(
+    dataset: xr.Dataset,
+    xy_dim_names: Optional[Tuple[str, str]] = None,
+    agg_methods: Optional[AggMethods] = None,
+):
+    assert_instance(dataset, xr.Dataset, name="dataset")
     assert_valid_agg_methods(agg_methods)
 
-    x_name, y_name = xy_dim_names or ('y', 'x')
+    x_name, y_name = xy_dim_names or ("y", "x")
 
     dataset_agg_methods = dict()
 
@@ -151,58 +147,50 @@ def get_dataset_agg_methods(dataset: xr.Dataset,
 
 def assert_valid_agg_methods(agg_methods: Optional[AggMethods]):
     """Assert that the given *agg_methods* are valid."""
-    assert_instance(agg_methods,
-                    (type(None), str, collections.abc.Mapping),
-                    name='agg_methods')
+    assert_instance(
+        agg_methods, (type(None), str, collections.abc.Mapping), name="agg_methods"
+    )
     if isinstance(agg_methods, str):
-        assert_in(
-            agg_methods, AGG_METHODS,
-            name='agg_methods'
-        )
+        assert_in(agg_methods, AGG_METHODS, name="agg_methods")
     elif agg_methods is not None:
         enum = (None, *AGG_METHODS)
         for k, v in agg_methods.items():
             assert_true(
-                isinstance(k, str),
-                message='keys in agg_methods must be strings'
+                isinstance(k, str), message="keys in agg_methods must be strings"
             )
             assert_true(
-                v in enum,
-                message=f'values in agg_methods must be one of {enum}'
+                v in enum, message=f"values in agg_methods must be one of {enum}"
             )
 
 
-def find_agg_method(agg_methods: AggMethods,
-                    var_name: Hashable,
-                    var_dtype: np.dtype) -> str:
+def find_agg_method(
+    agg_methods: AggMethods, var_name: Hashable, var_dtype: np.dtype
+) -> str:
     """
     Find aggregation method in *agg_methods*
     for given *var_name* and *var_dtype*.
     """
     assert_valid_agg_methods(agg_methods)
-    if isinstance(agg_methods, str) and agg_methods != 'auto':
+    if isinstance(agg_methods, str) and agg_methods != "auto":
         return agg_methods
     if isinstance(agg_methods, collections.abc.Mapping):
         for var_name_pat, agg_method in agg_methods.items():
-            if var_name == var_name_pat or fnmatch.fnmatch(str(var_name),
-                                                           var_name_pat):
-                if agg_method in (None, 'auto'):
+            if var_name == var_name_pat or fnmatch.fnmatch(str(var_name), var_name_pat):
+                if agg_method in (None, "auto"):
                     break
                 return agg_method
     # here: agg_method is either None or 'auto'
     if np.issubdtype(var_dtype, np.integer):
-        return 'first'
+        return "first"
     else:
-        return 'mean'
+        return "mean"
 
 
 _FULL_SLICE = slice(None, None, None)
 
 
 def get_variable_subsampling_slices(
-        variable: xr.DataArray,
-        step: int,
-        xy_dim_names: Optional[Tuple[str, str]] = None
+    variable: xr.DataArray, step: int, xy_dim_names: Optional[Tuple[str, str]] = None
 ) -> Optional[Tuple[slice, ...]]:
     """
     Compute subsampling slices for *variable*.
@@ -213,9 +201,9 @@ def get_variable_subsampling_slices(
     :param step: the integer subsampling step
     :param xy_dim_names: the spatial dimension names
     """
-    assert_instance(variable, xr.DataArray, name='variable')
-    assert_instance(step, int, name='step')
-    x_dim_name, y_dim_name = xy_dim_names or ('x', 'y')
+    assert_instance(variable, xr.DataArray, name="variable")
+    assert_instance(step, int, name="step")
+    x_dim_name, y_dim_name = xy_dim_names or ("x", "y")
 
     var_index = None
     for index, dim_name in enumerate(variable.dims):

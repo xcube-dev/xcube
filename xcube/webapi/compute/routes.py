@@ -37,7 +37,7 @@ OP_SCHEMA = {
             "items": {
                 "type": "object",
                 "description": "JSON Schema for each parameter",
-            }
+            },
         },
         "description": {"type": "string"},
     },
@@ -47,10 +47,7 @@ OP_SCHEMA = {
 OP_LIST_SCHEMA = {
     "type": "object",
     "properties": {
-        "operations": {
-            "type": "array",
-            "items": OP_SCHEMA
-        },
+        "operations": {"type": "array", "items": OP_SCHEMA},
     },
     "required": ["operations"],
 }
@@ -58,49 +55,33 @@ OP_LIST_SCHEMA = {
 OP_RESPONSES_SCHEMA = {
     "200": {
         "description": "Compute operation details",
-        "content": {
-            "application/json": OP_SCHEMA
-        }
+        "content": {"application/json": OP_SCHEMA},
     },
-    "404": {
-        "description": "An operation with the specified ID was not found."
-    }
+    "404": {"description": "An operation with the specified ID was not found."},
 }
 
 OP_LIST_RESPONSES_SCHEMA = {
     "200": {
         "description": "Compute operation details",
-        "content": {
-            "application/json": {
-                "schema": OP_LIST_SCHEMA
-            }
-        }
+        "content": {"application/json": {"schema": OP_LIST_SCHEMA}},
     },
-    "404": {
-        "description": "An operation with the specified ID was not found."
-    }
+    "404": {"description": "An operation with the specified ID was not found."},
 }
 
 JOB_STATE_SCHEMA = {
     "type": "object",
     "properties": {
-        "status": {
-            "type": "string",
-            "enum": list(JOB_STATUSES)
-        },
+        "status": {"type": "string", "enum": list(JOB_STATUSES)},
         "error": {
             "type": "object",
             "properties": {
                 "message": {"type": "string"},
                 "type": {"type": "string"},
-                "traceback": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
+                "traceback": {"type": "array", "items": {"type": "string"}},
             },
-            "required": ["message"]
+            "required": ["message"],
         },
-    }
+    },
 }
 
 JOB_RESULT_SCHEMA = {
@@ -108,7 +89,7 @@ JOB_RESULT_SCHEMA = {
     "properties": {
         "datasetId": {"type": "string"},
         "data": {},
-    }
+    },
 }
 
 JOB_SCHEMA = {
@@ -131,13 +112,10 @@ JOB_LIST_SCHEMA = {
                 "properties": {
                     "jobId": {"type": "integer"},
                     "operationId": {"type": "string"},
-                    "status": {
-                        "type": "string",
-                        "enum": list(JOB_STATUSES)
-                    },
+                    "status": {"type": "string", "enum": list(JOB_STATUSES)},
                 },
                 "required": ["jobId", "operationId", "status"],
-            }
+            },
         },
     },
     "required": ["jobs"],
@@ -146,36 +124,23 @@ JOB_LIST_SCHEMA = {
 JOB_RESPONSES_SCHEMA = {
     "200": {
         "description": "Compute job details",
-        "content": {
-            "application/json": JOB_SCHEMA
-        }
+        "content": {"application/json": JOB_SCHEMA},
     },
-    "404": {
-        "description": "A job with the specified ID was not found."
-    }
+    "404": {"description": "A job with the specified ID was not found."},
 }
 
 JOB_LIST_RESPONSES_SCHEMA = {
     "200": {
         "description": "List of compute jobs",
-        "content": {
-            "application/json": {
-                "schema": JOB_LIST_SCHEMA
-            }
-        }
+        "content": {"application/json": {"schema": JOB_LIST_SCHEMA}},
     }
 }
 
 JOB_REQUEST_SCHEMA = {
     "type": "object",
     "properties": {
-        "operationId": {
-            "type": "string"
-        },
-        "parameters": {
-            "type": "object",
-            "items": {}  # Any
-        },
+        "operationId": {"type": "string"},
+        "parameters": {"type": "object", "items": {}},  # Any
         "output": {
             "type": "object",
             "properties": {
@@ -196,70 +161,60 @@ JOB_REQUEST_SCHEMA = {
     "required": ["operationId"],
     "example": {
         "operationId": "spatial_subset",
-        "parameters": {
-            "dataset": "demo",
-            "bbox": [1, 51, 4, 52]
-        },
-        "output": {
-            "datasetId": "demo_subset",
-            "title": "My demo subset"
-        }
-    }
+        "parameters": {"dataset": "demo", "bbox": [1, 51, 4, 52]},
+        "output": {"datasetId": "demo_subset", "title": "My demo subset"},
+    },
 }
 
 JOB_REQUEST_BODY_SCHEMA = {
     "description": "Compute job request",
     "required": True,
-    "content": {
-        "application/json": {
-            "schema": JOB_REQUEST_SCHEMA
-        }
-    }
+    "content": {"application/json": {"schema": JOB_REQUEST_SCHEMA}},
 }
 
 PATH_PARAM_OP_ID = {
     "name": "operationId",
     "in": "path",
     "description": "Operation identifier",
-    "schema": {"type": "string"}
+    "schema": {"type": "string"},
 }
 
 PATH_PARAM_JOB_ID = {
     "name": "jobId",
     "in": "path",
     "description": "Job identifier",
-    "schema": {"type": "integer"}
+    "schema": {"type": "integer"},
 }
 
 
-@api.route('/compute/operations')
+@api.route("/compute/operations")
 class ComputeOperationsHandler(ApiHandler[ComputeContext]):
 
     @api.operation(
         operation_id="getComputeOperations",
         summary="Get available compute operations.",
-        responses=OP_LIST_RESPONSES_SCHEMA
+        responses=OP_LIST_RESPONSES_SCHEMA,
     )
     def get(self):
         self.response.finish(get_compute_operations(self.ctx))
 
 
 # noinspection PyPep8Naming
-@api.route('/compute/operations/{operationId}')
+@api.route("/compute/operations/{operationId}")
 class ComputeOperationHandler(ApiHandler[ComputeContext]):
 
     @api.operation(
         operation_id="getComputeOperationInfo",
         summary="Get the details of a given compute operation.",
         parameters=[PATH_PARAM_OP_ID],
-        responses=OP_RESPONSES_SCHEMA
+        responses=OP_RESPONSES_SCHEMA,
     )
     def get(self, operationId):
         self.response.finish(get_compute_operation(self.ctx, operationId))
 
 
 # noinspection PyPep8Naming
-@api.route('/compute/jobs')
+@api.route("/compute/jobs")
 class ComputeJobsHandler(ApiHandler[ComputeContext]):
 
     @api.operation(
@@ -268,16 +223,18 @@ class ComputeJobsHandler(ApiHandler[ComputeContext]):
         responses=JOB_LIST_RESPONSES_SCHEMA,
     )
     def get(self):
-        self.response.finish({
-            "jobs": [
-                {
-                    "jobId": job["jobId"],
-                    "operationId": job["request"]["operationId"],
-                    "status": job["state"]["status"],
-                }
-                for job in self.ctx.jobs.values()
-            ]
-        })
+        self.response.finish(
+            {
+                "jobs": [
+                    {
+                        "jobId": job["jobId"],
+                        "operationId": job["request"]["operationId"],
+                        "status": job["state"]["status"],
+                    }
+                    for job in self.ctx.jobs.values()
+                ]
+            }
+        )
 
     @api.operation(
         operation_id="scheduleComputeJob",
@@ -296,14 +253,16 @@ class ComputeJobsHandler(ApiHandler[ComputeContext]):
         #  done with if-then constructs: see
         #  https://json-schema.org/understanding-json-schema/reference/conditionals.html#if-then-else
         job_request = self.request.json
-        basic_schema = self.put.__openapi__['requestBody']['content'][
-            'application/json']['schema']
+        basic_schema = self.put.__openapi__["requestBody"]["content"][
+            "application/json"
+        ]["schema"]
         # noinspection PyProtectedMember,PyUnresolvedReferences
         op_schema = dict(
             properties=dict(
                 operationId=dict(enum=list(self.ctx.op_registry.ops.keys())),
                 parameters=self.ctx.op_registry.ops[
-                    job_request['operationId']]._op_info.params_schema
+                    job_request["operationId"]
+                ]._op_info.params_schema,
             )
         )
         full_schema = {**basic_schema, **op_schema}
@@ -311,11 +270,11 @@ class ComputeJobsHandler(ApiHandler[ComputeContext]):
             jsonschema.validate(job_request, full_schema)
             self.response.finish(self.ctx.schedule_job(job_request))
         except jsonschema.ValidationError as e:
-            raise ApiError.BadRequest(message=f'{e.message} at {e.json_path}')
+            raise ApiError.BadRequest(message=f"{e.message} at {e.json_path}")
 
 
 # noinspection PyPep8Naming
-@api.route('/compute/jobs/{jobId}')
+@api.route("/compute/jobs/{jobId}")
 class ComputeJobHandler(ApiHandler[ComputeContext]):
 
     @api.operation(

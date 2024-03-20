@@ -23,8 +23,8 @@ from xcube.server.api import Api
 from .context import WmtsContext
 
 api = Api(
-    'ows.wmts',
-    description='xcube OGC WMTS API',
-    required_apis=['tiles', 'datasets'],
-    create_ctx=WmtsContext
+    "ows.wmts",
+    description="xcube OGC WMTS API",
+    required_apis=["tiles", "datasets"],
+    create_ctx=WmtsContext,
 )

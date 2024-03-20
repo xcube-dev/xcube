@@ -47,11 +47,13 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
     @param open_params: keyword arguments.
     """
 
-    def __init__(self,
-                 fs: fsspec.AbstractFileSystem,
-                 root: Optional[str],
-                 data_id: str,
-                 **open_params: Dict[str, Any]):
+    def __init__(
+        self,
+        fs: fsspec.AbstractFileSystem,
+        root: Optional[str],
+        data_id: str,
+        **open_params: Dict[str, Any]
+    ):
         super().__init__(ds_id=data_id)
         self._fs = fs
         self._root = root
@@ -73,15 +75,14 @@ class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
             assert_true(self._fs is None, message="invalid type for fs")
         return len(overviews) + 1
 
-    def _get_dataset_lazily(self, index: int, parameters) \
-            -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters) -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (512, 512))
         self._file_url = self._get_file_url()
         return DatasetGeoTiffFsDataAccessor.open_dataset(
             self._fs,
             self._file_url,
             tile_size,
-            overview_level=index - 1 if index > 0 else None
+            overview_level=index - 1 if index > 0 else None,
         )
 
     def _get_file_url(self):
@@ -97,9 +98,9 @@ MULTI_LEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
         tile_size=JsonArraySchema(
             items=(
                 JsonNumberSchema(minimum=256, default=512),
-                JsonNumberSchema(minimum=256, default=512)
+                JsonNumberSchema(minimum=256, default=512),
             ),
-            default=[512, 512]
+            default=[512, 512],
         ),
     ),
     additional_properties=False,
@@ -116,11 +117,10 @@ class MultiLevelDatasetGeoTiffFsDataAccessor(DatasetGeoTiffFsDataAccessor):
     def get_data_type(cls) -> DataType:
         return MULTI_LEVEL_DATASET_TYPE
 
-    def get_open_data_params_schema(self,
-                                    data_id: str = None) -> JsonObjectSchema:
+    def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return MULTI_LEVEL_GEOTIFF_OPEN_DATA_PARAMS_SCHEMA
 
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
-        assert_instance(data_id, str, name='data_id')
+        assert_instance(data_id, str, name="data_id")
         fs, root, open_params = self.load_fs(open_params)
         return GeoTIFFMultiLevelDataset(fs, root, data_id, **open_params)

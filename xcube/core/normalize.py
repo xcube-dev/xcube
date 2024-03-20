@@ -45,6 +45,7 @@ class DatasetIsNotACubeError(BaseException):
     where y_dim_name and x_dim_name are determined by a dataset's
     :class:GridMapping.
     """
+
     pass
 
 
@@ -60,8 +61,9 @@ def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
     return assert_cube(ds)
 
 
-def normalize_dataset(ds: xr.Dataset,
-                      reverse_decreasing_lat: bool = False) -> xr.Dataset:
+def normalize_dataset(
+    ds: xr.Dataset, reverse_decreasing_lat: bool = False
+) -> xr.Dataset:
     """
     Normalize the geo- and time-coding upon opening the given
     dataset w.r.t. a common (CF-compatible) convention.
@@ -103,10 +105,11 @@ def normalize_dataset(ds: xr.Dataset,
     return ds
 
 
-def encode_cube(cube: xr.Dataset,
-                grid_mapping: Optional[GridMapping] = None,
-                non_cube_subset: Optional[xr.Dataset] = None) \
-        -> xr.Dataset:
+def encode_cube(
+    cube: xr.Dataset,
+    grid_mapping: Optional[GridMapping] = None,
+    non_cube_subset: Optional[xr.Dataset] = None,
+) -> xr.Dataset:
     """
     Encode a *cube* with its *grid_mapping*, and additional variables in
     *non_cube_subset* into a new dataset.
@@ -140,24 +143,25 @@ def encode_cube(cube: xr.Dataset,
     if grid_mapping is None:
         return dataset
 
-    if grid_mapping.crs.is_geographic \
-            and grid_mapping.is_regular \
-            and grid_mapping.xy_dim_names == ('lon', 'lat') \
-            and grid_mapping.xy_var_names == ('lon', 'lat'):
+    if (
+        grid_mapping.crs.is_geographic
+        and grid_mapping.is_regular
+        and grid_mapping.xy_dim_names == ("lon", "lat")
+        and grid_mapping.xy_var_names == ("lon", "lat")
+    ):
         # No need to add CRS variable
         return dataset
 
-    return dataset.assign(
-        crs=xr.DataArray(0, attrs=grid_mapping.crs.to_cf())
-    )
+    return dataset.assign(crs=xr.DataArray(0, attrs=grid_mapping.crs.to_cf()))
 
 
-def decode_cube(dataset: xr.Dataset,
-                normalize: bool = False,
-                force_copy: bool = False,
-                force_non_empty: bool = False,
-                force_geographic: bool = False) \
-        -> Tuple[xr.Dataset, GridMapping, xr.Dataset]:
+def decode_cube(
+    dataset: xr.Dataset,
+    normalize: bool = False,
+    force_copy: bool = False,
+    force_non_empty: bool = False,
+    force_geographic: bool = False,
+) -> Tuple[xr.Dataset, GridMapping, xr.Dataset]:
     """
     Decode a *dataset* into a cube variable subset, a grid mapping, and
     the non-cube variables of *dataset*.
@@ -171,7 +175,7 @@ def decode_cube(dataset: xr.Dataset,
     whose dimensions are ("time" , [...], y_dim_name, x_dim_name).
     Here y_dim_name and x_dim_name are determined by the
     :class:GridMapping derived from *dataset*.
-    
+
     :param dataset: The dataset.
     :param normalize: Whether to normalize the *dataset*,
         before the cube subset is determined.
@@ -197,36 +201,41 @@ def decode_cube(dataset: xr.Dataset,
     try:
         grid_mapping = GridMapping.from_dataset(dataset, tolerance=1e-4)
     except ValueError as e:
-        raise DatasetIsNotACubeError(f'Failed to detect grid mapping:'
-                                     f' {e}') from e
+        raise DatasetIsNotACubeError(f"Failed to detect grid mapping:" f" {e}") from e
     if force_geographic and not grid_mapping.crs.is_geographic:
         # We will need to overcome this soon!
-        raise DatasetIsNotACubeError(f'Grid mapping must use geographic CRS,'
-                                     f' but was {grid_mapping.crs.name!r}')
+        raise DatasetIsNotACubeError(
+            f"Grid mapping must use geographic CRS,"
+            f" but was {grid_mapping.crs.name!r}"
+        )
 
     x_dim_name, y_dim_name = grid_mapping.xy_dim_names
-    time_name = 'time'
+    time_name = "time"
 
     cube_vars = set()
     dropped_vars = set()
     for var_name, var in dataset.data_vars.items():
-        if var.ndim >= 3 \
-                and var.dims[0] == time_name \
-                and var.dims[-2] == y_dim_name \
-                and var.dims[-1] == x_dim_name \
-                and np.all(var.shape) \
-                and var.shape[-2] > 1 \
-                and var.shape[-1] > 1:
+        if (
+            var.ndim >= 3
+            and var.dims[0] == time_name
+            and var.dims[-2] == y_dim_name
+            and var.dims[-1] == x_dim_name
+            and np.all(var.shape)
+            and var.shape[-2] > 1
+            and var.shape[-1] > 1
+        ):
             cube_vars.add(var_name)
         else:
             dropped_vars.add(var_name)
 
     if force_non_empty and len(dropped_vars) == len(dataset.data_vars):
         # Or just return empty dataset?
-        raise DatasetIsNotACubeError(f'No variables found with dimensions'
-                                     f' ({time_name!r}, [...]'
-                                     f' {y_dim_name!r}, {x_dim_name!r})'
-                                     f' or dimension sizes too small')
+        raise DatasetIsNotACubeError(
+            f"No variables found with dimensions"
+            f" ({time_name!r}, [...]"
+            f" {y_dim_name!r}, {x_dim_name!r})"
+            f" or dimension sizes too small"
+        )
 
     if not force_copy and not dropped_vars:
         # Pure cube!
@@ -234,9 +243,7 @@ def decode_cube(dataset: xr.Dataset,
 
     cube = dataset.drop_vars(dropped_vars).assign_attrs(dataset.attrs)
 
-    return (cube,
-            grid_mapping,
-            dataset.drop_vars(cube_vars))
+    return (cube, grid_mapping, dataset.drop_vars(cube_vars))
 
 
 def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
@@ -247,51 +254,60 @@ def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
     :return: a normalized xarray dataset
     """
 
-    if 'latitude_centers' not in ds.coords or 'lon' in ds.coords:
+    if "latitude_centers" not in ds.coords or "lon" in ds.coords:
         return ds
 
     ds_zonal = ds.copy()
-    resolution = (ds.latitude_centers[1].values - ds.latitude_centers[0].values)
+    resolution = ds.latitude_centers[1].values - ds.latitude_centers[0].values
     ds_zonal = ds_zonal.assign_coords(
-        lon=[i + (resolution / 2) for i in np.arange(-180.0, 180.0, resolution)])
+        lon=[i + (resolution / 2) for i in np.arange(-180.0, 180.0, resolution)]
+    )
 
     for var in ds_zonal.data_vars:
-        if 'latitude_centers' in ds_zonal[var].dims:
-            ds_zonal[var] = xr.concat([ds_zonal[var] for _ in ds_zonal.lon], 'lon')
-            ds_zonal[var]['lon'] = ds_zonal.lon
-            var_dims = ds_zonal[var].attrs.get('dimensions', [])
-            lat_center_index = var_dims.index('latitude_centers')
-            var_dims.remove('latitude_centers')
-            var_dims.append('lat')
-            var_dims.append('lon')
-            var_chunk_sizes = ds_zonal[var].attrs.get('chunk_sizes', [])
+        if "latitude_centers" in ds_zonal[var].dims:
+            ds_zonal[var] = xr.concat([ds_zonal[var] for _ in ds_zonal.lon], "lon")
+            ds_zonal[var]["lon"] = ds_zonal.lon
+            var_dims = ds_zonal[var].attrs.get("dimensions", [])
+            lat_center_index = var_dims.index("latitude_centers")
+            var_dims.remove("latitude_centers")
+            var_dims.append("lat")
+            var_dims.append("lon")
+            var_chunk_sizes = ds_zonal[var].attrs.get("chunk_sizes", [])
             lat_chunk_size = var_chunk_sizes[lat_center_index]
             del var_chunk_sizes[lat_center_index]
             var_chunk_sizes.append(lat_chunk_size)
             var_chunk_sizes.append(ds_zonal.lon.size)
-    ds_zonal = ds_zonal.rename_dims({'latitude_centers': 'lat'})
-    ds_zonal = ds_zonal.drop_vars('latitude_centers')
+    ds_zonal = ds_zonal.rename_dims({"latitude_centers": "lat"})
+    ds_zonal = ds_zonal.drop_vars("latitude_centers")
     ds_zonal = ds_zonal.assign_coords(lat=ds.latitude_centers.values)
-    ds_zonal = ds_zonal.transpose(..., 'lat', 'lon')
+    ds_zonal = ds_zonal.transpose(..., "lat", "lon")
 
-    has_lon_bnds = 'lon_bnds' in ds_zonal.coords or 'lon_bnds' in ds_zonal
+    has_lon_bnds = "lon_bnds" in ds_zonal.coords or "lon_bnds" in ds_zonal
     if not has_lon_bnds:
-        lon_values = [[i - (resolution / 2), i + (resolution / 2)] for i in ds_zonal.lon.values]
-        ds_zonal = ds_zonal.assign_coords(lon_bnds=xr.DataArray(lon_values, dims=['lon', 'bnds']))
-    has_lat_bnds = 'lat_bnds' in ds_zonal.coords or 'lat_bnds' in ds_zonal
+        lon_values = [
+            [i - (resolution / 2), i + (resolution / 2)] for i in ds_zonal.lon.values
+        ]
+        ds_zonal = ds_zonal.assign_coords(
+            lon_bnds=xr.DataArray(lon_values, dims=["lon", "bnds"])
+        )
+    has_lat_bnds = "lat_bnds" in ds_zonal.coords or "lat_bnds" in ds_zonal
     if not has_lat_bnds:
-        lat_values = [[i - (resolution / 2), i + (resolution / 2)] for i in ds_zonal.lat.values]
-        ds_zonal = ds_zonal.assign_coords(lat_bnds=xr.DataArray(lat_values, dims=['lat', 'bnds']))
+        lat_values = [
+            [i - (resolution / 2), i + (resolution / 2)] for i in ds_zonal.lat.values
+        ]
+        ds_zonal = ds_zonal.assign_coords(
+            lat_bnds=xr.DataArray(lat_values, dims=["lat", "bnds"])
+        )
 
-    ds_zonal.lon.attrs['bounds'] = 'lon_bnds'
-    ds_zonal.lon.attrs['long_name'] = 'longitude'
-    ds_zonal.lon.attrs['standard_name'] = 'longitude'
-    ds_zonal.lon.attrs['units'] = 'degrees_east'
+    ds_zonal.lon.attrs["bounds"] = "lon_bnds"
+    ds_zonal.lon.attrs["long_name"] = "longitude"
+    ds_zonal.lon.attrs["standard_name"] = "longitude"
+    ds_zonal.lon.attrs["units"] = "degrees_east"
 
-    ds_zonal.lat.attrs['bounds'] = 'lat_bnds'
-    ds_zonal.lat.attrs['long_name'] = 'latitude'
-    ds_zonal.lat.attrs['standard_name'] = 'latitude'
-    ds_zonal.lat.attrs['units'] = 'degrees_north'
+    ds_zonal.lat.attrs["bounds"] = "lat_bnds"
+    ds_zonal.lat.attrs["long_name"] = "latitude"
+    ds_zonal.lat.attrs["standard_name"] = "latitude"
+    ds_zonal.lat.attrs["units"] = "degrees_north"
 
     return ds_zonal
 
@@ -306,11 +322,11 @@ def _normalize_lat_lon(ds: xr.Dataset) -> xr.Dataset:
     lon_name = get_lon_dim_name_impl(ds)
 
     name_dict = dict()
-    if lat_name and 'lat' not in ds:
-        name_dict[lat_name] = 'lat'
+    if lat_name and "lat" not in ds:
+        name_dict[lat_name] = "lat"
 
-    if lon_name and 'lon' not in ds:
-        name_dict[lon_name] = 'lon'
+    if lon_name and "lon" not in ds:
+        name_dict[lon_name] = "lon"
 
     if name_dict:
         ds = ds.rename(name_dict)
@@ -328,11 +344,11 @@ def _normalize_lat_lon_2d(ds: xr.Dataset) -> xr.Dataset:
     :param ds: some xarray dataset
     :return: a normalized xarray dataset, or the original one
     """
-    if not ('lat' in ds and 'lon' in ds):
+    if not ("lat" in ds and "lon" in ds):
         return ds
 
-    lat_var = ds['lat']
-    lon_var = ds['lon']
+    lat_var = ds["lat"]
+    lon_var = ds["lon"]
 
     lat_dims = lat_var.dims
     lon_dims = lon_var.dims
@@ -357,15 +373,17 @@ def _normalize_lat_lon_2d(ds: xr.Dataset) -> xr.Dataset:
     # Drop lat lon in any case. If note qual_lat and equal_lon subset_spatial_impl will
     # subsequently fail with a ValidationError
 
-    ds = ds.drop_vars(['lon', 'lat'])
+    ds = ds.drop_vars(["lon", "lat"])
 
     if not (equal_lat and equal_lon):
         return ds
 
-    ds = ds.rename({
-        x_dim_name: 'lon',
-        y_dim_name: 'lat',
-    })
+    ds = ds.rename(
+        {
+            x_dim_name: "lon",
+            y_dim_name: "lat",
+        }
+    )
 
     ds = ds.assign_coords(lon=np.array(lon_data_1), lat=np.array(lat_data_1))
 
@@ -380,10 +398,10 @@ def _normalize_lon_360(ds: xr.Dataset) -> xr.Dataset:
     :return: The fixed dataset or the original dataset.
     """
 
-    if 'lon' not in ds.coords:
+    if "lon" not in ds.coords:
         return ds
 
-    lon_var = ds.coords['lon']
+    lon_var = ds.coords["lon"]
 
     if len(lon_var.shape) != 1:
         return ds
@@ -394,27 +412,29 @@ def _normalize_lon_360(ds: xr.Dataset) -> xr.Dataset:
 
     lon_size_05 = lon_size // 2
     lon_values = lon_var.values
-    if not np.any(lon_values[lon_size_05:] > 180.):
+    if not np.any(lon_values[lon_size_05:] > 180.0):
         return ds
 
     delta_lon = lon_values[1] - lon_values[0]
 
     var_names = [var_name for var_name in ds.data_vars]
 
-    ds = ds.assign_coords(lon=xr.DataArray(np.linspace(-180. + 0.5 * delta_lon,
-                                                       +180. - 0.5 * delta_lon,
-                                                       lon_size),
-                                           dims=ds['lon'].dims,
-                                           attrs=dict(long_name='longitude',
-                                                      standard_name='longitude',
-                                                      units='degrees east')))
+    ds = ds.assign_coords(
+        lon=xr.DataArray(
+            np.linspace(-180.0 + 0.5 * delta_lon, +180.0 - 0.5 * delta_lon, lon_size),
+            dims=ds["lon"].dims,
+            attrs=dict(
+                long_name="longitude", standard_name="longitude", units="degrees east"
+            ),
+        )
+    )
 
     ds = adjust_spatial_attrs(ds, True)
 
     new_vars = dict()
     for var_name in var_names:
         var = ds[var_name]
-        if 'lon' in var.dims:
+        if "lon" in var.dims:
             new_var = var.roll(lon=lon_size_05, roll_coords=False)
             new_var.encoding.update(var.encoding)
             new_vars[var_name] = new_var
@@ -471,7 +491,7 @@ def _normalize_jd2datetime(ds: xr.Dataset) -> xr.Dataset:
 
     units = units or long_name
 
-    if not units or units != 'time in julian days':
+    if not units or units != "time in julian days":
         return ds
 
     ds = ds.copy()
@@ -479,10 +499,10 @@ def _normalize_jd2datetime(ds: xr.Dataset) -> xr.Dataset:
     # noinspection PyTypeChecker
     tuples = [jd2gcal(x, 0) for x in ds.time.values]
     # Replace JD time with datetime
-    ds['time'] = [datetime(x[0], x[1], x[2]) for x in tuples]
+    ds["time"] = [datetime(x[0], x[1], x[2]) for x in tuples]
     # Adjust attributes
-    ds.time.attrs['long_name'] = 'time'
-    ds.time.attrs['calendar'] = 'standard'
+    ds.time.attrs["long_name"] = "time"
+    ds.time.attrs["calendar"] = "standard"
 
     return ds
 
@@ -502,7 +522,7 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
              variables turned into coordinate variables.
     """
 
-    if 'bnds' not in ds.dims:
+    if "bnds" not in ds.dims:
         return ds
 
     coord_var_names = set()
@@ -516,8 +536,12 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
 
     old_ds = ds
     ds = old_ds.drop_vars(coord_var_names)
-    ds = ds.assign_coords(**{bounds_var_name: old_ds[bounds_var_name]
-                             for bounds_var_name in coord_var_names})
+    ds = ds.assign_coords(
+        **{
+            bounds_var_name: old_ds[bounds_var_name]
+            for bounds_var_name in coord_var_names
+        }
+    )
 
     return ds
 
@@ -546,54 +570,64 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
         # Can't do anything
         return ds
 
-    time = _get_valid_time_coord(ds, 'time')
+    time = _get_valid_time_coord(ds, "time")
     if time is None:
-        time = _get_valid_time_coord(ds, 't')
+        time = _get_valid_time_coord(ds, "t")
         if time is not None:
             ds = ds.rename_vars({"t": "time"})
-            ds = ds.assign_coords(time=('time', ds.time.data))
+            ds = ds.assign_coords(time=("time", ds.time.data))
             time = ds.time
     if time is not None:
         if not time.dims:
-            ds = ds.drop_vars('time')
+            ds = ds.drop_vars("time")
         elif len(time.dims) == 1:
             time_dim_name = time.dims[0]
-            is_time_used_as_dim = any([(time_dim_name in ds[var_name].dims)
-                                       for var_name in ds.data_vars])
+            is_time_used_as_dim = any(
+                [(time_dim_name in ds[var_name].dims) for var_name in ds.data_vars]
+            )
             if is_time_used_as_dim:
                 # It seems we already have valid time coordinates
                 return ds
-            time_bnds_var_name = time.attrs.get('bounds')
+            time_bnds_var_name = time.attrs.get("bounds")
             if time_bnds_var_name in ds:
                 ds = ds.drop_vars(time_bnds_var_name)
-            ds = ds.drop_vars('time')
-            ds = ds.drop_vars([var_name for var_name in ds.coords
-                               if time_dim_name in ds.coords[var_name].dims])
+            ds = ds.drop_vars("time")
+            ds = ds.drop_vars(
+                [
+                    var_name
+                    for var_name in ds.coords
+                    if time_dim_name in ds.coords[var_name].dims
+                ]
+            )
 
     try:
-        ds = ds.expand_dims('time')
+        ds = ds.expand_dims("time")
     except BaseException as e:
-        warnings.warn(f'failed to add time dimension: {e}')
+        warnings.warn(f"failed to add time dimension: {e}")
     if time_coverage_start and time_coverage_end:
-        time_value = time_coverage_start + 0.5 * (time_coverage_end - time_coverage_start)
+        time_value = time_coverage_start + 0.5 * (
+            time_coverage_end - time_coverage_start
+        )
     else:
         time_value = time_coverage_start or time_coverage_end
-    new_coord_vars = dict(time=xr.DataArray([time_value], dims=['time']))
+    new_coord_vars = dict(time=xr.DataArray([time_value], dims=["time"]))
     if time_coverage_start and time_coverage_end:
-        has_time_bnds = 'time_bnds' in ds.coords or 'time_bnds' in ds
+        has_time_bnds = "time_bnds" in ds.coords or "time_bnds" in ds
         if not has_time_bnds:
             new_coord_vars.update(
-                time_bnds=xr.DataArray([[time_coverage_start, time_coverage_end]],
-                                       dims=['time', 'bnds']))
+                time_bnds=xr.DataArray(
+                    [[time_coverage_start, time_coverage_end]], dims=["time", "bnds"]
+                )
+            )
     ds = ds.assign_coords(**new_coord_vars)
-    ds.coords['time'].attrs['long_name'] = 'time'
-    ds.coords['time'].attrs['standard_name'] = 'time'
-    ds.coords['time'].encoding['units'] = 'days since 1970-01-01'
-    if 'time_bnds' in ds.coords:
-        ds.coords['time'].attrs['bounds'] = 'time_bnds'
-        ds.coords['time_bnds'].attrs['long_name'] = 'time'
-        ds.coords['time_bnds'].attrs['standard_name'] = 'time'
-        ds.coords['time_bnds'].encoding['units'] = 'days since 1970-01-01'
+    ds.coords["time"].attrs["long_name"] = "time"
+    ds.coords["time"].attrs["standard_name"] = "time"
+    ds.coords["time"].encoding["units"] = "days since 1970-01-01"
+    if "time_bnds" in ds.coords:
+        ds.coords["time"].attrs["bounds"] = "time_bnds"
+        ds.coords["time_bnds"].attrs["long_name"] = "time"
+        ds.coords["time_bnds"].attrs["standard_name"] = "time"
+        ds.coords["time_bnds"].encoding["units"] = "days since 1970-01-01"
 
     return ds
 
@@ -601,9 +635,7 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
 def _get_valid_time_coord(ds: xr.Dataset, name: str) -> Optional[xr.DataArray]:
     if name in ds:
         time = ds[name]
-        if time.size > 0 \
-                and time.ndim == 1 \
-                and _is_supported_time_dtype(time.dtype):
+        if time.size > 0 and time.ndim == 1 and _is_supported_time_dtype(time.dtype):
             return time
     return None
 
@@ -613,18 +645,18 @@ def _is_supported_time_dtype(dtype: np.dtype) -> bool:
 
 
 def _get_time_coverage_from_ds(ds: xr.Dataset) -> (pd.Timestamp, pd.Timestamp):
-    time_coverage_start = ds.attrs.get('time_coverage_start')
+    time_coverage_start = ds.attrs.get("time_coverage_start")
     if time_coverage_start is not None:
         time_coverage_start = get_timestamp_from_string(time_coverage_start)
 
-    time_coverage_end = ds.attrs.get('time_coverage_end')
+    time_coverage_end = ds.attrs.get("time_coverage_end")
     if time_coverage_end is not None:
         time_coverage_end = get_timestamp_from_string(time_coverage_end)
 
     if time_coverage_start or time_coverage_end:
         return time_coverage_start, time_coverage_end
 
-    filename = ds.encoding.get('source', '').split('/')[-1]
+    filename = ds.encoding.get("source", "").split("/")[-1]
     return get_timestamps_from_string(filename)
 
 
@@ -632,8 +664,8 @@ def _get_time_coverage_from_ds(ds: xr.Dataset) -> (pd.Timestamp, pd.Timestamp):
 #   by another on that uses a dataset's grid mapping,
 #   see code in xcube/core/gen2/local/mladjuster.py
 
-def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) \
-        -> xr.Dataset:
+
+def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Dataset:
     """
     Adjust the global spatial attributes of the dataset by doing some
     introspection of the dataset and adjusting the appropriate attributes
@@ -653,7 +685,7 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) \
 
     copied = False
 
-    for dim in ('lon', 'lat'):
+    for dim in ("lon", "lat"):
         geo_spatial_attrs = get_geo_spatial_attrs_from_var(
             ds, dim, allow_point=allow_point
         )
@@ -666,27 +698,31 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) \
                         copied = True
                     ds.attrs[key] = geo_spatial_attrs[key]
 
-    lon_min = ds.attrs.get('geospatial_lon_min')
-    lat_min = ds.attrs.get('geospatial_lat_min')
-    lon_max = ds.attrs.get('geospatial_lon_max')
-    lat_max = ds.attrs.get('geospatial_lat_max')
+    lon_min = ds.attrs.get("geospatial_lon_min")
+    lat_min = ds.attrs.get("geospatial_lat_min")
+    lon_max = ds.attrs.get("geospatial_lon_max")
+    lat_max = ds.attrs.get("geospatial_lat_max")
     # TODO (forman): add geospatial_lon/lat_resolution
 
-    if lon_min is not None \
-            and lat_min is not None \
-            and lon_max is not None \
-            and lat_max is not None:
+    if (
+        lon_min is not None
+        and lat_min is not None
+        and lon_max is not None
+        and lat_max is not None
+    ):
 
         if not copied:
             ds = ds.copy()
 
-        ds.attrs['geospatial_bounds_crs'] = 'CRS84'
-        ds.attrs['geospatial_bounds'] = f'POLYGON((' \
-                                        f'{lon_min} {lat_min}, ' \
-                                        f'{lon_min} {lat_max}, ' \
-                                        f'{lon_max} {lat_max}, ' \
-                                        f'{lon_max} {lat_min}, ' \
-                                        f'{lon_min} {lat_min}))'
+        ds.attrs["geospatial_bounds_crs"] = "CRS84"
+        ds.attrs["geospatial_bounds"] = (
+            f"POLYGON(("
+            f"{lon_min} {lat_min}, "
+            f"{lon_min} {lat_max}, "
+            f"{lon_max} {lat_max}, "
+            f"{lon_max} {lat_min}, "
+            f"{lon_min} {lat_min}))"
+        )
 
     return ds
 
@@ -698,17 +734,15 @@ def is_coord_var(ds: xr.Dataset, var: xr.DataArray):
 
 
 def is_bounds_var(ds: xr.Dataset, var: xr.DataArray):
-    if len(var.dims) == 2 \
-            and var.shape[1] == 2 \
-            and var.dims[1] == 'bnds':
+    if len(var.dims) == 2 and var.shape[1] == 2 and var.dims[1] == "bnds":
         coord_name = var.dims[0]
         return coord_name in ds
     return False
 
 
-def get_geo_spatial_attrs_from_var(ds: xr.Dataset,
-                                   var_name: str,
-                                   allow_point: bool = False) -> Optional[dict]:
+def get_geo_spatial_attrs_from_var(
+    ds: xr.Dataset, var_name: str, allow_point: bool = False
+) -> Optional[dict]:
     """
     Get spatial boundaries, resolution and units of the given dimension of the given
     dataset. If the 'bounds' are explicitly defined, these will be used for
@@ -725,25 +759,29 @@ def get_geo_spatial_attrs_from_var(ds: xr.Dataset,
         return None
 
     var = ds[var_name]
-    res_name = 'geospatial_{}_resolution'.format(var_name)
-    min_name = 'geospatial_{}_min'.format(var_name)
-    max_name = 'geospatial_{}_max'.format(var_name)
-    units_name = 'geospatial_{}_units'.format(var_name)
+    res_name = "geospatial_{}_resolution".format(var_name)
+    min_name = "geospatial_{}_min".format(var_name)
+    max_name = "geospatial_{}_max".format(var_name)
+    units_name = "geospatial_{}_units".format(var_name)
 
-    if 'bounds' in var.attrs:
+    if "bounds" in var.attrs:
         # According to CF Conventions the corresponding 'bounds' coordinate variable name
         # should be in the attributes of the coordinate variable
-        bnds_name = var.attrs['bounds']
+        bnds_name = var.attrs["bounds"]
     else:
         # If 'bounds' attribute is missing, the bounds coordinate variable may be named
         # "<dim>_bnds"
-        bnds_name = '%s_bnds' % var_name
+        bnds_name = "%s_bnds" % var_name
 
     dim_var = None
 
     if bnds_name in ds:
         bnds_var = ds[bnds_name]
-        if len(bnds_var.shape) == 2 and bnds_var.shape[0] > 0 and bnds_var.shape[1] == 2:
+        if (
+            len(bnds_var.shape) == 2
+            and bnds_var.shape[0] > 0
+            and bnds_var.shape[1] == 2
+        ):
             dim_var = bnds_var
             dim_res = abs(bnds_var[0, 1] - bnds_var[0, 0])
             if bnds_var.shape[0] > 1:
@@ -765,8 +803,12 @@ def get_geo_spatial_attrs_from_var(ds: xr.Dataset,
                     dim_res = ds.attrs[res_name]
                     if isinstance(dim_res, str):
                         # remove any units from string
-                        dim_res = dim_res.replace('degree', '').replace('deg', ''). \
-                            replace('°', '').strip()
+                        dim_res = (
+                            dim_res.replace("degree", "")
+                            .replace("deg", "")
+                            .replace("°", "")
+                            .strip()
+                        )
                     try:
                         dim_res = float(dim_res)
                         dim_var = var
@@ -791,8 +833,8 @@ def get_geo_spatial_attrs_from_var(ds: xr.Dataset,
         # Cannot determine spatial extent for variable/dimension var_name
         return None
 
-    if 'units' in var.attrs:
-        dim_units = var.attrs['units']
+    if "units" in var.attrs:
+        dim_units = var.attrs["units"]
     else:
         dim_units = None
 
@@ -814,7 +856,7 @@ def get_lon_dim_name_impl(ds: Union[xr.Dataset, xr.DataArray]) -> Optional[str]:
     :param ds: An xarray Dataset
     :return: the name or None
     """
-    return _get_dim_name(ds, ['lon', 'longitude', 'long'])
+    return _get_dim_name(ds, ["lon", "longitude", "long"])
 
 
 def get_lat_dim_name_impl(ds: Union[xr.Dataset, xr.DataArray]) -> Optional[str]:
@@ -823,11 +865,12 @@ def get_lat_dim_name_impl(ds: Union[xr.Dataset, xr.DataArray]) -> Optional[str]:
     :param ds: An xarray Dataset
     :return: the name or None
     """
-    return _get_dim_name(ds, ['lat', 'latitude'])
+    return _get_dim_name(ds, ["lat", "latitude"])
 
 
-def _get_dim_name(ds: Union[xr.Dataset, xr.DataArray], possible_names: Sequence[str]) \
-        -> Optional[str]:
+def _get_dim_name(
+    ds: Union[xr.Dataset, xr.DataArray], possible_names: Sequence[str]
+) -> Optional[str]:
     for name in possible_names:
         if name in ds.dims:
             return name
@@ -856,16 +899,16 @@ def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
 
         must_transpose = False
 
-        if 'time' in dim_names:
-            time_index = dim_names.index('time')
+        if "time" in dim_names:
+            time_index = dim_names.index("time")
             if time_index > 0:
                 must_transpose = _swap_pos(dim_names, time_index, 0)
 
-        if num_dims >= 2 and 'lat' in dim_names and 'lon' in dim_names:
-            lat_index = dim_names.index('lat')
+        if num_dims >= 2 and "lat" in dim_names and "lon" in dim_names:
+            lat_index = dim_names.index("lat")
             if lat_index != num_dims - 2:
                 must_transpose = _swap_pos(dim_names, lat_index, -2)
-            lon_index = dim_names.index('lon')
+            lon_index = dim_names.index("lon")
             if lon_index != num_dims - 1:
                 must_transpose = _swap_pos(dim_names, lon_index, -1)
 
@@ -874,8 +917,8 @@ def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
                 ds = ds.copy()
                 copy_created = True
             ds[var_name] = var.transpose(*dim_names)
-            if var.encoding and 'chunksize' in ds[var_name].data:
-                ds[var_name].encoding['chunks'] = ds[var_name].data.chunksize
+            if var.encoding and "chunksize" in ds[var_name].data:
+                ds[var_name].encoding["chunks"] = ds[var_name].data.chunksize
 
     return ds
 

@@ -24,10 +24,16 @@ import click
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-@click.command(name='benchmark', hidden=True)
-@click.argument('config')
-@click.option('--repeats', '-R', metavar='REPEATS', type=int, default=1,
-              help="Number of repetitions")
+@click.command(name="benchmark", hidden=True)
+@click.argument("config")
+@click.option(
+    "--repeats",
+    "-R",
+    metavar="REPEATS",
+    type=int,
+    default=1,
+    help="Number of repetitions",
+)
 def benchmark(config: str, repeats: int):
     """
     Measure runtime performance of an executable.
@@ -60,6 +66,7 @@ def benchmark(config: str, repeats: int):
     repetition_count = repeats
 
     import yaml
+
     with open(config_path) as stream:
         config = yaml.safe_load(stream)
 
@@ -71,6 +78,7 @@ def benchmark(config: str, repeats: int):
     param_values = [config[param_name] for param_name in param_names]
 
     import numpy as np
+
     param_values_combinations = list(itertools.product(*param_values))
     param_combination_count = len(param_values_combinations)
     times = np.ndarray((repetition_count, param_combination_count), dtype=np.float64)
@@ -86,7 +94,10 @@ def benchmark(config: str, repeats: int):
             if isinstance(command_template, str):
                 command = _apply_template(command_template, params)
             else:
-                command = [_apply_template(arg_template, params) for arg_template in command_template]
+                command = [
+                    _apply_template(arg_template, params)
+                    for arg_template in command_template
+                ]
 
             try:
                 t0 = time.perf_counter()
@@ -105,31 +116,35 @@ def benchmark(config: str, repeats: int):
         times_stdev = np.nanstd(times, axis=0)
         times_min = np.nanmin(times, axis=0)
         times_max = np.nanmax(times, axis=0)
-        print(f"id;"
-              f"{';'.join(param_names)};"
-              f"time-mean;"
-              f"time-median;"
-              f"time-stdev;"
-              f"time-min;"
-              f"time-max")
+        print(
+            f"id;"
+            f"{';'.join(param_names)};"
+            f"time-mean;"
+            f"time-median;"
+            f"time-stdev;"
+            f"time-min;"
+            f"time-max"
+        )
         for param_combination_index in range(param_combination_count):
             param_values = param_values_combinations[param_combination_index]
-            print(f"{param_combination_index};"
-                  f"{';'.join(param_values)};"
-                  f"{times_mean[param_combination_index]};"
-                  f"{times_median[param_combination_index]};"
-                  f"{times_stdev[param_combination_index]};"
-                  f"{times_min[param_combination_index]};"
-                  f"{times_max[param_combination_index]}")
+            print(
+                f"{param_combination_index};"
+                f"{';'.join(param_values)};"
+                f"{times_mean[param_combination_index]};"
+                f"{times_median[param_combination_index]};"
+                f"{times_stdev[param_combination_index]};"
+                f"{times_min[param_combination_index]};"
+                f"{times_max[param_combination_index]}"
+            )
     else:
-        print(f"id;"
-              f"{';'.join(param_names)};"
-              f"time")
+        print(f"id;" f"{';'.join(param_names)};" f"time")
         for param_combination_index in range(param_combination_count):
             param_values = param_values_combinations[param_combination_index]
-            print(f"{param_combination_index};"
-                  f"{';'.join(param_values)};"
-                  f"{times[0, param_combination_index]}")
+            print(
+                f"{param_combination_index};"
+                f"{';'.join(param_values)};"
+                f"{times[0, param_combination_index]}"
+            )
 
 
 def _apply_template(template, params) -> str:

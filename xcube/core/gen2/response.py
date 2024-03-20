@@ -31,22 +31,24 @@ from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
-STATUS_IDS = ['ok', 'error', 'warning']
+STATUS_IDS = ["ok", "error", "warning"]
 
-R = TypeVar('R', bound=JsonObject)
+R = TypeVar("R", bound=JsonObject)
 
 
 class GenericCubeGeneratorResult(Generic[R], JsonObject):
-    def __init__(self,
-                 status: str,
-                 status_code: Optional[int] = None,
-                 result: Optional[R] = None,
-                 message: Optional[str] = None,
-                 output: Optional[Sequence[str]] = None,
-                 traceback: Optional[Sequence[str]] = None,
-                 versions: Optional[Dict[str, str]] = None):
-        assert_instance(status, str, name='status')
-        assert_in(status, STATUS_IDS, name='status')
+    def __init__(
+        self,
+        status: str,
+        status_code: Optional[int] = None,
+        result: Optional[R] = None,
+        message: Optional[str] = None,
+        output: Optional[Sequence[str]] = None,
+        traceback: Optional[Sequence[str]] = None,
+        versions: Optional[Dict[str, str]] = None,
+    ):
+        assert_instance(status, str, name="status")
+        assert_in(status, STATUS_IDS, name="status")
         self.status = status
         self.status_code = status_code
         self.result = result
@@ -55,22 +57,26 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
         self.traceback = list(traceback) if traceback else None
         self.versions = dict(versions) if versions else None
 
-    def derive(self,
-               /,
-               status: Optional[str] = None,
-               status_code: Optional[int] = None,
-               result: Optional[R] = None,
-               message: Optional[str] = None,
-               output: Optional[Sequence[str]] = None,
-               traceback: Optional[Sequence[str]] = None,
-               versions: Optional[Dict[str, str]] = None) -> R:
-        return self.__class__(status or self.status,
-                              status_code=status_code or self.status_code,
-                              result=result or self.result,
-                              message=message or self.message,
-                              output=output or self.output,
-                              traceback=traceback or self.traceback,
-                              versions=versions or self.versions)
+    def derive(
+        self,
+        /,
+        status: Optional[str] = None,
+        status_code: Optional[int] = None,
+        result: Optional[R] = None,
+        message: Optional[str] = None,
+        output: Optional[Sequence[str]] = None,
+        traceback: Optional[Sequence[str]] = None,
+        versions: Optional[Dict[str, str]] = None,
+    ) -> R:
+        return self.__class__(
+            status or self.status,
+            status_code=status_code or self.status_code,
+            result=result or self.result,
+            message=message or self.message,
+            output=output or self.output,
+            traceback=traceback or self.traceback,
+            versions=versions or self.versions,
+        )
 
     @classmethod
     @abstractmethod
@@ -91,16 +97,17 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
                 message=JsonStringSchema(),
                 output=JsonArraySchema(items=JsonStringSchema()),
                 traceback=JsonArraySchema(items=JsonStringSchema()),
-                versions=JsonObjectSchema(additional_properties=True)
+                versions=JsonObjectSchema(additional_properties=True),
             ),
-            required=['status'],
+            required=["status"],
             additional_properties=True,
             factory=cls,
         )
 
 
-def make_cube_generator_result_class(result_type: Type[R]) \
-        -> Type[GenericCubeGeneratorResult[R]]:
+def make_cube_generator_result_class(
+    result_type: Type[R],
+) -> Type[GenericCubeGeneratorResult[R]]:
     class SpecificCubeGeneratorResult(GenericCubeGeneratorResult[R]):
         @classmethod
         def get_result_schema(cls) -> JsonObjectSchema:
@@ -119,7 +126,7 @@ class CubeReference(JsonObject):
             properties=dict(
                 data_id=JsonStringSchema(min_length=1),
             ),
-            required=['data_id'],
+            required=["data_id"],
             additional_properties=False,
             factory=cls,
         )
@@ -129,10 +136,12 @@ CubeGeneratorResult = make_cube_generator_result_class(CubeReference)
 
 
 class CubeInfo(JsonObject):
-    def __init__(self,
-                 dataset_descriptor: DatasetDescriptor,
-                 size_estimation: Dict[str, Any],
-                 **kwargs):
+    def __init__(
+        self,
+        dataset_descriptor: DatasetDescriptor,
+        size_estimation: Dict[str, Any],
+        **kwargs,
+    ):
         self.dataset_descriptor: DatasetDescriptor = dataset_descriptor
         self.size_estimation: dict = size_estimation
 
@@ -141,11 +150,11 @@ class CubeInfo(JsonObject):
         return JsonObjectSchema(
             properties=dict(
                 dataset_descriptor=DatasetDescriptor.get_schema(),
-                size_estimation=JsonObjectSchema(additional_properties=True)
+                size_estimation=JsonObjectSchema(additional_properties=True),
             ),
-            required=['dataset_descriptor', 'size_estimation'],
+            required=["dataset_descriptor", "size_estimation"],
             additional_properties=True,
-            factory=cls
+            factory=cls,
         )
 
 

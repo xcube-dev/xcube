@@ -57,4 +57,3 @@ class MetaContext(ApiContext):
     @staticmethod
     def now():
         return datetime.datetime.now().isoformat()
-

@@ -8,9 +8,11 @@ from .registry import OpRegistry
 from .registry import OP_REGISTRY
 
 
-def operation(_op: Optional[Callable] = None,
-              params_schema: Optional[JsonObjectSchema] = None,
-              op_registry: OpRegistry = OP_REGISTRY):
+def operation(
+    _op: Optional[Callable] = None,
+    params_schema: Optional[JsonObjectSchema] = None,
+    op_registry: OpRegistry = OP_REGISTRY,
+):
     """Decorator that registers a function as an operation.
 
     :param _op: the function to register as an operation
@@ -35,15 +37,17 @@ def operation(_op: Optional[Callable] = None,
         return decorator(_op)
 
 
-def op_param(name: str,
-             json_type: Optional[Union[str, List[str]]] = None,
-             py_type: Optional[PyType] = None,
-             title: Optional[str] = None,
-             description: Optional[str] = None,
-             default: Optional[Any] = None,
-             required: Optional[bool] = None,
-             schema: Optional[JsonSchema] = None,
-             op_registry: OpRegistry = OP_REGISTRY):
+def op_param(
+    name: str,
+    json_type: Optional[Union[str, List[str]]] = None,
+    py_type: Optional[PyType] = None,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    default: Optional[Any] = None,
+    required: Optional[bool] = None,
+    schema: Optional[JsonSchema] = None,
+    op_registry: OpRegistry = OP_REGISTRY,
+):
     """Decorator that adds schema information to the operation parameter given
     by *name*.
 
@@ -93,5 +97,6 @@ def op_param(name: str,
 
 def _assert_decorator_target_ok(decorator_name: str, target: Any):
     if not callable(target):
-        raise TypeError(f"decorator {decorator_name!r}"
-                        f" can be used with callables only")
+        raise TypeError(
+            f"decorator {decorator_name!r}" f" can be used with callables only"
+        )

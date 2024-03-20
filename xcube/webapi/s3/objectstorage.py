@@ -41,11 +41,7 @@ class ObjectStorage(collections.abc.Mapping):
         to (multi-level) datasets.
     """
 
-    def __init__(self,
-                 datasets: Mapping[
-                     str,
-                     Union[xr.Dataset, MultiLevelDataset]
-                 ]):
+    def __init__(self, datasets: Mapping[str, Union[xr.Dataset, MultiLevelDataset]]):
         self.datasets = datasets
 
     def __len__(self) -> int:

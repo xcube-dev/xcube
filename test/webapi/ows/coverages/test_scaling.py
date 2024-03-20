@@ -11,7 +11,7 @@ from xcube.webapi.ows.coverages.scaling import CoverageScaling
 
 class ScalingTest(unittest.TestCase):
     def setUp(self):
-        self.epsg4326 = pyproj.CRS('EPSG:4326')
+        self.epsg4326 = pyproj.CRS("EPSG:4326")
         self.ds = xcube.core.new.new_cube()
 
     def test_default_scaling(self):
@@ -33,21 +33,21 @@ class ScalingTest(unittest.TestCase):
 
         # noinspection PyTypeChecker
         self.assertIsNone(
-            CoverageScaling(
-                CoverageRequest({}), CrsMock(), self.ds
-            ).get_axis_from_crs(set())
+            CoverageScaling(CoverageRequest({}), CrsMock(), self.ds).get_axis_from_crs(
+                set()
+            )
         )
 
     def test_scale_factor(self):
         scaling = CoverageScaling(
-            CoverageRequest({'scale-factor': ['2']}), self.epsg4326, self.ds
+            CoverageRequest({"scale-factor": ["2"]}), self.epsg4326, self.ds
         )
         self.assertEqual((2, 2), scaling.factor)
         self.assertEqual((180, 90), scaling.size)
 
     def test_scale_axes(self):
         scaling = CoverageScaling(
-            CoverageRequest({'scale-axes': ['Lat(3),Lon(1.2)']}),
+            CoverageRequest({"scale-axes": ["Lat(3),Lon(1.2)"]}),
             self.epsg4326,
             self.ds,
         )
@@ -56,7 +56,7 @@ class ScalingTest(unittest.TestCase):
 
     def test_scale_size(self):
         scaling = CoverageScaling(
-            CoverageRequest({'scale-size': ['Lat(90),Lon(240)']}),
+            CoverageRequest({"scale-size": ["Lat(90),Lon(240)"]}),
             self.epsg4326,
             self.ds,
         )
@@ -68,7 +68,7 @@ class ScalingTest(unittest.TestCase):
         self.assertEqual(
             gm_mock := object(),
             CoverageScaling(
-                CoverageRequest({'scale-factor': ['1']}),
+                CoverageRequest({"scale-factor": ["1"]}),
                 self.epsg4326,
                 self.ds,
             ).apply(gm_mock),

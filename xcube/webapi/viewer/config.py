@@ -26,14 +26,14 @@ CONFIGURATION_SCHEMA = JsonObjectSchema(
     properties=dict(
         Path=STRING_SCHEMA,
     ),
-    additional_properties=False
+    additional_properties=False,
 )
 
 VIEWER_SCHEMA = JsonObjectSchema(
     properties=dict(
         Configuration=CONFIGURATION_SCHEMA,
     ),
-    additional_properties=False
+    additional_properties=False,
 )
 
 CONFIG_SCHEMA = JsonObjectSchema(

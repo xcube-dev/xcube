@@ -74,7 +74,7 @@ class RoundToFractionTest(unittest.TestCase):
             [987.9441243998718, 990.0, Fraction(990, 1)],
             [1757.368043916636, 1800.0, Fraction(1800, 1)],
             [1143506.2928512183, 1100000.0, Fraction(1100000, 1)],
-            [217971970.75235566, 220000000.0, Fraction(220000000, 1)]
+            [217971970.75235566, 220000000.0, Fraction(220000000, 1)],
         ]
         self._assert_values(values, dict())
 
@@ -100,7 +100,7 @@ class RoundToFractionTest(unittest.TestCase):
             [987.9441243998718, 988.0, Fraction(988, 1)],
             [1757.368043916636, 1757.5, Fraction(3515, 2)],
             [1143506.2928512183, 1142500.0, Fraction(1142500, 1)],
-            [217971970.75235566, 218000000.0, Fraction(218000000, 1)]
+            [217971970.75235566, 218000000.0, Fraction(218000000, 1)],
         ]
         self._assert_values(values, dict(digits=3, resolution=0.25))
 
@@ -124,7 +124,7 @@ class RoundToFractionTest(unittest.TestCase):
             [987.9441243998718, 990.0, Fraction(990, 1)],
             [1757.368043916636, 1750.0, Fraction(1750, 1)],
             [1143506.2928512183, 1150000.0, Fraction(1150000, 1)],
-            [217971970.75235566, 220000000.0, Fraction(220000000, 1)]
+            [217971970.75235566, 220000000.0, Fraction(220000000, 1)],
         ]
         self._assert_values(values, dict(digits=2, resolution=0.5))
 
@@ -135,6 +135,7 @@ class RoundToFractionTest(unittest.TestCase):
                 actual_fraction = round_to_fraction(value, **kwargs)
                 results.append([value, float(actual_fraction), actual_fraction])
             import pprint
+
             pprint.pprint(results)
 
         for value, expected_float, expected_fraction in values:

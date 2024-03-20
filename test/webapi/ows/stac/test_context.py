@@ -20,7 +20,6 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-
 import unittest
 from typing import Optional, Union, Mapping, Any
 
@@ -31,7 +30,7 @@ from xcube.webapi.ows.stac.context import StacContext
 
 
 def get_stac_ctx(
-        server_config: Optional[Union[str, Mapping[str, Any]]] = None
+    server_config: Optional[Union[str, Mapping[str, Any]]] = None
 ) -> StacContext:
     return get_api_ctx("ows.stac", StacContext, server_config)
 

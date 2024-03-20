@@ -21,14 +21,13 @@
 
 import collections.abc
 from abc import abstractmethod, ABC
-from typing import Generic, TypeVar, Tuple, Any, Iterable, Dict, List, \
-    Sequence, Mapping
+from typing import Generic, TypeVar, Tuple, Any, Iterable, Dict, List, Sequence, Mapping
 
-K = TypeVar('K')
-V = TypeVar('V')
+K = TypeVar("K")
+V = TypeVar("V")
 
-_DICT_IS_READONLY = 'dict is read-only'
-_LIST_IS_READONLY = 'list is read-only'
+_DICT_IS_READONLY = "dict is read-only"
+_LIST_IS_READONLY = "list is read-only"
 
 
 class Frozen(ABC):
@@ -53,12 +52,10 @@ class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
 
     @classmethod
     def freeze(cls, other: Mapping) -> "FrozenDict":
-        return FrozenDict({key: freeze_value(value)
-                           for key, value in other.items()})
+        return FrozenDict({key: freeze_value(value) for key, value in other.items()})
 
     def defrost(self) -> Dict[K, V]:
-        return {key: defrost_value(value)
-                for key, value in self.items()}
+        return {key: defrost_value(value) for key, value in self.items()}
 
     ###########################################################
     # dict overrides

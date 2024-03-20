@@ -7,9 +7,9 @@ import xarray as xr
 from xcube.core.update import update_dataset_chunk_encoding
 
 
-def chunk_dataset(dataset: xr.Dataset,
-                  chunk_sizes: Dict[str, int] = None,
-                  format_name: str = None) -> xr.Dataset:
+def chunk_dataset(
+    dataset: xr.Dataset, chunk_sizes: Dict[str, int] = None, format_name: str = None
+) -> xr.Dataset:
     """
     Chunk *dataset* using *chunk_sizes* and optionally
     update encodings for given *format_name*.
@@ -21,14 +21,15 @@ def chunk_dataset(dataset: xr.Dataset,
     """
     dataset = dataset.chunk(chunks=chunk_sizes)
     if format_name:
-        dataset = update_dataset_chunk_encoding(dataset,
-                                                chunk_sizes=chunk_sizes,
-                                                format_name=format_name)
+        dataset = update_dataset_chunk_encoding(
+            dataset, chunk_sizes=chunk_sizes, format_name=format_name
+        )
     return dataset
 
 
-def get_empty_dataset_chunks(dataset: xr.Dataset) \
-        -> Iterator[Tuple[str, Iterator[Tuple[int, ...]]]]:
+def get_empty_dataset_chunks(
+    dataset: xr.Dataset,
+) -> Iterator[Tuple[str, Iterator[Tuple[int, ...]]]]:
     """
     Identify empty dataset chunks and return their indices.
 
@@ -36,8 +37,10 @@ def get_empty_dataset_chunks(dataset: xr.Dataset) \
     :return: An iterator that provides a stream of
         (variable name, block indices tuple) tuples.
     """
-    return ((str(var_name), get_empty_var_chunks(dataset[var_name]))
-            for var_name in dataset.data_vars)
+    return (
+        (str(var_name), get_empty_var_chunks(dataset[var_name]))
+        for var_name in dataset.data_vars
+    )
 
 
 def get_empty_var_chunks(var: xr.DataArray) -> Iterator[Tuple[int, ...]]:
@@ -73,5 +76,4 @@ def compute_chunk_slices(chunks: Tuple[Tuple[int, ...], ...]) -> Iterable:
             o += s
         chunk_slices.append(tuple(x))
 
-    return zip(itertools.product(*chunk_indices),
-               itertools.product(*chunk_slices))
+    return zip(itertools.product(*chunk_indices), itertools.product(*chunk_slices))

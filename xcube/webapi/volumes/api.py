@@ -24,9 +24,9 @@ from .config import CONFIG_SCHEMA
 from .context import VolumesContext
 
 api = Api(
-    'volumes',
-    description='xcube Volumes API',
-    required_apis=['datasets'],
+    "volumes",
+    description="xcube Volumes API",
+    required_apis=["datasets"],
     config_schema=CONFIG_SCHEMA,
-    create_ctx=VolumesContext
+    create_ctx=VolumesContext,
 )

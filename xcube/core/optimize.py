@@ -28,11 +28,13 @@ import zarr
 from xcube.core.unchunk import unchunk_dataset
 
 
-def optimize_dataset(input_path: str,
-                     output_path: str = None,
-                     in_place: bool = False,
-                     unchunk_coords: Union[bool, str, Sequence[str]] = False,
-                     exception_type: Type[Exception] = ValueError):
+def optimize_dataset(
+    input_path: str,
+    output_path: str = None,
+    in_place: bool = False,
+    unchunk_coords: Union[bool, str, Sequence[str]] = False,
+    exception_type: Type[Exception] = ValueError,
+):
     """
     Optimize a dataset for faster access.
 
@@ -58,8 +60,8 @@ def optimize_dataset(input_path: str,
     :param exception_type: Type of exception to be used on value errors.
     """
 
-    if not os.path.isfile(os.path.join(input_path, '.zgroup')):
-        raise exception_type('Input path must point to ZARR dataset directory.')
+    if not os.path.isfile(os.path.join(input_path, ".zgroup")):
+        raise exception_type("Input path must point to ZARR dataset directory.")
 
     input_path = os.path.abspath(os.path.normpath(input_path))
 
@@ -67,13 +69,13 @@ def optimize_dataset(input_path: str,
         output_path = input_path
     else:
         if not output_path:
-            raise exception_type(f'Output path must be given.')
-        if '{input}' in output_path:
+            raise exception_type(f"Output path must be given.")
+        if "{input}" in output_path:
             base_name, _ = os.path.splitext(os.path.basename(input_path))
             output_path = output_path.format(input=base_name)
         output_path = os.path.abspath(os.path.normpath(output_path))
         if os.path.exists(output_path):
-            raise exception_type(f'Output path already exists.')
+            raise exception_type(f"Output path already exists.")
 
     if not in_place:
         shutil.copytree(input_path, output_path)

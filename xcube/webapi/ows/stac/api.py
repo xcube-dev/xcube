@@ -24,9 +24,9 @@ from .config import CONFIG_SCHEMA
 from .context import StacContext
 
 api = Api(
-    'ows.stac',
-    description='xcube OGC STAC API',
-    required_apis=['datasets'],
+    "ows.stac",
+    description="xcube OGC STAC API",
+    required_apis=["datasets"],
     create_ctx=StacContext,
     config_schema=CONFIG_SCHEMA,
 )

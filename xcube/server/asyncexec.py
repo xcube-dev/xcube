@@ -20,8 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import abc
-from typing import Union, Callable, Optional, Any, \
-    Awaitable, TypeVar
+from typing import Union, Callable, Optional, Any, Awaitable, TypeVar
 
 from tornado import concurrent
 
@@ -34,11 +33,9 @@ class AsyncExecution(abc.ABC):
     """
 
     @abc.abstractmethod
-    def call_later(self,
-                   delay: Union[int, float],
-                   callback: Callable,
-                   *args,
-                   **kwargs) -> object:
+    def call_later(
+        self, delay: Union[int, float], callback: Callable, *args, **kwargs
+    ) -> object:
         """
         Executes the given callable *callback* after *delay* seconds.
 
@@ -55,11 +52,11 @@ class AsyncExecution(abc.ABC):
 
     @abc.abstractmethod
     def run_in_executor(
-            self,
-            executor: Optional[concurrent.futures.Executor],
-            function: Callable[..., ReturnT],
-            *args: Any,
-            **kwargs: Any
+        self,
+        executor: Optional[concurrent.futures.Executor],
+        function: Callable[..., ReturnT],
+        *args: Any,
+        **kwargs: Any
     ) -> Awaitable[ReturnT]:
         """
         Concurrently runs a *function* in a ``concurrent.futures.Executor``.

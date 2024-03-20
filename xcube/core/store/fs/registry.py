@@ -48,9 +48,7 @@ from ..error import DataStoreError
 _FS_ACCESSOR_CLASSES: Dict[str, Type[FsAccessor]] = {}
 
 
-def register_fs_accessor_class(
-        fs_accessor_class: Type[FsAccessor]
-):
+def register_fs_accessor_class(fs_accessor_class: Type[FsAccessor]):
     """
     Register a concrete filesystem accessor class.
 
@@ -62,11 +60,11 @@ def register_fs_accessor_class(
 
 
 for cls in (
-        AzureFsAccessor,
-        FileFsAccessor,
-        FtpFsAccessor,
-        MemoryFsAccessor,
-        S3FsAccessor,
+    AzureFsAccessor,
+    FileFsAccessor,
+    FtpFsAccessor,
+    MemoryFsAccessor,
+    S3FsAccessor,
 ):
     register_fs_accessor_class(cls)
 
@@ -85,12 +83,12 @@ def get_fs_accessor_class(protocol: str) -> Type[FsAccessor]:
             fsspec.get_filesystem_class(protocol)
         except ImportError as e:
             raise DataStoreError(
-                f'Filesystem for protocol {protocol!r}'
-                f' is not installed or requires additional packages'
+                f"Filesystem for protocol {protocol!r}"
+                f" is not installed or requires additional packages"
             ) from e
         except ValueError as e:
             raise DataStoreError(
-                f'Filesystem not found for protocol {protocol!r}'
+                f"Filesystem not found for protocol {protocol!r}"
             ) from e
 
         class FsAccessorClass(FsAccessor):
@@ -108,9 +106,7 @@ def get_fs_accessor_class(protocol: str) -> Type[FsAccessor]:
 _FS_DATA_ACCESSOR_CLASSES: Dict[str, Type[FsDataAccessor]] = {}
 
 
-def register_fs_data_accessor_class(
-        fs_data_accessor_class: Type[FsDataAccessor]
-):
+def register_fs_data_accessor_class(fs_data_accessor_class: Type[FsDataAccessor]):
     """
     Register an abstract filesystem data accessor class.
 
@@ -123,26 +119,26 @@ def register_fs_data_accessor_class(
     """
     data_type = fs_data_accessor_class.get_data_type()
     format_id = fs_data_accessor_class.get_format_id()
-    key = f'{data_type.alias}:{format_id}'
+    key = f"{data_type.alias}:{format_id}"
     _FS_DATA_ACCESSOR_CLASSES[key] = fs_data_accessor_class
 
 
 for cls in (
-        DatasetZarrFsDataAccessor,
-        DatasetNetcdfFsDataAccessor,
-        DatasetGeoTiffFsDataAccessor,
-        DatasetLevelsFsDataAccessor,
-        MultiLevelDatasetGeoTiffFsDataAccessor,
-        MultiLevelDatasetLevelsFsDataAccessor,
-        GeoDataFrameShapefileFsDataAccessor,
-        GeoDataFrameGeoJsonFsDataAccessor,
+    DatasetZarrFsDataAccessor,
+    DatasetNetcdfFsDataAccessor,
+    DatasetGeoTiffFsDataAccessor,
+    DatasetLevelsFsDataAccessor,
+    MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetLevelsFsDataAccessor,
+    GeoDataFrameShapefileFsDataAccessor,
+    GeoDataFrameGeoJsonFsDataAccessor,
 ):
     register_fs_data_accessor_class(cls)
 
 
-def get_fs_data_accessor_class(protocol: str,
-                               data_type_alias: str,
-                               format_id: str) -> Type[FsDataAccessor]:
+def get_fs_data_accessor_class(
+    protocol: str, data_type_alias: str, format_id: str
+) -> Type[FsDataAccessor]:
     """
     Get the class for a filesystem data accessor.
 
@@ -154,11 +150,13 @@ def get_fs_data_accessor_class(protocol: str,
         for example "zarr", "geojson".
     :return: A class that derives from :class:FsAccessor
     """
-    accessor_id = f'{data_type_alias}:{format_id}'
+    accessor_id = f"{data_type_alias}:{format_id}"
     data_accessor_class = _FS_DATA_ACCESSOR_CLASSES.get(accessor_id)
     if data_accessor_class is None:
-        raise DataStoreError(f'Combination of data type {data_type_alias!r}'
-                             f' and format {format_id!r} is not supported')
+        raise DataStoreError(
+            f"Combination of data type {data_type_alias!r}"
+            f" and format {format_id!r} is not supported"
+        )
 
     fs_accessor_class = get_fs_accessor_class(protocol)
 
@@ -172,6 +170,7 @@ def get_fs_data_accessor_class(protocol: str,
 
 ############################################
 # FsDataStore
+
 
 def get_fs_data_store_class(protocol: str) -> Type[FsDataStore]:
     """
@@ -192,13 +191,13 @@ def get_fs_data_store_class(protocol: str) -> Type[FsDataStore]:
 
 
 def new_fs_data_store(
-        protocol: str,
-        root: str = '',
-        max_depth: Optional[int] = 1,
-        read_only: bool = False,
-        includes: Optional[Sequence[str]] = None,
-        excludes: Optional[Sequence[str]] = None,
-        storage_options: Dict[str, Any] = None
+    protocol: str,
+    root: str = "",
+    max_depth: Optional[int] = 1,
+    read_only: bool = False,
+    includes: Optional[Sequence[str]] = None,
+    excludes: Optional[Sequence[str]] = None,
+    storage_options: Dict[str, Any] = None,
 ) -> FsDataStore:
     """
     Create a new instance of a filesystem-based data store.
@@ -234,15 +233,17 @@ def new_fs_data_store(
     """
     fs_data_store_class = get_fs_data_store_class(protocol)
     store_params_schema = fs_data_store_class.get_data_store_params_schema()
-    store_params = {k: v
-                    for k, v in dict(root=root,
-                                     max_depth=max_depth,
-                                     read_only=read_only,
-                                     includes=includes,
-                                     excludes=excludes,
-                                     storage_options=storage_options).items()
-                    if v is not None}
-    assert_valid_params(store_params,
-                        name='store_params',
-                        schema=store_params_schema)
+    store_params = {
+        k: v
+        for k, v in dict(
+            root=root,
+            max_depth=max_depth,
+            read_only=read_only,
+            includes=includes,
+            excludes=excludes,
+            storage_options=storage_options,
+        ).items()
+        if v is not None
+    }
+    assert_valid_params(store_params, name="store_params", schema=store_params_schema)
     return fs_data_store_class(**store_params)

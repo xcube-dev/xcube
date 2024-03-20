@@ -35,10 +35,9 @@ TransformedCube = Tuple[xr.Dataset, GridMapping, CubeConfig]
 
 class CubeTransformer(ABC):
     @abstractmethod
-    def transform_cube(self,
-                       cube: xr.Dataset,
-                       gm: GridMapping,
-                       cube_config: CubeConfig) -> TransformedCube:
+    def transform_cube(
+        self, cube: xr.Dataset, gm: GridMapping, cube_config: CubeConfig
+    ) -> TransformedCube:
         """
         Transform given *cube*, grid mapping *gm*, and cube
         configuration *cube_config* into a potentially new cube,
@@ -52,27 +51,26 @@ class CubeTransformer(ABC):
 
 
 class CubeIdentity(CubeTransformer):
-    def transform_cube(self,
-                       cube: xr.Dataset,
-                       gm: GridMapping,
-                       cube_config: CubeConfig) -> TransformedCube:
+    def transform_cube(
+        self, cube: xr.Dataset, gm: GridMapping, cube_config: CubeConfig
+    ) -> TransformedCube:
         """
         Return *cube*, grid mapping *gm*, and parameters without change.
         """
         return cube, gm, cube_config
 
 
-def transform_cube(t_cube: TransformedCube,
-                   transformer: CubeTransformer,
-                   label: str = '') -> TransformedCube:
+def transform_cube(
+    t_cube: TransformedCube, transformer: CubeTransformer, label: str = ""
+) -> TransformedCube:
     empty_cube = is_empty_cube(t_cube[0])
     identity = isinstance(transformer, CubeIdentity)
     if not label:
-        label = f'{type(transformer).__name__}'
+        label = f"{type(transformer).__name__}"
     if identity:
-        label += ' (step not applicable)'
+        label += " (step not applicable)"
     elif empty_cube:
-        label += ' (step not applicable, empty cube)'
+        label += " (step not applicable, empty cube)"
 
     with observe_progress(label, 1) as progress:
         if not (identity or empty_cube):

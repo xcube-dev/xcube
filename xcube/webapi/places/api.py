@@ -24,9 +24,9 @@ from .config import CONFIG_SCHEMA
 from .context import PlacesContext
 
 api = Api(
-    'places',
-    description='xcube Places API',
+    "places",
+    description="xcube Places API",
     config_schema=CONFIG_SCHEMA,
-    required_apis=['auth'],
-    create_ctx=PlacesContext
+    required_apis=["auth"],
+    create_ctx=PlacesContext,
 )

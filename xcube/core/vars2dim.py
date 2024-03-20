@@ -24,10 +24,12 @@ import xarray as xr
 from xcube.core.verify import assert_cube
 
 
-def vars_to_dim(cube: xr.Dataset,
-                dim_name: str = 'var',
-                var_name='data',
-                cube_asserted: bool = False):
+def vars_to_dim(
+    cube: xr.Dataset,
+    dim_name: str = "var",
+    var_name="data",
+    cube_asserted: bool = False,
+):
     """
     Convert data variables into a dimension.
 

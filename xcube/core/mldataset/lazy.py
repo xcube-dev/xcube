@@ -41,15 +41,17 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         passed to the ``get_dataset_lazily`` method.
     """
 
-    def __init__(self,
-                 grid_mapping: Optional[GridMapping] = None,
-                 num_levels: Optional[int] = None,
-                 ds_id: Optional[str] = None,
-                 parameters: Optional[Mapping[str, Any]] = None):
+    def __init__(
+        self,
+        grid_mapping: Optional[GridMapping] = None,
+        num_levels: Optional[int] = None,
+        ds_id: Optional[str] = None,
+        parameters: Optional[Mapping[str, Any]] = None,
+    ):
         if grid_mapping is not None:
-            assert_instance(grid_mapping, GridMapping, name='grid_mapping')
+            assert_instance(grid_mapping, GridMapping, name="grid_mapping")
         if ds_id is not None:
-            assert_instance(ds_id, str, name='ds_id')
+            assert_instance(ds_id, str, name="ds_id")
         self._grid_mapping = grid_mapping
         self._num_levels = num_levels
         self._ds_id = ds_id
@@ -66,7 +68,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
 
     @ds_id.setter
     def ds_id(self, ds_id: str):
-        assert_instance(ds_id, str, name='ds_id')
+        assert_instance(ds_id, str, name="ds_id")
         self._ds_id = ds_id
 
     @property
@@ -99,8 +101,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         if index not in self._level_datasets:
             with self._lock:
                 # noinspection PyTypeChecker
-                level_dataset = self._get_dataset_lazily(index,
-                                                         self._parameters)
+                level_dataset = self._get_dataset_lazily(index, self._parameters)
                 self.set_dataset(index, level_dataset)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
@@ -126,8 +127,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def _get_dataset_lazily(self, index: int,
-                            parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
         """Retrieve, i.e. read or compute, the dataset for the
         level at given *index*.
 

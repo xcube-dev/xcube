@@ -24,8 +24,8 @@ from .config import CONFIG_SCHEMA
 from .context import ViewerContext
 
 api = Api(
-    'viewer',
-    description='xcube Viewer web application',
+    "viewer",
+    description="xcube Viewer web application",
     create_ctx=ViewerContext,
-    config_schema=CONFIG_SCHEMA
+    config_schema=CONFIG_SCHEMA,
 )

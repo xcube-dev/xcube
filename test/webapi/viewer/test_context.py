@@ -28,7 +28,7 @@ from xcube.webapi.viewer.context import ViewerContext
 
 
 def get_viewer_ctx(
-        server_config: Optional[Union[str, Mapping[str, Any]]] = None
+    server_config: Optional[Union[str, Mapping[str, Any]]] = None
 ) -> ViewerContext:
     return get_api_ctx("viewer", ViewerContext, server_config)
 
@@ -42,7 +42,7 @@ class ViewerContextTest(unittest.TestCase):
     def test_config_path_ok(self):
         ctx = get_viewer_ctx()
         path = f"{ctx.config['base_dir']}/viewer"
-        self.assertEqual(path.replace('\\', '/'), ctx.config_path)
+        self.assertEqual(path.replace("\\", "/"), ctx.config_path)
 
         config_path = "s3://xcube-viewer-app/bc/dev/viewer/"
         config = dict(ctx.config)

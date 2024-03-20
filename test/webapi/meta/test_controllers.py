@@ -39,15 +39,15 @@ class MetaControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
         self.assertIsInstance(result, dict)
         self.assertEqual(
             {
-                'apis',
-                'currentTime',
-                'description',
-                'name',
-                'pid',
-                'startTime',
-                'updateTime',
-                'version',
-                'versions'
+                "apis",
+                "currentTime",
+                "description",
+                "name",
+                "pid",
+                "startTime",
+                "updateTime",
+                "version",
+                "versions",
             },
-            set(result.keys())
+            set(result.keys()),
         )

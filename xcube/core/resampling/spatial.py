@@ -41,12 +41,12 @@ _SCALE_LIMIT = 0.95
 
 
 def resample_in_space(
-        dataset: xr.Dataset,
-        source_gm: GridMapping = None,
-        target_gm: GridMapping = None,
-        var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
-        encode_cf: bool = True,
-        gm_name: Optional[str] = None
+    dataset: xr.Dataset,
+    source_gm: GridMapping = None,
+    target_gm: GridMapping = None,
+    var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+    encode_cf: bool = True,
+    gm_name: Optional[str] = None,
 ):
     """
     Resample a dataset in the spatial dimensions.
@@ -127,11 +127,10 @@ def resample_in_space(
         return dataset
 
     # target_gm must be regular
-    GridMapping.assert_regular(target_gm, name='target_gm')
+    GridMapping.assert_regular(target_gm, name="target_gm")
 
     # Are source and target both geographic grid mappings?
-    both_geographic = source_gm.crs.is_geographic \
-                      and target_gm.crs.is_geographic
+    both_geographic = source_gm.crs.is_geographic and target_gm.crs.is_geographic
 
     if both_geographic or source_gm.crs == target_gm.crs:
         # If CRSes are both geographic or their CRSes are equal:
@@ -144,7 +143,7 @@ def resample_in_space(
                 target_gm=target_gm,
                 var_configs=var_configs,
                 encode_cf=encode_cf,
-                gm_name=gm_name
+                gm_name=gm_name,
             )
 
         # If the source is not regular, we need to rectify it,
@@ -161,7 +160,7 @@ def resample_in_space(
                 source_gm=source_gm,
                 target_gm=target_gm,
                 encode_cf=encode_cf,
-                gm_name=gm_name
+                gm_name=gm_name,
             )
 
         # Source has higher resolution than target.
@@ -178,9 +177,9 @@ def resample_in_space(
                 var_configs=var_configs,
             )
         else:
-            _, downscaled_size = scale_xy_res_and_size(source_gm.xy_res,
-                                                       source_gm.size,
-                                                       (x_scale, y_scale))
+            _, downscaled_size = scale_xy_res_and_size(
+                source_gm.xy_res, source_gm.size, (x_scale, y_scale)
+            )
             downscaled_dataset = resample_dataset(
                 dataset,
                 ((x_scale, 1, 0), (1, y_scale, 0)),
@@ -192,22 +191,23 @@ def resample_in_space(
             downscaled_gm = GridMapping.from_dataset(
                 downscaled_dataset,
                 tile_size=source_gm.tile_size,
-                prefer_crs=source_gm.crs
+                prefer_crs=source_gm.crs,
             )
-        return rectify_dataset(downscaled_dataset,
-                               source_gm=downscaled_gm,
-                               target_gm=target_gm,
-                               encode_cf=encode_cf,
-                               gm_name=gm_name)
+        return rectify_dataset(
+            downscaled_dataset,
+            source_gm=downscaled_gm,
+            target_gm=target_gm,
+            encode_cf=encode_cf,
+            gm_name=gm_name,
+        )
 
     # If CRSes are not both geographic and their CRSes are different
     # transform the source_gm so its CRS matches the target CRS:
     transformed_source_gm = source_gm.transform(target_gm.crs)
     transformed_x, transformed_y = transformed_source_gm.xy_coords
     return resample_in_space(
-        dataset.assign(transformed_x=transformed_x,
-                       transformed_y=transformed_y),
+        dataset.assign(transformed_x=transformed_x, transformed_y=transformed_y),
         source_gm=transformed_source_gm,
         target_gm=target_gm,
-        gm_name=gm_name
+        gm_name=gm_name,
     )

@@ -44,9 +44,7 @@ class CoverageScaling:
     _x_name: str
     _y_name: str
 
-    def __init__(
-        self, request: CoverageRequest, crs: pyproj.CRS, ds: xr.Dataset
-    ):
+    def __init__(self, request: CoverageRequest, crs: pyproj.CRS, ds: xr.Dataset):
         """Create a new scaling from a coverages request object
 
         :param request: a request optionally including scaling parameters.
@@ -65,16 +63,16 @@ class CoverageScaling:
                 # but spec will soon be updated to allow 404 as an alternative.
                 # (J. Jacovella-St-Louis, pers. comm., 2023-11-27).
                 raise ApiError.NotFound(
-                    f'Requested coverage contains no data: {d} has zero size.'
+                    f"Requested coverage contains no data: {d} has zero size."
                 )
         self._initial_size = ds.dims[h_dim], ds.dims[v_dim]
 
         self._crs = crs
         self._y_name = self.get_axis_from_crs(
-            {'lat', 'latitude', 'geodetic latitude', 'n', 'north', 'y'}
+            {"lat", "latitude", "geodetic latitude", "n", "north", "y"}
         )
         self._x_name = self.get_axis_from_crs(
-            {'longitude', 'geodetic longitude', 'lon', 'e', 'east', 'x'}
+            {"longitude", "geodetic longitude", "lon", "e", "east", "x"}
         )
 
         # The standard doesn't define behaviour when multiple scale
@@ -134,14 +132,12 @@ class CoverageScaling:
             x_scale, y_scale = self._scale
             return x_initial / x_scale, y_initial / y_scale
 
-    def _get_xy_values(
-        self, axis_to_value: dict[str, float]
-    ) -> tuple[float, float]:
+    def _get_xy_values(self, axis_to_value: dict[str, float]) -> tuple[float, float]:
         x, y = None, None
         for axis in axis_to_value:
-            if axis.lower()[:3] in ['x', 'e', 'eas', 'lon', self._x_name]:
+            if axis.lower()[:3] in ["x", "e", "eas", "lon", self._x_name]:
                 x = axis_to_value[axis]
-            if axis.lower()[:3] in ['y', 'n', 'nor', 'lat', self._y_name]:
+            if axis.lower()[:3] in ["y", "n", "nor", "lat", self._y_name]:
                 y = axis_to_value[axis]
         return x, y
 
@@ -159,12 +155,12 @@ class CoverageScaling:
           no such axis exists
         """
         for axis in self._crs.axis_info:
-            if not hasattr(axis, 'abbrev'):
+            if not hasattr(axis, "abbrev"):
                 continue
             identifiers = set(
                 map(
-                    lambda attr: getattr(axis, attr, '').lower(),
-                    ['name', 'abbrev'],
+                    lambda attr: getattr(axis, attr, "").lower(),
+                    ["name", "abbrev"],
                 )
             )
             if identifiers & valid_identifiers:
@@ -192,6 +188,4 @@ class CoverageScaling:
             # specified dataset, which is what the client would expect. The
             # regularized GridMapping might have a different size,
             # so we don't want to apply a specified factor to it directly.
-            return regular.scale(
-                (self.size[0] / source[0], self.size[1] / source[1])
-            )
+            return regular.scale((self.size[0] / source[0], self.size[1] / source[1]))

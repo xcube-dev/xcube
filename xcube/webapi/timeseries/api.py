@@ -23,8 +23,8 @@ from xcube.server.api import Api
 from .context import TimeSeriesContext
 
 api = Api(
-    'timeseries',
-    description='xcube Timeseries API',
-    required_apis=['datasets'],
-    create_ctx=TimeSeriesContext
+    "timeseries",
+    description="xcube Timeseries API",
+    required_apis=["datasets"],
+    create_ctx=TimeSeriesContext,
 )

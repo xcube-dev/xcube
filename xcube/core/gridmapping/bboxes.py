@@ -27,12 +27,14 @@ import xarray as xr
 
 
 @nb.jit(nopython=True, nogil=True, parallel=True, cache=True)
-def compute_ij_bboxes(x_image: np.ndarray,
-                      y_image: np.ndarray,
-                      xy_boxes: np.ndarray,
-                      xy_border: float,
-                      ij_border: int,
-                      ij_boxes: np.ndarray):
+def compute_ij_bboxes(
+    x_image: np.ndarray,
+    y_image: np.ndarray,
+    xy_boxes: np.ndarray,
+    xy_border: float,
+    ij_border: int,
+    ij_boxes: np.ndarray,
+):
     """
     Compute bounding boxes in the image's i,j coordinates from given
     x,y coordinates *x_image*, *y_image* and bounding boxes
@@ -108,8 +110,9 @@ def compute_ij_bboxes(x_image: np.ndarray,
             ij_bbox[3] = j_max
 
 
-def compute_xy_bbox(xy_coords: Union[xr.DataArray, np.ndarray, da.Array]) \
-        -> Tuple[float, float, float, float]:
+def compute_xy_bbox(
+    xy_coords: Union[xr.DataArray, np.ndarray, da.Array]
+) -> Tuple[float, float, float, float]:
     xy_coords = da.asarray(xy_coords)
     result = da.reduction(
         xy_coords,
@@ -119,8 +122,7 @@ def compute_xy_bbox(xy_coords: Union[xr.DataArray, np.ndarray, da.Array]) \
         # concatenate=False,
         dtype=xy_coords.dtype,
         axis=(1, 2),
-        meta=np.array([[0, 0], [0, 0]],
-                      dtype=xy_coords.dtype)
+        meta=np.array([[0, 0], [0, 0]], dtype=xy_coords.dtype),
     )
     x_min, x_max, y_min, y_max = map(float, result.compute().flatten())
     return x_min, y_min, x_max, y_max
@@ -165,5 +167,4 @@ def compute_xy_bbox_block(xy_block: np.ndarray, axis: int, keepdims: bool):
     y_min = y_min if y_min != np.inf else np.nan
     x_max = x_max if x_max != -np.inf else np.nan
     y_max = y_max if y_max != -np.inf else np.nan
-    return np.array([[[x_min, x_max]], [[y_min, y_max]]],
-                    dtype=xy_block.dtype)
+    return np.array([[[x_min, x_max]], [[y_min, y_max]]], dtype=xy_block.dtype)

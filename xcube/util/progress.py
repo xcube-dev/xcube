@@ -38,10 +38,10 @@ class ProgressState:
         self._label = label
         self._total_work = total_work
         self._super_work = super_work
-        self._super_work_ahead = 1.
+        self._super_work_ahead = 1.0
         self._exc_info = None
         self._traceback = None
-        self._completed_work = 0.
+        self._completed_work = 0.0
         self._finished = False
         self._start_time = None
         self._start_time = time.perf_counter()
@@ -83,9 +83,11 @@ class ProgressState:
         if not self.exc_info:
             return None
         exc_type, exc_value, exc_traceback = self.exc_info
-        return (f'{type(exc_value).__name__}',
-                f'{exc_value}',
-                traceback.format_exception(exc_type, exc_value, exc_traceback))
+        return (
+            f"{type(exc_value).__name__}",
+            f"{exc_value}",
+            traceback.format_exception(exc_type, exc_value, exc_traceback),
+        )
 
     @property
     def finished(self) -> bool:
@@ -101,11 +103,11 @@ class ProgressState:
 
     @super_work_ahead.setter
     def super_work_ahead(self, work: float):
-        assert_true(work > 0, 'work must be greater than zero')
+        assert_true(work > 0, "work must be greater than zero")
         self._super_work_ahead = work
 
     def inc_work(self, work: float):
-        assert_true(work > 0, 'work must be greater than zero')
+        assert_true(work > 0, "work must be greater than zero")
         self._completed_work += work
 
     def finish(self):
@@ -167,8 +169,7 @@ class _ProgressContext:
             observer.on_end(self._state_stack)
 
     def begin(self, label: str, total_work: float) -> ProgressState:
-        super_work = self._state_stack[-1].super_work_ahead \
-            if self._state_stack else 1
+        super_work = self._state_stack[-1].super_work_ahead if self._state_stack else 1
         progress_state = ProgressState(label, total_work, super_work)
         self._state_stack.append(progress_state)
         self.emit_begin()
@@ -186,29 +187,29 @@ class _ProgressContext:
         return progress_state
 
     def worked(self, work: float):
-        assert_true(self._state_stack,
-                    'worked() method call is missing a current context')
-        assert_true(work > 0, 'work must be greater than zero')
+        assert_true(
+            self._state_stack, "worked() method call is missing a current context"
+        )
+        assert_true(work > 0, "work must be greater than zero")
         for s in reversed(self._state_stack):
             s.inc_work(work)
             work = s.to_super_work(work)
         self.emit_update()
 
     def will_work(self, work: float):
-        assert_true(self._state_stack,
-                    'will_work() method call is missing a current context')
+        assert_true(
+            self._state_stack, "will_work() method call is missing a current context"
+        )
         # noinspection PyProtectedMember
         self._state_stack[-1].super_work_ahead = work
 
     @classmethod
-    def instance(cls) -> '_ProgressContext':
+    def instance(cls) -> "_ProgressContext":
         return cls._instance
 
     @classmethod
-    def set_instance(cls, instance: '_ProgressContext' = None) \
-            -> '_ProgressContext':
-        cls._instance, old_instance = \
-            (instance or _ProgressContext()), cls._instance
+    def set_instance(cls, instance: "_ProgressContext" = None) -> "_ProgressContext":
+        cls._instance, old_instance = (instance or _ProgressContext()), cls._instance
         return old_instance
 
 
@@ -266,8 +267,8 @@ class observe_progress:
     """
 
     def __init__(self, label: str, total_work: float):
-        assert_given(label, 'label')
-        assert_true(total_work > 0, 'total_work must be greater than zero')
+        assert_given(label, "label")
+        assert_true(total_work > 0, "total_work must be greater than zero")
         self._label = label
         self._total_work = total_work
         self._state: Optional[ProgressState] = None
@@ -285,9 +286,8 @@ class observe_progress:
         self._assert_used_correctly()
         return self._state
 
-    def __enter__(self) -> 'observe_progress':
-        self._state = _ProgressContext.instance().begin(self._label,
-                                                        self._total_work)
+    def __enter__(self) -> "observe_progress":
+        self._state = _ProgressContext.instance().begin(self._label, self._total_work)
         return self
 
     def __exit__(self, type, value, traceback):
@@ -304,8 +304,10 @@ class observe_progress:
         _ProgressContext.instance().will_work(work)
 
     def _assert_used_correctly(self):
-        assert_true(self._state is not None,
-                    'observe_progress() must be used with "with" statement')
+        assert_true(
+            self._state is not None,
+            'observe_progress() must be used with "with" statement',
+        )
 
 
 class observe_dask_progress(dask.callbacks.Callback):
@@ -319,14 +321,16 @@ class observe_dask_progress(dask.callbacks.Callback):
         is reported.
     """
 
-    def __init__(self,
-                 label: str,
-                 total_work: float,
-                 interval: float = 0.1,
-                 initial_interval: float = 0):
+    def __init__(
+        self,
+        label: str,
+        total_work: float,
+        interval: float = 0.1,
+        initial_interval: float = 0,
+    ):
         super().__init__()
-        assert_given(label, 'label')
-        assert_true(total_work > 0, 'total_work must be greater than zero')
+        assert_given(label, "label")
+        assert_true(total_work > 0, "total_work must be greater than zero")
         self._label = label
         self._total_work = total_work
         self._state: Optional[ProgressState] = None
@@ -335,10 +339,9 @@ class observe_dask_progress(dask.callbacks.Callback):
         self._last_worked = 0
         self._running = False
 
-    def __enter__(self) -> 'observe_dask_progress':
+    def __enter__(self) -> "observe_dask_progress":
         super().__enter__()
-        self._state = _ProgressContext.instance().begin(self._label,
-                                                        self._total_work)
+        self._state = _ProgressContext.instance().begin(self._label, self._total_work)
         return self
 
     def __exit__(self, type, value, traceback):
@@ -387,9 +390,10 @@ class observe_dask_progress(dask.callbacks.Callback):
         dask_state = self._dask_state
         if not dask_state:
             return
-        num_done = len(dask_state['finished'])
-        num_tasks = num_done + sum(len(dask_state[k])
-                                   for k in ['ready', 'waiting', 'running'])
+        num_done = len(dask_state["finished"])
+        num_tasks = num_done + sum(
+            len(dask_state[k]) for k in ["ready", "waiting", "running"]
+        )
         if num_done < num_tasks:
             work_fraction = num_done / num_tasks if num_tasks > 0 else 0
             worked = work_fraction * self._total_work

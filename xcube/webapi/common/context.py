@@ -86,25 +86,24 @@ class ResourcesContext(ApiContext):
 
     @property
     def access_control(self) -> Dict[str, Any]:
-        return self.config.get('AccessControl', {})
+        return self.config.get("AccessControl", {})
 
     @property
     def required_scopes(self) -> List[str]:
-        return self.access_control.get('RequiredScopes', [])
+        return self.access_control.get("RequiredScopes", [])
 
     def get_service_url(self, base_url: Optional[str], *path: str):
-        base_url = base_url or ''
+        base_url = base_url or ""
         # noinspection PyTypeChecker
-        path_comp = '/'.join(path)
+        path_comp = "/".join(path)
         if self._prefix:
-            return base_url + self._prefix + '/' + path_comp
+            return base_url + self._prefix + "/" + path_comp
         else:
-            return base_url + '/' + path_comp
+            return base_url + "/" + path_comp
 
-    def get_config_path(self,
-                        config: Mapping[str, Any],
-                        config_name: str,
-                        path_entry_name: str = 'Path') -> str:
+    def get_config_path(
+        self, config: Mapping[str, Any], config_name: str, path_entry_name: str = "Path"
+    ) -> str:
         path = config.get(path_entry_name)
         if not path:
             raise ApiError.InvalidServerConfig(
@@ -115,17 +114,15 @@ class ResourcesContext(ApiContext):
     def resolve_config_path(self, path: str) -> str:
         return resolve_config_path(self.config, path)
 
-    def load_file(self,
-                  path: str,
-                  mode: str = "rb",
-                  encoding: str = "utf-8") -> Union[str, bytes]:
+    def load_file(
+        self, path: str, mode: str = "rb", encoding: str = "utf-8"
+    ) -> Union[str, bytes]:
         with self.open_file(path, mode=mode, encoding=encoding) as fp:
             return fp.read()
 
-    def open_file(self,
-                  path: str,
-                  mode: str = "rb",
-                  encoding: str = "utf-8") -> fsspec.core.OpenFile:
+    def open_file(
+        self, path: str, mode: str = "rb", encoding: str = "utf-8"
+    ) -> fsspec.core.OpenFile:
         path = self.resolve_config_path(path)
         return fsspec.open(path, mode=mode, encoding=encoding)
 
@@ -141,11 +138,9 @@ class ResourcesContext(ApiContext):
         context object.
         """
         if isinstance(value, dict):
-            return {k: self.eval_config_value(v)
-                    for k, v in value.items()}
+            return {k: self.eval_config_value(v) for k, v in value.items()}
         if isinstance(value, list):
-            return [self.eval_config_value(v)
-                    for v in value]
+            return [self.eval_config_value(v) for v in value]
         if isinstance(value, str):
             return self._eval_config_str_value(value)
         return value
@@ -167,7 +162,7 @@ class ResourcesContext(ApiContext):
         """
         for token in self._tokenize_value(value):
             if isinstance(token, tuple):
-                expression, = token
+                (expression,) = token
                 yield eval(expression, None, self.new_eval_env())
             else:
                 yield token
@@ -178,7 +173,7 @@ class ResourcesContext(ApiContext):
             base_dir=self.base_dir,
             load_file=self.load_file,
             open_file=self.open_file,
-            resolve_config_path=self.resolve_config_path
+            resolve_config_path=self.resolve_config_path,
         )
 
     @classmethod
@@ -200,14 +195,14 @@ class ResourcesContext(ApiContext):
                 sqs = not sqs
             elif c == '"' and not sqs:
                 dqs = not dqs
-            elif c == '$' and not (sqs or dqs or es):
-                if i < n - 1 and value[i + 1] == '{':
+            elif c == "$" and not (sqs or dqs or es):
+                if i < n - 1 and value[i + 1] == "{":
                     if i0 < i:
                         yield value[i0:i]  # Return a str.
                     es = True
                     i0 = i + 2
                     i += 1
-            elif c == '}' and es:
+            elif c == "}" and es:
                 es = False
                 yield value[i0:i],  # Yes, return a 1-tuple.
                 i0 = i + 1
@@ -219,19 +214,19 @@ class ResourcesContext(ApiContext):
 
 def normalize_prefix(prefix: Optional[str]) -> str:
     if not prefix:
-        return ''
+        return ""
 
-    prefix = prefix.replace('${name}', 'xcube')
-    prefix = prefix.replace('${version}', version)
-    prefix = prefix.replace('//', '/').replace('//', '/')
+    prefix = prefix.replace("${name}", "xcube")
+    prefix = prefix.replace("${version}", version)
+    prefix = prefix.replace("//", "/").replace("//", "/")
 
-    if prefix == '/':
-        return ''
+    if prefix == "/":
+        return ""
 
-    if not prefix.startswith('/'):
-        prefix = '/' + prefix
+    if not prefix.startswith("/"):
+        prefix = "/" + prefix
 
-    if prefix.endswith('/'):
+    if prefix.endswith("/"):
         prefix = prefix[0:-1]
 
     return prefix

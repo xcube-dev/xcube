@@ -30,7 +30,7 @@ from xcube.webapi.tiles.context import TilesContext
 
 
 def get_tiles_ctx(
-        server_config: Union[str, ServerConfig] = "config.yml"
+    server_config: Union[str, ServerConfig] = "config.yml"
 ) -> TilesContext:
     return get_api_ctx("tiles", TilesContext, server_config)
 

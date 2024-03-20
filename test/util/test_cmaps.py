@@ -46,75 +46,75 @@ class ColormapRegistryTest(TestCase):
         self.registry = ColormapRegistry()
 
     def test_get_cmap(self):
-        cmap_name, cmap = self.registry.get_cmap('plasma')
-        self.assertEqual('plasma', cmap_name)
+        cmap_name, cmap = self.registry.get_cmap("plasma")
+        self.assertEqual("plasma", cmap_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
-        cmap_name, cmap = self.registry.get_cmap('PLASMA')
+        cmap_name, cmap = self.registry.get_cmap("PLASMA")
         self.assertEqual(DEFAULT_CMAP_NAME, cmap_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_get_cmap_alpha(self):
-        cmap_name, cmap = self.registry.get_cmap('plasma_alpha')
-        self.assertEqual('plasma', cmap_name)
+        cmap_name, cmap = self.registry.get_cmap("plasma_alpha")
+        self.assertEqual("plasma", cmap_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_get_cmap_reversed(self):
-        cmap_name, cmap = self.registry.get_cmap('plasma_r')
-        self.assertEqual('plasma', cmap_name)
+        cmap_name, cmap = self.registry.get_cmap("plasma_r")
+        self.assertEqual("plasma", cmap_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_get_cmap_reversed_alpha(self):
-        cmap_name, cmap = self.registry.get_cmap('plasma_r_alpha')
-        self.assertEqual('plasma', cmap_name)
+        cmap_name, cmap = self.registry.get_cmap("plasma_r_alpha")
+        self.assertEqual("plasma", cmap_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_get_cmap_num_colors(self):
-        cmap_name, cmap = self.registry.get_cmap('plasma', num_colors=32)
-        self.assertEqual('plasma', cmap_name)
+        cmap_name, cmap = self.registry.get_cmap("plasma", num_colors=32)
+        self.assertEqual("plasma", cmap_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_categories(self):
         categories = self.registry.categories
         self.assertIsInstance(categories, dict)
         self.assertGreaterEqual(len(categories), 8)
-        self.assertIn('Perceptually Uniform Sequential', categories)
-        self.assertIn('Sequential', categories)
-        self.assertIn('Sequential (2)', categories)
-        self.assertIn('Diverging', categories)
-        self.assertIn('Qualitative', categories)
-        self.assertIn('Cyclic', categories)
-        self.assertIn('Ocean', categories)
-        self.assertIn('Miscellaneous', categories)
-        self.assertNotIn('Custom', categories)
+        self.assertIn("Perceptually Uniform Sequential", categories)
+        self.assertIn("Sequential", categories)
+        self.assertIn("Sequential (2)", categories)
+        self.assertIn("Diverging", categories)
+        self.assertIn("Qualitative", categories)
+        self.assertIn("Cyclic", categories)
+        self.assertIn("Ocean", categories)
+        self.assertIn("Miscellaneous", categories)
+        self.assertNotIn("Custom", categories)
 
     def test_category_descr(self):
-        category = self.registry.categories.get(
-            'Perceptually Uniform Sequential')
+        category = self.registry.categories.get("Perceptually Uniform Sequential")
         self.assertEqual(
-            'For many applications, a perceptually uniform colormap'
-            ' is the best choice -'
-            ' one in which equal steps in data are perceived as equal'
-            ' steps in the color'
-            ' space',
-            category.desc
+            "For many applications, a perceptually uniform colormap"
+            " is the best choice -"
+            " one in which equal steps in data are perceived as equal"
+            " steps in the color"
+            " space",
+            category.desc,
         )
 
     def test_colormaps(self):
         colormap = self.registry.colormaps.get("viridis")
-        self.assertEqual('Perceptually Uniform Sequential',
-                         colormap.cat_name)
-        self.assertEqual('viridis', colormap.cm_name)
-        self.assertEqual('iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA'
-                         'xWXB3AAAAxElEQVR4nI2TQZLEIAwDW+Jr84T5/1'
-                         'PCHGzAkGRrDynZbclwIPro25FARg7FQhLYkBr9m'
-                         'o/M9Fb/9K6vH32ddwnMHz3g5GKx9A2+dPirl91j'
-                         '7pmpOvqqT36OM54z//XfGO/zVff3OXfv2w42Vnr'
-                         'O+V6rME3NGYPlU9v0qAFP3vOZ9MlcPJVZHXP0ya'
-                         'zrgQVvr31kGis76qYLc6guWuaWrh3hjf3Bw7d45'
-                         'mqdO+rexrhLz7NHDS1/mwY0KWthKRQnN0Y0mR+s'
-                         'DYkJKNzLygAAAABJRU5ErkJggg==',
-                         colormap.cmap_png_base64)
+        self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
+        self.assertEqual("viridis", colormap.cm_name)
+        self.assertEqual(
+            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA"
+            "xWXB3AAAAxElEQVR4nI2TQZLEIAwDW+Jr84T5/1"
+            "PCHGzAkGRrDynZbclwIPro25FARg7FQhLYkBr9m"
+            "o/M9Fb/9K6vH32ddwnMHz3g5GKx9A2+dPirl91j"
+            "7pmpOvqqT36OM54z//XfGO/zVff3OXfv2w42Vnr"
+            "O+V6rME3NGYPlU9v0qAFP3vOZ9MlcPJVZHXP0ya"
+            "zrgQVvr31kGis76qYLc6guWuaWrh3hjf3Bw7d45"
+            "mqdO+rexrhLz7NHDS1/mwY0KWthKRQnN0Y0mR+s"
+            "DYkJKNzLygAAAABJRU5ErkJggg==",
+            colormap.cmap_png_base64,
+        )
 
     def test_to_json(self):
         obj = self.registry.to_json()
@@ -145,21 +145,22 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("Ocean", colormap.cat_name)
         self.assertEqual("thermal", colormap.cm_name)
-        self.assertEqual('iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA'
-                         'xWXB3AAAAz0lEQVR4nHWSyZUEIQxDv0woHULnn1'
-                         'p5DiWDgekDz7IkxKrx+aYIUA0BgapvmhiT06zDW'
-                         'nED2SvrW2UQzRMMgh3HhQ+UTlfgXXhAiKsKCCUB'
-                         'SGktkUp/OR0eTY+r++6vbLV15LV/6rDnXf62Bn1'
-                         'fbd9n/jXvrOVrZ7xqOyfZcnvfc08+fWeVdXLPxX'
-                         'V+9no2Xdr1u09QongWVqJYmHjPRucjfcENz4rn4'
-                         'cs2Fnv9yb2PlPUwUxfZdELNs3CuRzP2vBDpj/sf'
-                         'nzNneXL2TFz8H4K3dTwq9eoAAAAAAElFTkSuQmC'
-                         'C',
-                         colormap.cmap_png_base64)
+        self.assertEqual(
+            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA"
+            "xWXB3AAAAz0lEQVR4nHWSyZUEIQxDv0woHULnn1"
+            "p5DiWDgekDz7IkxKrx+aYIUA0BgapvmhiT06zDW"
+            "nED2SvrW2UQzRMMgh3HhQ+UTlfgXXhAiKsKCCUB"
+            "SGktkUp/OR0eTY+r++6vbLV15LV/6rDnXf62Bn1"
+            "fbd9n/jXvrOVrZ7xqOyfZcnvfc08+fWeVdXLPxX"
+            "V+9no2Xdr1u09QongWVqJYmHjPRucjfcENz4rn4"
+            "cs2Fnv9yb2PlPUwUxfZdELNs3CuRzP2vBDpj/sf"
+            "nzNneXL2TFz8H4K3dTwq9eoAAAAAAElFTkSuQmC"
+            "C",
+            colormap.cmap_png_base64,
+        )
 
     def test_load_snap_cpd_colormap(self):
-        cmap_name = os.path.join(os.path.dirname(__file__),
-                                 'chl_DeM2_200.cpd')
+        cmap_name = os.path.join(os.path.dirname(__file__), "chl_DeM2_200.cpd")
         colormap = load_snap_cpd_colormap(cmap_name)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("chl_DeM2_200", colormap.cm_name)
@@ -173,13 +174,14 @@ class ColormapRegistryTest(TestCase):
         )
 
     def test_load_snap_cpd_colormap_invalid(self):
-        cmap_name = os.path.join(os.path.dirname(__file__),
-                                 'chl_DeM2_200_invalid_for_testing.cpd')
+        cmap_name = os.path.join(
+            os.path.dirname(__file__), "chl_DeM2_200_invalid_for_testing.cpd"
+        )
         with self.assertRaises(ValueError):
             load_snap_cpd_colormap(cmap_name)
 
     def test_load_snap_cpd_colormap_missing(self):
-        cmap_name = 'test/webapi/im/chl_DeM2_200_not_existing.cpd'
+        cmap_name = "test/webapi/im/chl_DeM2_200_not_existing.cpd"
         with self.assertRaises(FileNotFoundError):
             load_snap_cpd_colormap(cmap_name)
 
@@ -222,12 +224,12 @@ class ColormapTest(TestCase):
         self.assertIsInstance(base64, str)
         self.assertIs(base64, self.colormap.cmap_png_base64)
         self.assertEqual(
-            'iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAA'
-            'u0lEQVR4nJWMwQEDIAwCScbqDB26e7VCHxpN1D76gsARezxf'
-            'MjOYO9y7xm3j9nxfWYMnb27Hxuc29/EfV255LN5s45F2GL9R'
-            'd4bJHd5QuJqhZpuvmbZep0fOB490I35osdD1nrt8X7yHB88+'
-            'cg0v/tDuEZkqAyUFS2YSkLSw4pFBhDHYlYHxZ/m9E8/s6Eho'
-            'KKSeT6b2U6m5FysXe01OkPYsdX94tpr3e2RNYPCNvWuJawJJ'
-            '6C3wo7u+hS8PX1PsPRnqDgAAAABJRU5ErkJggg==',
-            base64
+            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAA"
+            "u0lEQVR4nJWMwQEDIAwCScbqDB26e7VCHxpN1D76gsARezxf"
+            "MjOYO9y7xm3j9nxfWYMnb27Hxuc29/EfV255LN5s45F2GL9R"
+            "d4bJHd5QuJqhZpuvmbZep0fOB490I35osdD1nrt8X7yHB88+"
+            "cg0v/tDuEZkqAyUFS2YSkLSw4pFBhDHYlYHxZ/m9E8/s6Eho"
+            "KKSeT6b2U6m5FysXe01OkPYsdX94tpr3e2RNYPCNvWuJawJJ"
+            "6C3wo7u+hS8PX1PsPRnqDgAAAABJRU5ErkJggg==",
+            base64,
         )

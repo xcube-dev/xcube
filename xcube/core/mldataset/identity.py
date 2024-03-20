@@ -24,8 +24,7 @@ from .mapped import MappedMultiLevelDataset
 
 
 class IdentityMultiLevelDataset(MappedMultiLevelDataset):
-    """The identity.
-    """
+    """The identity."""
 
     def __init__(self, ml_dataset: MultiLevelDataset, ds_id: str = None):
         super().__init__(ml_dataset, lambda ds: ds, ds_id=ds_id)

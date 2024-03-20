@@ -84,8 +84,10 @@ class MultiLevelDataset(metaclass=ABCMeta):
             (i.e. ``self.grid_mapping.crs``).
         """
         x_res_0, y_res_0 = self.grid_mapping.xy_res
-        return [(x_res_0 * (1 << level), y_res_0 * (1 << level))
-                for level in range(self.num_levels)]
+        return [
+            (x_res_0 * (1 << level), y_res_0 * (1 << level))
+            for level in range(self.num_levels)
+        ]
 
     @cached_property
     def avg_resolutions(self) -> Sequence[float]:
@@ -96,8 +98,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         """
         x_res_0, y_res_0 = self.grid_mapping.xy_res
         xy_res_0 = math.sqrt(x_res_0 * y_res_0)
-        return [xy_res_0 * (1 << level)
-                for level in range(self.num_levels)]
+        return [xy_res_0 * (1 << level) for level in range(self.num_levels)]
 
     @property
     def base_dataset(self) -> xr.Dataset:
@@ -125,19 +126,22 @@ class MultiLevelDataset(metaclass=ABCMeta):
         """
 
     def close(self):
-        """ Close all datasets. Default implementation does nothing. """
+        """Close all datasets. Default implementation does nothing."""
 
-    def apply(self,
-              function: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
-              kwargs: Dict[str, Any] = None,
-              ds_id: str = None) -> 'MultiLevelDataset':
-        """ Apply function to all level datasets
+    def apply(
+        self,
+        function: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
+        kwargs: Dict[str, Any] = None,
+        ds_id: str = None,
+    ) -> "MultiLevelDataset":
+        """Apply function to all level datasets
         and return a new multi-level dataset.
         """
         from .mapped import MappedMultiLevelDataset
-        return MappedMultiLevelDataset(self, function,
-                                       ds_id=ds_id,
-                                       mapper_params=kwargs)
+
+        return MappedMultiLevelDataset(
+            self, function, ds_id=ds_id, mapper_params=kwargs
+        )
 
     def derive_tiling_scheme(self, tiling_scheme: TilingScheme):
         """
@@ -145,11 +149,9 @@ class MultiLevelDataset(metaclass=ABCMeta):
         minimum and maximum level indices.
         """
         min_level, max_level = tiling_scheme.get_levels_for_resolutions(
-            self.avg_resolutions,
-            self.grid_mapping.spatial_unit_name
+            self.avg_resolutions, self.grid_mapping.spatial_unit_name
         )
-        return tiling_scheme.derive(min_level=min_level,
-                                    max_level=max_level)
+        return tiling_scheme.derive(min_level=min_level, max_level=max_level)
 
     def get_level_for_resolution(self, xy_res: ScalarOrPair[float]) -> int:
         """
@@ -158,8 +160,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         :param xy_res: the resolution in x- and y-direction
         :return: a level ranging from 0 to self.num_levels - 1
         """
-        given_x_res, given_y_res = normalize_scalar_or_pair(xy_res,
-                                                            item_type=float)
+        given_x_res, given_y_res = normalize_scalar_or_pair(xy_res, item_type=float)
         for level, (x_res, y_res) in enumerate(self.resolutions):
             if x_res > given_x_res and y_res > given_y_res:
                 return max(0, level - 1)

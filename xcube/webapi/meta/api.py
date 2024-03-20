@@ -24,9 +24,9 @@ from .config import CONFIG_SCHEMA
 from .context import MetaContext
 
 api = Api(
-    'meta',
-    description='Server information and maintenance operations',
+    "meta",
+    description="Server information and maintenance operations",
     config_schema=CONFIG_SCHEMA,
-    required_apis=['auth'],
-    create_ctx=MetaContext
+    required_apis=["auth"],
+    create_ctx=MetaContext,
 )

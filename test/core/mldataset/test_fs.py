@@ -42,7 +42,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             x_res=360 / 512,
             y_res=180 / 256,
             time_periods=1,
-            variables=dict(CHL=0.8, qflags=1)
+            variables=dict(CHL=0.8, qflags=1),
         )
 
         self.fs: fsspec.AbstractFileSystem = fsspec.core.get_filesystem_class(
@@ -60,36 +60,24 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             tile_size=256,
             use_saved_levels=False,
             base_dataset_path=None,
-            expected_files=[
-                ".zlevels",
-                "0.zarr",
-                "1.zarr",
-                "2.zarr",
-                "3.zarr"
-            ],
+            expected_files=[".zlevels", "0.zarr", "1.zarr", "2.zarr", "3.zarr"],
             expected_num_levels=4,
             expected_tile_size=[256, 256],
-            expected_agg_methods={'CHL': 'mean', 'qflags': 'first'},
+            expected_agg_methods={"CHL": "mean", "qflags": "first"},
         )
 
     def test_io_nl_4_ts_256_agg(self):
         self.assert_io_ok(
             "test.levels",
             num_levels=4,
-            agg_methods={'CHL': 'median', 'qflags': 'max'},
+            agg_methods={"CHL": "median", "qflags": "max"},
             tile_size=256,
             use_saved_levels=False,
             base_dataset_path=None,
-            expected_files=[
-                ".zlevels",
-                "0.zarr",
-                "1.zarr",
-                "2.zarr",
-                "3.zarr"
-            ],
+            expected_files=[".zlevels", "0.zarr", "1.zarr", "2.zarr", "3.zarr"],
             expected_num_levels=4,
             expected_tile_size=[256, 256],
-            expected_agg_methods={'CHL': 'median', 'qflags': 'max'},
+            expected_agg_methods={"CHL": "median", "qflags": "max"},
         )
 
     def test_io_nl_4_ts_256_base(self):
@@ -101,45 +89,43 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             tile_size=256,
             use_saved_levels=False,
             base_dataset_path="test.zarr",
-            expected_files=[
-                ".zlevels",
-                "0.link",
-                "1.zarr",
-                "2.zarr",
-                "3.zarr"
-            ],
+            expected_files=[".zlevels", "0.link", "1.zarr", "2.zarr", "3.zarr"],
             expected_num_levels=4,
             expected_tile_size=[256, 256],
-            expected_agg_methods={'CHL': 'mean', 'qflags': 'first'},
+            expected_agg_methods={"CHL": "mean", "qflags": "first"},
         )
 
     def assert_io_ok(
-            self,
-            path: str,
-            num_levels: Optional[int],
-            agg_methods: Optional[Mapping[str, AggMethod]],
-            tile_size: Optional[int],
-            use_saved_levels: bool,
-            base_dataset_path: Optional[str],
-            expected_files: List[str],
-            expected_num_levels: int,
-            expected_agg_methods: Optional[Mapping[str, AggMethod]],
-            expected_tile_size: List[int]
+        self,
+        path: str,
+        num_levels: Optional[int],
+        agg_methods: Optional[Mapping[str, AggMethod]],
+        tile_size: Optional[int],
+        use_saved_levels: bool,
+        base_dataset_path: Optional[str],
+        expected_files: List[str],
+        expected_num_levels: int,
+        expected_agg_methods: Optional[Mapping[str, AggMethod]],
+        expected_tile_size: List[int],
     ):
         fs = self.fs
-        FsMultiLevelDataset.write_dataset(self.dataset,
-                                          path,
-                                          fs=fs,
-                                          fs_root="",
-                                          replace=True,
-                                          num_levels=num_levels,
-                                          agg_methods=agg_methods,
-                                          tile_size=tile_size,
-                                          use_saved_levels=use_saved_levels,
-                                          base_dataset_path=base_dataset_path)
+        FsMultiLevelDataset.write_dataset(
+            self.dataset,
+            path,
+            fs=fs,
+            fs_root="",
+            replace=True,
+            num_levels=num_levels,
+            agg_methods=agg_methods,
+            tile_size=tile_size,
+            use_saved_levels=use_saved_levels,
+            base_dataset_path=base_dataset_path,
+        )
         self.assertTrue(fs.isdir(path))
-        self.assertEqual(set([f"/{path}/{f}" for f in expected_files]),
-                         set(fs.listdir(path, detail=False)))
+        self.assertEqual(
+            set([f"/{path}/{f}" for f in expected_files]),
+            set(fs.listdir(path, detail=False)),
+        )
 
         ml_dataset = FsMultiLevelDataset(path, fs=fs)
         self.assertEqual(expected_num_levels, ml_dataset.num_levels)
@@ -154,15 +140,10 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             self.assertIsInstance(ml_dataset.get_dataset(i), xr.Dataset)
 
     def test_compute_size_weights(self):
-        size = 2 ** 28
-        weighted_sizes = list(map(
-            math.ceil, size * FsMultiLevelDataset.compute_size_weights(5)
-        ))
+        size = 2**28
+        weighted_sizes = list(
+            map(math.ceil, size * FsMultiLevelDataset.compute_size_weights(5))
+        )
         self.assertEqual(
-            [201523393,
-             50380849,
-             12595213,
-             3148804,
-             787201],
-            weighted_sizes
+            [201523393, 50380849, 12595213, 3148804, 787201], weighted_sizes
         )

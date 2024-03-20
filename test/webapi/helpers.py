@@ -14,16 +14,16 @@ from xcube.server.testing import ServerTestCase
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.plugin import get_extension_registry
 
-XCUBE_TEST_CLIENT_ID = os.environ.get('XCUBE_TEST_CLIENT_ID')
-XCUBE_TEST_CLIENT_SECRET = os.environ.get('XCUBE_TEST_CLIENT_SECRET')
+XCUBE_TEST_CLIENT_ID = os.environ.get("XCUBE_TEST_CLIENT_ID")
+XCUBE_TEST_CLIENT_SECRET = os.environ.get("XCUBE_TEST_CLIENT_SECRET")
 
-T = TypeVar('T', bound=Context)
+T = TypeVar("T", bound=Context)
 
 
 def get_server(
-        server_config: Optional[Union[str, Mapping[str, Any]]] = None,
-        framework: Optional[Framework] = None,
-        extension_registry: Optional[ExtensionRegistry] = None
+    server_config: Optional[Union[str, Mapping[str, Any]]] = None,
+    framework: Optional[Framework] = None,
+    extension_registry: Optional[ExtensionRegistry] = None,
 ) -> Server:
     """Get the server object for the given
     server configuration path or dictionary *server_config*.
@@ -42,7 +42,7 @@ def get_server(
     :return: The API context object
     :raise AssertionError: if API context object can not be determined
     """
-    server_config = server_config or 'config.yml'
+    server_config = server_config or "config.yml"
     if isinstance(server_config, str):
         config_path = server_config
         base_dir = os.path.dirname(config_path)
@@ -51,7 +51,7 @@ def get_server(
             config_path = os.path.join(base_dir, config_path)
         elif not os.path.isabs(base_dir):
             base_dir = os.path.abspath(base_dir)
-        with open(config_path, encoding='utf-8') as fp:
+        with open(config_path, encoding="utf-8") as fp:
             server_config = yaml.safe_load(fp)
             assert isinstance(server_config, dict)
             server_config["base_dir"] = base_dir
@@ -60,17 +60,15 @@ def get_server(
 
     framework = framework or MockFramework()
     extension_registry = extension_registry or get_extension_registry()
-    return Server(framework,
-                  server_config,
-                  extension_registry=extension_registry)
+    return Server(framework, server_config, extension_registry=extension_registry)
 
 
 def get_api_ctx(
-        api_name: str,
-        api_ctx_cls: Type[T],
-        server_config: Optional[Union[str, Mapping[str, Any]]] = None,
-        framework: Optional[Framework] = None,
-        extension_registry: Optional[ExtensionRegistry] = None
+    api_name: str,
+    api_ctx_cls: Type[T],
+    server_config: Optional[Union[str, Mapping[str, Any]]] = None,
+    framework: Optional[Framework] = None,
+    extension_registry: Optional[ExtensionRegistry] = None,
 ) -> T:
     """Get the API context object for the given
     API name *api_name*,
@@ -93,16 +91,18 @@ def get_api_ctx(
     :return: The API context object
     :raise AssertionError: if API context object can not be determined
     """
-    server = get_server(server_config or 'config.yml',
-                        framework=framework,
-                        extension_registry=extension_registry)
+    server = get_server(
+        server_config or "config.yml",
+        framework=framework,
+        extension_registry=extension_registry,
+    )
     api_ctx = server.ctx.get_api_ctx(api_name, cls=api_ctx_cls)
     assert isinstance(api_ctx, api_ctx_cls)
     return api_ctx
 
 
 def get_res_test_dir() -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__), 'res'))
+    return os.path.normpath(os.path.join(os.path.dirname(__file__), "res"))
 
 
 class RoutesTestCase(ServerTestCase):
@@ -112,7 +112,7 @@ class RoutesTestCase(ServerTestCase):
     def get_config_filename(self) -> str:
         """Get configuration filename.
         Default impl. returns ``'config.yml'``."""
-        return f'config.yml'
+        return f"config.yml"
 
     # noinspection PyMethodMayBeStatic
     def get_config_path(self) -> str:
@@ -120,7 +120,7 @@ class RoutesTestCase(ServerTestCase):
         Default impl. uses ``self.get_config_filename()`` to construct
         a path into test resources.
         """
-        return f'{get_res_test_dir()}/{self.get_config_filename()}'
+        return f"{get_res_test_dir()}/{self.get_config_filename()}"
 
     def get_config(self) -> Mapping[str, Any]:
         """Get configuration.
@@ -129,7 +129,7 @@ class RoutesTestCase(ServerTestCase):
         Then sets 'base_dir' configuration parameter.
         """
         config_path = self.get_config_path()
-        base_dir = os.path.dirname(config_path) or '.'
+        base_dir = os.path.dirname(config_path) or "."
         with open(config_path, encoding="utf-8") as fp:
             server_config = yaml.safe_load(fp)
             server_config["base_dir"] = base_dir
@@ -137,6 +137,6 @@ class RoutesTestCase(ServerTestCase):
 
     def get_extension_registry(self):
         """Gets xcube default extension registry
-         with all extensions loaded.
-         """
+        with all extensions loaded.
+        """
         return get_extension_registry()

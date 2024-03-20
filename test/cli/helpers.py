@@ -18,9 +18,7 @@ class CliTest(unittest.TestCase, metaclass=ABCMeta):
     def invoke_cli(self, args: List[str]):
         self.runner = click.testing.CliRunner(mix_stderr=False)
         # noinspection PyTypeChecker
-        return self.runner.invoke(cli,
-                                  args,
-                                  catch_exceptions=False)
+        return self.runner.invoke(cli, args, catch_exceptions=False)
 
 
 class CliDataTest(CliTest, metaclass=ABCMeta):
@@ -36,8 +34,10 @@ class CliDataTest(CliTest, metaclass=ABCMeta):
 
     def setUp(self):
         self._rm_outputs()
-        dataset = new_cube(variables=dict(precipitation=0.4, temperature=275.2, soil_moisture=0.5),
-                           time_periods=self.time_periods())
+        dataset = new_cube(
+            variables=dict(precipitation=0.4, temperature=275.2, soil_moisture=0.5),
+            time_periods=self.time_periods(),
+        )
         if self.chunks() is not None:
             dataset = dataset.chunk(self.chunks())
         dataset.to_netcdf(TEST_NC_FILE, mode="w")

@@ -46,25 +46,26 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
         passed as keyword arguments.
     """
 
-    def __init__(self,
-                 ml_datasets: Sequence[MultiLevelDataset],
-                 ds_id: Optional[str] = None,
-                 combiner_function: Optional[Callable] = None,
-                 combiner_params: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        ml_datasets: Sequence[MultiLevelDataset],
+        ds_id: Optional[str] = None,
+        combiner_function: Optional[Callable] = None,
+        combiner_params: Optional[Dict[str, Any]] = None,
+    ):
         if not ml_datasets or len(ml_datasets) < 2:
-            raise ValueError('ml_datasets must have at least two elements')
-        super().__init__(ds_id=ds_id,
-                         parameters=combiner_params)
+            raise ValueError("ml_datasets must have at least two elements")
+        super().__init__(ds_id=ds_id, parameters=combiner_params)
         self._ml_datasets = ml_datasets
         self._combiner_function = combiner_function
 
     def _get_num_levels_lazily(self) -> int:
         return self._ml_datasets[0].num_levels
 
-    def _get_dataset_lazily(self, index: int,
-                            combiner_params: Dict[str, Any]) -> xr.Dataset:
-        datasets = [ml_dataset.get_dataset(index)
-                    for ml_dataset in self._ml_datasets]
+    def _get_dataset_lazily(
+        self, index: int, combiner_params: Dict[str, Any]
+    ) -> xr.Dataset:
+        datasets = [ml_dataset.get_dataset(index) for ml_dataset in self._ml_datasets]
         if self._combiner_function is None:
             combined_dataset = datasets[0].copy()
             for dataset in datasets[1:]:

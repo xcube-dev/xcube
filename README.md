@@ -3,6 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/xcube/badge/?version=latest)](https://xcube.readthedocs.io/en/latest/?badge=latest)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/xcube/badges/version.svg)](https://anaconda.org/conda-forge/xcube)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/xcube/badges/license.svg)](https://anaconda.org/conda-forge/xcube)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 xcube is a Python toolkit for managing geospatial data cubes.
 

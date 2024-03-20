@@ -28,24 +28,26 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(False, gm.is_lon_360)
         self.assertEqual(True, gm.is_j_axis_up)
         self.assertEqual((2, 180, 360), gm.xy_coords.shape)
-        self.assertEqual(('coord', 'lat', 'lon'), gm.xy_coords.dims)
+        self.assertEqual(("coord", "lat", "lon"), gm.xy_coords.dims)
 
     def test_from_regular_cube_with_crs(self):
-        dataset = xcube.core.new.new_cube(variables=dict(rad=0.5),
-                                          x_start=0,
-                                          y_start=0,
-                                          x_name='x',
-                                          y_name='y',
-                                          crs='epsg:25832')
+        dataset = xcube.core.new.new_cube(
+            variables=dict(rad=0.5),
+            x_start=0,
+            y_start=0,
+            x_name="x",
+            y_name="y",
+            crs="epsg:25832",
+        )
         gm1 = GridMapping.from_dataset(dataset)
-        self.assertEqual(pyproj.CRS.from_string('epsg:25832'), gm1.crs)
-        dataset = dataset.drop_vars('crs')
+        self.assertEqual(pyproj.CRS.from_string("epsg:25832"), gm1.crs)
+        dataset = dataset.drop_vars("crs")
         gm2 = GridMapping.from_dataset(dataset)
         self.assertEqual(GEO_CRS, gm2.crs)
         gm3 = GridMapping.from_dataset(dataset, crs=gm1.crs)
         self.assertEqual(gm1.crs, gm3.crs)
-        self.assertEqual(('x', 'y'), gm3.xy_var_names)
-        self.assertEqual(('x', 'y'), gm3.xy_dim_names)
+        self.assertEqual(("x", "y"), gm3.xy_var_names)
+        self.assertEqual(("x", "y"), gm3.xy_dim_names)
 
     def test_from_regular_cube_no_chunks_and_chunks(self):
         dataset = xcube.core.new.new_cube(variables=dict(rad=0.5))
@@ -56,17 +58,23 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual((10, 20), gm2.tile_size)
 
     def test_from_non_regular_cube(self):
-        lon = np.array([[8, 9.3, 10.6, 11.9],
-                        [8, 9.2, 10.4, 11.6],
-                        [8, 9.1, 10.2, 11.3]], dtype=np.float32)
-        lat = np.array([[56, 56.1, 56.2, 56.3],
-                        [55, 55.2, 55.4, 55.6],
-                        [54, 54.3, 54.6, 54.9]], dtype=np.float32)
+        lon = np.array(
+            [[8, 9.3, 10.6, 11.9], [8, 9.2, 10.4, 11.6], [8, 9.1, 10.2, 11.3]],
+            dtype=np.float32,
+        )
+        lat = np.array(
+            [[56, 56.1, 56.2, 56.3], [55, 55.2, 55.4, 55.6], [54, 54.3, 54.6, 54.9]],
+            dtype=np.float32,
+        )
         rad = np.random.random(3 * 4).reshape((3, 4))
-        dims = ('y', 'x')
-        dataset = xr.Dataset(dict(lon=xr.DataArray(lon, dims=dims),
-                                  lat=xr.DataArray(lat, dims=dims),
-                                  rad=xr.DataArray(rad, dims=dims)))
+        dims = ("y", "x")
+        dataset = xr.Dataset(
+            dict(
+                lon=xr.DataArray(lon, dims=dims),
+                lat=xr.DataArray(lat, dims=dims),
+                rad=xr.DataArray(rad, dims=dims),
+            )
+        )
         gm = GridMapping.from_dataset(dataset)
         self.assertEqual((4, 3), gm.size)
         self.assertEqual((4, 3), gm.tile_size)
@@ -75,14 +83,20 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(False, gm.is_lon_360)
         self.assertEqual(None, gm.is_j_axis_up)
         self.assertEqual((2, 3, 4), gm.xy_coords.shape)
-        self.assertEqual(('coord', 'y', 'x'), gm.xy_coords.dims)
+        self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
         self.assertEqual((0.8, 0.8), gm.xy_res)
 
     def test_from_real_olci(self):
-        olci_l2_path = os.path.join(os.path.dirname(__file__),
-                                    '..', '..', '..',
-                                    'examples', 'notebooks', 'inputdata',
-                                    'S3-OLCI-L2A.zarr.zip')
+        olci_l2_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "..",
+            "examples",
+            "notebooks",
+            "inputdata",
+            "S3-OLCI-L2A.zarr.zip",
+        )
 
         dataset = xr.open_zarr(olci_l2_path)
         gm = GridMapping.from_dataset(dataset)
@@ -98,7 +112,7 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertEqual(False, gm.is_lon_360)
         self.assertEqual(None, gm.is_j_axis_up)
         self.assertEqual((2, 1890, 1189), gm.xy_coords.shape)
-        self.assertEqual(('coord', 'y', 'x'), gm.xy_coords.dims)
+        self.assertEqual(("coord", "y", "x"), gm.xy_coords.dims)
 
         gm = gm.to_regular()
         self.assertEqual((2926, 2177), gm.size)
@@ -126,8 +140,9 @@ class DatasetGridMappingTest(unittest.TestCase):
         self.assertIn("Geographic", gm.crs.type_name)
         self.assertEqual(False, gm.is_regular)
 
-        gm = GridMapping.from_dataset(dataset, prefer_crs=GEO_CRS,
-                                      prefer_is_regular=True)
+        gm = GridMapping.from_dataset(
+            dataset, prefer_crs=GEO_CRS, prefer_is_regular=True
+        )
         # Should pick the geographic one which is irregular
         self.assertIn("Geographic", gm.crs.type_name)
         self.assertEqual(False, gm.is_regular)
@@ -135,5 +150,4 @@ class DatasetGridMappingTest(unittest.TestCase):
     def test_no_grid_mapping_found(self):
         with self.assertRaises(ValueError) as cm:
             GridMapping.from_dataset(xr.Dataset())
-        self.assertEqual('cannot find any grid mapping in dataset',
-                         f'{cm.exception}')
+        self.assertEqual("cannot find any grid mapping in dataset", f"{cm.exception}")

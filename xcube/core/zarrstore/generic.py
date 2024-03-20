@@ -26,8 +26,7 @@ import json
 import math
 import threading
 import warnings
-from typing import Iterator, Dict, Tuple, Any, Callable, \
-    Optional, List, Sequence
+from typing import Iterator, Dict, Tuple, Any, Callable, Optional, List, Sequence
 from typing import Union
 
 import numcodecs.abc
@@ -37,8 +36,7 @@ import zarr.storage
 
 from xcube.util.assertions import assert_instance, assert_true
 
-GetData = Callable[[Tuple[int]],
-                   Union[bytes, np.ndarray]]
+GetData = Callable[[Tuple[int]], Union[bytes, np.ndarray]]
 
 OnClose = Callable[[Dict[str, Any]], None]
 
@@ -129,46 +127,50 @@ class GenericArray(Dict[str, any]):
         dictionary constructor.
     """
 
-    def __init__(self,
-                 array: Optional[Dict[str, any]] = None,
-                 name: Optional[str] = None,
-                 get_data: Optional[GetData] = None,
-                 get_data_params: Optional[Dict[str, Any]] = None,
-                 data: Optional[np.ndarray] = None,
-                 dtype: Optional[Union[str, np.dtype]] = None,
-                 dims: Optional[Union[str, Sequence[str]]] = None,
-                 shape: Optional[Sequence[int]] = None,
-                 chunks: Optional[Sequence[int]] = None,
-                 fill_value: Optional[Union[bool, int, float, str]] = None,
-                 compressor: Optional[numcodecs.abc.Codec] = None,
-                 filters: Optional[Sequence[numcodecs.abc.Codec]] = None,
-                 order: Optional[str] = None,
-                 attrs: Optional[Dict[str, Any]] = None,
-                 on_close: Optional[OnClose] = None,
-                 chunk_encoding: Optional[str] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        array: Optional[Dict[str, any]] = None,
+        name: Optional[str] = None,
+        get_data: Optional[GetData] = None,
+        get_data_params: Optional[Dict[str, Any]] = None,
+        data: Optional[np.ndarray] = None,
+        dtype: Optional[Union[str, np.dtype]] = None,
+        dims: Optional[Union[str, Sequence[str]]] = None,
+        shape: Optional[Sequence[int]] = None,
+        chunks: Optional[Sequence[int]] = None,
+        fill_value: Optional[Union[bool, int, float, str]] = None,
+        compressor: Optional[numcodecs.abc.Codec] = None,
+        filters: Optional[Sequence[numcodecs.abc.Codec]] = None,
+        order: Optional[str] = None,
+        attrs: Optional[Dict[str, Any]] = None,
+        on_close: Optional[OnClose] = None,
+        chunk_encoding: Optional[str] = None,
+        **kwargs,
+    ):
         array = dict(array) if array is not None else dict()
-        array.update({
-            k: v
-            for k, v in dict(
-                name=name,
-                dtype=dtype,
-                dims=dims,
-                shape=shape,
-                chunks=chunks,
-                fill_value=fill_value,
-                compressor=compressor,
-                filters=filters,
-                order=order,
-                attrs=attrs,
-                data=data,
-                get_data=get_data,
-                get_data_params=get_data_params,
-                on_close=on_close,
-                chunk_encoding=chunk_encoding
-            ).items()
-            if v is not None
-        })
+        array.update(
+            {
+                k: v
+                for k, v in dict(
+                    name=name,
+                    dtype=dtype,
+                    dims=dims,
+                    shape=shape,
+                    chunks=chunks,
+                    fill_value=fill_value,
+                    compressor=compressor,
+                    filters=filters,
+                    order=order,
+                    attrs=attrs,
+                    data=data,
+                    get_data=get_data,
+                    get_data_params=get_data_params,
+                    on_close=on_close,
+                    chunk_encoding=chunk_encoding,
+                ).items()
+                if v is not None
+            }
+        )
         super().__init__(array, **kwargs)
 
     def finalize(self) -> "GenericArray":
@@ -182,16 +184,18 @@ class GenericArray(Dict[str, any]):
         data = self.get("data")
         get_data = self.get("get_data")
         if data is None and get_data is None:
-            raise ValueError(f"array {name!r}:"
-                             f" either data or get_data must be defined")
+            raise ValueError(
+                f"array {name!r}:" f" either data or get_data must be defined"
+            )
         if get_data is not None:
             if data is not None:
-                raise ValueError(f"array {name!r}:"
-                                 f" data and get_data cannot"
-                                 f" be defined together")
+                raise ValueError(
+                    f"array {name!r}:"
+                    f" data and get_data cannot"
+                    f" be defined together"
+                )
             if not callable(get_data):
-                raise TypeError(f"array {name!r}:"
-                                f" get_data must be a callable")
+                raise TypeError(f"array {name!r}:" f" get_data must be a callable")
             sig = inspect.signature(get_data)
             get_data_info = {
                 "has_array_info": "array_info" in sig.parameters,
@@ -228,32 +232,37 @@ class GenericArray(Dict[str, any]):
         if shape is None:
             raise ValueError(f"array {name!r}: missing shape")
         if len(shape) != ndim:
-            raise ValueError(f"array {name!r}:"
-                             f" dims and shape must have same length")
+            raise ValueError(
+                f"array {name!r}:" f" dims and shape must have same length"
+            )
         if len(chunks) != ndim:
-            raise ValueError(f"array {name!r}:"
-                             f" dims and chunks must have same length")
+            raise ValueError(
+                f"array {name!r}:" f" dims and chunks must have same length"
+            )
 
-        num_chunks = tuple(map(lambda x: math.ceil(x[0] / x[1]),
-                               zip(shape, chunks)))
+        num_chunks = tuple(map(lambda x: math.ceil(x[0] / x[1]), zip(shape, chunks)))
 
         filters = self.get("filters")
         if filters:
             filters = list(filters)
             for f in filters:
                 if not isinstance(f, numcodecs.abc.Codec):
-                    raise TypeError(f"array {name!r}:"
-                                    f" filter items must be an"
-                                    f" instance of numcodecs.abc.Codec")
+                    raise TypeError(
+                        f"array {name!r}:"
+                        f" filter items must be an"
+                        f" instance of numcodecs.abc.Codec"
+                    )
         else:
             filters = None
 
         compressor = self.get("compressor")
         if compressor is not None:
             if not isinstance(compressor, numcodecs.abc.Codec):
-                raise TypeError(f"array {name!r}:"
-                                f" compressor must be an"
-                                f" instance of numcodecs.abc.Codec")
+                raise TypeError(
+                    f"array {name!r}:"
+                    f" compressor must be an"
+                    f" instance of numcodecs.abc.Codec"
+                )
 
         fill_value = self.get("fill_value")
         if isinstance(fill_value, np.ndarray):
@@ -296,27 +305,29 @@ class GenericArray(Dict[str, any]):
         # Note: passing the properties as dictionary
         # will prevent removing them if their value is None,
         # see GenericArray constructor.
-        return GenericArray({
-            "name": name,
-            "dtype": dtype,
-            "dims": tuple(dims),
-            "shape": tuple(shape),
-            "chunks": tuple(chunks),
-            "fill_value": fill_value,
-            "filters": filters,
-            "compressor": compressor,
-            "order": order,
-            "attrs": attrs,
-            "data": data,
-            "get_data": get_data,
-            "get_data_params": get_data_params,
-            "on_close": self.get("on_close"),
-            "chunk_encoding": chunk_encoding,
-            # Computed properties
-            "ndim": len(dims),
-            "num_chunks": num_chunks,
-            "get_data_info": get_data_info,
-        })
+        return GenericArray(
+            {
+                "name": name,
+                "dtype": dtype,
+                "dims": tuple(dims),
+                "shape": tuple(shape),
+                "chunks": tuple(chunks),
+                "fill_value": fill_value,
+                "filters": filters,
+                "compressor": compressor,
+                "order": order,
+                "attrs": attrs,
+                "data": data,
+                "get_data": get_data,
+                "get_data_params": get_data_params,
+                "on_close": self.get("on_close"),
+                "chunk_encoding": chunk_encoding,
+                # Computed properties
+                "ndim": len(dims),
+                "num_chunks": num_chunks,
+                "get_data_info": get_data_info,
+            }
+        )
 
 
 GenericArrayLike = Union[GenericArray, Dict[str, Any]]
@@ -349,10 +360,10 @@ class GenericZarrStore(zarr.storage.Store):
     Array = GenericArray
 
     def __init__(
-            self,
-            *arrays: GenericArrayLike,
-            attrs: Optional[Dict[str, Any]] = None,
-            array_defaults: Optional[GenericArrayLike] = None
+        self,
+        *arrays: GenericArrayLike,
+        attrs: Optional[Dict[str, Any]] = None,
+        array_defaults: Optional[GenericArrayLike] = None,
     ):
         self._attrs = dict(attrs) if attrs is not None else {}
         self._array_defaults = array_defaults
@@ -361,9 +372,9 @@ class GenericZarrStore(zarr.storage.Store):
         for array in arrays:
             self.add_array(array)
 
-    def add_array(self,
-                  array: Optional[GenericArrayLike] = None,
-                  **array_kwargs) -> None:
+    def add_array(
+        self, array: Optional[GenericArrayLike] = None, **array_kwargs
+    ) -> None:
         """
         Add a new array to this store.
 
@@ -392,10 +403,12 @@ class GenericZarrStore(zarr.storage.Store):
             elif old_dim_size != dim_size:
                 # Dimensions must have same lengths for all arrays
                 # in this store
-                raise ValueError(f"array {name!r}"
-                                 f" defines dimension {dim_name!r}"
-                                 f" with size {dim_size},"
-                                 f" but existing size is {old_dim_size}")
+                raise ValueError(
+                    f"array {name!r}"
+                    f" defines dimension {dim_name!r}"
+                    f" with size {dim_size},"
+                    f" but existing size is {old_dim_size}"
+                )
 
         self._arrays[name] = effective_array
 
@@ -413,12 +426,7 @@ class GenericZarrStore(zarr.storage.Store):
         :return: List of sorted directory entries.
         """
         if path == "":
-            return sorted([
-                ".zmetadata",
-                ".zgroup",
-                ".zattrs",
-                *self._arrays.keys()
-            ])
+            return sorted([".zmetadata", ".zgroup", ".zattrs", *self._arrays.keys()])
         elif "/" not in path:
             return sorted(self._get_array_keys(path))
         raise ValueError(f"{path} is not a directory")
@@ -450,14 +458,16 @@ class GenericZarrStore(zarr.storage.Store):
         """
         array = self._arrays.get(src_path)
         if array is None:
-            raise ValueError(f"can only rename arrays, but {src_path!r}"
-                             f" is not an array")
+            raise ValueError(
+                f"can only rename arrays, but {src_path!r}" f" is not an array"
+            )
         if dst_path in self._arrays:
-            raise ValueError(f"cannot rename array {src_path!r} into"
-                             f" {dst_path!r} because it already exists")
+            raise ValueError(
+                f"cannot rename array {src_path!r} into"
+                f" {dst_path!r} because it already exists"
+            )
         if "/" in dst_path:
-            raise ValueError(f"cannot rename array {src_path!r}"
-                             f" into {dst_path!r}")
+            raise ValueError(f"cannot rename array {src_path!r}" f" into {dst_path!r}")
         array["name"] = dst_path
         self._arrays[dst_path] = array
         del self._arrays[src_path]
@@ -514,8 +524,8 @@ class GenericZarrStore(zarr.storage.Store):
         return item
 
     def __setitem__(self, key: str, value: bytes) -> None:
-        class_name = self.__module__ + '.' + self.__class__.__name__
-        raise TypeError(f'{class_name} is read-only')
+        class_name = self.__module__ + "." + self.__class__.__name__
+        raise TypeError(f"{class_name} is read-only")
 
     def __delitem__(self, key: str) -> None:
         self.rmdir(key)
@@ -525,10 +535,9 @@ class GenericZarrStore(zarr.storage.Store):
     ##########################################################################
 
     @classmethod
-    def from_dataset(cls,
-                     dataset: xr.Dataset,
-                     array_defaults: Optional[GenericArrayLike] = None) \
-            -> "GenericZarrStore":
+    def from_dataset(
+        cls, dataset: xr.Dataset, array_defaults: Optional[GenericArrayLike] = None
+    ) -> "GenericZarrStore":
         """Create a Zarr store for given *dataset*.
         to the *dataset*'s attributes.
         The following *array_defaults* properties can be provided
@@ -545,31 +554,32 @@ class GenericZarrStore(zarr.storage.Store):
         :return: A new Zarr store instance.
         """
 
-        def _get_dataset_data(ds=None,
-                              chunk_info=None,
-                              array_info=None) -> np.ndarray:
+        def _get_dataset_data(ds=None, chunk_info=None, array_info=None) -> np.ndarray:
             array_name = array_info["name"]
             chunk_slices = chunk_info["slices"]
             return ds[array_name][chunk_slices].values
 
         arrays = []
         for var_name, var in dataset.variables.items():
-            arrays.append(GenericArray(
-                name=str(var_name),
-                dtype=np.dtype(var.dtype).str,
-                dims=[str(dim) for dim in var.dims],
-                shape=var.shape,
-                chunks=[(max(*c) if len(c) > 1 else c[0])
-                        for c in var.chunks] if var.chunks else var.shape,
-                attrs={str(k): v for k, v in var.attrs.items()},
-                get_data=_get_dataset_data,
-                get_data_params=dict(ds=dataset),
-            ))
+            arrays.append(
+                GenericArray(
+                    name=str(var_name),
+                    dtype=np.dtype(var.dtype).str,
+                    dims=[str(dim) for dim in var.dims],
+                    shape=var.shape,
+                    chunks=(
+                        [(max(*c) if len(c) > 1 else c[0]) for c in var.chunks]
+                        if var.chunks
+                        else var.shape
+                    ),
+                    attrs={str(k): v for k, v in var.attrs.items()},
+                    get_data=_get_dataset_data,
+                    get_data_params=dict(ds=dataset),
+                )
+            )
 
         attrs = {str(k): v for k, v in dataset.attrs.items()}
-        return GenericZarrStore(*arrays,
-                                attrs=attrs,
-                                array_defaults=array_defaults)
+        return GenericZarrStore(*arrays, attrs=attrs, array_defaults=array_defaults)
 
     ########################################################################
     # Helpers
@@ -586,9 +596,9 @@ class GenericZarrStore(zarr.storage.Store):
         array_name, value_id = self._parse_array_key(key)
         array = self._arrays[array_name]
 
-        if value_id == '.zarray':
+        if value_id == ".zarray":
             return self._get_array_spec_item(array)
-        if value_id == '.zattrs':
+        if value_id == ".zattrs":
             return self._get_array_attrs_item(array)
 
         chunk_index = self._get_array_chunk_index(array_name, value_id)
@@ -604,16 +614,11 @@ class GenericZarrStore(zarr.storage.Store):
             metadata[key] = self._get_item(key)
             key = array_name + "/.zattrs"
             metadata[key] = self._get_item(key)
-        return {
-            "zarr_consolidated_format": 1,
-            "metadata": metadata
-        }
+        return {"zarr_consolidated_format": 1, "metadata": metadata}
 
     # noinspection PyMethodMayBeStatic
     def _get_group_item(self):
-        return {
-            "zarr_format": 2
-        }
+        return {"zarr_format": 2}
 
     def _get_attrs_item(self):
         return self._attrs or {}
@@ -657,16 +662,12 @@ class GenericZarrStore(zarr.storage.Store):
     def _get_array_attrs_item(self, array: GenericArray):
         dims = array["dims"]
         attrs = array["attrs"]
-        return {
-            "_ARRAY_DIMENSIONS": dims,
-            **(attrs or {})
-        }
+        return {"_ARRAY_DIMENSIONS": dims, **(attrs or {})}
 
     # noinspection PyMethodMayBeStatic
-    def _get_array_data_item(self,
-                             array: Dict[str, Any],
-                             chunk_index: Tuple[int]) \
-            -> Union[bytes, np.ndarray]:
+    def _get_array_data_item(
+        self, array: Dict[str, Any], chunk_index: Tuple[int]
+    ) -> Union[bytes, np.ndarray]:
         # Note, here array is expected to be "finalized",
         # that is, validated and normalized
 
@@ -709,39 +710,42 @@ class GenericZarrStore(zarr.storage.Store):
                 if data.shape == chunk_shape:
                     padding = get_chunk_padding(shape, chunks, chunk_index)
                     fill_value = array["fill_value"]
-                    data = np.pad(data, padding,
-                                  mode="constant",
-                                  constant_values=fill_value or 0)
+                    data = np.pad(
+                        data, padding, mode="constant", constant_values=fill_value or 0
+                    )
                 else:
                     key = format_chunk_key(array["name"], chunk_index)
-                    raise ValueError(f"{key}:"
-                                     f" data chunk at {chunk_index}"
-                                     f" must have shape {chunk_shape},"
-                                     f" but was {data.shape}")
+                    raise ValueError(
+                        f"{key}:"
+                        f" data chunk at {chunk_index}"
+                        f" must have shape {chunk_shape},"
+                        f" but was {data.shape}"
+                    )
             if chunk_encoding == "bytes":
                 # Convert to bytes, filter and compress
-                data = ndarray_to_bytes(data,
-                                        order=array["order"],
-                                        filters=array["filters"],
-                                        compressor=array["compressor"])
+                data = ndarray_to_bytes(
+                    data,
+                    order=array["order"],
+                    filters=array["filters"],
+                    compressor=array["compressor"],
+                )
 
         # Sanity check
-        if (chunk_encoding == "bytes"
-            and not isinstance(data, bytes)) \
-                or (chunk_encoding == "ndarray"
-                    and not isinstance(data, np.ndarray)):
-            key = format_chunk_key(array["name"],
-                                   chunk_index)
-            expected_type = "numpy.ndarray" if chunk_encoding == "ndarray" \
-                else "bytes"
-            raise TypeError(f"{key}:"
-                            f" data must be encoded as {expected_type},"
-                            f" but was {type(data).__name__}")
+        if (chunk_encoding == "bytes" and not isinstance(data, bytes)) or (
+            chunk_encoding == "ndarray" and not isinstance(data, np.ndarray)
+        ):
+            key = format_chunk_key(array["name"], chunk_index)
+            expected_type = "numpy.ndarray" if chunk_encoding == "ndarray" else "bytes"
+            raise TypeError(
+                f"{key}:"
+                f" data must be encoded as {expected_type},"
+                f" but was {type(data).__name__}"
+            )
 
         return data
 
     def _parse_array_key(self, key: str) -> Tuple[str, str]:
-        array_name_and_value_id = key.rsplit('/', maxsplit=1)
+        array_name_and_value_id = key.rsplit("/", maxsplit=1)
         if len(array_name_and_value_id) != 2:
             raise KeyError(key)
         array_name, value_id = array_name_and_value_id
@@ -749,11 +753,9 @@ class GenericZarrStore(zarr.storage.Store):
             raise KeyError(key)
         return array_name, value_id
 
-    def _get_array_chunk_index(self,
-                               array_name: str,
-                               index_id: str) -> Tuple[int]:
+    def _get_array_chunk_index(self, array_name: str, index_id: str) -> Tuple[int]:
         try:
-            chunk_index = tuple(map(int, index_id.split('.')))
+            chunk_index = tuple(map(int, index_id.split(".")))
         except (ValueError, TypeError):
             raise KeyError(f"{array_name}/{index_id}")
         array = self._arrays[array_name]
@@ -774,51 +776,46 @@ class GenericZarrStore(zarr.storage.Store):
         yield from get_chunk_keys(array_name, num_chunks)
 
 
-def get_array_slices(shape: Tuple[int, ...],
-                     chunks: Tuple[int, ...],
-                     chunk_index: Tuple[int, ...]) -> Tuple[slice, ...]:
+def get_array_slices(
+    shape: Tuple[int, ...], chunks: Tuple[int, ...], chunk_index: Tuple[int, ...]
+) -> Tuple[slice, ...]:
     return tuple(
-        slice(i * c,
-              i * c + (c if (i + 1) * c <= s else s % c))
+        slice(i * c, i * c + (c if (i + 1) * c <= s else s % c))
         for s, c, i in zip(shape, chunks, chunk_index)
     )
 
 
-def get_chunk_shape(shape: Tuple[int, ...],
-                    chunks: Tuple[int, ...],
-                    chunk_index: Tuple[int, ...]) -> Tuple[int, ...]:
+def get_chunk_shape(
+    shape: Tuple[int, ...], chunks: Tuple[int, ...], chunk_index: Tuple[int, ...]
+) -> Tuple[int, ...]:
     return tuple(
-        c if (i + 1) * c <= s else s % c
-        for s, c, i in zip(shape, chunks, chunk_index)
+        c if (i + 1) * c <= s else s % c for s, c, i in zip(shape, chunks, chunk_index)
     )
 
 
-def get_chunk_padding(shape: Tuple[int, ...],
-                      chunks: Tuple[int, ...],
-                      chunk_index: Tuple[int, ...]):
+def get_chunk_padding(
+    shape: Tuple[int, ...], chunks: Tuple[int, ...], chunk_index: Tuple[int, ...]
+):
     return tuple(
         (0, 0 if (i + 1) * c <= s else c - s % c)
         for s, c, i in zip(shape, chunks, chunk_index)
     )
 
 
-def get_chunk_indexes(num_chunks: Tuple[int, ...]) \
-        -> Iterator[Tuple[int, ...]]:
+def get_chunk_indexes(num_chunks: Tuple[int, ...]) -> Iterator[Tuple[int, ...]]:
     if not num_chunks:
         yield 0,
     else:
         yield from itertools.product(*tuple(map(range, map(int, num_chunks))))
 
 
-def get_chunk_keys(array_name: str,
-                   num_chunks: Tuple[int, ...]) -> Iterator[str]:
+def get_chunk_keys(array_name: str, num_chunks: Tuple[int, ...]) -> Iterator[str]:
     for chunk_index in get_chunk_indexes(num_chunks):
         yield format_chunk_key(array_name, chunk_index)
 
 
-def format_chunk_key(array_name: str,
-                     chunk_index: Tuple[int, ...]) -> str:
-    chunk_id = '.'.join(map(str, chunk_index))
+def format_chunk_key(array_name: str, chunk_index: Tuple[int, ...]) -> str:
+    chunk_id = ".".join(map(str, chunk_index))
     return f"{array_name}/{chunk_id}"
 
 
@@ -827,14 +824,14 @@ def dict_to_bytes(d: Dict) -> bytes:
 
 
 def str_to_bytes(s: str) -> bytes:
-    return bytes(s, encoding='utf-8')
+    return bytes(s, encoding="utf-8")
 
 
 def ndarray_to_bytes(
-        data: np.ndarray,
-        order: Optional[str] = None,
-        filters: Optional[Sequence[Any]] = None,
-        compressor: Optional[numcodecs.abc.Codec] = None
+    data: np.ndarray,
+    order: Optional[str] = None,
+    filters: Optional[Sequence[Any]] = None,
+    compressor: Optional[numcodecs.abc.Codec] = None,
 ) -> bytes:
     data = data.tobytes(order=order or "C")
     if filters:
@@ -843,4 +840,3 @@ def ndarray_to_bytes(
     if compressor is not None:
         data = compressor.encode(data)
     return data
-

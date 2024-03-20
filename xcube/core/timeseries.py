@@ -41,12 +41,12 @@ from xcube.constants import CRS_CRS84
 
 Date = Union[np.datetime64, str]
 
-AGG_MEAN = 'mean'
-AGG_MEDIAN = 'median'
-AGG_STD = 'std'
-AGG_MIN = 'min'
-AGG_MAX = 'max'
-AGG_COUNT = 'count'
+AGG_MEAN = "mean"
+AGG_MEDIAN = "median"
+AGG_STD = "std"
+AGG_MIN = "min"
+AGG_MAX = "max"
+AGG_COUNT = "count"
 
 MUST_LOAD = True
 CAN_COMPUTE = False
@@ -57,20 +57,20 @@ AGG_METHODS = {
     AGG_STD: CAN_COMPUTE,
     AGG_MIN: CAN_COMPUTE,
     AGG_MAX: CAN_COMPUTE,
-    AGG_COUNT: CAN_COMPUTE
+    AGG_COUNT: CAN_COMPUTE,
 }
 
 
 def get_time_series(
-        cube: xr.Dataset,
-        grid_mapping: Optional[GridMapping] = None,
-        geometry: Optional[GeometryLike] = None,
-        var_names: Optional[Sequence[str]] = None,
-        start_date: Optional[Date] = None,
-        end_date: Optional[Date] = None,
-        agg_methods: Union[str, Sequence[str], AbstractSet[str]] = AGG_MEAN,
-        use_groupby: bool = False,
-        cube_asserted: Optional[bool] = None
+    cube: xr.Dataset,
+    grid_mapping: Optional[GridMapping] = None,
+    geometry: Optional[GeometryLike] = None,
+    var_names: Optional[Sequence[str]] = None,
+    start_date: Optional[Date] = None,
+    end_date: Optional[Date] = None,
+    agg_methods: Union[str, Sequence[str], AbstractSet[str]] = AGG_MEAN,
+    use_groupby: bool = False,
+    cube_asserted: Optional[bool] = None,
 ) -> Optional[xr.Dataset]:
     """
     Get a time series dataset from a data *cube*.
@@ -112,8 +112,10 @@ def get_time_series(
         No replacement.
     """
     if cube_asserted is not None:
-        warnings.warn('cube_asserted has been deprecated'
-                      ' and will be removed soon.', DeprecationWarning)
+        warnings.warn(
+            "cube_asserted has been deprecated" " and will be removed soon.",
+            DeprecationWarning,
+        )
     assert_instance(cube, xr.Dataset)
     if grid_mapping is not None:
         assert_instance(grid_mapping, GridMapping)
@@ -122,9 +124,9 @@ def get_time_series(
 
     geometry = normalize_geometry(geometry)
     if geometry is not None and not grid_mapping.crs.is_geographic:
-        project = pyproj.Transformer.from_crs(CRS_CRS84,
-                                              grid_mapping.crs,
-                                              always_xy=True).transform
+        project = pyproj.Transformer.from_crs(
+            CRS_CRS84, grid_mapping.crs, always_xy=True
+        ).transform
         geometry = shapely.ops.transform(project, geometry)
 
     dataset = select_variables_subset(cube, var_names)
@@ -142,35 +144,35 @@ def get_time_series(
         if not bounds.contains(geometry):
             return None
         indexers = {x_name: geometry.x, y_name: geometry.y}
-        dataset = dataset.sel(**indexers, method='Nearest')
+        dataset = dataset.sel(**indexers, method="Nearest")
         return dataset.assign_attrs(max_number_of_observations=1)
 
     agg_methods = normalize_agg_methods(agg_methods)
 
     if geometry is not None:
-        dataset = mask_dataset_by_geometry(dataset, geometry,
-                                           save_geometry_mask='__mask__')
+        dataset = mask_dataset_by_geometry(
+            dataset, geometry, save_geometry_mask="__mask__"
+        )
         if dataset is None:
             return None
-        mask = dataset['__mask__']
+        mask = dataset["__mask__"]
         max_number_of_observations = np.count_nonzero(mask)
-        dataset = dataset.drop_vars(['__mask__'])
+        dataset = dataset.drop_vars(["__mask__"])
     else:
-        max_number_of_observations = \
-            dataset[y_name].size * dataset[x_name].size
+        max_number_of_observations = dataset[y_name].size * dataset[x_name].size
 
-    must_load = len(agg_methods) > 1 \
-                or any(AGG_METHODS[agg_method] == MUST_LOAD
-                       for agg_method in agg_methods)
+    must_load = len(agg_methods) > 1 or any(
+        AGG_METHODS[agg_method] == MUST_LOAD for agg_method in agg_methods
+    )
     if must_load:
         dataset.load()
 
     agg_datasets = []
     if use_groupby:
-        time_group = dataset.groupby('time')
+        time_group = dataset.groupby("time")
         for agg_method in agg_methods:
             method = getattr(time_group, agg_method)
-            if agg_method == 'count':
+            if agg_method == "count":
                 agg_dataset = method(dim=xr.ALL_DIMS)
             else:
                 agg_dataset = method(dim=xr.ALL_DIMS, skipna=True)
@@ -178,7 +180,7 @@ def get_time_series(
     else:
         for agg_method in agg_methods:
             method = getattr(dataset, agg_method)
-            if agg_method == 'count':
+            if agg_method == "count":
                 agg_dataset = method(dim=(y_name, x_name))
             else:
                 agg_dataset = method(dim=(y_name, x_name), skipna=True)
@@ -199,17 +201,18 @@ def get_time_series(
     return ts_dataset
 
 
-def normalize_agg_methods(agg_methods: Union[str, Sequence[str]],
-                          exception_type=ValueError) -> Set[str]:
+def normalize_agg_methods(
+    agg_methods: Union[str, Sequence[str]], exception_type=ValueError
+) -> Set[str]:
     agg_methods = agg_methods or [AGG_MEAN]
     if isinstance(agg_methods, str):
         agg_methods = [agg_methods]
     agg_methods = set(agg_methods)
     invalid_agg_methods = agg_methods - set(AGG_METHODS.keys())
     if invalid_agg_methods:
-        s = 's' if len(invalid_agg_methods) > 1 else ''
+        s = "s" if len(invalid_agg_methods) > 1 else ""
         raise exception_type(
-            f'invalid aggregation method{s}:'
+            f"invalid aggregation method{s}:"
             f' {", ".join(sorted(list(invalid_agg_methods)))}'
         )
     return agg_methods

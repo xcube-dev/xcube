@@ -20,8 +20,7 @@
 # SOFTWARE.
 
 import warnings
-from typing import Collection, Optional, Tuple, Callable, Dict, Any, \
-    List, Mapping
+from typing import Collection, Optional, Tuple, Callable, Dict, Any, List, Mapping
 from typing import Union
 
 import cftime
@@ -35,17 +34,19 @@ from xcube.util.assertions import assert_given
 from xcube.util.timeindex import ensure_time_index_compatible
 
 Bbox = Tuple[float, float, float, float]
-TimeRange = Union[Tuple[Optional[str], Optional[str]],
-                  Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]]
+TimeRange = Union[
+    Tuple[Optional[str], Optional[str]],
+    Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]],
+]
 
 
 def select_subset(
-        dataset: xr.Dataset,
-        *,
-        var_names: Optional[Collection[str]] = None,
-        bbox: Optional[Bbox] = None,
-        time_range: Optional[TimeRange] = None,
-        grid_mapping: Optional[GridMapping] = None
+    dataset: xr.Dataset,
+    *,
+    var_names: Optional[Collection[str]] = None,
+    bbox: Optional[Bbox] = None,
+    time_range: Optional[TimeRange] = None,
+    grid_mapping: Optional[GridMapping] = None,
 ):
     """
     Create a subset from *dataset* given *var_names*,
@@ -67,23 +68,18 @@ def select_subset(
         if no keyword-arguments are used.
     """
     if var_names is not None:
-        dataset = select_variables_subset(
-            dataset, var_names=var_names
-        )
+        dataset = select_variables_subset(dataset, var_names=var_names)
     if bbox is not None:
         dataset = select_spatial_subset(
             dataset, xy_bbox=bbox, grid_mapping=grid_mapping
         )
     if time_range is not None:
-        dataset = select_temporal_subset(
-            dataset, time_range=time_range
-        )
+        dataset = select_temporal_subset(dataset, time_range=time_range)
     return dataset
 
 
 def select_variables_subset(
-        dataset: xr.Dataset,
-        var_names: Optional[Collection[str]] = None
+    dataset: xr.Dataset, var_names: Optional[Collection[str]] = None
 ) -> xr.Dataset:
     """
     Select data variable from given *dataset* and create new dataset.
@@ -102,12 +98,12 @@ def select_variables_subset(
 
 
 def select_spatial_subset(
-        dataset: xr.Dataset,
-        ij_bbox: Optional[Tuple[int, int, int, int]] = None,
-        ij_border: int = 0,
-        xy_bbox: Optional[Tuple[float, float, float, float]] = None,
-        xy_border: float = 0.,
-        grid_mapping: Optional[GridMapping] = None,
+    dataset: xr.Dataset,
+    ij_bbox: Optional[Tuple[int, int, int, int]] = None,
+    ij_border: int = 0,
+    xy_bbox: Optional[Tuple[float, float, float, float]] = None,
+    xy_border: float = 0.0,
+    grid_mapping: Optional[GridMapping] = None,
 ) -> Optional[xr.Dataset]:
     """
     Select a spatial subset of *dataset* for the
@@ -129,9 +125,9 @@ def select_spatial_subset(
     """
 
     if ij_bbox is None and xy_bbox is None:
-        raise ValueError('One of ij_bbox and xy_bbox must be given')
+        raise ValueError("One of ij_bbox and xy_bbox must be given")
     if ij_bbox and xy_bbox:
-        raise ValueError('Only one of ij_bbox and xy_bbox can be given')
+        raise ValueError("Only one of ij_bbox and xy_bbox can be given")
 
     if grid_mapping is None:
         grid_mapping = GridMapping.from_dataset(dataset)
@@ -143,32 +139,32 @@ def select_spatial_subset(
         # Hotfix für #981 and #985
         if xy_bbox:
             if y.values[0] < y.values[-1]:
-                ds = dataset.sel(**{
-                    x_name: slice(xy_bbox[0] - xy_border,
-                                  xy_bbox[2] + xy_border),
-                    y_name: slice(xy_bbox[1] - xy_border,
-                                  xy_bbox[3] + xy_border)
-                })
+                ds = dataset.sel(
+                    **{
+                        x_name: slice(xy_bbox[0] - xy_border, xy_bbox[2] + xy_border),
+                        y_name: slice(xy_bbox[1] - xy_border, xy_bbox[3] + xy_border),
+                    }
+                )
             else:
-                ds = dataset.sel(**{
-                    x_name: slice(xy_bbox[0] - xy_border,
-                                  xy_bbox[2] + xy_border),
-                    y_name: slice(xy_bbox[3] + xy_border,
-                                  xy_bbox[1] - xy_border)
-                })
+                ds = dataset.sel(
+                    **{
+                        x_name: slice(xy_bbox[0] - xy_border, xy_bbox[2] + xy_border),
+                        y_name: slice(xy_bbox[3] + xy_border, xy_bbox[1] - xy_border),
+                    }
+                )
             return ds
         else:
-            return dataset.isel(**{
-                x_name: slice(ij_bbox[0] - ij_border,
-                              ij_bbox[2] + ij_border),
-                y_name: slice(ij_bbox[1] - ij_border,
-                              ij_bbox[3] + ij_border)
-            })
+            return dataset.isel(
+                **{
+                    x_name: slice(ij_bbox[0] - ij_border, ij_bbox[2] + ij_border),
+                    y_name: slice(ij_bbox[1] - ij_border, ij_bbox[3] + ij_border),
+                }
+            )
     else:
         if xy_bbox:
-            ij_bbox = grid_mapping.ij_bbox_from_xy_bbox(xy_bbox,
-                                                        ij_border=ij_border,
-                                                        xy_border=xy_border)
+            ij_bbox = grid_mapping.ij_bbox_from_xy_bbox(
+                xy_bbox, ij_border=ij_border, xy_border=xy_border
+            )
             if ij_bbox[0] == -1:
                 return None
         width, height = grid_mapping.size
@@ -181,9 +177,9 @@ def select_spatial_subset(
         return dataset
 
 
-def select_temporal_subset(dataset: xr.Dataset,
-                           time_range: TimeRange,
-                           time_name: str = 'time') -> xr.Dataset:
+def select_temporal_subset(
+    dataset: xr.Dataset, time_range: TimeRange, time_name: str = "time"
+) -> xr.Dataset:
     """
     Select a temporal subset from *dataset* given *time_range*.
 
@@ -194,56 +190,54 @@ def select_temporal_subset(dataset: xr.Dataset,
         Defaults to "time".
     :return:
     """
-    assert_given(time_range, 'time_range')
-    time_name = time_name or 'time'
+    assert_given(time_range, "time_range")
+    time_name = time_name or "time"
     if time_name not in dataset:
-        raise ValueError(f'cannot compute temporal subset: variable'
-                         f' "{time_name}" not found in dataset')
+        raise ValueError(
+            f"cannot compute temporal subset: variable"
+            f' "{time_name}" not found in dataset'
+        )
     time_1, time_2 = time_range
     time_1 = pd.to_datetime(time_1) if time_1 is not None else None
     time_2 = pd.to_datetime(time_2) if time_2 is not None else None
     if time_1 is None and time_2 is None:
         return dataset
     if time_2 is not None:
-        delta = time_2 - time_2.floor('1D')
-        if delta == pd.Timedelta('0 days 00:00:00'):
-            time_2 += pd.Timedelta('1D')
+        delta = time_2 - time_2.floor("1D")
+        if delta == pd.Timedelta("0 days 00:00:00"):
+            time_2 += pd.Timedelta("1D")
     try:
-        time_slice = ensure_time_index_compatible(dataset,
-                                                  slice(time_1, time_2),
-                                                  time_name)
-        return dataset.sel({time_name or 'time': time_slice})
+        time_slice = ensure_time_index_compatible(
+            dataset, slice(time_1, time_2), time_name
+        )
+        return dataset.sel({time_name or "time": time_slice})
     except TypeError:
-        calendar = dataset.time.encoding.get('calendar')
-        time_1 = cftime.datetime(time_1.year, time_1.month, time_1.day,
-                                 calendar=calendar)
-        time_2 = cftime.datetime(time_2.year, time_2.month, time_2.day,
-                                 calendar=calendar)
-        time_slice = ensure_time_index_compatible(dataset,
-                                                  slice(time_1, time_2),
-                                                  time_name)
-        return dataset.sel({time_name or 'time': time_slice})
+        calendar = dataset.time.encoding.get("calendar")
+        time_1 = cftime.datetime(
+            time_1.year, time_1.month, time_1.day, calendar=calendar
+        )
+        time_2 = cftime.datetime(
+            time_2.year, time_2.month, time_2.day, calendar=calendar
+        )
+        time_slice = ensure_time_index_compatible(
+            dataset, slice(time_1, time_2), time_name
+        )
+        return dataset.sel({time_name or "time": time_slice})
 
 
-_PREDICATE_SIGNATURE = "predicate(" \
-                       "slice_array: xr.DataArray, " \
-                       "slice_info: Dict" \
-                       ") -> bool"
+_PREDICATE_SIGNATURE = (
+    "predicate(" "slice_array: xr.DataArray, " "slice_info: Dict" ") -> bool"
+)
 
-Predicate = Callable[
-    [
-        xr.DataArray,
-        Dict[str, Any]
-    ],
-    bool
-]
+Predicate = Callable[[xr.DataArray, Dict[str, Any]], bool]
 
 
-def select_label_subset(dataset: xr.Dataset,
-                        dim: str,
-                        predicate: Union[Predicate,
-                                         Mapping[str, Predicate]],
-                        use_dask: bool = False):
+def select_label_subset(
+    dataset: xr.Dataset,
+    dim: str,
+    predicate: Union[Predicate, Mapping[str, Predicate]],
+    use_dask: bool = False,
+):
     """Select the labels in *dataset* along a given dimension *dim*
     using a predicate function *predicate* that is called for
     all variable slices for a current label.
@@ -309,25 +303,31 @@ def select_label_subset(dataset: xr.Dataset,
         If all labels are selected, *dataset* is returned without change.
     """
     if callable(predicate):
-        predicate_lookup = {var_name: predicate
-                            for var_name, var in dataset.data_vars.items()
-                            if dim in var.dims}
+        predicate_lookup = {
+            var_name: predicate
+            for var_name, var in dataset.data_vars.items()
+            if dim in var.dims
+        }
     elif isinstance(predicate, Mapping):
         predicate_lookup = predicate
         for var_name, var_predicate in predicate_lookup.items():
             if not callable(var_predicate):
-                raise TypeError(f'predicate for variable {var_name!r}'
-                                f' must be callable with'
-                                f' signature {_PREDICATE_SIGNATURE}')
+                raise TypeError(
+                    f"predicate for variable {var_name!r}"
+                    f" must be callable with"
+                    f" signature {_PREDICATE_SIGNATURE}"
+                )
     else:
-        raise TypeError(f'predicate'
-                        f' must be callable with'
-                        f' signature {_PREDICATE_SIGNATURE}')
+        raise TypeError(
+            f"predicate" f" must be callable with" f" signature {_PREDICATE_SIGNATURE}"
+        )
 
     num_labels = dataset.dims[dim]
 
-    valid_mask = [_is_label_valid(dataset, predicate_lookup, dim, index)
-                  for index in range(num_labels)]
+    valid_mask = [
+        _is_label_valid(dataset, predicate_lookup, dim, index)
+        for index in range(num_labels)
+    ]
 
     if use_dask:
         valid_mask = da.stack(valid_mask).compute()
@@ -339,10 +339,9 @@ def select_label_subset(dataset: xr.Dataset,
     return dataset.drop_isel({dim: dropped_indexes})
 
 
-def _is_label_valid(dataset: xr.Dataset,
-                    predicate_lookup: Mapping[str, Predicate],
-                    dim: str,
-                    index: int) -> da.Array:
+def _is_label_valid(
+    dataset: xr.Dataset, predicate_lookup: Mapping[str, Predicate], dim: str, index: int
+) -> da.Array:
     label = dataset[dim][index] if dim in dataset else None
     results: List[da.Array] = []
     for var_name, var in dataset.data_vars.items():
@@ -350,10 +349,7 @@ def _is_label_valid(dataset: xr.Dataset,
             predicate = predicate_lookup.get(var_name)
             if predicate is not None:
                 slice_array = var.isel({dim: index})
-                slice_info = dict(var=var_name,
-                                  dim=dim,
-                                  index=index,
-                                  label=label)
+                slice_info = dict(var=var_name, dim=dim, index=index, label=label)
                 result = predicate(slice_array, slice_info)
                 if isinstance(result, xr.DataArray):
                     result = result.data

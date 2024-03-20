@@ -39,16 +39,18 @@ class CubeGeneratorError(ValueError):
     :param remote_output:  Terminal output of a remote process.
     """
 
-    def __init__(self,
-                 *args,
-                 status_code: Optional[int] = None,
-                 remote_traceback: Optional[List[str]] = None,
-                 remote_output: Optional[List[str]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        *args,
+        status_code: Optional[int] = None,
+        remote_traceback: Optional[List[str]] = None,
+        remote_output: Optional[List[str]] = None,
+        **kwargs
+    ):
         # noinspection PyArgumentList
         super().__init__(*args, **kwargs)
         if status_code is not None:
-            assert_instance(status_code, int, 'status_code')
+            assert_instance(status_code, int, "status_code")
         self._status_code = status_code
         self._remote_traceback = remote_traceback
         self._remote_output = remote_output

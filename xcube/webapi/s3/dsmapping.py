@@ -28,8 +28,8 @@ from xcube.core.mldataset import MultiLevelDataset
 from ..datasets.context import DatasetsContext
 from ...util.assertions import assert_instance
 
-_LEVELS_EXT = '.levels'
-_ZARR_EXT = '.zarr'
+_LEVELS_EXT = ".levels"
+_ZARR_EXT = ".zarr"
 
 
 class DatasetsMapping(collections.abc.Mapping):
@@ -51,9 +51,7 @@ class DatasetsMapping(collections.abc.Mapping):
         object storage
     """
 
-    def __init__(self,
-                 datasets_ctx: DatasetsContext,
-                 is_multi_level: bool = False):
+    def __init__(self, datasets_ctx: DatasetsContext, is_multi_level: bool = False):
         assert_instance(datasets_ctx, DatasetsContext, name="datasets_ctx")
         assert_instance(is_multi_level, bool, name="is_multi_level")
         self._datasets_ctx = datasets_ctx
@@ -64,25 +62,23 @@ class DatasetsMapping(collections.abc.Mapping):
         return self._get_s3_names(self._datasets_ctx, self._is_multi_level)
 
     @staticmethod
-    def _get_s3_names(datasets_ctx: DatasetsContext,
-                      is_multi_level: bool) -> Dict[str, str]:
+    def _get_s3_names(
+        datasets_ctx: DatasetsContext, is_multi_level: bool
+    ) -> Dict[str, str]:
         """Generate user-friendly S3 names for dataset identifiers.
         If *is_multi_level* is True, S3 names will be forced to have
         ".levels" suffix, otherwise the ".zarr" suffix.
         """
-        ds_ids = [c["Identifier"]
-                  for c in datasets_ctx.get_dataset_configs()]
+        ds_ids = [c["Identifier"] for c in datasets_ctx.get_dataset_configs()]
         all_ids = set(ds_ids)
 
         s3_names = {}
         for ds_id in ds_ids:
             s3_base, s3_ext = _split_base_ext(ds_id)
             if is_multi_level:
-                s3_name = _replace_ext(s3_base, s3_ext,
-                                       _ZARR_EXT, _LEVELS_EXT, all_ids)
+                s3_name = _replace_ext(s3_base, s3_ext, _ZARR_EXT, _LEVELS_EXT, all_ids)
             else:
-                s3_name = _replace_ext(s3_base, s3_ext,
-                                       _LEVELS_EXT, _ZARR_EXT, all_ids)
+                s3_name = _replace_ext(s3_base, s3_ext, _LEVELS_EXT, _ZARR_EXT, all_ids)
             s3_names[s3_name] = ds_id
         return s3_names
 
@@ -100,8 +96,7 @@ class DatasetsMapping(collections.abc.Mapping):
         calls only."""
         return s3_name in self._s3_names
 
-    def __getitem__(self, s3_name: str) \
-            -> Union[xr.Dataset, MultiLevelDataset]:
+    def __getitem__(self, s3_name: str) -> Union[xr.Dataset, MultiLevelDataset]:
         """Get or open the dataset given by *dataset_id*."""
         dataset_id = self._s3_names[s3_name]
         # Will raise ApiError
@@ -112,17 +107,18 @@ class DatasetsMapping(collections.abc.Mapping):
 
 
 def _split_base_ext(identifier: str):
-    base_ext = identifier.rsplit('.', maxsplit=1)
+    base_ext = identifier.rsplit(".", maxsplit=1)
     if len(base_ext) == 2:
-        return base_ext[0], '.' + base_ext[1]
+        return base_ext[0], "." + base_ext[1]
     else:
-        return identifier, ''
+        return identifier, ""
 
 
-def _replace_ext(base_name: str, old_ext: str, trigger_ext: str, new_ext: str,
-                 all_ids: Set[str]) -> str:
-    if old_ext == new_ext \
-            or (old_ext == trigger_ext
-                and (base_name + new_ext) not in all_ids):
+def _replace_ext(
+    base_name: str, old_ext: str, trigger_ext: str, new_ext: str, all_ids: Set[str]
+) -> str:
+    if old_ext == new_ext or (
+        old_ext == trigger_ext and (base_name + new_ext) not in all_ids
+    ):
         return base_name + new_ext
     return base_name + old_ext + new_ext

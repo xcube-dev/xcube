@@ -47,8 +47,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor):
     def get_driver_name(cls) -> str:
         """Get the GeoDataFrame I/O driver name"""
 
-    def get_open_data_params_schema(self, data_id: str = None) \
-            -> JsonObjectSchema:
+    def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(
                 storage_options=self.get_storage_options_schema(),
@@ -66,9 +65,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor):
         else:
             _, file_path = new_temp_file()
             fs.get_file(data_id, file_path)
-        return gpd.read_file(file_path,
-                             driver=self.get_driver_name(),
-                             **open_params)
+        return gpd.read_file(file_path, driver=self.get_driver_name(), **open_params)
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         return JsonObjectSchema(
@@ -78,13 +75,10 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor):
             ),
         )
 
-    def write_data(self,
-                   data: gpd.GeoDataFrame,
-                   data_id: str,
-                   **write_params) -> str:
+    def write_data(self, data: gpd.GeoDataFrame, data_id: str, **write_params) -> str:
         # TODO: implement me correctly,
         #  this is not valid for shapefile AND geojson
-        assert_instance(data, (gpd.GeoDataFrame, pd.DataFrame), 'data')
+        assert_instance(data, (gpd.GeoDataFrame, pd.DataFrame), "data")
         fs, root, write_params = self.load_fs(write_params)
         is_local = is_local_fs(fs)
         if is_local:
@@ -104,11 +98,11 @@ class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor):
 
     @classmethod
     def get_format_id(cls) -> str:
-        return 'shapefile'
+        return "shapefile"
 
     @classmethod
     def get_driver_name(cls) -> str:
-        return 'ESRI Shapefile'
+        return "ESRI Shapefile"
 
 
 class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor):
@@ -118,8 +112,8 @@ class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor):
 
     @classmethod
     def get_format_id(cls) -> str:
-        return 'geojson'
+        return "geojson"
 
     @classmethod
     def get_driver_name(cls) -> str:
-        return 'GeoJSON'
+        return "GeoJSON"

@@ -6,9 +6,9 @@ def caseless_dict(*args, **kwargs) -> Dict:
     return _CaselessDict(*args, **kwargs)
 
 
-_KT = TypeVar('_KT')
-_VT = TypeVar('_VT')
-_VT_co = TypeVar('_VT_co', covariant=True)
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+_VT_co = TypeVar("_VT_co", covariant=True)
 
 
 class _CaselessDict(dict):

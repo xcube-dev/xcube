@@ -40,53 +40,52 @@ class ComputeControllersTest(unittest.TestCase):
         result = get_compute_operations(get_compute_ctx())
         operations: List = result["operations"]
 
-        operations_map = {op.get('operationId'): op for op in operations}
-        self.assertIn('spatial_subset', operations_map)
+        operations_map = {op.get("operationId"): op for op in operations}
+        self.assertIn("spatial_subset", operations_map)
 
-        op = operations_map['spatial_subset']
+        op = operations_map["spatial_subset"]
         self.assert_spatial_subset_op_ok(op)
 
     def test_get_compute_operation_entry(self):
-        op = get_compute_operation(get_compute_ctx(), 'spatial_subset')
+        op = get_compute_operation(get_compute_ctx(), "spatial_subset")
         self.assert_spatial_subset_op_ok(op)
 
     def assert_spatial_subset_op_ok(self, op: Any):
         self.assertIsInstance(op, dict)
 
-        self.assertEqual('spatial_subset', op.get('operationId'))
-        self.assertEqual('Create a spatial subset'
-                         ' from given dataset.',
-                         op.get('description'))
+        self.assertEqual("spatial_subset", op.get("operationId"))
+        self.assertEqual(
+            "Create a spatial subset" " from given dataset.", op.get("description")
+        )
         self.assertIn("parametersSchema", op)
 
         schema = op.get("parametersSchema")
         self.assertIsInstance(schema, dict)
 
-        self.assertEqual('object',
-                         schema.get('type'))
-        self.assertEqual(False,
-                         schema.get('additionalProperties'))
-        self.assertEqual({'dataset', 'bbox'},
-                         set(schema.get('required', [])))
+        self.assertEqual("object", schema.get("type"))
+        self.assertEqual(False, schema.get("additionalProperties"))
+        self.assertEqual({"dataset", "bbox"}, set(schema.get("required", [])))
         self.assertEqual(
             {
-                'dataset': {
-                    'type': 'string',
-                    'title': 'Dataset identifier',
+                "dataset": {
+                    "type": "string",
+                    "title": "Dataset identifier",
                 },
-                'bbox': {
-                    'type': 'array',
-                    'minItems': 4,
-                    'maxItems': 4,
-                    'prefixItems': [{'type': 'number'},
-                              {'type': 'number'},
-                              {'type': 'number'},
-                              {'type': 'number'}],
-                    'title': 'Bounding box',
-                    'description': 'Bounding box using the '
-                                   'dataset\'s CRS '
-                                   'coordinates',
+                "bbox": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "prefixItems": [
+                        {"type": "number"},
+                        {"type": "number"},
+                        {"type": "number"},
+                        {"type": "number"},
+                    ],
+                    "title": "Bounding box",
+                    "description": "Bounding box using the "
+                    "dataset's CRS "
+                    "coordinates",
                 },
             },
-            schema.get('properties')
+            schema.get("properties"),
         )

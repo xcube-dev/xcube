@@ -69,39 +69,36 @@ class AuthContext(ApiContext):
         response = requests.get(openid_config_uri)
         if response.ok:
             openid_config = json.loads(response.content)
-            if openid_config and 'jwks_uri' in openid_config:
-                jwks_uri = openid_config['jwks_uri']
+            if openid_config and "jwks_uri" in openid_config:
+                jwks_uri = openid_config["jwks_uri"]
         response = requests.get(jwks_uri)
         if response.ok:
             return json.loads(response.content)
         # TODO (forman): convert into ApiError
         response.raise_for_status()
 
-    def get_granted_scopes(self, request_headers: Mapping[str, str]) \
-            -> Optional[Set[str]]:
+    def get_granted_scopes(
+        self, request_headers: Mapping[str, str]
+    ) -> Optional[Set[str]]:
         must_authenticate = self.must_authenticate
-        id_token = self.get_id_token(request_headers,
-                                     require_auth=must_authenticate)
+        id_token = self.get_id_token(request_headers, require_auth=must_authenticate)
         permissions = None
         if id_token:
-            permissions = id_token.get('permissions')
+            permissions = id_token.get("permissions")
             if not isinstance(permissions, (list, tuple)):
-                scope = id_token.get('scope')
+                scope = id_token.get("scope")
                 if isinstance(scope, str):
-                    permissions = scope.split(' ')
+                    permissions = scope.split(" ")
             if permissions is not None:
-                permissions = self._interpolate_permissions(id_token,
-                                                            permissions)
+                permissions = self._interpolate_permissions(id_token, permissions)
         return permissions
 
-    def get_id_token(self,
-                     request_headers: Mapping[str, str],
-                     require_auth: bool = False) \
-            -> Optional[Mapping[str, str]]:
+    def get_id_token(
+        self, request_headers: Mapping[str, str], require_auth: bool = False
+    ) -> Optional[Mapping[str, str]]:
         """Decode the access token and verifies it."""
 
-        access_token = self.get_access_token(request_headers,
-                                             require_auth=require_auth)
+        access_token = self.get_access_token(request_headers, require_auth=require_auth)
         if access_token is None:
             return None
 
@@ -118,13 +115,14 @@ class AuthContext(ApiContext):
             unverified_header = jwt.get_unverified_header(access_token)
         except jwt.InvalidTokenError:
             unverified_header = None
-        if not unverified_header \
-                or not unverified_header.get("kid") \
-                or not unverified_header.get("alg"):
+        if (
+            not unverified_header
+            or not unverified_header.get("kid")
+            or not unverified_header.get("alg")
+        ):
             # "alg" should be "RS256" or "HS256" or others
             raise ApiError.BadRequest(
-                "Invalid header."
-                " A signed JWT Access Token is expected."
+                "Invalid header." " A signed JWT Access Token is expected."
             )
 
         # The key identifier of the access token which we must validate.
@@ -142,7 +140,7 @@ class AuthContext(ApiContext):
                     "kid": key["kid"],
                     "use": key["use"],
                     "n": key["n"],
-                    "e": key["e"]
+                    "e": key["e"],
                 }
                 break
         if rsa_key is None:
@@ -157,53 +155,43 @@ class AuthContext(ApiContext):
                 jwt.algorithms.RSAAlgorithm.from_jwk(rsa_key),
                 issuer=auth_config.authority,
                 audience=auth_config.audience,
-                algorithms=auth_config.algorithms
+                algorithms=auth_config.algorithms,
             )
         except jwt.PyJWTError as e:
-            raise ApiError.BadRequest(
-                f"Failed to decode access token: {e}"
-            ) from e
+            raise ApiError.BadRequest(f"Failed to decode access token: {e}") from e
 
         return id_token
 
     @classmethod
-    def get_access_token(cls,
-                         request_headers: Mapping[str, str],
-                         require_auth: bool = False) -> Optional[str]:
-        """Obtain the access token from the Authorization Header
-        """
+    def get_access_token(
+        cls, request_headers: Mapping[str, str], require_auth: bool = False
+    ) -> Optional[str]:
+        """Obtain the access token from the Authorization Header"""
         # noinspection PyUnresolvedReferences
         auth = request_headers.get("Authorization", None)
         if not auth:
             if require_auth:
-                raise ApiError.Unauthorized(
-                    "Authorization header is expected."
-                )
+                raise ApiError.Unauthorized("Authorization header is expected.")
             return None
 
         parts = auth.split()
 
         if parts[0].lower() != "bearer":
             raise ApiError.BadRequest(
-                'Invalid header.'
-                ' Authorization header must start with "Bearer".'
+                "Invalid header." ' Authorization header must start with "Bearer".'
             )
         elif len(parts) == 1:
-            raise ApiError.BadRequest(
-                "Invalid header."
-                " Bearer token not found."
-            )
+            raise ApiError.BadRequest("Invalid header." " Bearer token not found.")
         elif len(parts) > 2:
             raise ApiError.BadRequest(
-                "Invalid header."
-                " Authorization header must be Bearer token."
+                "Invalid header." " Authorization header must be Bearer token."
             )
 
         return parts[1]
 
-    def _interpolate_permissions(self,
-                                 id_token: Mapping[str, Any],
-                                 permissions: Union[list, tuple]):
+    def _interpolate_permissions(
+        self, id_token: Mapping[str, Any], permissions: Union[list, tuple]
+    ):
         predicate = self._is_template_permission
 
         plain_permissions = set(filterfalse(predicate, permissions))
@@ -213,19 +201,19 @@ class AuthContext(ApiContext):
         templ_permissions = filter(predicate, permissions)
         id_mapping = self._get_template_dict(id_token)
         return plain_permissions.union(
-            set(Template(permission).safe_substitute(id_mapping)
-                for permission in templ_permissions)
+            set(
+                Template(permission).safe_substitute(id_mapping)
+                for permission in templ_permissions
+            )
         )
 
     @staticmethod
     def _is_template_permission(permission: str) -> bool:
-        return '$' in permission
+        return "$" in permission
 
     @staticmethod
     def _get_template_dict(id_token: Mapping[str, Any]) -> Dict[str, str]:
-        d = {k: v
-             for k, v in id_token.items()
-             if isinstance(v, str)}
-        if 'username' not in d and 'preferred_username' in d:
-            d['username'] = d['preferred_username']
+        d = {k: v for k, v in id_token.items() if isinstance(v, str)}
+        if "username" not in d and "preferred_username" in d:
+            d["username"] = d["preferred_username"]
         return d

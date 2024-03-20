@@ -21,7 +21,4 @@
 
 from xcube.server.api import Api
 
-api = Api(
-    'styles',
-    description='xcube Styles API'
-)
+api = Api("styles", description="xcube Styles API")

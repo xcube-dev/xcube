@@ -42,5 +42,5 @@ class ViewerContext(ResourcesContext):
             return None
         return self.get_config_path(
             self.config["Viewer"].get("Configuration", {}),
-            "'Configuration' item of 'Viewer'"
+            "'Configuration' item of 'Viewer'",
         )

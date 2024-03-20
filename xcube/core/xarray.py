@@ -24,7 +24,7 @@ from xcube.core.vars2dim import vars_to_dim
 from xcube.core.verify import verify_cube
 
 
-@xr.register_dataset_accessor('xcube')
+@xr.register_dataset_accessor("xcube")
 class DatasetAccessor:
     """
     The xcube xarray API.
@@ -74,9 +74,9 @@ class DatasetAccessor:
 
     def _init_cube_subset(self):
         try:
-            cube, grid_mapping, non_cube = decode_cube(self._dataset,
-                                                       normalize=True,
-                                                       force_copy=True)
+            cube, grid_mapping, non_cube = decode_cube(
+                self._dataset, normalize=True, force_copy=True
+            )
         except DatasetIsNotACubeError:
             cube, grid_mapping, non_cube = xr.Dataset(), None, self._dataset
         self._cube_subset = cube
@@ -131,13 +131,15 @@ class DatasetAccessor:
         """
         return write_cube(self._dataset, output_path, format_name=format_name, **kwargs)
 
-    def values_for_points(self,
-                          points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
-                          var_names: Sequence[str] = None,
-                          index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
-                          include_indexes: bool = False,
-                          method: str = "nearest",
-                          cube_asserted: bool = False):
+    def values_for_points(
+        self,
+        points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
+        var_names: Sequence[str] = None,
+        index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
+        include_indexes: bool = False,
+        method: str = "nearest",
+        cube_asserted: bool = False,
+    ):
         """
         Extract values from cube variables at given coordinates in *points*.
 
@@ -150,20 +152,24 @@ class DatasetAccessor:
         :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
         :return: A new data frame whose columns are values from *cube* variables at given *points*.
         """
-        return get_cube_values_for_points(self._dataset,
-                                          points,
-                                          var_names=var_names,
-                                          index_name_pattern=index_name_pattern,
-                                          include_indexes=include_indexes,
-                                          method=method,
-                                          cube_asserted=cube_asserted)
+        return get_cube_values_for_points(
+            self._dataset,
+            points,
+            var_names=var_names,
+            index_name_pattern=index_name_pattern,
+            include_indexes=include_indexes,
+            method=method,
+            cube_asserted=cube_asserted,
+        )
 
-    def values_for_indexes(self,
-                           indexes: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
-                           var_names: Sequence[str] = None,
-                           index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
-                           method: str = "nearest",
-                           cube_asserted: bool = False) -> xr.Dataset:
+    def values_for_indexes(
+        self,
+        indexes: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
+        var_names: Sequence[str] = None,
+        index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
+        method: str = "nearest",
+        cube_asserted: bool = False,
+    ) -> xr.Dataset:
         """
         Get values from this cube at given *indexes*.
 
@@ -175,19 +181,23 @@ class DatasetAccessor:
         :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
         :return: A new data frame whose columns are values from *cube* variables at given *indexes*.
         """
-        return get_cube_values_for_indexes(self._dataset,
-                                           indexes,
-                                           data_var_names=var_names,
-                                           index_name_pattern=index_name_pattern,
-                                           method=method,
-                                           cube_asserted=cube_asserted)
+        return get_cube_values_for_indexes(
+            self._dataset,
+            indexes,
+            data_var_names=var_names,
+            index_name_pattern=index_name_pattern,
+            method=method,
+            cube_asserted=cube_asserted,
+        )
 
-    def point_indexes(self,
-                      points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
-                      dim_name_mapping: Mapping[str, str] = None,
-                      index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
-                      index_dtype=np.float64,
-                      cube_asserted: bool = False):
+    def point_indexes(
+        self,
+        points: Union[xr.Dataset, pd.DataFrame, Mapping[str, Any]],
+        dim_name_mapping: Mapping[str, str] = None,
+        index_name_pattern: str = DEFAULT_INDEX_NAME_PATTERN,
+        index_dtype=np.float64,
+        cube_asserted: bool = False,
+    ):
         """
         Get indexes of given coordinates in *points* into this cube.
 
@@ -202,17 +212,21 @@ class DatasetAccessor:
         :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
         :return: A dataset containing the index columns.
         """
-        return get_cube_point_indexes(self._dataset,
-                                      points,
-                                      dim_name_mapping=dim_name_mapping,
-                                      index_name_pattern=index_name_pattern,
-                                      index_dtype=index_dtype,
-                                      cube_asserted=cube_asserted)
+        return get_cube_point_indexes(
+            self._dataset,
+            points,
+            dim_name_mapping=dim_name_mapping,
+            index_name_pattern=index_name_pattern,
+            index_dtype=index_dtype,
+            cube_asserted=cube_asserted,
+        )
 
-    def indexes(self,
-                coord_var_name: str,
-                coord_values: Union[xr.DataArray, np.ndarray],
-                index_dtype=np.float64) -> Union[xr.DataArray, np.ndarray]:
+    def indexes(
+        self,
+        coord_var_name: str,
+        coord_values: Union[xr.DataArray, np.ndarray],
+        index_dtype=np.float64,
+    ) -> Union[xr.DataArray, np.ndarray]:
         """
         Compute the indexes into a coordinate variable *coord_var_name* of this cube
         for the given coordinate values *coord_values*.
@@ -234,12 +248,16 @@ class DatasetAccessor:
                if *index_dtype* is a floating point types.
         :return: The indexes and their fractions as a tuple of numpy int64 and float64 arrays.
         """
-        return get_dataset_indexes(self._dataset,
-                                   coord_var_name=coord_var_name,
-                                   coord_values=coord_values,
-                                   index_dtype=index_dtype)
+        return get_dataset_indexes(
+            self._dataset,
+            coord_var_name=coord_var_name,
+            coord_values=coord_values,
+            index_dtype=index_dtype,
+        )
 
-    def chunk(self, chunk_sizes: Dict[str, int] = None, format_name: str = None) -> xr.Dataset:
+    def chunk(
+        self, chunk_sizes: Dict[str, int] = None, format_name: str = None
+    ) -> xr.Dataset:
         """
         Chunk this dataset and update encodings for given format.
 
@@ -247,11 +265,11 @@ class DatasetAccessor:
         :param format_name: format, e.g. "zarr" or "netcdf4"
         :return: the re-chunked dataset
         """
-        return chunk_dataset(self._dataset,
-                             chunk_sizes=chunk_sizes,
-                             format_name=format_name)
+        return chunk_dataset(
+            self._dataset, chunk_sizes=chunk_sizes, format_name=format_name
+        )
 
-    def vars_to_dim(self, dim_name: str = 'newdim'):
+    def vars_to_dim(self, dim_name: str = "newdim"):
         """
         Convert data variables into a dimension
 
@@ -260,9 +278,7 @@ class DatasetAccessor:
         """
         return vars_to_dim(self._dataset, dim_name)
 
-    def dump(self,
-             var_names=None,
-             show_var_encoding=False) -> str:
+    def dump(self, var_names=None, show_var_encoding=False) -> str:
         """
         Dump this dataset or its variables into a text string.
 
@@ -270,9 +286,9 @@ class DatasetAccessor:
         :param show_var_encoding: also dump variable encodings?
         :return: the dataset dump
         """
-        return dump_dataset(self._dataset,
-                            var_names=var_names,
-                            show_var_encoding=show_var_encoding)
+        return dump_dataset(
+            self._dataset, var_names=var_names, show_var_encoding=show_var_encoding
+        )
 
     def verify(self) -> List[str]:
         """
@@ -293,9 +309,11 @@ class DatasetAccessor:
         """
         return select_variables_subset(self._dataset, var_names)
 
-    @deprecated(version='0.13.0',
-                reason='multi-level datasets should be represented by'
-                       ' class xcube.core.mldataset.MultiLevelDataset')
+    @deprecated(
+        version="0.13.0",
+        reason="multi-level datasets should be represented by"
+        " class xcube.core.mldataset.MultiLevelDataset",
+    )
     def levels(self, **kwargs) -> List[xr.Dataset]:
         """
         Transform this dataset into the levels of a multi-level pyramid with spatial resolution

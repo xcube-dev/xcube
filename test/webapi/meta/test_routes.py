@@ -25,54 +25,46 @@ from ..helpers import RoutesTestCase
 class MetaRoutesTest(RoutesTestCase):
 
     def test_fetch_server_info(self):
-        response = self.fetch('/')
+        response = self.fetch("/")
         self.assertResponseOK(response)
 
     def test_fetch_openapi_json(self):
-        response = self.fetch('/openapi.json')
+        response = self.fetch("/openapi.json")
         self.assertResponseOK(response)
 
     def test_fetch_openapi_html(self):
-        response = self.fetch('/openapi.html')
+        response = self.fetch("/openapi.html")
         self.assertResponseOK(response)
 
     def test_fetch_maintenance_fail(self):
-        response = self.fetch('/maintenance/fail')
+        response = self.fetch("/maintenance/fail")
         self.assertResponse(
             response,
             expected_status=500,
-            expected_message='Error! No worries, this is just a test.'
+            expected_message="Error! No worries, this is just a test.",
         )
 
-        response = self.fetch('/maintenance/fail?message=HELP')
-        self.assertResponse(
-            response,
-            expected_status=500,
-            expected_message='HELP'
-        )
+        response = self.fetch("/maintenance/fail?message=HELP")
+        self.assertResponse(response, expected_status=500, expected_message="HELP")
 
-        response = self.fetch('/maintenance/fail?code=488')
+        response = self.fetch("/maintenance/fail?code=488")
         self.assertResponse(
             response,
             expected_status=488,
-            expected_message='Error! No worries, this is just a test.'
+            expected_message="Error! No worries, this is just a test.",
         )
 
-        response = self.fetch('/maintenance/fail?code=508&message=HELP')
-        self.assertResponse(
-            response,
-            expected_status=508,
-            expected_message='HELP'
-        )
+        response = self.fetch("/maintenance/fail?code=508&message=HELP")
+        self.assertResponse(response, expected_status=508, expected_message="HELP")
 
-        response = self.fetch('/maintenance/fail?code=x')
+        response = self.fetch("/maintenance/fail?code=x")
         self.assertResponse(
             response,
             expected_status=400,
             expected_message="HTTP 400: Bad Request"
-                             " (Query parameter 'code' must have type 'int'.)"
+            " (Query parameter 'code' must have type 'int'.)",
         )
 
     def test_fetch_maintenance_update(self):
-        response = self.fetch('/maintenance/update')
+        response = self.fetch("/maintenance/update")
         self.assertResponseOK(response)

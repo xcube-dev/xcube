@@ -46,25 +46,25 @@ from .tilingscheme import DEFAULT_CRS_NAME
 from .tilingscheme import DEFAULT_TILE_SIZE
 from .tilingscheme import TilingScheme
 
-DEFAULT_VALUE_RANGE = (0., 1.)
-DEFAULT_CMAP_NAME = 'bone'
-DEFAULT_FORMAT = 'png'
+DEFAULT_VALUE_RANGE = (0.0, 1.0)
+DEFAULT_CMAP_NAME = "bone"
+DEFAULT_FORMAT = "png"
 DEFAULT_TILE_ENLARGEMENT = 1
 
 ValueRange = Tuple[float, float]
 
 
 def compute_tiles(
-        ml_dataset: MultiLevelDataset,
-        variable_names: Union[str, Sequence[str]],
-        tile_bbox: Tuple[float, float, float, float],
-        tile_crs: Union[str, pyproj.CRS] = DEFAULT_CRS_NAME,
-        tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
-        level: int = 0,
-        non_spatial_labels: Optional[Dict[str, Any]] = None,
-        as_dataset: bool = False,
-        tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
-        trace_perf: bool = False,
+    ml_dataset: MultiLevelDataset,
+    variable_names: Union[str, Sequence[str]],
+    tile_bbox: Tuple[float, float, float, float],
+    tile_crs: Union[str, pyproj.CRS] = DEFAULT_CRS_NAME,
+    tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
+    level: int = 0,
+    non_spatial_labels: Optional[Dict[str, Any]] = None,
+    as_dataset: bool = False,
+    tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
+    trace_perf: bool = False,
 ) -> Optional[Union[List[np.ndarray], xr.Dataset]]:
     """Compute tiles for given *variable_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -129,19 +129,17 @@ def compute_tiles(
 
     dataset = ml_dataset.get_dataset(level)
 
-    with measure_time('Preparing 2D subset'):
+    with measure_time("Preparing 2D subset"):
         variables = [
-            _get_variable(ml_dataset.ds_id,
-                          dataset,
-                          variable_name,
-                          non_spatial_labels,
-                          logger)
+            _get_variable(
+                ml_dataset.ds_id, dataset, variable_name, non_spatial_labels, logger
+            )
             for variable_name in variable_names
         ]
 
     variable_0 = variables[0]
 
-    with measure_time('Transforming tile map to dataset coordinates'):
+    with measure_time("Transforming tile map to dataset coordinates"):
         ds_x_name, ds_y_name = ml_dataset.grid_mapping.xy_dim_names
 
         ds_y_coords = variable_0[ds_y_name]
@@ -150,10 +148,12 @@ def compute_tiles(
         tile_res_x = (tile_x_max - tile_x_min) / (tile_width - 1)
         tile_res_y = (tile_y_max - tile_y_min) / (tile_height - 1)
 
-        tile_x_1d = np.linspace(tile_x_min + 0.5 * tile_res_x,
-                                tile_x_max - 0.5 * tile_res_x, tile_width)
-        tile_y_1d = np.linspace(tile_y_min + 0.5 * tile_res_y,
-                                tile_y_max - 0.5 * tile_res_y, tile_height)
+        tile_x_1d = np.linspace(
+            tile_x_min + 0.5 * tile_res_x, tile_x_max - 0.5 * tile_res_x, tile_width
+        )
+        tile_y_1d = np.linspace(
+            tile_y_min + 0.5 * tile_res_y, tile_y_max - 0.5 * tile_res_y, tile_height
+        )
 
         tile_x_2d = np.tile(tile_x_1d, (tile_height, 1))
         tile_y_2d = np.tile(tile_y_1d, (tile_width, 1)).transpose()
@@ -162,14 +162,12 @@ def compute_tiles(
         assert tile_y_2d.shape == tile_x_2d.shape
 
         t_map_to_ds = ProjCache.INSTANCE.get_transformer(
-            tile_crs,
-            ml_dataset.grid_mapping.crs
+            tile_crs, ml_dataset.grid_mapping.crs
         )
 
-        tile_ds_x_2d, tile_ds_y_2d = t_map_to_ds.transform(tile_x_2d,
-                                                           tile_y_2d)
+        tile_ds_x_2d, tile_ds_y_2d = t_map_to_ds.transform(tile_x_2d, tile_y_2d)
 
-    with measure_time('Getting spatial subset'):
+    with measure_time("Getting spatial subset"):
         # Get min/max of the 1D arrays surrounding the 2D array
         # North
         ds_x_n = tile_ds_x_2d[0, :]
@@ -184,20 +182,27 @@ def compute_tiles(
         ds_x_e = tile_ds_x_2d[:, tile_width - 1]
         ds_y_e = tile_ds_y_2d[:, tile_width - 1]
         # Min
-        ds_x_min = np.nanmin([np.nanmin(ds_x_n), np.nanmin(ds_x_s),
-                              np.nanmin(ds_x_w), np.nanmin(ds_x_e)])
-        ds_y_min = np.nanmin([np.nanmin(ds_y_n), np.nanmin(ds_y_s),
-                              np.nanmin(ds_y_w), np.nanmin(ds_y_e)])
+        ds_x_min = np.nanmin(
+            [np.nanmin(ds_x_n), np.nanmin(ds_x_s), np.nanmin(ds_x_w), np.nanmin(ds_x_e)]
+        )
+        ds_y_min = np.nanmin(
+            [np.nanmin(ds_y_n), np.nanmin(ds_y_s), np.nanmin(ds_y_w), np.nanmin(ds_y_e)]
+        )
         # Max
-        ds_x_max = np.nanmax([np.nanmax(ds_x_n), np.nanmax(ds_x_s),
-                              np.nanmax(ds_x_w), np.nanmax(ds_x_e)])
-        ds_y_max = np.nanmax([np.nanmax(ds_y_n), np.nanmax(ds_y_s),
-                              np.nanmax(ds_y_w), np.nanmax(ds_y_e)])
-        if np.isnan(ds_x_min) or np.isnan(ds_y_min) \
-                or np.isnan(ds_y_max) or np.isnan(ds_y_max):
+        ds_x_max = np.nanmax(
+            [np.nanmax(ds_x_n), np.nanmax(ds_x_s), np.nanmax(ds_x_w), np.nanmax(ds_x_e)]
+        )
+        ds_y_max = np.nanmax(
+            [np.nanmax(ds_y_n), np.nanmax(ds_y_s), np.nanmax(ds_y_w), np.nanmax(ds_y_e)]
+        )
+        if (
+            np.isnan(ds_x_min)
+            or np.isnan(ds_y_min)
+            or np.isnan(ds_y_max)
+            or np.isnan(ds_y_max)
+        ):
             raise TileNotFoundException(
-                'Tile bounds NaN after map projection',
-                logger=logger
+                "Tile bounds NaN after map projection", logger=logger
             )
 
         num_extra_pixels = tile_enlargement
@@ -211,9 +216,10 @@ def compute_tiles(
         else:
             ds_y_slice = slice(ds_y_max + extra_dy, ds_y_min - extra_dy)
 
-        var_subsets = [variable.sel({ds_x_name: ds_x_slice,
-                                     ds_y_name: ds_y_slice})
-                       for variable in variables]
+        var_subsets = [
+            variable.sel({ds_x_name: ds_x_slice, ds_y_name: ds_y_slice})
+            for variable in variables
+        ]
         for var_subset in var_subsets:
             # A zero or a one in the tile's shape will produce a
             # non-existing or too small tile. It will also prevent
@@ -221,7 +227,7 @@ def compute_tiles(
             if 0 in var_subset.shape or 1 in var_subset.shape:
                 return None
 
-    with measure_time('Transforming dataset coordinates into indices'):
+    with measure_time("Transforming dataset coordinates into indices"):
         var_subset_0 = var_subsets[0]
         ds_x_coords = var_subset_0[ds_x_name]
         ds_y_coords = var_subset_0[ds_y_name]
@@ -243,16 +249,20 @@ def compute_tiles(
         ds_x_indices = ds_x_indices.astype(dtype=np.int64)
         ds_y_indices = ds_y_indices.astype(dtype=np.int64)
 
-    with measure_time('Masking dataset indices'):
-        ds_mask = (ds_x_indices >= 0) & (ds_x_indices < ds_size_x) \
-                  & (ds_y_indices >= 0) & (ds_y_indices < ds_size_y)
+    with measure_time("Masking dataset indices"):
+        ds_mask = (
+            (ds_x_indices >= 0)
+            & (ds_x_indices < ds_size_x)
+            & (ds_y_indices >= 0)
+            & (ds_y_indices < ds_size_y)
+        )
 
         ds_x_indices = np.where(ds_mask, ds_x_indices, 0)
         ds_y_indices = np.where(ds_mask, ds_y_indices, 0)
 
     var_tiles = []
     for var_subset in var_subsets:
-        with measure_time('Loading 2D data for spatial subset'):
+        with measure_time("Loading 2D data for spatial subset"):
             # Note, we need to load the values here into a numpy array,
             # because 2D indexing by [ds_y_indices, ds_x_indices]
             # does not (yet) work with dask arrays.
@@ -261,7 +271,7 @@ def compute_tiles(
             # they will be of size one, if any.
             var_tile = var_tile.reshape(var_tile.shape[-2:])
 
-        with measure_time('Looking up dataset indices'):
+        with measure_time("Looking up dataset indices"):
             # This does the actual projection trick.
             # Lookup indices ds_y_indices, ds_x_indices to create
             # the actual tile.
@@ -276,18 +286,19 @@ def compute_tiles(
             var_tiles,
             (ds_x_name, ds_y_name),
             (tile_x_1d, tile_y_1d),
-            tile_crs
+            tile_crs,
         )
 
     return var_tiles
 
 
 def _new_tile_dataset(
-        original_vars: List[Tuple[xr.DataArray, Tuple[Hashable, ...]]],
-        tiles: List[np.ndarray],
-        xy_names: Tuple[str, str],
-        xy_coords: Tuple[np.ndarray, np.ndarray],
-        crs: Union[str, pyproj.CRS]):
+    original_vars: List[Tuple[xr.DataArray, Tuple[Hashable, ...]]],
+    tiles: List[np.ndarray],
+    xy_names: Tuple[str, str],
+    xy_coords: Tuple[np.ndarray, np.ndarray],
+    crs: Union[str, pyproj.CRS],
+):
     data_vars = {}
     non_spatial_coords = {}
     for i, (original_var, original_dims) in enumerate(original_vars):
@@ -296,8 +307,7 @@ def _new_tile_dataset(
         for dim in original_dims:
             if dim not in xy_names:
                 non_spatial_dims.append(dim)
-                if dim not in non_spatial_coords \
-                        and dim in original_var.coords:
+                if dim not in non_spatial_coords and dim in original_var.coords:
                     non_spatial_coords[dim] = original_var.coords[dim]
         data_2d = tiles[i]
         data_nd = data_2d[(*(len(non_spatial_dims) * [np.newaxis]), ...)]
@@ -310,40 +320,48 @@ def _new_tile_dataset(
     print(pyproj.CRS(crs).to_cf())
     return xr.Dataset(
         data_vars=dict(
-            **data_vars,
-            crs=xr.DataArray((), attrs=pyproj.CRS(crs).to_cf())
+            **data_vars, crs=xr.DataArray((), attrs=pyproj.CRS(crs).to_cf())
         ),
         coords=dict(
-            **{k: xr.DataArray([v.values], dims=k, attrs=v.attrs)
-               for k, v in non_spatial_coords.items()},
-            y=xr.DataArray(xy_coords[1], dims="y", attrs=dict(
-                long_name="y coordinate of projection",
-                standard_name="projection_y_coordinate"
-            )),
-            x=xr.DataArray(xy_coords[0], dims="x", attrs=dict(
-                long_name="x coordinate of projection",
-                standard_name="projection_x_coordinate"
-            )),
-        )
+            **{
+                k: xr.DataArray([v.values], dims=k, attrs=v.attrs)
+                for k, v in non_spatial_coords.items()
+            },
+            y=xr.DataArray(
+                xy_coords[1],
+                dims="y",
+                attrs=dict(
+                    long_name="y coordinate of projection",
+                    standard_name="projection_y_coordinate",
+                ),
+            ),
+            x=xr.DataArray(
+                xy_coords[0],
+                dims="x",
+                attrs=dict(
+                    long_name="x coordinate of projection",
+                    standard_name="projection_x_coordinate",
+                ),
+            ),
+        ),
     )
 
 
 def compute_rgba_tile(
-        ml_dataset: MultiLevelDataset,
-        variable_names: Union[str, Sequence[str]],
-        tile_x: int,
-        tile_y: int,
-        tile_z: int,
-        cmap_provider: ColormapProvider,
-        crs_name: str = DEFAULT_CRS_NAME,
-        tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
-        cmap_name: str = None,
-        value_ranges: Optional[Union[ValueRange,
-                                     Sequence[ValueRange]]] = None,
-        non_spatial_labels: Optional[Dict[str, Any]] = None,
-        format: str = DEFAULT_FORMAT,
-        tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
-        trace_perf: bool = False,
+    ml_dataset: MultiLevelDataset,
+    variable_names: Union[str, Sequence[str]],
+    tile_x: int,
+    tile_y: int,
+    tile_z: int,
+    cmap_provider: ColormapProvider,
+    crs_name: str = DEFAULT_CRS_NAME,
+    tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
+    cmap_name: str = None,
+    value_ranges: Optional[Union[ValueRange, Sequence[ValueRange]]] = None,
+    non_spatial_labels: Optional[Dict[str, Any]] = None,
+    format: str = DEFAULT_FORMAT,
+    tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
+    trace_perf: bool = False,
 ) -> Union[bytes, np.ndarray]:
     """Compute an RGBA image tile from *variable_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -410,27 +428,28 @@ def compute_rgba_tile(
     if isinstance(variable_names, str):
         variable_names = (variable_names,)
     num_components = len(variable_names)
-    assert_true(num_components in (1, 3),
-                message='number of names in'
-                        ' variable_names must be 1 or 3')
+    assert_true(
+        num_components in (1, 3),
+        message="number of names in" " variable_names must be 1 or 3",
+    )
     tile_size = normalize_scalar_or_pair(tile_size)
     tile_width, tile_height = tile_size
     if not value_ranges:
         value_ranges = num_components * (DEFAULT_VALUE_RANGE,)
     else:
-        assert_instance(value_ranges, (list, tuple), name='value_ranges')
+        assert_instance(value_ranges, (list, tuple), name="value_ranges")
     if isinstance(value_ranges[0], (int, float)):
         value_ranges = num_components * (value_ranges,)
-    assert_true(num_components == len(value_ranges),
-                message='value_ranges must have'
-                        ' same length as variable_names')
+    assert_true(
+        num_components == len(value_ranges),
+        message="value_ranges must have" " same length as variable_names",
+    )
     format = _normalize_format(format)
-    assert_in(format, ('png', 'numpy'), name='format')
+    assert_in(format, ("png", "numpy"), name="format")
 
     measure_time = measure_time_cm(disabled=not trace_perf, logger=LOG)
 
-    tiling_scheme = TilingScheme.for_crs(crs_name) \
-        .derive(tile_size=tile_size)
+    tiling_scheme = TilingScheme.for_crs(crs_name).derive(tile_size=tile_size)
 
     tile_bbox = tiling_scheme.get_tile_extent(tile_x, tile_y, tile_z)
     if tile_bbox is None:
@@ -444,41 +463,39 @@ def compute_rgba_tile(
         return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
     ds_level = tiling_scheme.get_resolutions_level(
-        tile_z,
-        ml_dataset.avg_resolutions,
-        ml_dataset.grid_mapping.spatial_unit_name
+        tile_z, ml_dataset.avg_resolutions, ml_dataset.grid_mapping.spatial_unit_name
     )
 
-    var_tiles = compute_tiles(ml_dataset,
-                              variable_names,
-                              tile_bbox,
-                              tiling_scheme.crs,
-                              tile_size=tile_size,
-                              level=ds_level,
-                              non_spatial_labels=non_spatial_labels,
-                              tile_enlargement=tile_enlargement,
-                              trace_perf=trace_perf)
+    var_tiles = compute_tiles(
+        ml_dataset,
+        variable_names,
+        tile_bbox,
+        tiling_scheme.crs,
+        tile_size=tile_size,
+        level=ds_level,
+        non_spatial_labels=non_spatial_labels,
+        tile_enlargement=tile_enlargement,
+        trace_perf=trace_perf,
+    )
 
     if var_tiles is None:
         return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
     norm_var_tiles = []
     for var_tile, value_range in zip(var_tiles, value_ranges):
-        with measure_time('Normalizing data tile'):
+        with measure_time("Normalizing data tile"):
             var_tile = var_tile[::-1, :]
             value_min, value_max = value_range
             if value_max < value_min:
                 value_min, value_max = value_max, value_min
             if math.isclose(value_min, value_max):
                 value_max = value_min + 1
-            norm = matplotlib.colors.Normalize(
-                value_min, value_max, clip=True
-            )
+            norm = matplotlib.colors.Normalize(value_min, value_max, clip=True)
             norm_var_tile = norm(var_tile)
 
         norm_var_tiles.append(norm_var_tile)
 
-    with measure_time('Encoding tile as RGBA image'):
+    with measure_time("Encoding tile as RGBA image"):
         if len(norm_var_tiles) == 1:
             var_tile_norm = norm_var_tiles[0]
             _, cm = cmap_provider.get_cmap(cmap_name)
@@ -486,38 +503,38 @@ def compute_rgba_tile(
             var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
         else:
             r, g, b = norm_var_tiles
-            var_tile_rgba = np.zeros((tile_height, tile_width, 4),
-                                     dtype=np.uint8)
+            var_tile_rgba = np.zeros((tile_height, tile_width, 4), dtype=np.uint8)
             var_tile_rgba[..., 0] = 255 * r
             var_tile_rgba[..., 1] = 255 * g
             var_tile_rgba[..., 2] = 255 * b
             var_tile_rgba[..., 3] = np.where(np.isfinite(r + g + b), 255, 0)
 
-    if format == 'png':
-        with measure_time('Encoding RGBA image as PNG bytes'):
+    if format == "png":
+        with measure_time("Encoding RGBA image as PNG bytes"):
             return _encode_rgba_as_png(var_tile_rgba)
     else:  # format == 'numpy'
         return var_tile_rgba
 
 
-def get_var_cmap_params(var: xr.DataArray,
-                        cmap_name: Optional[str],
-                        cmap_range: Tuple[Optional[float], Optional[float]],
-                        valid_range: Optional[Tuple[float, float]]) \
-        -> Tuple[str, Tuple[float, float]]:
+def get_var_cmap_params(
+    var: xr.DataArray,
+    cmap_name: Optional[str],
+    cmap_range: Tuple[Optional[float], Optional[float]],
+    valid_range: Optional[Tuple[float, float]],
+) -> Tuple[str, Tuple[float, float]]:
     if cmap_name is None:
-        cmap_name = var.attrs.get('color_bar_name')
+        cmap_name = var.attrs.get("color_bar_name")
         if cmap_name is None:
             cmap_name = DEFAULT_CMAP_NAME
     cmap_vmin, cmap_vmax = cmap_range
     if cmap_vmin is None:
-        cmap_vmin = var.attrs.get('color_value_min')
+        cmap_vmin = var.attrs.get("color_value_min")
         if cmap_vmin is None and valid_range is not None:
             cmap_vmin = valid_range[0]
         if cmap_vmin is None:
             cmap_vmin = DEFAULT_VALUE_RANGE[0]
     if cmap_vmax is None:
-        cmap_vmax = var.attrs.get('color_value_max')
+        cmap_vmax = var.attrs.get("color_value_max")
         if cmap_vmax is None and valid_range is not None:
             cmap_vmax = valid_range[1]
         if cmap_vmax is None:
@@ -528,16 +545,16 @@ def get_var_cmap_params(var: xr.DataArray,
 def get_var_valid_range(var: xr.DataArray) -> Optional[Tuple[float, float]]:
     valid_min = None
     valid_max = None
-    valid_range = var.attrs.get('valid_range')
+    valid_range = var.attrs.get("valid_range")
     if valid_range:
         try:
             valid_min, valid_max = map(float, valid_range)
         except (TypeError, ValueError):
             pass
     if valid_min is None:
-        valid_min = var.attrs.get('valid_min')
+        valid_min = var.attrs.get("valid_min")
     if valid_max is None:
-        valid_max = var.attrs.get('valid_max')
+        valid_max = var.attrs.get("valid_max")
     if valid_min is None and valid_max is None:
         valid_range = None
     elif valid_min is not None and valid_max is not None:
@@ -549,33 +566,26 @@ def get_var_valid_range(var: xr.DataArray) -> Optional[Tuple[float, float]]:
     return valid_range
 
 
-def _get_variable(ds_name,
-                  dataset,
-                  variable_name,
-                  non_spatial_labels,
-                  logger):
+def _get_variable(ds_name, dataset, variable_name, non_spatial_labels, logger):
     if variable_name not in dataset:
         raise TileNotFoundException(
-            f'Variable {variable_name!r}'
-            f' not found in dataset {ds_name!r}',
-            logger=logger
+            f"Variable {variable_name!r}" f" not found in dataset {ds_name!r}",
+            logger=logger,
         )
     variable = dataset[variable_name]
-    non_spatial_labels = _get_non_spatial_labels(dataset,
-                                                 variable,
-                                                 non_spatial_labels,
-                                                 logger)
+    non_spatial_labels = _get_non_spatial_labels(
+        dataset, variable, non_spatial_labels, logger
+    )
     if non_spatial_labels:
-        non_spatial_labels_safe = \
-            ensure_time_label_compatible(variable, non_spatial_labels)
-        variable = variable.sel(**non_spatial_labels_safe, method='nearest')
+        non_spatial_labels_safe = ensure_time_label_compatible(
+            variable, non_spatial_labels
+        )
+        variable = variable.sel(**non_spatial_labels_safe, method="nearest")
     return variable
 
 
 class TileException(Exception):
-    def __init__(self,
-                 message: str,
-                 logger: Optional[logging.Logger] = None):
+    def __init__(self, message: str, logger: Optional[logging.Logger] = None):
         super().__init__(message)
         if logger is not None:
             logger.warning(message)
@@ -592,18 +602,17 @@ class TileRequestException(TileException):
 class TransparentRgbaTilePool:
     """A cache for fully-transparent RGBA tiles of a given size and format."""
 
-    INSTANCE: 'TransparentRgbaTilePool'
+    INSTANCE: "TransparentRgbaTilePool"
 
     def __init__(self):
         self._transparent_tiles: Dict[str, Union[bytes, np.ndarray]] = dict()
 
-    def get(self, tile_size: Pair[int], format: str) \
-            -> Union[bytes, np.ndarray]:
+    def get(self, tile_size: Pair[int], format: str) -> Union[bytes, np.ndarray]:
         tile_w, tile_h = tile_size
-        key = f'{format}-{tile_w}-{tile_h}'
+        key = f"{format}-{tile_w}-{tile_h}"
         if key not in self._transparent_tiles:
             data = np.zeros((tile_h, tile_w, 4), dtype=np.uint8)
-            if format == 'png':
+            if format == "png":
                 data = _encode_rgba_as_png(data)
             self._transparent_tiles[key] = data
         return self._transparent_tiles[key]
@@ -612,10 +621,12 @@ class TransparentRgbaTilePool:
 TransparentRgbaTilePool.INSTANCE = TransparentRgbaTilePool()
 
 
-def _get_non_spatial_labels(dataset: xr.Dataset,
-                            variable: xr.DataArray,
-                            labels: Optional[Dict[str, Any]],
-                            logger: logging.Logger) -> Dict[Hashable, Any]:
+def _get_non_spatial_labels(
+    dataset: xr.Dataset,
+    variable: xr.DataArray,
+    labels: Optional[Dict[str, Any]],
+    logger: logging.Logger,
+) -> Dict[Hashable, Any]:
     labels = labels if labels is not None else {}
 
     new_labels = {}
@@ -640,26 +651,30 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
         label = labels.get(dim_name)
         if label is None:
             if logger:
-                logger.debug((f'missing label for dimension {dim!r},'
-                              f' using first label instead'))
+                logger.debug(
+                    (
+                        f"missing label for dimension {dim!r},"
+                        f" using first label instead"
+                    )
+                )
             label = coord_var[0].values
 
         elif isinstance(label, str):
-            if '/' in label:
+            if "/" in label:
                 # In case of WMTS tile requests the tame range labels
                 # from WMTS dimensions may be passed.
-                label = label.split('/', maxsplit=1)[0]
+                label = label.split("/", maxsplit=1)[0]
 
-            if label.lower() == 'first':
+            if label.lower() == "first":
                 label = coord_var[0].values
-            elif label.lower() in ('last', 'current'):
+            elif label.lower() in ("last", "current"):
                 label = coord_var[-1].values
             else:
                 try:
                     label = np.array(label).astype(coord_var.dtype)
                 except (TypeError, ValueError) as e:
                     raise TileRequestException(
-                        f'Illegal label {label!r} for dimension {dim!r}'
+                        f"Illegal label {label!r} for dimension {dim!r}"
                     ) from e
 
         new_labels[dim] = label
@@ -668,8 +683,8 @@ def _get_non_spatial_labels(dataset: xr.Dataset,
 
 
 def _normalize_format(format: str) -> str:
-    if format in ('png', 'PNG', 'image/png'):
-        return 'png'
+    if format in ("png", "PNG", "image/png"):
+        return "png"
     return format
 
 
@@ -677,5 +692,5 @@ def _encode_rgba_as_png(rgba_array: np.ndarray) -> bytes:
     # noinspection PyUnresolvedReferences
     image = PIL.Image.fromarray(rgba_array)
     stream = io.BytesIO()
-    image.save(stream, format='PNG')
+    image.save(stream, format="PNG")
     return bytes(stream.getvalue())
