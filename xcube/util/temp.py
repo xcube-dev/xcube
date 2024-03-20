@@ -26,12 +26,10 @@ import shutil
 import tempfile
 from typing import Tuple
 
-DEFAULT_TEMP_FILE_PREFIX = 'xcube-'
+DEFAULT_TEMP_FILE_PREFIX = "xcube-"
 
 
-def new_temp_dir(prefix: str = None,
-                 suffix: str = None,
-                 dir_path: str = None) -> str:
+def new_temp_dir(prefix: str = None, suffix: str = None, dir_path: str = None) -> str:
     """
     Create new temporary directory using ``tempfile.mkdtemp()```
     The directory will be removed later when the process ends.
@@ -49,15 +47,17 @@ def new_temp_dir(prefix: str = None,
     :return: The absolute path to the new directory.
     """
     prefix = DEFAULT_TEMP_FILE_PREFIX if prefix is None else prefix
-    return remove_dir_later(tempfile.mkdtemp(prefix=prefix,
-                                             suffix=suffix,
-                                             dir=dir_path))
+    return remove_dir_later(
+        tempfile.mkdtemp(prefix=prefix, suffix=suffix, dir=dir_path)
+    )
 
 
-def new_temp_file(prefix: str = None,
-                  suffix: str = None,
-                  dir_path: str = None,
-                  text_mode: bool = False) -> Tuple[int, str]:
+def new_temp_file(
+    prefix: str = None,
+    suffix: str = None,
+    dir_path: str = None,
+    text_mode: bool = False,
+) -> Tuple[int, str]:
     """
     Create new temporary file using ``tempfile.mkstemp()```.
     The file will be removed later when the process ends.
@@ -79,10 +79,9 @@ def new_temp_file(prefix: str = None,
         absolute path to the new file.
     """
     prefix = DEFAULT_TEMP_FILE_PREFIX if prefix is None else prefix
-    fd, file_path = tempfile.mkstemp(prefix=prefix,
-                                     suffix=suffix,
-                                     dir=dir_path,
-                                     text=text_mode)
+    fd, file_path = tempfile.mkstemp(
+        prefix=prefix, suffix=suffix, dir=dir_path, text=text_mode
+    )
     return fd, remove_file_later(file_path)
 
 

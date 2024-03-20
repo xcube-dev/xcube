@@ -28,9 +28,7 @@ from xcube.server.api import ServerConfig
 from xcube.webapi.meta.context import MetaContext
 
 
-def get_meta_ctx(
-        server_config: Union[str, ServerConfig] = "config.yml"
-) -> MetaContext:
+def get_meta_ctx(server_config: Union[str, ServerConfig] = "config.yml") -> MetaContext:
     return get_api_ctx("meta", MetaContext, server_config)
 
 

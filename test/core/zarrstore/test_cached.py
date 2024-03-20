@@ -51,16 +51,16 @@ class CachedZarrStoreTest(unittest.TestCase):
         store = self.get_store()
 
         self.assertEqual(b"", store["chl/0.1.1"])
-        self.assertEqual(["__getitem__('chl/0.1.1')",
-                          "__setitem__('chl/0.1.1', bytes)"],
-                         self.cache.records)
+        self.assertEqual(
+            ["__getitem__('chl/0.1.1')", "__setitem__('chl/0.1.1', bytes)"],
+            self.cache.records,
+        )
         self.assertIn("chl/0.1.1", self.store)
         self.assertIn("chl/0.1.1", self.cache)
 
         self.cache.records = []
         self.assertEqual(b"", store["chl/0.1.1"])
-        self.assertEqual(["__getitem__('chl/0.1.1')"],
-                         self.cache.records)
+        self.assertEqual(["__getitem__('chl/0.1.1')"], self.cache.records)
 
     def test_len(self):
         store = self.get_store()
@@ -68,25 +68,29 @@ class CachedZarrStoreTest(unittest.TestCase):
 
     def test_iter(self):
         store = self.get_store()
-        self.assertEqual(['chl/.zarray',
-                          'chl/.zattrs',
-                          'chl/0.0.0',
-                          'chl/0.0.1',
-                          'chl/0.1.0',
-                          'chl/0.1.1'],
-                         list(iter(store)))
+        self.assertEqual(
+            [
+                "chl/.zarray",
+                "chl/.zattrs",
+                "chl/0.0.0",
+                "chl/0.0.1",
+                "chl/0.1.0",
+                "chl/0.1.1",
+            ],
+            list(iter(store)),
+        )
 
     def test_contains(self):
         store = self.get_store()
-        self.assertIn('chl/.zarray', store)
-        self.assertNotIn('chl', store)
+        self.assertIn("chl/.zarray", store)
+        self.assertNotIn("chl", store)
 
     def test_setitem(self):
         store = self.get_store()
         with pytest.raises(NotImplementedError):
-            store['chl/0.0.1'] = b""
+            store["chl/0.0.1"] = b""
 
     def test_delitem(self):
         store = self.get_store()
         with pytest.raises(NotImplementedError):
-            del store['chl/0.0.1']
+            del store["chl/0.0.1"]

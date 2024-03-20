@@ -30,11 +30,10 @@ def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
     """
     Check whether *fs* is a local filesystem.
     """
-    return 'file' in fs.protocol or isinstance(fs, LocalFileSystem)
+    return "file" in fs.protocol or isinstance(fs, LocalFileSystem)
 
 
-def get_fs_path_class(fs: fsspec.AbstractFileSystem) \
-        -> Type[pathlib.PurePath]:
+def get_fs_path_class(fs: fsspec.AbstractFileSystem) -> Type[pathlib.PurePath]:
     """
     Get the appropriate ``pathlib.PurePath`` class for the filesystem *fs*.
     """
@@ -60,9 +59,9 @@ def resolve_path(path: pathlib.PurePath) -> pathlib.PurePath:
 def _resolve_path_impl(reversed_parts: Iterator[str]):
     skips = False
     for part in reversed_parts:
-        if part == '.':
+        if part == ".":
             continue
-        elif part == '..':
+        elif part == "..":
             skips += 1
             continue
         if skips == 0:

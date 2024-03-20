@@ -35,7 +35,7 @@ from .response import CubeGeneratorResult
 from .response import CubeInfoResult
 from .response import GenericCubeGeneratorResult
 
-R = TypeVar('R', bound=GenericCubeGeneratorResult)
+R = TypeVar("R", bound=GenericCubeGeneratorResult)
 
 
 class CubeGenerator(ABC):
@@ -47,12 +47,14 @@ class CubeGenerator(ABC):
     """
 
     @classmethod
-    def new(cls,
-            service_config: Optional[ServiceConfigLike] = None,
-            stores_config: Optional[DataStorePoolLike] = None,
-            raise_on_error: bool = False,
-            verbosity: int = 0,
-            **kwargs) -> 'CubeGenerator':
+    def new(
+        cls,
+        service_config: Optional[ServiceConfigLike] = None,
+        stores_config: Optional[DataStorePoolLike] = None,
+        raise_on_error: bool = False,
+        verbosity: int = 0,
+        **kwargs,
+    ) -> "CubeGenerator":
         """
         Create a new cube generator from given configurations.
 
@@ -104,37 +106,47 @@ class CubeGenerator(ABC):
         if service_config is not None:
             from .remote.config import ServiceConfig
             from .remote.generator import RemoteCubeGenerator
-            assert_true(stores_config is None,
-                        'service_config and stores_config cannot be'
-                        ' given at the same time.')
-            assert_instance(service_config,
-                            (str, dict, ServiceConfig, type(None)),
-                            'service_config')
-            service_config = ServiceConfig.normalize(service_config) \
-                if service_config is not None else None
-            return RemoteCubeGenerator(service_config=service_config,
-                                       raise_on_error=raise_on_error,
-                                       verbosity=verbosity,
-                                       **kwargs)
+
+            assert_true(
+                stores_config is None,
+                "service_config and stores_config cannot be" " given at the same time.",
+            )
+            assert_instance(
+                service_config, (str, dict, ServiceConfig, type(None)), "service_config"
+            )
+            service_config = (
+                ServiceConfig.normalize(service_config)
+                if service_config is not None
+                else None
+            )
+            return RemoteCubeGenerator(
+                service_config=service_config,
+                raise_on_error=raise_on_error,
+                verbosity=verbosity,
+                **kwargs,
+            )
         else:
             from .local.generator import LocalCubeGenerator
-            assert_instance(stores_config,
-                            (str, dict, DataStorePool, type(None)),
-                            'stores_config')
-            store_pool = DataStorePool.normalize(stores_config) \
-                if stores_config is not None else None
-            return LocalCubeGenerator(store_pool=store_pool,
-                                      raise_on_error=raise_on_error,
-                                      verbosity=verbosity)
 
-    def __init__(self,
-                 raise_on_error: bool = False,
-                 verbosity: int = 0):
+            assert_instance(
+                stores_config, (str, dict, DataStorePool, type(None)), "stores_config"
+            )
+            store_pool = (
+                DataStorePool.normalize(stores_config)
+                if stores_config is not None
+                else None
+            )
+            return LocalCubeGenerator(
+                store_pool=store_pool,
+                raise_on_error=raise_on_error,
+                verbosity=verbosity,
+            )
+
+    def __init__(self, raise_on_error: bool = False, verbosity: int = 0):
         self._raise_on_error = raise_on_error
         self._verbosity = verbosity
 
-    def get_cube_info(self, request: CubeGeneratorRequestLike) \
-            -> CubeInfoResult:
+    def get_cube_info(self, request: CubeGeneratorRequestLike) -> CubeInfoResult:
         """
         Get data cube information for given *request*.
 
@@ -157,16 +169,13 @@ class CubeGenerator(ABC):
         except CubeGeneratorError as e:
             if self._raise_on_error:
                 raise e
-            return self._new_cube_generator_error_result(
-                CubeInfoResult, e
-            )
-        if result.status == 'error':
+            return self._new_cube_generator_error_result(CubeInfoResult, e)
+        if result.status == "error":
             if self._raise_on_error:
                 raise self._new_generator_error_from_result(result)
         return result
 
-    def generate_cube(self, request: CubeGeneratorRequestLike) \
-            -> CubeGeneratorResult:
+    def generate_cube(self, request: CubeGeneratorRequestLike) -> CubeGeneratorResult:
         """
         Generate the data cube for given *request*.
 
@@ -197,51 +206,48 @@ class CubeGenerator(ABC):
         except CubeGeneratorError as e:
             if self._raise_on_error:
                 raise e
-            return self._new_cube_generator_error_result(
-                CubeGeneratorResult, e
-            )
+            return self._new_cube_generator_error_result(CubeGeneratorResult, e)
         finally:
             if self._verbosity:
                 ConsoleProgressObserver().deactivate()
 
-        if result.status == 'error':
+        if result.status == "error":
             if self._raise_on_error:
                 raise self._new_generator_error_from_result(result)
         return result
 
     @abstractmethod
-    def _get_cube_info(self, request: CubeGeneratorRequestLike) \
-            -> CubeInfoResult:
+    def _get_cube_info(self, request: CubeGeneratorRequestLike) -> CubeInfoResult:
         """
         The implementation of the :meth:`get_cube_info` method
         """
 
     @abstractmethod
-    def _generate_cube(self, request: CubeGeneratorRequestLike) \
-            -> CubeGeneratorResult:
+    def _generate_cube(self, request: CubeGeneratorRequestLike) -> CubeGeneratorResult:
         """
         The implementation of the :meth:`generate_cube` method
         """
 
     @classmethod
     def _new_cube_generator_error_result(
-            cls,
-            result_type: Type[R],
-            e: CubeGeneratorError
+        cls, result_type: Type[R], e: CubeGeneratorError
     ) -> R:
         tb = e.remote_traceback
         if tb is None and e.__traceback__ is not None:
             tb = traceback.format_tb(e.__traceback__)
-        return result_type(status='error',
-                           message=f'{e}',
-                           status_code=e.status_code,
-                           output=e.remote_output,
-                           traceback=tb)
+        return result_type(
+            status="error",
+            message=f"{e}",
+            status_code=e.status_code,
+            output=e.remote_output,
+            traceback=tb,
+        )
 
     @classmethod
-    def _new_generator_error_from_result(cls,
-                                         result: GenericCubeGeneratorResult):
-        return CubeGeneratorError(result.message,
-                                  status_code=result.status_code,
-                                  remote_output=result.output,
-                                  remote_traceback=result.traceback)
+    def _new_generator_error_from_result(cls, result: GenericCubeGeneratorResult):
+        return CubeGeneratorError(
+            result.message,
+            status_code=result.status_code,
+            remote_output=result.output,
+            remote_traceback=result.traceback,
+        )

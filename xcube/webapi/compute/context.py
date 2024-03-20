@@ -68,7 +68,7 @@ JOB_STATUSES = {
     JOB_STARTED,
     JOB_COMPLETED,
     JOB_FAILED,
-    JOB_CANCELLED
+    JOB_CANCELLED,
 }
 
 
@@ -79,9 +79,7 @@ class ComputeContext(ResourcesContext):
     in the same server context.
     """
 
-    def __init__(self,
-                 server_ctx: Context,
-                 op_registry: OpRegistry = OP_REGISTRY):
+    def __init__(self, server_ctx: Context, op_registry: OpRegistry = OP_REGISTRY):
         """Create a new compute context
 
         :param server_ctx: the current server context object
@@ -89,11 +87,9 @@ class ComputeContext(ResourcesContext):
                             this context
         """
         super().__init__(server_ctx)
-        self._datasets_ctx: DatasetsContext \
-            = server_ctx.get_api_ctx("datasets")
+        self._datasets_ctx: DatasetsContext = server_ctx.get_api_ctx("datasets")
         assert isinstance(self._datasets_ctx, DatasetsContext)
-        self._places_ctx: PlacesContext \
-            = server_ctx.get_api_ctx("places")
+        self._places_ctx: PlacesContext = server_ctx.get_api_ctx("places")
         assert isinstance(self._places_ctx, PlacesContext)
 
         self._op_registry = op_registry
@@ -105,8 +101,9 @@ class ComputeContext(ResourcesContext):
         self.next_job_id = 0
         self.jobs: Jobs = {}
         self.job_futures: JobFutures = {}
-        self.job_executor = LocalExecutor(max_workers=max_workers,
-                                          thread_name_prefix='xcube-job-')
+        self.job_executor = LocalExecutor(
+            max_workers=max_workers, thread_name_prefix="xcube-job-"
+        )
 
     def on_dispose(self):
         self.job_executor.shutdown(cancel_futures=True)
@@ -151,14 +148,11 @@ class ComputeContext(ResourcesContext):
         self.jobs[job_id] = job
         set_job_status(job, JOB_SCHEDULED)
         # Schedule job
-        job_future: JobFuture = \
-            self.job_executor.submit(self._invoke_job, job_id)
+        job_future: JobFuture = self.job_executor.submit(self._invoke_job, job_id)
         # Register new job future
         self.job_futures[job_id] = job_future
         # Notify when job is completed, failed, or cancelled.
-        job_future.add_done_callback(
-            functools.partial(self._handle_job_done, job_id)
-        )
+        job_future.add_done_callback(functools.partial(self._handle_job_done, job_id))
 
         return job
 
@@ -224,7 +218,7 @@ class ComputeContext(ResourcesContext):
         """
         job = self.jobs.get(job_id)
         if job is None:
-            raise ApiError.NotFound(f'Job #{job_id} not found.')
+            raise ApiError.NotFound(f"Job #{job_id} not found.")
 
         future = self.job_futures.pop(job_id, None)
         if future is not None and not future.done():
@@ -233,9 +227,7 @@ class ComputeContext(ResourcesContext):
 
         return job
 
-    def get_effective_parameters(self,
-                                 op: Callable,
-                                 parameters: Dict[str, Any]):
+    def get_effective_parameters(self, op: Callable, parameters: Dict[str, Any]):
         """Replace dataset names with datasets in operation parameters.
 
         This method takes a parameter dictionary for the invocation or an
@@ -256,14 +248,13 @@ class ComputeContext(ResourcesContext):
         parameters = parameters.copy()
         for param_name, param_py_type in param_py_types.items():
             param_value = parameters.get(param_name)
-            if isinstance(param_value, str) \
-                    and inspect.isclass(param_py_type):
+            if isinstance(param_value, str) and inspect.isclass(param_py_type):
                 if issubclass(param_py_type, xr.Dataset):
-                    parameters[param_name] = \
-                        self._datasets_ctx.get_dataset(param_value)
+                    parameters[param_name] = self._datasets_ctx.get_dataset(param_value)
                 elif issubclass(param_py_type, MultiLevelDataset):
-                    parameters[param_name] = \
-                        self._datasets_ctx.get_ml_dataset(param_value)
+                    parameters[param_name] = self._datasets_ctx.get_ml_dataset(
+                        param_value
+                    )
         return parameters
 
 
@@ -271,9 +262,7 @@ def new_job(job_id: int, job_request: JobRequest) -> Job:
     return {
         "jobId": job_id,
         "request": job_request,
-        "state": {
-            "status": "init"
-        },
+        "state": {"status": "init"},
     }
 
 
@@ -290,9 +279,7 @@ def is_job_status(job: Job, status: str) -> bool:
     return job["state"]["status"] == status
 
 
-def set_job_status(job: Job,
-                   status: str,
-                   error: Optional[BaseException] = None):
+def set_job_status(job: Job, status: str, error: Optional[BaseException] = None):
     """Set the status of a job.
 
     :param job: a job specification (string-keyed dictionary)
@@ -311,7 +298,7 @@ def set_job_status(job: Job,
         job["state"]["error"] = {
             "message": str(error),
             "type": type(error).__name__,
-            "traceback": traceback.extract_tb(error.__traceback__).format()
+            "traceback": traceback.extract_tb(error.__traceback__).format(),
         }
 
 

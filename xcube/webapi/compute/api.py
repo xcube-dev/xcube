@@ -24,9 +24,9 @@ from .config import CONFIG_SCHEMA
 from .context import ComputeContext
 
 api = Api(
-    'compute',
-    description='xcube Datasets Compute API',
+    "compute",
+    description="xcube Datasets Compute API",
     config_schema=CONFIG_SCHEMA,
-    required_apis=['datasets', 'places'],
-    create_ctx=ComputeContext
+    required_apis=["datasets", "places"],
+    create_ctx=ComputeContext,
 )

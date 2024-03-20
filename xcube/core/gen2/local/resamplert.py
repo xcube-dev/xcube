@@ -29,9 +29,8 @@ from ..config import CubeConfig
 
 class CubeResamplerT(CubeTransformer):
 
-    def transform_cube(self,
-                       cube: xr.Dataset,
-                       gm: GridMapping,
-                       cube_config: CubeConfig) -> TransformedCube:
+    def transform_cube(
+        self, cube: xr.Dataset, gm: GridMapping, cube_config: CubeConfig
+    ) -> TransformedCube:
         # TODO (forman): implement me
         return cube, gm, cube_config

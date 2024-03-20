@@ -1,16 +1,16 @@
 # The MIT License (MIT)
 # Copyright (c) 2022 by the xcube development team and contributors
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
 # to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense,
 # and/or sell copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -30,7 +30,7 @@ from xcube.constants import LOG
 from xcube.util.assertions import assert_instance
 
 
-@xr.register_dataset_accessor('zarr_store')
+@xr.register_dataset_accessor("zarr_store")
 class ZarrStoreHolder:
     """Represents a xarray dataset property ``zarr_store``.
 
@@ -76,22 +76,21 @@ class ZarrStoreHolder:
             with self._lock:
                 if self._zarr_store is None:
                     from xcube.core.zarrstore import GenericZarrStore
-                    self._zarr_store = GenericZarrStore.from_dataset(
-                        self._dataset
-                    )
+
+                    self._zarr_store = GenericZarrStore.from_dataset(self._dataset)
                     source = self._dataset.encoding.get("source", "?")
-                    LOG.warning(f"dataset {source!r} is assigned a"
-                                f" GenericZarrStore which may introduce"
-                                f" performance penalties")
+                    LOG.warning(
+                        f"dataset {source!r} is assigned a"
+                        f" GenericZarrStore which may introduce"
+                        f" performance penalties"
+                    )
         return self._zarr_store
 
     def set(self, zarr_store: collections.abc.MutableMapping) -> None:
         """Set the Zarr store of a dataset.
         :param zarr_store: The Zarr store.
         """
-        assert_instance(zarr_store,
-                        collections.abc.MutableMapping,
-                        name='zarr_store')
+        assert_instance(zarr_store, collections.abc.MutableMapping, name="zarr_store")
         with self._lock:
             self._zarr_store = zarr_store
 

@@ -25,8 +25,7 @@ import functools
 import logging
 import traceback
 import urllib.parse
-from typing import (Any, Optional, Sequence, Union, Callable, Type,
-                    Awaitable, Mapping)
+from typing import Any, Optional, Sequence, Union, Callable, Type, Awaitable, Mapping
 
 import tornado.escape
 import tornado.httputil
@@ -63,10 +62,12 @@ class TornadoFramework(Framework):
     The Tornado web server framework.
     """
 
-    def __init__(self,
-                 application: Optional[tornado.web.Application] = None,
-                 io_loop: Optional[tornado.ioloop.IOLoop] = None,
-                 shared_io_loop: bool = False):
+    def __init__(
+        self,
+        application: Optional[tornado.web.Application] = None,
+        io_loop: Optional[tornado.ioloop.IOLoop] = None,
+        shared_io_loop: bool = False,
+    ):
         self._application = application or tornado.web.Application()
         self._io_loop = io_loop
         self._shared_io_loop = io_loop is not None and shared_io_loop
@@ -87,20 +88,15 @@ class TornadoFramework(Framework):
                         protocol=JsonStringSchema(nullable=True),
                         no_keep_alive=JsonBooleanSchema(default=False),
                         decompress_request=JsonBooleanSchema(default=False),
-                        ssl_options=JsonObjectSchema(
-                            additional_properties=True
-                        ),
+                        ssl_options=JsonObjectSchema(additional_properties=True),
                         chunk_size=JsonIntegerSchema(
-                            nullable=True,
-                            exclusive_minimum=0
+                            nullable=True, exclusive_minimum=0
                         ),
                         max_header_size=JsonIntegerSchema(
-                            nullable=True,
-                            exclusive_minimum=0
+                            nullable=True, exclusive_minimum=0
                         ),
                         max_body_size=JsonIntegerSchema(
-                            nullable=True,
-                            exclusive_minimum=0
+                            nullable=True, exclusive_minimum=0
                         ),
                     ),
                     additional_properties=True,
@@ -116,46 +112,47 @@ class TornadoFramework(Framework):
     def io_loop(self) -> tornado.ioloop.IOLoop:
         return self._io_loop or tornado.ioloop.IOLoop.current()
 
-    def add_static_routes(self,
-                          api_routes: Sequence[ApiStaticRoute],
-                          url_prefix: str):
+    def add_static_routes(self, api_routes: Sequence[ApiStaticRoute], url_prefix: str):
         handlers = []
         for api_route in api_routes:
-            base_url = f'{url_prefix}{api_route.path}'
+            base_url = f"{url_prefix}{api_route.path}"
             default_filename = api_route.default_filename
-            handlers.append((
-                f'{base_url}',
-                tornado.web.RedirectHandler,
-                {'url': f'{base_url}/'}
-            ))
-            handlers.append((
-                f'{base_url}/(.*)',
-                tornado.web.StaticFileHandler,
-                {'path': api_route.dir_path,
-                 'default_filename': default_filename}
-            ))
-            LOG.log(LOG_LEVEL_DETAIL, f'Added static route'
-                                      f' {api_route.path!r}'
-                                      f' from API {api_route.api_name!r}')
+            handlers.append(
+                (f"{base_url}", tornado.web.RedirectHandler, {"url": f"{base_url}/"})
+            )
+            handlers.append(
+                (
+                    f"{base_url}/(.*)",
+                    tornado.web.StaticFileHandler,
+                    {"path": api_route.dir_path, "default_filename": default_filename},
+                )
+            )
+            LOG.log(
+                LOG_LEVEL_DETAIL,
+                f"Added static route"
+                f" {api_route.path!r}"
+                f" from API {api_route.api_name!r}",
+            )
         if handlers:
             self.application.add_handlers(".*$", handlers)
 
-    def add_routes(self,
-                   api_routes: Sequence[ApiRoute],
-                   url_prefix: str):
+    def add_routes(self, api_routes: Sequence[ApiRoute], url_prefix: str):
         handlers = []
         for api_route in api_routes:
-            handlers.append((
-                url_prefix + self.path_to_pattern(api_route.path),
-                TornadoRequestHandler,
-                {
-                    "api_route": api_route
-                }
-            ))
+            handlers.append(
+                (
+                    url_prefix + self.path_to_pattern(api_route.path),
+                    TornadoRequestHandler,
+                    {"api_route": api_route},
+                )
+            )
 
-            LOG.log(LOG_LEVEL_DETAIL, f'Added route'
-                                      f' {api_route.path!r}'
-                                      f' from API {api_route.api_name!r}')
+            LOG.log(
+                LOG_LEVEL_DETAIL,
+                f"Added route"
+                f" {api_route.path!r}"
+                f" from API {api_route.api_name!r}",
+            )
         if handlers:
             self.application.add_handlers(".*$", handlers)
 
@@ -186,29 +183,22 @@ class TornadoFramework(Framework):
         if not self._shared_io_loop:
             self.io_loop.stop()
 
-    def call_later(self,
-                   delay: Union[int, float],
-                   callback: Callable,
-                   *args,
-                   **kwargs) -> object:
-        return self.io_loop.call_later(
-            delay,
-            callback,
-            *args,
-            **kwargs
-        )
+    def call_later(
+        self, delay: Union[int, float], callback: Callable, *args, **kwargs
+    ) -> object:
+        return self.io_loop.call_later(delay, callback, *args, **kwargs)
 
     def run_in_executor(
-            self,
-            executor: Optional[concurrent.futures.Executor],
-            function: Callable[..., ReturnT],
-            *args: Any,
-            **kwargs: Any
+        self,
+        executor: Optional[concurrent.futures.Executor],
+        function: Callable[..., ReturnT],
+        *args: Any,
+        **kwargs: Any,
     ) -> Awaitable[ReturnT]:
         return self.io_loop.run_in_executor(
             executor,
             functools.partial(function, **kwargs) if kwargs else function,
-            *args
+            *args,
         )
 
     @staticmethod
@@ -217,10 +207,10 @@ class TornadoFramework(Framework):
         # have a single log level and format. Root handlers are
         # assumed to be already configured by xcube CLI.
         for logger_name in [
-            'tornado',
-            'tornado.access',
-            'tornado.application',
-            'tornado.general'
+            "tornado",
+            "tornado.access",
+            "tornado.application",
+            "tornado.general",
         ]:
             log = logging.getLogger(logger_name)
             # Remove Tornado's own handlers
@@ -246,24 +236,24 @@ class TornadoFramework(Framework):
         :return: equivalent regex pattern
         :raise ValueError: if *pattern* is invalid
         """
-        var_pattern = r'(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)'
-        rest_var_pattern = r'\/?(?P<%s>.*)'
+        var_pattern = r"(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)"
+        rest_var_pattern = r"\/?(?P<%s>.*)"
         num_rest_vars = 0
         rest_var_seen = False
-        reg_expr = ''
+        reg_expr = ""
         pos = 0
         while True:
-            pos1 = path.find('{', pos)
+            pos1 = path.find("{", pos)
             if pos1 >= 0:
-                pos2 = path.find('}', pos1 + 1)
+                pos2 = path.find("}", pos1 + 1)
                 if pos2 <= pos1:
                     raise ValueError('missing closing "}" in "%s"' % path)
-                arg = path[pos1 + 1:pos2]
-                if arg.startswith('*'):
+                arg = path[pos1 + 1 : pos2]
+                if arg.startswith("*"):
                     rest_var_seen = True
                     name = arg[1:]
                     pattern = rest_var_pattern
-                    if pos1 > 0 and path[pos1 - 1] == '/':
+                    if pos1 > 0 and path[pos1 - 1] == "/":
                         # Consume a trailing "/" because it is
                         # covered in pattern
                         pos1 -= 1
@@ -280,19 +270,21 @@ class TornadoFramework(Framework):
                 reg_expr += path[pos:pos1] + (pattern % name)
                 pos = pos2 + 1
             else:
-                pos2 = path.find('}', pos)
+                pos2 = path.find("}", pos)
                 if pos2 >= pos:
                     raise ValueError('missing opening "{" in "%s"' % path)
                 rest_of_path = path[pos:]
                 if rest_var_seen and rest_of_path:
-                    raise ValueError('wildcard variable must be last in path,'
-                                     f' but path was "{path}"')
+                    raise ValueError(
+                        "wildcard variable must be last in path,"
+                        f' but path was "{path}"'
+                    )
                 reg_expr += rest_of_path
                 rest_var_seen = False
                 break
         if num_rest_vars > 1:
             raise ValueError(
-                'only a single wildcard variable is allowed,'
+                "only a single wildcard variable is allowed,"
                 f' but found {num_rest_vars} in path "{path}"'
             )
         return reg_expr
@@ -301,10 +293,12 @@ class TornadoFramework(Framework):
 # noinspection PyAbstractClass
 class TornadoRequestHandler(tornado.web.RequestHandler):
 
-    def __init__(self,
-                 application: tornado.web.Application,
-                 request: tornado.httputil.HTTPServerRequest,
-                 **kwargs: Any):
+    def __init__(
+        self,
+        application: tornado.web.Application,
+        request: tornado.httputil.HTTPServerRequest,
+        **kwargs: Any,
+    ):
         super().__init__(application, request)
         server_ctx = getattr(application, SERVER_CTX_ATTR_NAME, None)
         assert isinstance(server_ctx, Context)
@@ -312,58 +306,59 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         ctx: Context = server_ctx.get_api_ctx(api_route.api_name)
         self._api_handler: ApiHandler = api_route.handler_cls(
             ctx,
-            TornadoApiRequest(request,
-                              get_url_prefix(server_ctx.config),
-                              get_reverse_url_prefix(server_ctx.config)),
+            TornadoApiRequest(
+                request,
+                get_url_prefix(server_ctx.config),
+                get_reverse_url_prefix(server_ctx.config),
+            ),
             TornadoApiResponse(self),
-            **api_route.handler_kwargs
+            **api_route.handler_kwargs,
         )
 
     def set_default_headers(self):
-        self.set_header('Server', f'xcube-server/{version}')
+        self.set_header("Server", f"xcube-server/{version}")
         # TODO: get from config
-        self.set_header('Access-Control-Allow-Origin', '*')
-        self.set_header('Access-Control-Allow-Methods',
-                        'GET,PUT,DELETE,OPTIONS')
-        self.set_header('Access-Control-Allow-Headers',
-                        'x-requested-with,access-control-allow-origin,'
-                        'authorization,content-type')
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS")
+        self.set_header(
+            "Access-Control-Allow-Headers",
+            "x-requested-with,access-control-allow-origin,"
+            "authorization,content-type",
+        )
 
     def write_error(self, status_code: int, **kwargs: Any):
         valid_json_types = str, int, float, bool, type(None)
-        error_info = {k: v for k, v in kwargs.items()
-                      if isinstance(v, valid_json_types)}
+        error_info = {
+            k: v for k, v in kwargs.items() if isinstance(v, valid_json_types)
+        }
         error_info.update(status_code=status_code)
         if "exc_info" in kwargs:
             exc_type, exc_val, exc_tb = kwargs["exc_info"]
             error_info.update(
-                exception=traceback.format_exception(exc_type, exc_val,
-                                                     exc_tb),
-                message=str(exc_val)
+                exception=traceback.format_exception(exc_type, exc_val, exc_tb),
+                message=str(exc_val),
             )
             if isinstance(exc_val, tornado.web.HTTPError) and exc_val.reason:
                 error_info.update(reason=exc_val.reason)
-        self.finish({
-            "error": error_info
-        })
+        self.finish({"error": error_info})
 
     async def head(self, *args, **kwargs):
-        await self._call_method('head', *args, **kwargs)
+        await self._call_method("head", *args, **kwargs)
 
     async def get(self, *args, **kwargs):
-        await self._call_method('get', *args, **kwargs)
+        await self._call_method("get", *args, **kwargs)
 
     async def post(self, *args, **kwargs):
-        await self._call_method('post', *args, **kwargs)
+        await self._call_method("post", *args, **kwargs)
 
     async def put(self, *args, **kwargs):
-        await self._call_method('put', *args, **kwargs)
+        await self._call_method("put", *args, **kwargs)
 
     async def delete(self, *args, **kwargs):
-        await self._call_method('delete', *args, **kwargs)
+        await self._call_method("delete", *args, **kwargs)
 
     async def options(self, *args, **kwargs):
-        await self._call_method('options', *args, **kwargs)
+        await self._call_method("options", *args, **kwargs)
 
     async def _call_method(self, method_name: str, *args, **kwargs):
         method = getattr(self._api_handler, method_name)
@@ -373,15 +368,16 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
             else:
                 method(*args, **kwargs)
         except ApiError as e:
-            raise tornado.web.HTTPError(e.status_code,
-                                        log_message=e.message) from e
+            raise tornado.web.HTTPError(e.status_code, log_message=e.message) from e
 
 
 class TornadoApiRequest(ApiRequest):
-    def __init__(self,
-                 request: tornado.httputil.HTTPServerRequest,
-                 url_prefix: str = '',
-                 reverse_url_prefix: str = ''):
+    def __init__(
+        self,
+        request: tornado.httputil.HTTPServerRequest,
+        url_prefix: str = "",
+        reverse_url_prefix: str = "",
+    ):
         self._request = request
         self._url_prefix = url_prefix
         self._reverse_url_prefix = reverse_url_prefix
@@ -404,28 +400,26 @@ class TornadoApiRequest(ApiRequest):
         return mapping
 
     # noinspection PyShadowingBuiltins
-    def get_query_args(self,
-                       name: str,
-                       type: Optional[Type[ArgT]] = None) -> Sequence[ArgT]:
+    def get_query_args(
+        self, name: str, type: Optional[Type[ArgT]] = None
+    ) -> Sequence[ArgT]:
         name_lc = name.lower() if self._is_query_lower_case else name
         if not self.query or name_lc not in self.query:
             return []
         values = self.query[name_lc]
         if type is not None and type is not str:
-            assert_true(callable(type), 'type must be callable')
+            assert_true(callable(type), "type must be callable")
             try:
                 return [type(v) for v in values]
             except (ValueError, TypeError):
                 raise ApiError.BadRequest(
-                    f'Query parameter {name!r}'
-                    f' must have type {type.__name__!r}.'
+                    f"Query parameter {name!r}" f" must have type {type.__name__!r}."
                 )
         return values
 
-    def url_for_path(self,
-                     path: str,
-                     query: Optional[str] = None,
-                     reverse: bool = False) -> str:
+    def url_for_path(
+        self, path: str, query: Optional[str] = None, reverse: bool = False
+    ) -> str:
         """Get the URL for given *path* and *query*.
         If the *reverse* flag is set, the configuration parameter
         ``reverse_url_prefix``, if provided, is used to construct the URL,
@@ -465,9 +459,7 @@ class TornadoApiRequest(ApiRequest):
         try:
             return tornado.escape.json_decode(self.body)
         except ValueError as e:
-            raise ApiError.BadRequest(
-                f'Body does not contain valid JSON: {e}'
-            ) from e
+            raise ApiError.BadRequest(f"Body does not contain valid JSON: {e}") from e
 
 
 class TornadoApiResponse(ApiResponse):
@@ -480,9 +472,7 @@ class TornadoApiResponse(ApiResponse):
     def set_status(self, status_code: int, reason: Optional[str] = None):
         self._handler.set_status(status_code, reason=reason)
 
-    def write(self, 
-              data: Union[str, bytes, JSON],
-              content_type: Optional[str] = None):
+    def write(self, data: Union[str, bytes, JSON], content_type: Optional[str] = None):
         if data is not None:
             self._handler.write(data)
         # https://www.tornadoweb.org/en/stable/web.html#tornado.web.RequestHandler.write
@@ -491,11 +481,10 @@ class TornadoApiResponse(ApiResponse):
         # send JSON as a different Content-Type, call set_header after calling
         # write())."
         if content_type is not None:
-            self._handler.set_header('Content-Type', content_type)
+            self._handler.set_header("Content-Type", content_type)
 
-    def finish(self, 
-               data: Union[str, bytes, JSON] = None,
-               content_type: Optional[str] = None):
+    def finish(
+        self, data: Union[str, bytes, JSON] = None, content_type: Optional[str] = None
+    ):
         self.write(data, content_type)
         return self._handler.finish()
-

@@ -28,9 +28,9 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 from xcube.util.ipython import register_json_formatter
 
 Component = Any
-ComponentLoader = Callable[['Extension'], Component]
-ComponentTransform = Callable[[Component, 'Extension'], Component]
-ExtensionPredicate = Callable[['Extension'], bool]
+ComponentLoader = Callable[["Extension"], Component]
+ComponentTransform = Callable[[Component, "Extension"], Component]
+ExtensionPredicate = Callable[["Extension"], bool]
 
 
 class Extension:
@@ -50,21 +50,25 @@ class Extension:
     """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 point: str,
-                 name: str,
-                 component: Component = None,
-                 loader: ComponentLoader = None,
-                 **metadata):
+    def __init__(
+        self,
+        point: str,
+        name: str,
+        component: Component = None,
+        loader: ComponentLoader = None,
+        **metadata,
+    ):
 
         if point is None:
-            raise ValueError(f'point must be given')
+            raise ValueError(f"point must be given")
         if name is None:
-            raise ValueError(f'name must be given')
-        if (loader is not None and component is not None) or (loader is None and component is None):
-            raise ValueError(f'either component or loader must be given')
+            raise ValueError(f"name must be given")
+        if (loader is not None and component is not None) or (
+            loader is None and component is None
+        ):
+            raise ValueError(f"either component or loader must be given")
         if loader is not None and not callable(loader):
-            raise ValueError(f'loader must be callable')
+            raise ValueError(f"loader must be callable")
 
         self._component = component
         self._loader = loader
@@ -101,16 +105,18 @@ class Extension:
         return dict(self._metadata)
 
     def to_dict(self) -> Dict[str, Any]:
-        """ Get a JSON-serializable dictionary representation of this extension. """
+        """Get a JSON-serializable dictionary representation of this extension."""
 
         # Note: we avoid loading the component!
         if self._component is not None:
-            if hasattr(self._component, 'to_dict') and callable(getattr(self._component, 'to_dict')):
+            if hasattr(self._component, "to_dict") and callable(
+                getattr(self._component, "to_dict")
+            ):
                 component = self._component.to_dict()
             else:
                 component = repr(self._component)
         else:
-            component = '<not loaded yet>'
+            component = "<not loaded yet>"
         d = dict(
             name=self.name,
             **self.metadata,
@@ -166,12 +172,14 @@ class ExtensionRegistry:
         """
         extension = self.get_extension(point, name)
         if extension is None:
-            raise ValueError(f'extension {name!r} not found for extension point {point!r}')
+            raise ValueError(
+                f"extension {name!r} not found for extension point {point!r}"
+            )
         return extension.component
 
-    def find_extensions(self,
-                        point: str,
-                        predicate: ExtensionPredicate = None) -> List[Extension]:
+    def find_extensions(
+        self, point: str, predicate: ExtensionPredicate = None
+    ) -> List[Extension]:
         """
         Find extensions for *point* and optional filter function *predicate*.
 
@@ -187,11 +195,13 @@ class ExtensionRegistry:
         point_extensions = self._extension_points[point]
         if predicate is None:
             return list(point_extensions.values())
-        return [extension for extension in point_extensions.values() if predicate(extension)]
+        return [
+            extension for extension in point_extensions.values() if predicate(extension)
+        ]
 
-    def find_components(self,
-                        point: str,
-                        predicate: ExtensionPredicate = None) -> List[Component]:
+    def find_components(
+        self, point: str, predicate: ExtensionPredicate = None
+    ) -> List[Component]:
         """
         Find extension components for *point* and optional filter function *predicate*.
 
@@ -202,14 +212,19 @@ class ExtensionRegistry:
         :param predicate: optional filter function
         :return: list of matching extension components
         """
-        return [extension.component for extension in self.find_extensions(point, predicate=predicate)]
+        return [
+            extension.component
+            for extension in self.find_extensions(point, predicate=predicate)
+        ]
 
-    def add_extension(self,
-                      point: str,
-                      name: str,
-                      component: Component = None,
-                      loader: ComponentLoader = None,
-                      **metadata) -> Extension:
+    def add_extension(
+        self,
+        point: str,
+        name: str,
+        component: Component = None,
+        loader: ComponentLoader = None,
+        **metadata,
+    ) -> Extension:
         """
         Register an extension *component* or an extension component *loader* for
         the given extension *point*, *name*, and additional *metadata*.
@@ -229,7 +244,9 @@ class ExtensionRegistry:
         :param metadata: extension metadata
         :return: a registered extension
         """
-        extension = Extension(point, name, component=component, loader=loader, **metadata)
+        extension = Extension(
+            point, name, component=component, loader=loader, **metadata
+        )
         if point in self._extension_points:
             self._extension_points[point][name] = extension
         else:
@@ -247,8 +264,11 @@ class ExtensionRegistry:
         del point_extensions[name]
 
     def to_dict(self):
-        """ Get a JSON-serializable dictionary representation of this extension registry. """
-        return {k: {ek: ev.to_dict() for ek, ev in v.items()} for k, v in self._extension_points.items()}
+        """Get a JSON-serializable dictionary representation of this extension registry."""
+        return {
+            k: {ek: ev.to_dict() for ek, ev in v.items()}
+            for k, v in self._extension_points.items()
+        }
 
 
 register_json_formatter(ExtensionRegistry)
@@ -261,11 +281,13 @@ def get_extension_registry() -> ExtensionRegistry:
     return _EXTENSION_REGISTRY_SINGLETON
 
 
-def import_component(spec: str,
-                     transform: ComponentTransform = None,
-                     call: bool = False,
-                     call_args: Sequence[Any] = None,
-                     call_kwargs: Mapping[str, Any] = None) -> ComponentLoader:
+def import_component(
+    spec: str,
+    transform: ComponentTransform = None,
+    call: bool = False,
+    call_args: Sequence[Any] = None,
+    call_kwargs: Mapping[str, Any] = None,
+) -> ComponentLoader:
     """
     Return a component loader that imports a module or module component from *spec*.
     To import a module, *spec* should be the fully qualified module name. To import a
@@ -315,17 +337,17 @@ def _import_component(component_spec: str, force_component: bool = False):
     :param force_component: If True, *spec* must specify a component name
     :return: the imported module or module component
     """
-    if ':' in component_spec:
-        module_name, component_name = component_spec.split(':', maxsplit=1)
+    if ":" in component_spec:
+        module_name, component_name = component_spec.split(":", maxsplit=1)
     else:
         module_name, component_name = component_spec, None
 
     if force_component and component_name is None:
-        raise ValueError('illegal spec, must specify a component')
-    if module_name == '':
-        raise ValueError('illegal spec, missing module path')
-    if component_name == '':
-        raise ValueError('illegal spec, missing component name')
+        raise ValueError("illegal spec, must specify a component")
+    if module_name == "":
+        raise ValueError("illegal spec, missing module path")
+    if component_name == "":
+        raise ValueError("illegal spec, missing component name")
 
     module = importlib.import_module(module_name)
     return getattr(module, component_name) if component_name else module

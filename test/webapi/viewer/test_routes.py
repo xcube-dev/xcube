@@ -25,25 +25,24 @@ from test.webapi.helpers import RoutesTestCase
 class ViewerRoutesTest(RoutesTestCase):
 
     def test_viewer(self):
-        response = self.fetch('/viewer')
+        response = self.fetch("/viewer")
         self.assertResponseOK(response)
 
-        response = self.fetch('/viewer/')
+        response = self.fetch("/viewer/")
         self.assertResponseOK(response)
 
-        response = self.fetch('/viewer/index.html')
+        response = self.fetch("/viewer/index.html")
         self.assertResponseOK(response)
 
-        response = self.fetch('/viewer/manifest.json')
+        response = self.fetch("/viewer/manifest.json")
         self.assertResponseOK(response)
 
-        response = self.fetch('/viewer/images/logo.png')
+        response = self.fetch("/viewer/images/logo.png")
         self.assertResponseOK(response)
 
 
 class ViewerConfigRoutesTest(RoutesTestCase):
 
     def test_viewer_config(self):
-        response = self.fetch('/viewer/config/config.json')
+        response = self.fetch("/viewer/config/config.json")
         self.assertResponseOK(response)
-

@@ -31,11 +31,10 @@ from ..config import CubeConfig
 class CubeRechunker(CubeTransformer):
     """Force cube to have chunks compatible with Zarr."""
 
-    def transform_cube(self,
-                       cube: xr.Dataset,
-                       gm: GridMapping,
-                       cube_config: CubeConfig) -> TransformedCube:
-        cube, gm = rechunk_cube(cube, gm,
-                                chunks=cube_config.chunks,
-                                tile_size=cube_config.tile_size)
+    def transform_cube(
+        self, cube: xr.Dataset, gm: GridMapping, cube_config: CubeConfig
+    ) -> TransformedCube:
+        cube, gm = rechunk_cube(
+            cube, gm, chunks=cube_config.chunks, tile_size=cube_config.tile_size
+        )
         return cube, gm, cube_config

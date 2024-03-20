@@ -15,29 +15,22 @@ nan = np.nan
 class ResampleInSpaceTest(unittest.TestCase):
 
     def test_affine_transform_dataset(self):
-        source_ds = new_cube(variables={"CHL": 10., "TSM": 8.5})
+        source_ds = new_cube(variables={"CHL": 10.0, "TSM": 8.5})
         source_gm = GridMapping.from_dataset(source_ds)
-        target_gm = GridMapping.regular(size=(8, 4),
-                                        xy_min=(0, 0),
-                                        xy_res=2,
-                                        crs=CRS_WGS84)
+        target_gm = GridMapping.regular(
+            size=(8, 4), xy_min=(0, 0), xy_res=2, crs=CRS_WGS84
+        )
 
-        target_ds = resample_in_space(source_ds, source_gm, target_gm,
-                                      encode_cf=True,
-                                      gm_name="crs")
+        target_ds = resample_in_space(
+            source_ds, source_gm, target_gm, encode_cf=True, gm_name="crs"
+        )
 
         self.assertIn("crs", target_ds)
-        self.assertEqual(
-            target_gm.crs,
-            pyproj.CRS.from_cf(target_ds.crs.attrs)
-        )
+        self.assertEqual(target_gm.crs, pyproj.CRS.from_cf(target_ds.crs.attrs))
 
         for var_name in ("CHL", "TSM"):
             self.assertIn(var_name, target_ds)
-            self.assertEqual(
-                "crs",
-                target_ds[var_name].attrs.get("grid_mapping")
-            )
+            self.assertEqual("crs", target_ds[var_name].attrs.get("grid_mapping"))
 
         actual_gm = GridMapping.from_dataset(target_ds)
         self.assertEqual(RegularGridMapping, type(target_gm))

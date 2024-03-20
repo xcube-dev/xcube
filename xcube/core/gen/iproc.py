@@ -52,29 +52,37 @@ class ReprojectionInfo:
            coordinate arrays denoted by *xy_tp_names*.
     """
 
-    def __init__(self,
-                 xy_names: Tuple[str, str] = None,
-                 xy_tp_names: Tuple[str, str] = None,
-                 xy_crs: Any = None,
-                 xy_gcp_step: Union[int, Tuple[int, int]] = None,
-                 xy_tp_gcp_step: Union[int, Tuple[int, int]] = None):
-        self._xy_names = self._assert_name_pair('xy_names', xy_names)
-        self._xy_tp_names = self._assert_name_pair('xy_tp_names', xy_tp_names)
+    def __init__(
+        self,
+        xy_names: Tuple[str, str] = None,
+        xy_tp_names: Tuple[str, str] = None,
+        xy_crs: Any = None,
+        xy_gcp_step: Union[int, Tuple[int, int]] = None,
+        xy_tp_gcp_step: Union[int, Tuple[int, int]] = None,
+    ):
+        self._xy_names = self._assert_name_pair("xy_names", xy_names)
+        self._xy_tp_names = self._assert_name_pair("xy_tp_names", xy_tp_names)
         self._xy_crs = xy_crs
-        self._xy_gcp_step = self._assert_step_pair('xy_gcp_step', xy_gcp_step)
-        self._xy_tp_gcp_step = self._assert_step_pair('xy_tp_gcp_step', xy_tp_gcp_step)
+        self._xy_gcp_step = self._assert_step_pair("xy_gcp_step", xy_gcp_step)
+        self._xy_tp_gcp_step = self._assert_step_pair("xy_tp_gcp_step", xy_tp_gcp_step)
 
-    def derive(self,
-               xy_names: Tuple[str, str] = None,
-               xy_tp_names: Tuple[str, str] = None,
-               xy_crs: Any = None,
-               xy_gcp_step: Union[int, Tuple[int, int]] = None,
-               xy_tp_gcp_step: Union[int, Tuple[int, int]] = None):
-        return ReprojectionInfo(self.xy_names if xy_names is None else xy_names,
-                                xy_tp_names=self.xy_tp_names if xy_tp_names is None else xy_tp_names,
-                                xy_crs=self.xy_crs if xy_crs is None else xy_crs,
-                                xy_gcp_step=self.xy_gcp_step if xy_gcp_step is None else xy_gcp_step,
-                                xy_tp_gcp_step=self.xy_tp_gcp_step if xy_tp_gcp_step is None else xy_tp_gcp_step)
+    def derive(
+        self,
+        xy_names: Tuple[str, str] = None,
+        xy_tp_names: Tuple[str, str] = None,
+        xy_crs: Any = None,
+        xy_gcp_step: Union[int, Tuple[int, int]] = None,
+        xy_tp_gcp_step: Union[int, Tuple[int, int]] = None,
+    ):
+        return ReprojectionInfo(
+            self.xy_names if xy_names is None else xy_names,
+            xy_tp_names=self.xy_tp_names if xy_tp_names is None else xy_tp_names,
+            xy_crs=self.xy_crs if xy_crs is None else xy_crs,
+            xy_gcp_step=self.xy_gcp_step if xy_gcp_step is None else xy_gcp_step,
+            xy_tp_gcp_step=(
+                self.xy_tp_gcp_step if xy_tp_gcp_step is None else xy_tp_gcp_step
+            ),
+        )
 
     @property
     def xy_names(self) -> Optional[Tuple[str, str]]:
@@ -117,15 +125,15 @@ class ReprojectionInfo:
 
     def _assert_name(self, keyword: str, value):
         if value is None:
-            raise ValueError(f'invalid {keyword}, missing name')
+            raise ValueError(f"invalid {keyword}, missing name")
         if not isinstance(value, str) or not value:
-            raise ValueError(f'invalid {keyword}, name must be a non-empty string')
+            raise ValueError(f"invalid {keyword}, name must be a non-empty string")
 
     def _assert_step(self, keyword: str, value):
         if value is None:
-            raise ValueError(f'invalid {keyword}, missing name')
+            raise ValueError(f"invalid {keyword}, missing name")
         if not isinstance(value, int) or value <= 0:
-            raise ValueError(f'invalid {keyword}, step must be an integer number')
+            raise ValueError(f"invalid {keyword}, step must be an integer number")
 
 
 class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
@@ -142,15 +150,15 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     def __init__(self, name: str, **parameters):
         super().__init__(EXTENSION_POINT_INPUT_PROCESSORS, name)
         self._parameters = {**self.default_parameters, **parameters}
-        if 'input_reader' not in self._parameters:
-            raise ValueError('missing input_reader in input processor parameters')
+        if "input_reader" not in self._parameters:
+            raise ValueError("missing input_reader in input processor parameters")
 
     @property
     def description(self) -> str:
         """
         :return: A description for this input processor
         """
-        return self.get_metadata_attr('description', '')
+        return self.get_metadata_attr("description", "")
 
     @property
     def default_parameters(self) -> Dict[str, Any]:
@@ -162,14 +170,14 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
 
     @property
     def input_reader(self) -> str:
-        return self.parameters['input_reader']
+        return self.parameters["input_reader"]
 
     @property
     def input_reader_params(self) -> dict:
         """
         :return: The input reader parameters for this input processor.
         """
-        return self.parameters.get('input_reader_params', {})
+        return self.parameters.get("input_reader_params", {})
 
     @abstractmethod
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
@@ -212,12 +220,14 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
     # See #540
 
     @abstractmethod
-    def process(self,
-                dataset: xr.Dataset,
-                geo_coding: GridMapping,
-                output_geom: GridMapping,
-                output_resampling: str,
-                include_non_spatial_vars=False) -> xr.Dataset:
+    def process(
+        self,
+        dataset: xr.Dataset,
+        geo_coding: GridMapping,
+        output_geom: GridMapping,
+        output_resampling: str,
+        include_non_spatial_vars=False,
+    ) -> xr.Dataset:
         """
         Perform spatial transformation into the cube's WGS84 SRS such that all variables in the output dataset
         * must be 2D arrays with dimensions "lat" and "lon", in this order, and
@@ -272,7 +282,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
     @property
     def default_parameters(self) -> Dict[str, Any]:
         default_parameters = super().default_parameters
-        default_parameters.update(xy_names=('lon', 'lat'))
+        default_parameters.update(xy_names=("lon", "lat"))
         return default_parameters
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
@@ -282,11 +292,13 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
         :return: The reprojection information of the dataset or None.
         """
         parameters = self.parameters
-        return ReprojectionInfo(xy_names=parameters.get('xy_names', ('lon', 'lat')),
-                                xy_tp_names=parameters.get('xy_tp_names'),
-                                xy_crs=parameters.get('xy_crs'),
-                                xy_gcp_step=parameters.get('xy_gcp_step'),
-                                xy_tp_gcp_step=parameters.get('xy_tp_gcp_step'))
+        return ReprojectionInfo(
+            xy_names=parameters.get("xy_names", ("lon", "lat")),
+            xy_tp_names=parameters.get("xy_tp_names"),
+            xy_crs=parameters.get("xy_crs"),
+            xy_gcp_step=parameters.get("xy_gcp_step"),
+            xy_tp_gcp_step=parameters.get("xy_tp_gcp_step"),
+        )
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
         """
@@ -303,57 +315,74 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             extra_vars.update(set(reprojection_info.xy_tp_names))
         return extra_vars
 
-    def process(self,
-                dataset: xr.Dataset,
-                geo_coding: GridMapping,
-                output_geom: GridMapping,
-                output_resampling: str,
-                include_non_spatial_vars=False) -> xr.Dataset:
+    def process(
+        self,
+        dataset: xr.Dataset,
+        geo_coding: GridMapping,
+        output_geom: GridMapping,
+        output_resampling: str,
+        include_non_spatial_vars=False,
+    ) -> xr.Dataset:
         """
         Perform reprojection using tie-points / ground control points.
         """
         reprojection_info = self.get_reprojection_info(dataset)
 
-        warn_prefix = 'unsupported argument in np-GCP rectification mode'
+        warn_prefix = "unsupported argument in np-GCP rectification mode"
         if reprojection_info.xy_crs is not None:
-            warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_crs = {reprojection_info.xy_crs!r}')
+            warnings.warn(
+                f"{warn_prefix}: ignoring "
+                f"reprojection_info.xy_crs = {reprojection_info.xy_crs!r}"
+            )
         if reprojection_info.xy_tp_names is not None:
-            warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_tp_names = {reprojection_info.xy_tp_names!r}')
+            warnings.warn(
+                f"{warn_prefix}: ignoring "
+                f"reprojection_info.xy_tp_names = {reprojection_info.xy_tp_names!r}"
+            )
         if reprojection_info.xy_gcp_step is not None:
-            warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_gcp_step = {reprojection_info.xy_gcp_step!r}')
+            warnings.warn(
+                f"{warn_prefix}: ignoring "
+                f"reprojection_info.xy_gcp_step = {reprojection_info.xy_gcp_step!r}"
+            )
         if reprojection_info.xy_tp_gcp_step is not None:
-            warnings.warn(f'{warn_prefix}: ignoring '
-                          f'reprojection_info.xy_tp_gcp_step = {reprojection_info.xy_tp_gcp_step!r}')
-        if output_resampling != 'Nearest':
-            warnings.warn(f'{warn_prefix}: ignoring '
-                          f'dst_resampling = {output_resampling!r}')
+            warnings.warn(
+                f"{warn_prefix}: ignoring "
+                f"reprojection_info.xy_tp_gcp_step = {reprojection_info.xy_tp_gcp_step!r}"
+            )
+        if output_resampling != "Nearest":
+            warnings.warn(
+                f"{warn_prefix}: ignoring " f"dst_resampling = {output_resampling!r}"
+            )
         if include_non_spatial_vars:
-            warnings.warn(f'{warn_prefix}: ignoring '
-                          f'include_non_spatial_vars = {include_non_spatial_vars!r}')
+            warnings.warn(
+                f"{warn_prefix}: ignoring "
+                f"include_non_spatial_vars = {include_non_spatial_vars!r}"
+            )
 
-        geo_coding = geo_coding.derive(xy_var_names=(reprojection_info.xy_names[0],
-                                                     reprojection_info.xy_names[1]))
+        geo_coding = geo_coding.derive(
+            xy_var_names=(reprojection_info.xy_names[0], reprojection_info.xy_names[1])
+        )
 
-        dataset = rectify_dataset(dataset,
-                                  compute_subset=False,
-                                  source_gm=geo_coding,
-                                  target_gm=output_geom)
+        dataset = rectify_dataset(
+            dataset, compute_subset=False, source_gm=geo_coding, target_gm=output_geom
+        )
         if output_geom.is_tiled:
             # The following condition may become true,
             # if we have used rectified_dataset(input, ..., is_y_reverse=True)
             # In this case y-chunksizes will also be reversed. So that the first chunk is smaller than any other.
             # Zarr will reject such datasets, when written.
-            if dataset.chunks.get('lat')[0] < dataset.chunks.get('lat')[-1]:
-                dataset = dataset.chunk({'lat': output_geom.tile_height,
-                                         'lon': output_geom.tile_width})
-        if dataset is not None \
-                and geo_coding.crs.is_geographic \
-                and geo_coding.xy_var_names != ('lon', 'lat'):
-            dataset = dataset.rename({geo_coding.xy_var_names[0]: 'lon',
-                                      geo_coding.xy_var_names[1]: 'lat'})
+            if dataset.chunks.get("lat")[0] < dataset.chunks.get("lat")[-1]:
+                dataset = dataset.chunk(
+                    {"lat": output_geom.tile_height, "lon": output_geom.tile_width}
+                )
+        if (
+            dataset is not None
+            and geo_coding.crs.is_geographic
+            and geo_coding.xy_var_names != ("lon", "lat")
+        ):
+            dataset = dataset.rename(
+                {geo_coding.xy_var_names[0]: "lon", geo_coding.xy_var_names[1]: "lat"}
+            )
 
         return dataset
 
@@ -390,14 +419,14 @@ class DefaultInputProcessor(XYInputProcessor):
     """
 
     def __init__(self, **parameters):
-        super().__init__('default', **parameters)
+        super().__init__("default", **parameters)
 
     @property
     def default_parameters(self) -> Dict[str, Any]:
         default_parameters = super().default_parameters
-        default_parameters.update(input_reader='netcdf4',
-                                  xy_names=('lon', 'lat'),
-                                  xy_crs=CRS_WKT_EPSG_4326)
+        default_parameters.update(
+            input_reader="netcdf4", xy_names=("lon", "lat"), xy_crs=CRS_WKT_EPSG_4326
+        )
         return default_parameters
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
@@ -418,11 +447,14 @@ class DefaultInputProcessor(XYInputProcessor):
         if time_coverage_start is None or time_coverage_end is None:
             time_coverage_start, time_coverage_end = get_time_range_from_attrs(dataset)
         if time_coverage_start is None:
-            raise ValueError("invalid input: missing time coverage information in dataset")
+            raise ValueError(
+                "invalid input: missing time coverage information in dataset"
+            )
         if time_coverage_end is None:
             time_coverage_end = time_coverage_start
-        return to_time_in_days_since_1970(time_coverage_start), \
-               to_time_in_days_since_1970(time_coverage_end)
+        return to_time_in_days_since_1970(
+            time_coverage_start
+        ), to_time_in_days_since_1970(time_coverage_end)
 
     def _validate(self, dataset):
         self._check_coordinate_var(dataset, "lon", min_length=2)
@@ -438,11 +470,18 @@ class DefaultInputProcessor(XYInputProcessor):
             if var.dims == required_dims:
                 count += 1
         if count == 0:
-            raise ValueError(f"dataset has no variables with required dimensions {required_dims!r}")
+            raise ValueError(
+                f"dataset has no variables with required dimensions {required_dims!r}"
+            )
 
     # noinspection PyMethodMayBeStatic
-    def _check_coordinate_var(self, dataset: xr.Dataset, coord_var_name: str,
-                              min_length: int = None, max_length: int = None):
+    def _check_coordinate_var(
+        self,
+        dataset: xr.Dataset,
+        coord_var_name: str,
+        min_length: int = None,
+        max_length: int = None,
+    ):
         if coord_var_name not in dataset.coords:
             raise ValueError(f'missing coordinate variable "{coord_var_name}"')
         coord_var = dataset.coords[coord_var_name]
@@ -453,12 +492,18 @@ class DefaultInputProcessor(XYInputProcessor):
             coord_bnds_var = dataset[coord_var_bnds_name]
             expected_shape = (len(coord_var), 2)
             if coord_bnds_var.shape != expected_shape:
-                raise ValueError(f'coordinate bounds variable "{coord_bnds_var}" must have shape {expected_shape!r}')
+                raise ValueError(
+                    f'coordinate bounds variable "{coord_bnds_var}" must have shape {expected_shape!r}'
+                )
         else:
             if min_length is not None and len(coord_var) < min_length:
-                raise ValueError(f'coordinate variable "{coord_var_name}" must have at least {min_length} value(s)')
+                raise ValueError(
+                    f'coordinate variable "{coord_var_name}" must have at least {min_length} value(s)'
+                )
             if max_length is not None and len(coord_var) > max_length:
-                raise ValueError(f'coordinate variable "{coord_var_name}" must have no more than {max_length} value(s)')
+                raise ValueError(
+                    f'coordinate variable "{coord_var_name}" must have no more than {max_length} value(s)'
+                )
 
 
 def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
@@ -469,10 +514,10 @@ def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
     :return: The fixed dataset or the original dataset.
     """
 
-    if 'lon' not in dataset.coords:
+    if "lon" not in dataset.coords:
         return dataset
 
-    lon_var = dataset.coords['lon']
+    lon_var = dataset.coords["lon"]
 
     if len(lon_var.shape) != 1:
         return dataset
@@ -483,7 +528,7 @@ def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
 
     lon_size_05 = lon_size // 2
     lon_values = lon_var.values
-    if not np.any(lon_values[lon_size_05:] > 180.):
+    if not np.any(lon_values[lon_size_05:] > 180.0):
         return dataset
 
     # roll_coords will be set to False by default in the future
@@ -494,7 +539,9 @@ def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
 
 
 def find_input_processor_class(name: str):
-    extension = get_extension_registry().get_extension(EXTENSION_POINT_INPUT_PROCESSORS, name)
+    extension = get_extension_registry().get_extension(
+        EXTENSION_POINT_INPUT_PROCESSORS, name
+    )
     if not extension:
         return None
     return extension.component

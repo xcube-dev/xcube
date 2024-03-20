@@ -32,35 +32,28 @@ from ..config import OutputConfig
 
 
 class CubeWriter:
-    def __init__(self,
-                 output_config: OutputConfig,
-                 store_pool: DataStorePool = None):
+    def __init__(self, output_config: OutputConfig, store_pool: DataStorePool = None):
         self._output_config = output_config
         self._store_pool = store_pool
 
-    def write_cube(self,
-                   cube: xr.Dataset,
-                   gm: GridMapping) -> Tuple[str, xr.Dataset]:
+    def write_cube(self, cube: xr.Dataset, gm: GridMapping) -> Tuple[str, xr.Dataset]:
         output_config = self._output_config
         dataset = encode_cube(cube, grid_mapping=gm)
-        with observe_dask_progress('writing cube', 100):
+        with observe_dask_progress("writing cube", 100):
             write_params = output_config.write_params or {}
             store_params = output_config.store_params or {}
             if output_config.store_id:
                 store_instance = get_data_store_instance(
                     output_config.store_id,
                     store_params=store_params,
-                    store_pool=self._store_pool
+                    store_pool=self._store_pool,
                 )
                 writer = store_instance.store
-                write_params.update(
-                    writer_id=output_config.writer_id,
-                    **write_params
-                )
+                write_params.update(writer_id=output_config.writer_id, **write_params)
             else:
                 writer = new_data_writer(output_config.writer_id)
                 write_params.update(**store_params, **write_params)
-            if not dataset.attrs.get('title'):
+            if not dataset.attrs.get("title"):
                 # Set fallback title, so we can distinguish
                 # datasets from stores in xcube-viewer
                 dataset = dataset.assign_attrs(title=output_config.data_id)

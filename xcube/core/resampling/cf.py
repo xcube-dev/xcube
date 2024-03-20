@@ -27,10 +27,12 @@ from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_instance
 
 
-def encode_grid_mapping(ds: xr.Dataset,
-                        gm: GridMapping,
-                        gm_name: Optional[str] = None,
-                        force: Optional[bool] = None) -> xr.Dataset:
+def encode_grid_mapping(
+    ds: xr.Dataset,
+    gm: GridMapping,
+    gm_name: Optional[str] = None,
+    force: Optional[bool] = None,
+) -> xr.Dataset:
     """Encode the given grid mapping *gm* into a
     copy of *ds* in a CF-compliant way and return the dataset copy.
     The function removes any existing grid mappings.
@@ -62,26 +64,29 @@ def encode_grid_mapping(ds: xr.Dataset,
     ds_copy = ds.copy()
 
     x_dim_name, y_dim_name = gm.xy_dim_names
-    spatial_vars = [(var_name, var)
-                    for var_name, var in ds.data_vars.items()
-                    if (var.ndim >= 2
-                        and var.dims[-1] == x_dim_name
-                        and var.dims[-2] == y_dim_name)]
+    spatial_vars = [
+        (var_name, var)
+        for var_name, var in ds.data_vars.items()
+        if (var.ndim >= 2 and var.dims[-1] == x_dim_name and var.dims[-2] == y_dim_name)
+    ]
 
-    old_gm_names = set(old_gm_name
-                       for old_gm_name in (
-                           var.attrs.get("grid_mapping")
-                           for var_name, var in spatial_vars
-                       )
-                       if old_gm_name and old_gm_name in ds_copy)
+    old_gm_names = set(
+        old_gm_name
+        for old_gm_name in (
+            var.attrs.get("grid_mapping") for var_name, var in spatial_vars
+        )
+        if old_gm_name and old_gm_name in ds_copy
+    )
     if old_gm_names:
         force = True if force is None else force
         gm_name = gm_name or next(iter(old_gm_names))
         ds_copy = ds_copy.drop_vars(old_gm_names)
 
-    is_geographic = (gm.xy_var_names == gm.xy_dim_names
-                     and gm.xy_dim_names == ("lon", "lat")
-                     and gm.crs.is_geographic)
+    is_geographic = (
+        gm.xy_var_names == gm.xy_dim_names
+        and gm.xy_dim_names == ("lon", "lat")
+        and gm.crs.is_geographic
+    )
 
     if force or not is_geographic:
         gm_name = gm_name or "crs"
@@ -92,15 +97,12 @@ def encode_grid_mapping(ds: xr.Dataset,
     return ds_copy
 
 
-def maybe_encode_grid_mapping(encode_cf: bool,
-                              ds: xr.Dataset,
-                              gm: GridMapping,
-                              gm_name: Optional[str]) -> xr.Dataset:
+def maybe_encode_grid_mapping(
+    encode_cf: bool, ds: xr.Dataset, gm: GridMapping, gm_name: Optional[str]
+) -> xr.Dataset:
     """Internal helper."""
     if encode_cf:
         return encode_grid_mapping(
-            ds, gm,
-            gm_name=gm_name,
-            force=True if gm_name else None
+            ds, gm, gm_name=gm_name, force=True if gm_name else None
         )
     return ds

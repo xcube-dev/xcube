@@ -37,54 +37,56 @@ class LoggingZarrStore(zarr.storage.BaseStore):
     including execution time.
     """
 
-    def __init__(self,
-                 other: collections.abc.MutableMapping,
-                 logger: Logger = LOG,
-                 name: Optional[str] = None):
+    def __init__(
+        self,
+        other: collections.abc.MutableMapping,
+        logger: Logger = LOG,
+        name: Optional[str] = None,
+    ):
         assert_instance(other, collections.abc.MutableMapping)
         self._other = other
         self._measure_time = measure_time_cm(logger=logger)
-        self._name = name or 'chunk_store'
-        if hasattr(other, 'listdir'):
-            setattr(self, 'listdir', self.__listdir)
-        if hasattr(other, 'getsize'):
-            setattr(self, 'getsize', self.__getsize)
+        self._name = name or "chunk_store"
+        if hasattr(other, "listdir"):
+            setattr(self, "listdir", self.__listdir)
+        if hasattr(other, "getsize"):
+            setattr(self, "getsize", self.__getsize)
 
     def __listdir(self, key: str) -> Iterable[str]:
-        with self._measure_time(f'{self._name}.listdir({key!r})'):
+        with self._measure_time(f"{self._name}.listdir({key!r})"):
             # noinspection PyUnresolvedReferences
             return self._other.listdir(key)
 
     def __getsize(self, key: str) -> int:
-        with self._measure_time(f'{self._name}.getsize({key!r})'):
+        with self._measure_time(f"{self._name}.getsize({key!r})"):
             # noinspection PyUnresolvedReferences
             return self._other.getsize(key)
 
     def keys(self) -> KeysView[str]:
-        with self._measure_time(f'{self._name}.keys()'):
+        with self._measure_time(f"{self._name}.keys()"):
             # noinspection PyTypeChecker
             return self._other.keys()
 
     def __iter__(self) -> Iterator[str]:
-        with self._measure_time(f'{self._name}.__iter__()'):
+        with self._measure_time(f"{self._name}.__iter__()"):
             return self._other.__iter__()
 
     def __len__(self) -> int:
-        with self._measure_time(f'{self._name}.__len__()'):
+        with self._measure_time(f"{self._name}.__len__()"):
             return self._other.__len__()
 
     def __contains__(self, key) -> bool:
-        with self._measure_time(f'{self._name}.__contains__({key!r})'):
+        with self._measure_time(f"{self._name}.__contains__({key!r})"):
             return self._other.__contains__(key)
 
     def __getitem__(self, key: str) -> bytes:
-        with self._measure_time(f'{self._name}.__getitem__({key!r})'):
+        with self._measure_time(f"{self._name}.__getitem__({key!r})"):
             return self._other.__getitem__(key)
 
     def __setitem__(self, key: str, value: bytes) -> None:
-        with self._measure_time(f'{self._name}.__setitem__({key!r}, <value>)'):
+        with self._measure_time(f"{self._name}.__setitem__({key!r}, <value>)"):
             return self._other.__setitem__(key, value)
 
     def __delitem__(self, key: str) -> None:
-        with self._measure_time(f'{self._name}.__delitem__({key!r})'):
+        with self._measure_time(f"{self._name}.__delitem__({key!r})"):
             return self._other.__delitem__(key)

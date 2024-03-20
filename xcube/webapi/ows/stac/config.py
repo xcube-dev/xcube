@@ -35,10 +35,10 @@ DEFAULT_COLLECTION_DESCRIPTION = "a collection of xcube datasets"
 # As well as the unified collection, there's an individual collection for
 # each datacube, with the same name as that datacube, and containing a single
 # feature representing that datacube. This is the name of that single feature.
-DEFAULT_FEATURE_ID = 'datacube'
+DEFAULT_FEATURE_ID = "datacube"
 
 # Prefix for STAC and OGC endpoints
-PATH_PREFIX = '/ogc'
+PATH_PREFIX = "/ogc"
 
 COLLECTION_SCHEMA = JsonObjectSchema(
     properties=dict(

@@ -26,45 +26,58 @@ from typing import Dict, Any
 
 import click
 
-from xcube.cli.common import (cli_option_quiet,
-                              cli_option_verbosity,
-                              configure_cli_output)
+from xcube.cli.common import (
+    cli_option_quiet,
+    cli_option_verbosity,
+    configure_cli_output,
+)
 from xcube.constants import LOG
 
 
 @click.command(name="gen2", hidden=True)
-@click.argument('request_path',
-                type=str,
-                required=False,
-                metavar='REQUEST')
-@click.option('--stores', 'stores_config_path',
-              metavar='STORES_CONFIG',
-              help='A JSON or YAML file that maps store names to '
-                   'parameterized data stores.')
-@click.option('--service', 'service_config_path',
-              metavar='SERVICE_CONFIG',
-              help='A JSON or YAML file that provides the configuration for an'
-                   ' xcube Generator Service. If provided, the REQUEST will be'
-                   ' passed to the service instead of generating the cube on '
-                   ' this computer.')
-@click.option('--info', '-i',
-              is_flag=True,
-              help='Output information about the data cube to be generated.'
-                   ' Does not generate the data cube.')
-@click.option('--output', '-o', 'output_file',
-              metavar='RESULT',
-              help='Write cube information or generation result into JSON'
-                   ' file RESULT.'
-                   ' If omitted, the JSON is dumped to stdout.')
+@click.argument("request_path", type=str, required=False, metavar="REQUEST")
+@click.option(
+    "--stores",
+    "stores_config_path",
+    metavar="STORES_CONFIG",
+    help="A JSON or YAML file that maps store names to " "parameterized data stores.",
+)
+@click.option(
+    "--service",
+    "service_config_path",
+    metavar="SERVICE_CONFIG",
+    help="A JSON or YAML file that provides the configuration for an"
+    " xcube Generator Service. If provided, the REQUEST will be"
+    " passed to the service instead of generating the cube on "
+    " this computer.",
+)
+@click.option(
+    "--info",
+    "-i",
+    is_flag=True,
+    help="Output information about the data cube to be generated."
+    " Does not generate the data cube.",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_file",
+    metavar="RESULT",
+    help="Write cube information or generation result into JSON"
+    " file RESULT."
+    " If omitted, the JSON is dumped to stdout.",
+)
 @cli_option_quiet
 @cli_option_verbosity
-def gen2(request_path: str,
-         stores_config_path: str = None,
-         service_config_path: str = None,
-         output_file: str = None,
-         info: bool = False,
-         quiet: bool = False,
-         verbosity: int = 0):
+def gen2(
+    request_path: str,
+    stores_config_path: str = None,
+    service_config_path: str = None,
+    output_file: str = None,
+    info: bool = False,
+    quiet: bool = False,
+    verbosity: int = 0,
+):
     """
     Generator tool for data cubes.
 
@@ -135,12 +148,11 @@ def gen2(request_path: str,
 
     # noinspection PyBroadException
     try:
-        request = CubeGeneratorRequest.from_file(request_path,
-                                                 verbosity=verbosity)
+        request = CubeGeneratorRequest.from_file(request_path, verbosity=verbosity)
         generator = CubeGenerator.new(
             stores_config=stores_config_path,
             service_config=service_config_path,
-            verbosity=verbosity
+            verbosity=verbosity,
         )
 
         if info:
@@ -150,9 +162,11 @@ def gen2(request_path: str,
     except BaseException as e:
         error = e
 
-        result = dict(status='error',
-                      message=f'{error}',
-                      traceback=traceback.format_tb(error.__traceback__))
+        result = dict(
+            status="error",
+            message=f"{error}",
+            traceback=traceback.format_tb(error.__traceback__),
+        )
         if isinstance(error, CubeGeneratorError):
             if error.status_code is not None:
                 result.update(status_code=error.status_code)
@@ -160,26 +174,26 @@ def gen2(request_path: str,
                 result.update(remote_output=error.remote_output)
             if error.remote_traceback is not None:
                 result.update(remote_traceback=error.remote_traceback)
-        if 'status_code' not in result:
-            result['status_code'] = 500
+        if "status_code" not in result:
+            result["status_code"] = 500
 
-    if result.get('status') == 'error':
-        result['versions'] = get_xcube_versions()
+    if result.get("status") == "error":
+        result["versions"] = get_xcube_versions()
 
     if output_file is not None:
-        with open(output_file, 'w') as fp:
+        with open(output_file, "w") as fp:
             json.dump(result, fp, indent=2)
-        LOG.info(f'Result written to {output_file}')
+        LOG.info(f"Result written to {output_file}")
     else:
         json.dump(result, sys.stdout, indent=2)
 
-    if result.get('status') == 'error':
-        message = result.get('message',
-                             'Cube generation failed.'
-                             if error is None else f'{error}')
+    if result.get("status") == "error":
+        message = result.get(
+            "message", "Cube generation failed." if error is None else f"{error}"
+        )
         click_error = click.ClickException(message)
         raise click_error from error
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     gen2()

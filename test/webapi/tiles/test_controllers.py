@@ -31,7 +31,7 @@ from xcube.constants import CRS84
 
 
 def get_tiles_ctx(
-        server_config: Union[str, ServerConfig] = "config.yml"
+    server_config: Union[str, ServerConfig] = "config.yml"
 ) -> TilesContext:
     return get_api_ctx("tiles", TilesContext, server_config)
 
@@ -41,12 +41,12 @@ class TilesControllerTest(unittest.TestCase):
     def test_compute_ml_dataset_tile(self):
         ctx = get_tiles_ctx()
         tile = compute_ml_dataset_tile(
-            ctx, 'demo', 'conc_tsm', CRS84, '0', '0', '0', {}
+            ctx, "demo", "conc_tsm", CRS84, "0", "0", "0", {}
         )
         self.assertIsInstance(tile, bytes)
 
         tile = compute_ml_dataset_tile(
-            ctx, 'demo', 'conc_tsm', CRS84, '-20', '0', '0', {}
+            ctx, "demo", "conc_tsm", CRS84, "-20", "0", "0", {}
         )
         self.assertIsInstance(tile, bytes)
 
@@ -54,53 +54,58 @@ class TilesControllerTest(unittest.TestCase):
         ctx = get_tiles_ctx()
         with self.assertRaises(ApiError.NotFound) as cm:
             compute_ml_dataset_tile(
-                ctx, 'demo-rgb', 'conc_tsm', CRS84, '0', '0', '0', {}
+                ctx, "demo-rgb", "conc_tsm", CRS84, "0", "0", "0", {}
             )
-        self.assertEqual('HTTP status 404:'
-                         ' Dataset "demo-rgb" not found',
-                         f'{cm.exception}')
+        self.assertEqual(
+            "HTTP status 404:" ' Dataset "demo-rgb" not found', f"{cm.exception}"
+        )
 
     def test_compute_ml_dataset_tile_invalid_variable(self):
         ctx = get_tiles_ctx()
         with self.assertRaises(ApiError.NotFound) as cm:
-            compute_ml_dataset_tile(
-                ctx, 'demo', 'conc_tdi', CRS84, '0', '0', '0', {}
-            )
-        self.assertEqual('HTTP status 404:'
-                         ' Variable "conc_tdi" not found in dataset "demo"',
-                         f'{cm.exception}')
+            compute_ml_dataset_tile(ctx, "demo", "conc_tdi", CRS84, "0", "0", "0", {})
+        self.assertEqual(
+            "HTTP status 404:" ' Variable "conc_tdi" not found in dataset "demo"',
+            f"{cm.exception}",
+        )
 
     def test_compute_ml_dataset_tile_with_all_params(self):
         ctx = get_tiles_ctx()
         tile = compute_ml_dataset_tile(
-            ctx, 'demo', 'conc_tsm', CRS84, '0', '0', '0',
-            dict(time='current',
-                 cbar='plasma',
-                 vmin='0.1',
-                 vmax='0.3')
+            ctx,
+            "demo",
+            "conc_tsm",
+            CRS84,
+            "0",
+            "0",
+            "0",
+            dict(time="current", cbar="plasma", vmin="0.1", vmax="0.3"),
         )
         self.assertIsInstance(tile, bytes)
 
     def test_compute_ml_dataset_tile_with_time_dim(self):
         ctx = get_tiles_ctx()
         tile = compute_ml_dataset_tile(
-            ctx, 'demo', 'conc_tsm', CRS84, '0', '0', '0',
-            dict(time='2017-01-26')
+            ctx, "demo", "conc_tsm", CRS84, "0", "0", "0", dict(time="2017-01-26")
         )
         self.assertIsInstance(tile, bytes)
 
         ctx = get_tiles_ctx()
         tile = compute_ml_dataset_tile(
-            ctx, 'demo', 'conc_tsm', CRS84, '0', '0', '0',
-            dict(
-                time='2017-01-26/2017-01-27')
+            ctx,
+            "demo",
+            "conc_tsm",
+            CRS84,
+            "0",
+            "0",
+            "0",
+            dict(time="2017-01-26/2017-01-27"),
         )
         self.assertIsInstance(tile, bytes)
 
         ctx = get_tiles_ctx()
         tile = compute_ml_dataset_tile(
-            ctx, 'demo', 'conc_tsm', CRS84, '0', '0', '0',
-            dict(time='current')
+            ctx, "demo", "conc_tsm", CRS84, "0", "0", "0", dict(time="current")
         )
         self.assertIsInstance(tile, bytes)
 
@@ -108,39 +113,36 @@ class TilesControllerTest(unittest.TestCase):
         ctx = get_tiles_ctx()
         with self.assertRaises(ApiError.BadRequest) as cm:
             compute_ml_dataset_tile(
-                ctx, 'demo', 'conc_tsm', CRS84, '0', '0', '0',
-                dict(time='Gnaaark!')
+                ctx, "demo", "conc_tsm", CRS84, "0", "0", "0", dict(time="Gnaaark!")
             )
         self.assertEqual(
-            "HTTP status 400:"
-            " Illegal label 'Gnaaark!' for dimension 'time'",
-            f'{cm.exception}')
+            "HTTP status 400:" " Illegal label 'Gnaaark!' for dimension 'time'",
+            f"{cm.exception}",
+        )
 
     def test_get_dataset_rgb_tile(self):
-        ctx = get_tiles_ctx('config-rgb.yml')
-        tile = compute_ml_dataset_tile(
-            ctx, 'demo-rgb', 'rgb', CRS84, '0', '0', '0', {}
-        )
+        ctx = get_tiles_ctx("config-rgb.yml")
+        tile = compute_ml_dataset_tile(ctx, "demo-rgb", "rgb", CRS84, "0", "0", "0", {})
         self.assertIsInstance(tile, bytes)
 
     def test_get_dataset_rgb_tile_invalid_b(self):
-        ctx = get_tiles_ctx('config-rgb.yml')
+        ctx = get_tiles_ctx("config-rgb.yml")
         with self.assertRaises(ApiError.NotFound) as cm:
             compute_ml_dataset_tile(
-                ctx, 'demo-rgb', 'rgb', CRS84, '0', '0', '0',
-                dict(b='refl_3')
+                ctx, "demo-rgb", "rgb", CRS84, "0", "0", "0", dict(b="refl_3")
             )
-        self.assertEqual("HTTP status 404:"
-                         " Variable 'refl_3' not found in dataset 'demo-rgb'",
-                         f'{cm.exception}')
+        self.assertEqual(
+            "HTTP status 404:" " Variable 'refl_3' not found in dataset 'demo-rgb'",
+            f"{cm.exception}",
+        )
 
     def test_get_dataset_rgb_tile_no_vars(self):
         ctx = get_tiles_ctx()
         with self.assertRaises(ApiError.BadRequest) as cm:
-            compute_ml_dataset_tile(
-                ctx, 'demo', 'rgb', CRS84, '0', '0', '0', {}
-            )
-        self.assertEqual("HTTP status 400:"
-                         " No variable in dataset 'demo'"
-                         " specified for RGB component R",
-                         f'{cm.exception}')
+            compute_ml_dataset_tile(ctx, "demo", "rgb", CRS84, "0", "0", "0", {})
+        self.assertEqual(
+            "HTTP status 400:"
+            " No variable in dataset 'demo'"
+            " specified for RGB component R",
+            f"{cm.exception}",
+        )

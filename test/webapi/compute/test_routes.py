@@ -29,17 +29,17 @@ from ..helpers import RoutesTestCase
 class ComputeOperationsRoutesTest(RoutesTestCase):
 
     def test_fetch_compute_operations(self):
-        ops, status = self.fetch_json('/compute/operations')
+        ops, status = self.fetch_json("/compute/operations")
         self.assertIsInstance(ops, dict)
         self.assertIsInstance(ops.get("operations"), list)
         self.assertTrue(len(ops.get("operations")) > 0)
         self.assertEqual(200, status)
 
     def test_fetch_compute_operation(self):
-        op, status = self.fetch_json('/compute/operations/spatial_subset')
+        op, status = self.fetch_json("/compute/operations/spatial_subset")
         self.assertIsInstance(op, dict)
         self.assertIsInstance(op.get("operationId"), str)
-        self.assertEqual('spatial_subset', op.get("operationId"))
+        self.assertEqual("spatial_subset", op.get("operationId"))
         self.assertEqual(200, status)
 
 
@@ -47,24 +47,18 @@ class ComputeJobsRoutesTest(RoutesTestCase):
 
     def test_fetch_job_lifecycle(self):
         job, status = self.fetch_json(
-            '/compute/jobs',
+            "/compute/jobs",
             method="PUT",
             body={
                 "operationId": "spatial_subset",
-                "parameters": {
-                    "dataset": "demo",
-                    "bbox": [1, 51, 4, 52]
-                },
-                "output": {
-                    "datasetId": "demo_subset",
-                    "title": "My demo subset"
-                }
-            }
+                "parameters": {"dataset": "demo", "bbox": [1, 51, 4, 52]},
+                "output": {"datasetId": "demo_subset", "title": "My demo subset"},
+            },
         )
         self.assert_job_ok(job)
         self.assertEqual(200, status)
 
-        jobs, status = self.fetch_json(f'/compute/jobs')
+        jobs, status = self.fetch_json(f"/compute/jobs")
         self.assertIsInstance(jobs, dict)
         self.assertIsInstance(jobs.get("jobs"), list)
         self.assertEqual(200, status)
@@ -72,7 +66,7 @@ class ComputeJobsRoutesTest(RoutesTestCase):
         job_id = job.get("jobId")
         while True:
             time.sleep(0.1)
-            job, status = self.fetch_json(f'/compute/jobs/{job_id}')
+            job, status = self.fetch_json(f"/compute/jobs/{job_id}")
             self.assert_job_ok(job)
             job_status = job["state"]["status"]
             self.assertEqual(200, status)
@@ -87,7 +81,7 @@ class ComputeJobsRoutesTest(RoutesTestCase):
                 self.assertEqual("demo_subset", result.get("datasetId"))
 
                 # Check we can find the result:
-                dataset, status = self.fetch_json('/datasets/demo_subset')
+                dataset, status = self.fetch_json("/datasets/demo_subset")
                 self.assertIsInstance(dataset, dict)
                 self.assertEqual(200, status)
                 break
@@ -99,24 +93,21 @@ class ComputeJobsRoutesTest(RoutesTestCase):
 
     def test_job_failed(self):
         job, status = self.fetch_json(
-            '/compute/jobs',
+            "/compute/jobs",
             method="PUT",
             body={
                 "operationId": "spatial_subset",
                 "parameters": {
                     "dataset": "nonexistent_dataset",
-                    "bbox": [1, 51, 4, 52]
+                    "bbox": [1, 51, 4, 52],
                 },
-                "output": {
-                    "datasetId": "demo_subset",
-                    "title": "My demo subset"
-                }
-            }
+                "output": {"datasetId": "demo_subset", "title": "My demo subset"},
+            },
         )
         self.assert_job_ok(job)
         self.assertEqual(200, status)
 
-        jobs, status = self.fetch_json(f'/compute/jobs')
+        jobs, status = self.fetch_json(f"/compute/jobs")
         self.assertIsInstance(jobs, dict)
         self.assertIsInstance(jobs.get("jobs"), list)
         self.assertEqual(200, status)
@@ -124,7 +115,7 @@ class ComputeJobsRoutesTest(RoutesTestCase):
         job_id = job.get("jobId")
         while True:
             time.sleep(0.1)
-            job, status = self.fetch_json(f'/compute/jobs/{job_id}')
+            job, status = self.fetch_json(f"/compute/jobs/{job_id}")
             self.assert_job_ok(job)
             job_status = job["state"]["status"]
             self.assertEqual(200, status)
@@ -134,9 +125,9 @@ class ComputeJobsRoutesTest(RoutesTestCase):
 
             if job_status == "failed":
                 # Expected to fail due to non-existent source dataset
-                error = job['state'].get('error')
+                error = job["state"].get("error")
                 self.assertIsInstance(error, dict)
-                self.assertTrue('not found' in error.get('message').lower())
+                self.assertTrue("not found" in error.get("message").lower())
                 break
 
             if job_status != "running":
@@ -146,10 +137,10 @@ class ComputeJobsRoutesTest(RoutesTestCase):
 
     def test_cancel_nonexistent_job(self):
         job, status = self.fetch_json(
-            '/compute/jobs/666',
+            "/compute/jobs/666",
             method="DELETE",
         )
-        self.assertIsInstance(job['error'], dict)
+        self.assertIsInstance(job["error"], dict)
         self.assertEqual(404, status)
 
     def test_cancel_job(self):
@@ -159,7 +150,7 @@ class ComputeJobsRoutesTest(RoutesTestCase):
             return dataset
 
         job1, status1 = self.fetch_json(
-            '/compute/jobs',
+            "/compute/jobs",
             method="PUT",
             body={
                 "operationId": "slow_identity",
@@ -168,14 +159,14 @@ class ComputeJobsRoutesTest(RoutesTestCase):
                 },
                 "output": {
                     "datasetId": "demo2",
-                }
-            }
+                },
+            },
         )
         job2, status2 = self.fetch_json(
             f'/compute/jobs/{job1.get("jobId")}',
             method="DELETE",
         )
-        self.assertEqual(job2['state']['status'], 'cancelled')
+        self.assertEqual(job2["state"]["status"], "cancelled")
 
     def test_mldataset(self):
         from xcube.core.mldataset import MultiLevelDataset
@@ -186,18 +177,15 @@ class ComputeJobsRoutesTest(RoutesTestCase):
             return dataset
 
         self.fetch_json(
-            '/compute/jobs',
+            "/compute/jobs",
             method="PUT",
             body={
                 "operationId": "identity",
                 "parameters": {
                     "dataset": "demo",
                 },
-                "output": {
-                    "datasetId": "demo_output",
-                    "title": "Demo output"
-                }
-            }
+                "output": {"datasetId": "demo_output", "title": "Demo output"},
+            },
         )
 
     def assert_job_ok(self, job):

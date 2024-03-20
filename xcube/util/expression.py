@@ -24,10 +24,12 @@ import warnings
 from typing import Dict, Any
 
 
-def compute_array_expr(expr: str,
-                       namespace: Dict[str, Any] = None,
-                       errors: str = 'raise',
-                       result_name: str = None):
+def compute_array_expr(
+    expr: str,
+    namespace: Dict[str, Any] = None,
+    errors: str = "raise",
+    result_name: str = None,
+):
     """
     Safely evaluate a Python expression and return the result.
 
@@ -48,17 +50,18 @@ def compute_array_expr(expr: str,
         evaluating the expression. May be one of "raise" or "warn".
     :return: The result computed from the evaluating the expression.
     """
-    expr = transpile_expr(expr, warn=errors == 'warn')
-    return compute_expr(expr,
-                        namespace=namespace,
-                        errors=errors,
-                        result_name=result_name)
+    expr = transpile_expr(expr, warn=errors == "warn")
+    return compute_expr(
+        expr, namespace=namespace, errors=errors, result_name=result_name
+    )
 
 
-def compute_expr(expr: str,
-                 namespace: Dict[str, Any] = None,
-                 errors: str = 'raise',
-                 result_name: str = None):
+def compute_expr(
+    expr: str,
+    namespace: Dict[str, Any] = None,
+    errors: str = "raise",
+    result_name: str = None,
+):
     """
     Safely evaluate a Python expression and return the result.
 
@@ -75,13 +78,12 @@ def compute_expr(expr: str,
     except Exception as e:
         result = None
         if result_name:
-            msg = f'failed computing {result_name}' \
-                  f' from expression {expr!r}: {e}'
+            msg = f"failed computing {result_name}" f" from expression {expr!r}: {e}"
         else:
-            msg = f'failed computing expression {expr!r}: {e}'
-        if errors == 'raise':
+            msg = f"failed computing expression {expr!r}: {e}"
+        if errors == "raise":
             raise ValueError(msg) from e
-        if errors == 'warn':
+        if errors == "warn":
             warnings.warn(msg)
     return result
 
@@ -106,40 +108,42 @@ class _ExprTranspiler:
     """
 
     _KEYWORDS = {
-        'in', 'not in', 'is', 'is not',
-        'and', 'or', 'not',
-        'True', 'False', 'None'
+        "in",
+        "not in",
+        "is",
+        "is not",
+        "and",
+        "or",
+        "not",
+        "True",
+        "False",
+        "None",
     }
 
     _OP_INFOS = {
-
-        ast.IfExp: ('if', 10, 'L'),
-
-        ast.Eq: ('==', 100, 'R'),
-        ast.NotEq: ('!=', 100, 'R'),
-        ast.Lt: ('<', 100, 'R'),
-        ast.LtE: ('<=', 100, 'R'),
-        ast.Gt: ('>', 100, 'R'),
-        ast.GtE: ('>=', 100, 'R'),
-        ast.Is: ('is', 100, 'R'),
-        ast.IsNot: ('is not', 100, 'R'),
-        ast.In: ('in', 100, 'R'),
-        ast.NotIn: ('not in', 100, 'R'),
-
-        ast.Or: ('or', 300, 'L'),
-        ast.And: ('and', 400, 'L'),
-        ast.Not: ('not', 500, None),
-
-        ast.UAdd: ('+', 600, None),
-        ast.USub: ('-', 600, None),
-
-        ast.Add: ('+', 600, 'E'),
-        ast.Sub: ('-', 600, 'L'),
-        ast.Mult: ('*', 700, 'E'),
-        ast.Div: ('/', 700, 'L'),
-        ast.FloorDiv: ('//', 700, 'L'),
-        ast.Mod: ('%', 800, 'L'),
-        ast.Pow: ('**', 900, 'L'),
+        ast.IfExp: ("if", 10, "L"),
+        ast.Eq: ("==", 100, "R"),
+        ast.NotEq: ("!=", 100, "R"),
+        ast.Lt: ("<", 100, "R"),
+        ast.LtE: ("<=", 100, "R"),
+        ast.Gt: (">", 100, "R"),
+        ast.GtE: (">=", 100, "R"),
+        ast.Is: ("is", 100, "R"),
+        ast.IsNot: ("is not", 100, "R"),
+        ast.In: ("in", 100, "R"),
+        ast.NotIn: ("not in", 100, "R"),
+        ast.Or: ("or", 300, "L"),
+        ast.And: ("and", 400, "L"),
+        ast.Not: ("not", 500, None),
+        ast.UAdd: ("+", 600, None),
+        ast.USub: ("-", 600, None),
+        ast.Add: ("+", 600, "E"),
+        ast.Sub: ("-", 600, "L"),
+        ast.Mult: ("*", 700, "E"),
+        ast.Div: ("/", 700, "L"),
+        ast.FloorDiv: ("//", 700, "L"),
+        ast.Mod: ("%", 800, "L"),
+        ast.Pow: ("**", 900, "L"),
     }
 
     @classmethod
@@ -170,8 +174,9 @@ class _ExprTranspiler:
             return pat.format(x=x)
         if isinstance(node, ast.Call):
             pat = self.transform_call(node.func, node.args)
-            xes = {'x%s' % i: self._transpile(node.args[i])
-                   for i in range(len(node.args))}
+            xes = {
+                "x%s" % i: self._transpile(node.args[i]) for i in range(len(node.args))
+            }
             return pat.format(**xes)
         if isinstance(node, ast.UnaryOp):
             pat = self.transform_unary_op(node.op, node.operand)
@@ -190,17 +195,25 @@ class _ExprTranspiler:
             return pat.format(x=x, y=y, z=z)
         if isinstance(node, ast.BoolOp):
             pat = self.transform_bool_op(node.op, node.values)
-            xes = {'x%s' % i: self._transpile(node.values[i])
-                   for i in range(len(node.values))}
+            xes = {
+                "x%s" % i: self._transpile(node.values[i])
+                for i in range(len(node.values))
+            }
             return pat.format(**xes)
         if isinstance(node, ast.Compare):
             pat = self.transform_compare(node.left, node.ops, node.comparators)
-            xes = {'x0': self._transpile(node.left)}
-            xes.update({'x%s' % (i + 1): self._transpile(node.comparators[i])
-                        for i in range(len(node.comparators))})
+            xes = {"x0": self._transpile(node.left)}
+            xes.update(
+                {
+                    "x%s" % (i + 1): self._transpile(node.comparators[i])
+                    for i in range(len(node.comparators))
+                }
+            )
             return pat.format(**xes)
-        raise ValueError('unrecognized expression node %s in "%s"'
-                         % (node.__class__.__name__, self.expr))
+        raise ValueError(
+            'unrecognized expression node %s in "%s"'
+            % (node.__class__.__name__, self.expr)
+        )
 
     def transform_name(self, name: ast.Name):
         return name.id
@@ -212,18 +225,18 @@ class _ExprTranspiler:
         return str(node.n)
 
     def transform_call(self, func: ast.Name, args):
-        args = ', '.join(['{x%d}' % i for i in range(len(args))])
+        args = ", ".join(["{x%d}" % i for i in range(len(args))])
         return "%s(%s)" % (self.transform_function_name(func), args)
 
     def transform_function_name(self, func: ast.Name):
         if isinstance(func, ast.Attribute):
-            return '%s.%s' % (func.value.id, func.attr)
+            return "%s.%s" % (func.value.id, func.attr)
         else:
-            if func.id in ('where',):
-                return 'xr.%s' % func.id
+            if func.id in ("where",):
+                return "xr.%s" % func.id
             else:
-                name = dict(min='fmin', max='fmax').get(func.id, func.id)
-                return 'np.%s' % name
+                name = dict(min="fmin", max="fmax").get(func.id, func.id)
+                return "np.%s" % name
 
     # noinspection PyUnusedLocal
     def transform_attribute(self, value: ast.AST, attr: str, ctx):
@@ -232,18 +245,18 @@ class _ExprTranspiler:
     def transform_unary_op(self, op, operand):
         name, precedence, _ = self.get_op_info(op)
 
-        x = '{x}'
+        x = "{x}"
 
-        if name == 'not':
+        if name == "not":
             return "np.logical_not(%s)" % x
 
-        right_op = getattr(operand, 'op', None)
+        right_op = getattr(operand, "op", None)
         if right_op:
             _, other_precedence, other_assoc = self.get_op_info(right_op)
-            if other_precedence < precedence \
-                    or (other_precedence == precedence
-                        and other_assoc is not None):
-                x = '({x})'
+            if other_precedence < precedence or (
+                other_precedence == precedence and other_assoc is not None
+            ):
+                x = "({x})"
 
         if name in self._KEYWORDS:
             return "%s %s" % (name, x)
@@ -253,74 +266,85 @@ class _ExprTranspiler:
     def transform_bin_op(self, op, left, right):
         name, precedence, assoc = _ExprTranspiler.get_op_info(op)
 
-        x = '{x}'
-        y = '{y}'
+        x = "{x}"
+        y = "{y}"
 
-        if name == '**':
-            return 'np.power(%s, %s)' % (x, y)
+        if name == "**":
+            return "np.power(%s, %s)" % (x, y)
 
-        left_op = getattr(left, 'op', None)
-        right_op = getattr(right, 'op', None)
+        left_op = getattr(left, "op", None)
+        right_op = getattr(right, "op", None)
 
         if left_op:
             _, other_precedence, other_assoc = self.get_op_info(left_op)
-            if other_precedence < precedence \
-                    or (other_precedence == precedence
-                        and assoc == 'R'
-                        and other_assoc is not None):
-                x = '({x})'
+            if other_precedence < precedence or (
+                other_precedence == precedence
+                and assoc == "R"
+                and other_assoc is not None
+            ):
+                x = "({x})"
 
         if right_op:
             _, other_precedence, other_assoc = self.get_op_info(right_op)
-            if other_precedence < precedence \
-                    or (other_precedence == precedence
-                        and assoc == 'L'
-                        and other_assoc is not None):
-                y = '({y})'
+            if other_precedence < precedence or (
+                other_precedence == precedence
+                and assoc == "L"
+                and other_assoc is not None
+            ):
+                y = "({y})"
 
         return "%s %s %s" % (x, name, y)
 
     # noinspection PyUnusedLocal
     def transform_if_exp(self, test, body, orelse):
-        return 'xr.where({y}, {x}, {z})'
+        return "xr.where({y}, {x}, {z})"
 
     def transform_bool_op(self, op, values):
         name, precedence, assoc = _ExprTranspiler.get_op_info(op)
 
-        if name == 'and' or name == 'or':
+        if name == "and" or name == "or":
             expr = None
             for i in range(1, len(values)):
-                expr = 'np.logical_%s(%s, {x%d})' \
-                       % (name, '{x0}' if i == 1 else expr, i)
+                expr = "np.logical_%s(%s, {x%d})" % (
+                    name,
+                    "{x0}" if i == 1 else expr,
+                    i,
+                )
             return expr
 
         xes = []
         for i in range(len(values)):
             value = values[i]
-            x = '{x%d}' % i
-            other_op = getattr(value, 'op', None)
+            x = "{x%d}" % i
+            other_op = getattr(value, "op", None)
             if other_op:
                 _, other_precedence, other_assoc = self.get_op_info(other_op)
-                if i == 0 and other_precedence < precedence \
-                        or i > 0 and other_precedence <= precedence:
-                    x = '(%s)' % x
+                if (
+                    i == 0
+                    and other_precedence < precedence
+                    or i > 0
+                    and other_precedence <= precedence
+                ):
+                    x = "(%s)" % x
             xes.append(x)
 
-        return (' %s ' % name).join(xes)
+        return (" %s " % name).join(xes)
 
     # Compare(left, ops, comparators
     def transform_compare(self, left, ops, comparators):
 
         if len(ops) != 1:
-            raise ValueError('expression "%s" uses an n-ary comparison,'
-                             ' but only binary are supported' % self.expr)
+            raise ValueError(
+                'expression "%s" uses an n-ary comparison,'
+                " but only binary are supported" % self.expr
+            )
 
         right = comparators[0]
         op = ops[0]
         name, precedence, assoc = _ExprTranspiler.get_op_info(op)
 
-        x = '{x0}'
-        y = '{x1}'
+        x = "{x0}"
+        y = "{x1}"
 
         if self._is_nan(left):
             nan_op = y
@@ -331,29 +355,32 @@ class _ExprTranspiler:
 
         if nan_op:
             if self.warn:
-                warnings.warn('Use of NaN as operand with comparison'
-                              ' "%s" is ambiguous: "%s"' % (name, self.expr))
-            if name == '==':
-                return 'np.isnan(%s)' % nan_op
-            if name == '!=':
-                return 'np.logical_not(np.isnan(%s))' % nan_op
+                warnings.warn(
+                    "Use of NaN as operand with comparison"
+                    ' "%s" is ambiguous: "%s"' % (name, self.expr)
+                )
+            if name == "==":
+                return "np.isnan(%s)" % nan_op
+            if name == "!=":
+                return "np.logical_not(np.isnan(%s))" % nan_op
 
-        left_op = getattr(left, 'op', None)
+        left_op = getattr(left, "op", None)
         if left_op:
             name, other_precedence, assoc = _ExprTranspiler.get_op_info(left_op)
             if other_precedence < precedence:
-                x = '(%s)' % x
+                x = "(%s)" % x
 
-        right_op = getattr(right, 'op', None)
+        right_op = getattr(right, "op", None)
         if right_op:
             _, other_precedence, other_assoc = self.get_op_info(right_op)
-            if other_precedence < precedence \
-                    or (other_precedence == precedence
-                        and assoc == 'L'
-                        and other_assoc is not None):
-                y = '(%s)' % y
+            if other_precedence < precedence or (
+                other_precedence == precedence
+                and assoc == "L"
+                and other_assoc is not None
+            ):
+                y = "(%s)" % y
 
-        return '%s %s %s' % (x, name, y)
+        return "%s %s %s" % (x, name, y)
 
     def _is_nan(self, node):
-        return isinstance(node, ast.Name) and node.id == 'NaN'
+        return isinstance(node, ast.Name) and node.id == "NaN"

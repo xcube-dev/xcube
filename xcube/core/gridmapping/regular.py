@@ -38,7 +38,7 @@ from .helpers import _to_int_or_float
 class RegularGridMapping(GridMapping):
 
     def __init__(self, **kwargs):
-        kwargs.pop('is_regular', None)
+        kwargs.pop("is_regular", None)
         super().__init__(is_regular=True, **kwargs)
         self._xy_coords = None
 
@@ -47,10 +47,10 @@ class RegularGridMapping(GridMapping):
         x_res = self.x_res
         x1, x2 = self.x_min + x_res / 2, self.x_max - x_res / 2
         x_name, _ = self.xy_dim_names
-        return xr.DataArray(da.linspace(x1, x2,
-                                        self.width,
-                                        chunks=self.tile_width),
-                            dims=self.xy_dim_names[0])
+        return xr.DataArray(
+            da.linspace(x1, x2, self.width, chunks=self.tile_width),
+            dims=self.xy_dim_names[0],
+        )
 
     def _new_y_coords(self) -> xr.DataArray:
         self._assert_regular()
@@ -58,40 +58,39 @@ class RegularGridMapping(GridMapping):
         y1, y2 = self.y_min + y_res / 2, self.y_max - y_res / 2
         if not self.is_j_axis_up:
             y1, y2 = y2, y1
-        return xr.DataArray(da.linspace(y1, y2,
-                                        self.height,
-                                        chunks=self.tile_height),
-                            dims=self.xy_dim_names[1])
+        return xr.DataArray(
+            da.linspace(y1, y2, self.height, chunks=self.tile_height),
+            dims=self.xy_dim_names[1],
+        )
 
     def _new_xy_coords(self) -> xr.DataArray:
         self._assert_regular()
         x_coords_1d = self.x_coords
         y_coords_1d = self.y_coords
         y_coords_2d, x_coords_2d = xr.broadcast(y_coords_1d, x_coords_1d)
-        xy_coords = xr.concat([x_coords_2d, y_coords_2d],
-                              dim='coord').chunk((2,
-                                                  self.tile_height,
-                                                  self.tile_width))
-        xy_coords.name = 'xy_coords'
+        xy_coords = xr.concat([x_coords_2d, y_coords_2d], dim="coord").chunk(
+            (2, self.tile_height, self.tile_width)
+        )
+        xy_coords.name = "xy_coords"
         return xy_coords
 
 
 def new_regular_grid_mapping(
-        size: Union[int, Tuple[int, int]],
-        xy_min: Tuple[float, float],
-        xy_res: Union[float, Tuple[float, float]],
-        crs: Union[str, pyproj.crs.CRS],
-        *,
-        tile_size: Union[int, Tuple[int, int]] = None,
-        is_j_axis_up: bool = False
+    size: Union[int, Tuple[int, int]],
+    xy_min: Tuple[float, float],
+    xy_res: Union[float, Tuple[float, float]],
+    crs: Union[str, pyproj.crs.CRS],
+    *,
+    tile_size: Union[int, Tuple[int, int]] = None,
+    is_j_axis_up: bool = False
 ) -> GridMapping:
-    width, height = _normalize_int_pair(size, name='size')
-    assert_true(width > 1 and height > 1, 'invalid size')
+    width, height = _normalize_int_pair(size, name="size")
+    assert_true(width > 1 and height > 1, "invalid size")
 
-    x_min, y_min = _normalize_number_pair(xy_min, name='xy_min')
+    x_min, y_min = _normalize_number_pair(xy_min, name="xy_min")
 
-    x_res, y_res = _normalize_number_pair(xy_res, name='xy_res')
-    assert_true(x_res > 0 and y_res > 0, 'invalid xy_res')
+    x_res, y_res = _normalize_number_pair(xy_res, name="xy_res")
+    assert_true(x_res > 0 and y_res > 0, "invalid xy_res")
 
     crs = _normalize_crs(crs)
 
@@ -104,9 +103,9 @@ def new_regular_grid_mapping(
         # TODO: don't do that.
         #  Instead set NaN in coord vars returned by to_coords()
         if y_min < -90:
-            raise ValueError('invalid y_min')
+            raise ValueError("invalid y_min")
         if y_max > 90:
-            raise ValueError('invalid size, y_min combination')
+            raise ValueError("invalid size, y_min combination")
 
     return RegularGridMapping(
         crs=crs,
@@ -117,19 +116,19 @@ def new_regular_grid_mapping(
         xy_var_names=_default_xy_var_names(crs),
         xy_dim_names=_default_xy_dim_names(crs),
         is_lon_360=x_max > 180,
-        is_j_axis_up=is_j_axis_up
+        is_j_axis_up=is_j_axis_up,
     )
 
 
-def to_regular_grid_mapping(grid_mapping: GridMapping,
-                            *,
-                            tile_size: Union[int, Tuple[int, int]] = None,
-                            is_j_axis_up: bool = False) -> GridMapping:
+def to_regular_grid_mapping(
+    grid_mapping: GridMapping,
+    *,
+    tile_size: Union[int, Tuple[int, int]] = None,
+    is_j_axis_up: bool = False
+) -> GridMapping:
     if grid_mapping.is_regular:
-        if tile_size is not None \
-                or is_j_axis_up != grid_mapping.is_j_axis_up:
-            return grid_mapping.derive(tile_size=tile_size,
-                                       is_j_axis_up=is_j_axis_up)
+        if tile_size is not None or is_j_axis_up != grid_mapping.is_j_axis_up:
+            return grid_mapping.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
         return grid_mapping
 
     x_min, y_min, x_max, y_max = grid_mapping.xy_bbox
@@ -152,5 +151,5 @@ def to_regular_grid_mapping(grid_mapping: GridMapping,
         xy_res=xy_res,
         crs=grid_mapping.crs,
         tile_size=tile_size,
-        is_j_axis_up=is_j_axis_up
+        is_j_axis_up=is_j_axis_up,
     )

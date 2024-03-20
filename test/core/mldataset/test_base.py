@@ -16,16 +16,13 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         self.assertIsInstance(ml_ds.grid_mapping, GridMapping)
         self.assertIsNotNone(ml_ds.lock)
         self.assertEqual(3, ml_ds.num_levels)
-        self.assertEqual({'noise': 'first'}, ml_ds.agg_methods)
+        self.assertEqual({"noise": "first"}, ml_ds.agg_methods)
 
     def test_resolutions(self):
         ds = get_test_dataset()
         ml_ds = BaseMultiLevelDataset(ds)
 
-        self.assertEqual([(0.25, 0.25),
-                          (0.5, 0.5),
-                          (1.0, 1.0)],
-                         ml_ds.resolutions)
+        self.assertEqual([(0.25, 0.25), (0.5, 0.5), (1.0, 1.0)], ml_ds.resolutions)
         self.assertIs(ml_ds.resolutions, ml_ds.resolutions)
 
         self.assertEqual([0.25, 0.5, 1.0], ml_ds.avg_resolutions)
@@ -51,18 +48,15 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
 
         ds0 = ml_ds.get_dataset(0)
         self.assertIsNot(ds, ds0)
-        self.assertEqual({'time': 14, 'lat': 720, 'lon': 1440, 'bnds': 2},
-                         ds0.dims)
+        self.assertEqual({"time": 14, "lat": 720, "lon": 1440, "bnds": 2}, ds0.dims)
 
         ds1 = ml_ds.get_dataset(1)
         self.assertIsNot(ds, ds1)
-        self.assertEqual({'time': 14, 'lat': 360, 'lon': 720},
-                         ds1.dims)
+        self.assertEqual({"time": 14, "lat": 360, "lon": 720}, ds1.dims)
 
         ds2 = ml_ds.get_dataset(2)
         self.assertIsNot(ds, ds2)
-        self.assertEqual({'time': 14, 'lat': 180, 'lon': 360},
-                         ds2.dims)
+        self.assertEqual({"time": 14, "lat": 180, "lon": 360}, ds2.dims)
 
         self.assertEqual([ds0, ds1, ds2], ml_ds.datasets)
 
@@ -74,10 +68,10 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
         ds = get_test_dataset()
         with self.assertRaises(TypeError):
             # noinspection PyTypeChecker
-            BaseMultiLevelDataset('test.levels')
+            BaseMultiLevelDataset("test.levels")
         with self.assertRaises(TypeError):
             # noinspection PyTypeChecker
-            BaseMultiLevelDataset(ds, grid_mapping='crs84')
+            BaseMultiLevelDataset(ds, grid_mapping="crs84")
 
     def test_derive_tiling_scheme(self):
         ds = get_test_dataset()

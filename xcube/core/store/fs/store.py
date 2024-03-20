@@ -25,8 +25,18 @@ import pathlib
 import uuid
 import warnings
 from threading import RLock
-from typing import Optional, Iterator, Any, Tuple, List, Dict, \
-    Union, Container, Callable, Sequence
+from typing import (
+    Optional,
+    Iterator,
+    Any,
+    Tuple,
+    List,
+    Dict,
+    Union,
+    Container,
+    Callable,
+    Sequence,
+)
 
 import fsspec
 import geopandas as gpd
@@ -69,7 +79,7 @@ from ..search import DefaultSearchMixin
 from ..store import MutableDataStore
 
 _DEFAULT_DATA_TYPE = DATASET_TYPE.alias
-_DEFAULT_FORMAT_ID = 'zarr'
+_DEFAULT_FORMAT_ID = "zarr"
 
 # TODO (forman): The following constants _FILENAME_EXT_TO_DATA_TYPE_ALIASES
 #   and _FILENAME_EXT_TO_FORMAT reflect implicit knowledge about the
@@ -78,23 +88,23 @@ _DEFAULT_FORMAT_ID = 'zarr'
 #   from all registered accessors.
 
 _FILENAME_EXT_TO_FORMAT = {
-    '.zarr': 'zarr',
-    '.levels': 'levels',
-    '.nc': 'netcdf',
-    '.tif': 'geotiff',
-    '.tiff': 'geotiff',
-    '.geotiff': 'geotiff',
-    '.shp': 'shapefile',
-    '.geojson': 'geojson',
+    ".zarr": "zarr",
+    ".levels": "levels",
+    ".nc": "netcdf",
+    ".tif": "geotiff",
+    ".tiff": "geotiff",
+    ".geotiff": "geotiff",
+    ".shp": "shapefile",
+    ".geojson": "geojson",
 }
 
 _FORMAT_TO_DATA_TYPE_ALIASES = {
-    'zarr': (DATASET_TYPE.alias,),
-    'netcdf': (DATASET_TYPE.alias,),
-    'levels': (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
-    'geotiff': (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
-    'geojson': (GEO_DATA_FRAME_TYPE.alias,),
-    'shapefile': (GEO_DATA_FRAME_TYPE.alias,),
+    "zarr": (DATASET_TYPE.alias,),
+    "netcdf": (DATASET_TYPE.alias,),
+    "levels": (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
+    "geotiff": (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
+    "geojson": (GEO_DATA_FRAME_TYPE.alias,),
+    "shapefile": (GEO_DATA_FRAME_TYPE.alias,),
 }
 
 _DataId = str
@@ -135,17 +145,19 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         returned by `get_data_ids()`. By default, no paths are excluded.
     """
 
-    def __init__(self,
-                 fs: Optional[fsspec.AbstractFileSystem] = None,
-                 root: str = '',
-                 max_depth: Optional[int] = 1,
-                 read_only: bool = False,
-                 includes: Optional[Union[str, Sequence[str]]] = None,
-                 excludes: Optional[Union[str, Sequence[str]]] = None):
+    def __init__(
+        self,
+        fs: Optional[fsspec.AbstractFileSystem] = None,
+        root: str = "",
+        max_depth: Optional[int] = 1,
+        read_only: bool = False,
+        includes: Optional[Union[str, Sequence[str]]] = None,
+        excludes: Optional[Union[str, Sequence[str]]] = None,
+    ):
         if fs is not None:
-            assert_instance(fs, fsspec.AbstractFileSystem, name='fs')
+            assert_instance(fs, fsspec.AbstractFileSystem, name="fs")
         self._fs = fs
-        self._raw_root: str = root or ''
+        self._raw_root: str = root or ""
         self._root: Optional[str] = None
         self._max_depth = max_depth
         self._read_only = read_only
@@ -181,7 +193,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         Default implementation raises NotImplementedError.
         :return: An instance of ``fsspec.AbstractFileSystem``.
         """
-        raise NotImplementedError('unknown filesystem')
+        raise NotImplementedError("unknown filesystem")
 
     @property
     def root(self) -> str:
@@ -220,64 +232,67 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        wc_schema = JsonComplexSchema(one_of=[
-            JsonNullSchema(),
-            JsonStringSchema(),
-            JsonArraySchema(items=JsonStringSchema())
-        ])
+        wc_schema = JsonComplexSchema(
+            one_of=[
+                JsonNullSchema(),
+                JsonStringSchema(),
+                JsonArraySchema(items=JsonStringSchema()),
+            ]
+        )
         return JsonObjectSchema(
             properties=dict(
-                root=JsonStringSchema(default=''),
+                root=JsonStringSchema(default=""),
                 max_depth=JsonIntegerSchema(nullable=True, default=1),
                 read_only=JsonBooleanSchema(default=False),
                 includes=wc_schema,
                 excludes=wc_schema,
             ),
-            additional_properties=False
+            additional_properties=False,
         )
 
     @classmethod
     def get_data_types(cls) -> Tuple[str, ...]:
-        return tuple(set(
-            data_type
-            for types_tuple in _FORMAT_TO_DATA_TYPE_ALIASES.values()
-            for data_type in types_tuple
-        ))
+        return tuple(
+            set(
+                data_type
+                for types_tuple in _FORMAT_TO_DATA_TYPE_ALIASES.values()
+                for data_type in types_tuple
+            )
+        )
 
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
         self._assert_valid_data_id(data_id)
-        data_type_alias, format_id, protocol = \
-            self._guess_accessor_id_parts(data_id)
+        data_type_alias, format_id, protocol = self._guess_accessor_id_parts(data_id)
         data_type_aliases = [data_type_alias]
-        for ext in find_data_opener_extensions(get_data_accessor_predicate(
-            format_id=format_id,
-            storage_id=protocol
-        )):
-            data_type_alias = ext.name.split(':')[0]
+        for ext in find_data_opener_extensions(
+            get_data_accessor_predicate(format_id=format_id, storage_id=protocol)
+        ):
+            data_type_alias = ext.name.split(":")[0]
             if data_type_alias not in data_type_aliases:
                 data_type_aliases.append(data_type_alias)
         return tuple(data_type_aliases)
 
-    def get_data_ids(self,
-                     data_type: DataTypeLike = None,
-                     include_attrs: Container[str] = None) -> _DataIds:
+    def get_data_ids(
+        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+    ) -> _DataIds:
         data_type = DataType.normalize(data_type)
         # TODO: do not ignore names in include_attrs
         return_tuples = include_attrs is not None
-        data_ids = self._generate_data_ids('', data_type, return_tuples, 1)
+        data_ids = self._generate_data_ids("", data_type, return_tuples, 1)
         if self._includes or self._excludes:
             yield from self._filter_data_ids(data_ids, return_tuples)
         yield from data_ids
 
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
-        assert_given(data_id, 'data_id')
+        assert_given(data_id, "data_id")
         if self._is_data_specified(data_id, data_type):
             fs_path = self._convert_data_id_into_fs_path(data_id)
             return self.fs.exists(fs_path)
         return False
 
-    def describe_data(self, data_id: str, data_type: DataTypeLike = None) \
-            -> DataDescriptor:
+    def describe_data(
+        self, data_id: str, data_type: DataTypeLike = None
+    ) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
         self._assert_data_specified(data_id, data_type)
         # TODO: optimize me, self.open_data() may be very slow!
@@ -288,96 +303,87 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         data = self.open_data(data_id)
         return new_data_descriptor(data_id, data, require=True)
 
-    def get_data_opener_ids(self,
-                            data_id: str = None,
-                            data_type: DataTypeLike = None) \
-            -> Tuple[str, ...]:
+    def get_data_opener_ids(
+        self, data_id: str = None, data_type: DataTypeLike = None
+    ) -> Tuple[str, ...]:
         data_type = DataType.normalize(data_type)
         format_id = None
         storage_id = self.protocol
         if data_id:
-            accessor_id_parts = self._guess_accessor_id_parts(
-                data_id, require=False
-            )
+            accessor_id_parts = self._guess_accessor_id_parts(data_id, require=False)
             if not accessor_id_parts:
                 return ()  # nothing found
             acc_data_type_alias, format_id, storage_id = accessor_id_parts
             if data_type == ANY_TYPE:
                 data_type = DataType.normalize(acc_data_type_alias)
-        return tuple(ext.name for ext in find_data_opener_extensions(
-            predicate=get_data_accessor_predicate(
-                data_type=data_type,
-                format_id=format_id,
-                storage_id=storage_id
+        return tuple(
+            ext.name
+            for ext in find_data_opener_extensions(
+                predicate=get_data_accessor_predicate(
+                    data_type=data_type, format_id=format_id, storage_id=storage_id
+                )
             )
-        ))
+        )
 
-    def get_open_data_params_schema(self,
-                                    data_id: str = None,
-                                    opener_id: str = None) \
-            -> JsonObjectSchema:
+    def get_open_data_params_schema(
+        self, data_id: str = None, opener_id: str = None
+    ) -> JsonObjectSchema:
         opener = self._find_opener(opener_id=opener_id, data_id=data_id)
         return self._get_open_data_params_schema(opener, data_id)
 
-    def open_data(self,
-                  data_id: str,
-                  opener_id: str = None,
-                  **open_params) -> xr.Dataset:
+    def open_data(
+        self, data_id: str, opener_id: str = None, **open_params
+    ) -> xr.Dataset:
         opener = self._find_opener(opener_id=opener_id, data_id=data_id)
-        open_params_schema = self._get_open_data_params_schema(opener,
-                                                               data_id)
-        assert_valid_params(open_params,
-                            name='open_params',
-                            schema=open_params_schema)
+        open_params_schema = self._get_open_data_params_schema(opener, data_id)
+        assert_valid_params(open_params, name="open_params", schema=open_params_schema)
         fs_path = self._convert_data_id_into_fs_path(data_id)
-        return opener.open_data(fs_path,
-                                fs=self.fs,
-                                root=self.root,
-                                **open_params)
+        return opener.open_data(fs_path, fs=self.fs, root=self.root, **open_params)
 
-    def get_data_writer_ids(self, data_type: str = None) \
-            -> Tuple[str, ...]:
+    def get_data_writer_ids(self, data_type: str = None) -> Tuple[str, ...]:
         data_type = DataType.normalize(data_type)
-        return tuple(ext.name for ext in find_data_writer_extensions(
-            predicate=get_data_accessor_predicate(
-                data_type=data_type,
-                storage_id=self.protocol
+        return tuple(
+            ext.name
+            for ext in find_data_writer_extensions(
+                predicate=get_data_accessor_predicate(
+                    data_type=data_type, storage_id=self.protocol
+                )
             )
-        ))
+        )
 
-    def get_write_data_params_schema(self, writer_id: str = None) \
-            -> JsonObjectSchema:
+    def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         writer = self._find_writer(writer_id=writer_id)
         return self._get_write_data_params_schema(writer)
 
-    def write_data(self,
-                   data: Any,
-                   data_id: str = None,
-                   writer_id: str = None,
-                   replace: bool = False,
-                   **write_params) -> str:
+    def write_data(
+        self,
+        data: Any,
+        data_id: str = None,
+        writer_id: str = None,
+        replace: bool = False,
+        **write_params,
+    ) -> str:
         if self.read_only:
-            raise DataStoreError('Data store is read-only.')
+            raise DataStoreError("Data store is read-only.")
         if not writer_id:
             writer_id = self._guess_writer_id(data, data_id=data_id)
         writer = self._find_writer(writer_id=writer_id)
         write_params_schema = self._get_write_data_params_schema(writer)
-        assert_valid_params(write_params,
-                            name='write_params',
-                            schema=write_params_schema)
+        assert_valid_params(
+            write_params, name="write_params", schema=write_params_schema
+        )
         data_id = self._ensure_valid_data_id(writer_id, data_id=data_id)
         fs_path = self._convert_data_id_into_fs_path(data_id)
         self.fs.makedirs(self.root, exist_ok=True)
-        written_fs_path = writer.write_data(data,
-                                            fs_path,
-                                            replace=replace,
-                                            fs=self.fs,
-                                            root=self.root,
-                                            **write_params)
+        written_fs_path = writer.write_data(
+            data, fs_path, replace=replace, fs=self.fs, root=self.root, **write_params
+        )
         # Verify, accessors fulfill their write_data() contract
-        assert_true(fs_path == written_fs_path,
-                    message='FsDataAccessor implementations must '
-                            'return the data_id passed in.')
+        assert_true(
+            fs_path == written_fs_path,
+            message="FsDataAccessor implementations must "
+            "return the data_id passed in.",
+        )
         # Return original data_id (which is a relative path).
         # Note: it would be cleaner to return written_fs_path
         # here, but it is an absolute path.
@@ -387,25 +393,20 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         # arguments.
         return data_id
 
-    def get_delete_data_params_schema(self, data_id: str = None) \
-            -> JsonObjectSchema:
+    def get_delete_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         writer = self._find_writer(data_id=data_id)
         return self._get_delete_data_params_schema(writer, data_id)
 
     def delete_data(self, data_id: str, **delete_params):
         if self.read_only:
-            raise DataStoreError('Data store is read-only.')
+            raise DataStoreError("Data store is read-only.")
         writer = self._find_writer(data_id=data_id)
-        delete_params_schema = self._get_delete_data_params_schema(writer,
-                                                                   data_id)
-        assert_valid_params(delete_params,
-                            name='delete_params',
-                            schema=delete_params_schema)
+        delete_params_schema = self._get_delete_data_params_schema(writer, data_id)
+        assert_valid_params(
+            delete_params, name="delete_params", schema=delete_params_schema
+        )
         fs_path = self._convert_data_id_into_fs_path(data_id)
-        writer.delete_data(fs_path,
-                           fs=self.fs,
-                           root=self.root,
-                           **delete_params)
+        writer.delete_data(fs_path, fs=self.fs, root=self.root, **delete_params)
 
     def register_data(self, data_id: str, data: Any):
         # We don't need this as we use the filesystem
@@ -419,8 +420,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     # Implementation helpers
 
     @staticmethod
-    def _get_open_data_params_schema(opener: DataOpener,
-                                     data_id: str):
+    def _get_open_data_params_schema(opener: DataOpener, data_id: str):
         schema = opener.get_open_data_params_schema(data_id=data_id)
         return FsAccessor.remove_storage_options_from_params_schema(schema)
 
@@ -430,8 +430,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return FsAccessor.remove_storage_options_from_params_schema(schema)
 
     @staticmethod
-    def _get_delete_data_params_schema(writer: DataWriter,
-                                       data_id: str):
+    def _get_delete_data_params_schema(writer: DataWriter, data_id: str):
         schema = writer.get_delete_data_params_schema(data_id)
         return FsAccessor.remove_storage_options_from_params_schema(schema)
 
@@ -439,72 +438,68 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         data_type = None
         format_id = None
         if data_id:
-            accessor_id_parts = self._guess_accessor_id_parts(
-                data_id, require=False
-            )
+            accessor_id_parts = self._guess_accessor_id_parts(data_id, require=False)
             if accessor_id_parts:
                 data_type = accessor_id_parts[0]
                 format_id = accessor_id_parts[1]
         if isinstance(data, xr.Dataset):
             data_type = DATASET_TYPE.alias
-            format_id = format_id or 'zarr'
+            format_id = format_id or "zarr"
         elif isinstance(data, MultiLevelDataset):
             data_type = MULTI_LEVEL_DATASET_TYPE.alias
-            format_id = format_id or 'levels'
+            format_id = format_id or "levels"
         elif isinstance(data, gpd.GeoDataFrame):
             data_type = GEO_DATA_FRAME_TYPE.alias
-            format_id = format_id or 'geojson'
+            format_id = format_id or "geojson"
         predicate = get_data_accessor_predicate(
-            data_type=data_type,
-            format_id=format_id,
-            storage_id=self.protocol
+            data_type=data_type, format_id=format_id, storage_id=self.protocol
         )
         extensions = find_data_writer_extensions(predicate=predicate)
         if not extensions:
-            raise DataStoreError(f'Can not find suitable data writer'
-                                 f' for data of type {type(data)!r}'
-                                 f' and format {format_id!r}')
+            raise DataStoreError(
+                f"Can not find suitable data writer"
+                f" for data of type {type(data)!r}"
+                f" and format {format_id!r}"
+            )
         return extensions[0].name
 
-    def _find_opener(self,
-                     opener_id: str = None,
-                     data_id: str = None,
-                     require: bool = True) -> Optional[DataOpener]:
+    def _find_opener(
+        self, opener_id: str = None, data_id: str = None, require: bool = True
+    ) -> Optional[DataOpener]:
         if not opener_id:
             opener_id = self._find_opener_id(data_id=data_id, require=require)
             if opener_id is None:
                 return None
         return new_data_opener(opener_id)
 
-    def _find_writer(self,
-                     writer_id: str = None,
-                     data_id: str = None,
-                     require: bool = True) -> Optional[DataWriter]:
+    def _find_writer(
+        self, writer_id: str = None, data_id: str = None, require: bool = True
+    ) -> Optional[DataWriter]:
         if not writer_id:
             writer_id = self._find_writer_id(data_id=data_id, require=require)
             if writer_id is None:
                 return None
         return new_data_writer(writer_id)
 
-    def _is_data_specified(self,
-                           data_id: str,
-                           data_type: DataTypeLike,
-                           require: bool = False) -> bool:
+    def _is_data_specified(
+        self, data_id: str, data_type: DataTypeLike, require: bool = False
+    ) -> bool:
         data_type = DataType.normalize(data_type)
-        actual_data_type = self._guess_data_type_for_data_id(
-            data_id, require=False
-        )
+        actual_data_type = self._guess_data_type_for_data_id(data_id, require=False)
         if actual_data_type is None:
             if require:
-                raise DataStoreError(f'Cannot determine data type of'
-                                     f' resource {data_id!r}')
+                raise DataStoreError(
+                    f"Cannot determine data type of" f" resource {data_id!r}"
+                )
             return False
         if not data_type.is_super_type_of(actual_data_type):
             if require:
-                raise DataStoreError(f'Data type {data_type!r}'
-                                     f' is not compatible with type'
-                                     f' {actual_data_type!r} of'
-                                     f' data resource {data_id!r}')
+                raise DataStoreError(
+                    f"Data type {data_type!r}"
+                    f" is not compatible with type"
+                    f" {actual_data_type!r} of"
+                    f" data resource {data_id!r}"
+                )
             return False
         return True
 
@@ -513,7 +508,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @classmethod
     def _ensure_valid_data_id(cls, writer_id: str, data_id: str = None) -> str:
-        format_id = writer_id.split(':')[1]
+        format_id = writer_id.split(":")[1]
         first_ext = None
         for known_ext, known_format_id in _FILENAME_EXT_TO_FORMAT.items():
             # Note, there may be multiple common file extensions
@@ -526,74 +521,65 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                     return data_id
         assert first_ext is not None
         if data_id:
-            warnings.warn(f'Data resource identifier {data_id!r} is'
-                          f' lacking an expected extension {first_ext!r}.'
-                          f' It will be written as {format_id!r},'
-                          f' but the store may later have difficulties'
-                          f' identifying the correct data format.')
+            warnings.warn(
+                f"Data resource identifier {data_id!r} is"
+                f" lacking an expected extension {first_ext!r}."
+                f" It will be written as {format_id!r},"
+                f" but the store may later have difficulties"
+                f" identifying the correct data format."
+            )
             return data_id
         return str(uuid.uuid4()) + first_ext
 
     def _assert_valid_data_id(self, data_id):
         if not self.has_data(data_id):
-            raise DataStoreError(f'Data resource "{data_id}"'
-                                 f' does not exist in store')
+            raise DataStoreError(
+                f'Data resource "{data_id}"' f" does not exist in store"
+            )
 
     def _convert_data_id_into_fs_path(self, data_id: str) -> str:
-        assert_given(data_id, 'data_id')
+        assert_given(data_id, "data_id")
         root = self.root
-        fs_path = f'{root}/{data_id}' if root else data_id
+        fs_path = f"{root}/{data_id}" if root else data_id
         return fs_path
 
-    def _assert_valid_data_type(self,
-                                data_type: DataType):
+    def _assert_valid_data_type(self, data_type: DataType):
         if data_type != ANY_TYPE:
-            assert_in(data_type,
-                      self.get_data_types(),
-                      name='data_type')
+            assert_in(data_type, self.get_data_types(), name="data_type")
 
-    def _find_opener_id(self, data_id: str = None, require=True) \
-            -> Optional[str]:
-        return self._find_accessor_id(find_data_opener_extensions,
-                                      data_id=data_id,
-                                      require=require)
+    def _find_opener_id(self, data_id: str = None, require=True) -> Optional[str]:
+        return self._find_accessor_id(
+            find_data_opener_extensions, data_id=data_id, require=require
+        )
 
-    def _find_writer_id(self, data_id: str = None, require=True) \
-            -> Optional[str]:
-        return self._find_accessor_id(find_data_writer_extensions,
-                                      data_id=data_id,
-                                      require=require)
+    def _find_writer_id(self, data_id: str = None, require=True) -> Optional[str]:
+        return self._find_accessor_id(
+            find_data_writer_extensions, data_id=data_id, require=require
+        )
 
-    def _find_accessor_id(self,
-                          find_data_accessor_extensions: Callable,
-                          data_id: str = None,
-                          require=True) -> Optional[str]:
+    def _find_accessor_id(
+        self, find_data_accessor_extensions: Callable, data_id: str = None, require=True
+    ) -> Optional[str]:
         extensions = self._find_accessor_extensions(
-            find_data_accessor_extensions,
-            data_id=data_id,
-            require=require
+            find_data_accessor_extensions, data_id=data_id, require=require
         )
         return extensions[0].name if extensions else None
 
     def _find_opener_extensions(self, data_id: str = None, require=True):
-        return self._find_accessor_extensions(find_data_opener_extensions,
-                                              data_id=data_id,
-                                              require=require)
+        return self._find_accessor_extensions(
+            find_data_opener_extensions, data_id=data_id, require=require
+        )
 
     def _find_writer_extensions(self, data_id: str = None, require=True):
-        return self._find_accessor_extensions(find_data_writer_extensions,
-                                              data_id=data_id,
-                                              require=require)
+        return self._find_accessor_extensions(
+            find_data_writer_extensions, data_id=data_id, require=require
+        )
 
-    def _find_accessor_extensions(self,
-                                  find_data_accessor_extensions: Callable,
-                                  data_id: str = None,
-                                  require=True) -> List[Extension]:
+    def _find_accessor_extensions(
+        self, find_data_accessor_extensions: Callable, data_id: str = None, require=True
+    ) -> List[Extension]:
         if data_id:
-            accessor_id_parts = self._guess_accessor_id_parts(
-                data_id,
-                require=require
-            )
+            accessor_id_parts = self._guess_accessor_id_parts(data_id, require=require)
             if not accessor_id_parts:
                 return []
             data_type_alias = accessor_id_parts[0]
@@ -604,32 +590,31 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             format_id = _DEFAULT_FORMAT_ID
             storage_id = self.protocol
         predicate = get_data_accessor_predicate(
-            data_type=data_type_alias,
-            format_id=format_id,
-            storage_id=storage_id
+            data_type=data_type_alias, format_id=format_id, storage_id=storage_id
         )
         extensions = find_data_accessor_extensions(predicate)
         if not extensions:
             if require:
-                msg = 'No data accessor found'
+                msg = "No data accessor found"
                 if data_id:
-                    msg += f' for data resource {data_id!r}'
+                    msg += f" for data resource {data_id!r}"
                 raise DataStoreError(msg)
             return []
         return extensions
 
-    def _guess_data_type_for_data_id(self, data_id: str, require=True) \
-            -> Optional[DataType]:
-        accessor_id_parts = self._guess_accessor_id_parts(data_id,
-                                                          require=require)
+    def _guess_data_type_for_data_id(
+        self, data_id: str, require=True
+    ) -> Optional[DataType]:
+        accessor_id_parts = self._guess_accessor_id_parts(data_id, require=require)
         if accessor_id_parts is None:
             return None
         data_type_alias, _, _ = accessor_id_parts
         return DataType.normalize(data_type_alias)
 
-    def _guess_accessor_id_parts(self, data_id: str, require=True) \
-            -> Optional[Tuple[str, str, str]]:
-        assert_given(data_id, 'data_id')
+    def _guess_accessor_id_parts(
+        self, data_id: str, require=True
+    ) -> Optional[Tuple[str, str, str]]:
+        assert_given(data_id, "data_id")
         ext = self._get_filename_ext(data_id)
         data_type_aliases = None
         format_id = _FILENAME_EXT_TO_FORMAT.get(ext.lower())
@@ -637,55 +622,55 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             data_type_aliases = _FORMAT_TO_DATA_TYPE_ALIASES.get(format_id)
         if data_type_aliases is None or format_id is None:
             if require:
-                raise DataStoreError(f'Cannot determine data type for '
-                                     f' data resource {data_id!r}')
+                raise DataStoreError(
+                    f"Cannot determine data type for " f" data resource {data_id!r}"
+                )
             return None
         return data_type_aliases[0], format_id, self.protocol
 
     def _get_filename_ext(self, data_path: str) -> str:
-        dot_pos = data_path.rfind('.')
+        dot_pos = data_path.rfind(".")
         if dot_pos == -1:
-            return ''
-        slash_pos = data_path.rfind('/')
+            return ""
+        slash_pos = data_path.rfind("/")
         if dot_pos < slash_pos:
-            return ''
+            return ""
         # TODO: avoid self.fs here to ensure laziness.
-        if self.fs.sep != '/':
+        if self.fs.sep != "/":
             sep_pos = data_path.rfind(self.fs.sep)
             if dot_pos < sep_pos:
-                return ''
+                return ""
         return data_path[dot_pos:]
 
-    def _generate_data_ids(self,
-                           dir_path: str,
-                           data_type: DataType,
-                           return_tuples: bool,
-                           current_depth: int) -> _DataIds:
-        root = self.root + ('/' + dir_path if dir_path else '')
+    def _generate_data_ids(
+        self,
+        dir_path: str,
+        data_type: DataType,
+        return_tuples: bool,
+        current_depth: int,
+    ) -> _DataIds:
+        root = self.root + ("/" + dir_path if dir_path else "")
         if not self.fs.exists(root):
             return
         # noinspection PyArgumentEqualDefault
         for file_info in self.fs.ls(root, detail=True):
-            file_path: str = file_info['name']
+            file_path: str = file_info["name"]
             if file_path.startswith(self.root):
-                file_path = file_path[len(self.root) + 1:]
-            elif file_path.startswith('/' + self.root):
-                file_path = file_path[len(self.root) + 2:]
+                file_path = file_path[len(self.root) + 1 :]
+            elif file_path.startswith("/" + self.root):
+                file_path = file_path[len(self.root) + 2 :]
             if not file_path:
                 continue
             if self._is_data_specified(file_path, data_type):
                 yield (file_path, {}) if return_tuples else file_path
-            elif file_info.get('type') == 'directory' \
-                    and (self._max_depth is None
-                         or current_depth < self._max_depth):
-                yield from self._generate_data_ids(file_path,
-                                                   data_type,
-                                                   return_tuples,
-                                                   current_depth + 1)
+            elif file_info.get("type") == "directory" and (
+                self._max_depth is None or current_depth < self._max_depth
+            ):
+                yield from self._generate_data_ids(
+                    file_path, data_type, return_tuples, current_depth + 1
+                )
 
-    def _filter_data_ids(self,
-                         data_ids: _DataIds,
-                         return_tuples: bool) -> _DataIds:
+    def _filter_data_ids(self, data_ids: _DataIds, return_tuples: bool) -> _DataIds:
         for data_id in data_ids:
             path = data_id[0] if return_tuples else data_id
             excluded = False
@@ -704,9 +689,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @staticmethod
     def _normalize_wc(wc: Optional[Union[str, Sequence[str]]]) -> Tuple[str]:
-        return tuple() if not wc \
-            else (wc,) if isinstance(wc, str) \
-            else tuple(wc)
+        return tuple() if not wc else (wc,) if isinstance(wc, str) else tuple(wc)
 
 
 class FsDataStore(BaseFsDataStore, FsAccessor):
@@ -741,19 +724,23 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
         Used to instantiate the filesystem.
     """
 
-    def __init__(self,
-                 root: str = '',
-                 max_depth: Optional[int] = 1,
-                 read_only: bool = False,
-                 includes: Optional[Sequence[str]] = None,
-                 excludes: Optional[Sequence[str]] = None,
-                 storage_options: Dict[str, Any] = None):
+    def __init__(
+        self,
+        root: str = "",
+        max_depth: Optional[int] = 1,
+        read_only: bool = False,
+        includes: Optional[Sequence[str]] = None,
+        excludes: Optional[Sequence[str]] = None,
+        storage_options: Dict[str, Any] = None,
+    ):
         self._storage_options = storage_options or {}
-        super().__init__(root=root,
-                         max_depth=max_depth,
-                         read_only=read_only,
-                         includes=includes,
-                         excludes=excludes)
+        super().__init__(
+            root=root,
+            max_depth=max_depth,
+            read_only=read_only,
+            includes=includes,
+            excludes=excludes,
+        )
 
     @property
     def protocol(self) -> str:
@@ -768,9 +755,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
         # Note, this is invoked only once per store instance.
-        fs, _, _ = self.load_fs(
-            {STORAGE_OPTIONS_PARAM_NAME: self._storage_options}
-        )
+        fs, _, _ = self.load_fs({STORAGE_OPTIONS_PARAM_NAME: self._storage_options})
         return fs
 
     @classmethod

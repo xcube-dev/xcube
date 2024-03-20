@@ -29,6 +29,7 @@ class _Undefined:
     """
     Represents the UNDEFINED value.
     """
+
     _hash_code = hash(UNDEFINED_STR) + 1
 
     def __str__(self):

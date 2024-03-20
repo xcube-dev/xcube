@@ -27,28 +27,29 @@ from xcube.util.jsonschema import JsonObject
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.jsonschema import JsonStringSchema
 
-DEFAULT_ENDPOINT_URL = 'https://xcube-gen.brockmann-consult.de/api/v2/'
+DEFAULT_ENDPOINT_URL = "https://xcube-gen.brockmann-consult.de/api/v2/"
 
-ServiceConfigLike = Union[str, Dict, 'ServiceConfig']
+ServiceConfigLike = Union[str, Dict, "ServiceConfig"]
 
 
 class ServiceConfig(JsonObject):
-    def __init__(self,
-                 endpoint_url: str = None,
-                 client_id: str = None,
-                 client_secret: str = None,
-                 access_token: str = None):
+    def __init__(
+        self,
+        endpoint_url: str = None,
+        client_id: str = None,
+        client_secret: str = None,
+        access_token: str = None,
+    ):
         endpoint_url = endpoint_url or DEFAULT_ENDPOINT_URL
-        if not endpoint_url.endswith('/'):
-            endpoint_url += '/'
+        if not endpoint_url.endswith("/"):
+            endpoint_url += "/"
         self.endpoint_url = endpoint_url
         self.client_id = client_id
         self.client_secret = client_secret
         self.access_token = access_token
 
     @classmethod
-    def normalize(cls, service_config: ServiceConfigLike) \
-            -> 'ServiceConfig':
+    def normalize(cls, service_config: ServiceConfigLike) -> "ServiceConfig":
         """
         Normalize given *service_config* to an instance of
         :class:ServiceConfig.
@@ -75,11 +76,12 @@ class ServiceConfig(JsonObject):
             return ServiceConfig.from_file(service_config)
         if isinstance(service_config, dict):
             return ServiceConfig.from_dict(service_config)
-        raise TypeError('service_config must be a str, dict, '
-                        'or a ServiceConfig instance')
+        raise TypeError(
+            "service_config must be a str, dict, " "or a ServiceConfig instance"
+        )
 
     @classmethod
-    def from_file(cls, service_config_file: str) -> 'ServiceConfig':
+    def from_file(cls, service_config_file: str) -> "ServiceConfig":
         service_config = load_json_or_yaml_config(service_config_file)
         cls.get_schema().validate_instance(service_config)
         return ServiceConfig(**service_config)

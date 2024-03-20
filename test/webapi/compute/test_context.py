@@ -28,7 +28,7 @@ from xcube.webapi.compute.context import ComputeContext, is_job_status
 
 
 def get_compute_ctx(
-        server_config: Union[str, Mapping[str, Any]] = "config.yml"
+    server_config: Union[str, Mapping[str, Any]] = "config.yml"
 ) -> ComputeContext:
     return get_api_ctx("compute", ComputeContext, server_config)
 
@@ -42,16 +42,8 @@ class ComputeContextTest(unittest.TestCase):
         self.assertIsInstance(ctx.places_ctx, Context)
 
     def test_is_status_with_valid_status(self):
-        self.assertTrue(
-            is_job_status(
-                dict(state=dict(status='failed')),
-                'failed'
-            )
-        )
+        self.assertTrue(is_job_status(dict(state=dict(status="failed")), "failed"))
 
     def test_is_status_with_invalid_status(self):
         with self.assertRaises(ValueError) as test_context:
-            is_job_status(
-                dict(state=dict(status='failed')),
-                'not_a_valid_status'
-            )
+            is_job_status(dict(state=dict(status="failed")), "not_a_valid_status")

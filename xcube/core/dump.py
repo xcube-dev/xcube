@@ -22,9 +22,7 @@
 import xarray as xr
 
 
-def dump_dataset(dataset: xr.Dataset,
-                 var_names=None,
-                 show_var_encoding=False) -> str:
+def dump_dataset(dataset: xr.Dataset, var_names=None, show_var_encoding=False) -> str:
     """
     Dumps a dataset or variables into a text string.
 
@@ -39,10 +37,19 @@ def dump_dataset(dataset: xr.Dataset,
         if show_var_encoding:
             for var_name, var in dataset.coords.items():
                 if var.encoding:
-                    lines.append(dump_var_encoding(var, header=f"Encoding for coordinate variable {var_name!r}:"))
+                    lines.append(
+                        dump_var_encoding(
+                            var,
+                            header=f"Encoding for coordinate variable {var_name!r}:",
+                        )
+                    )
             for var_name, var in dataset.data_vars.items():
                 if var.encoding:
-                    lines.append(dump_var_encoding(var, header=f"Encoding for data variable {var_name!r}:"))
+                    lines.append(
+                        dump_var_encoding(
+                            var, header=f"Encoding for data variable {var_name!r}:"
+                        )
+                    )
     else:
         for var_name in var_names:
             var = dataset[var_name]

@@ -39,25 +39,22 @@ class ConfigChangeObserverTest(unittest.TestCase):
         rimraf(self.TEST_CONFIG)
 
     def test_config_change_observer(self):
-        extension_registry = mock_extension_registry([
-            ("datasets", dict(create_ctx=MockApiContext)),
-        ])
+        extension_registry = mock_extension_registry(
+            [
+                ("datasets", dict(create_ctx=MockApiContext)),
+            ]
+        )
 
         config = {}
         with open(self.TEST_CONFIG, "w") as fp:
             yaml.safe_dump(config, fp)
 
         framework = MockFramework()
-        server = Server(
-            framework, config,
-            extension_registry=extension_registry
-        )
+        server = Server(framework, config, extension_registry=extension_registry)
 
         server_ctx = server.ctx
 
-        observer = ConfigChangeObserver(server,
-                                        [self.TEST_CONFIG],
-                                        0.1)
+        observer = ConfigChangeObserver(server, [self.TEST_CONFIG], 0.1)
 
         self.assertEqual(0, framework.call_later_count)
         self.assertIs(server_ctx, server.ctx)

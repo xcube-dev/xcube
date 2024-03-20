@@ -12,7 +12,7 @@ PyType = type(type(int))
 
 # Functions registered in the operation registry will
 # receive a new attribute with this name.
-_ATTR_NAME_OP_INFO = '_op_info'
+_ATTR_NAME_OP_INFO = "_op_info"
 
 _PRIMITIVE_PY_TO_JSON_TYPES = {
     type(None): "null",
@@ -22,17 +22,15 @@ _PRIMITIVE_PY_TO_JSON_TYPES = {
     str: "string",
 }
 
-_PRIMITIVE_JSON_TO_PY_TYPES = {
-    v: k for k, v in _PRIMITIVE_PY_TO_JSON_TYPES.items()
-}
+_PRIMITIVE_JSON_TO_PY_TYPES = {v: k for k, v in _PRIMITIVE_PY_TO_JSON_TYPES.items()}
 
 
 class OpInfo:
     """Information about a compute operation"""
 
-    def __init__(self,
-                 params_schema: Dict[str, Any],
-                 param_py_types: Dict[str, PyType]):
+    def __init__(
+        self, params_schema: Dict[str, Any], param_py_types: Dict[str, PyType]
+    ):
         """Create information about a compute operation
 
         :param params_schema: map of parameter names to their JSON Schema
@@ -65,8 +63,9 @@ class OpInfo:
         """
         op_info = getattr(op, _ATTR_NAME_OP_INFO, None)
         if not isinstance(op_info, OpInfo):
-            raise ValueError(f"function {op.__name__}() is not"
-                             f" registered as an operation")
+            raise ValueError(
+                f"function {op.__name__}() is not" f" registered as an operation"
+            )
         return op_info
 
     @classmethod
@@ -86,8 +85,7 @@ class OpInfo:
         params_schema = {}
         if code:
             args = inspect.getargs(code)
-            required_param_names = set(args.args or []) \
-                .union(set(args.varargs or []))
+            required_param_names = set(args.args or []).union(set(args.varargs or []))
             optional_param_names = set(args.varkw or [])
             all_param_names = required_param_names.union(optional_param_names)
             if all_param_names:
@@ -97,23 +95,22 @@ class OpInfo:
                     if py_type is not None:
                         param_py_types[param_name] = py_type
                     if inspect.isclass(py_type):
-                        if issubclass(py_type,
-                                      (xr.Dataset, MultiLevelDataset)):
+                        if issubclass(py_type, (xr.Dataset, MultiLevelDataset)):
                             # extract function from get_effective_parameters
                             param_schema = {
                                 "type": "string",
-                                "title": "Dataset identifier"
+                                "title": "Dataset identifier",
                             }
                         else:
                             raise ValueError(
-                                f'Illegal operation parameter class {py_type}.'
-                                f' Classes must be subclasses of Dataset or '
-                                f'MultiLevelDataset.'
+                                f"Illegal operation parameter class {py_type}."
+                                f" Classes must be subclasses of Dataset or "
+                                f"MultiLevelDataset."
                             )
                     elif py_type is not None:
                         if not OpInfo._is_valid_parameter_type(py_type):
                             raise ValueError(
-                                f'Illegal operation parameter type {py_type}.'
+                                f"Illegal operation parameter type {py_type}."
                             )
                         param_schema = build_json_schema(py_type).to_dict()
                     else:
@@ -123,13 +120,12 @@ class OpInfo:
                     "type": "object",
                     "properties": properties,
                     "required": list(required_param_names),
-                    "additionalProperties": False
+                    "additionalProperties": False,
                 }
             else:
-                params_schema.update({
-                    "type": ["null", "object"],
-                    "additionalProperties": False
-                })
+                params_schema.update(
+                    {"type": ["null", "object"], "additionalProperties": False}
+                )
 
         return OpInfo(params_schema, param_py_types)
 

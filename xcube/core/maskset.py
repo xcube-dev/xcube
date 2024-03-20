@@ -30,6 +30,7 @@ import xarray as xr
 #       >>> ds = xr.open_dataset("my/path/to/cf/netcdf.nc", decode_flags=True)
 #       >>> ds.flag_mask_sets['quality_flags']
 
+
 class MaskSet:
     """
     A set of mask variables derived from a variable *flag_var* with the following
@@ -50,32 +51,32 @@ class MaskSet:
     """
 
     def __init__(self, flag_var: xr.DataArray):
-        flag_masks = flag_var.attrs.get('flag_masks')
-        flag_values = flag_var.attrs.get('flag_values')
+        flag_masks = flag_var.attrs.get("flag_masks")
+        flag_values = flag_var.attrs.get("flag_values")
         if flag_masks is None and flag_values is None:
-            raise ValueError("One or both of the attributes "
-                             "'flag_masks' or 'flag_values' "
-                             "must be present and non-null in flag_var")
-        if flag_masks is not None:
-            flag_masks = _convert_flag_var_attribute_value(flag_masks,
-                                                           'flag_masks')
-        if flag_values is not None:
-            flag_values = _convert_flag_var_attribute_value(flag_values,
-                                                            'flag_values')
-        if 'flag_meanings' not in flag_var.attrs:
             raise ValueError(
-                "flag_var must have the attribute 'flag_meanings'")
-        flag_meanings = flag_var.attrs.get('flag_meanings')
+                "One or both of the attributes "
+                "'flag_masks' or 'flag_values' "
+                "must be present and non-null in flag_var"
+            )
+        if flag_masks is not None:
+            flag_masks = _convert_flag_var_attribute_value(flag_masks, "flag_masks")
+        if flag_values is not None:
+            flag_values = _convert_flag_var_attribute_value(flag_values, "flag_values")
+        if "flag_meanings" not in flag_var.attrs:
+            raise ValueError("flag_var must have the attribute 'flag_meanings'")
+        flag_meanings = flag_var.attrs.get("flag_meanings")
         if not isinstance(flag_meanings, str):
-            raise TypeError("attribute 'flag_meanings' of flag_var "
-                            "must be a string")
-        flag_names = flag_meanings.split(' ')
+            raise TypeError("attribute 'flag_meanings' of flag_var " "must be a string")
+        flag_names = flag_meanings.split(" ")
         if flag_masks is not None and len(flag_names) != len(flag_masks):
-            raise ValueError("attributes 'flag_meanings' and 'flag_masks' "
-                             "are not corresponding")
+            raise ValueError(
+                "attributes 'flag_meanings' and 'flag_masks' " "are not corresponding"
+            )
         if flag_values is not None and len(flag_names) != len(flag_values):
-            raise ValueError("attributes 'flag_meanings' and 'flag_values' "
-                             "are not corresponding")
+            raise ValueError(
+                "attributes 'flag_meanings' and 'flag_values' " "are not corresponding"
+            )
         if flag_masks is None:
             flag_masks = [None] * len(flag_names)
         if flag_values is None:
@@ -87,11 +88,12 @@ class MaskSet:
 
     @classmethod
     def is_flag_var(cls, var: xr.DataArray) -> bool:
-        return 'flag_meanings' in var.attrs \
-               and ('flag_masks' in var.attrs or 'flag_values' in var.attrs)
+        return "flag_meanings" in var.attrs and (
+            "flag_masks" in var.attrs or "flag_values" in var.attrs
+        )
 
     @classmethod
-    def get_mask_sets(cls, dataset: xr.Dataset) -> Dict[str, 'MaskSet']:
+    def get_mask_sets(cls, dataset: xr.Dataset) -> Dict[str, "MaskSet"]:
         """
         For each "flag" variable in given *dataset*, turn it into a ``MaskSet``,
         store it in a dictionary.
@@ -108,21 +110,25 @@ class MaskSet:
         return masks
 
     def _repr_html_(self):
-        lines = ['<html>',
-                 '<table>',
-                 '<tr><th>Flag name</th><th>Mask</th><th>Value</th></tr>']
+        lines = [
+            "<html>",
+            "<table>",
+            "<tr><th>Flag name</th><th>Mask</th><th>Value</th></tr>",
+        ]
 
         for name, data in self._flags.items():
             mask, value = data
-            lines.append(f'<tr><td>{name}</td><td>{mask}</td><td>{value}</td></tr>')
+            lines.append(f"<tr><td>{name}</td><td>{mask}</td><td>{value}</td></tr>")
 
-        lines.extend(['</table>',
-                      '</html>'])
+        lines.extend(["</table>", "</html>"])
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def __str__(self):
-        return "%s(%s)" % (self._flag_var.name, ', '.join(["%s=%s" % (n, v) for n, v in self._flags.items()]))
+        return "%s(%s)" % (
+            self._flag_var.name,
+            ", ".join(["%s=%s" % (n, v) for n, v in self._flags.items()]),
+        )
 
     def __dir__(self) -> Iterable[str]:
         return self._flag_names
@@ -157,17 +163,13 @@ class MaskSet:
         flag_mask, flag_value = self._flags[flag_name]
 
         if flag_var.chunks is not None:
-            ones_array = da.ones(flag_var.shape,
-                                 dtype=np.uint8,
-                                 chunks=flag_var.chunks)
+            ones_array = da.ones(flag_var.shape, dtype=np.uint8, chunks=flag_var.chunks)
         else:
-            ones_array = np.ones(flag_var.shape,
-                                 dtype=np.uint8)
+            ones_array = np.ones(flag_var.shape, dtype=np.uint8)
 
-        mask_var = xr.DataArray(ones_array,
-                                dims=flag_var.dims,
-                                name=flag_name,
-                                coords=flag_var.coords)
+        mask_var = xr.DataArray(
+            ones_array, dims=flag_var.dims, name=flag_name, coords=flag_var.coords
+        )
         if flag_mask is not None:
             if flag_var.dtype != flag_mask.dtype:
                 flag_var = flag_var.astype(flag_mask.dtype)
@@ -185,7 +187,10 @@ class MaskSet:
 
 
 _MASK_DTYPES = (
-    (2 ** 8, np.uint8), (2 ** 16, np.uint16), (2 ** 32, np.uint32), (2 ** 64, np.uint64)
+    (2**8, np.uint8),
+    (2**16, np.uint16),
+    (2**32, np.uint32),
+    (2**64, np.uint64),
 )
 
 
@@ -196,7 +201,7 @@ def _convert_flag_var_attribute_value(attr_value, attr_name):
         max_mask = 0
         for s in attr_value.split(","):
             s = s.strip()
-            pair = s.split('-')
+            pair = s.split("-")
             if len(pair) == 1:
                 try:
                     mask = (1 << int(s[0:-1])) if s.endswith("b") else int(s)
@@ -227,7 +232,7 @@ def _convert_flag_var_attribute_value(attr_value, attr_name):
 
         raise ValueError(err_msg)
 
-    if not (hasattr(attr_value, 'dtype') and hasattr(attr_value, 'shape')):
-        raise TypeError(f'attribute {attr_name!r} must be an integer array')
+    if not (hasattr(attr_value, "dtype") and hasattr(attr_value, "shape")):
+        raise TypeError(f"attribute {attr_name!r} must be an integer array")
 
     return attr_value

@@ -21,8 +21,7 @@
 
 import collections.abc
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, \
-    Optional
+from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optional
 
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
@@ -30,7 +29,7 @@ from xcube.util.assertions import assert_true
 # Make sure rfc3339-validator package is installed : jsonschema uses it for
 # validating instances of JsonDateSchema and JsonDatetimeSchema.
 # Use of __import__ avoids "unused package" warnings.
-__import__('rfc3339_validator')
+__import__("rfc3339_validator")
 
 import jsonschema
 
@@ -40,32 +39,33 @@ from xcube.util.undefined import UNDEFINED
 Factory = Callable[..., Any]
 Serializer = Callable[..., Any]
 
-_TYPES_ENUM = {'null', 'boolean', 'integer', 'number', 'string', 'array',
-               'object'}
-_NUMERIC_TYPES_ENUM = {'integer', 'number'}
+_TYPES_ENUM = {"null", "boolean", "integer", "number", "string", "array", "object"}
+_NUMERIC_TYPES_ENUM = {"integer", "number"}
 
 
 class JsonSchema(ABC):
 
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 type: Union[str, Sequence[str]] = None,
-                 default: Any = UNDEFINED,
-                 const: Any = UNDEFINED,
-                 enum: Sequence[Any] = None,
-                 nullable: bool = None,
-                 title: str = None,
-                 description: str = None,
-                 examples: str = None,
-                 factory: Factory = None,
-                 serializer: Serializer = None):
+    def __init__(
+        self,
+        type: Union[str, Sequence[str]] = None,
+        default: Any = UNDEFINED,
+        const: Any = UNDEFINED,
+        enum: Sequence[Any] = None,
+        nullable: bool = None,
+        title: str = None,
+        description: str = None,
+        examples: str = None,
+        factory: Factory = None,
+        serializer: Serializer = None,
+    ):
         if type is not None and type not in _TYPES_ENUM:
-            names = ', '.join(map(lambda t: f'"{t}"', sorted(list(_TYPES_ENUM))))
-            raise ValueError(f'type must be one of {names}')
+            names = ", ".join(map(lambda t: f'"{t}"', sorted(list(_TYPES_ENUM))))
+            raise ValueError(f"type must be one of {names}")
         if factory is not None and not callable(factory):
-            raise ValueError('factory must be callable')
+            raise ValueError("factory must be callable")
         if serializer is not None and not callable(serializer):
-            raise ValueError('serializer must be callable')
+            raise ValueError("serializer must be callable")
         self.type: Optional[Union[str, Sequence[str]]] = type
         self.default: Any = default
         self.const: Any = const
@@ -80,12 +80,12 @@ class JsonSchema(ABC):
     def to_dict(self) -> Dict[str, Any]:
         d = dict()
         if self.type is not None:
-            if self.nullable is True and self.type != 'null':
-                d.update(type=[self.type, 'null'])
+            if self.nullable is True and self.type != "null":
+                d.update(type=[self.type, "null"])
             else:
                 d.update(type=self.type)
         elif self.nullable is True:
-            d.update(type='null')
+            d.update(type="null")
         if self.default != UNDEFINED:
             d.update(default=self.default)
         if self.const != UNDEFINED:
@@ -117,20 +117,22 @@ class JsonSchema(ABC):
         # By default, jsonschema only recognizes lists as arrays. Here we derive
         # and use a custom validator which recognizes both lists and tuples as
         # arrays.
-        new_type_checker = \
-            base_validator.TYPE_CHECKER.redefine(
-                'array',
-                lambda checker, inst: isinstance(inst, (list, tuple)))
-        custom_validator = \
-            jsonschema.validators.extend(base_validator,
-                                         type_checker=new_type_checker)
+        new_type_checker = base_validator.TYPE_CHECKER.redefine(
+            "array", lambda checker, inst: isinstance(inst, (list, tuple))
+        )
+        custom_validator = jsonschema.validators.extend(
+            base_validator, type_checker=new_type_checker
+        )
 
         # jsconschema needs extra packages installed to validate some formats;
         # if they are missing, the format check will be skipped silently. For
         # date-time format, strict_rfc3339 or rfc3339-validator is required.
-        jsonschema.validate(instance=instance, schema=self.to_dict(),
-                            cls=custom_validator,
-                            format_checker=jsonschema.draft7_format_checker)
+        jsonschema.validate(
+            instance=instance,
+            schema=self.to_dict(),
+            cls=custom_validator,
+            format_checker=jsonschema.draft7_format_checker,
+        )
 
     def to_instance(self, value: Any) -> Any:
         """Convert Python object *value* into JSON value and return the validated result."""
@@ -159,13 +161,15 @@ class JsonComplexSchema(JsonSchema):
     # For full support one_of, any_of, all_of should also be handled in from_instance and to_instance.
 
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 one_of: Sequence['JsonSchema'] = None,
-                 any_of: Sequence['JsonSchema'] = None,
-                 all_of: Sequence['JsonSchema'] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        one_of: Sequence["JsonSchema"] = None,
+        any_of: Sequence["JsonSchema"] = None,
+        all_of: Sequence["JsonSchema"] = None,
+        **kwargs,
+    ):
         if len([x for x in (one_of, any_of, all_of) if bool(x)]) != 1:
-            raise ValueError('exactly one of one_of, any_of, all_of must be given')
+            raise ValueError("exactly one of one_of, any_of, all_of must be given")
         super().__init__(**kwargs)
         self.one_of = one_of
         self.any_of = any_of
@@ -193,7 +197,7 @@ class JsonSimpleSchema(JsonSchema):
     def __init__(self, type: str, **kwargs):
         super().__init__(type, **kwargs)
         if not isinstance(type, str):
-            raise ValueError(f'illegal type: {type}')
+            raise ValueError(f"illegal type: {type}")
 
     def _to_unvalidated_instance(self, value: Any) -> Any:
         return self.serializer(value) if self.serializer is not None else value
@@ -204,23 +208,25 @@ class JsonSimpleSchema(JsonSchema):
 
 class JsonNullSchema(JsonSimpleSchema):
     def __init__(self, **kwargs):
-        super().__init__(type='null', **kwargs)
+        super().__init__(type="null", **kwargs)
 
 
 class JsonBooleanSchema(JsonSimpleSchema):
     def __init__(self, **kwargs):
-        super().__init__(type='boolean', **kwargs)
+        super().__init__(type="boolean", **kwargs)
 
 
 class JsonStringSchema(JsonSimpleSchema):
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 format: str = None,
-                 pattern: str = None,
-                 min_length: int = None,
-                 max_length: int = None,
-                 **kwargs):
-        super().__init__(type='string', **kwargs)
+    def __init__(
+        self,
+        format: str = None,
+        pattern: str = None,
+        min_length: int = None,
+        max_length: int = None,
+        **kwargs,
+    ):
+        super().__init__(type="string", **kwargs)
         self.format = format
         self.pattern = pattern
         self.min_length = min_length
@@ -243,17 +249,18 @@ class JsonDateAndTimeSchemaBase:
     # noinspection PyShadowingBuiltins
     @classmethod
     def _validate_value(cls, value: Optional[str], name: str, format: str):
-        if value is not None and \
-                not cls._is_valid_value(value, format):
+        if value is not None and not cls._is_valid_value(value, format):
             raise ValueError(f'{name} must be formatted as a "{format}"')
 
     # noinspection PyShadowingBuiltins
     @classmethod
     def _is_valid_value(cls, value: str, format: str) -> bool:
         try:
-            jsonschema.validate(value,
-                                dict(type='string', format=format),
-                                format_checker=jsonschema.draft7_format_checker)
+            jsonschema.validate(
+                value,
+                dict(type="string", format=format),
+                format_checker=jsonschema.draft7_format_checker,
+            )
             return True
         except jsonschema.ValidationError:
             return False
@@ -268,13 +275,10 @@ class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
     """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 min_date: str = None,
-                 max_date: str = None,
-                 **kwargs):
-        super().__init__(**kwargs, format='date')
-        self._validate_value(min_date, 'min_date', 'date')
-        self._validate_value(max_date, 'max_date', 'date')
+    def __init__(self, min_date: str = None, max_date: str = None, **kwargs):
+        super().__init__(**kwargs, format="date")
+        self._validate_value(min_date, "min_date", "date")
+        self._validate_value(max_date, "max_date", "date")
         self.min_date = min_date
         self.max_date = max_date
 
@@ -287,10 +291,9 @@ class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
         return d
 
     @classmethod
-    def new_range(cls,
-                  min_date: str = None,
-                  max_date: str = None,
-                  nullable: bool = False) -> 'JsonArraySchema':
+    def new_range(
+        cls, min_date: str = None, max_date: str = None, nullable: bool = False
+    ) -> "JsonArraySchema":
         """
         Return a schema for a date range.
         :param min_date: optional minimum date.
@@ -303,7 +306,8 @@ class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
                 JsonDateSchema(min_date=min_date, max_date=max_date, nullable=nullable),
                 JsonDateSchema(min_date=min_date, max_date=max_date, nullable=nullable),
             ],
-            nullable=nullable)
+            nullable=nullable,
+        )
 
 
 class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
@@ -315,13 +319,10 @@ class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
     """
 
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 min_datetime: str = None,
-                 max_datetime: str = None,
-                 **kwargs):
-        super().__init__(**kwargs, format='date-time')
-        self._validate_value(min_datetime, 'min_datetime', 'date-time')
-        self._validate_value(max_datetime, 'max_datetime', 'date-time')
+    def __init__(self, min_datetime: str = None, max_datetime: str = None, **kwargs):
+        super().__init__(**kwargs, format="date-time")
+        self._validate_value(min_datetime, "min_datetime", "date-time")
+        self._validate_value(max_datetime, "max_datetime", "date-time")
         self.min_datetime = min_datetime
         self.max_datetime = max_datetime
 
@@ -334,10 +335,9 @@ class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
         return d
 
     @classmethod
-    def new_range(cls,
-                  min_datetime: str = None,
-                  max_datetime: str = None,
-                  nullable: bool = False) -> 'JsonArraySchema':
+    def new_range(
+        cls, min_datetime: str = None, max_datetime: str = None, nullable: bool = False
+    ) -> "JsonArraySchema":
         """
         Return a schema for a date-time range.
         :param min_datetime: optional minimum date.
@@ -345,25 +345,38 @@ class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
         :param nullable: whether the whole range as well as individual start and end dates may be None.
         :return: a JsonArraySchema with two items.
         """
-        return JsonArraySchema(items=[
-            JsonDatetimeSchema(min_datetime=min_datetime, max_datetime=max_datetime, nullable=nullable),
-            JsonDatetimeSchema(min_datetime=min_datetime, max_datetime=max_datetime, nullable=nullable),
-        ], nullable=nullable)
+        return JsonArraySchema(
+            items=[
+                JsonDatetimeSchema(
+                    min_datetime=min_datetime,
+                    max_datetime=max_datetime,
+                    nullable=nullable,
+                ),
+                JsonDatetimeSchema(
+                    min_datetime=min_datetime,
+                    max_datetime=max_datetime,
+                    nullable=nullable,
+                ),
+            ],
+            nullable=nullable,
+        )
 
 
 class JsonNumberSchema(JsonSimpleSchema):
     # noinspection PyShadowingBuiltins
-    def __init__(self,
-                 type: str = 'number',
-                 minimum: Union[int, float] = None,
-                 exclusive_minimum: Union[int, float] = None,
-                 maximum: Union[int, float] = None,
-                 exclusive_maximum: Union[int, float] = None,
-                 multiple_of: Union[int, float] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        type: str = "number",
+        minimum: Union[int, float] = None,
+        exclusive_minimum: Union[int, float] = None,
+        maximum: Union[int, float] = None,
+        exclusive_maximum: Union[int, float] = None,
+        multiple_of: Union[int, float] = None,
+        **kwargs,
+    ):
         if type not in _NUMERIC_TYPES_ENUM:
-            names = ', '.join(sorted(map(lambda t: f'"{t}"', _NUMERIC_TYPES_ENUM)))
-            raise ValueError(f'Type must be one of {names}')
+            names = ", ".join(sorted(map(lambda t: f'"{t}"', _NUMERIC_TYPES_ENUM)))
+            raise ValueError(f"Type must be one of {names}")
         super().__init__(type, **kwargs)
         self.minimum = minimum
         self.exclusive_minimum = exclusive_minimum
@@ -388,18 +401,20 @@ class JsonNumberSchema(JsonSimpleSchema):
 
 class JsonIntegerSchema(JsonNumberSchema):
     def __init__(self, **kwargs):
-        super().__init__(type='integer', **kwargs)
+        super().__init__(type="integer", **kwargs)
 
 
 class JsonArraySchema(JsonSchema):
 
-    def __init__(self,
-                 items: Union[JsonSchema, Sequence[JsonSchema]] = None,
-                 min_items: int = None,
-                 max_items: int = None,
-                 unique_items: bool = None,
-                 **kwargs):
-        super().__init__(type='array', **kwargs)
+    def __init__(
+        self,
+        items: Union[JsonSchema, Sequence[JsonSchema]] = None,
+        min_items: int = None,
+        max_items: int = None,
+        unique_items: bool = None,
+        **kwargs,
+    ):
+        super().__init__(type="array", **kwargs)
         self.items = items
         self.min_items = min_items
         self.max_items = max_items
@@ -420,28 +435,35 @@ class JsonArraySchema(JsonSchema):
             d.update(uniqueItems=self.unique_items)
         return d
 
-    def _to_unvalidated_instance(self, value: Optional[Sequence[Any]]) -> Optional[Sequence[Any]]:
+    def _to_unvalidated_instance(
+        self, value: Optional[Sequence[Any]]
+    ) -> Optional[Sequence[Any]]:
         if self.serializer:
             return self.serializer(value)
-        return self._convert_sequence(value, '_to_unvalidated_instance')
+        return self._convert_sequence(value, "_to_unvalidated_instance")
 
     def _from_validated_instance(self, instance: Sequence[Any]) -> Any:
-        obj = self._convert_sequence(instance, '_from_validated_instance')
-        return self.factory(obj) if self.factory is not None and obj is not None else obj
+        obj = self._convert_sequence(instance, "_from_validated_instance")
+        return (
+            self.factory(obj) if self.factory is not None and obj is not None else obj
+        )
 
-    def _convert_sequence(self, sequence: Optional[Sequence[Any]], method_name: str) -> Optional[Sequence[Any]]:
+    def _convert_sequence(
+        self, sequence: Optional[Sequence[Any]], method_name: str
+    ) -> Optional[Sequence[Any]]:
         items_schema = self.items
         if sequence is None:
             # Sequence may be null too
             return None
         if isinstance(items_schema, JsonSchema):
             # Sequence turned into list with items_schema applying to all elements
-            return [getattr(items_schema, method_name)(item)
-                    for item in sequence]
+            return [getattr(items_schema, method_name)(item) for item in sequence]
         if items_schema is not None:
             # Sequence turned into tuple with schema for every position
-            return [getattr(items_schema[item_index], method_name)(sequence[item_index])
-                    for item_index in range(len(items_schema))]
+            return [
+                getattr(items_schema[item_index], method_name)(sequence[item_index])
+                for item_index in range(len(items_schema))
+            ]
         # Sequence returned as-is, without schema
         return sequence
 
@@ -450,15 +472,17 @@ class JsonObjectSchema(JsonSchema):
 
     # TODO: also address property dependencies
 
-    def __init__(self,
-                 properties: Mapping[str, JsonSchema] = None,
-                 additional_properties: Union[bool, JsonSchema] = None,
-                 min_properties: int = None,
-                 max_properties: int = None,
-                 required: Sequence[str] = None,
-                 dependencies: Mapping[str, Union[Sequence[str], JsonSchema]] = None,
-                 **kwargs):
-        super().__init__(type='object', **kwargs)
+    def __init__(
+        self,
+        properties: Mapping[str, JsonSchema] = None,
+        additional_properties: Union[bool, JsonSchema] = None,
+        min_properties: int = None,
+        max_properties: int = None,
+        required: Sequence[str] = None,
+        dependencies: Mapping[str, Union[Sequence[str], JsonSchema]] = None,
+        **kwargs,
+    ):
+        super().__init__(type="object", **kwargs)
         self.properties = dict(properties) if properties else dict()
         self.additional_properties = additional_properties
         self.min_properties = min_properties
@@ -471,8 +495,13 @@ class JsonObjectSchema(JsonSchema):
         if self.properties is not None:
             d.update(properties={k: v.to_dict() for k, v in self.properties.items()})
         if self.additional_properties is not None:
-            d.update(additionalProperties=self.additional_properties.to_dict() \
-                if isinstance(self.additional_properties, JsonSchema) else self.additional_properties)
+            d.update(
+                additionalProperties=(
+                    self.additional_properties.to_dict()
+                    if isinstance(self.additional_properties, JsonSchema)
+                    else self.additional_properties
+                )
+            )
         if self.min_properties is not None:
             d.update(minProperties=self.min_properties)
         if self.max_properties is not None:
@@ -480,14 +509,18 @@ class JsonObjectSchema(JsonSchema):
         if self.required:
             d.update(required=list(self.required))
         if self.dependencies:
-            d.update(dependencies={k: (v.to_dict() if isinstance(v, JsonSchema) else v)
-                                   for k, v in self.dependencies.items()})
+            d.update(
+                dependencies={
+                    k: (v.to_dict() if isinstance(v, JsonSchema) else v)
+                    for k, v in self.dependencies.items()
+                }
+            )
         return d
 
     # TODO: move away. this is a special-purpose utility
-    def process_kwargs_subset(self,
-                              kwargs: Dict[str, Any],
-                              keywords: Sequence[str]) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def process_kwargs_subset(
+        self, kwargs: Dict[str, Any], keywords: Sequence[str]
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Utility that helps processing keyword-arguments. in *kwargs*:
 
@@ -517,14 +550,17 @@ class JsonObjectSchema(JsonSchema):
     def _to_unvalidated_instance(self, value: Any) -> Optional[Mapping[str, Any]]:
         if self.serializer is not None:
             return self.serializer(value)
-        return self._convert_mapping(value, '_to_unvalidated_instance')
+        return self._convert_mapping(value, "_to_unvalidated_instance")
 
     def _from_validated_instance(self, instance: Optional[Mapping[str, Any]]) -> Any:
-        obj = self._convert_mapping(instance, '_from_validated_instance')
-        return self.factory(**obj) if self.factory is not None and obj is not None else obj
+        obj = self._convert_mapping(instance, "_from_validated_instance")
+        return (
+            self.factory(**obj) if self.factory is not None and obj is not None else obj
+        )
 
-    def _convert_mapping(self, mapping_or_obj: Optional[Mapping[str, Any]], method_name: str) \
-            -> Optional[Mapping[str, Any]]:
+    def _convert_mapping(
+        self, mapping_or_obj: Optional[Mapping[str, Any]], method_name: str
+    ) -> Optional[Mapping[str, Any]]:
         # TODO: recognise self.dependencies. if dependency is again a schema, compute effective schema
         #       by merging this and the dependency.
 
@@ -532,12 +568,16 @@ class JsonObjectSchema(JsonSchema):
             return None
 
         # Fix for #432: call object's own to_dict() method but beware of infinite recursion
-        if (hasattr(mapping_or_obj, 'to_dict')
-                and callable(mapping_or_obj.to_dict)
-                # calling JsonSchema.to_dict() is always fine
-                and (isinstance(mapping_or_obj, JsonSchema)
-                     # calling JsonObject.to_dict() would cause infinite recursion
-                     or not isinstance(mapping_or_obj, JsonObject))):
+        if (
+            hasattr(mapping_or_obj, "to_dict")
+            and callable(mapping_or_obj.to_dict)
+            # calling JsonSchema.to_dict() is always fine
+            and (
+                isinstance(mapping_or_obj, JsonSchema)
+                # calling JsonObject.to_dict() would cause infinite recursion
+                or not isinstance(mapping_or_obj, JsonObject)
+            )
+        ):
             # noinspection PyBroadException
             try:
                 return mapping_or_obj.to_dict()
@@ -570,12 +610,14 @@ class JsonObjectSchema(JsonSchema):
                     # If property_name is defined in properties, we fully trust it
                     property_value = getattr(mapping_or_obj, property_name)
                     property_ok = True
-                elif additional_properties and not property_name.startswith('_'):
+                elif additional_properties and not property_name.startswith("_"):
                     # If property_name is not defined in properties, but additional
                     # properties are allowed, filter out private variables and callables.
                     property_value = getattr(mapping_or_obj, property_name)
                     property_ok = not callable(property_value)
-                property_ok = property_ok and (property_name in required_set or property_value is not None)
+                property_ok = property_ok and (
+                    property_name in required_set or property_value is not None
+                )
                 if property_ok and property_value != UNDEFINED:
                     mapping[property_name] = property_value
 
@@ -585,21 +627,33 @@ class JsonObjectSchema(JsonSchema):
         for property_name, property_schema in self.properties.items():
             if property_name in mapping:
                 property_value = mapping[property_name]
-                converted_property_value = getattr(property_schema, method_name)(property_value)
+                converted_property_value = getattr(property_schema, method_name)(
+                    property_value
+                )
                 converted_mapping[property_name] = converted_property_value
             else:
                 property_value = property_schema.default
                 if property_value != UNDEFINED:
-                    converted_property_value = getattr(property_schema, method_name)(property_value)
-                    if property_name in required_set or converted_property_value is not None:
+                    converted_property_value = getattr(property_schema, method_name)(
+                        property_value
+                    )
+                    if (
+                        property_name in required_set
+                        or converted_property_value is not None
+                    ):
                         converted_mapping[property_name] = converted_property_value
 
         # process additional properties
         if additional_properties:
             for property_name, property_value in mapping.items():
-                if property_name not in converted_mapping and property_value != UNDEFINED:
+                if (
+                    property_name not in converted_mapping
+                    and property_value != UNDEFINED
+                ):
                     if additional_properties_schema:
-                        property_value = getattr(additional_properties_schema, method_name)(property_value)
+                        property_value = getattr(
+                            additional_properties_schema, method_name
+                        )(property_value)
                     converted_mapping[property_name] = property_value
 
         return converted_mapping
@@ -608,6 +662,7 @@ class JsonObjectSchema(JsonSchema):
     def inject_attrs(cls, obj: object, attrs: Dict[str, Any]):
         for k, v in (attrs or {}).items():
             setattr(obj, k, v)
+
 
 class JsonObject(ABC):
     """
@@ -630,7 +685,7 @@ class JsonObject(ABC):
         """Get JSON object schema."""
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any]) -> 'JsonObject':
+    def from_dict(cls, value: Dict[str, Any]) -> "JsonObject":
         """Create instance from JSON-serializable dictionary *value*."""
         return cls.get_schema().from_instance(value)
 
@@ -639,10 +694,12 @@ class JsonObject(ABC):
         return self.get_schema().to_instance(self)
 
     def _inject_attrs(self, attrs: Dict[str, Any]):
-        assert_instance(attrs, dict, name='attrs')
+        assert_instance(attrs, dict, name="attrs")
         schema = self.get_schema()
-        assert_true(isinstance(schema, JsonObjectSchema),
-                    message='schema must be a JSON object schema')
+        assert_true(
+            isinstance(schema, JsonObjectSchema),
+            message="schema must be a JSON object schema",
+        )
         all_attrs = {k: None for k in (schema.properties or {}).keys()}
         all_attrs.update(attrs)
         JsonObjectSchema.inject_attrs(self, all_attrs)

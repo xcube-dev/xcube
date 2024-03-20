@@ -24,13 +24,15 @@ from typing import Optional, Set
 
 from xcube.server.api import ApiError
 
-READ_ALL_DATASETS_SCOPE = 'read:dataset:*'
-READ_ALL_VARIABLES_SCOPE = 'read:variable:*'
+READ_ALL_DATASETS_SCOPE = "read:dataset:*"
+READ_ALL_VARIABLES_SCOPE = "read:variable:*"
 
 
-def assert_scopes(required_scopes: Set[str],
-                  granted_scopes: Optional[Set[str]],
-                  is_substitute: bool = False):
+def assert_scopes(
+    required_scopes: Set[str],
+    granted_scopes: Optional[Set[str]],
+    is_substitute: bool = False,
+):
     """
     Assert scopes.
     Raise ServiceAuthError if one of *required_scopes* is
@@ -42,18 +44,18 @@ def assert_scopes(required_scopes: Set[str],
     :param is_substitute: True, if the resource to be checked
         is a substitute.
     """
-    missing_scope = _get_missing_scope(required_scopes,
-                                       granted_scopes,
-                                       is_substitute=is_substitute)
+    missing_scope = _get_missing_scope(
+        required_scopes, granted_scopes, is_substitute=is_substitute
+    )
     if missing_scope is not None:
-        raise ApiError.Unauthorized(
-            f'Missing permission "{missing_scope}"'
-        )
+        raise ApiError.Unauthorized(f'Missing permission "{missing_scope}"')
 
 
-def check_scopes(required_scopes: Set[str],
-                 granted_scopes: Optional[Set[str]],
-                 is_substitute: bool = False) -> bool:
+def check_scopes(
+    required_scopes: Set[str],
+    granted_scopes: Optional[Set[str]],
+    is_substitute: bool = False,
+) -> bool:
     """
     Check scopes.
 
@@ -71,14 +73,17 @@ def check_scopes(required_scopes: Set[str],
         is a substitute.
     :return: True, if scopes are ok.
     """
-    return _get_missing_scope(required_scopes,
-                              granted_scopes,
-                              is_substitute=is_substitute) is None
+    return (
+        _get_missing_scope(required_scopes, granted_scopes, is_substitute=is_substitute)
+        is None
+    )
 
 
-def _get_missing_scope(required_scopes: Set[str],
-                       granted_scopes: Optional[Set[str]],
-                       is_substitute: bool = False) -> Optional[str]:
+def _get_missing_scope(
+    required_scopes: Set[str],
+    granted_scopes: Optional[Set[str]],
+    is_substitute: bool = False,
+) -> Optional[str]:
     """
     Return the first required scope that is
     fulfilled by any granted scope
@@ -95,8 +100,9 @@ def _get_missing_scope(required_scopes: Set[str],
         for required_scope in required_scopes:
             required_permission_given = False
             for granted_scope in granted_scopes:
-                if required_scope == granted_scope \
-                        or fnmatch.fnmatch(required_scope, granted_scope):
+                if required_scope == granted_scope or fnmatch.fnmatch(
+                    required_scope, granted_scope
+                ):
                     # If any granted scope matches, we can stop
                     required_permission_given = True
                     break

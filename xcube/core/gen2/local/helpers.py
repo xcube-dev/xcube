@@ -28,11 +28,14 @@ def is_empty_cube(cube: xr.Dataset) -> bool:
 
 
 def strip_cube(cube: xr.Dataset) -> xr.Dataset:
-    drop_vars = [k for k, v in cube.data_vars.items()
-                 if len(v.shape) < 3
-                 or np.product(v.shape) == 0
-                 or v.shape[-2] < 2
-                 or v.shape[-1] < 2]
+    drop_vars = [
+        k
+        for k, v in cube.data_vars.items()
+        if len(v.shape) < 3
+        or np.product(v.shape) == 0
+        or v.shape[-2] < 2
+        or v.shape[-1] < 2
+    ]
     if drop_vars:
         return cube.drop_vars(drop_vars)
     return cube

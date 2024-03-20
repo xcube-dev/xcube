@@ -41,14 +41,12 @@ class FlaskFramework(Framework):
     def config_schema(self) -> Optional[JsonObjectSchema]:
         return None
 
-    def add_static_routes(self,
-                          static_routes: Sequence[ApiStaticRoute],
-                          url_prefix: str):
+    def add_static_routes(
+        self, static_routes: Sequence[ApiStaticRoute], url_prefix: str
+    ):
         raise NotImplementedError()
 
-    def add_routes(self,
-                   routes: Sequence[ApiRoute],
-                   url_prefix: str):
+    def add_routes(self, routes: Sequence[ApiRoute], url_prefix: str):
         raise NotImplementedError()
 
     def update(self, ctx: Context):
@@ -60,16 +58,16 @@ class FlaskFramework(Framework):
     def stop(self, ctx: Context):
         raise NotImplementedError()
 
-    def call_later(self,
-                   delay: Union[int, float],
-                   callback: Callable,
-                   *args,
-                   **kwargs) -> object:
+    def call_later(
+        self, delay: Union[int, float], callback: Callable, *args, **kwargs
+    ) -> object:
         raise NotImplementedError()
 
-    def run_in_executor(self,
-                        executor: Optional[concurrent.futures.Executor],
-                        function: Callable[..., ReturnT],
-                        *args: Any,
-                        **kwargs: Any) -> Awaitable[ReturnT]:
+    def run_in_executor(
+        self,
+        executor: Optional[concurrent.futures.Executor],
+        function: Callable[..., ReturnT],
+        *args: Any,
+        **kwargs: Any
+    ) -> Awaitable[ReturnT]:
         raise NotImplementedError()

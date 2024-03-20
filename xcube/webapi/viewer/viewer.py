@@ -81,9 +81,10 @@ class Viewer:
         thread.daemon = True
         thread.start()
 
-        self._server = Server(TornadoFramework(io_loop=self._io_loop,
-                                               shared_io_loop=True),
-                              config=server_config)
+        self._server = Server(
+            TornadoFramework(io_loop=self._io_loop, shared_io_loop=True),
+            config=server_config,
+        )
 
         self._io_loop.add_callback(self._server.start)
 
@@ -114,7 +115,7 @@ class Viewer:
     def datasets_ctx(self) -> DatasetsContext:
         """Gets the context for the server's "datasets" API."""
         assert self.is_server_running
-        return self._server.ctx.get_api_ctx('datasets')
+        return self._server.ctx.get_api_ctx("datasets")
 
     def stop_server(self):
         """Stops this viewer's server."""
@@ -127,12 +128,14 @@ class Viewer:
         self._server = None
         self._io_loop = None
 
-    def add_dataset(self,
-                    dataset: Union[xr.Dataset, MultiLevelDataset],
-                    ds_id: Optional[str] = None,
-                    title: Optional[str] = None,
-                    style: Optional[str] = None,
-                    color_mappings: Dict[str, Dict[str, Any]] = None):
+    def add_dataset(
+        self,
+        dataset: Union[xr.Dataset, MultiLevelDataset],
+        ds_id: Optional[str] = None,
+        title: Optional[str] = None,
+        style: Optional[str] = None,
+        color_mappings: Dict[str, Dict[str, Any]] = None,
+    ):
         """
         Add a dataset to this viewer.
 
@@ -152,11 +155,13 @@ class Viewer:
         """
         if not self._check_server_running():
             return
-        return self.datasets_ctx.add_dataset(dataset,
-                                             ds_id=ds_id,
-                                             title=title,
-                                             style=style,
-                                             color_mappings=color_mappings)
+        return self.datasets_ctx.add_dataset(
+            dataset,
+            ds_id=ds_id,
+            title=title,
+            style=style,
+            color_mappings=color_mappings,
+        )
 
     def remove_dataset(self, ds_id: str):
         """
@@ -168,9 +173,7 @@ class Viewer:
             return
         self.datasets_ctx.remove_dataset(ds_id)
 
-    def show(self,
-             width: Union[int, str] = "100%",
-             height: Union[str, int] = 800):
+    def show(self, width: Union[int, str] = "100%", height: Union[str, int] = 800):
         """
         Show this viewer as an iframe.
         Intended to be used in a Jupyter notebook.
@@ -182,17 +185,19 @@ class Viewer:
         """
         try:
             from IPython.core.display import HTML
+
             return HTML(
                 f'<iframe src="{self._viewer_url}&compact=1"'
                 f' width="{width}"'
                 f' height="{height}"'
-                f'/>'
+                f"/>"
             )
         except ImportError as e:
             print(f"Error: {e}; Trying to open Viewer in web browser...")
             # noinspection PyBroadException
             try:
                 import webbrowser
+
                 webbrowser.open_new_tab(self.viewer_url)
             except BaseException:
                 print("Failed too.")
@@ -205,7 +210,7 @@ class Viewer:
 
     def _check_server_running(self):
         if not self.is_server_running:
-            print('Server not running')
+            print("Server not running")
         return self.is_server_running
 
 

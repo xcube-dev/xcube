@@ -117,7 +117,7 @@ class MemoryCacheStore(CacheStore):
         :return: the original value.
         """
         if key != stored_value[0]:
-            raise ValueError('key does not match stored value')
+            raise ValueError("key does not match stored value")
         return stored_value[1]
 
     def discard_value(self, key, stored_value):
@@ -127,7 +127,7 @@ class MemoryCacheStore(CacheStore):
         :param stored_value: the stored representation of the value
         """
         if key != stored_value[0]:
-            raise ValueError('key does not match stored value')
+            raise ValueError("key does not match stored value")
         stored_value[1] = None
 
 
@@ -153,13 +153,13 @@ class FileCacheStore(CacheStore):
         dir_path = os.path.dirname(path)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path, exist_ok=True)
-        with open(path, 'wb') as fp:
+        with open(path, "wb") as fp:
             fp.write(value)
         return path, os.path.getsize(path)
 
     def restore_value(self, key, stored_value):
         path = self._key_to_path(key)
-        with open(path, 'rb') as fp:
+        with open(path, "rb") as fp:
             return fp.read()
 
     def discard_value(self, key, stored_value):
@@ -257,7 +257,14 @@ class Cache:
             self.access_time = time.process_time() - _T0
             self.access_count += 1
 
-    def __init__(self, store=MemoryCacheStore(), capacity=1000, threshold=0.75, policy=POLICY_LRU, parent_cache=None):
+    def __init__(
+        self,
+        store=MemoryCacheStore(),
+        capacity=1000,
+        threshold=0.75,
+        policy=POLICY_LRU,
+        parent_cache=None,
+    ):
         """
         Constructor.
 
@@ -358,7 +365,9 @@ class Cache:
             self._remove_item(item)
             item.discard(self._store, key)
             if _DEBUG_CACHE:
-                _debug_print('Cache: discarded value for key "%s" from parent cache' % key)
+                _debug_print(
+                    'Cache: discarded value for key "%s" from parent cache' % key
+                )
         self._lock.release()
 
     def _add_item(self, item):
@@ -375,7 +384,7 @@ class Cache:
 
     def trim(self, extra_size=0):
         if _DEBUG_CACHE:
-            _debug_print('trimming...')
+            _debug_print("trimming...")
         self._lock.acquire()
         self._item_list.sort(key=self._policy)
         keys = []
@@ -418,17 +427,26 @@ def _debug_print(msg):
 
 
 def _compute_object_size(obj):
-    if hasattr(obj, 'nbytes'):
+    if hasattr(obj, "nbytes"):
         # A numpy ndarray instance
         return obj.nbytes
-    elif hasattr(obj, 'size') and hasattr(obj, 'mode'):
+    elif hasattr(obj, "size") and hasattr(obj, "mode"):
         # A PIL Image instance
         w, h = obj.size
         m = obj.mode
-        return w * h * (4 if m in ('RGBA', 'RGBx', 'I', 'F') else
-                        3 if m in ('RGB', 'YCbCr', 'LAB', 'HSV') else
-                        1. / 8. if m == '1' else
-                        1)
+        return (
+            w
+            * h
+            * (
+                4
+                if m in ("RGBA", "RGBx", "I", "F")
+                else (
+                    3
+                    if m in ("RGB", "YCbCr", "LAB", "HSV")
+                    else 1.0 / 8.0 if m == "1" else 1
+                )
+            )
+        )
     else:
         return sys.getsizeof(obj)
 
@@ -437,10 +455,10 @@ def parse_mem_size(mem_size_text: str) -> Optional[int]:
     mem_size_text = mem_size_text.upper()
     if mem_size_text != "" and mem_size_text not in ("OFF", "NONE", "NULL", "FALSE"):
         unit = mem_size_text[-1]
-        factors = {"B": 10 ** 0, "K": 10 ** 3, "M": 10 ** 6, "G": 10 ** 9, "T": 10 ** 12}
+        factors = {"B": 10**0, "K": 10**3, "M": 10**6, "G": 10**9, "T": 10**12}
         try:
             if unit in factors:
-                capacity = int(mem_size_text[0: -1]) * factors[unit]
+                capacity = int(mem_size_text[0:-1]) * factors[unit]
             else:
                 capacity = int(mem_size_text)
         except ValueError:

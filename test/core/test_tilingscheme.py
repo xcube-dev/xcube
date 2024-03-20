@@ -33,38 +33,39 @@ from xcube.constants import CRS84
 class TilingSchemeTest(unittest.TestCase):
 
     def test_for_crs_geographic(self):
-        self.assertIs(TilingScheme.GEOGRAPHIC,
-                      TilingScheme.for_crs('EPSG:4326'))
-        self.assertIs(TilingScheme.GEOGRAPHIC,
-                      TilingScheme.for_crs(
-                          'urn:ogc:def:crs:OGC:1.3:EPSG::4326'
-                      ))
-        self.assertIs(TilingScheme.GEOGRAPHIC,
-                      TilingScheme.for_crs(CRS84))
-        self.assertIs(TilingScheme.GEOGRAPHIC,
-                      TilingScheme.for_crs('urn:ogc:def:crs:OGC:1.3:CRS84'))
-        self.assertIs(TilingScheme.GEOGRAPHIC,
-                      TilingScheme.for_crs('WGS84'))
+        self.assertIs(TilingScheme.GEOGRAPHIC, TilingScheme.for_crs("EPSG:4326"))
+        self.assertIs(
+            TilingScheme.GEOGRAPHIC,
+            TilingScheme.for_crs("urn:ogc:def:crs:OGC:1.3:EPSG::4326"),
+        )
+        self.assertIs(TilingScheme.GEOGRAPHIC, TilingScheme.for_crs(CRS84))
+        self.assertIs(
+            TilingScheme.GEOGRAPHIC,
+            TilingScheme.for_crs("urn:ogc:def:crs:OGC:1.3:CRS84"),
+        )
+        self.assertIs(TilingScheme.GEOGRAPHIC, TilingScheme.for_crs("WGS84"))
 
-        self.assertIs(TilingScheme.GEOGRAPHIC,
-                      TilingScheme.for_crs(TilingScheme.GEOGRAPHIC.crs))
+        self.assertIs(
+            TilingScheme.GEOGRAPHIC, TilingScheme.for_crs(TilingScheme.GEOGRAPHIC.crs)
+        )
 
         tiling_scheme = TilingScheme.for_crs(CRS84, tile_size=512)
         self.assertIsNot(TilingScheme.GEOGRAPHIC, tiling_scheme)
         self.assertEqual((512, 512), tiling_scheme.tile_size)
 
     def test_for_crs_web_mercator(self):
-        self.assertIs(TilingScheme.WEB_MERCATOR,
-                      TilingScheme.for_crs('EPSG:3857'))
-        self.assertIs(TilingScheme.WEB_MERCATOR,
-                      TilingScheme.for_crs(
-                          'urn:ogc:def:crs:OGC:1.3:EPSG::3857')
-                      )
+        self.assertIs(TilingScheme.WEB_MERCATOR, TilingScheme.for_crs("EPSG:3857"))
+        self.assertIs(
+            TilingScheme.WEB_MERCATOR,
+            TilingScheme.for_crs("urn:ogc:def:crs:OGC:1.3:EPSG::3857"),
+        )
 
-        self.assertIs(TilingScheme.WEB_MERCATOR,
-                      TilingScheme.for_crs(TilingScheme.WEB_MERCATOR.crs))
+        self.assertIs(
+            TilingScheme.WEB_MERCATOR,
+            TilingScheme.for_crs(TilingScheme.WEB_MERCATOR.crs),
+        )
 
-        tiling_scheme = TilingScheme.for_crs('EPSG:3857', tile_size=512)
+        tiling_scheme = TilingScheme.for_crs("EPSG:3857", tile_size=512)
         self.assertIsNot(TilingScheme.WEB_MERCATOR, tiling_scheme)
         self.assertEqual((512, 512), tiling_scheme.tile_size)
 
@@ -88,7 +89,7 @@ class TilingSchemeTest(unittest.TestCase):
         tiling_scheme = TilingScheme.WEB_MERCATOR
 
         self.assertEqual((1, 1), tiling_scheme.num_level_zero_tiles)
-        self.assertEqual('EPSG:3857', tiling_scheme.crs_name)
+        self.assertEqual("EPSG:3857", tiling_scheme.crs_name)
         self.assertEqual((256, 256), tiling_scheme.tile_size)
         self.assertEqual(256, tiling_scheme.tile_width)
         self.assertEqual(256, tiling_scheme.tile_height)
@@ -106,17 +107,20 @@ class TilingSchemeTest(unittest.TestCase):
 
         half = EARTH_CIRCUMFERENCE_WGS84 / 2
 
-        self.assertEqual((-half, -half, half, half),
-                         tiling_scheme.get_tile_extent(0, 0, 0))
+        self.assertEqual(
+            (-half, -half, half, half), tiling_scheme.get_tile_extent(0, 0, 0)
+        )
 
-        self.assertEqual((-half, 0.0, 0.0, half),
-                         tiling_scheme.get_tile_extent(0, 0, 1))
-        self.assertEqual((0.0, 0.0, half, half),
-                         tiling_scheme.get_tile_extent(1, 0, 1))
-        self.assertEqual((-half, -half, 0.0, 0.0),
-                         tiling_scheme.get_tile_extent(0, 1, 1))
-        self.assertEqual((0.0, -half, half, 0.0),
-                         tiling_scheme.get_tile_extent(1, 1, 1))
+        self.assertEqual(
+            (-half, 0.0, 0.0, half), tiling_scheme.get_tile_extent(0, 0, 1)
+        )
+        self.assertEqual((0.0, 0.0, half, half), tiling_scheme.get_tile_extent(1, 0, 1))
+        self.assertEqual(
+            (-half, -half, 0.0, 0.0), tiling_scheme.get_tile_extent(0, 1, 1)
+        )
+        self.assertEqual(
+            (0.0, -half, half, 0.0), tiling_scheme.get_tile_extent(1, 1, 1)
+        )
 
     def test_derive_geographic(self):
         tiling_scheme = TilingScheme.GEOGRAPHIC
@@ -132,66 +136,56 @@ class TilingSchemeTest(unittest.TestCase):
 
         with self.assertRaises(ValueError) as cm:
             tiling_scheme.get_resolutions()
-        self.assertEqual('max_value must be given', f'{cm.exception}')
+        self.assertEqual("max_value must be given", f"{cm.exception}")
 
         resolutions = tiling_scheme.get_resolutions(max_level=6)
-        self.assertEqual([0.703125,
-                          0.3515625,
-                          0.17578125,
-                          0.087890625,
-                          0.0439453125,
-                          0.02197265625,
-                          0.010986328125],
-                         resolutions)
+        self.assertEqual(
+            [
+                0.703125,
+                0.3515625,
+                0.17578125,
+                0.087890625,
+                0.0439453125,
+                0.02197265625,
+                0.010986328125,
+            ],
+            resolutions,
+        )
 
         resolutions = tiling_scheme.get_resolutions(min_level=4, max_level=6)
-        self.assertEqual([0.0439453125,
-                          0.02197265625,
-                          0.010986328125],
-                         resolutions)
+        self.assertEqual([0.0439453125, 0.02197265625, 0.010986328125], resolutions)
 
-        resolutions = tiling_scheme.derive(max_level=6). \
-            get_resolutions()
-        self.assertEqual([0.703125,
-                          0.3515625,
-                          0.17578125,
-                          0.087890625,
-                          0.0439453125,
-                          0.02197265625,
-                          0.010986328125],
-                         resolutions)
+        resolutions = tiling_scheme.derive(max_level=6).get_resolutions()
+        self.assertEqual(
+            [
+                0.703125,
+                0.3515625,
+                0.17578125,
+                0.087890625,
+                0.0439453125,
+                0.02197265625,
+                0.010986328125,
+            ],
+            resolutions,
+        )
 
-        resolutions = tiling_scheme.derive(min_level=4, max_level=6). \
-            get_resolutions()
-        self.assertEqual([0.0439453125,
-                          0.02197265625,
-                          0.010986328125],
-                         resolutions)
+        resolutions = tiling_scheme.derive(min_level=4, max_level=6).get_resolutions()
+        self.assertEqual([0.0439453125, 0.02197265625, 0.010986328125], resolutions)
 
     def test_tile_extent_geographic(self):
         tiling_scheme = TilingScheme.GEOGRAPHIC
 
-        self.assertEqual((-180, -90, 0, 90),
-                         tiling_scheme.get_tile_extent(0, 0, 0))
-        self.assertEqual((0, -90, 180, 90),
-                         tiling_scheme.get_tile_extent(1, 0, 0))
+        self.assertEqual((-180, -90, 0, 90), tiling_scheme.get_tile_extent(0, 0, 0))
+        self.assertEqual((0, -90, 180, 90), tiling_scheme.get_tile_extent(1, 0, 0))
 
-        self.assertEqual((-180, 0, -90, 90),
-                         tiling_scheme.get_tile_extent(0, 0, 1))
-        self.assertEqual((-90, 0, 0, 90),
-                         tiling_scheme.get_tile_extent(1, 0, 1))
-        self.assertEqual((0, 0, 90, 90),
-                         tiling_scheme.get_tile_extent(2, 0, 1))
-        self.assertEqual((90, 0, 180, 90),
-                         tiling_scheme.get_tile_extent(3, 0, 1))
-        self.assertEqual((-180, -90, -90, 0),
-                         tiling_scheme.get_tile_extent(0, 1, 1))
-        self.assertEqual((-90, -90, 0, 0),
-                         tiling_scheme.get_tile_extent(1, 1, 1))
-        self.assertEqual((0, -90, 90, 0),
-                         tiling_scheme.get_tile_extent(2, 1, 1))
-        self.assertEqual((90, -90, 180, 0),
-                         tiling_scheme.get_tile_extent(3, 1, 1))
+        self.assertEqual((-180, 0, -90, 90), tiling_scheme.get_tile_extent(0, 0, 1))
+        self.assertEqual((-90, 0, 0, 90), tiling_scheme.get_tile_extent(1, 0, 1))
+        self.assertEqual((0, 0, 90, 90), tiling_scheme.get_tile_extent(2, 0, 1))
+        self.assertEqual((90, 0, 180, 90), tiling_scheme.get_tile_extent(3, 0, 1))
+        self.assertEqual((-180, -90, -90, 0), tiling_scheme.get_tile_extent(0, 1, 1))
+        self.assertEqual((-90, -90, 0, 0), tiling_scheme.get_tile_extent(1, 1, 1))
+        self.assertEqual((0, -90, 90, 0), tiling_scheme.get_tile_extent(2, 1, 1))
+        self.assertEqual((90, -90, 180, 0), tiling_scheme.get_tile_extent(3, 1, 1))
 
     def test_get_resolutions_level_web_mercator(self):
         tiling_scheme = TilingScheme.WEB_MERCATOR
@@ -202,7 +196,7 @@ class TilingSchemeTest(unittest.TestCase):
         # for level, res in enumerate(resolutions):
         #     print(level, res)
 
-        args = [10, 20, 40, 80, 160], 'meter'
+        args = [10, 20, 40, 80, 160], "meter"
 
         get_level = tiling_scheme.get_resolutions_level
         self.assertEqual(4, get_level(0, *args))
@@ -231,10 +225,7 @@ class TilingSchemeTest(unittest.TestCase):
 
         self.assertEqual(
             (10, 14),
-            tiling_scheme.get_levels_for_resolutions(
-                [10, 20, 40, 80, 160],
-                'meter'
-            )
+            tiling_scheme.get_levels_for_resolutions([10, 20, 40, 80, 160], "meter"),
         )
 
     def test_get_resolutions_level_geographic(self):
@@ -247,11 +238,9 @@ class TilingSchemeTest(unittest.TestCase):
         #     print(level, res)
 
         num_ds_levels = 6
-        ds_resolutions = [
-            180 / 256 / 2 ** i for i in reversed(range(num_ds_levels))
-        ]
+        ds_resolutions = [180 / 256 / 2**i for i in reversed(range(num_ds_levels))]
 
-        args = ds_resolutions, 'degree'
+        args = ds_resolutions, "degree"
 
         get_level = tiling_scheme.get_resolutions_level
         self.assertEqual(5, get_level(0, *args))
@@ -267,84 +256,65 @@ class TilingSchemeTest(unittest.TestCase):
         tiling_scheme = TilingScheme.GEOGRAPHIC
 
         num_ds_levels = 10
-        ds_resolutions = [
-            180 / 256 / 2 ** i for i in reversed(range(num_ds_levels))
-        ]
+        ds_resolutions = [180 / 256 / 2**i for i in reversed(range(num_ds_levels))]
 
         # Test up to num_ds_levels
         self.assertEqual(
             (0, num_ds_levels - 1),
-            tiling_scheme.get_levels_for_resolutions(
-                ds_resolutions,
-                'degrees'
-            )
+            tiling_scheme.get_levels_for_resolutions(ds_resolutions, "degrees"),
         )
 
         # Test single level 5
         self.assertEqual(
             (5, 5),
-            tiling_scheme.get_levels_for_resolutions(
-                [180 / 256 / 2 ** 5],
-                'degrees'
-            )
+            tiling_scheme.get_levels_for_resolutions([180 / 256 / 2**5], "degrees"),
         )
 
         # Test empty
         with self.assertRaises(ValueError):
-            tiling_scheme.get_levels_for_resolutions(
-                [],
-                'degrees'
-            )
+            tiling_scheme.get_levels_for_resolutions([], "degrees")
 
     def test_get_limited_levels_for_resolutions_geographic(self):
         tiling_scheme = TilingScheme.GEOGRAPHIC
 
         self.assertEqual(
             (0, 2),
-            tiling_scheme.get_levels_for_resolutions(
-                [0.25, 0.5, 1.0, 2.0],
-                'degrees'
-            )
+            tiling_scheme.get_levels_for_resolutions([0.25, 0.5, 1.0, 2.0], "degrees"),
         )
 
         self.assertEqual(
             (0, 2),
             tiling_scheme.get_levels_for_resolutions(
-                [0.25, 0.5, 1.0, 2.0, 4.0],
-                'degrees'
-            )
+                [0.25, 0.5, 1.0, 2.0, 4.0], "degrees"
+            ),
         )
 
         self.assertEqual(
             (0, 3),
             tiling_scheme.get_levels_for_resolutions(
-                [0.125, 0.25, 0.5, 1.0, 2.0],
-                'degrees'
-            )
+                [0.125, 0.25, 0.5, 1.0, 2.0], "degrees"
+            ),
         )
 
         self.assertEqual(
             (0, 3),
             tiling_scheme.get_levels_for_resolutions(
-                [0.125, 0.25, 0.5, 1.0, 2.0, 4.0],
-                'degrees'
-            )
+                [0.125, 0.25, 0.5, 1.0, 2.0, 4.0], "degrees"
+            ),
         )
 
         self.assertEqual(
             (0, 4),
             tiling_scheme.get_levels_for_resolutions(
-                [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0],
-                'degrees'
-            )
+                [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0], "degrees"
+            ),
         )
 
         self.assertEqual(
             (0, 4),
             tiling_scheme.get_levels_for_resolutions(
-                [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0],
-                'degrees'
-            )
+                [0.0625, 0.125, 0.25, 0.5, 1.0, 2.0, 4.0], "degrees"
+            ),
         )
 
 
@@ -353,15 +323,12 @@ class TilingSchemeHelpersTest(unittest.TestCase):
     def test_subdivide_size(self):
         self.assertEqual(
             [(2048, 1024), (1024, 512), (512, 256)],
-            subdivide_size((2048, 1024), (256, 256))
+            subdivide_size((2048, 1024), (256, 256)),
         )
-        self.assertEqual(
-            [(360, 180)],
-            subdivide_size((360, 180), (256, 256))
-        )
+        self.assertEqual([(360, 180)], subdivide_size((360, 180), (256, 256)))
         self.assertEqual(
             [(7200, 3600), (3600, 1800), (1800, 900), (900, 450), (450, 225)],
-            subdivide_size((7200, 3600), (256, 256))
+            subdivide_size((7200, 3600), (256, 256)),
         )
 
     def test_get_num_levels(self):
@@ -370,14 +337,12 @@ class TilingSchemeHelpersTest(unittest.TestCase):
         self.assertEqual(5, get_num_levels((7200, 3600), (256, 256)))
 
     def test_get_unit_factor(self):
-        self.assertAlmostEqual(1, get_unit_factor('m', 'm'))
-        self.assertAlmostEqual(1, get_unit_factor('meters', 'm'))
-        self.assertAlmostEqual(1, get_unit_factor('deg', 'degree'))
-        self.assertAlmostEqual(111319.49079327358,
-                               get_unit_factor('deg', 'm'))
-        self.assertAlmostEqual(8.983152841195214e-06,
-                               get_unit_factor('m', 'degree'))
+        self.assertAlmostEqual(1, get_unit_factor("m", "m"))
+        self.assertAlmostEqual(1, get_unit_factor("meters", "m"))
+        self.assertAlmostEqual(1, get_unit_factor("deg", "degree"))
+        self.assertAlmostEqual(111319.49079327358, get_unit_factor("deg", "m"))
+        self.assertAlmostEqual(8.983152841195214e-06, get_unit_factor("m", "degree"))
         with self.assertRaises(ValueError):
-            get_unit_factor('cm', 'm')
+            get_unit_factor("cm", "m")
         with self.assertRaises(ValueError):
-            get_unit_factor('m', 'mdeg')
+            get_unit_factor("m", "mdeg")

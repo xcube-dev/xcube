@@ -28,44 +28,44 @@ PATH_PARAM_PLACE_GROUP_ID = {
     "name": "placeGroupId",
     "in": "path",
     "description": "Place group identifier",
-    "schema": {"type": "string"}
+    "schema": {"type": "string"},
 }
 
 
-@api.route('/places')
+@api.route("/places")
 class PlaceGroupsHandler(ApiHandler[PlacesContext]):
-    @api.operation(operationId='getPlaceGroups',
-                   summary='Get place groups including all places.')
+    @api.operation(
+        operationId="getPlaceGroups", summary="Get place groups including all places."
+    )
     def get(self):
-        place_groups = self.ctx.get_global_place_groups(
-            self.request.reverse_base_url
-        )
+        place_groups = self.ctx.get_global_place_groups(self.request.reverse_base_url)
         self.response.finish({"placeGroups": place_groups})
 
 
 # noinspection PyPep8Naming
-@api.route('/places/{placeGroupId}')
+@api.route("/places/{placeGroupId}")
 class FindPlacesHandler(ApiHandler):
     """Find places within a known place group."""
 
-    @api.operation(operationId='findPlacesInPlaceGroup',
-                   summary='Find places in a given place group.',
-                   parameters=[
-                       PATH_PARAM_PLACE_GROUP_ID,
-                       {
-                           "name": "geom",
-                           "in": "query",
-                           "description": "Geometry WKT string",
-                           "schema": {"type": "string"}
-                       },
-                       {
-                           "name": "bbox",
-                           "in": "query",
-                           "description": "Bounding box string in"
-                                          " the form x1,y1,x2,y2",
-                           "schema": {"type": "string"},
-                       },
-                   ])
+    @api.operation(
+        operationId="findPlacesInPlaceGroup",
+        summary="Find places in a given place group.",
+        parameters=[
+            PATH_PARAM_PLACE_GROUP_ID,
+            {
+                "name": "geom",
+                "in": "query",
+                "description": "Geometry WKT string",
+                "schema": {"type": "string"},
+            },
+            {
+                "name": "bbox",
+                "in": "query",
+                "description": "Bounding box string in" " the form x1,y1,x2,y2",
+                "schema": {"type": "string"},
+            },
+        ],
+    )
     def get(self, placeGroupId: str):
         geom_wkt = self.request.get_query_arg("geom", default=None)
         box_coords = self.request.get_query_arg("bbox", default=None)
@@ -73,9 +73,7 @@ class FindPlacesHandler(ApiHandler):
         # query_expr = self.request.get_query_arg("query", default=None)
         # comb_op = self.request.get_query_arg("comb", default="and")
         if geom_wkt and box_coords:
-            raise ApiError.BadRequest(
-                'Only one of "geom" and "bbox" may be given'
-            )
+            raise ApiError.BadRequest('Only one of "geom" and "bbox" may be given')
         places = find_places(
             self.ctx,
             placeGroupId,
@@ -86,11 +84,12 @@ class FindPlacesHandler(ApiHandler):
         )
         self.response.finish({"places": places})
 
-    @api.operation(operationId='findPlacesInPlaceGroup',
-                   summary='Find places in a given place group'
-                           ' for a GeoJSON object.',
-                   parameters=[PATH_PARAM_PLACE_GROUP_ID],
-                   description='The request body must be a GeoJSON object.')
+    @api.operation(
+        operationId="findPlacesInPlaceGroup",
+        summary="Find places in a given place group" " for a GeoJSON object.",
+        parameters=[PATH_PARAM_PLACE_GROUP_ID],
+        description="The request body must be a GeoJSON object.",
+    )
     def post(self, placeGroupId: str):
         # Not implemented yet:
         # query_expr = self.request.get_query_arg("query", default=None)

@@ -25,15 +25,21 @@ from xcube.util.undefined import UNDEFINED
 
 
 class GeoJSON:
-    PRIMITIVE_GEOMETRY_TYPES = {'Point', 'LineString', 'Polygon',
-                                'MultiPoint', 'MultiLineString', 'MultiPolygon'}
-    GEOMETRY_COLLECTION_TYPE = 'GeometryCollection'
-    FEATURE_TYPE = 'Feature'
-    FEATURE_COLLECTION_TYPE = 'FeatureCollection'
+    PRIMITIVE_GEOMETRY_TYPES = {
+        "Point",
+        "LineString",
+        "Polygon",
+        "MultiPoint",
+        "MultiLineString",
+        "MultiPolygon",
+    }
+    GEOMETRY_COLLECTION_TYPE = "GeometryCollection"
+    FEATURE_TYPE = "Feature"
+    FEATURE_COLLECTION_TYPE = "FeatureCollection"
 
     @classmethod
     def is_point(cls, obj: Any) -> bool:
-        return cls.get_type_name(obj) == 'Point'
+        return cls.get_type_name(obj) == "Point"
 
     @classmethod
     def is_feature(cls, obj: Any) -> bool:
@@ -41,29 +47,31 @@ class GeoJSON:
 
     @classmethod
     def is_feature_collection(cls, obj: Any) -> bool:
-        return cls.get_type_name(obj) == cls.FEATURE_COLLECTION_TYPE and cls._is_valid_sequence(obj, 'features')
+        return cls.get_type_name(
+            obj
+        ) == cls.FEATURE_COLLECTION_TYPE and cls._is_valid_sequence(obj, "features")
 
     @classmethod
     def is_geometry(cls, obj: Any) -> bool:
         type_name = cls.get_type_name(obj)
         if type_name in cls.PRIMITIVE_GEOMETRY_TYPES:
-            return cls._is_valid_sequence(obj, 'coordinates')
+            return cls._is_valid_sequence(obj, "coordinates")
         if type_name == cls.GEOMETRY_COLLECTION_TYPE:
-            return cls._is_valid_sequence(obj, 'geometries')
+            return cls._is_valid_sequence(obj, "geometries")
         return False
 
     @classmethod
     def is_geometry_collection(cls, obj: Any) -> bool:
         type_name = cls.get_type_name(obj)
         if type_name == cls.GEOMETRY_COLLECTION_TYPE:
-            return cls._is_valid_sequence(obj, 'geometries')
+            return cls._is_valid_sequence(obj, "geometries")
         return False
 
     @classmethod
     def get_geometry_collection_geometries(cls, obj: Any) -> Optional[Sequence[Dict]]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.GEOMETRY_COLLECTION_TYPE:
-            geometries = cls._get_sequence(obj, 'geometries')
+            geometries = cls._get_sequence(obj, "geometries")
             if geometries == UNDEFINED:
                 return None
             elif geometries is None:
@@ -76,7 +84,7 @@ class GeoJSON:
     def get_feature_collection_features(cls, obj: Any) -> Optional[Sequence[Dict]]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.FEATURE_COLLECTION_TYPE:
-            features = cls._get_sequence(obj, 'features')
+            features = cls._get_sequence(obj, "features")
             if features == UNDEFINED:
                 return None
             elif features is None:
@@ -89,9 +97,9 @@ class GeoJSON:
     def get_feature_geometry(cls, obj: Any) -> Optional[Dict]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.FEATURE_TYPE:
-            if 'geometry' not in obj:
+            if "geometry" not in obj:
                 return None
-            geometry = obj['geometry']
+            geometry = obj["geometry"]
             if cls.is_geometry(geometry):
                 return geometry
             return None

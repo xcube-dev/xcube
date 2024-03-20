@@ -30,7 +30,7 @@ from xcube.webapi.timeseries.context import TimeSeriesContext
 
 
 def get_timeseries_ctx(
-        server_config: Union[str, ServerConfig] = "config.yml"
+    server_config: Union[str, ServerConfig] = "config.yml"
 ) -> TimeSeriesContext:
     return get_api_ctx("timeseries", TimeSeriesContext, server_config)
 

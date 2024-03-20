@@ -28,9 +28,11 @@ from xcube.util.jsonschema import JsonObjectSchema
 from .error import DataStoreError
 
 
-def assert_valid_params(params: Optional[Dict[str, Any]],
-                        schema: Optional[JsonObjectSchema] = None,
-                        name: str = 'params'):
+def assert_valid_params(
+    params: Optional[Dict[str, Any]],
+    schema: Optional[JsonObjectSchema] = None,
+    name: str = "params",
+):
     """
     Assert that constructor/method parameters *params* are valid.
 
@@ -39,14 +41,14 @@ def assert_valid_params(params: Optional[Dict[str, Any]],
     :param schema: The JSON Schema that *params* must adhere to.
     :param name: Name of the *params* variable.
     """
-    _assert_valid(params, schema,
-                  name, 'parameterization',
-                  _validate_params)
+    _assert_valid(params, schema, name, "parameterization", _validate_params)
 
 
-def assert_valid_config(config: Optional[Dict[str, Any]],
-                        schema: Optional[JsonObjectSchema] = None,
-                        name: str = 'config'):
+def assert_valid_config(
+    config: Optional[Dict[str, Any]],
+    schema: Optional[JsonObjectSchema] = None,
+    name: str = "config",
+):
     """
     Assert that JSON object *config* is valid.
 
@@ -54,9 +56,7 @@ def assert_valid_config(config: Optional[Dict[str, Any]],
     :param schema: The JSON Schema that *config* must adhere to.
     :param name: Name of the *config* variable.
     """
-    _assert_valid(config, schema,
-                  name, 'configuration',
-                  _validate_config)
+    _assert_valid(config, schema, name, "configuration", _validate_config)
 
 
 def _validate_params(params: Dict[str, Any], schema: JsonObjectSchema):
@@ -72,20 +72,19 @@ def _validate_config(config: Dict[str, Any], schema: JsonObjectSchema):
     schema.validate_instance(config)
 
 
-def _assert_valid(obj: Optional[Dict[str, Any]],
-                  schema: Optional[JsonObjectSchema],
-                  name: str,
-                  kind: str,
-                  validator: Callable[[Dict[str, Any],
-                                       JsonObjectSchema], Any]):
+def _assert_valid(
+    obj: Optional[Dict[str, Any]],
+    schema: Optional[JsonObjectSchema],
+    name: str,
+    kind: str,
+    validator: Callable[[Dict[str, Any], JsonObjectSchema], Any],
+):
     if obj is None:
         return
     assert_instance(obj, dict, name=name)
     if schema is not None:
-        assert_instance(schema, JsonObjectSchema,
-                        name=f'{name}_schema')
+        assert_instance(schema, JsonObjectSchema, name=f"{name}_schema")
         try:
             validator(obj, schema)
         except jsonschema.ValidationError as e:
-            raise DataStoreError(f'Invalid {kind}'
-                                 f' detected: {e.message}') from e
+            raise DataStoreError(f"Invalid {kind}" f" detected: {e.message}") from e

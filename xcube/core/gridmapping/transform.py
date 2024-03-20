@@ -52,41 +52,41 @@ from .helpers import _normalize_crs
 #         return self._xy_coords
 #
 
+
 def transform_grid_mapping(
-        grid_mapping: GridMapping,
-        crs: Union[str, pyproj.crs.CRS],
-        *,
-        tile_size: Union[int, Tuple[int, int]] = None,
-        xy_var_names: Tuple[str, str] = None,
-        tolerance: float = DEFAULT_TOLERANCE,
+    grid_mapping: GridMapping,
+    crs: Union[str, pyproj.crs.CRS],
+    *,
+    tile_size: Union[int, Tuple[int, int]] = None,
+    xy_var_names: Tuple[str, str] = None,
+    tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
     target_crs = _normalize_crs(crs)
 
     if xy_var_names:
-        _assert_valid_xy_names(xy_var_names, name='xy_var_names')
+        _assert_valid_xy_names(xy_var_names, name="xy_var_names")
 
     source_crs = grid_mapping.crs
     if source_crs == target_crs:
         if tile_size is not None or xy_var_names is not None:
-            return grid_mapping.derive(tile_size=tile_size,
-                                       xy_var_names=xy_var_names)
+            return grid_mapping.derive(tile_size=tile_size, xy_var_names=xy_var_names)
         return grid_mapping
 
-    transformer = pt.Transformer.from_crs(source_crs,
-                                          target_crs,
-                                          always_xy=True)
+    transformer = pt.Transformer.from_crs(source_crs, target_crs, always_xy=True)
 
     def _transform(block: np.ndarray) -> np.ndarray:
         x1, y1 = block
         x2, y2 = transformer.transform(x1, y1)
         return np.stack([x2, y2])
 
-    xy_coords = xr.apply_ufunc(_transform,
-                               grid_mapping.xy_coords,
-                               output_dtypes=[np.float64],
-                               dask='parallelized')
+    xy_coords = xr.apply_ufunc(
+        _transform,
+        grid_mapping.xy_coords,
+        output_dtypes=[np.float64],
+        dask="parallelized",
+    )
 
-    xy_var_names = xy_var_names or ('transformed_x', 'transformed_y')
+    xy_var_names = xy_var_names or ("transformed_x", "transformed_y")
 
     # TODO: Use a specialized grid mapping here that can store the
     #   *xy_coords* directly. Splitting the xy_coords dask array into

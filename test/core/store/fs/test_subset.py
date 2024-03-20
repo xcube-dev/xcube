@@ -39,26 +39,26 @@ class FsStoreSubset:
 
             cls.fs.delete(cls.root, recursive=True)
 
-            dir_path = f'{cls.root}/l1b'
+            dir_path = f"{cls.root}/l1b"
             cls.fs.mkdir(dir_path)
             for i in range(3):
-                zarr_path = f'{dir_path}/olci-l1b-2022050{i + 1}.zarr'
-                cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode='w')
+                zarr_path = f"{dir_path}/olci-l1b-2022050{i + 1}.zarr"
+                cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode="w")
 
-            dir_path = f'{cls.root}/l2'
+            dir_path = f"{cls.root}/l2"
             cls.fs.mkdir(dir_path)
             for i in range(3):
-                zarr_path = f'{dir_path}/olci-l2-2022050{i + 1}.zarr'
-                cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode='w')
+                zarr_path = f"{dir_path}/olci-l2-2022050{i + 1}.zarr"
+                cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode="w")
 
-            dir_path = f'{cls.root}/l3'
+            dir_path = f"{cls.root}/l3"
             cls.fs.mkdir(dir_path)
-            for i in ['2020', '2021']:
-                levels_path = f'{dir_path}/olci-l3-{i}.levels'
+            for i in ["2020", "2021"]:
+                levels_path = f"{dir_path}/olci-l3-{i}.levels"
                 cls.fs.mkdir(levels_path)
                 for j in range(4):
-                    zarr_path = f'{levels_path}/{j}.zarr'
-                    cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode='w')
+                    zarr_path = f"{levels_path}/{j}.zarr"
+                    cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode="w")
 
         @classmethod
         def tearDownClass(cls) -> None:
@@ -67,83 +67,97 @@ class FsStoreSubset:
 
         def test_no_subset(self):
             store = self.new_store()
-            self.assertEqual({'l1b/olci-l1b-20220501.zarr',
-                              'l1b/olci-l1b-20220502.zarr',
-                              'l1b/olci-l1b-20220503.zarr',
-                              'l2/olci-l2-20220501.zarr',
-                              'l2/olci-l2-20220502.zarr',
-                              'l2/olci-l2-20220503.zarr',
-                              'l3/olci-l3-2020.levels',
-                              'l3/olci-l3-2021.levels'},
-                             set(store.get_data_ids()))
+            self.assertEqual(
+                {
+                    "l1b/olci-l1b-20220501.zarr",
+                    "l1b/olci-l1b-20220502.zarr",
+                    "l1b/olci-l1b-20220503.zarr",
+                    "l2/olci-l2-20220501.zarr",
+                    "l2/olci-l2-20220502.zarr",
+                    "l2/olci-l2-20220503.zarr",
+                    "l3/olci-l3-2020.levels",
+                    "l3/olci-l3-2021.levels",
+                },
+                set(store.get_data_ids()),
+            )
 
         def test_include(self):
-            store = self.new_store(includes='*/*20220502*')
-            self.assertEqual({'l1b/olci-l1b-20220502.zarr',
-                              'l2/olci-l2-20220502.zarr'},
-                             set(store.get_data_ids()))
+            store = self.new_store(includes="*/*20220502*")
+            self.assertEqual(
+                {"l1b/olci-l1b-20220502.zarr", "l2/olci-l2-20220502.zarr"},
+                set(store.get_data_ids()),
+            )
 
-            store = self.new_store(includes=['*/*20220502*', '*.levels'])
-            self.assertEqual({'l1b/olci-l1b-20220502.zarr',
-                              'l2/olci-l2-20220502.zarr',
-                              'l3/olci-l3-2020.levels',
-                              'l3/olci-l3-2021.levels'},
-                             set(store.get_data_ids()))
+            store = self.new_store(includes=["*/*20220502*", "*.levels"])
+            self.assertEqual(
+                {
+                    "l1b/olci-l1b-20220502.zarr",
+                    "l2/olci-l2-20220502.zarr",
+                    "l3/olci-l3-2020.levels",
+                    "l3/olci-l3-2021.levels",
+                },
+                set(store.get_data_ids()),
+            )
 
-            store = self.new_store(includes=['*.tiff'])
-            self.assertEqual(set(),
-                             set(store.get_data_ids()))
+            store = self.new_store(includes=["*.tiff"])
+            self.assertEqual(set(), set(store.get_data_ids()))
 
         def test_exclude(self):
-            store = self.new_store(excludes='*/*20220502*')
-            self.assertEqual({'l1b/olci-l1b-20220501.zarr',
-                              'l1b/olci-l1b-20220503.zarr',
-                              'l2/olci-l2-20220501.zarr',
-                              'l2/olci-l2-20220503.zarr',
-                              'l3/olci-l3-2020.levels',
-                              'l3/olci-l3-2021.levels'},
-                             set(store.get_data_ids()))
+            store = self.new_store(excludes="*/*20220502*")
+            self.assertEqual(
+                {
+                    "l1b/olci-l1b-20220501.zarr",
+                    "l1b/olci-l1b-20220503.zarr",
+                    "l2/olci-l2-20220501.zarr",
+                    "l2/olci-l2-20220503.zarr",
+                    "l3/olci-l3-2020.levels",
+                    "l3/olci-l3-2021.levels",
+                },
+                set(store.get_data_ids()),
+            )
 
-            store = self.new_store(excludes=['*/*20220502*', '*.levels'])
-            self.assertEqual({'l1b/olci-l1b-20220501.zarr',
-                              'l1b/olci-l1b-20220503.zarr',
-                              'l2/olci-l2-20220501.zarr',
-                              'l2/olci-l2-20220503.zarr'},
-                             set(store.get_data_ids()))
+            store = self.new_store(excludes=["*/*20220502*", "*.levels"])
+            self.assertEqual(
+                {
+                    "l1b/olci-l1b-20220501.zarr",
+                    "l1b/olci-l1b-20220503.zarr",
+                    "l2/olci-l2-20220501.zarr",
+                    "l2/olci-l2-20220503.zarr",
+                },
+                set(store.get_data_ids()),
+            )
 
-            store = self.new_store(excludes=['*.zarr', '*.levels'])
-            self.assertEqual(set(),
-                             set(store.get_data_ids()))
+            store = self.new_store(excludes=["*.zarr", "*.levels"])
+            self.assertEqual(set(), set(store.get_data_ids()))
 
         def test_include_exclude(self):
-            store = self.new_store(includes='*.levels',
-                                   excludes='*2021*')
-            self.assertEqual({'l3/olci-l3-2020.levels'},
-                             set(store.get_data_ids()))
+            store = self.new_store(includes="*.levels", excludes="*2021*")
+            self.assertEqual({"l3/olci-l3-2020.levels"}, set(store.get_data_ids()))
 
-            store = self.new_store(includes='*2022*',
-                                   excludes=['*.levels', 'l1b/*'])
-            self.assertEqual({'l2/olci-l2-20220501.zarr',
-                              'l2/olci-l2-20220502.zarr',
-                              'l2/olci-l2-20220503.zarr'},
-                             set(store.get_data_ids()))
+            store = self.new_store(includes="*2022*", excludes=["*.levels", "l1b/*"])
+            self.assertEqual(
+                {
+                    "l2/olci-l2-20220501.zarr",
+                    "l2/olci-l2-20220502.zarr",
+                    "l2/olci-l2-20220503.zarr",
+                },
+                set(store.get_data_ids()),
+            )
 
 
 class MemoryFsStoreSubsetTest(FsStoreSubset.CommonTest):
     @classmethod
     def get_fs_root(cls) -> Tuple[fsspec.AbstractFileSystem, str]:
         fs = fsspec.get_filesystem_class("memory")()
-        root = 'xcube'
+        root = "xcube"
         fs.mkdirs(root, exist_ok=True)
         return fs, root
 
     @classmethod
     def new_store(cls, **params) -> FsDataStore:
-        return new_fs_data_store('memory',
-                                 root=cls.root,
-                                 max_depth=3,
-                                 read_only=True,
-                                 **params)
+        return new_fs_data_store(
+            "memory", root=cls.root, max_depth=3, read_only=True, **params
+        )
 
 
 class FileFsStoreSubsetTest(FsStoreSubset.CommonTest):
@@ -154,11 +168,9 @@ class FileFsStoreSubsetTest(FsStoreSubset.CommonTest):
 
     @classmethod
     def new_store(cls, **params) -> FsDataStore:
-        return new_fs_data_store('file',
-                                 root=cls.root,
-                                 max_depth=3,
-                                 read_only=True,
-                                 **params)
+        return new_fs_data_store(
+            "file", root=cls.root, max_depth=3, read_only=True, **params
+        )
 
 
 # TODO (forman): check, why we get OSError for moto test
@@ -167,19 +179,19 @@ class S3FsStoreSubsetTest(FsStoreSubset.CommonTest, S3Test):
     @classmethod
     def get_fs_root(cls) -> Tuple[fsspec.AbstractFileSystem, str]:
         fs = fsspec.get_filesystem_class("s3")(**cls.get_storage_options())
-        root = 'xcube'
+        root = "xcube"
         fs.mkdirs(root, exist_ok=True)
         return fs, root
 
     @classmethod
     def new_store(cls, **params) -> FsDataStore:
         return new_fs_data_store(
-            's3',
+            "s3",
             root=cls.root,
             max_depth=3,
             read_only=True,
             storage_options=cls.get_storage_options(),
-            **params
+            **params,
         )
 
     @classmethod
@@ -190,5 +202,5 @@ class S3FsStoreSubsetTest(FsStoreSubset.CommonTest, S3Test):
             secret="",
             client_kwargs=dict(
                 endpoint_url=MOTO_SERVER_ENDPOINT_URL,
-            )
+            ),
         )

@@ -29,7 +29,7 @@ COMPUTE_CONFIG_SCHEMA = JsonObjectSchema(
         # Executor=JsonObjectSchema(),
         # OpRegistry=JsonStringSchema(),
     ),
-    additional_properties=False
+    additional_properties=False,
 )
 
 CONFIG_SCHEMA = JsonObjectSchema(

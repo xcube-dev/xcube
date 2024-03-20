@@ -10,7 +10,7 @@ from xcube.core.gen2.local.transformer import transform_cube
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 
-CALLBACK_MOCK_URL = 'https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback'
+CALLBACK_MOCK_URL = "https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback"
 
 
 class CubeIdentityTest(unittest.TestCase):
@@ -20,9 +20,7 @@ class CubeIdentityTest(unittest.TestCase):
         gm = GridMapping.from_dataset(cube)
         cube_config = CubeConfig()
         identity = CubeIdentity()
-        t_cube = identity.transform_cube(cube,
-                                         gm,
-                                         cube_config)
+        t_cube = identity.transform_cube(cube, gm, cube_config)
         self.assertIsInstance(t_cube, tuple)
         self.assertEqual(3, len(t_cube))
         self.assertIs(cube, t_cube[0])
@@ -32,13 +30,13 @@ class CubeIdentityTest(unittest.TestCase):
 
 class MyTiler(CubeTransformer):
 
-    def transform_cube(self,
-                       cube: xr.Dataset,
-                       gm: GridMapping,
-                       cube_config: CubeConfig) -> TransformedCube:
-        cube = cube.chunk(dict(lon=cube_config.tile_size[0],
-                               lat=cube_config.tile_size[1]))
-        cube_config = cube_config.drop_props('tile_size')
+    def transform_cube(
+        self, cube: xr.Dataset, gm: GridMapping, cube_config: CubeConfig
+    ) -> TransformedCube:
+        cube = cube.chunk(
+            dict(lon=cube_config.tile_size[0], lat=cube_config.tile_size[1])
+        )
+        cube_config = cube_config.drop_props("tile_size")
         return cube, gm, cube_config
 
 

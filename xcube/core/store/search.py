@@ -14,9 +14,9 @@ class DataSearcher(ABC):
 
     @classmethod
     @abstractmethod
-    def get_search_params_schema(cls,
-                                 data_type: DataTypeLike = None) \
-            -> JsonObjectSchema:
+    def get_search_params_schema(
+        cls, data_type: DataTypeLike = None
+    ) -> JsonObjectSchema:
         """
         Get the schema for the parameters that can be passed
         as *search_params* to :meth:search_data().
@@ -30,9 +30,9 @@ class DataSearcher(ABC):
         """
 
     @abstractmethod
-    def search_data(self,
-                    data_type: DataTypeLike = None,
-                    **search_params) -> Iterator[DataDescriptor]:
+    def search_data(
+        self, data_type: DataTypeLike = None, **search_params
+    ) -> Iterator[DataDescriptor]:
         """
         Search this store for data resources.
         If *data_type* is given, the search is restricted
@@ -67,8 +67,9 @@ class DefaultSearchMixin(DataSearcher):
 
     # noinspection PyUnusedLocal
     @classmethod
-    def get_search_params_schema(cls, data_type: DataTypeLike = None) \
-            -> JsonObjectSchema:
+    def get_search_params_schema(
+        cls, data_type: DataTypeLike = None
+    ) -> JsonObjectSchema:
         """
         Get search parameters JSON object schema.
 
@@ -80,10 +81,9 @@ class DefaultSearchMixin(DataSearcher):
         """
         return JsonObjectSchema(additional_properties=False)
 
-    def search_data(self,
-                    data_type: DataTypeLike = None,
-                    **search_params) \
-            -> Iterator[DataDescriptor]:
+    def search_data(
+        self, data_type: DataTypeLike = None, **search_params
+    ) -> Iterator[DataDescriptor]:
         """
         Search the data store.
 
@@ -95,15 +95,10 @@ class DefaultSearchMixin(DataSearcher):
         :param search_params: Not supported (yet)
         :return: an iterator of :class:DataDescriptor instances
         """
-        search_params_schema = self.get_search_params_schema(
-            data_type=data_type
+        search_params_schema = self.get_search_params_schema(data_type=data_type)
+        assert_valid_params(
+            search_params, name="search_params", schema=search_params_schema
         )
-        assert_valid_params(search_params,
-                            name='search_params',
-                            schema=search_params_schema)
         for data_id in self.get_data_ids(data_type=data_type):
-            data_descriptor = self.describe_data(
-                data_id,
-                data_type=data_type
-            )
+            data_descriptor = self.describe_data(data_id, data_type=data_type)
             yield data_descriptor

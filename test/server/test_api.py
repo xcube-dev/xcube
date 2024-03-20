@@ -39,10 +39,10 @@ from .mocks import mock_server
 class ApiTest(unittest.TestCase):
 
     def test_basic_props(self):
-        api = Api("datasets", description='What an API!')
+        api = Api("datasets", description="What an API!")
         self.assertEqual("datasets", api.name)
         self.assertEqual("0.0.0", api.version)
-        self.assertEqual('What an API!', api.description)
+        self.assertEqual("What an API!", api.description)
         self.assertEqual((), api.required_apis)
         self.assertEqual((), api.optional_apis)
         self.assertEqual(None, api.config_schema)
@@ -56,28 +56,30 @@ class ApiTest(unittest.TestCase):
         test_dict = dict()
 
         def handle_start(ctx):
-            test_dict['handle_start'] = ctx
+            test_dict["handle_start"] = ctx
 
         def handle_stop(ctx):
-            test_dict['handle_stop'] = ctx
+            test_dict["handle_stop"] = ctx
 
         server_ctx = ServerContext(mock_server(), {})
 
-        api = Api("datasets",
-                  create_ctx=MyApiContext,
-                  on_start=handle_start,
-                  on_stop=handle_stop)
+        api = Api(
+            "datasets",
+            create_ctx=MyApiContext,
+            on_start=handle_start,
+            on_stop=handle_stop,
+        )
 
         api_ctx = api.create_ctx(server_ctx)
         self.assertIsInstance(api_ctx, MyApiContext)
 
         api.on_start(server_ctx)
-        self.assertIs(server_ctx, test_dict.get('handle_start'))
-        self.assertIs(None, test_dict.get('handle_stop'))
+        self.assertIs(server_ctx, test_dict.get("handle_start"))
+        self.assertIs(None, test_dict.get("handle_stop"))
 
         api.on_stop(server_ctx)
-        self.assertIs(server_ctx, test_dict.get('handle_start'))
-        self.assertIs(server_ctx, test_dict.get('handle_stop'))
+        self.assertIs(server_ctx, test_dict.get("handle_start"))
+        self.assertIs(server_ctx, test_dict.get("handle_stop"))
 
     def test_route_decorator(self):
         api = Api("datasets")
@@ -97,9 +99,9 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(
             (
                 ApiRoute("datasets", "/datasets", DatasetsHandler),
-                ApiRoute("datasets", "/datasets/{dataset_id}", DatasetHandler)
+                ApiRoute("datasets", "/datasets/{dataset_id}", DatasetHandler),
             ),
-            api.routes
+            api.routes,
         )
 
     def test_operation_decorator(self):
@@ -112,17 +114,16 @@ class ApiTest(unittest.TestCase):
             def get(self):
                 return {}
 
-        self.assertEqual(
-            {},
-            getattr(DatasetsHandler.get, '__openapi__', None)
-        )
+        self.assertEqual({}, getattr(DatasetsHandler.get, "__openapi__", None))
 
         with self.assertRaises(TypeError) as cm:
             api.operation()(42)
-        self.assertEqual("API datasets: @operation() decorator"
-                         " must be used with one of the HTTP"
-                         " methods of an ApiHandler",
-                         f"{cm.exception}")
+        self.assertEqual(
+            "API datasets: @operation() decorator"
+            " must be used with one of the HTTP"
+            " methods of an ApiHandler",
+            f"{cm.exception}",
+        )
 
 
 class ApiRouteTest(unittest.TestCase):
@@ -134,24 +135,22 @@ class ApiRouteTest(unittest.TestCase):
                 return {}
 
         self.assertTrue(
-            ApiRoute("datasets", "/datasets", DatasetHandler) ==
             ApiRoute("datasets", "/datasets", DatasetHandler)
+            == ApiRoute("datasets", "/datasets", DatasetHandler)
         )
         self.assertTrue(
-            ApiRoute("datasets", "/datasets", DatasetHandler) ==
-            ApiRoute("datasets", "/datasets", DatasetHandler, {})
+            ApiRoute("datasets", "/datasets", DatasetHandler)
+            == ApiRoute("datasets", "/datasets", DatasetHandler, {})
         )
         self.assertTrue(
-            ApiRoute("datasets", "/datasets", DatasetHandler) !=
-            ApiRoute("datasets", "/dataset", DatasetHandler, {})
+            ApiRoute("datasets", "/datasets", DatasetHandler)
+            != ApiRoute("datasets", "/dataset", DatasetHandler, {})
         )
         self.assertTrue(
-            ApiRoute("datasets", "/datasets", DatasetHandler) !=
-            ApiRoute("dataset", "/datasets", DatasetHandler, {})
+            ApiRoute("datasets", "/datasets", DatasetHandler)
+            != ApiRoute("dataset", "/datasets", DatasetHandler, {})
         )
-        self.assertTrue(
-            ApiRoute("datasets", "/datasets", DatasetHandler) != 42
-        )
+        self.assertTrue(ApiRoute("datasets", "/datasets", DatasetHandler) != 42)
 
     def test_hash(self):
         class DatasetHandler(ApiHandler):
@@ -161,11 +160,11 @@ class ApiRouteTest(unittest.TestCase):
 
         self.assertEqual(
             hash(ApiRoute("datasets", "/datasets", DatasetHandler)),
-            hash(ApiRoute("datasets", "/datasets", DatasetHandler))
+            hash(ApiRoute("datasets", "/datasets", DatasetHandler)),
         )
         self.assertEqual(
             hash(ApiRoute("datasets", "/datasets", DatasetHandler)),
-            hash(ApiRoute("datasets", "/datasets", DatasetHandler, {}))
+            hash(ApiRoute("datasets", "/datasets", DatasetHandler, {})),
         )
 
     def test_str_and_repr(self):
@@ -174,22 +173,25 @@ class ApiRouteTest(unittest.TestCase):
             def get(self):
                 return {}
 
-        api_route = ApiRoute("datasets", "/datasets",
-                             DatasetHandler, dict(force=True))
-        self.assertEqual("ApiRoute("
-                         "'datasets',"
-                         " '/datasets',"
-                         " DatasetHandler,"
-                         " handler_kwargs={'force': True}"
-                         ")",
-                         f'{api_route}')
-        self.assertEqual("ApiRoute("
-                         "'datasets',"
-                         " '/datasets',"
-                         " DatasetHandler,"
-                         " handler_kwargs={'force': True}"
-                         ")",
-                         f'{api_route!r}')
+        api_route = ApiRoute("datasets", "/datasets", DatasetHandler, dict(force=True))
+        self.assertEqual(
+            "ApiRoute("
+            "'datasets',"
+            " '/datasets',"
+            " DatasetHandler,"
+            " handler_kwargs={'force': True}"
+            ")",
+            f"{api_route}",
+        )
+        self.assertEqual(
+            "ApiRoute("
+            "'datasets',"
+            " '/datasets',"
+            " DatasetHandler,"
+            " handler_kwargs={'force': True}"
+            ")",
+            f"{api_route!r}",
+        )
 
 
 class ApiContextTest(unittest.TestCase):
@@ -229,14 +231,13 @@ class ApiHandlerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.api = Api("datasets", create_ctx=self.DatasetsContext)
         self.config = {}
-        server_ctx = ServerContext(mock_server(api_specs=[self.api]),
-                                   self.config)
+        server_ctx = ServerContext(mock_server(api_specs=[self.api]), self.config)
         server_ctx.on_update(None)
         self.request = MockApiRequest()
         self.response = MockApiResponse()
-        self.handler = ApiHandler(server_ctx.get_api_ctx("datasets"),
-                                  self.request,
-                                  self.response)
+        self.handler = ApiHandler(
+            server_ctx.get_api_ctx("datasets"), self.request, self.response
+        )
 
     def test_props(self):
         handler = self.handler
@@ -251,23 +252,21 @@ class ApiHandlerTest(unittest.TestCase):
 
         with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.get()
-        self.assertEqual('HTTP status 405: method GET not allowed',
-                         f'{cm.exception}')
+        self.assertEqual("HTTP status 405: method GET not allowed", f"{cm.exception}")
 
         with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.post()
-        self.assertEqual('HTTP status 405: method POST not allowed',
-                         f'{cm.exception}')
+        self.assertEqual("HTTP status 405: method POST not allowed", f"{cm.exception}")
 
         with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.put()
-        self.assertEqual('HTTP status 405: method PUT not allowed',
-                         f'{cm.exception}')
+        self.assertEqual("HTTP status 405: method PUT not allowed", f"{cm.exception}")
 
         with self.assertRaises(ApiError.MethodNotAllowed) as cm:
             handler.delete()
-        self.assertEqual('HTTP status 405: method DELETE not allowed',
-                         f'{cm.exception}')
+        self.assertEqual(
+            "HTTP status 405: method DELETE not allowed", f"{cm.exception}"
+        )
 
     def test_default_options_method(self):
         handler = self.handler
@@ -278,40 +277,35 @@ class ApiHandlerTest(unittest.TestCase):
 class ApiRequestTest(unittest.TestCase):
 
     def test_urls(self):
-        request = MockApiRequest(dict(details='1'),
-                                 reverse_url_prefix='/proxy/9192')
-        self.assertEqual('http://localhost:8080/datasets?details=1',
-                         request.url)
-        self.assertEqual('http://localhost:8080',
-                         request.base_url)
-        self.assertEqual('http://localhost:8080/proxy/9192',
-                         request.reverse_base_url)
-        self.assertEqual('http://localhost:8080/places',
-                         request.url_for_path('places'))
-        self.assertEqual('http://localhost:8080/proxy/9192/places',
-                         request.url_for_path('places', reverse=True))
+        request = MockApiRequest(dict(details="1"), reverse_url_prefix="/proxy/9192")
+        self.assertEqual("http://localhost:8080/datasets?details=1", request.url)
+        self.assertEqual("http://localhost:8080", request.base_url)
+        self.assertEqual("http://localhost:8080/proxy/9192", request.reverse_base_url)
+        self.assertEqual("http://localhost:8080/places", request.url_for_path("places"))
+        self.assertEqual(
+            "http://localhost:8080/proxy/9192/places",
+            request.url_for_path("places", reverse=True),
+        )
 
     def test_query_args(self):
-        request = MockApiRequest(query_args=dict(details=['1']))
-        self.assertEqual(['1'], request.get_query_args('details'))
-        self.assertEqual([], request.get_query_args('crs'))
+        request = MockApiRequest(query_args=dict(details=["1"]))
+        self.assertEqual(["1"], request.get_query_args("details"))
+        self.assertEqual([], request.get_query_args("crs"))
 
     def test_query_args_with_type(self):
-        request = MockApiRequest(query_args=dict(details=['1']))
-        self.assertEqual([True], request.get_query_args('details', type=bool))
-        self.assertEqual([], request.get_query_args('crs', type=str))
+        request = MockApiRequest(query_args=dict(details=["1"]))
+        self.assertEqual([True], request.get_query_args("details", type=bool))
+        self.assertEqual([], request.get_query_args("crs", type=str))
 
     def test_query_arg_with_type(self):
-        request = MockApiRequest(query_args=dict(details=['1']))
-        self.assertEqual(True, request.get_query_arg('details', type=bool))
-        self.assertEqual(None, request.get_query_arg('crs', type=str))
+        request = MockApiRequest(query_args=dict(details=["1"]))
+        self.assertEqual(True, request.get_query_arg("details", type=bool))
+        self.assertEqual(None, request.get_query_arg("crs", type=str))
 
     def test_query_arg_with_default(self):
-        request = MockApiRequest(query_args=dict(details=['1']))
-        self.assertEqual(True, request.get_query_arg('details',
-                                                     default=False))
-        self.assertEqual('CRS84', request.get_query_arg('crs',
-                                                        default='CRS84'))
+        request = MockApiRequest(query_args=dict(details=["1"]))
+        self.assertEqual(True, request.get_query_arg("details", default=False))
+        self.assertEqual("CRS84", request.get_query_arg("crs", default="CRS84"))
 
 
 class ApiErrorTest(unittest.TestCase):
@@ -322,10 +316,10 @@ class ApiErrorTest(unittest.TestCase):
         self.assertEqual(428, error.status_code)
         self.assertEqual(None, error.message)
 
-        error = ApiError(428, message='No idea')
+        error = ApiError(428, message="No idea")
         self.assertIsInstance(error, Exception)
         self.assertEqual(428, error.status_code)
-        self.assertEqual('No idea', error.message)
+        self.assertEqual("No idea", error.message)
 
         self.assertIsNot(ApiError.BadRequest, ApiError.Unauthorized)
         self.assertIsNot(ApiError.BadRequest, ApiError.Forbidden)

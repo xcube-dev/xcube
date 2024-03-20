@@ -49,19 +49,19 @@ def get_coverage_as_json(ctx: DatasetsContext, collection_id: str):
     :return: a JSON representation of the coverage
     """
     return {
-        'id': collection_id,
-        'type': 'CoverageByDomainAndRange',
-        'envelope': get_collection_envelope(ctx, collection_id),
-        'domainSet': get_coverage_domainset(ctx, collection_id),
-        'rangeSet': {
-            'type': 'RangeSet',
+        "id": collection_id,
+        "type": "CoverageByDomainAndRange",
+        "envelope": get_collection_envelope(ctx, collection_id),
+        "domainSet": get_coverage_domainset(ctx, collection_id),
+        "rangeSet": {
+            "type": "RangeSet",
             # TODO: Wait for next update to API specification before
             #  implementing the data block -- not clear yet whether this
             #  is being deprecated along with the rangeSet endpoint.
-            'dataBlock': {'type': 'VDataBlock', 'values': ['TODO']},
+            "dataBlock": {"type": "VDataBlock", "values": ["TODO"]},
         },
-        'rangeType': get_coverage_rangetype(ctx, collection_id),
-        'metadata': get_collection_metadata(ctx, collection_id),
+        "rangeType": get_coverage_rangetype(ctx, collection_id),
+        "metadata": get_collection_metadata(ctx, collection_id),
     }
 
 
@@ -109,14 +109,14 @@ def get_coverage_data(
     # requirement 7D: "If a datetime parameter is specified requesting a
     # coverage without any temporal dimension, the parameter SHALL either be
     # ignored, or a 4xx client error generated." We choose to ignore it.
-    if request.datetime is not None and 'time' in ds.variables:
+    if request.datetime is not None and "time" in ds.variables:
         if isinstance(request.datetime, tuple):
             time_slice = slice(*request.datetime)
             time_slice = ensure_time_index_compatible(ds, time_slice)
             ds = ds.sel(time=time_slice)
         else:
             timespec = ensure_time_index_compatible(ds, request.datetime)
-            ds = ds.sel(time=timespec, method='nearest').squeeze()
+            ds = ds.sel(time=timespec, method="nearest").squeeze()
 
     if request.subset is not None:
         subset_bbox, ds = _apply_subsetting(ds, request.subset, subset_crs)
@@ -138,9 +138,7 @@ def get_coverage_data(
         # We can't combine the scaling operation with this CRS transformation,
         # since the size may end up wrong after the re-application of bounding
         # boxes below.
-        ds = resample_in_space(
-            ds, source_gm=source_gm, target_gm=transformed_gm
-        )
+        ds = resample_in_space(ds, source_gm=source_gm, target_gm=transformed_gm)
 
     if native_crs != final_crs:
         # If we've resampled into a new CRS, the transformed native-CRS
@@ -161,31 +159,29 @@ def get_coverage_data(
 
     ds.rio.write_crs(final_crs, inplace=True)
     for var in ds.data_vars.values():
-        var.attrs.pop('grid_mapping', None)
+        var.attrs.pop("grid_mapping", None)
 
     # check: rename axes to match final CRS?
 
     media_types = dict(
-        tiff={'geotiff', 'image/tiff', 'application/x-geotiff'},
-        png={'png', 'image/png'},
-        netcdf={'netcdf', 'application/netcdf', 'application/x-netcdf'},
+        tiff={"geotiff", "image/tiff", "application/x-geotiff"},
+        png={"png", "image/png"},
+        netcdf={"netcdf", "application/netcdf", "application/x-netcdf"},
     )
-    if content_type in media_types['tiff']:
-        content = dataset_to_image(ds, 'tiff', final_crs)
-    elif content_type in media_types['png']:
-        content = dataset_to_image(ds, 'png', final_crs)
-    elif content_type in media_types['netcdf']:
+    if content_type in media_types["tiff"]:
+        content = dataset_to_image(ds, "tiff", final_crs)
+    elif content_type in media_types["png"]:
+        content = dataset_to_image(ds, "png", final_crs)
+    elif content_type in media_types["netcdf"]:
         content = dataset_to_netcdf(ds)
     else:
         # It's expected that the caller (server API handler) will catch
         # unhandled types, but we may as well do the right thing if any
         # do slip through.
         raise ApiError.UnsupportedMediaType(
-            f'Unsupported media type {content_type}. '
-            + 'Available media types: '
-            + ', '.join(
-                [type_ for value in media_types.values() for type_ in value]
-            )
+            f"Unsupported media type {content_type}. "
+            + "Available media types: "
+            + ", ".join([type_ for value in media_types.values() for type_ in value])
         )
     final_bbox = get_bbox_from_ds(ds)
     if not is_xy_order(final_crs):
@@ -195,18 +191,19 @@ def get_coverage_data(
 
 def _apply_properties(collection_id, ds, properties):
     requested_vars = set(properties)
-    data_vars = set(map(
-        # Filter out 0-dimensional variables (usually grid mapping variables)
-        str, {k: v for k, v in ds.data_vars.items() if v.dims != ()}
-    ))
+    data_vars = set(
+        map(
+            # Filter out 0-dimensional variables (usually grid mapping variables)
+            str,
+            {k: v for k, v in ds.data_vars.items() if v.dims != ()},
+        )
+    )
     unrecognized_vars = requested_vars - data_vars
     if unrecognized_vars == set():
-        ds = ds.drop_vars(
-            list(data_vars - requested_vars - {'crs', 'spatial_ref'})
-        )
+        ds = ds.drop_vars(list(data_vars - requested_vars - {"crs", "spatial_ref"}))
     else:
         raise ApiError.BadRequest(
-            f'The following properties are not present in the coverage '
+            f"The following properties are not present in the coverage "
             f'{collection_id}: {", ".join(unrecognized_vars)}'
         )
     return ds
@@ -217,17 +214,17 @@ def _assert_coverage_size_ok(scaling: CoverageScaling):
     x, y = scaling.size
     if (x * y) > size_limit:
         raise ApiError.ContentTooLarge(
-            f'Requested coverage is too large:' f'{x} × {y} > {size_limit}.'
+            f"Requested coverage is too large:" f"{x} × {y} > {size_limit}."
         )
 
 
 _IndexerTuple = NamedTuple(
-    'Indexers',
+    "Indexers",
     [
-        ('indices', dict[str, Any]),  # non-geographic single-valued specifiers
-        ('slices', dict[str, slice]),  # non-geographic range specifiers
-        ('x', Optional[Union[float, tuple[float, float]]]),  # x or longitude
-        ('y', Optional[Union[float, tuple[float, float]]]),  # y or latitude
+        ("indices", dict[str, Any]),  # non-geographic single-valued specifiers
+        ("slices", dict[str, slice]),  # non-geographic range specifiers
+        ("x", Optional[Union[float, tuple[float, float]]]),  # x or longitude
+        ("y", Optional[Union[float, tuple[float, float]]]),  # y or latitude
     ],
 )
 
@@ -245,7 +242,7 @@ def _apply_subsetting(
     if indexers.slices:
         ds = ds.sel(indexers=indexers.slices)
     if indexers.indices:
-        ds = ds.sel(indexers=indexers.indices, method='nearest')
+        ds = ds.sel(indexers=indexers.indices, method="nearest")
 
     return bbox, ds
 
@@ -257,7 +254,7 @@ def _parse_subset_specifier(
     specifiers = {}
     for axis, value in subset_spec.items():
         if isinstance(value, str):  # single value
-            if axis == 'time':
+            if axis == "time":
                 specifiers[axis] = ensure_time_index_compatible(ds, value)
             else:
                 try:
@@ -267,16 +264,14 @@ def _parse_subset_specifier(
                     specifiers[axis] = value
         else:  # range
             low, high = value
-            low = None if low == '*' else low
-            high = None if high == '*' else high
-            if axis == 'time':
-                specifiers[axis] = ensure_time_index_compatible(
-                    ds, slice(low, high)
-                )
+            low = None if low == "*" else low
+            high = None if high == "*" else high
+            if axis == "time":
+                specifiers[axis] = ensure_time_index_compatible(ds, slice(low, high))
             else:
                 low = float(low)
                 high = float(high)
-                if axis.lower()[:3] in ['y', 'n', 'nor', 'lat'] and high < low:
+                if axis.lower()[:3] in ["y", "n", "nor", "lat"] and high < low:
                     low, high = high, low
                 specifiers[axis] = low, high
 
@@ -307,9 +302,7 @@ def _apply_geographic_subsetting(
     # subsetting is only specified in one dimension.
     full_bbox_native = get_bbox_from_ds(ds)
     native_crs = get_crs_from_dataset(ds)
-    full_bbox_subset_crs = transform_bbox(
-        full_bbox_native, native_crs, subset_crs
-    )
+    full_bbox_subset_crs = transform_bbox(full_bbox_native, native_crs, subset_crs)
 
     # 2. Find horizontal and/or vertical ranges in indexers, falling back to
     # values from whole-dataset bbox if a complete bbox is not specified.
@@ -360,9 +353,9 @@ def _find_geographic_parameters(
 ) -> tuple[Optional[str], Optional[str]]:
     x, y = None, None
     for name in names:
-        if name.lower()[:3] in ['x', 'e', 'eas', 'lon']:
+        if name.lower()[:3] in ["x", "e", "eas", "lon"]:
             x = name
-        if name.lower()[:3] in ['y', 'n', 'nor', 'lat']:
+        if name.lower()[:3] in ["y", "n", "nor", "lat"]:
             y = name
     return x, y
 
@@ -372,9 +365,7 @@ def transform_bbox(
 ) -> list[float]:
     if source_crs == dest_crs:
         return bbox
-    transformer = pyproj.Transformer.from_crs(
-        source_crs, dest_crs, always_xy=True
-    )
+    transformer = pyproj.Transformer.from_crs(source_crs, dest_crs, always_xy=True)
     bbox_ = bbox.copy()
     _ensure_bbox_y_ascending(bbox_)
     return list(transformer.transform_bounds(*bbox_))
@@ -394,13 +385,9 @@ def _apply_bbox(
     h_dim = get_h_dim(ds)
     v_dim = get_v_dim(ds)
     x0, y0, x1, y1 = (
-        (0, 1, 2, 3)
-        if (always_xy or is_xy_order(native_crs))
-        else (1, 0, 3, 2)
+        (0, 1, 2, 3) if (always_xy or is_xy_order(native_crs)) else (1, 0, 3, 2)
     )
-    v_slice = _correct_inverted_y_range_if_necessary(
-        ds, v_dim, (bbox[y0], bbox[y1])
-    )
+    v_slice = _correct_inverted_y_range_if_necessary(ds, v_dim, (bbox[y0], bbox[y1]))
     ds = ds.sel({h_dim: slice(bbox[x0], bbox[x1]), v_dim: slice(*v_slice)})
     return ds
 
@@ -419,7 +406,7 @@ def _correct_inverted_y_range_if_necessary(
     # (For longitude, a descending-order slice is valid.)
     if (
         None not in range_
-        and axis[:3].lower() in {'lat', 'nor', 'y'}
+        and axis[:3].lower() in {"lat", "nor", "y"}
         and (x0 < x1) != (ds[axis][0] < ds[axis][-1])
     ):
         x0, x1 = x1, x0
@@ -428,7 +415,7 @@ def _correct_inverted_y_range_if_necessary(
 
 def dataset_to_image(
     ds: xr.Dataset,
-    image_format: Literal['png', 'tiff'] = 'png',
+    image_format: Literal["png", "tiff"] = "png",
     crs: pyproj.CRS = None,
 ) -> bytes:
     """
@@ -440,29 +427,27 @@ def dataset_to_image(
     :return: TIFF-formatted bytes representing the dataset
     """
 
-    if image_format == 'png':
+    if image_format == "png":
         for var in ds.data_vars:
             # rasterio's PNG driver only supports these data types.
             if ds[var].dtype not in {np.uint8, np.uint16}:
-                ds[var] = ds[var].astype(np.uint16, casting='unsafe')
+                ds[var] = ds[var].astype(np.uint16, casting="unsafe")
 
     ds = ds.squeeze()
 
     with tempfile.TemporaryDirectory() as tempdir:
-        path = os.path.join(tempdir, 'out.' + image_format)
+        path = os.path.join(tempdir, "out." + image_format)
         # Make dataset representable in an image format by discarding
         # additional variables and dimensions.
-        ds = ds.drop_vars(
-            names=['crs', 'spatial_ref'], errors='ignore'
-        ).squeeze()
+        ds = ds.drop_vars(names=["crs", "spatial_ref"], errors="ignore").squeeze()
         if len(ds.data_vars) == 1:
             ds[list(ds.data_vars)[0]].rio.to_raster(path)
         else:
             ds.rio.to_raster(path)
         if crs is not None:
-            with rasterio.open(path, mode='r+') as src:
+            with rasterio.open(path, mode="r+") as src:
                 src.crs = crs
-        with open(path, 'rb') as fh:
+        with open(path, "rb") as fh:
             data = fh.read()
     return data
 
@@ -475,9 +460,9 @@ def dataset_to_netcdf(ds: xr.Dataset) -> bytes:
     :return: NetCDF-formatted bytes representing the dataset
     """
     with tempfile.TemporaryDirectory() as tempdir:
-        path = os.path.join(tempdir, 'out.nc')
+        path = os.path.join(tempdir, "out.nc")
         ds.to_netcdf(path)
-        with open(path, 'rb') as fh:
+        with open(path, "rb") as fh:
             data = fh.read()
     return data
 
@@ -495,19 +480,19 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     """
     ds = get_dataset(ctx, collection_id)
     grid_limits = dict(
-        type='GridLimits',
-        srsName=f'http://www.opengis.net/def/crs/OGC/0/Index{len(ds.dims)}D',
+        type="GridLimits",
+        srsName=f"http://www.opengis.net/def/crs/OGC/0/Index{len(ds.dims)}D",
         axisLabels=list(ds.dims),
         axis=[_get_grid_limits_axis(ds, dim) for dim in ds.dims],
     )
     grid = dict(
-        type='GeneralGridCoverage',
+        type="GeneralGridCoverage",
         srsName=get_crs_from_dataset(ds).to_string(),
         axisLabels=list(ds.dims.keys()),
         axis=_get_axes_properties(ds),
         gridLimits=grid_limits,
     )
-    return dict(type='DomainSet', generalGrid=grid)
+    return dict(type="DomainSet", generalGrid=grid)
 
 
 def get_collection_metadata(ctx: DatasetsContext, collection_id: str):
@@ -550,7 +535,7 @@ def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
     else:
         lower_bound, upper_bound = axis[0].item(), axis[-1].item()
     return dict(
-        type='RegularAxis',
+        type="RegularAxis",
         axisLabel=dim,
         lowerBound=lower_bound,
         upperBound=upper_bound,
@@ -560,20 +545,18 @@ def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
 
 
 def _get_grid_limits_axis(ds: xr.Dataset, dim: str) -> dict[str, Any]:
-    return dict(
-        type='IndexAxis', axisLabel=dim, lowerBound=0, upperBound=len(ds[dim])
-    )
+    return dict(type="IndexAxis", axisLabel=dim, lowerBound=0, upperBound=len(ds[dim]))
 
 
 def get_units(ds: xr.Dataset, dim: str) -> str:
     coord = ds.coords[dim]
-    if hasattr(coord, 'attrs') and 'units' in coord.attrs:
-        return coord.attrs['units']
+    if hasattr(coord, "attrs") and "units" in coord.attrs:
+        return coord.attrs["units"]
     if np.issubdtype(coord, np.datetime64):
         return np.datetime_data(coord)[0]
     # TODO: as a fallback for spatial axes, we could try matching dimensions
     #  to CRS axes and take the unit from the CRS definition.
-    return 'unknown'
+    return "unknown"
 
 
 def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.CRS:
@@ -586,19 +569,17 @@ def get_crs_from_dataset(ds: xr.Dataset) -> pyproj.CRS:
     :return: a string representation of the dataset's CRS, or "EPSG:4326"
              if the CRS cannot be determined
     """
-    for var_name in 'crs', 'spatial_ref':
+    for var_name in "crs", "spatial_ref":
         if var_name in ds.variables:
             var = ds[var_name]
-            for attr_name in 'spatial_ref', 'crs_wkt':
+            for attr_name in "spatial_ref", "crs_wkt":
                 if attr_name in var.attrs:
                     crs_string = ds[var_name].attrs[attr_name]
                     return pyproj.CRS(crs_string)
-    return pyproj.CRS('EPSG:4326')
+    return pyproj.CRS("EPSG:4326")
 
 
-def get_coverage_rangetype(
-    ctx: DatasetsContext, collection_id: str
-) -> dict[str, list]:
+def get_coverage_rangetype(ctx: DatasetsContext, collection_id: str) -> dict[str, list]:
     """Return the range type of a dataset
 
     The range type describes the data types of the dataset's variables
@@ -620,21 +601,19 @@ def get_coverage_rangetype_for_dataset(ds) -> dict[str, list]:
     :param ds: a dataset
     :return: a dictionary representing the supplied dataset's range type
     """
-    result = dict(type='DataRecord', field=[])
+    result = dict(type="DataRecord", field=[])
     for var_name, variable in ds.data_vars.items():
         if variable.dims == ():
             # A 0-dimensional variable is probably a grid mapping variable;
             # in any case, it doesn't have the dimensions of the cube, so
             # isn't part of the range.
             continue
-        result['field'].append(
+        result["field"].append(
             dict(
-                type='Quantity',
+                type="Quantity",
                 name=var_name,
                 description=get_dataarray_description(variable),
-                encodingInfo=dict(
-                    dataType=dtype_to_opengis_datatype(variable.dtype)
-                ),
+                encodingInfo=dict(dataType=dtype_to_opengis_datatype(variable.dtype)),
             )
         )
     return result
@@ -649,18 +628,18 @@ def dtype_to_opengis_datatype(dt: np.dtype) -> str:
              if the dtype is not recognized
     """
     nbits = 8 * np.dtype(dt).itemsize
-    int_size_map = {8: 'Byte', 16: 'Short', 32: 'Int', 64: 'Long'}
-    prefix = 'http://www.opengis.net/def/dataType/OGC/0/'
+    int_size_map = {8: "Byte", 16: "Short", 32: "Int", 64: "Long"}
+    prefix = "http://www.opengis.net/def/dataType/OGC/0/"
     if np.issubdtype(dt, np.floating):
-        opengis_type = f'{prefix}float{nbits}'
+        opengis_type = f"{prefix}float{nbits}"
     elif np.issubdtype(dt, np.signedinteger):
-        opengis_type = f'{prefix}signed{int_size_map[nbits]}'
+        opengis_type = f"{prefix}signed{int_size_map[nbits]}"
     elif np.issubdtype(dt, np.unsignedinteger):
-        opengis_type = f'{prefix}unsigned{int_size_map[nbits]}'
-    elif 'datetime64' in str(dt):
-        opengis_type = 'http://www.opengis.net/def/bipm/UTC'
+        opengis_type = f"{prefix}unsigned{int_size_map[nbits]}"
+    elif "datetime64" in str(dt):
+        opengis_type = "http://www.opengis.net/def/bipm/UTC"
     else:
-        opengis_type = ''  # TODO decide what to do in this case
+        opengis_type = ""  # TODO decide what to do in this case
     return opengis_type
 
 
@@ -672,8 +651,8 @@ def get_dataarray_description(da: xr.DataArray) -> str:
     :param da: a DataArray
     :return: a string describing the DataArray
     """
-    if hasattr(da, 'attrs'):
-        for attr in ['description', 'long_name', 'standard_name', 'name']:
+    if hasattr(da, "attrs"):
+        for attr in ["description", "long_name", "standard_name", "name"]:
             if attr in da.attrs:
                 return da.attrs[attr]
     return str(da.name)
@@ -691,10 +670,10 @@ def get_collection_envelope(ds_ctx, collection_id):
     """
     ds = get_dataset(ds_ctx, collection_id)
     return {
-        'type': 'EnvelopeByAxis',
-        'srsName': get_crs_from_dataset(ds).to_string(),
-        'axisLabels': list(ds.dims.keys()),
-        'axis': _get_axes_properties(ds),
+        "type": "EnvelopeByAxis",
+        "srsName": get_crs_from_dataset(ds).to_string(),
+        "axisLabels": list(ds.dims.keys()),
+        "axis": _get_axes_properties(ds),
     }
 
 
@@ -702,11 +681,11 @@ def is_xy_order(crs: pyproj.CRS) -> bool:
     """Try to determine whether a CRS has x-y axis order"""
     x_index = None
     y_index = None
-    x_re = re.compile('^x|lon|east', flags=re.IGNORECASE)
-    y_re = re.compile('^y|lat|north', flags=re.IGNORECASE)
+    x_re = re.compile("^x|lon|east", flags=re.IGNORECASE)
+    y_re = re.compile("^y|lat|north", flags=re.IGNORECASE)
 
     for i, axis in enumerate(crs.axis_info):
-        for prop in 'name', 'abbrev', 'direction':
+        for prop in "name", "abbrev", "direction":
             if x_re.search(getattr(axis, prop)):
                 x_index = i
             elif y_re.search(getattr(axis, prop)):

@@ -32,19 +32,21 @@ from xcube.util.dask import compute_array_from_func
 from .cf import maybe_encode_grid_mapping
 
 
-def rectify_dataset(source_ds: xr.Dataset,
-                    *,
-                    var_names: Union[str, Sequence[str]] = None,
-                    source_gm: GridMapping = None,
-                    xy_var_names: Tuple[str, str] = None,
-                    target_gm: GridMapping = None,
-                    encode_cf: bool = True,
-                    gm_name: Optional[str] = None,
-                    tile_size: Union[int, Tuple[int, int]] = None,
-                    is_j_axis_up: bool = None,
-                    output_ij_names: Tuple[str, str] = None,
-                    compute_subset: bool = True,
-                    uv_delta: float = 1e-3) -> Optional[xr.Dataset]:
+def rectify_dataset(
+    source_ds: xr.Dataset,
+    *,
+    var_names: Union[str, Sequence[str]] = None,
+    source_gm: GridMapping = None,
+    xy_var_names: Tuple[str, str] = None,
+    target_gm: GridMapping = None,
+    encode_cf: bool = True,
+    gm_name: Optional[str] = None,
+    tile_size: Union[int, Tuple[int, int]] = None,
+    is_j_axis_up: bool = None,
+    output_ij_names: Tuple[str, str] = None,
+    compute_subset: bool = True,
+    uv_delta: float = 1e-3,
+) -> Optional[xr.Dataset]:
     """
     Reproject dataset *source_ds* using its per-pixel
     x,y coordinates or the given *source_gm*.
@@ -115,7 +117,7 @@ def rectify_dataset(source_ds: xr.Dataset,
             xy_bbox=target_gm.xy_bbox,
             ij_border=1,
             xy_border=0.5 * (target_gm.x_res + target_gm.y_res),
-            grid_mapping=source_gm
+            grid_mapping=source_gm,
         )
         if source_ds_subset is None:
             return None
@@ -135,8 +137,7 @@ def rectify_dataset(source_ds: xr.Dataset,
     #     )
 
     if tile_size is not None or is_j_axis_up is not None:
-        target_gm = target_gm.derive(tile_size=tile_size,
-                                     is_j_axis_up=is_j_axis_up)
+        target_gm = target_gm.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
 
     src_vars = _select_variables(source_ds, source_gm, var_names)
 
@@ -147,9 +148,7 @@ def rectify_dataset(source_ds: xr.Dataset,
         compute_dst_src_ij_images = _compute_ij_images_xarray_numpy
         compute_dst_var_image = _compute_var_image_xarray_numpy
 
-    dst_src_ij_array = compute_dst_src_ij_images(source_gm,
-                                                 target_gm,
-                                                 uv_delta)
+    dst_src_ij_array = compute_dst_src_ij_images(source_gm, target_gm, uv_delta)
 
     dst_x_dim, dst_y_dim = target_gm.xy_dim_names
     dst_dims = dst_y_dim, dst_x_dim
@@ -157,42 +156,42 @@ def rectify_dataset(source_ds: xr.Dataset,
     dst_vars = dict()
     for src_var_name, src_var in src_vars.items():
         dst_var_dims = src_var.dims[0:-2] + dst_dims
-        dst_var_coords = {d: src_var.coords[d]
-                          for d in dst_var_dims if d in src_var.coords}
-        dst_var_coords.update({d: dst_ds_coords[d]
-                               for d in dst_var_dims if d in dst_ds_coords})
-        dst_var_array = compute_dst_var_image(src_var,
-                                              dst_src_ij_array,
-                                              fill_value=np.nan)
-        dst_var = xr.DataArray(dst_var_array,
-                               dims=dst_var_dims,
-                               coords=dst_var_coords,
-                               attrs=src_var.attrs)
+        dst_var_coords = {
+            d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords
+        }
+        dst_var_coords.update(
+            {d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords}
+        )
+        dst_var_array = compute_dst_var_image(
+            src_var, dst_src_ij_array, fill_value=np.nan
+        )
+        dst_var = xr.DataArray(
+            dst_var_array, dims=dst_var_dims, coords=dst_var_coords, attrs=src_var.attrs
+        )
         dst_vars[src_var_name] = dst_var
 
     if output_ij_names:
         output_i_name, output_j_name = output_ij_names
-        dst_ij_coords = {d: dst_ds_coords[d]
-                         for d in dst_dims if d in dst_ds_coords}
-        dst_vars[output_i_name] = xr.DataArray(dst_src_ij_array[0],
-                                               dims=dst_dims,
-                                               coords=dst_ij_coords)
-        dst_vars[output_j_name] = xr.DataArray(dst_src_ij_array[1],
-                                               dims=dst_dims,
-                                               coords=dst_ij_coords)
+        dst_ij_coords = {d: dst_ds_coords[d] for d in dst_dims if d in dst_ds_coords}
+        dst_vars[output_i_name] = xr.DataArray(
+            dst_src_ij_array[0], dims=dst_dims, coords=dst_ij_coords
+        )
+        dst_vars[output_j_name] = xr.DataArray(
+            dst_src_ij_array[1], dims=dst_dims, coords=dst_ij_coords
+        )
 
-    return maybe_encode_grid_mapping(encode_cf,
-                                     xr.Dataset(dst_vars,
-                                                coords=dst_ds_coords,
-                                                attrs=src_attrs),
-                                     target_gm,
-                                     gm_name)
+    return maybe_encode_grid_mapping(
+        encode_cf,
+        xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs),
+        target_gm,
+        gm_name,
+    )
 
 
 def _select_variables(
-        source_ds: xr.Dataset,
-        source_gm: GridMapping,
-        var_names: Union[None, str, Sequence[str]]
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    var_names: Union[None, str, Sequence[str]],
 ) -> Mapping[str, xr.DataArray]:
     """
     Select variables from *dataset*.
@@ -208,14 +207,16 @@ def _select_variables(
     spatial_shape = tuple(reversed(source_gm.size))
     spatial_dims = tuple(reversed(source_gm.xy_dim_names))
     if var_names is None:
-        var_names = [var_name
-                     for var_name, var in source_ds.data_vars.items()
-                     if var_name not in spatial_var_names
-                     and _is_2d_spatial_var(var, spatial_shape, spatial_dims)]
+        var_names = [
+            var_name
+            for var_name, var in source_ds.data_vars.items()
+            if var_name not in spatial_var_names
+            and _is_2d_spatial_var(var, spatial_shape, spatial_dims)
+        ]
     elif isinstance(var_names, str):
         var_names = (var_names,)
     elif len(var_names) == 0:
-        raise ValueError(f'empty var_names')
+        raise ValueError(f"empty var_names")
     src_vars = {}
     for var_name in var_names:
         src_var = source_ds[var_name]
@@ -234,9 +235,9 @@ def _is_2d_spatial_var(var: xr.DataArray, shape, dims) -> bool:
     return var.ndim >= 2 and var.shape[-2:] == shape and var.dims[-2:] == dims
 
 
-def _compute_ij_images_xarray_numpy(src_geo_coding: GridMapping,
-                                    output_geom: GridMapping,
-                                    uv_delta: float) -> np.ndarray:
+def _compute_ij_images_xarray_numpy(
+    src_geo_coding: GridMapping, output_geom: GridMapping, uv_delta: float
+) -> np.ndarray:
     """
     Compute numpy.ndarray destination image with source
     pixel i,j coords from xarray.DataArray x,y sources.
@@ -246,29 +247,29 @@ def _compute_ij_images_xarray_numpy(src_geo_coding: GridMapping,
     dst_shape = 2, dst_height, dst_width
     dst_src_ij_images = np.full(dst_shape, np.nan, dtype=np.float64)
     dst_x_offset = output_geom.x_min
-    dst_y_offset = output_geom.y_min \
-        if output_geom.is_j_axis_up else output_geom.y_max
+    dst_y_offset = output_geom.y_min if output_geom.is_j_axis_up else output_geom.y_max
     dst_x_scale = output_geom.x_res
-    dst_y_scale = output_geom.y_res \
-        if output_geom.is_j_axis_up else -output_geom.y_res
+    dst_y_scale = output_geom.y_res if output_geom.is_j_axis_up else -output_geom.y_res
     # TODO: GridMapping: this will cause out-of-memory problems!
     x_values, y_values = src_geo_coding.xy_coords.values
-    _compute_ij_images_numpy_parallel(x_values,
-                                      y_values,
-                                      0,
-                                      0,
-                                      dst_src_ij_images,
-                                      dst_x_offset,
-                                      dst_y_offset,
-                                      dst_x_scale,
-                                      dst_y_scale,
-                                      uv_delta)
+    _compute_ij_images_numpy_parallel(
+        x_values,
+        y_values,
+        0,
+        0,
+        dst_src_ij_images,
+        dst_x_offset,
+        dst_y_offset,
+        dst_x_scale,
+        dst_y_scale,
+        uv_delta,
+    )
     return dst_src_ij_images
 
 
-def _compute_ij_images_xarray_dask(src_geo_coding: GridMapping,
-                                   output_geom: GridMapping,
-                                   uv_delta: float) -> da.Array:
+def _compute_ij_images_xarray_dask(
+    src_geo_coding: GridMapping, output_geom: GridMapping, uv_delta: float
+) -> da.Array:
     """
     Compute dask.array.Array destination image
     with source pixel i,j coords from xarray.DataArray x,y sources.
@@ -293,16 +294,14 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GridMapping,
     #
     num_tiles_x = dst_width / dst_tile_width
     num_tiles_y = dst_height / dst_tile_height
-    xy_border = min(min(2 * num_tiles_x * output_geom.x_res,
-                        2 * num_tiles_y * output_geom.y_res),
-                    min(0.5 * (dst_x_max - dst_x_min),
-                        0.5 * (dst_y_max - dst_y_min)))
+    xy_border = min(
+        min(2 * num_tiles_x * output_geom.x_res, 2 * num_tiles_y * output_geom.y_res),
+        min(0.5 * (dst_x_max - dst_x_min), 0.5 * (dst_y_max - dst_y_min)),
+    )
 
     dst_xy_bboxes = output_geom.xy_bboxes
     src_ij_bboxes = src_geo_coding.ij_bboxes_from_xy_bboxes(
-        dst_xy_bboxes,
-        xy_border=xy_border,
-        ij_border=1
+        dst_xy_bboxes, xy_border=xy_border, ij_border=1
     )
 
     return compute_array_from_func(
@@ -311,10 +310,10 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GridMapping,
         dst_var_chunks,
         np.float64,
         ctx_arg_names=[
-            'dtype',
-            'block_id',
-            'block_shape',
-            'block_slices',
+            "dtype",
+            "block_id",
+            "block_shape",
+            "block_slices",
         ],
         args=(
             src_geo_coding.xy_coords,
@@ -325,26 +324,26 @@ def _compute_ij_images_xarray_dask(src_geo_coding: GridMapping,
             dst_x_res,
             dst_y_res,
             dst_is_j_axis_up,
-            uv_delta
+            uv_delta,
         ),
-        name='ij_pixels'
+        name="ij_pixels",
     )
 
 
 def _compute_ij_images_xarray_dask_block(
-        dtype: np.dtype,
-        block_id: int,
-        block_shape: Tuple[int, int],
-        block_slices: Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]],
-        src_xy_coords: xr.DataArray,
-        src_ij_bboxes: np.ndarray,
-        dst_x_min: float,
-        dst_y_min: float,
-        dst_y_max: float,
-        dst_x_res: float,
-        dst_y_res: float,
-        dst_is_j_axis_up: bool,
-        uv_delta: float
+    dtype: np.dtype,
+    block_id: int,
+    block_shape: Tuple[int, int],
+    block_slices: Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]],
+    src_xy_coords: xr.DataArray,
+    src_ij_bboxes: np.ndarray,
+    dst_x_min: float,
+    dst_y_min: float,
+    dst_y_max: float,
+    dst_x_res: float,
+    dst_y_res: float,
+    dst_is_j_axis_up: bool,
+    uv_delta: float,
 ) -> np.ndarray:
     """
     Compute dask.array.Array destination block with source
@@ -357,8 +356,8 @@ def _compute_ij_images_xarray_dask_block(
     if src_i_min == -1:
         return dst_src_ij_block
     src_xy_values = src_xy_coords[
-                    :, src_j_min:src_j_max + 1, src_i_min:src_i_max + 1
-                    ].values
+        :, src_j_min : src_j_max + 1, src_i_min : src_i_max + 1
+    ].values
     src_x_values = src_xy_values[0]
     src_y_values = src_xy_values[1]
     dst_x_offset = dst_x_min + dst_x_slice_start * dst_x_res
@@ -376,23 +375,23 @@ def _compute_ij_images_xarray_dask_block(
         dst_y_offset,
         dst_x_res,
         dst_y_res if dst_is_j_axis_up else -dst_y_res,
-        uv_delta
+        uv_delta,
     )
     return dst_src_ij_block
 
 
 @nb.njit(nogil=True, parallel=True, cache=True)
 def _compute_ij_images_numpy_parallel(
-        src_x_image: np.ndarray,
-        src_y_image: np.ndarray,
-        src_i_min: int,
-        src_j_min: int,
-        dst_src_ij_images: np.ndarray,
-        dst_x_offset: float,
-        dst_y_offset: float,
-        dst_x_scale: float,
-        dst_y_scale: float,
-        uv_delta: float
+    src_x_image: np.ndarray,
+    src_y_image: np.ndarray,
+    src_i_min: int,
+    src_j_min: int,
+    dst_src_ij_images: np.ndarray,
+    dst_x_offset: float,
+    dst_y_offset: float,
+    dst_x_scale: float,
+    dst_y_scale: float,
+    uv_delta: float,
 ):
     """
     Compute numpy.ndarray destination image with source
@@ -413,7 +412,7 @@ def _compute_ij_images_numpy_parallel(
             dst_y_offset,
             dst_x_scale,
             dst_y_scale,
-            uv_delta
+            uv_delta,
         )
 
 
@@ -421,16 +420,16 @@ def _compute_ij_images_numpy_parallel(
 # and nb.prange, we end up in infinite JIT compilation :(
 @nb.njit(nogil=True, cache=True)
 def _compute_ij_images_numpy_sequential(
-        src_x_image: np.ndarray,
-        src_y_image: np.ndarray,
-        src_i_min: int,
-        src_j_min: int,
-        dst_src_ij_images: np.ndarray,
-        dst_x_offset: float,
-        dst_y_offset: float,
-        dst_x_scale: float,
-        dst_y_scale: float,
-        uv_delta: float
+    src_x_image: np.ndarray,
+    src_y_image: np.ndarray,
+    src_i_min: int,
+    src_j_min: int,
+    dst_src_ij_images: np.ndarray,
+    dst_x_offset: float,
+    dst_y_offset: float,
+    dst_x_scale: float,
+    dst_y_scale: float,
+    uv_delta: float,
 ):
     """
     Compute numpy.ndarray destination image with source pixel i,j coords
@@ -450,23 +449,23 @@ def _compute_ij_images_numpy_sequential(
             dst_y_offset,
             dst_x_scale,
             dst_y_scale,
-            uv_delta
+            uv_delta,
         )
 
 
 @nb.njit(nogil=True, cache=True)
 def _compute_ij_images_for_source_line(
-        src_j0: int,
-        src_x_image: np.ndarray,
-        src_y_image: np.ndarray,
-        src_i_min: int,
-        src_j_min: int,
-        dst_src_ij_images: np.ndarray,
-        dst_x_offset: float,
-        dst_y_offset: float,
-        dst_x_scale: float,
-        dst_y_scale: float,
-        uv_delta: float
+    src_j0: int,
+    src_x_image: np.ndarray,
+    src_y_image: np.ndarray,
+    src_i_min: int,
+    src_j_min: int,
+    dst_src_ij_images: np.ndarray,
+    dst_x_offset: float,
+    dst_y_offset: float,
+    dst_x_scale: float,
+    dst_y_scale: float,
+    uv_delta: float,
 ):
     """
     Compute numpy.ndarray destination image with source
@@ -497,20 +496,20 @@ def _compute_ij_images_for_source_line(
         dst_py[2] = dst_p2y = src_y_image[src_j1, src_i0]
         dst_py[3] = dst_p3y = src_y_image[src_j1, src_i1]
 
-        dst_pi = np.floor((dst_px - dst_x_offset)
-                          / dst_x_scale).astype(np.int64)
-        dst_pj = np.floor((dst_py - dst_y_offset)
-                          / dst_y_scale).astype(np.int64)
+        dst_pi = np.floor((dst_px - dst_x_offset) / dst_x_scale).astype(np.int64)
+        dst_pj = np.floor((dst_py - dst_y_offset) / dst_y_scale).astype(np.int64)
 
         dst_i_min = np.min(dst_pi)
         dst_i_max = np.max(dst_pi)
         dst_j_min = np.min(dst_pj)
         dst_j_max = np.max(dst_pj)
 
-        if dst_i_max < 0 \
-                or dst_j_max < 0 \
-                or dst_i_min >= dst_width \
-                or dst_j_min >= dst_height:
+        if (
+            dst_i_max < 0
+            or dst_j_max < 0
+            or dst_i_min >= dst_width
+            or dst_j_min >= dst_height
+        ):
             continue
 
         if dst_i_min < 0:
@@ -545,18 +544,14 @@ def _compute_ij_images_for_source_line(
                 src_i = src_j = -1
 
                 if det_a != 0.0:
-                    u = _fu(dst_x, dst_y,
-                            dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
-                    v = _fv(dst_x, dst_y,
-                            dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
+                    u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
+                    v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
                     if u >= u_min and v >= v_min and u + v <= uv_max:
                         src_i = src_i0 + _fclamp(u, 0.0, 1.0)
                         src_j = src_j0 + _fclamp(v, 0.0, 1.0)
                 if src_i == -1 and det_b != 0.0:
-                    u = _fu(dst_x, dst_y,
-                            dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
-                    v = _fv(dst_x, dst_y,
-                            dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
+                    u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
+                    v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
                     if u >= u_min and v >= v_min and u + v <= uv_max:
                         src_i = src_i1 - _fclamp(u, 0.0, 1.0)
                         src_j = src_j1 - _fclamp(v, 0.0, 1.0)
@@ -566,41 +561,41 @@ def _compute_ij_images_for_source_line(
 
 
 def _compute_var_image_xarray_numpy(
-        src_var: xr.DataArray,
-        dst_src_ij_images: np.ndarray,
-        fill_value: Union[int, float, complex] = np.nan
+    src_var: xr.DataArray,
+    dst_src_ij_images: np.ndarray,
+    fill_value: Union[int, float, complex] = np.nan,
 ) -> np.ndarray:
     """
     Extract source pixels from xarray.DataArray source
     with numpy.ndarray data.
     """
-    return _compute_var_image_numpy(src_var.values,
-                                    dst_src_ij_images,
-                                    fill_value)
+    return _compute_var_image_numpy(src_var.values, dst_src_ij_images, fill_value)
 
 
 def _compute_var_image_xarray_dask(
-        src_var: xr.DataArray,
-        dst_src_ij_images: np.ndarray,
-        fill_value: Union[int, float, complex] = np.nan
+    src_var: xr.DataArray,
+    dst_src_ij_images: np.ndarray,
+    fill_value: Union[int, float, complex] = np.nan,
 ) -> da.Array:
     """
     Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
     """
-    return da.map_blocks(_compute_var_image_xarray_dask_block,
-                         src_var.values,
-                         dst_src_ij_images,
-                         fill_value,
-                         dtype=src_var.dtype,
-                         drop_axis=0)
+    return da.map_blocks(
+        _compute_var_image_xarray_dask_block,
+        src_var.values,
+        dst_src_ij_images,
+        fill_value,
+        dtype=src_var.dtype,
+        drop_axis=0,
+    )
 
 
 @nb.njit(nogil=True, cache=True)
 def _compute_var_image_numpy(
-        src_var: np.ndarray,
-        dst_src_ij_images: np.ndarray,
-        fill_value: Union[int, float, complex] = np.nan
+    src_var: np.ndarray,
+    dst_src_ij_images: np.ndarray,
+    fill_value: Union[int, float, complex] = np.nan,
 ) -> np.ndarray:
     """
     Extract source pixels from numpy.ndarray source
@@ -610,17 +605,15 @@ def _compute_var_image_numpy(
     dst_height = dst_src_ij_images.shape[-2]
     dst_shape = src_var.shape[:-2] + (dst_height, dst_width)
     dst_values = np.full(dst_shape, fill_value, dtype=src_var.dtype)
-    _compute_var_image_numpy_parallel(src_var,
-                                      dst_src_ij_images,
-                                      dst_values)
+    _compute_var_image_numpy_parallel(src_var, dst_src_ij_images, dst_values)
     return dst_values
 
 
 @nb.njit(nogil=True, cache=True)
 def _compute_var_image_xarray_dask_block(
-        src_var_image: np.ndarray,
-        dst_src_ij_images: np.ndarray,
-        fill_value: Union[int, float, complex] = np.nan
+    src_var_image: np.ndarray,
+    dst_src_ij_images: np.ndarray,
+    fill_value: Union[int, float, complex] = np.nan,
 ) -> np.ndarray:
     """
     Extract source pixels from np.ndarray source
@@ -630,17 +623,13 @@ def _compute_var_image_xarray_dask_block(
     dst_height = dst_src_ij_images.shape[-2]
     dst_shape = src_var_image.shape[:-2] + (dst_height, dst_width)
     dst_values = np.full(dst_shape, fill_value, dtype=src_var_image.dtype)
-    _compute_var_image_numpy_sequential(src_var_image,
-                                        dst_src_ij_images,
-                                        dst_values)
+    _compute_var_image_numpy_sequential(src_var_image, dst_src_ij_images, dst_values)
     return dst_values
 
 
 @nb.njit(nogil=True, parallel=True, cache=True)
 def _compute_var_image_numpy_parallel(
-        src_var_image: np.ndarray,
-        dst_src_ij_images: np.ndarray,
-        dst_var_image: np.ndarray
+    src_var_image: np.ndarray, dst_src_ij_images: np.ndarray, dst_var_image: np.ndarray
 ):
     """
     Extract source pixels from np.ndarray source
@@ -657,9 +646,7 @@ def _compute_var_image_numpy_parallel(
 # and nb.prange, we end up in infinite JIT compilation :(
 @nb.njit(nogil=True, cache=True)
 def _compute_var_image_numpy_sequential(
-        src_var_image: np.ndarray,
-        dst_src_ij_images: np.ndarray,
-        dst_var_image: np.ndarray
+    src_var_image: np.ndarray, dst_src_ij_images: np.ndarray, dst_var_image: np.ndarray
 ):
     """
     Extract source pixels from np.ndarray source
@@ -674,10 +661,10 @@ def _compute_var_image_numpy_sequential(
 
 @nb.njit(nogil=True, cache=True)
 def _compute_var_image_for_dest_line(
-        dst_j: int,
-        src_var_image: np.ndarray,
-        dst_src_ij_images: np.ndarray,
-        dst_var_image: np.ndarray
+    dst_j: int,
+    src_var_image: np.ndarray,
+    dst_src_ij_images: np.ndarray,
+    dst_var_image: np.ndarray,
 ):
     """
     Extract source pixels from *src_values* np.ndarray
@@ -707,36 +694,41 @@ def _compute_var_image_for_dest_line(
         dst_var_image[..., dst_j, dst_i] = src_var_image[..., src_j, src_i]
 
 
-@nb.njit('float64(float64, float64, float64, float64, float64, float64)',
-         nogil=True, inline='always')
-def _fdet(px0: float, py0: float,
-          px1: float, py1: float,
-          px2: float, py2: float) -> float:
+@nb.njit(
+    "float64(float64, float64, float64, float64, float64, float64)",
+    nogil=True,
+    inline="always",
+)
+def _fdet(
+    px0: float, py0: float, px1: float, py1: float, px2: float, py2: float
+) -> float:
     return (px0 - px1) * (py0 - py2) - (px0 - px2) * (py0 - py1)
 
 
-@nb.njit('float64(float64, float64, float64, float64, float64, float64)',
-         nogil=True, inline='always')
-def _fu(px: float, py: float,
-        px0: float, py0: float,
-        px2: float, py2: float) -> float:
+@nb.njit(
+    "float64(float64, float64, float64, float64, float64, float64)",
+    nogil=True,
+    inline="always",
+)
+def _fu(px: float, py: float, px0: float, py0: float, px2: float, py2: float) -> float:
     return (px0 - px) * (py0 - py2) - (py0 - py) * (px0 - px2)
 
 
-@nb.njit('float64(float64, float64, float64, float64, float64, float64)',
-         nogil=True, inline='always')
-def _fv(px: float, py: float,
-        px0: float, py0: float,
-        px1: float, py1: float) -> float:
+@nb.njit(
+    "float64(float64, float64, float64, float64, float64, float64)",
+    nogil=True,
+    inline="always",
+)
+def _fv(px: float, py: float, px0: float, py0: float, px1: float, py1: float) -> float:
     return (py0 - py) * (px0 - px1) - (px0 - px) * (py0 - py1)
 
 
-@nb.njit('float64(float64, float64, float64)', nogil=True, inline='always')
+@nb.njit("float64(float64, float64, float64)", nogil=True, inline="always")
 def _fclamp(x: float, x_min: float, x_max: float) -> float:
     return x_min if x < x_min else (x_max if x > x_max else x)
 
 
-@nb.njit('int64(int64, int64, int64)', nogil=True, inline='always')
+@nb.njit("int64(int64, int64, int64)", nogil=True, inline="always")
 def _iclamp(x: int, x_min: int, x_max: int) -> int:
     return x_min if x < x_min else (x_max if x > x_max else x)
 

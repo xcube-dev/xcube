@@ -41,13 +41,7 @@ class NumpyJSONEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-_PRIMITIVE_JSON_TYPES = {
-    type(None),
-    bool,
-    int,
-    float,
-    str
-}
+_PRIMITIVE_JSON_TYPES = {type(None), bool, int, float, str}
 
 
 def to_json_value(obj: Any) -> JsonValue:
@@ -95,20 +89,24 @@ def to_json_value(obj: Any) -> JsonValue:
             return [to_json_value(item) for item in obj]
         except TypeError:
             # Same as json.JSONEncoder.default(self, obj)
-            raise TypeError(f'Object of type'
-                            f' {obj.__class__.__name__}'
-                            f' is not JSON serializable')
+            raise TypeError(
+                f"Object of type"
+                f" {obj.__class__.__name__}"
+                f" is not JSON serializable"
+            )
 
 
 def _key(key: Any) -> str:
     if not isinstance(key, str):
-        raise TypeError(f'Property names of JSON objects must be strings,'
-                        f' but got {key.__class__.__name__}')
+        raise TypeError(
+            f"Property names of JSON objects must be strings,"
+            f" but got {key.__class__.__name__}"
+        )
     return key
 
 
 def _convert_default(obj: Any) -> Any:
-    if hasattr(obj, 'dtype') and hasattr(obj, 'ndim'):
+    if hasattr(obj, "dtype") and hasattr(obj, "ndim"):
         if obj.ndim == 0:
             if np.issubdtype(obj.dtype, bool):
                 return bool(obj)
@@ -117,7 +115,7 @@ def _convert_default(obj: Any) -> Any:
             elif np.issubdtype(obj.dtype, np.floating):
                 return float(obj)
             elif np.issubdtype(obj.dtype, np.datetime64):
-                return np.datetime_as_string(obj, timezone='UTC', unit='s')
+                return np.datetime_as_string(obj, timezone="UTC", unit="s")
             elif np.issubdtype(obj.dtype, np.str):
                 return str(obj)
         else:

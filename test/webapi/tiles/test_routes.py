@@ -26,28 +26,33 @@ class TilesRoutesTest(RoutesTestCase):
 
     def test_fetch_dataset_tile(self):
         # New
-        response = self.fetch('/tiles/demo/conc_chl/0/0/0')
+        response = self.fetch("/tiles/demo/conc_chl/0/0/0")
         self.assertResponseOK(response)
         # Old
-        response = self.fetch('/datasets/demo/vars/conc_chl/tiles2/0/0/0')
+        response = self.fetch("/datasets/demo/vars/conc_chl/tiles2/0/0/0")
         self.assertResponseOK(response)
 
     def test_fetch_dataset_rgb_tile(self):
         # New
-        response = self.fetch('/tiles/demo/rgb/0/0/0?'
-                              'r=kd489&g=conc_chl&b=conc_tsm&time=first')
+        response = self.fetch(
+            "/tiles/demo/rgb/0/0/0?" "r=kd489&g=conc_chl&b=conc_tsm&time=first"
+        )
         self.assertResponseOK(response)
         # Old
-        response = self.fetch('/datasets/demo/vars/rgb/tiles2/0/0/0?'
-                              'r=kd489&g=conc_chl&b=conc_tsm&time=first')
+        response = self.fetch(
+            "/datasets/demo/vars/rgb/tiles2/0/0/0?"
+            "r=kd489&g=conc_chl&b=conc_tsm&time=first"
+        )
         self.assertResponseOK(response)
 
     def test_fetch_dataset_tile_with_params(self):
         # New
-        response = self.fetch('/tiles/demo/conc_chl/0/0/0?'
-                              'time=current&cmap=jet&debug=1')
+        response = self.fetch(
+            "/tiles/demo/conc_chl/0/0/0?" "time=current&cmap=jet&debug=1"
+        )
         self.assertResponseOK(response)
         # Old
-        response = self.fetch('/datasets/demo/vars/conc_chl/tiles2/0/0/0?'
-                              'time=current&cmap=jet&debug=1')
+        response = self.fetch(
+            "/datasets/demo/vars/conc_chl/tiles2/0/0/0?" "time=current&cmap=jet&debug=1"
+        )
         self.assertResponseOK(response)

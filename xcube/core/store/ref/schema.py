@@ -46,9 +46,10 @@ REF_STORE_SCHEMA = JsonObjectSchema(
                             data_id=JsonStringSchema(min_length=1),
                             # We could detail data_descriptor a bit more. Not now.
                             data_descriptor=JsonObjectSchema(
-                                additional_properties=True),
+                                additional_properties=True
+                            ),
                         ),
-                        required=["ref_path"]
+                        required=["ref_path"],
                     ),
                 ],
             ),
@@ -61,10 +62,8 @@ REF_STORE_SCHEMA = JsonObjectSchema(
             )
         ),
         target_options=JsonObjectSchema(
-            description=(
-                "Extra filesystem options for loading the reference files."
-            ),
-            additional_properties=True
+            description=("Extra filesystem options for loading the reference files."),
+            additional_properties=True,
         ),
         remote_protocol=JsonStringSchema(
             description=(
@@ -74,14 +73,10 @@ REF_STORE_SCHEMA = JsonObjectSchema(
             )
         ),
         remote_options=JsonObjectSchema(
-            description=(
-                "Extra filesystem options for loading the referenced data."
-            ),
-            additional_properties=True
+            description=("Extra filesystem options for loading the referenced data."),
+            additional_properties=True,
         ),
-        max_gap=JsonIntegerSchema(
-            description="See max_block."
-        ),
+        max_gap=JsonIntegerSchema(description="See max_block."),
         max_block=JsonIntegerSchema(
             description=(
                 "For merging multiple concurrent requests to the same"
@@ -105,5 +100,5 @@ REF_STORE_SCHEMA = JsonObjectSchema(
         ),
         **COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES,
     ),
-    additional_properties=True
+    additional_properties=True,
 )

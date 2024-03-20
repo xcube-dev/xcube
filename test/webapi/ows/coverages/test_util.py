@@ -7,12 +7,12 @@ class UtilTest(unittest.TestCase):
 
     def setUp(self):
         self.ds_latlon = xcube.core.new.new_cube()
-        self.ds_xy = xcube.core.new.new_cube(x_name='x', y_name='y')
+        self.ds_xy = xcube.core.new.new_cube(x_name="x", y_name="y")
 
     def test_get_h_dim(self):
-        self.assertEqual('lon', util.get_h_dim(self.ds_latlon))
-        self.assertEqual('x', util.get_h_dim(self.ds_xy))
+        self.assertEqual("lon", util.get_h_dim(self.ds_latlon))
+        self.assertEqual("x", util.get_h_dim(self.ds_xy))
 
     def test_get_v_dim(self):
-        self.assertEqual('lat', util.get_v_dim(self.ds_latlon))
-        self.assertEqual('y', util.get_v_dim(self.ds_xy))
+        self.assertEqual("lat", util.get_v_dim(self.ds_latlon))
+        self.assertEqual("y", util.get_v_dim(self.ds_xy))

@@ -6,8 +6,11 @@ from xcube.core.dump import dump_dataset
 
 class DumpDatasetTest(unittest.TestCase):
     def test_dump_dataset(self):
-        dataset = new_test_dataset(["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
-                                   precipitation=0.4, temperature=275.2)
+        dataset = new_test_dataset(
+            ["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
+            precipitation=0.4,
+            temperature=275.2,
+        )
         for var in dataset.variables.values():
             var.encoding.update({"_FillValue": 999.0})
 
@@ -36,8 +39,10 @@ class DumpDatasetTest(unittest.TestCase):
         self.assertIn("    _FillValue:  999.0\n", text)
 
         text = dump_dataset(dataset, ["precipitation"])
-        precip_regex = r"<xarray\.DataArray 'precipitation' .*" \
+        precip_regex = (
+            r"<xarray\.DataArray 'precipitation' .*"
             r"\(time: 5, lat: 180, lon: 360\)>( Size: 3MB)?\n"
+        )
         self.assertRegex(text, precip_regex)
         self.assertNotIn("Encoding:\n", text)
         self.assertNotIn("    _FillValue:  999.0", text)

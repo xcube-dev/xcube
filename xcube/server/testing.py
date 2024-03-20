@@ -41,7 +41,7 @@ from xcube.util.extension import ExtensionRegistry
 # taken from https://stackoverflow.com/a/45690594
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(('localhost', 0))
+        s.bind(("localhost", 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
 
@@ -51,16 +51,14 @@ class ServerTestCase(unittest.TestCase, ABC):
     def setUp(self) -> None:
         self.port = find_free_port()
         config = self.get_config()
-        config.update({
-            'port': self.port,
-            'address': 'localhost'
-        })
+        config.update({"port": self.port, "address": "localhost"})
         self.add_config(config)
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         er = self.get_extension_registry()
         self.add_extension(er)
-        self.server = Server(framework=TornadoFramework(), config=config,
-                             extension_registry=er)
+        self.server = Server(
+            framework=TornadoFramework(), config=config, extension_registry=er
+        )
         tornado = threading.Thread(target=self.server.start)
         tornado.daemon = True
         tornado.start()
@@ -71,7 +69,7 @@ class ServerTestCase(unittest.TestCase, ABC):
         # Fixing https://github.com/dcs4cop/xcube/issues/899
         while True:
             try:
-                self.fetch('/')
+                self.fetch("/")
                 break
             except (MaxRetryError, TimeoutError):
                 time.sleep(0.1)
@@ -93,12 +91,13 @@ class ServerTestCase(unittest.TestCase, ABC):
     def add_config(self, config: Dict) -> None:
         pass
 
-    def fetch(self,
-              path: str,
-              method: str = "GET",
-              headers: Optional[Dict[str, str]] = None,
-              body: Optional[Any] = None) \
-            -> urllib3.response.HTTPResponse:
+    def fetch(
+        self,
+        path: str,
+        method: str = "GET",
+        headers: Optional[Dict[str, str]] = None,
+        body: Optional[Any] = None,
+    ) -> urllib3.response.HTTPResponse:
         """Fetches the response for given request.
 
         :param path: Route request path
@@ -109,18 +108,18 @@ class ServerTestCase(unittest.TestCase, ABC):
         """
         if path.startswith("/"):
             path = path[1:]
-        url = f'http://localhost:{self.port}/{path}'
+        url = f"http://localhost:{self.port}/{path}"
         if isinstance(body, dict):
-            body = bytes(json.dumps(body), 'utf-8')
+            body = bytes(json.dumps(body), "utf-8")
         return self.http.request(method, url, headers=headers, body=body)
 
-    def fetch_json(self,
-                   path: str,
-                   method: str = "GET",
-                   headers: Optional[Dict[str, str]] = None,
-                   body: Optional[Any] = None) \
-            -> Tuple[
-                Union[type(None), bool, int, float, str, list, dict], int]:
+    def fetch_json(
+        self,
+        path: str,
+        method: str = "GET",
+        headers: Optional[Dict[str, str]] = None,
+        body: Optional[Any] = None,
+    ) -> Tuple[Union[type(None), bool, int, float, str, list, dict], int]:
         """Fetches the response's JSON value for given request.
 
         :param path: Route request path
@@ -132,55 +131,48 @@ class ServerTestCase(unittest.TestCase, ABC):
         response = self.fetch(path, method=method, headers=headers, body=body)
         return json.loads(response.data), response.status
 
-    def assertResponseOK(
-            self,
-            response: urllib3.response.HTTPResponse
-    ):
-        """ Assert that response has status code 200.
+    def assertResponseOK(self, response: urllib3.response.HTTPResponse):
+        """Assert that response has status code 200.
 
         :param response: The response from a ``self.fetch()`` call
         """
         self.assertResponse(response, expected_status=200)
 
     def assertResourceNotFoundResponse(
-            self,
-            response: urllib3.response.HTTPResponse,
-            expected_message: str = None
+        self, response: urllib3.response.HTTPResponse, expected_message: str = None
     ):
-        """ Assert that response
+        """Assert that response
         has the given status code 404, and
         has the given error message *expected_message*, if given.
 
         :param response: The response from a ``self.fetch()`` call
         :param expected_message: The expected error message or part of it.
         """
-        self.assertResponse(response,
-                            expected_status=404,
-                            expected_message=expected_message)
+        self.assertResponse(
+            response, expected_status=404, expected_message=expected_message
+        )
 
     def assertBadRequestResponse(
-            self,
-            response: urllib3.response.HTTPResponse,
-            expected_message: str = None
+        self, response: urllib3.response.HTTPResponse, expected_message: str = None
     ):
-        """ Assert that response
+        """Assert that response
         has the given status code 400, and
         has the given error message *expected_message*, if given.
 
         :param response: The response from a ``self.fetch()`` call
         :param expected_message: The expected error message or part of it.
         """
-        self.assertResponse(response,
-                            expected_status=400,
-                            expected_message=expected_message)
+        self.assertResponse(
+            response, expected_status=400, expected_message=expected_message
+        )
 
     def assertResponse(
-            self,
-            response: urllib3.response.HTTPResponse,
-            expected_status: Optional[int] = None,
-            expected_message: Optional[str] = None
+        self,
+        response: urllib3.response.HTTPResponse,
+        expected_status: Optional[int] = None,
+        expected_message: Optional[str] = None,
     ):
-        """ Assert that response
+        """Assert that response
         has the given status code *expected_status*, if given, and
         has the given error message *expected_message*, if given.
 
@@ -190,26 +182,25 @@ class ServerTestCase(unittest.TestCase, ABC):
         """
         message = self.parse_error_message(response)
         if expected_status is not None:
-            self.assertEqual(expected_status, response.status,
-                             msg=message or response.reason)
+            self.assertEqual(
+                expected_status, response.status, msg=message or response.reason
+            )
         if expected_message is not None:
-            self.assertIsNotNone(message,
-                                 msg="error message not available")
-            self.assertIsInstance(message, str,
-                                  msg="error message must be a string,"
-                                      f" was {message!r}")
+            self.assertIsNotNone(message, msg="error message not available")
+            self.assertIsInstance(
+                message, str, msg="error message must be a string," f" was {message!r}"
+            )
             self.assertIn(expected_message, message)
 
     @classmethod
     def parse_error_message(
-            cls,
-            response: urllib3.response.HTTPResponse
+        cls, response: urllib3.response.HTTPResponse
     ) -> Optional[str]:
         """Parse an error message from the given response object."""
         # noinspection PyBroadException
         try:
             result = json.loads(response.data)
-            return result['error']['message']
+            return result["error"]["message"]
         except BaseException:
             return None
 

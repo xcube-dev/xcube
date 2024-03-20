@@ -33,11 +33,9 @@ def get_service_info(ctx: MetaContext) -> Dict[str, Any]:
         api_info = {
             "name": other_api.name,
             "version": other_api.version,
-            "description": other_api.description
+            "description": other_api.description,
         }
-        api_infos.append({k: v
-                          for k, v in api_info.items()
-                          if v is not None})
+        api_infos.append({k: v for k, v in api_info.items() if v is not None})
 
     # TODO (forman): once APIs are configurable, we should
     #   get the server name, description from configuration too
@@ -50,5 +48,5 @@ def get_service_info(ctx: MetaContext) -> Dict[str, Any]:
         startTime=ctx.start_time,
         currentTime=ctx.current_time,
         updateTime=ctx.update_time,
-        pid=os.getpid()
+        pid=os.getpid(),
     )

@@ -23,12 +23,12 @@ from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonObjectSchema
 
 
-DEFAULT_MAX_VOXEL_COUNT = 256 ** 3
+DEFAULT_MAX_VOXEL_COUNT = 256**3
 
 VOLUMES_ACCESS_SCHEMA = JsonObjectSchema(
     properties=dict(
         MaxVoxelCount=JsonIntegerSchema(
-            minimum=10 ** 3,
+            minimum=10**3,
             default=DEFAULT_MAX_VOXEL_COUNT,
         ),
     ),

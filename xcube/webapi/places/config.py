@@ -31,8 +31,8 @@ PLACE_GROUP_JOIN_SCHEMA = JsonObjectSchema(
         Path=PATH_SCHEMA,
     ),
     required=[
-        'Property',
-        'Path',
+        "Property",
+        "Path",
     ],
     additional_properties=False,
 )
@@ -45,9 +45,7 @@ PLACE_GROUP_SCHEMA = JsonObjectSchema(
         Query=STRING_SCHEMA,
         Join=PLACE_GROUP_JOIN_SCHEMA,
         CharacterEncoding=STRING_SCHEMA,
-        PropertyMapping=JsonObjectSchema(
-            additional_properties=PATH_SCHEMA
-        ),
+        PropertyMapping=JsonObjectSchema(additional_properties=PATH_SCHEMA),
         PlaceGroupRef=IDENTIFIER_SCHEMA,
     ),
     required=[
@@ -64,7 +62,5 @@ PLACE_GROUP_SCHEMA = JsonObjectSchema(
 )
 
 CONFIG_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        PlaceGroups=JsonArraySchema(items=PLACE_GROUP_SCHEMA)
-    )
+    properties=dict(PlaceGroups=JsonArraySchema(items=PLACE_GROUP_SCHEMA))
 )

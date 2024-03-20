@@ -41,9 +41,7 @@ nan = np.nan
 
 class ColormapProviderMock(ColormapProvider):
 
-    def get_cmap(self,
-                 cm_name: str,
-                 num_colors: Optional[int] = None):
+    def get_cmap(self, cm_name: str, num_colors: Optional[int] = None):
         return cm_name, matplotlib.cm.get_cmap(cm_name, lut=num_colors)
 
 
@@ -56,28 +54,25 @@ class Tile2Test(unittest.TestCase):
     def _get_ml_dataset(crs_name: str) -> MultiLevelDataset:
         crs = pyproj.CRS.from_string(crs_name)
         geo_crs = pyproj.CRS.from_string(GEOGRAPHIC_CRS_NAME)
-        transformer = pyproj.Transformer.from_crs(
-            geo_crs, crs, always_xy=True
-        )
-        (x1, x2), (y1, y2) = transformer.transform(
-            (-180, 180),
-            (-85.051129, 85.051129)
-        )
+        transformer = pyproj.Transformer.from_crs(geo_crs, crs, always_xy=True)
+        (x1, x2), (y1, y2) = transformer.transform((-180, 180), (-85.051129, 85.051129))
 
         data = np.array(
-            [[
-                [5, 1, 1, 1, 1, 2, 2, 2, 2, 6],
-                [1, 5, 1, 1, 1, 2, 2, 2, 6, 2],
-                [1, 1, 5, 1, 1, 2, 2, 6, 2, 2],
-                [1, 1, 1, 5, 1, 2, 6, 2, 2, 2],
-                [1, 1, 1, 1, 5, 6, 2, 2, 2, 2],
-                [3, 3, 3, 3, 6, 5, 4, 4, 4, 4],
-                [3, 3, 3, 6, 3, 4, 5, 4, 4, 4],
-                [3, 3, 6, 3, 3, 4, 4, 5, 4, 4],
-                [3, 6, 3, 3, 3, 4, 4, 4, 5, 4],
-                [6, 3, 3, 3, 3, 4, 4, 4, 4, 5],
-            ]],
-            dtype=np.float32
+            [
+                [
+                    [5, 1, 1, 1, 1, 2, 2, 2, 2, 6],
+                    [1, 5, 1, 1, 1, 2, 2, 2, 6, 2],
+                    [1, 1, 5, 1, 1, 2, 2, 6, 2, 2],
+                    [1, 1, 1, 5, 1, 2, 6, 2, 2, 2],
+                    [1, 1, 1, 1, 5, 6, 2, 2, 2, 2],
+                    [3, 3, 3, 3, 6, 5, 4, 4, 4, 4],
+                    [3, 3, 3, 6, 3, 4, 5, 4, 4, 4],
+                    [3, 3, 6, 3, 3, 4, 4, 5, 4, 4],
+                    [3, 6, 3, 3, 3, 4, 4, 4, 5, 4],
+                    [6, 3, 3, 3, 3, 4, 4, 4, 4, 5],
+                ]
+            ],
+            dtype=np.float32,
         )
         a_data = np.where(data != 6, data + 0, np.nan)
         b_data = np.where(data != 5, data + 1, np.nan)
@@ -89,25 +84,20 @@ class Tile2Test(unittest.TestCase):
         y1 += 0.5 * res
         y2 -= 0.5 * res
 
-        var_a = xr.DataArray(a_data, dims=['time', 'y', 'x'])
-        var_b = xr.DataArray(b_data, dims=['time', 'y', 'x'])
-        var_c = xr.DataArray(c_data, dims=['time', 'y', 'x'])
-        spatial_ref = xr.DataArray(
-            0, attrs=pyproj.CRS.from_string(crs_name).to_cf()
-        )
+        var_a = xr.DataArray(a_data, dims=["time", "y", "x"])
+        var_b = xr.DataArray(b_data, dims=["time", "y", "x"])
+        var_c = xr.DataArray(c_data, dims=["time", "y", "x"])
+        spatial_ref = xr.DataArray(0, attrs=pyproj.CRS.from_string(crs_name).to_cf())
 
         ds = xr.Dataset(
             data_vars=dict(
-                var_a=var_a,
-                var_b=var_b,
-                var_c=var_c,
-                spatial_ref=spatial_ref
+                var_a=var_a, var_b=var_b, var_c=var_c, spatial_ref=spatial_ref
             ),
             coords=dict(
-                time=xr.DataArray(np.array([0]), dims='time'),
-                y=xr.DataArray(np.linspace(y1, y2, h), dims='y'),
-                x=xr.DataArray(np.linspace(x1, x2, w), dims='x')
-            )
+                time=xr.DataArray(np.array([0]), dims="time"),
+                y=xr.DataArray(np.linspace(y1, y2, h), dims="y"),
+                x=xr.DataArray(np.linspace(x1, x2, w), dims="x"),
+            ),
         )
         # ds = ds.chunk(dict(x=4, y=3))
         return BaseMultiLevelDataset(ds)
@@ -118,17 +108,13 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
     ml_ds = Tile2Test._get_ml_dataset(crs_name)
     tile_w = 12
     tile_h = 8
-    args = [
-        ml_ds,
-        ('var_a', 'var_b', 'var_c'),
-        (-180, -90, 180, 90)
-    ]
+    args = [ml_ds, ("var_a", "var_b", "var_c"), (-180, -90, 180, 90)]
     kwargs = dict(
         tile_crs=GEOGRAPHIC_CRS_NAME,
         tile_size=(tile_w, tile_h),
         level=0,
-        non_spatial_labels={'time': 0},
-        tile_enlargement=0
+        non_spatial_labels={"time": 0},
+        tile_enlargement=0,
     )
 
     def test_compute_tiles_as_ndarrays(self):
@@ -143,12 +129,13 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
         # Test spatial reference
         self.assertIn("crs", dataset)
         self.assertIn("crs_wkt", dataset["crs"].attrs)
-        self.assertIn("latitude_longitude",
-                      dataset["crs"].attrs.get("grid_mapping_name"))
+        self.assertIn(
+            "latitude_longitude", dataset["crs"].attrs.get("grid_mapping_name")
+        )
 
         # Test data variables
         tiles: List[np.ndarray] = []
-        for var_name in ('var_a', 'var_b', 'var_c'):
+        for var_name in ("var_a", "var_b", "var_c"):
             self.assertIn(var_name, dataset.data_vars)
             var = dataset[var_name]
             self.assertEqual(("time", "y", "x"), var.dims)
@@ -157,67 +144,71 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
         self.assert_tiles_ok(self.tile_w, self.tile_h, tiles)
 
         # Test coordinates
-        dim_sizes = ('time', 1), ('y', self.tile_h), ('x', self.tile_w)
+        dim_sizes = ("time", 1), ("y", self.tile_h), ("x", self.tile_w)
         self.assertEqual(dict(dim_sizes), dataset.dims)
         for var_name, expected_size in dim_sizes:
             self.assertIn(var_name, dataset.coords)
             var = dataset[var_name]
             self.assertEqual(expected_size, len(var))
 
-    def assert_tiles_ok(self,
-                        expected_tile_w: int,
-                        expected_tile_h: int,
-                        actual_tiles: List[np.ndarray]):
+    def assert_tiles_ok(
+        self, expected_tile_w: int, expected_tile_h: int, actual_tiles: List[np.ndarray]
+    ):
         self.assertEqual(3, len(actual_tiles))
         for i in range(3):
             self.assertIsInstance(actual_tiles[i], np.ndarray)
             self.assertEqual(np.float32, actual_tiles[i].dtype)
-            self.assertEqual((expected_tile_h, expected_tile_w),
-                             actual_tiles[i].shape)
+            self.assertEqual((expected_tile_h, expected_tile_w), actual_tiles[i].shape)
         # print(f'{tiles[0]!r}')
         np.testing.assert_equal(
             actual_tiles[0],
             np.array(
-                [[1., 1., 1., 5., 1., 1., 1., 2., 2., nan, 2., 2.],
-                 [1., 1., 1., 5., 1., 1., 1., 2., 2., nan, 2., 2.],
-                 [1., 1., 1., 1., 5., 1., 1., 2., nan, 2., 2., 2.],
-                 [1., 1., 1., 1., 1., 5., 5., nan, 2., 2., 2., 2.],
-                 [1., 1., 1., 1., 1., 5., 5., nan, 2., 2., 2., 2.],
-                 [3., 3., 3., 3., 3., nan, nan, 5., 4., 4., 4., 4.],
-                 [3., 3., 3., 3., nan, 3., 3., 4., 5., 4., 4., 4.],
-                 [3., 3., 3., nan, 3., 3., 3., 4., 4., 5., 4., 4.]],
-                dtype=np.float32
-            )
+                [
+                    [1.0, 1.0, 1.0, 5.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, 2.0, 2.0],
+                    [1.0, 1.0, 1.0, 5.0, 1.0, 1.0, 1.0, 2.0, 2.0, nan, 2.0, 2.0],
+                    [1.0, 1.0, 1.0, 1.0, 5.0, 1.0, 1.0, 2.0, nan, 2.0, 2.0, 2.0],
+                    [1.0, 1.0, 1.0, 1.0, 1.0, 5.0, 5.0, nan, 2.0, 2.0, 2.0, 2.0],
+                    [1.0, 1.0, 1.0, 1.0, 1.0, 5.0, 5.0, nan, 2.0, 2.0, 2.0, 2.0],
+                    [3.0, 3.0, 3.0, 3.0, 3.0, nan, nan, 5.0, 4.0, 4.0, 4.0, 4.0],
+                    [3.0, 3.0, 3.0, 3.0, nan, 3.0, 3.0, 4.0, 5.0, 4.0, 4.0, 4.0],
+                    [3.0, 3.0, 3.0, nan, 3.0, 3.0, 3.0, 4.0, 4.0, 5.0, 4.0, 4.0],
+                ],
+                dtype=np.float32,
+            ),
         )
         # print(f'{tiles[1]!r}')
         np.testing.assert_equal(
             actual_tiles[1],
             np.array(
-                [[2., 2., 2., nan, 2., 2., 2., 3., 3., 7., 3., 3.],
-                 [2., 2., 2., nan, 2., 2., 2., 3., 3., 7., 3., 3.],
-                 [2., 2., 2., 2., nan, 2., 2., 3., 7., 3., 3., 3.],
-                 [2., 2., 2., 2., 2., nan, nan, 7., 3., 3., 3., 3.],
-                 [2., 2., 2., 2., 2., nan, nan, 7., 3., 3., 3., 3.],
-                 [4., 4., 4., 4., 4., 7., 7., nan, 5., 5., 5., 5.],
-                 [4., 4., 4., 4., 7., 4., 4., 5., nan, 5., 5., 5.],
-                 [4., 4., 4., 7., 4., 4., 4., 5., 5., nan, 5., 5.]],
-                dtype=np.float32
-            )
+                [
+                    [2.0, 2.0, 2.0, nan, 2.0, 2.0, 2.0, 3.0, 3.0, 7.0, 3.0, 3.0],
+                    [2.0, 2.0, 2.0, nan, 2.0, 2.0, 2.0, 3.0, 3.0, 7.0, 3.0, 3.0],
+                    [2.0, 2.0, 2.0, 2.0, nan, 2.0, 2.0, 3.0, 7.0, 3.0, 3.0, 3.0],
+                    [2.0, 2.0, 2.0, 2.0, 2.0, nan, nan, 7.0, 3.0, 3.0, 3.0, 3.0],
+                    [2.0, 2.0, 2.0, 2.0, 2.0, nan, nan, 7.0, 3.0, 3.0, 3.0, 3.0],
+                    [4.0, 4.0, 4.0, 4.0, 4.0, 7.0, 7.0, nan, 5.0, 5.0, 5.0, 5.0],
+                    [4.0, 4.0, 4.0, 4.0, 7.0, 4.0, 4.0, 5.0, nan, 5.0, 5.0, 5.0],
+                    [4.0, 4.0, 4.0, 7.0, 4.0, 4.0, 4.0, 5.0, 5.0, nan, 5.0, 5.0],
+                ],
+                dtype=np.float32,
+            ),
         )
         # print(f'{tiles[2]!r}')
         np.testing.assert_equal(
             actual_tiles[2],
             np.array(
-                [[3., 3., 3., 7., 3., 3., 3., 4., 4., 8., 4., 4.],
-                 [3., 3., 3., 7., 3., 3., 3., 4., 4., 8., 4., 4.],
-                 [3., 3., 3., 3., 7., 3., 3., 4., 8., 4., 4., 4.],
-                 [3., 3., 3., 3., 3., 7., 7., 8., 4., 4., 4., 4.],
-                 [3., 3., 3., 3., 3., 7., 7., 8., 4., 4., 4., 4.],
-                 [5., 5., 5., 5., 5., 8., 8., 7., nan, nan, nan, nan],
-                 [5., 5., 5., 5., 8., 5., 5., nan, 7., nan, nan, nan],
-                 [5., 5., 5., 8., 5., 5., 5., nan, nan, 7., nan, nan]],
-                dtype=np.float32
-            )
+                [
+                    [3.0, 3.0, 3.0, 7.0, 3.0, 3.0, 3.0, 4.0, 4.0, 8.0, 4.0, 4.0],
+                    [3.0, 3.0, 3.0, 7.0, 3.0, 3.0, 3.0, 4.0, 4.0, 8.0, 4.0, 4.0],
+                    [3.0, 3.0, 3.0, 3.0, 7.0, 3.0, 3.0, 4.0, 8.0, 4.0, 4.0, 4.0],
+                    [3.0, 3.0, 3.0, 3.0, 3.0, 7.0, 7.0, 8.0, 4.0, 4.0, 4.0, 4.0],
+                    [3.0, 3.0, 3.0, 3.0, 3.0, 7.0, 7.0, 8.0, 4.0, 4.0, 4.0, 4.0],
+                    [5.0, 5.0, 5.0, 5.0, 5.0, 8.0, 8.0, 7.0, nan, nan, nan, nan],
+                    [5.0, 5.0, 5.0, 5.0, 8.0, 5.0, 5.0, nan, 7.0, nan, nan, nan],
+                    [5.0, 5.0, 5.0, 8.0, 5.0, 5.0, 5.0, nan, nan, 7.0, nan, nan],
+                ],
+                dtype=np.float32,
+            ),
         )
 
 
@@ -226,21 +217,16 @@ class ComputeRgbaTileTest(Tile2Test, unittest.TestCase):
     def test_compute_rgba_tile_with_color_mapping(self):
         crs_name = WEB_MERCATOR_CRS_NAME
         ml_ds = self._get_ml_dataset(crs_name)
-        args = [
-            ml_ds,
-            'var_a',
-            0, 0, 0,
-            CMAP_PROVIDER
-        ]
+        args = [ml_ds, "var_a", 0, 0, 0, CMAP_PROVIDER]
         kwargs = dict(
             crs_name=crs_name,
             tile_size=10,
             cmap_name="gray",
             value_ranges=(0, 10),
-            non_spatial_labels={'time': 0},
-            tile_enlargement=0
+            non_spatial_labels={"time": 0},
+            tile_enlargement=0,
         )
-        tile = compute_rgba_tile(*args, **kwargs, format='numpy')
+        tile = compute_rgba_tile(*args, **kwargs, format="numpy")
         self.assertIsInstance(tile, np.ndarray)
         self.assertEqual(np.uint8, tile.dtype)
         self.assertEqual((10, 10, 4), tile.shape)
@@ -251,58 +237,57 @@ class ComputeRgbaTileTest(Tile2Test, unittest.TestCase):
         np.testing.assert_equal(
             r,
             np.array(
-                [[0, 0, 76, 76, 76, 76, 102, 102, 102, 128],
-                 [76, 76, 0, 76, 76, 76, 102, 102, 128, 102],
-                 [76, 76, 76, 0, 76, 76, 102, 128, 102, 102],
-                 [76, 76, 76, 76, 0, 0, 128, 102, 102, 102],
-                 [25, 25, 25, 25, 128, 128, 0, 51, 51, 51],
-                 [25, 25, 25, 25, 128, 128, 0, 51, 51, 51],
-                 [25, 25, 25, 128, 25, 25, 51, 0, 51, 51],
-                 [25, 25, 128, 25, 25, 25, 51, 51, 0, 51],
-                 [128, 128, 25, 25, 25, 25, 51, 51, 51, 0],
-                 [128, 128, 25, 25, 25, 25, 51, 51, 51, 0]],
-                dtype=np.uint8
-            )
+                [
+                    [0, 0, 76, 76, 76, 76, 102, 102, 102, 128],
+                    [76, 76, 0, 76, 76, 76, 102, 102, 128, 102],
+                    [76, 76, 76, 0, 76, 76, 102, 128, 102, 102],
+                    [76, 76, 76, 76, 0, 0, 128, 102, 102, 102],
+                    [25, 25, 25, 25, 128, 128, 0, 51, 51, 51],
+                    [25, 25, 25, 25, 128, 128, 0, 51, 51, 51],
+                    [25, 25, 25, 128, 25, 25, 51, 0, 51, 51],
+                    [25, 25, 128, 25, 25, 25, 51, 51, 0, 51],
+                    [128, 128, 25, 25, 25, 25, 51, 51, 51, 0],
+                    [128, 128, 25, 25, 25, 25, 51, 51, 51, 0],
+                ],
+                dtype=np.uint8,
+            ),
         )
         np.testing.assert_equal(r, g)
         np.testing.assert_equal(r, b)
         np.testing.assert_equal(
             a,
             np.array(
-                [[0, 0, 255, 255, 255, 255, 255, 255, 255, 255],
-                 [255, 255, 0, 255, 255, 255, 255, 255, 255, 255],
-                 [255, 255, 255, 0, 255, 255, 255, 255, 255, 255],
-                 [255, 255, 255, 255, 0, 0, 255, 255, 255, 255],
-                 [255, 255, 255, 255, 255, 255, 0, 255, 255, 255],
-                 [255, 255, 255, 255, 255, 255, 0, 255, 255, 255],
-                 [255, 255, 255, 255, 255, 255, 255, 0, 255, 255],
-                 [255, 255, 255, 255, 255, 255, 255, 255, 0, 255],
-                 [255, 255, 255, 255, 255, 255, 255, 255, 255, 0],
-                 [255, 255, 255, 255, 255, 255, 255, 255, 255, 0]],
-                dtype=np.uint8
-            )
+                [
+                    [0, 0, 255, 255, 255, 255, 255, 255, 255, 255],
+                    [255, 255, 0, 255, 255, 255, 255, 255, 255, 255],
+                    [255, 255, 255, 0, 255, 255, 255, 255, 255, 255],
+                    [255, 255, 255, 255, 0, 0, 255, 255, 255, 255],
+                    [255, 255, 255, 255, 255, 255, 0, 255, 255, 255],
+                    [255, 255, 255, 255, 255, 255, 0, 255, 255, 255],
+                    [255, 255, 255, 255, 255, 255, 255, 0, 255, 255],
+                    [255, 255, 255, 255, 255, 255, 255, 255, 0, 255],
+                    [255, 255, 255, 255, 255, 255, 255, 255, 255, 0],
+                    [255, 255, 255, 255, 255, 255, 255, 255, 255, 0],
+                ],
+                dtype=np.uint8,
+            ),
         )
 
-        tile = compute_rgba_tile(*args, **kwargs, format='png')
+        tile = compute_rgba_tile(*args, **kwargs, format="png")
         self.assertIsInstance(tile, bytes)
 
     def test_compute_rgba_tile_with_components(self):
         crs_name = WEB_MERCATOR_CRS_NAME
         ml_ds = self._get_ml_dataset(crs_name)
-        args = [
-            ml_ds,
-            ('var_a', 'var_b', 'var_c'),
-            0, 0, 0,
-            CMAP_PROVIDER
-        ]
+        args = [ml_ds, ("var_a", "var_b", "var_c"), 0, 0, 0, CMAP_PROVIDER]
         kwargs = dict(
             crs_name=crs_name,
             tile_size=10,
             value_ranges=(0, 10),
-            non_spatial_labels={'time': 0},
-            tile_enlargement=0
+            non_spatial_labels={"time": 0},
+            tile_enlargement=0,
         )
-        tile = compute_rgba_tile(*args, **kwargs, format='numpy')
+        tile = compute_rgba_tile(*args, **kwargs, format="numpy")
         self.assertIsInstance(tile, np.ndarray)
         self.assertEqual(np.uint8, tile.dtype)
         self.assertEqual((10, 10, 4), tile.shape)
@@ -313,67 +298,75 @@ class ComputeRgbaTileTest(Tile2Test, unittest.TestCase):
         np.testing.assert_equal(
             r,
             np.array(
-                [[0, 0, 76, 76, 76, 76, 102, 102, 102, 127],
-                 [76, 76, 0, 76, 76, 76, 102, 102, 127, 102],
-                 [76, 76, 76, 0, 76, 76, 102, 127, 102, 102],
-                 [76, 76, 76, 76, 0, 0, 127, 102, 102, 102],
-                 [25, 25, 25, 25, 127, 127, 0, 51, 51, 51],
-                 [25, 25, 25, 25, 127, 127, 0, 51, 51, 51],
-                 [25, 25, 25, 127, 25, 25, 51, 0, 51, 51],
-                 [25, 25, 127, 25, 25, 25, 51, 51, 0, 51],
-                 [127, 127, 25, 25, 25, 25, 51, 51, 51, 0],
-                 [127, 127, 25, 25, 25, 25, 51, 51, 51, 0]],
-                dtype=np.uint8
-            )
+                [
+                    [0, 0, 76, 76, 76, 76, 102, 102, 102, 127],
+                    [76, 76, 0, 76, 76, 76, 102, 102, 127, 102],
+                    [76, 76, 76, 0, 76, 76, 102, 127, 102, 102],
+                    [76, 76, 76, 76, 0, 0, 127, 102, 102, 102],
+                    [25, 25, 25, 25, 127, 127, 0, 51, 51, 51],
+                    [25, 25, 25, 25, 127, 127, 0, 51, 51, 51],
+                    [25, 25, 25, 127, 25, 25, 51, 0, 51, 51],
+                    [25, 25, 127, 25, 25, 25, 51, 51, 0, 51],
+                    [127, 127, 25, 25, 25, 25, 51, 51, 51, 0],
+                    [127, 127, 25, 25, 25, 25, 51, 51, 51, 0],
+                ],
+                dtype=np.uint8,
+            ),
         )
         np.testing.assert_equal(
             g,
             np.array(
-                [[178, 178, 102, 102, 102, 102, 127, 127, 127, 0],
-                 [102, 102, 178, 102, 102, 102, 127, 127, 0, 127],
-                 [102, 102, 102, 178, 102, 102, 127, 0, 127, 127],
-                 [102, 102, 102, 102, 178, 178, 0, 127, 127, 127],
-                 [51, 51, 51, 51, 0, 0, 178, 76, 76, 76],
-                 [51, 51, 51, 51, 0, 0, 178, 76, 76, 76],
-                 [51, 51, 51, 0, 51, 51, 76, 178, 76, 76],
-                 [51, 51, 0, 51, 51, 51, 76, 76, 178, 76],
-                 [0, 0, 51, 51, 51, 51, 76, 76, 76, 178],
-                 [0, 0, 51, 51, 51, 51, 76, 76, 76, 178]],
-                dtype=np.uint8
-            )
+                [
+                    [178, 178, 102, 102, 102, 102, 127, 127, 127, 0],
+                    [102, 102, 178, 102, 102, 102, 127, 127, 0, 127],
+                    [102, 102, 102, 178, 102, 102, 127, 0, 127, 127],
+                    [102, 102, 102, 102, 178, 178, 0, 127, 127, 127],
+                    [51, 51, 51, 51, 0, 0, 178, 76, 76, 76],
+                    [51, 51, 51, 51, 0, 0, 178, 76, 76, 76],
+                    [51, 51, 51, 0, 51, 51, 76, 178, 76, 76],
+                    [51, 51, 0, 51, 51, 51, 76, 76, 178, 76],
+                    [0, 0, 51, 51, 51, 51, 76, 76, 76, 178],
+                    [0, 0, 51, 51, 51, 51, 76, 76, 76, 178],
+                ],
+                dtype=np.uint8,
+            ),
         )
         np.testing.assert_equal(
             b,
             np.array(
-                [[204, 204, 127, 127, 127, 127, 0, 0, 0, 178],
-                 [127, 127, 204, 127, 127, 127, 0, 0, 178, 0],
-                 [127, 127, 127, 204, 127, 127, 0, 178, 0, 0],
-                 [127, 127, 127, 127, 204, 204, 178, 0, 0, 0],
-                 [76, 76, 76, 76, 178, 178, 204, 102, 102, 102],
-                 [76, 76, 76, 76, 178, 178, 204, 102, 102, 102],
-                 [76, 76, 76, 178, 76, 76, 102, 204, 102, 102],
-                 [76, 76, 178, 76, 76, 76, 102, 102, 204, 102],
-                 [178, 178, 76, 76, 76, 76, 102, 102, 102, 204],
-                 [178, 178, 76, 76, 76, 76, 102, 102, 102, 204]],
-                dtype=np.uint8
-            )
+                [
+                    [204, 204, 127, 127, 127, 127, 0, 0, 0, 178],
+                    [127, 127, 204, 127, 127, 127, 0, 0, 178, 0],
+                    [127, 127, 127, 204, 127, 127, 0, 178, 0, 0],
+                    [127, 127, 127, 127, 204, 204, 178, 0, 0, 0],
+                    [76, 76, 76, 76, 178, 178, 204, 102, 102, 102],
+                    [76, 76, 76, 76, 178, 178, 204, 102, 102, 102],
+                    [76, 76, 76, 178, 76, 76, 102, 204, 102, 102],
+                    [76, 76, 178, 76, 76, 76, 102, 102, 204, 102],
+                    [178, 178, 76, 76, 76, 76, 102, 102, 102, 204],
+                    [178, 178, 76, 76, 76, 76, 102, 102, 102, 204],
+                ],
+                dtype=np.uint8,
+            ),
         )
         np.testing.assert_equal(
             a,
             np.array(
-                [[0, 0, 255, 255, 255, 255, 0, 0, 0, 0],
-                 [255, 255, 0, 255, 255, 255, 0, 0, 0, 0],
-                 [255, 255, 255, 0, 255, 255, 0, 0, 0, 0],
-                 [255, 255, 255, 255, 0, 0, 0, 0, 0, 0],
-                 [255, 255, 255, 255, 0, 0, 0, 255, 255, 255],
-                 [255, 255, 255, 255, 0, 0, 0, 255, 255, 255],
-                 [255, 255, 255, 0, 255, 255, 255, 0, 255, 255],
-                 [255, 255, 0, 255, 255, 255, 255, 255, 0, 255],
-                 [0, 0, 255, 255, 255, 255, 255, 255, 255, 0],
-                 [0, 0, 255, 255, 255, 255, 255, 255, 255, 0]],
-                dtype=np.uint8
-            )
+                [
+                    [0, 0, 255, 255, 255, 255, 0, 0, 0, 0],
+                    [255, 255, 0, 255, 255, 255, 0, 0, 0, 0],
+                    [255, 255, 255, 0, 255, 255, 0, 0, 0, 0],
+                    [255, 255, 255, 255, 0, 0, 0, 0, 0, 0],
+                    [255, 255, 255, 255, 0, 0, 0, 255, 255, 255],
+                    [255, 255, 255, 255, 0, 0, 0, 255, 255, 255],
+                    [255, 255, 255, 0, 255, 255, 255, 0, 255, 255],
+                    [255, 255, 0, 255, 255, 255, 255, 255, 0, 255],
+                    [0, 0, 255, 255, 255, 255, 255, 255, 255, 0],
+                    [0, 0, 255, 255, 255, 255, 255, 255, 255, 0],
+                ],
+                dtype=np.uint8,
+            ),
         )
 
-        tile = compute_rgba_tile(*args, **kwargs, format='png')
+        tile = compute_rgba_tile(*args, **kwargs, format="png")
         self.assertIsInstance(tile, bytes)

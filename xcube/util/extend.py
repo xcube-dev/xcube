@@ -21,15 +21,24 @@
 
 import inspect
 import threading
-from typing import Type, TypeVar, Mapping, Sequence, Any, Optional, Callable, \
-    Tuple, Union
+from typing import (
+    Type,
+    TypeVar,
+    Mapping,
+    Sequence,
+    Any,
+    Optional,
+    Callable,
+    Tuple,
+    Union,
+)
 
 from xcube.util.assertions import assert_true
 
-GET_EXTENSIONS_ATTR_NAME = 'get_extensions'
+GET_EXTENSIONS_ATTR_NAME = "get_extensions"
 
-Base = TypeVar('Base')
-Ext = TypeVar('Ext')
+Base = TypeVar("Base")
+Ext = TypeVar("Ext")
 
 BaseClass = Type[Base]
 ExtClass = Type[Ext]
@@ -39,13 +48,13 @@ ExtInstItem = Tuple[str, Ext]
 
 
 def extend(
-        base_class: BaseClass,
-        name: str,
-        doc: Optional[str] = None,
-        class_handler: Union[None, str, Callable[[ExtClassItem], Any]] = None,
-        inst_handler: Union[None, str, Callable[[ExtInstItem], Any]] = None,
-        ext_args: Optional[Sequence[Any]] = None,
-        ext_kwargs: Optional[Mapping[str, Any]] = None
+    base_class: BaseClass,
+    name: str,
+    doc: Optional[str] = None,
+    class_handler: Union[None, str, Callable[[ExtClassItem], Any]] = None,
+    inst_handler: Union[None, str, Callable[[ExtInstItem], Any]] = None,
+    ext_args: Optional[Sequence[Any]] = None,
+    ext_kwargs: Optional[Mapping[str, Any]] = None,
 ) -> Callable[[ExtClass], ExtClass]:
     """
     A class decorator factory that adds an instance property named
@@ -88,17 +97,18 @@ def extend(
         to the decorated class' constructor
     :return: a class decorator function
     """
-    assert_true(inspect.isclass(base_class),
-                message=f'base_class must be a class type,'
-                        f' but was {type(base_class).__name__}')
-    assert_true(isinstance(name, str)
-                and name.isidentifier(),
-                message=f'name must be a valid identifier,'
-                        f' but was {name!r}')
-    assert_true(doc is None or isinstance(doc, str),
-                message='doc must be a string')
+    assert_true(
+        inspect.isclass(base_class),
+        message=f"base_class must be a class type,"
+        f" but was {type(base_class).__name__}",
+    )
+    assert_true(
+        isinstance(name, str) and name.isidentifier(),
+        message=f"name must be a valid identifier," f" but was {name!r}",
+    )
+    assert_true(doc is None or isinstance(doc, str), message="doc must be a string")
 
-    _name = '_' + name
+    _name = "_" + name
     lock = threading.RLock()
 
     def call_handler(base, handler, ext):
@@ -108,9 +118,10 @@ def extend(
             handler((name, ext))
 
     def add_class_property(ext_class: ExtClass) -> ExtClass:
-        assert_true(inspect.isclass(ext_class),
-                    message='the extend() decorator can'
-                            ' be used with classes only')
+        assert_true(
+            inspect.isclass(ext_class),
+            message="the extend() decorator can" " be used with classes only",
+        )
 
         def _get_property(base: Base):
             ext = getattr(base, _name, None)
@@ -118,21 +129,24 @@ def extend(
                 with lock:
                     ext = getattr(base, _name, None)
                     if ext is None:
-                        ext = ext_class(base,
-                                        *(ext_args or ()),
-                                        **(ext_kwargs or {}))
+                        ext = ext_class(base, *(ext_args or ()), **(ext_kwargs or {}))
                         setattr(base, _name, ext)
                         call_handler(base, inst_handler, ext)
             return ext
 
-        assert_true(not hasattr(base_class, name),
-                    message=f'a property named {name} already'
-                            f' exists in class {base_class.__name__}')
+        assert_true(
+            not hasattr(base_class, name),
+            message=f"a property named {name} already"
+            f" exists in class {base_class.__name__}",
+        )
 
-        setattr(base_class,
-                name,
-                property(_get_property, None, None,
-                         ext_class.__doc__ if doc is None else doc))
+        setattr(
+            base_class,
+            name,
+            property(
+                _get_property, None, None, ext_class.__doc__ if doc is None else doc
+            ),
+        )
 
         call_handler(base_class, class_handler, ext_class)
 

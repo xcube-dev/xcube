@@ -69,9 +69,9 @@ class ReferenceDataStore(DataStore):
     """
 
     def __init__(
-            self,
-            refs: List[str],
-            **ref_kwargs,
+        self,
+        refs: List[str],
+        **ref_kwargs,
     ):
         self._refs = dict(self._normalize_ref(ref) for ref in refs)
         self._ref_kwargs = ref_kwargs
@@ -87,20 +87,17 @@ class ReferenceDataStore(DataStore):
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
         return self.get_data_types()
 
-    def get_data_ids(self,
-                     data_type: DataTypeLike = None,
-                     include_attrs: Container[str] = None) -> \
-            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+    def get_data_ids(
+        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+    ) -> Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         return iter(self._refs.keys())
 
-    def has_data(self,
-                 data_id: str,
-                 data_type: DataTypeLike = None) -> bool:
+    def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         return data_id in self._refs
 
-    def describe_data(self,
-                      data_id: str,
-                      data_type: DataTypeLike = None) -> DataDescriptor:
+    def describe_data(
+        self, data_id: str, data_type: DataTypeLike = None
+    ) -> DataDescriptor:
         data_descriptor = self._refs[data_id].get("data_descriptor")
         if data_descriptor is None:
             dataset = self.open_data(data_id)
@@ -108,46 +105,51 @@ class ReferenceDataStore(DataStore):
             self._refs[data_id]["data_descriptor"] = data_descriptor
         return data_descriptor
 
-    def get_data_opener_ids(self,
-                            data_id: str = None,
-                            data_type: DataTypeLike = None) -> Tuple[str, ...]:
+    def get_data_opener_ids(
+        self, data_id: str = None, data_type: DataTypeLike = None
+    ) -> Tuple[str, ...]:
         return ("dataset:zarr:reference",)
 
-    def get_open_data_params_schema(self,
-                                    data_id: str = None,
-                                    opener_id: str = None) -> JsonObjectSchema:
+    def get_open_data_params_schema(
+        self, data_id: str = None, opener_id: str = None
+    ) -> JsonObjectSchema:
         # We do not have open parameters yet
         return JsonObjectSchema()
 
-    def open_data(self,
-                  data_id: str,
-                  opener_id: str = None,
-                  **open_params) -> xr.Dataset:
+    def open_data(
+        self, data_id: str, opener_id: str = None, **open_params
+    ) -> xr.Dataset:
         if open_params:
-            warnings.warn(f"open_params are not supported yet,"
-                          f" but passing forward {', '.join(open_params.keys())}")
+            warnings.warn(
+                f"open_params are not supported yet,"
+                f" but passing forward {', '.join(open_params.keys())}"
+            )
         ref_path = self._refs[data_id]["ref_path"]
         open_params.pop("consolidated", False)
-        ref_mapping = fsspec.get_mapper('reference://', fo=ref_path, **self._ref_kwargs)
+        ref_mapping = fsspec.get_mapper("reference://", fo=ref_path, **self._ref_kwargs)
         return xr.open_zarr(ref_mapping, consolidated=False, **open_params)
 
     @classmethod
-    def get_search_params_schema(cls,
-                                 data_type: DataTypeLike = None) -> JsonObjectSchema:
+    def get_search_params_schema(
+        cls, data_type: DataTypeLike = None
+    ) -> JsonObjectSchema:
         # We do not have search parameters yet
         return JsonObjectSchema()
 
-    def search_data(self,
-                    data_type: DataTypeLike = None,
-                    **search_params) -> Iterator[DataDescriptor]:
+    def search_data(
+        self, data_type: DataTypeLike = None, **search_params
+    ) -> Iterator[DataDescriptor]:
         if search_params:
-            warnings.warn(f"search_params are not supported yet,"
-                          f" but received {', '.join(search_params.keys())}")
+            warnings.warn(
+                f"search_params are not supported yet,"
+                f" but received {', '.join(search_params.keys())}"
+            )
         return (self.describe_data(data_id) for data_id in self.get_data_ids())
 
     @classmethod
-    def _normalize_ref(cls, ref: Union[str, Dict[str, Any]]) \
-            -> Tuple[str, Dict[str, Any]]:
+    def _normalize_ref(
+        cls, ref: Union[str, Dict[str, Any]]
+    ) -> Tuple[str, Dict[str, Any]]:
 
         if isinstance(ref, str):
             ref_path = ref
@@ -163,8 +165,10 @@ class ReferenceDataStore(DataStore):
             if isinstance(data_descriptor, dict):
                 data_descriptor = DatasetDescriptor.from_dict(data_descriptor)
             elif data_descriptor is not None:
-                raise TypeError("value of data_descriptor key"
-                                " in refs item must be a dict or None")
+                raise TypeError(
+                    "value of data_descriptor key"
+                    " in refs item must be a dict or None"
+                )
 
             data_id = ref.get("data_id") or None
             if data_id is None and data_descriptor is not None:
@@ -172,8 +176,7 @@ class ReferenceDataStore(DataStore):
             if data_id is None:
                 data_id = cls._ref_path_to_data_id(ref_path)
 
-            return data_id, dict(ref_path=ref_path,
-                                 data_descriptor=data_descriptor)
+            return data_id, dict(ref_path=ref_path, data_descriptor=data_descriptor)
         raise TypeError("item in refs must be a str or a dict")
 
     @classmethod

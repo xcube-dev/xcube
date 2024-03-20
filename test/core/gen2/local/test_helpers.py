@@ -18,11 +18,11 @@ class HelpersTest(unittest.TestCase):
         self.assertIs(cube, strip_cube(cube))
 
         cube = new_cube(variables=dict(chl=0.6, tsm=0.9, flags=16))
-        cube_subset = cube.sel(time=slice('1990-01-01', '1991-01-01'))
+        cube_subset = cube.sel(time=slice("1990-01-01", "1991-01-01"))
         stripped_cube = strip_cube(cube_subset)
         self.assertEqual(set(), set(stripped_cube.data_vars))
 
         cube = new_cube(variables=dict(chl=0.6, tsm=0.9, flags=16))
-        cube_subset = cube.sel(lat=0, lon=0, method='nearest')
+        cube_subset = cube.sel(lat=0, lon=0, method="nearest")
         stripped_cube = strip_cube(cube_subset)
         self.assertEqual(set(), set(stripped_cube.data_vars))

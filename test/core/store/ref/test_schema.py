@@ -32,21 +32,21 @@ class ReferenceSchemaTest(unittest.TestCase):
         self.assertIsInstance(REF_STORE_SCHEMA.properties, dict)
         self.assertEqual(
             {
-                'asynchronous',
-                'cache_size',
-                'listings_expiry_time',
-                'max_block',
-                'max_gap',
-                'max_paths',
-                'refs',
-                'remote_options',
-                'remote_protocol',
-                'skip_instance_cache',
-                'target_options',
-                'target_protocol',
-                'use_listings_cache'
+                "asynchronous",
+                "cache_size",
+                "listings_expiry_time",
+                "max_block",
+                "max_gap",
+                "max_paths",
+                "refs",
+                "remote_options",
+                "remote_protocol",
+                "skip_instance_cache",
+                "target_options",
+                "target_protocol",
+                "use_listings_cache",
             },
-            set(REF_STORE_SCHEMA.properties.keys())
+            set(REF_STORE_SCHEMA.properties.keys()),
         )
 
     def test_json_serialisation(self):

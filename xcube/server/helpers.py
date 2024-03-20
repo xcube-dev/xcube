@@ -34,10 +34,7 @@ class ConfigChangeObserver:
     :param check_after: Time in seconds between two observations.
     """
 
-    def __init__(self,
-                 server: Server,
-                 config_paths: Sequence[str],
-                 check_after: float):
+    def __init__(self, server: Server, config_paths: Sequence[str], check_after: float):
         self._server = server
         self._config_paths = config_paths
         self._check_after = check_after
@@ -45,8 +42,7 @@ class ConfigChangeObserver:
 
     def check(self):
         last_stats = self._last_stats
-        next_stats = [os.stat(config_path)
-                      for config_path in self._config_paths]
+        next_stats = [os.stat(config_path) for config_path in self._config_paths]
         if self._change_detected(last_stats, next_stats):
             next_config = load_configs(*self._config_paths)
             self._server.update(next_config)

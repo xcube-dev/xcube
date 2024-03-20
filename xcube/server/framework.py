@@ -44,9 +44,7 @@ class Framework(AsyncExecution, abc.ABC):
         indicates that configuration is not possible."""
 
     @abc.abstractmethod
-    def add_static_routes(self,
-                          routes: Sequence[ApiStaticRoute],
-                          url_prefix: str):
+    def add_static_routes(self, routes: Sequence[ApiStaticRoute], url_prefix: str):
         """
         Adds the given static routes to this web server.
 
@@ -55,9 +53,7 @@ class Framework(AsyncExecution, abc.ABC):
         """
 
     @abc.abstractmethod
-    def add_routes(self,
-                   routes: Sequence[ApiRoute],
-                   url_prefix: str):
+    def add_routes(self, routes: Sequence[ApiRoute], url_prefix: str):
         """
         Adds the given routes to this web server.
 
@@ -96,9 +92,8 @@ def get_framework_names() -> List[str]:
     """Get the names of possible web server frameworks."""
     extension_registry = get_extension_registry()
     return [
-        ext.name for ext in extension_registry.find_extensions(
-            EXTENSION_POINT_SERVER_FRAMEWORKS
-        )
+        ext.name
+        for ext in extension_registry.find_extensions(EXTENSION_POINT_SERVER_FRAMEWORKS)
     ]
 
 
@@ -106,6 +101,5 @@ def get_framework_class(framework_name: str) -> Type[Framework]:
     """Get the web server framework class for the given *framework_name*."""
     extension_registry = get_extension_registry()
     return extension_registry.get_component(
-        EXTENSION_POINT_SERVER_FRAMEWORKS,
-        framework_name
+        EXTENSION_POINT_SERVER_FRAMEWORKS, framework_name
     )

@@ -23,8 +23,8 @@ from xcube.server.api import Api
 from .context import TilesContext
 
 api = Api(
-    'tiles',
-    description='xcube Tiles API',
-    required_apis=['datasets'],
+    "tiles",
+    description="xcube Tiles API",
+    required_apis=["datasets"],
     create_ctx=TilesContext,
 )

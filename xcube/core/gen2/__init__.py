@@ -21,8 +21,10 @@
 
 # noinspection PyUnresolvedReferences
 from xcube.core.byoa import CodeConfig
+
 # noinspection PyUnresolvedReferences
 from xcube.core.byoa import FileSet
+
 # noinspection PyUnresolvedReferences
 from xcube.core.store.descriptor import DatasetDescriptor
 

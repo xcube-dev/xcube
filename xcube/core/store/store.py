@@ -20,8 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABC
-from typing import Iterator, Tuple, Any, Optional, \
-    List, Type, Dict, Union, Container
+from typing import Iterator, Tuple, Any, Optional, List, Type, Dict, Union, Container
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util.extension import Extension
@@ -43,10 +42,11 @@ from .search import DataSearcher
 #######################################################
 
 
-def new_data_store(data_store_id: str,
-                   extension_registry: Optional[ExtensionRegistry] = None,
-                   **data_store_params) \
-        -> Union['DataStore', 'MutableDataStore']:
+def new_data_store(
+    data_store_id: str,
+    extension_registry: Optional[ExtensionRegistry] = None,
+    **data_store_params,
+) -> Union["DataStore", "MutableDataStore"]:
     """
     Create a new data store instance for given
     *data_store_id* and *data_store_params*.
@@ -58,21 +58,19 @@ def new_data_store(data_store_id: str,
     :return: A new data store instance
     """
     data_store_class = get_data_store_class(
-        data_store_id,
-        extension_registry=extension_registry
+        data_store_id, extension_registry=extension_registry
     )
     data_store_params_schema = data_store_class.get_data_store_params_schema()
-    assert_valid_params(data_store_params,
-                        name='data_store_params',
-                        schema=data_store_params_schema)
+    assert_valid_params(
+        data_store_params, name="data_store_params", schema=data_store_params_schema
+    )
     # noinspection PyArgumentList
     return data_store_class(**data_store_params)
 
 
 def get_data_store_class(
-        data_store_id: str,
-        extension_registry: Optional[ExtensionRegistry] = None
-) -> Union[Type['DataStore'], Type['MutableDataStore']]:
+    data_store_id: str, extension_registry: Optional[ExtensionRegistry] = None
+) -> Union[Type["DataStore"], Type["MutableDataStore"]]:
     """
     Get the class for the data store identified by *data_store_id*.
 
@@ -82,17 +80,16 @@ def get_data_store_class(
     :return: The class for the data store.
     """
     extension_registry = extension_registry or get_extension_registry()
-    if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES,
-                                            data_store_id):
-        raise DataStoreError(f'Unknown data store "{data_store_id}"'
-                             f' (may be due to missing xcube plugin)')
-    return extension_registry.get_component(EXTENSION_POINT_DATA_STORES,
-                                            data_store_id)
+    if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
+        raise DataStoreError(
+            f'Unknown data store "{data_store_id}"'
+            f" (may be due to missing xcube plugin)"
+        )
+    return extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
 
 
 def get_data_store_params_schema(
-        data_store_id: str,
-        extension_registry: Optional[ExtensionRegistry] = None
+    data_store_id: str, extension_registry: Optional[ExtensionRegistry] = None
 ) -> JsonObjectSchema:
     """
     Get the JSON schema for instantiating a new data store
@@ -104,15 +101,14 @@ def get_data_store_params_schema(
     :return: The JSON schema for the data store's parameters.
     """
     data_store_class = get_data_store_class(
-        data_store_id,
-        extension_registry=extension_registry
+        data_store_id, extension_registry=extension_registry
     )
     return data_store_class.get_data_store_params_schema()
 
 
 def find_data_store_extensions(
-        predicate: ExtensionPredicate = None,
-        extension_registry: Optional[ExtensionRegistry] = None
+    predicate: ExtensionPredicate = None,
+    extension_registry: Optional[ExtensionRegistry] = None,
 ) -> List[Extension]:
     """
     Find data store extensions using the optional filter
@@ -124,13 +120,15 @@ def find_data_store_extensions(
     :return: List of data store extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
-    return extension_registry.find_extensions(EXTENSION_POINT_DATA_STORES,
-                                              predicate=predicate)
+    return extension_registry.find_extensions(
+        EXTENSION_POINT_DATA_STORES, predicate=predicate
+    )
 
 
 #######################################################
 # Classes
 #######################################################
+
 
 class DataStore(DataOpener, DataSearcher, ABC):
     """
@@ -185,10 +183,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     @abstractmethod
-    def get_data_ids(self,
-                     data_type: DataTypeLike = None,
-                     include_attrs: Container[str] = None) -> \
-            Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+    def get_data_ids(
+        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+    ) -> Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
         """
         Get an iterator over the data resource identifiers for the
         given type *data_type*. If *data_type* is omitted, all data
@@ -237,10 +234,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
         :raise DataStoreError: If an error occurs.
         """
 
-    def list_data_ids(self,
-                      data_type: DataTypeLike = None,
-                      include_attrs: Container[str] = None) -> \
-            Union[List[str], List[Tuple[str, Dict[str, Any]]]]:
+    def list_data_ids(
+        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+    ) -> Union[List[str], List[Tuple[str, Dict[str, Any]]]]:
         """
         Convenience version of `get_data_ids()` that returns a list rather
         than an iterator.
@@ -257,13 +253,10 @@ class DataStore(DataOpener, DataSearcher, ABC):
             resources provided by this data store.
         :raise DataStoreError: If an error occurs.
         """
-        return list(self.get_data_ids(data_type=data_type,
-                                      include_attrs=include_attrs))
+        return list(self.get_data_ids(data_type=data_type, include_attrs=include_attrs))
 
     @abstractmethod
-    def has_data(self,
-                 data_id: str,
-                 data_type: DataTypeLike = None) -> bool:
+    def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         """
         Check if the data resource given by *data_id* is
         available in this store.
@@ -279,9 +272,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     @abstractmethod
-    def describe_data(self,
-                      data_id: str,
-                      data_type: DataTypeLike = None) -> DataDescriptor:
+    def describe_data(
+        self, data_id: str, data_type: DataTypeLike = None
+    ) -> DataDescriptor:
         """
         Get the descriptor for the data resource given by *data_id*.
 
@@ -299,10 +292,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     @abstractmethod
-    def get_data_opener_ids(self,
-                            data_id: str = None,
-                            data_type: DataTypeLike = None) \
-            -> Tuple[str, ...]:
+    def get_data_opener_ids(
+        self, data_id: str = None, data_type: DataTypeLike = None
+    ) -> Tuple[str, ...]:
         """
         Get identifiers of data openers that can be used to open data
         resources from this store.
@@ -330,10 +322,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     @abstractmethod
-    def get_open_data_params_schema(self,
-                                    data_id: str = None,
-                                    opener_id: str = None) \
-            -> JsonObjectSchema:
+    def get_open_data_params_schema(
+        self, data_id: str = None, opener_id: str = None
+    ) -> JsonObjectSchema:
         """
         Get the schema for the parameters passed as *open_params* to
         :meth:open_data(data_id, open_params).
@@ -402,10 +393,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     @abstractmethod
-    def open_data(self,
-                  data_id: str,
-                  opener_id: str = None,
-                  **open_params) -> Any:
+    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
         """
         Open the data given by the data resource identifier *data_id*
         using the supplied *open_params*.
@@ -441,9 +429,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
     """
 
     @abstractmethod
-    def get_data_writer_ids(self,
-                            data_type: DataTypeLike = None) \
-            -> Tuple[str, ...]:
+    def get_data_writer_ids(self, data_type: DataTypeLike = None) -> Tuple[str, ...]:
         """
         Get identifiers of data writers that can be used to write data
         resources to this store.
@@ -465,9 +451,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         """
 
     @abstractmethod
-    def get_write_data_params_schema(self,
-                                     writer_id: str = None) \
-            -> JsonObjectSchema:
+    def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         """
         Get the schema for the parameters passed as *write_params* to
         :meth:write_data(data, data_id, open_params).
@@ -492,12 +476,14 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         """
 
     @abstractmethod
-    def write_data(self,
-                   data: Any,
-                   data_id: str = None,
-                   writer_id: str = None,
-                   replace: bool = False,
-                   **write_params) -> str:
+    def write_data(
+        self,
+        data: Any,
+        data_id: str = None,
+        writer_id: str = None,
+        replace: bool = False,
+        **write_params,
+    ) -> str:
         """
         Write a data in-memory instance using the supplied *data_id*
          and *write_params*.

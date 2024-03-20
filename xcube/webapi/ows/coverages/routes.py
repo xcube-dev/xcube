@@ -34,12 +34,12 @@ from .controllers import (
 )
 
 
-PATH_PREFIX = '/ogc'
+PATH_PREFIX = "/ogc"
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage')
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/')
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/")
 class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
     """
     Return coverage data
@@ -51,8 +51,8 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
 
     # noinspection PyPep8Naming
     @api.operation(
-        operation_id='coveragesCoverage',
-        summary='A coverage in OGC API - Coverages',
+        operation_id="coveragesCoverage",
+        summary="A coverage in OGC API - Coverages",
     )
     async def get(self, collectionId: str):
         ds_ctx = self.ctx.datasets_ctx
@@ -60,18 +60,18 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
         # The single-component type specifiers aren't RFC2045-compliant,
         #  but the OGC API - Coverages draft allows them in the f parameter.
         available_types = [
-            'png',
-            'image/png',
-            'image/tiff',
-            'application/x-geotiff',
-            'geotiff',
-            'application/netcdf',
-            'application/x-netcdf',
-            'netcdf',
-            'html',
-            'text/html',
-            'json',
-            'application/json',
+            "png",
+            "image/png",
+            "image/tiff",
+            "application/x-geotiff",
+            "geotiff",
+            "application/netcdf",
+            "application/x-netcdf",
+            "netcdf",
+            "html",
+            "text/html",
+            "json",
+            "application/json",
             # TODO: support covjson
         ]
         content_type = negotiate_content_type(self.request, available_types)
@@ -80,15 +80,13 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             raise ApiError.UnsupportedMediaType(
                 f'Available media types: {", ".join(available_types)}\n'
             )
-        elif content_type in {'text/html', 'html'}:
+        elif content_type in {"text/html", "html"}:
             result = (
-                '<html><title>Collection</title><body><pre>\n'
-                + json.dumps(
-                    get_coverage_as_json(ds_ctx, collectionId), indent=2
-                )
-                + '\n</pre></body></html>'
+                "<html><title>Collection</title><body><pre>\n"
+                + json.dumps(get_coverage_as_json(ds_ctx, collectionId), indent=2)
+                + "\n</pre></body></html>"
             )
-        elif content_type in {'application/json', 'json'}:
+        elif content_type in {"application/json", "json"}:
             result = get_coverage_as_json(ds_ctx, collectionId)
         else:
             result, content_bbox, content_crs = get_coverage_data(
@@ -96,19 +94,15 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
             )
 
         if content_bbox is not None:
-            self.response.set_header(
-                'Content-Bbox', ','.join(map(str, content_bbox))
-            )
+            self.response.set_header("Content-Bbox", ",".join(map(str, content_bbox)))
         if content_crs is not None:
-            self.response.set_header(
-                'Content-Crs', f'[{content_crs.to_string()}]'
-            )
+            self.response.set_header("Content-Crs", f"[{content_crs.to_string()}]")
         return await self.response.finish(result, content_type=content_type)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/domainset')
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/domainset/')
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/domainset")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/domainset/")
 class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
     """
     Describe the domain set of a coverage
@@ -119,19 +113,17 @@ class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
 
     # noinspection PyPep8Naming
     @api.operation(
-        operation_id='coveragesDomainSet',
-        summary='OGC API - Coverages - domain set',
+        operation_id="coveragesDomainSet",
+        summary="OGC API - Coverages - domain set",
     )
     async def get(self, collectionId: str):
-        domain_set = get_coverage_domainset(
-            self.ctx.datasets_ctx, collectionId
-        )
+        domain_set = get_coverage_domainset(self.ctx.datasets_ctx, collectionId)
         return self.response.finish(domain_set)
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/rangetype')
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/rangetype/')
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangetype")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangetype/")
 class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
     """
     Describe the range type of a coverage
@@ -143,18 +135,16 @@ class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
 
     # noinspection PyPep8Naming
     @api.operation(
-        operation_id='coveragesRangeType',
-        summary='OGC API - Coverages - range type',
+        operation_id="coveragesRangeType",
+        summary="OGC API - Coverages - range type",
     )
     async def get(self, collectionId: str):
-        range_type = get_coverage_rangetype(
-            self.ctx.datasets_ctx, collectionId
-        )
+        range_type = get_coverage_rangetype(self.ctx.datasets_ctx, collectionId)
         return self.response.finish(range_type)
 
 
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/metadata')
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/metadata/')
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/metadata")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/metadata/")
 class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
     """
     Return coverage metadata
@@ -164,8 +154,8 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
 
     # noinspection PyPep8Naming
     @api.operation(
-        operation_id='coveragesMetadata',
-        summary='OGC API - Coverages - metadata',
+        operation_id="coveragesMetadata",
+        summary="OGC API - Coverages - metadata",
     )
     async def get(self, collectionId: str):
         return self.response.finish(
@@ -173,8 +163,8 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
         )
 
 
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/rangeset')
-@api.route(PATH_PREFIX + '/collections/{collectionId}/coverage/rangeset/')
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangeset")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangeset/")
 class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
     """
     Handle rangeset endpoint with a "not allowed" response
@@ -187,14 +177,14 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
 
     # noinspection PyPep8Naming
     @api.operation(
-        operation_id='coveragesRangeset',
-        summary='OGC API - Coverages - rangeset',
+        operation_id="coveragesRangeset",
+        summary="OGC API - Coverages - rangeset",
     )
     async def get(self, collectionId: str):
         self.response.set_status(405)
-        self.response.set_header('Allow', '')  # no methods supported
+        self.response.set_header("Allow", "")  # no methods supported
         return self.response.finish(
-            'The rangeset endpoint has been deprecated and is not supported.'
+            "The rangeset endpoint has been deprecated and is not supported."
         )
 
 
@@ -213,19 +203,15 @@ def negotiate_content_type(
     :return: the MIME type that is most acceptable to both client and server,
              or None if there is no MIME type acceptable to both
     """
-    if 'f' in request.query:  # overrides headers
-        content_type = request.query['f'][0]
-        return (
-            content_type
-            if available is None or content_type in available
-            else None
-        )
+    if "f" in request.query:  # overrides headers
+        content_type = request.query["f"][0]
+        return content_type if available is None or content_type in available else None
 
-    accept = re.split(', *', request.headers.get('Accept'))
+    accept = re.split(", *", request.headers.get("Accept"))
 
     def parse_part(part: str) -> tuple[float, str]:
-        if ';q=' in part:
-            subparts = part.split(';q=')
+        if ";q=" in part:
+            subparts = part.split(";q=")
             return float(subparts[1]), subparts[0]
         else:
             return 1, part

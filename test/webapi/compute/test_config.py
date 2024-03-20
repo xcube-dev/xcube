@@ -30,19 +30,19 @@ class ComputeConfigTest(TestCase):
         self.assertIsInstance(CONFIG_SCHEMA, JsonObjectSchema)
         self.assertEqual(
             {
-                'type': 'object',
-                'properties': {
-                    'Compute': {
-                        'type': 'object',
-                        'properties': {
-                            'MaxWorkers': {
-                                'type': 'integer',
-                                'minimum': 1,
+                "type": "object",
+                "properties": {
+                    "Compute": {
+                        "type": "object",
+                        "properties": {
+                            "MaxWorkers": {
+                                "type": "integer",
+                                "minimum": 1,
                             }
                         },
-                        'additionalProperties': False,
+                        "additionalProperties": False,
                     }
                 },
             },
-            CONFIG_SCHEMA.to_dict()
+            CONFIG_SCHEMA.to_dict(),
         )

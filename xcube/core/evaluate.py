@@ -31,9 +31,11 @@ from xcube.util.config import to_resolved_name_dict_pairs
 from xcube.util.expression import compute_array_expr
 
 
-def evaluate_dataset(dataset: xr.Dataset,
-                     processed_variables: NameDictPairList = None,
-                     errors: str = 'raise') -> xr.Dataset:
+def evaluate_dataset(
+    dataset: xr.Dataset,
+    processed_variables: NameDictPairList = None,
+    errors: str = "raise",
+) -> xr.Dataset:
     """
     Compute new variables or mask existing variables in *dataset*
     by the evaluation of Python expressions, that may refer to other
@@ -81,8 +83,7 @@ def evaluate_dataset(dataset: xr.Dataset,
         )
     else:
         var_names = list(dataset.data_vars)
-        var_names = sorted(var_names,
-                           key=functools.partial(_get_var_sort_key, dataset))
+        var_names = sorted(var_names, key=functools.partial(_get_var_sort_key, dataset))
         processed_variables = [(var_name, None) for var_name in var_names]
 
     # Initialize namespace with some constants and modules
@@ -111,37 +112,39 @@ def evaluate_dataset(dataset: xr.Dataset,
             if var_props is None:
                 var_props = dict()
 
-        do_load = var_props.get('load', False)
+        do_load = var_props.get("load", False)
 
-        expression = var_props.get('expression')
+        expression = var_props.get("expression")
         if expression:
             # Compute new variable
-            computed_array = compute_array_expr(expression,
-                                                namespace=namespace,
-                                                result_name=f'{var_name!r}',
-                                                errors=errors)
+            computed_array = compute_array_expr(
+                expression,
+                namespace=namespace,
+                result_name=f"{var_name!r}",
+                errors=errors,
+            )
             if computed_array is not None:
-                if hasattr(computed_array, 'attrs'):
+                if hasattr(computed_array, "attrs"):
                     var = computed_array
                     var.attrs.update(var_props)
                 if do_load:
                     computed_array.load()
                 namespace[var_name] = computed_array
 
-        valid_pixel_expression = var_props.get('valid_pixel_expression')
+        valid_pixel_expression = var_props.get("valid_pixel_expression")
         if valid_pixel_expression:
             # Compute new mask for existing variable
             if var is None:
-                raise ValueError(f'undefined variable {var_name!r}')
+                raise ValueError(f"undefined variable {var_name!r}")
             valid_mask = compute_array_expr(
                 valid_pixel_expression,
                 namespace=namespace,
-                result_name=f'valid mask for {var_name!r}',
-                errors=errors
+                result_name=f"valid mask for {var_name!r}",
+                errors=errors,
             )
             if valid_mask is not None:
                 masked_var = var.where(valid_mask)
-                if hasattr(masked_var, 'attrs'):
+                if hasattr(masked_var, "attrs"):
                     masked_var.attrs.update(var_props)
                 if do_load:
                     masked_var.load()
@@ -158,8 +161,8 @@ def evaluate_dataset(dataset: xr.Dataset,
 def _get_var_sort_key(dataset: xr.Dataset, var_name: str):
     # noinspection SpellCheckingInspection
     attrs = dataset[var_name].attrs
-    a1 = attrs.get('expression')
-    a2 = attrs.get('valid_pixel_expression')
+    a1 = attrs.get("expression")
+    a2 = attrs.get("valid_pixel_expression")
     v1 = 10 * len(a1) if a1 is not None else 0
     v2 = 100 * len(a2) if a2 is not None else 0
     return v1 + v2

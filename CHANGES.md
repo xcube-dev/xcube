@@ -3,6 +3,11 @@
 * Update dependencies to better match imports; remove the defaults channel;
   turn adlfs into a soft dependency. (#945)
 
+* Reformatted xcube code base using [black](https://black.readthedocs.io/)
+  default settings. It implies a line length of 88 characters and double quotes 
+  for string literals. Also added [`.editorconfig`](https://editorconfig.org/) 
+  for IDEs not recognising black's defaults.
+
 ## Changes in 1.4.1
 
 ### Enhancements

@@ -51,7 +51,7 @@ PATH_PARAM_TMS_ID = {
     "schema": {
         "type": "string",
         "enum": [WMTS_CRS84_TMS_ID, WMTS_WEB_MERCATOR_TMS_ID],
-    }
+    },
 }
 
 TILE_PARAMETERS = [
@@ -83,10 +83,12 @@ TMS_TILE_PARAMETERS = [
 ]
 
 
-@api.route('/wmts/1.0.0/WMTSCapabilities.xml')
+@api.route("/wmts/1.0.0/WMTSCapabilities.xml")
 class WmtsCapabilitiesXmlHandler(ApiHandler[WmtsContext]):
-    @api.operation(operationId='getWmtsCapabilities',
-                   summary='Gets the WMTS capabilities as XML document')
+    @api.operation(
+        operationId="getWmtsCapabilities",
+        summary="Gets the WMTS capabilities as XML document",
+    )
     async def get(self):
         self.request.make_query_lower_case()
         capabilities = await self.ctx.run_in_executor(
@@ -94,19 +96,20 @@ class WmtsCapabilitiesXmlHandler(ApiHandler[WmtsContext]):
             get_wmts_capabilities_xml,
             self.ctx,
             self.request.reverse_base_url,
-            WMTS_CRS84_TMS_ID
+            WMTS_CRS84_TMS_ID,
         )
-        self.response.set_header('Content-Type', 'application/xml')
+        self.response.set_header("Content-Type", "application/xml")
         await self.response.finish(capabilities)
 
 
-@api.route('/wmts/1.0.0/{tmsId}/WMTSCapabilities.xml')
+@api.route("/wmts/1.0.0/{tmsId}/WMTSCapabilities.xml")
 class WmtsCapabilitiesXmlForTmsHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
-    @api.operation(operationId='getWmtsTmsCapabilities',
-                   summary='Gets the WMTS capabilities'
-                           ' for tile matrix set as XML document',
-                   parameters=[PATH_PARAM_TMS_ID])
+    @api.operation(
+        operationId="getWmtsTmsCapabilities",
+        summary="Gets the WMTS capabilities" " for tile matrix set as XML document",
+        parameters=[PATH_PARAM_TMS_ID],
+    )
     async def get(self, tmsId):
         self.request.make_query_lower_case()
         _assert_valid_tms_id(tmsId)
@@ -115,26 +118,23 @@ class WmtsCapabilitiesXmlForTmsHandler(ApiHandler[WmtsContext]):
             get_wmts_capabilities_xml,
             self.ctx,
             self.request.reverse_base_url,
-            tmsId
+            tmsId,
         )
-        self.response.set_header('Content-Type', 'application/xml')
+        self.response.set_header("Content-Type", "application/xml")
         await self.response.finish(capabilities)
 
 
-@api.route('/wmts/1.0.0/tile/{datasetId}/{varName}/{z}/{y}/{x}.png')
+@api.route("/wmts/1.0.0/tile/{datasetId}/{varName}/{z}/{y}/{x}.png")
 class WmtsImageTileHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
-    @api.operation(operationId='getWmtsImageTile',
-                   summary='Gets a WMTS image tile in PNG format.',
-                   parameters=TILE_PARAMETERS)
-    async def get(self,
-                  datasetId: str,
-                  varName: str,
-                  z: str, y: str, x: str):
+    @api.operation(
+        operationId="getWmtsImageTile",
+        summary="Gets a WMTS image tile in PNG format.",
+        parameters=TILE_PARAMETERS,
+    )
+    async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):
         self.request.make_query_lower_case()
-        tms_id = self.request.get_query_arg(
-            'tilematrixset', default=WMTS_CRS84_TMS_ID
-        )
+        tms_id = self.request.get_query_arg("tilematrixset", default=WMTS_CRS84_TMS_ID)
         _assert_valid_tms_id(tms_id)
         crs_name = get_crs_name_from_tms_id(tms_id)
         tile = await self.ctx.run_in_executor(
@@ -144,25 +144,26 @@ class WmtsImageTileHandler(ApiHandler[WmtsContext]):
             datasetId,
             varName,
             crs_name,
-            x, y, z,
-            _query_to_dict(self.request)
+            x,
+            y,
+            z,
+            _query_to_dict(self.request),
         )
-        self.response.set_header('Content-Type', 'image/png')
+        self.response.set_header("Content-Type", "image/png")
         await self.response.finish(tile)
 
 
-@api.route('/wmts/1.0.0/tile/{datasetId}/{varName}/{tmsId}/{z}/{y}/{x}.png')
+@api.route("/wmts/1.0.0/tile/{datasetId}/{varName}/{tmsId}/{z}/{y}/{x}.png")
 class WmtsImageTileForTmsHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
-    @api.operation(operationId='getWmtsTmsImageTile',
-                   summary='Gets a WMTS image tile'
-                           ' for given tile matrix set in PNG format',
-                   parameters=TMS_TILE_PARAMETERS)
-    async def get(self,
-                  datasetId: str,
-                  varName: str,
-                  tmsId: str,
-                  z: str, y: str, x: str):
+    @api.operation(
+        operationId="getWmtsTmsImageTile",
+        summary="Gets a WMTS image tile" " for given tile matrix set in PNG format",
+        parameters=TMS_TILE_PARAMETERS,
+    )
+    async def get(
+        self, datasetId: str, varName: str, tmsId: str, z: str, y: str, x: str
+    ):
         self.request.make_query_lower_case()
         _assert_valid_tms_id(tmsId)
         crs_name = get_crs_name_from_tms_id(tmsId)
@@ -173,30 +174,30 @@ class WmtsImageTileForTmsHandler(ApiHandler[WmtsContext]):
             datasetId,
             varName,
             crs_name,
-            x, y, z,
-            _query_to_dict(self.request)
+            x,
+            y,
+            z,
+            _query_to_dict(self.request),
         )
-        self.response.set_header('Content-Type', 'image/png')
+        self.response.set_header("Content-Type", "image/png")
         await self.response.finish(tile)
 
 
-@api.route('/wmts/kvp')
+@api.route("/wmts/kvp")
 class WmtsKvpHandler(ApiHandler[WmtsContext]):
-    @api.operation(operationId='invokeWmtsMethodFromKvp',
-                   summary='Invokes the WMTS by key-value pairs',
-                   parameters=TILE_PARAMETERS)
+    @api.operation(
+        operationId="invokeWmtsMethodFromKvp",
+        summary="Invokes the WMTS by key-value pairs",
+        parameters=TILE_PARAMETERS,
+    )
     async def get(self):
         self.request.make_query_lower_case()
-        service = self.request.get_query_arg('service')
+        service = self.request.get_query_arg("service")
         if service != "WMTS":
-            raise ApiError.BadRequest(
-                'value for "service" parameter must be "WMTS"'
-            )
-        request = self.request.get_query_arg('request')
+            raise ApiError.BadRequest('value for "service" parameter must be "WMTS"')
+        request = self.request.get_query_arg("request")
         if request == "GetCapabilities":
-            wmts_version = self.request.get_query_arg(
-                "version", default=WMTS_VERSION
-            )
+            wmts_version = self.request.get_query_arg("version", default=WMTS_VERSION)
             if wmts_version != WMTS_VERSION:
                 raise ApiError.BadRequest(
                     f'value for "version" parameter must be "{WMTS_VERSION}"'
@@ -210,14 +211,13 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
                 get_wmts_capabilities_xml,
                 self.ctx,
                 self.request.reverse_base_url,
-                tms_id
+                tms_id,
             )
             self.response.set_header("Content-Type", "application/xml")
             await self.response.finish(capabilities)
 
         elif request == "GetTile":
-            wmts_version = self.request.get_query_arg("version",
-                                                      default=WMTS_VERSION)
+            wmts_version = self.request.get_query_arg("version", default=WMTS_VERSION)
             if wmts_version != WMTS_VERSION:
                 raise ApiError.BadRequest(
                     f'value for "version" parameter must be "{WMTS_VERSION}"'
@@ -227,8 +227,7 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
                 ds_id, var_name = layer.split(".")
             except ValueError as e:
                 raise ApiError.BadRequest(
-                    'value for "layer" parameter must be'
-                    ' "<dataset>.<variable>"'
+                    'value for "layer" parameter must be' ' "<dataset>.<variable>"'
                 ) from e
             # For time being, we ignore "style"
             # style = self.request.get_query_arg("style"
@@ -237,11 +236,10 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
             ).lower()
             if mime_type not in (WMTS_TILE_FORMAT, "png"):
                 raise ApiError.BadRequest(
-                    f'value for "format" parameter'
-                    f' must be "{WMTS_TILE_FORMAT}"'
+                    f'value for "format" parameter' f' must be "{WMTS_TILE_FORMAT}"'
                 )
             tms_id = self.request.get_query_arg(
-                'tilematrixset', default=WMTS_CRS84_TMS_ID
+                "tilematrixset", default=WMTS_CRS84_TMS_ID
             )
             _assert_valid_tms_id(tms_id)
             crs_name = get_crs_name_from_tms_id(tms_id)
@@ -255,8 +253,10 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
                 ds_id,
                 var_name,
                 crs_name,
-                x, y, z,
-                _query_to_dict(self.request)
+                x,
+                y,
+                z,
+                _query_to_dict(self.request),
             )
             self.response.set_header("Content-Type", "image/png")
             await self.response.finish(tile)
@@ -265,16 +265,14 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
                 'request type "GetFeatureInfo" not yet implemented'
             )
         else:
-            raise ApiError.BadRequest(
-                f'invalid request type "{request}"'
-            )
+            raise ApiError.BadRequest(f'invalid request type "{request}"')
 
 
 def _assert_valid_tms_id(tms_id: str):
     if tms_id not in _VALID_WMTS_TMS_IDS:
         raise ApiError.BadRequest(
             f'value for "tilematrixset" parameter'
-            f' must be one of {_VALID_WMTS_TMS_IDS!r}'
+            f" must be one of {_VALID_WMTS_TMS_IDS!r}"
         )
 
 

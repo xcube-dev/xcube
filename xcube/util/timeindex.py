@@ -38,13 +38,14 @@ import xarray as xr
 import logging
 import warnings
 
-logger = logging.getLogger('xcube')
+logger = logging.getLogger("xcube")
 
 
-def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
-                                 labels: Dict[Hashable, Any],
-                                 time_name: Hashable = 'time')\
-        -> Dict[Hashable, Any]:
+def ensure_time_label_compatible(
+    var: Union[xr.DataArray, xr.Dataset],
+    labels: Dict[Hashable, Any],
+    time_name: Hashable = "time",
+) -> Dict[Hashable, Any]:
     """Ensure that *labels[time_name]* is compatible with *var*
 
     This function returns either the passed-in *labels* object, or a copy of
@@ -71,16 +72,17 @@ def ensure_time_label_compatible(var: Union[xr.DataArray, xr.Dataset],
     # _tile2._get_non_spatial_labels.
     if time_name in labels and time_name in var.dims:
         new_labels = labels.copy()
-        new_labels[time_name] = \
-            ensure_time_index_compatible(var, labels[time_name], time_name)
+        new_labels[time_name] = ensure_time_index_compatible(
+            var, labels[time_name], time_name
+        )
         return new_labels
     else:
         return labels
 
 
-def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
-                                 time_value: Any,
-                                 time_name: Hashable = 'time') -> Any:
+def ensure_time_index_compatible(
+    var: Union[xr.DataArray, xr.Dataset], time_value: Any, time_name: Hashable = "time"
+) -> Any:
     """Ensure that *time_value* is a valid time indexer for *var*
 
     It is expected that the value of *time_value* will be a valid timestamp
@@ -107,13 +109,15 @@ def ensure_time_index_compatible(var: Union[xr.DataArray, xr.Dataset],
         return slice(
             _ensure_timestamp_compatible(var, time_value.start, time_name),
             _ensure_timestamp_compatible(var, time_value.stop, time_name),
-            time_value.step)
+            time_value.step,
+        )
     else:
         return _ensure_timestamp_compatible(var, time_value, time_name)
 
 
-def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
-                                 time_name: Hashable):
+def _ensure_timestamp_compatible(
+    var: xr.DataArray, time_value: Any, time_name: Hashable
+):
     if time_value is None:
         return None
 
@@ -127,16 +131,12 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
             # numpy array scalar type rather than converting to a native
             # Python integer.
             contents = time_value[()]
-            new_contents = _ensure_timestamp_compatible(
-                var, contents, time_name
-            )
-            return (
-                time_value if contents == new_contents
-                else np.array(new_contents)
-            )
+            new_contents = _ensure_timestamp_compatible(var, contents, time_name)
+            return time_value if contents == new_contents else np.array(new_contents)
         else:
-            warnings.warn('Indexer is a multi-element ndarray; '
-                          'leaving it unmodified')
+            warnings.warn(
+                "Indexer is a multi-element ndarray; " "leaving it unmodified"
+            )
             return time_value
 
     cant_determine_warning_template = (
@@ -147,7 +147,7 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         "such an error occurs after this warning, make sure that the {} "
         "timezone information."
     )
-    if hasattr(time_value, 'tzinfo'):
+    if hasattr(time_value, "tzinfo"):
         timestamp = time_value
         time_value_tzinfo = time_value.tzinfo
     else:
@@ -157,10 +157,10 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         except (TypeError, ValueError):
             warnings.warn(
                 cant_determine_warning_template.format(
-                    'time indexer', 'time indexer has'
+                    "time indexer", "time indexer has"
                 )
             )
-            warnings.warn(f'Indexer: {time_value}')
+            warnings.warn(f"Indexer: {time_value}")
             return time_value
 
     if _has_datetime64_time(var, time_name):
@@ -179,16 +179,16 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         # so we take a singleton slice and then get the values from it,
         # which ensures both correctness and efficiency.
         first_time_value = var.time[0:1].values[0]
-        if hasattr(first_time_value, 'tzinfo'):
+        if hasattr(first_time_value, "tzinfo"):
             array_timezone = first_time_value.tzinfo
         else:
             warnings.warn(
                 cant_determine_warning_template.format(
-                    'time co-ordinate of the variable',
-                    'data in the time co-ordinate have'
+                    "time co-ordinate of the variable",
+                    "data in the time co-ordinate have",
                 )
             )
-            warnings.warn(f'First time value: {first_time_value}')
+            warnings.warn(f"First time value: {first_time_value}")
             return time_value
 
     cant_convert_warning_template = (
@@ -200,20 +200,16 @@ def _ensure_timestamp_compatible(var: xr.DataArray, time_value: Any,
         "both timezone-aware) or that the indexer has a {0} method."
     )
     if array_timezone is None and time_value_tzinfo is not None:
-        if hasattr(timestamp, 'tz_convert'):
+        if hasattr(timestamp, "tz_convert"):
             return timestamp.tz_convert(None)
         else:
-            warnings.warn(
-                cant_convert_warning_template.format('tz_convert', 'naive')
-            )
+            warnings.warn(cant_convert_warning_template.format("tz_convert", "naive"))
             return time_value
     elif array_timezone is not None and time_value_tzinfo is None:
-        if hasattr(timestamp, 'tz_localize'):
+        if hasattr(timestamp, "tz_localize"):
             return timestamp.tz_localize(array_timezone)
         else:
-            warnings.warn(
-                cant_convert_warning_template.format('tz_localize', 'aware')
-            )
+            warnings.warn(cant_convert_warning_template.format("tz_localize", "aware"))
             return time_value
     else:
         return time_value
@@ -225,6 +221,8 @@ def _has_datetime64_time(var: xr.DataArray, time_name) -> bool:
     *time_name* specifies the name of the time dimension.
 
     It is assumed that a *time_name* key is present in var.dims."""
-    return hasattr(var[time_name], 'dtype') \
-           and hasattr(var[time_name].dtype, 'type') \
-           and var[time_name].dtype.type is np.datetime64
+    return (
+        hasattr(var[time_name], "dtype")
+        and hasattr(var[time_name].dtype, "type")
+        and var[time_name].dtype.type is np.datetime64
+    )

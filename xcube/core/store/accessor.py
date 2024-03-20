@@ -41,9 +41,12 @@ from .error import DataStoreError
 # Data accessor instantiation and registry query
 #######################################################
 
-def new_data_opener(opener_id: str,
-                    extension_registry: Optional[ExtensionRegistry] = None,
-                    **opener_params) -> 'DataOpener':
+
+def new_data_opener(
+    opener_id: str,
+    extension_registry: Optional[ExtensionRegistry] = None,
+    **opener_params,
+) -> "DataOpener":
     """
     Get an instance of the data opener identified by *opener_id*.
 
@@ -57,19 +60,20 @@ def new_data_opener(opener_id: str,
     :param opener_params: Extra opener parameters.
     :return: A data opener instance.
     """
-    assert_given(opener_id, 'opener_id')
+    assert_given(opener_id, "opener_id")
     extension_registry = extension_registry or get_extension_registry()
-    if not extension_registry.has_extension(EXTENSION_POINT_DATA_OPENERS,
-                                            opener_id):
-        raise DataStoreError(f'A data opener named'
-                             f' {opener_id!r} is not registered')
-    return extension_registry.get_component(EXTENSION_POINT_DATA_OPENERS,
-                                            opener_id)(**opener_params)
+    if not extension_registry.has_extension(EXTENSION_POINT_DATA_OPENERS, opener_id):
+        raise DataStoreError(f"A data opener named" f" {opener_id!r} is not registered")
+    return extension_registry.get_component(EXTENSION_POINT_DATA_OPENERS, opener_id)(
+        **opener_params
+    )
 
 
-def new_data_writer(writer_id: str,
-                    extension_registry: Optional[ExtensionRegistry] = None,
-                    **writer_params) -> 'DataWriter':
+def new_data_writer(
+    writer_id: str,
+    extension_registry: Optional[ExtensionRegistry] = None,
+    **writer_params,
+) -> "DataWriter":
     """
     Get an instance of the data writer identified by *writer_id*.
 
@@ -83,19 +87,18 @@ def new_data_writer(writer_id: str,
     :param writer_params: Extra writer parameters.
     :return: A data writer instance.
     """
-    assert_given(writer_id, 'writer_id')
+    assert_given(writer_id, "writer_id")
     extension_registry = extension_registry or get_extension_registry()
-    if not extension_registry.has_extension(EXTENSION_POINT_DATA_WRITERS,
-                                            writer_id):
-        raise DataStoreError(f'A data writer named'
-                             f' {writer_id!r} is not registered')
-    return extension_registry.get_component(EXTENSION_POINT_DATA_WRITERS,
-                                            writer_id)(**writer_params)
+    if not extension_registry.has_extension(EXTENSION_POINT_DATA_WRITERS, writer_id):
+        raise DataStoreError(f"A data writer named" f" {writer_id!r} is not registered")
+    return extension_registry.get_component(EXTENSION_POINT_DATA_WRITERS, writer_id)(
+        **writer_params
+    )
 
 
 def find_data_opener_extensions(
-        predicate: ExtensionPredicate = None,
-        extension_registry: Optional[ExtensionRegistry] = None
+    predicate: ExtensionPredicate = None,
+    extension_registry: Optional[ExtensionRegistry] = None,
 ) -> List[Extension]:
     """
     Get registered data opener extensions using the optional
@@ -108,14 +111,13 @@ def find_data_opener_extensions(
     """
     extension_registry = extension_registry or get_extension_registry()
     return extension_registry.find_extensions(
-        EXTENSION_POINT_DATA_OPENERS,
-        predicate=predicate
+        EXTENSION_POINT_DATA_OPENERS, predicate=predicate
     )
 
 
 def find_data_writer_extensions(
-        predicate: ExtensionPredicate = None,
-        extension_registry: Optional[ExtensionRegistry] = None
+    predicate: ExtensionPredicate = None,
+    extension_registry: Optional[ExtensionRegistry] = None,
 ) -> List[Extension]:
     """
     Get registered data writer extensions using the optional filter
@@ -128,15 +130,12 @@ def find_data_writer_extensions(
     """
     extension_registry = extension_registry or get_extension_registry()
     return extension_registry.find_extensions(
-        EXTENSION_POINT_DATA_WRITERS,
-        predicate=predicate
+        EXTENSION_POINT_DATA_WRITERS, predicate=predicate
     )
 
 
 def get_data_accessor_predicate(
-        data_type: DataTypeLike = None,
-        format_id: str = None,
-        storage_id: str = None
+    data_type: DataTypeLike = None, format_id: str = None, storage_id: str = None
 ) -> ExtensionPredicate:
     """
     Get a predicate that checks if a data accessor extensions's name is
@@ -151,24 +150,24 @@ def get_data_accessor_predicate(
     :raise DataStoreError: If an error occurs.
     """
     if any((data_type, format_id, storage_id)):
-        data_type = DataType.normalize(data_type) \
-            if data_type is not None else None
+        data_type = DataType.normalize(data_type) if data_type is not None else None
 
         def _predicate(extension: Extension) -> bool:
-            extension_parts = extension.name.split(':', maxsplit=4)
+            extension_parts = extension.name.split(":", maxsplit=4)
             if storage_id is not None:
                 ext_storage_id = extension_parts[2]
-                if ext_storage_id != '*' and ext_storage_id != storage_id:
+                if ext_storage_id != "*" and ext_storage_id != storage_id:
                     return False
             if format_id is not None:
                 ext_format_id = extension_parts[1]
-                if ext_format_id != '*' and ext_format_id != format_id:
+                if ext_format_id != "*" and ext_format_id != format_id:
                     return False
             if data_type is not None:
                 ext_data_type = DataType.normalize(extension_parts[0])
                 if not data_type.is_super_type_of(ext_data_type):
                     return False
             return True
+
     else:
         # noinspection PyUnusedLocal
         def _predicate(extension: Extension) -> bool:
@@ -196,8 +195,7 @@ class DataOpener(ABC):
     """
 
     @abstractmethod
-    def get_open_data_params_schema(self, data_id: str = None) \
-            -> JsonObjectSchema:
+    def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         """
         Get the schema for the parameters passed as *open_params* to
         :meth:open_data(data_id, open_params).
@@ -236,8 +234,7 @@ class DataDeleter(ABC):
     """
 
     @abstractmethod
-    def get_delete_data_params_schema(self, data_id: str = None) \
-            -> JsonObjectSchema:
+    def get_delete_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         """
         Get the schema for the parameters passed as *delete_params*
         to :meth:delete_data.
@@ -282,11 +279,9 @@ class DataWriter(DataDeleter, ABC):
         """
 
     @abstractmethod
-    def write_data(self,
-                   data: Any,
-                   data_id: str,
-                   replace: bool = False,
-                   **write_params) -> str:
+    def write_data(
+        self, data: Any, data_id: str, replace: bool = False, **write_params
+    ) -> str:
         """
         Write a data resource using the supplied *data_id* and *write_params*.
 
@@ -306,9 +301,7 @@ class DataTimeSliceUpdater(DataWriter, ABC):
     """
 
     @abstractmethod
-    def append_data_time_slice(self,
-                               data_id: str,
-                               time_slice: xr.Dataset):
+    def append_data_time_slice(self, data_id: str, time_slice: xr.Dataset):
         """
         Append a time slice to the identified data resource.
 
@@ -319,10 +312,7 @@ class DataTimeSliceUpdater(DataWriter, ABC):
         """
 
     @abstractmethod
-    def insert_data_time_slice(self,
-                               data_id: str,
-                               time_slice: Any,
-                               time_index: int):
+    def insert_data_time_slice(self, data_id: str, time_slice: Any, time_index: int):
         """
         Insert a time slice into the identified data resource at given index.
 
@@ -334,10 +324,7 @@ class DataTimeSliceUpdater(DataWriter, ABC):
         """
 
     @abstractmethod
-    def replace_data_time_slice(self,
-                                data_id: str,
-                                time_slice: Any,
-                                time_index: int):
+    def replace_data_time_slice(self, data_id: str, time_slice: Any, time_index: int):
         """
         Replace a time slice in the identified data resource at given index.
 

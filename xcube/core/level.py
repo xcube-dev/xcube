@@ -30,27 +30,27 @@ from xcube.core.dsio import open_dataset
 PyramidLevelCallback = Callable[[xr.Dataset, int, int], Optional[xr.Dataset]]
 
 _DEPRECATED_READ = (
-    'No longer in use. To read multi-level datasets, use:\n'
+    "No longer in use. To read multi-level datasets, use:\n"
     '>>> data_store = new_data_store("file")\n'
     '>>> ml_dataset = data_store.open_data(path + ".levels")'
 )
 _DEPRECATED_WRITE = (
-    'No longer in use. To write multi-level datasets, use:\n'
+    "No longer in use. To write multi-level datasets, use:\n"
     '>>> data_store = new_data_store("file")\n'
     '>>> data_store.write_data(dataset, path + ".levels")'
 )
 
 
-@deprecated(version='0.10.2', reason=_DEPRECATED_WRITE)
+@deprecated(version="0.10.2", reason=_DEPRECATED_WRITE)
 def compute_levels(
-        dataset: xr.Dataset,
-        spatial_dims: Tuple[str, str] = None,
-        spatial_shape: Tuple[int, int] = None,
-        spatial_tile_shape: Tuple[int, int] = None,
-        var_names: Sequence[str] = None,
-        num_levels_max: int = None,
-        post_process_level: PyramidLevelCallback = None,
-        progress_monitor: PyramidLevelCallback = None
+    dataset: xr.Dataset,
+    spatial_dims: Tuple[str, str] = None,
+    spatial_shape: Tuple[int, int] = None,
+    spatial_tile_shape: Tuple[int, int] = None,
+    var_names: Sequence[str] = None,
+    num_levels_max: int = None,
+    post_process_level: PyramidLevelCallback = None,
+    progress_monitor: PyramidLevelCallback = None,
 ) -> List[xr.Dataset]:
     """
     Transform the given *dataset* into the levels of a multi-level
@@ -81,9 +81,9 @@ def compute_levels(
     :return: A list of dataset instances representing
         the multi-level pyramid.
     """
-    dropped_vars, spatial_shape, spatial_tile_shape = \
-        _filter_level_source_dataset(dataset, var_names, spatial_dims,
-                                     spatial_shape, spatial_tile_shape)
+    dropped_vars, spatial_shape, spatial_tile_shape = _filter_level_source_dataset(
+        dataset, var_names, spatial_dims, spatial_shape, spatial_tile_shape
+    )
     if dropped_vars:
         dataset = dataset.drop_vars(dropped_vars)
 
@@ -99,9 +99,9 @@ def compute_levels(
         spatial_tile_shape = tile_w, tile_h
 
     # Count num_levels
-    level_shapes = _compute_level_shapes(spatial_shape,
-                                         spatial_tile_shape,
-                                         num_levels_max=num_levels_max)
+    level_shapes = _compute_level_shapes(
+        spatial_shape, spatial_tile_shape, num_levels_max=num_levels_max
+    )
     num_levels = len(level_shapes)
 
     # Compute levels
@@ -118,6 +118,7 @@ def compute_levels(
                 downsampled_var = var[..., ::2, ::2]
                 if downsampled_var.shape[-2:] != level_shapes[level]:
                     import warnings
+
                     warnings.warn(
                         f"unexpected spatial shape for down-sampled"
                         f" variable {var_name!r}:"
@@ -125,22 +126,19 @@ def compute_levels(
                         f" but found {downsampled_var.shape[-2:]}"
                     )
                 downsampled_vars[var_name] = downsampled_var
-            level_dataset = xr.Dataset(downsampled_vars,
-                                       attrs=level_dataset.attrs)
+            level_dataset = xr.Dataset(downsampled_vars, attrs=level_dataset.attrs)
 
-        level_dataset = _tile_level_dataset(level_dataset,
-                                            spatial_tile_shape)
+        level_dataset = _tile_level_dataset(level_dataset, spatial_tile_shape)
 
         # Apply post processor, if any
         if post_process_level is not None:
-            level_dataset = post_process_level(level_dataset,
-                                               len(level_datasets),
-                                               num_levels)
+            level_dataset = post_process_level(
+                level_dataset, len(level_datasets), num_levels
+            )
 
         # Inform progress monitor, if any
         if progress_monitor is not None:
-            progress_monitor(level_dataset, len(level_datasets),
-                             num_levels)
+            progress_monitor(level_dataset, len(level_datasets), num_levels)
 
         # Collect level dataset
         level_datasets.append(level_dataset)
@@ -148,13 +146,15 @@ def compute_levels(
     return level_datasets
 
 
-@deprecated(version='0.10.2', reason=_DEPRECATED_WRITE)
-def write_levels(output_path: str,
-                 dataset: xr.Dataset = None,
-                 input_path: str = None,
-                 link_input: bool = False,
-                 progress_monitor: PyramidLevelCallback = None,
-                 **kwargs) -> List[xr.Dataset]:
+@deprecated(version="0.10.2", reason=_DEPRECATED_WRITE)
+def write_levels(
+    output_path: str,
+    dataset: xr.Dataset = None,
+    input_path: str = None,
+    link_input: bool = False,
+    progress_monitor: PyramidLevelCallback = None,
+    **kwargs,
+) -> List[xr.Dataset]:
     """
     Transform the given dataset given by a *dataset* instance
     or *input_path* string into the levels of a multi-level pyramid
@@ -176,23 +176,18 @@ def write_levels(output_path: str,
         the multi-level pyramid.
     """
     if dataset is None and input_path is None:
-        raise ValueError(
-            "at least one of dataset or input_path must be given"
-        )
+        raise ValueError("at least one of dataset or input_path must be given")
 
     if link_input and input_path is None:
-        raise ValueError(
-            "input_path must be provided to link input"
-        )
+        raise ValueError("input_path must be provided to link input")
 
-    _post_process_level = kwargs.pop("post_process_level") \
-        if "post_process_level" in kwargs else None
+    _post_process_level = (
+        kwargs.pop("post_process_level") if "post_process_level" in kwargs else None
+    )
 
     def post_process_level(level_dataset, index, num_levels):
         if _post_process_level is not None:
-            level_dataset = _post_process_level(level_dataset,
-                                                index,
-                                                num_levels)
+            level_dataset = _post_process_level(level_dataset, index, num_levels)
 
         if index == 0 and link_input:
             with open(os.path.join(output_path, f"{index}.link"), "w") as fp:
@@ -214,15 +209,12 @@ def write_levels(output_path: str,
     if dataset is None:
         dataset = open_dataset(input_path)
 
-    return compute_levels(dataset,
-                          post_process_level=post_process_level,
-                          **kwargs)
+    return compute_levels(dataset, post_process_level=post_process_level, **kwargs)
 
 
-@deprecated(version='0.10.2', reason=_DEPRECATED_READ)
+@deprecated(version="0.10.2", reason=_DEPRECATED_READ)
 def read_levels(
-        dir_path: str,
-        progress_monitor: PyramidLevelCallback = None
+    dir_path: str, progress_monitor: PyramidLevelCallback = None
 ) -> List[xr.Dataset]:
     """
     Read the of a multi-level pyramid with spatial resolution
@@ -248,10 +240,12 @@ def read_levels(
                 level_paths[index] = (ext, file_path)
 
     if num_levels != len(level_paths):
-        raise ValueError(f"Inconsistent pyramid directory:"
-                         f" expected {num_levels} but found"
-                         f" {len(level_paths)} entries:"
-                         f" {dir_path}")
+        raise ValueError(
+            f"Inconsistent pyramid directory:"
+            f" expected {num_levels} but found"
+            f" {len(level_paths)} entries:"
+            f" {dir_path}"
+        )
 
     levels = []
     for index in range(num_levels):
@@ -260,12 +254,8 @@ def read_levels(
             with open(file_path, "r") as fp:
                 link_file_path = fp.read()
             if not os.path.isabs(link_file_path):
-                parent_dir_path = os.path.abspath(
-                    os.path.dirname(dir_path) or '.'
-                )
-                link_file_path = os.path.join(
-                    parent_dir_path, link_file_path
-                )
+                parent_dir_path = os.path.abspath(os.path.dirname(dir_path) or ".")
+                link_file_path = os.path.join(parent_dir_path, link_file_path)
             dataset = xr.open_zarr(link_file_path)
         else:
             dataset = xr.open_zarr(file_path)
@@ -292,11 +282,10 @@ def _tile_level_dataset(level_dataset, spatial_tile_shape):
     for var_name in level_dataset.data_vars:
         var = level_dataset.data_vars[var_name]
         height, width = var.shape[-2:]
-        zarr_chunks = (1,) * (var.ndim - 2) + (
-            tile_height, tile_width
-        )
+        zarr_chunks = (1,) * (var.ndim - 2) + (tile_height, tile_width)
         dask_chunks = (1,) * (var.ndim - 2) + (
-            _tile_chunk(height, tile_height), _tile_chunk(width, tile_width)
+            _tile_chunk(height, tile_height),
+            _tile_chunk(width, tile_width),
         )
         dask_chunks = {var.dims[i]: dask_chunks[i] for i in range(var.ndim)}
         chunked_var = var.chunk(chunks=dask_chunks)
@@ -318,9 +307,7 @@ def _tile_level_dataset(level_dataset, spatial_tile_shape):
 
 
 def _compute_level_shapes(
-        spatial_shape,
-        spatial_tile_shape,
-        num_levels_max=None
+    spatial_shape, spatial_tile_shape, num_levels_max=None
 ) -> List[Tuple[int, int]]:
     height, width = spatial_shape
     tile_height, tile_width = spatial_tile_shape
@@ -329,19 +316,23 @@ def _compute_level_shapes(
     while True:
         width = (width + 1) // 2
         height = (height + 1) // 2
-        if width < tile_width \
-                or height < tile_height \
-                or num_levels_max == len(level_shapes):
+        if (
+            width < tile_width
+            or height < tile_height
+            or num_levels_max == len(level_shapes)
+        ):
             break
         level_shapes.append((height, width))
     return level_shapes
 
 
-def _filter_level_source_dataset(dataset,
-                                 var_names=None,
-                                 spatial_dims=None,
-                                 spatial_shape=None,
-                                 spatial_tile_shape=None):
+def _filter_level_source_dataset(
+    dataset,
+    var_names=None,
+    spatial_dims=None,
+    spatial_shape=None,
+    spatial_tile_shape=None,
+):
     if var_names:
         var_names = set(var_names)
         dropped_vars = list(set(dataset.data_vars).difference(var_names))
@@ -378,6 +369,7 @@ def _filter_level_source_dataset(dataset,
             continue
 
         if spatial_tile_shape is None and var.chunks is not None:
+
             def chunk_to_int(chunk):
                 return chunk if isinstance(chunk, int) else max(chunk)
 

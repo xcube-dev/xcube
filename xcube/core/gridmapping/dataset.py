@@ -33,14 +33,14 @@ from .helpers import _normalize_crs
 
 
 def new_grid_mapping_from_dataset(
-        dataset: xr.Dataset,
-        *,
-        crs: Union[str, pyproj.crs.CRS] = None,
-        tile_size: Union[int, Tuple[str, str]] = None,
-        prefer_crs: Union[str, pyproj.crs.CRS] = None,
-        prefer_is_regular: bool = None,
-        emit_warnings: bool = False,
-        tolerance: float = DEFAULT_TOLERANCE
+    dataset: xr.Dataset,
+    *,
+    crs: Union[str, pyproj.crs.CRS] = None,
+    tile_size: Union[int, Tuple[str, str]] = None,
+    prefer_crs: Union[str, pyproj.crs.CRS] = None,
+    prefer_is_regular: bool = None,
+    emit_warnings: bool = False,
+    tolerance: float = DEFAULT_TOLERANCE
 ) -> Optional[GridMapping]:
     # Note `crs` is used if CRS is known in advance,
     # so the code forces its use. `prefer_crs` is used if
@@ -63,24 +63,27 @@ def new_grid_mapping_from_dataset(
     ).values()
 
     grid_mappings = [
-        new_grid_mapping_from_coords(x_coords=gmp.coords.x,
-                                     y_coords=gmp.coords.y,
-                                     crs=gmp.crs,
-                                     tile_size=tile_size or gmp.tile_size,
-                                     tolerance=tolerance)
+        new_grid_mapping_from_coords(
+            x_coords=gmp.coords.x,
+            y_coords=gmp.coords.y,
+            crs=gmp.crs,
+            tile_size=tile_size or gmp.tile_size,
+            tolerance=tolerance,
+        )
         for gmp in grid_mapping_proxies
     ]
 
     if len(grid_mappings) > 1:
-        if prefer_crs is not None \
-                and prefer_is_regular is not None:
+        if prefer_crs is not None and prefer_is_regular is not None:
             for gm in grid_mappings:
-                if gm.crs == prefer_crs \
-                        and gm.is_regular == prefer_is_regular:
+                if gm.crs == prefer_crs and gm.is_regular == prefer_is_regular:
                     return gm
             for gm in grid_mappings:
-                if gm.crs.is_geographic and prefer_crs.is_geographic \
-                        and gm.is_regular == prefer_is_regular:
+                if (
+                    gm.crs.is_geographic
+                    and prefer_crs.is_geographic
+                    and gm.is_regular == prefer_is_regular
+                ):
                     return gm
 
         if prefer_crs is not None:
@@ -100,4 +103,4 @@ def new_grid_mapping_from_dataset(
     if grid_mappings:
         return grid_mappings[0]
 
-    raise ValueError('cannot find any grid mapping in dataset')
+    raise ValueError("cannot find any grid mapping in dataset")

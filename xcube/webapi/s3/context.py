@@ -33,12 +33,10 @@ class S3Context(ResourcesContext):
         super().__init__(server_ctx)
         self._datasets_ctx = server_ctx.get_api_ctx("datasets")
         self._buckets = {
-            "datasets": ObjectStorage(
-                DatasetsMapping(self._datasets_ctx, False)
-            ),
+            "datasets": ObjectStorage(DatasetsMapping(self._datasets_ctx, False)),
             "pyramids": ObjectStorage(
                 DatasetsMapping(self._datasets_ctx, True),
-            )
+            ),
         }
 
     @property

@@ -45,16 +45,16 @@ GeoJsonGeometry = GeoJsonObj
 
 
 def get_time_series(
-        ctx: TimeSeriesContext,
-        ds_name: str,
-        var_name: str,
-        geo_json: GeoJsonObj,
-        agg_methods: Union[str, Sequence[str]] = None,
-        start_date: Optional[np.datetime64] = None,
-        end_date: Optional[np.datetime64] = None,
-        tolerance: Optional[float] = 1.0,
-        max_valids: Optional[int] = None,
-        incl_ancillary_vars: bool = False
+    ctx: TimeSeriesContext,
+    ds_name: str,
+    var_name: str,
+    geo_json: GeoJsonObj,
+    agg_methods: Union[str, Sequence[str]] = None,
+    start_date: Optional[np.datetime64] = None,
+    end_date: Optional[np.datetime64] = None,
+    tolerance: Optional[float] = 1.0,
+    max_valids: Optional[int] = None,
+    incl_ancillary_vars: bool = False,
 ) -> Union[TimeSeries, TimeSeriesCollection]:
     """Get the time-series for a given GeoJSON object *geo_json*.
 
@@ -98,7 +98,7 @@ def get_time_series(
     :return: Time-series data structure.
     """
     if tolerance:
-        timedelta = pd.Timedelta(tolerance, unit='seconds')
+        timedelta = pd.Timedelta(tolerance, unit="seconds")
         if start_date is not None:
             start_date -= timedelta
         if end_date is not None:
@@ -109,8 +109,7 @@ def get_time_series(
     )
 
     ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_name)
-    dataset = ctx.datasets_ctx.get_time_series_dataset(ds_name,
-                                                       var_name=var_name)
+    dataset = ctx.datasets_ctx.get_time_series_dataset(ds_name, var_name=var_name)
     geo_json_geometries, is_collection = _to_geo_json_geometries(geo_json)
     geometries = _to_shapely_geometries(geo_json_geometries)
 
@@ -124,28 +123,30 @@ def get_time_series(
             agg_methods=agg_methods,
             grid_mapping=ml_dataset.grid_mapping,
             max_valids=max_valids,
-            incl_ancillary_vars=incl_ancillary_vars
+            incl_ancillary_vars=incl_ancillary_vars,
         )
 
     if ctx.datasets_ctx.trace_perf:
-        LOG.info(f'get_time_series: dataset id {ds_name},'
-                 f' variable {var_name}, '
-                 f'{len(results)} x {len(results[0])} values,'
-                 f' took {time_result.duration} seconds')
+        LOG.info(
+            f"get_time_series: dataset id {ds_name},"
+            f" variable {var_name}, "
+            f"{len(results)} x {len(results[0])} values,"
+            f" took {time_result.duration} seconds"
+        )
 
     return results[0] if not is_collection and len(results) == 1 else results
 
 
 def _get_time_series_for_geometries(
-        dataset: xr.Dataset,
-        var_name: str,
-        geometries: List[shapely.geometry.base.BaseGeometry],
-        agg_methods: Set[str],
-        grid_mapping: Optional[GridMapping] = None,
-        start_date: Optional[np.datetime64] = None,
-        end_date: Optional[np.datetime64] = None,
-        max_valids: Optional[int] = None,
-        incl_ancillary_vars: bool = False
+    dataset: xr.Dataset,
+    var_name: str,
+    geometries: List[shapely.geometry.base.BaseGeometry],
+    agg_methods: Set[str],
+    grid_mapping: Optional[GridMapping] = None,
+    start_date: Optional[np.datetime64] = None,
+    end_date: Optional[np.datetime64] = None,
+    max_valids: Optional[int] = None,
+    incl_ancillary_vars: bool = False,
 ) -> TimeSeriesCollection:
     time_series_collection = []
     for geometry in geometries:
@@ -158,22 +159,22 @@ def _get_time_series_for_geometries(
             start_date=start_date,
             end_date=end_date,
             max_valids=max_valids,
-            incl_ancillary_vars=incl_ancillary_vars
+            incl_ancillary_vars=incl_ancillary_vars,
         )
         time_series_collection.append(time_series)
     return time_series_collection
 
 
 def _get_time_series_for_geometry(
-        dataset: xr.Dataset,
-        var_name: str,
-        geometry: shapely.geometry.base.BaseGeometry,
-        agg_methods: Set[str],
-        grid_mapping: Optional[GridMapping] = None,
-        start_date: Optional[np.datetime64] = None,
-        end_date: Optional[np.datetime64] = None,
-        max_valids: Optional[int] = None,
-        incl_ancillary_vars: bool = False
+    dataset: xr.Dataset,
+    var_name: str,
+    geometry: shapely.geometry.base.BaseGeometry,
+    agg_methods: Set[str],
+    grid_mapping: Optional[GridMapping] = None,
+    start_date: Optional[np.datetime64] = None,
+    end_date: Optional[np.datetime64] = None,
+    max_valids: Optional[int] = None,
+    incl_ancillary_vars: bool = False,
 ) -> TimeSeries:
     if isinstance(geometry, shapely.geometry.Point):
         return _get_time_series_for_point(
@@ -185,7 +186,7 @@ def _get_time_series_for_geometry(
             start_date=start_date,
             end_date=end_date,
             max_valids=max_valids,
-            incl_ancillary_vars=incl_ancillary_vars
+            incl_ancillary_vars=incl_ancillary_vars,
         )
 
     time_series_ds = timeseries.get_time_series(
@@ -196,57 +197,47 @@ def _get_time_series_for_geometry(
         agg_methods=agg_methods,
         start_date=start_date,
         end_date=end_date,
-        cube_asserted=True
+        cube_asserted=True,
     )
     if time_series_ds is None:
         return []
 
-    var_names = {agg_method: f'{var_name}_{agg_method}' for agg_method in
-                 agg_methods}
+    var_names = {agg_method: f"{var_name}_{agg_method}" for agg_method in agg_methods}
 
-    return collect_timeseries_result(time_series_ds,
-                                     var_names,
-                                     max_valids=max_valids)
+    return collect_timeseries_result(time_series_ds, var_names, max_valids=max_valids)
 
 
 def _get_time_series_for_point(
-        dataset: xr.Dataset,
-        var_name: str,
-        point: shapely.geometry.Point,
-        agg_methods: Set[str],
-        grid_mapping: Optional[GridMapping] = None,
-        start_date: Optional[np.datetime64] = None,
-        end_date: Optional[np.datetime64] = None,
-        max_valids: Optional[int] = None,
-        incl_ancillary_vars: bool = False
+    dataset: xr.Dataset,
+    var_name: str,
+    point: shapely.geometry.Point,
+    agg_methods: Set[str],
+    grid_mapping: Optional[GridMapping] = None,
+    start_date: Optional[np.datetime64] = None,
+    end_date: Optional[np.datetime64] = None,
+    max_valids: Optional[int] = None,
+    incl_ancillary_vars: bool = False,
 ) -> TimeSeries:
     var_key = None
     if timeseries.AGG_MEAN in agg_methods:
         var_key = timeseries.AGG_MEAN
     elif timeseries.AGG_MEDIAN in agg_methods:
         var_key = timeseries.AGG_MEDIAN
-    elif timeseries.AGG_MIN in agg_methods \
-            or timeseries.AGG_MAX in agg_methods:
+    elif timeseries.AGG_MIN in agg_methods or timeseries.AGG_MAX in agg_methods:
         var_key = timeseries.AGG_MIN
     if not var_key:
         raise ApiError.BadRequest(
-            'Aggregation methods must include one of'
-            ' "mean", "median", "min", "max"'
+            "Aggregation methods must include one of" ' "mean", "median", "min", "max"'
         )
 
     roles_to_anc_var_names = dict()
     if incl_ancillary_vars:
         roles_to_anc_var_name_sets = find_ancillary_var_names(
-            dataset,
-            var_name,
-            same_shape=True,
-            same_dims=True
+            dataset, var_name, same_shape=True, same_dims=True
         )
-        for role, roles_to_anc_var_name_sets \
-                in roles_to_anc_var_name_sets.items():
+        for role, roles_to_anc_var_name_sets in roles_to_anc_var_name_sets.items():
             if role:
-                roles_to_anc_var_names[
-                    role] = roles_to_anc_var_name_sets.pop()
+                roles_to_anc_var_names[role] = roles_to_anc_var_name_sets.pop()
 
     var_names = [var_name] + list(set(roles_to_anc_var_names.values()))
 
@@ -257,7 +248,7 @@ def _get_time_series_for_point(
         var_names=var_names,
         start_date=start_date,
         end_date=end_date,
-        cube_asserted=True
+        cube_asserted=True,
     )
     if time_series_ds is None:
         return []
@@ -266,14 +257,14 @@ def _get_time_series_for_point(
     for role, anc_var_name in roles_to_anc_var_names.items():
         key_to_var_names[role] = anc_var_name
 
-    return collect_timeseries_result(time_series_ds,
-                                     key_to_var_names,
-                                     max_valids=max_valids)
+    return collect_timeseries_result(
+        time_series_ds, key_to_var_names, max_valids=max_valids
+    )
 
 
-def collect_timeseries_result(time_series_ds: xr.Dataset,
-                              key_to_var_names: Dict[str, str],
-                              max_valids: int = None) -> TimeSeries:
+def collect_timeseries_result(
+    time_series_ds: xr.Dataset, key_to_var_names: Dict[str, str], max_valids: int = None
+) -> TimeSeries:
     _check_max_valids(max_valids)
 
     var_values_map = dict()
@@ -286,18 +277,20 @@ def collect_timeseries_result(time_series_ds: xr.Dataset,
         elif np.issubdtype(values.dtype, np.dtype(bool)):
             num_type = bool
         else:
-            raise ValueError(f'cannot convert {values.dtype}'
-                             f' into JSON-convertible value')
-        var_values_map[key] = [(num_type(v) if f else None)
-                               for f, v in zip(np.isfinite(values), values)]
+            raise ValueError(
+                f"cannot convert {values.dtype}" f" into JSON-convertible value"
+            )
+        var_values_map[key] = [
+            (num_type(v) if f else None) for f, v in zip(np.isfinite(values), values)
+        ]
 
     time_values = [
-        t.isoformat() + 'Z'
-        for t in pd.DatetimeIndex(time_series_ds.time.values).round('s')
+        t.isoformat() + "Z"
+        for t in pd.DatetimeIndex(time_series_ds.time.values).round("s")
     ]
 
     max_number_of_observations = time_series_ds.attrs.get(
-        'max_number_of_observations', 1
+        "max_number_of_observations", 1
     )
     num_times = len(time_values)
     time_series = []
@@ -321,14 +314,14 @@ def collect_timeseries_result(time_series_ds: xr.Dataset,
                 all_null = False
             time_series_value[key] = var_value
 
-        has_count = 'count' in time_series_value
-        no_obs = all_null or (has_count and time_series_value['count'] == 0)
+        has_count = "count" in time_series_value
+        no_obs = all_null or (has_count and time_series_value["count"] == 0)
         if no_obs and max_valids is not None:
             continue
 
-        time_series_value['time'] = time_values[time_index]
+        time_series_value["time"] = time_values[time_index]
         if has_count:
-            time_series_value['count_tot'] = max_number_of_observations
+            time_series_value["count_tot"] = max_number_of_observations
 
         time_series.append(time_series_value)
 
@@ -338,22 +331,20 @@ def collect_timeseries_result(time_series_ds: xr.Dataset,
     return time_series
 
 
-def _to_shapely_geometries(geo_json_geometries: List[GeoJsonGeometry]) \
-        -> List[shapely.geometry.base.BaseGeometry]:
+def _to_shapely_geometries(
+    geo_json_geometries: List[GeoJsonGeometry],
+) -> List[shapely.geometry.base.BaseGeometry]:
     geometries = []
     for geo_json_geometry in geo_json_geometries:
         try:
             geometry = shapely.geometry.shape(geo_json_geometry)
         except (TypeError, ValueError) as e:
-            raise ApiError.BadRequest(
-                "Invalid GeoJSON geometry encountered"
-            ) from e
+            raise ApiError.BadRequest("Invalid GeoJSON geometry encountered") from e
         geometries.append(geometry)
     return geometries
 
 
-def _to_geo_json_geometries(geo_json: GeoJsonObj) \
-        -> Tuple[List[GeoJsonGeometry], bool]:
+def _to_geo_json_geometries(geo_json: GeoJsonObj) -> Tuple[List[GeoJsonGeometry], bool]:
     is_collection = False
     if GeoJSON.is_feature(geo_json):
         geometry = _get_feature_geometry(geo_json)
@@ -361,8 +352,9 @@ def _to_geo_json_geometries(geo_json: GeoJsonObj) \
     elif GeoJSON.is_feature_collection(geo_json):
         is_collection = True
         features = GeoJSON.get_feature_collection_features(geo_json)
-        geometries = [_get_feature_geometry(feature)
-                      for feature in features] if features else []
+        geometries = (
+            [_get_feature_geometry(feature) for feature in features] if features else []
+        )
     elif GeoJSON.is_geometry_collection(geo_json):
         is_collection = True
         geometries = GeoJSON.get_geometry_collection_geometries(geo_json)
@@ -380,8 +372,7 @@ def _get_feature_geometry(feature: GeoJsonFeature) -> GeoJsonGeometry:
     return geometry
 
 
-def _get_float_value(values: Optional[np.ndarray], index: int) \
-        -> Optional[float]:
+def _get_float_value(values: Optional[np.ndarray], index: int) -> Optional[float]:
     if values is None:
         return None
     value = float(values[index])
@@ -391,6 +382,5 @@ def _get_float_value(values: Optional[np.ndarray], index: int) \
 def _check_max_valids(max_valids):
     if not (max_valids is None or max_valids == -1 or max_valids > 0):
         raise ApiError.BadRequest(
-            f'max_valids must be either None, -1 or positive,'
-            f' was {max_valids}'
+            f"max_valids must be either None, -1 or positive," f" was {max_valids}"
         )
