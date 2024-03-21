@@ -1,5 +1,5 @@
-.. _demo configuration file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config.yml
-.. _demo stores configuration file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config-with-stores.yml
+.. _demo configuration file: https://github.com/dcs4cop/xcube/blob/main/examples/serve/demo/config.yml
+.. _demo stores configuration file: https://github.com/dcs4cop/xcube/blob/main/examples/serve/demo/config-with-stores.yml
 .. _Auth0: https://auth0.com/
 
 ===============
@@ -109,7 +109,7 @@ The xcube server supports xcube datasets stored as local NetCDF files, as well a
 `Zarr <https://zarr.readthedocs.io/en/stable/>`_ directories in the local file system or remote object storage.
 Remote Zarr datasets must be stored AWS S3 compatible object storage.
 
-As an example, here is the `configuration of the demo server <https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/config.yml>`_.
+As an example, here is the `configuration of the demo server <https://github.com/dcs4cop/xcube/blob/main/examples/serve/demo/config.yml>`_.
 The parts of the demo configuration file are explained in detail further down.
 
 Some hints before, which are not addressed in the server demo configuration file.
@@ -253,9 +253,9 @@ must be an absolute filesystem path or a S3 path as in the example above.
 It points to a directory that is expected to contain the the viewer configuration file `config.json` 
 among other configuration resources, such as custom ``favicon.ico`` or ``logo.png``.
 The file ``config.json`` should conform to the
-[configuration JSON Schema](https://github.com/dcs4cop/xcube-viewer/blob/master/src/resources/config.schema.json). 
+[configuration JSON Schema](https://github.com/dcs4cop/xcube-viewer/blob/main/src/resources/config.schema.json).
 All its values are optional, if not provided, 
-[default values](https://github.com/dcs4cop/xcube-viewer/blob/master/src/resources/config.json) 
+[default values](https://github.com/dcs4cop/xcube-viewer/blob/main/src/resources/config.json)
 are used instead. 
 
 .. _datasets:

@@ -1,8 +1,8 @@
-.. _xcube repository: https://github.com/dcs4cop/xcube/tree/master/examples/gen/data
+.. _xcube repository: https://github.com/dcs4cop/xcube/tree/main/examples/gen/data
 .. _Copernicus Marine Environment Monitoring Service: http://marine.copernicus.eu/
 .. _Product User Manual: http://resources.marine.copernicus.eu/documents/PUM/CMEMS-SST-PUM-010-001.pdf
-.. _configuration file: https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/xcube_sst_demo_config.yml
-.. _configuration file which takes Sentinel-3 Ocean and Land Colour Instrument (OLCI): https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/xcube_olci_demo_config.yml
+.. _configuration file: https://github.com/dcs4cop/xcube/tree/main/examples/gen/config_files/xcube_sst_demo_config.yml
+.. _configuration file which takes Sentinel-3 Ocean and Land Colour Instrument (OLCI): https://github.com/dcs4cop/xcube/tree/main/examples/gen/config_files/xcube_olci_demo_config.yml
 
 .. warning:: This chapter is a work in progress and currently less than a draft.
 

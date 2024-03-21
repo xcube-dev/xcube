@@ -1,5 +1,5 @@
-.. _xcube.core.gen.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/master/xcube/core/gen/iproc.py
-.. _setup.py: https://github.com/dcs4cop/xcube/blob/master/setup.py
+.. _xcube.core.gen.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/main/xcube/core/gen/iproc.py
+.. _setup.py: https://github.com/dcs4cop/xcube/blob/main/setup.py
 .. _`Creating and discovering plugins`: https://packaging.python.org/guides/creating-and-discovering-plugins/
 .. _`Python Packing User Guide`: https://packaging.python.org/
 .. _`Dynamic Discovery of Services and Plugins`: https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins

@@ -18,7 +18,7 @@ Useful references related to this document include:
    [xcube-cci](https://github.com/dcs4cop/xcube-sh/), and
    [xcube-cds](https://github.com/dcs4cop/xcube-cds)
  - The
-   [`xcube.util.jsonschema`](https://github.com/dcs4cop/xcube/blob/master/xcube/util/jsonschema.py) 
+   [`xcube.util.jsonschema`](https://github.com/dcs4cop/xcube/blob/main/xcube/util/jsonschema.py) 
    source code
 
 ## Naming Identifiers
@@ -171,7 +171,7 @@ annotations.
    
  - `force_cube: bool`  
    Whether to return results as a [specification-compliant
-   xcube](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+   xcube](https://github.com/dcs4cop/xcube/blob/main/docs/source/cubespec.md).
    If a store supports this parameter and if a dataset is opened with this
    parameter set to `True`, the store MUST return a specification-compliant
    xcube dataset. If this parameter is not supported or if a dataset is opened 
