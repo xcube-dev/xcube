@@ -41,7 +41,7 @@ doc_title = 'xcube Toolkit Documentation'
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.7'
 
-# The master toctree document.
+# The main toctree document.
 master_doc = 'index'
 
 # The suffix(es) of source filenames.

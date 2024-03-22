@@ -3,7 +3,7 @@
 .. _colormaps provided by matplotlib: https://matplotlib.org/examples/color/colormaps_reference.html
 .. _Cesium Demo: http://localhost:9090/examples/serve/demo/index-cesium.html
 .. _download Cesium: https://cesiumjs.org/downloads/
-.. _demo's HTML file: https://github.com/dcs4cop/xcube/blob/master/examples/serve/demo/index-cesium.html
+.. _demo's HTML file: https://github.com/dcs4cop/xcube/blob/main/examples/serve/demo/index-cesium.html
 
 .. warning:: This chapter is a work in progress and currently less than a draft.
 

@@ -8,6 +8,9 @@
   for string literals. Also added [`.editorconfig`](https://editorconfig.org/) 
   for IDEs not recognising black's defaults.
 
+* Renamed xcube's main branch from `master` to `main` on GitHub.
+
+
 ## Changes in 1.4.1
 
 ### Enhancements
@@ -107,7 +110,7 @@
   version 0.13.0
 * Update "Development process" section of developer guide.
 * Updated GitHub workflow to build docker image for GitHub releases only and 
-  not on each commit to master.
+  not on each commit to main.
 
 ## Changes in 1.2.0
 
@@ -1041,10 +1044,10 @@ Same as 1.0.2, just fixed unit tests due to minor Python environment change.
     + `num_levels`: If given, restricts the number of resolution levels 
        to the given value. Must be a positive integer to be effective.
   - Added a new example notebook 
-    [5_multi_level_datasets.ipynb](https://github.com/dcs4cop/xcube/blob/master/examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
+    [5_multi_level_datasets.ipynb](https://github.com/dcs4cop/xcube/blob/main/examples/notebooks/datastores/5_multi_level_datasets.ipynb) 
     that demonstrates writing and opening multi-level datasets with the 
     xcube filesystem data stores.
-  - Specified [xcube Multi-Resolution Datasets](https://github.com/dcs4cop/xcube/blob/master/docs/source/mldatasets.md)
+  - Specified [xcube Multi-Resolution Datasets](https://github.com/dcs4cop/xcube/blob/main/docs/source/mldatasets.md)
     definition and format.
 
 * `xcube gen2` returns more expressive error messages.
@@ -1304,7 +1307,7 @@ Same as 1.0.2, just fixed unit tests due to minor Python environment change.
 * Removed example notebooks that used hard-coded local file paths. (#400)
 * Added a GitHub action that will run xcube unit tests, and build and 
   push Docker images. The version tag of the image is either `latest` when 
-  the master changed or equals the release tag. 
+  the main branch changed, or the same as the release tag. 
 * Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
   lacks a callable named 'init_plugin`.
 * Fixed an issue where `xcube serve` provided wrong layer source options for 
@@ -1340,7 +1343,7 @@ Same as 1.0.2, just fixed unit tests due to minor Python environment change.
   `latitude_centers` and to invert decreasing latitude coordinate values.
 * Introduced `xcube.core.normalize.cubify_dataset()` function to normalize 
   a dataset and finally assert the result complies to the 
-  [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/master/docs/source/cubespec.md).
+  [xcube dataset conventions](https://github.com/dcs4cop/xcube/blob/main/docs/source/cubespec.md).
 * Fixed that data stores `directory` and `s3` were not able to handle data 
   identifiers that they had assigned themselves during `write_data()`.  
   (#450)

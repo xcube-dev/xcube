@@ -1,4 +1,4 @@
-.. xcube documentation master file
+.. xcube documentation main file
 
 ============================================
 xcube - An xarray-based EO data cube toolkit

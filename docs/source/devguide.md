@@ -253,7 +253,7 @@ Make sure your change
 1. Add issue label "in progress".
 1. Clone the GitHub repository to your local machine, if you haven't
    already done so.
-1. Check out the `master` branch and make sure it's up to date (`git pull`).
+1. Check out the `main` branch and make sure it's up to date (`git pull`).
 1. Create a development branch named `"<developer>-<issue>-<title>"` 
    (see [below](#development-branches)).
 1. Develop, having in mind the checklists and implementation hints
@@ -303,7 +303,7 @@ Make sure your change
 
 ### Target Branch
 
-The `master` branch contains latest developments,
+The `main` branch contains latest developments,
 including new features and fixes.
 Its software version string is always `<major>.<minor>.<micro>.dev<n>`.
 The branch is used to generate major, minor, or maintenance releases.
@@ -333,7 +333,7 @@ you need to adjust the paths accordingly.
 * In `xcube/version.py` remove the `.dev` suffix from version name.
 * Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
   from the last version headline.
-* Push changes to either master or a new maintenance branch (see above).
+* Push changes to either main or a new maintenance branch (see above).
 * Await results from Travis CI and ReadTheDocs builds. If broken, fix.
 * Go to [xcube/releases](https://github.com/dcs4cop/xcube/releases) 
   and press button "Draft a new Release".
@@ -341,13 +341,13 @@ you need to adjust the paths accordingly.
   - Release title is: `${version}` (without a "v" prefix) 
   - Paste latest changes from `CHANGES.md` into field "Describe this release"
   - Press "Publish release" button
-* After the release on GitHub, rebase sources, if the branch was `master`, 
+* After the release on GitHub, rebase sources, if the branch was `main`, 
   create a new maintenance branch (see above)
 * In `xcube/version.py` increase version number and append a `.dev0` suffix 
   to the version name so that it is still PEP-440 compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)`
   to it.
-* Push changes to either master or a new maintenance branch (see above).
+* Push changes to either main or a new maintenance branch (see above).
 * Activate new doc version on ReadTheDocs. 
 
 Go through the same procedure for all xcube plugin packages 
@@ -439,17 +439,17 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
     $ cd build 
     $ http-server -p 3000 -c-1
 
-* Push changes to either master or a new maintenance branch (see above).
+* Push changes to either main or a new maintenance branch (see above).
 * Goto [xcube-viewer/releases](https://github.com/dcs4cop/xcube-viewer/releases) 
   and press button "Draft a new Release".
   - Tag version is: `v${version}` (with a "v" prefix).
   - Release title is: `${version}`. 
   - Paste latest changes from `CHANGES.md` into field "Describe this release".
   - Press "Publish release" button.
-* After the release on GitHub, if the branch was `master`, 
+* After the release on GitHub, if the branch was `main`, 
   create a new maintenance branch (see above).
 * Increase `version` property and `version` constant in `package.json` and `src/config.ts` 
   and append `-dev.0` suffix to version name so it is SemVer compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
-* Push changes to either master or a new maintenance branch (see above).
-* Deploy builds of `master` branches to related web content providers.
+* Push changes to either main or a new maintenance branch (see above).
+* Deploy builds of `main` branches to related web content providers.

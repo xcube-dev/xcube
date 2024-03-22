@@ -188,7 +188,7 @@ class DatasetDescriptor(DataDescriptor):
     contained in the dataset.
 
     Regrading *time_range* and *time_period* parameters, please refer to
-    https://github.com/dcs4cop/xcube/blob/master/docs/source/storeconv.md#date-time-and-duration-specifications
+    https://github.com/dcs4cop/xcube/blob/main/docs/source/storeconv.md#date-time-and-duration-specifications
 
     :param data_id: An identifier for the data
     :param data_type: The data type of the data described

@@ -1,4 +1,4 @@
-[xcube.core.store]: https://github.com/dcs4cop/xcube/tree/master/xcube/core/store
+[xcube.core.store]: https://github.com/dcs4cop/xcube/tree/main/xcube/core/store
 [xcube Dataset Convention]: ./cubespec.md
 [xcube Multi-Level Dataset Convention]: ./mldatasets.md
 [xcube Data Store Conventions]: ./storeconv.md
@@ -189,7 +189,7 @@ system or data type. Some data stores may also provide vector data.
 
 For every data store we also provide a dedicated example Notebook that 
 demonstrates its specific usage in 
-[examples/notebooks/datastores](https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/datastores).
+[examples/notebooks/datastores](https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/datastores).
 
 ### Filesystem-based data stores
 
