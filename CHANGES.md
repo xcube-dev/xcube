@@ -8,7 +8,7 @@
   for string literals. Also added [`.editorconfig`](https://editorconfig.org/) 
   for IDEs not recognising black's defaults.
 
-* Renamed xcube's main branch from `master` into `main` on GitHub.
+* Renamed xcube's main branch from `master` to `main` on GitHub.
 
 
 ## Changes in 1.4.1
@@ -1307,7 +1307,7 @@ Same as 1.0.2, just fixed unit tests due to minor Python environment change.
 * Removed example notebooks that used hard-coded local file paths. (#400)
 * Added a GitHub action that will run xcube unit tests, and build and 
   push Docker images. The version tag of the image is either `latest` when 
-  the main changed or equals the release tag. 
+  the main branch changed, or the same as the release tag. 
 * Removed warning `module 'xcube_xyz' looks like an xcube-plugin but 
   lacks a callable named 'init_plugin`.
 * Fixed an issue where `xcube serve` provided wrong layer source options for 
