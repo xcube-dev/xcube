@@ -12,7 +12,7 @@
 
 * xcube's code base changed its docstring format from reST style to the much better 
   readable [Google style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
-  Existing docstrings have been converted using the awsome [docconvert](https://github.com/cbillingham/docconvert) 
+  Existing docstrings have been converted using the awesome [docconvert](https://github.com/cbillingham/docconvert) 
   tool.
 
 
