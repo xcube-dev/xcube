@@ -179,7 +179,8 @@ Make sure your change
 
 Create new module in `xcube.core` and add your functions.
 For any functions added make sure naming is in line with other API.
-Add clear doc-string to the new API. Use Sphinx RST format.
+Add clear doc-string to the new API using 
+[Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
 
 Decide if your API methods requires [xcube datasets](./cubespec.md) as 
 inputs, if so, name the primary dataset argument `cube` and add a 
