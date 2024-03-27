@@ -10,6 +10,8 @@
 
 * Renamed xcube's main branch from `master` to `main` on GitHub.
 
+* Added documentation page "How do I ..." that points users to applicable
+  xcube Python API.
 
 ## Changes in 1.4.1
 

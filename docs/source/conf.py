@@ -60,6 +60,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autodoc',
     'sphinx_autodoc_annotation',
+    'sphinx_markdown_tables',
     'sphinxarg.ext',
     'recommonmark',
 ]
