@@ -280,9 +280,13 @@ Make sure your change
 1. Wait for reviewers to review your PR and respond to comments and
    suggestions. Reviewers can also commit to your branch with additional
    changes.
-1. Once all reviewers have given an "accept" review, the PR should be
-   merged. The last reviewer to give an "accept" should perform the merge;
-   if they forget, the PR author should merge.
+1. Once all reviewers have given an "approve" review and all CI checks have
+   passed, the PR should be merged. If the PR has been assigned, one of the
+   assignees should merge. If the PR is unassigned:
+   1. By default, the PR author should merge.
+   1. If there are no comments requiring attention from the PR author (e.g.
+      optional change suggestions accompanying an approving review), then the
+      last reviewer may merge after approving.
 1. Remove issue label "in progress".
 1. Delete the feature branch.
 1. If the PR completely solves the associated issue: close the issue, if it
