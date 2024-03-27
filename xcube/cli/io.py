@@ -94,8 +94,7 @@ def store_info(
     show_data_ids: bool,
     use_json_format: bool,
 ):
-    """
-    Show data store information.
+    """Show data store information.
 
     Dumps detailed data store information in human readable form or as JSON, when using the --json option.
 
@@ -167,8 +166,7 @@ def store_info(
 @click.argument("data_id", metavar="DATA")
 @click.argument("store_params", metavar="PARAMS", nargs=-1)
 def store_data(store_id: str, data_id: str, store_params: List[str]):
-    """
-    Show data resource information.
+    """Show data resource information.
 
     Show the data descriptor for data resource DATA in data store STORE.
     Note some stores require provision of store parameters PARAMS.
@@ -183,8 +181,7 @@ def store_data(store_id: str, data_id: str, store_params: List[str]):
 @click.command(name="info")
 @click.argument("opener_id", metavar="OPENER")
 def opener_info(opener_id: str):
-    """
-    Show data opener information.
+    """Show data opener information.
     You can obtain valid OPENER names using command "xcube io opener list".
     """
     extension = get_extension_registry().get_extension(
@@ -203,8 +200,7 @@ def opener_info(opener_id: str):
 @click.command(name="info")
 @click.argument("writer_id", metavar="WRITER")
 def writer_info(writer_id: str):
-    """
-    Show data opener information.
+    """Show data opener information.
     You can obtain valid WRITER names using command "xcube io writer list".
     """
     extension = get_extension_registry().get_extension(
@@ -305,8 +301,7 @@ def dump(
     yaml_format: bool,
     json_format: bool,
 ):
-    """
-    Dump metadata of given data stores.
+    """Dump metadata of given data stores.
 
     Dumps data store metadata and metadata for a store's data resources
     for given data stores  into a JSON file.
@@ -562,25 +557,19 @@ def _parse_props(props: str) -> Dict[str, AbstractSet]:
 
 @click.group()
 def store():
-    """
-    Tools for xcube's data stores.
-    """
+    """Tools for xcube's data stores."""
     pass
 
 
 @click.group()
 def opener():
-    """
-    Tools for xcube's data openers.
-    """
+    """Tools for xcube's data openers."""
     pass
 
 
 @click.group()
 def writer():
-    """
-    Tools for xcube's data writers.
-    """
+    """Tools for xcube's data writers."""
     pass
 
 
@@ -595,9 +584,7 @@ writer.add_command(writer_info)
 
 @click.group(hidden=True)
 def io():
-    """
-    Tools for xcube's generic I/O system.
-    """
+    """Tools for xcube's generic I/O system."""
     pass
 
 

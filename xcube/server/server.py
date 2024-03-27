@@ -63,8 +63,7 @@ from ..util.frozen import FrozenDict
 
 
 class Server(AsyncExecution):
-    """
-    A REST server extendable by API extensions.
+    """A REST server extendable by API extensions.
 
     APIs are registered using the extension point
     "xcube.server.api".
@@ -86,10 +85,11 @@ class Server(AsyncExecution):
       * Use any given request JSON schema in openAPI
         to validate requests in HTTP methods
 
-    :param framework: The web server framework to be used
-    :param config: The server configuration.
-    :param extension_registry: Optional extension registry.
-        Defaults to xcube's default extension registry.
+    Args:
+        framework: The web server framework to be used
+        config: The server configuration.
+        extension_registry: Optional extension registry. Defaults to
+            xcube's default extension registry.
     """
 
     def __init__(
@@ -177,13 +177,13 @@ class Server(AsyncExecution):
         self._set_ctx(ctx)
 
     def call_later(self, delay: Union[int, float], callback: Callable, *args, **kwargs):
-        """
-        Executes the given callable *callback* after *delay* seconds.
+        """Executes the given callable *callback* after *delay* seconds.
 
-        :param delay: Delay in seconds.
-        :param callback: Callback to be called.
-        :param args: Positional arguments passed to *callback*.
-        :param kwargs: Keyword arguments passed to *callback*.
+        Args:
+            delay: Delay in seconds.
+            callback: Callback to be called.
+            *args: Positional arguments passed to *callback*.
+            **kwargs: Keyword arguments passed to *callback*.
         """
         return self._framework.call_later(delay, callback, *args, **kwargs)
 
@@ -194,16 +194,18 @@ class Server(AsyncExecution):
         *args: Any,
         **kwargs: Any,
     ) -> Awaitable[ReturnT]:
-        """
-        Concurrently runs a *function* in a ``concurrent.futures.Executor``.
+        """Concurrently runs a *function* in a ``concurrent.futures.Executor``.
         If *executor* is ``None``, the framework's default
         executor will be used.
 
-        :param executor: An optional executor.
-        :param function: The function to be run concurrently.
-        :param args: Positional arguments passed to *function*.
-        :param kwargs: Keyword arguments passed to *function*.
-        :return: The awaitable return value of *function*.
+        Args:
+            executor: An optional executor.
+            function: The function to be run concurrently.
+            *args: Positional arguments passed to *function*.
+            **kwargs: Keyword arguments passed to *function*.
+
+        Returns:
+            The awaitable return value of *function*.
         """
         return self._framework.run_in_executor(executor, function, *args, **kwargs)
 
@@ -447,8 +449,7 @@ class Server(AsyncExecution):
 
 
 class ServerContext(Context):
-    """
-    The server context holds the current server configuration and
+    """The server context holds the current server configuration and
     the API context objects that depend on that specific configuration.
 
     A new server context is created for any new server configuration,
@@ -456,8 +457,9 @@ class ServerContext(Context):
 
     The constructor shall not be called directly.
 
-    :param server: The server.
-    :param config: The current server configuration.
+    Args:
+        server: The server.
+        config: The current server configuration.
     """
 
     def __init__(self, server: Server, config: collections.abc.Mapping):

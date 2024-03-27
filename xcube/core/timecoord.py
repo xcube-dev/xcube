@@ -96,16 +96,19 @@ def add_time_coords(dataset: xr.Dataset, time_range: Tuple[float, float]) -> xr.
 def get_time_range_from_data(
     dataset: xr.Dataset, maybe_consider_metadata: bool = True
 ) -> Tuple[Optional[float], Optional[float]]:
-    """
-    Determines a time range from a dataset by inspecting its time_bounds or time data arrays.
+    """Determines a time range from a dataset by inspecting its time_bounds or time data arrays.
     In cases where no time bounds are given and no time periodicity can be determined,
     metadata may be considered.
 
-    :param dataset: The dataset of which the time range shall be determined
-    :param maybe_consider_metadata: Whether metadata shall be considered.
+    Args:
+        dataset: The dataset of which the time range shall be determined
+        maybe_consider_metadata: Whether metadata shall be considered.
     Only used when the dataset has no time bounds array and no time periodicity.
     The values will only be set when they do not contradict the values from the data arrays.
-    :return: A tuple with two float values: The first one represents the start time,
+
+    Returns:
+        A tuple with two float values: The first one represents the
+        start time,
     the second the end time. Either may be None.
     """
     time_bounds_names = ["time_bnds", "time_bounds"]
@@ -267,16 +270,20 @@ def timestamp_to_iso_string(
     freq: str = "S",
     round_fn: str = "round",
 ):
-    """
-    Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00
+    """Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00
     to an ISO-format string.
 
-    :param time: UTC timestamp given as time delta since 1970-01-01 00:00:00 in the units
-        given by the numpy datetime64 type, so it can be as nanos, millis,
-        seconds since 1970-01-01 00:00:00.
-    :param freq: time rounding resolution. See pandas.Timestamp.round().
-    :param round_fn: time rounding function. Defaults to pandas.Timestamp.round().
-    :return: ISO-format string.
+    Args:
+        time: UTC timestamp given as time delta since 1970-01-01
+            00:00:00 in the units given by the numpy datetime64 type, so
+            it can be as nanos, millis, seconds since 1970-01-01
+            00:00:00.
+        freq: time rounding resolution. See pandas.Timestamp.round().
+        round_fn: time rounding function. Defaults to
+            pandas.Timestamp.round().
+
+    Returns:
+        ISO-format string.
     """
     # All times are UTC (Z = Zulu Time Zone = UTC)
     assert_in(round_fn, ("ceil", "floor", "round"), name="round_fn")

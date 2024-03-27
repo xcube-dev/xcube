@@ -54,9 +54,7 @@ class CubeIdentity(CubeTransformer):
     def transform_cube(
         self, cube: xr.Dataset, gm: GridMapping, cube_config: CubeConfig
     ) -> TransformedCube:
-        """
-        Return *cube*, grid mapping *gm*, and parameters without change.
-        """
+        """Return *cube*, grid mapping *gm*, and parameters without change."""
         return cube, gm, cube_config
 
 

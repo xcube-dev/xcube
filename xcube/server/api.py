@@ -71,8 +71,7 @@ builtin_type = type
 
 
 class Api(Generic[ServerContextT]):
-    """
-    A server API.
+    """A server API.
 
     The most common purpose of this class is to
     add a new API to the server by the means of routes.
@@ -119,27 +118,28 @@ class Api(Generic[ServerContextT]):
             return self.ctx.get_datasets()
     ```
 
-    :param name: The API name. Must be unique within a server.
-    :param version: The API version. Defaults to "0.0.0".
-    :param routes: Optional list of initial routes.
-        A route is a tuple of the form (route-pattern, handler-class) or
-        (route-pattern, handler-class, handler-kwargs). The handler-class
-        must be derived from ApiHandler.
-    :param required_apis: Sequence of names of other required APIs.
-    :param optional_apis: Sequence of names of other optional APIs.
-    :param config_schema: Optional JSON schema for the API's configuration.
-        If not given, or None is passed, the API is assumed to
-        have no configuration.
-    :param create_ctx: Optional API context factory.
-        If given, must be a callable that accepts the server context
-        and returns a ``Context`` instance for the API.
-        Called when a new context is required after configuration changes.
-    :param on_start: Optional start handler.
-        If given, must be a callable that accepts the server context.
-        Called when the server starts.
-    :param on_stop: Optional stop handler.
-        If given, must be a callable that accepts the server context.
-        Called when the server stopped.
+    Args:
+        name: The API name. Must be unique within a server.
+        version: The API version. Defaults to "0.0.0".
+        routes: Optional list of initial routes. A route is a tuple of
+            the form (route-pattern, handler-class) or (route-pattern,
+            handler-class, handler-kwargs). The handler-class must be
+            derived from ApiHandler.
+        required_apis: Sequence of names of other required APIs.
+        optional_apis: Sequence of names of other optional APIs.
+        config_schema: Optional JSON schema for the API's configuration.
+            If not given, or None is passed, the API is assumed to have
+            no configuration.
+        create_ctx: Optional API context factory. If given, must be a
+            callable that accepts the server context and returns a
+            ``Context`` instance for the API. Called when a new context
+            is required after configuration changes.
+        on_start: Optional start handler. If given, must be a callable
+            that accepts the server context. Called when the server
+            starts.
+        on_stop: Optional stop handler. If given, must be a callable
+            that accepts the server context. Called when the server
+            stopped.
     """
 
     def __init__(
@@ -209,17 +209,17 @@ class Api(Generic[ServerContextT]):
     def static_route(
         self, path: str, default_filename: Optional[str] = None, **openapi_metadata
     ):
-        """
-        Decorator that adds static route to this API.
+        """Decorator that adds static route to this API.
 
         The decorator target must be a function that returns the route's
         local root directory path either as a string or a ``pathlib.Path``.
         If it can not determine an existing path, it should return None.
 
-        :param path: The route path.
-        :param default_filename: Optional default filename,
-            e.g., "index.html".
-        :param openapi_metadata: Optional OpenAPI GET operation metadata.
+        Args:
+            path: The route path.
+            default_filename: Optional default filename, e.g.,
+                "index.html".
+            **openapi_metadata: Optional OpenAPI GET operation metadata.
         """
 
         def decorator_func(get_root_path: Callable[[], Optional[str]]):
@@ -238,16 +238,18 @@ class Api(Generic[ServerContextT]):
         return decorator_func
 
     def route(self, path: str, **handler_kwargs):
-        """
-        Decorator that adds a route to this API.
+        """Decorator that adds a route to this API.
 
         The decorator target must be a class derived from ApiHandler.
 
-        :param path: The route path.
-        :param handler_kwargs: Optional keyword arguments passed to
-            ApiHandler constructor.
-        :return: A decorator function that receives a
-            class derived from ApiHandler
+        Args:
+            path: The route path.
+            **handler_kwargs: Optional keyword arguments passed to
+                ApiHandler constructor.
+
+        Returns:
+            A decorator function that receives a class derived from
+            ApiHandler
         """
 
         def decorator_func(handler_cls: Type[ApiHandler]):
@@ -267,25 +269,26 @@ class Api(Generic[ServerContextT]):
         tags: Optional[str] = None,
         **kwargs,
     ):
-        """
-        Decorator that adds OpenAPI 3.0 information to an
+        """Decorator that adds OpenAPI 3.0 information to an
         API handler's operation,
         i.e. one of the get, post, put, delete, or options methods.
 
-        :param operation_id: a string identifier for the operation
-        :param summary: a summary of the operation
-        :param description: A description of the operation. CommonMark syntax
-                            may be used.
-        :param parameters: List of dictionaries, one per parameter, defining
-                           OpenAPI Parameter objects
-        :param request_body: A dictionary defining an OpenAPI Request Body
-                             object
-        :param responses: A dictionary defining an OpenAPI Responses object
-        :param tags: OpenAPI tags
-        :param kwargs: OpenAPI parameters
+        Args:
+            operation_id: a string identifier for the operation
+            summary: a summary of the operation
+            description: A description of the operation. CommonMark
+                syntax may be used.
+            parameters: List of dictionaries, one per parameter,
+                defining OpenAPI Parameter objects
+            request_body: A dictionary defining an OpenAPI Request Body
+                object
+            responses: A dictionary defining an OpenAPI Responses object
+            tags: OpenAPI tags
+            **kwargs: OpenAPI parameters
 
-        :return: A decorator function that receives and returns an
-                 ApiHandler's operation.
+        Returns:
+            A decorator function that receives and returns an
+            ApiHandler's operation.
         """
         openapi = {
             "operationId": operation_id or kwargs.pop("operationId", None),
@@ -341,8 +344,11 @@ class Api(Generic[ServerContextT]):
         Otherwise, a new instance of ``ApiContext`` is returned.
         Should not be called directly.
 
-        :param server_ctx: The server's current context.
-        :return: An instance of ``Context``
+        Args:
+            server_ctx: The server's current context.
+
+        Returns:
+            An instance of ``Context``
         """
         return self._create_ctx(server_ctx)
 
@@ -354,7 +360,8 @@ class Api(Generic[ServerContextT]):
         The default implementation calls the *on_start*
         argument passed to the constructor, if any.
 
-        :param server_ctx: The server's current context
+        Args:
+            server_ctx: The server's current context
         """
         return self._on_start(server_ctx)
 
@@ -366,7 +373,8 @@ class Api(Generic[ServerContextT]):
         The default implementation calls the *on_stop*
         argument passed to the constructor, if any.
 
-        :param server_ctx: The server's current context
+        Args:
+            server_ctx: The server's current context
         """
         return self._on_stop(server_ctx)
 
@@ -376,7 +384,8 @@ class Api(Generic[ServerContextT]):
         Returns a list of dictionaries of the form
         {'path': '/some/path', 'methods': ['get', 'post']}
 
-        :return: a list of dictionaries, each describing an endpoint
+        Returns:
+            a list of dictionaries, each describing an endpoint
         """
         return [route.path_and_methods() for route in self.routes]
 
@@ -408,18 +417,20 @@ class Context(AsyncExecution, ABC):
     def get_api_ctx(
         self, api_name: str, cls: Optional[Type[ApiContextT]] = None
     ) -> Optional[ApiContextT]:
-        """
-        Get the API context for *api_name*.
+        """Get the API context for *api_name*.
         Can be used to access context objects of other APIs.
 
         The keyword argument *cls* can be used to assert a specific
         type if of context.
 
-        :param api_name: The name of a registered API.
-        :param cls: Optional context class.
-            If given, must be a class derived from `ApiContext`.
-        :return: The API context object for *api_name*,
-            or None if no such exists.
+        Args:
+            api_name: The name of a registered API.
+            cls: Optional context class. If given, must be a class
+                derived from `ApiContext`.
+
+        Returns:
+            The API context object for *api_name*, or None if no such
+            exists.
         """
 
     @abstractmethod
@@ -430,9 +441,10 @@ class Context(AsyncExecution, ABC):
         ``self.config`` and the given *prev_context*, if any.
         The method shall not be called directly.
 
-        :param prev_context: The previous context instance.
-            Will be ``None`` if ``on_update()`` is called for the
-            very first time.
+        Args:
+            prev_context: The previous context instance. Will be
+                ``None`` if ``on_update()`` is called for the very first
+                time.
         """
 
     @abstractmethod
@@ -446,8 +458,7 @@ class Context(AsyncExecution, ABC):
 
 
 class ApiContext(Context):
-    """
-    An implementation of the server context to be used by APIs.
+    """An implementation of the server context to be used by APIs.
 
     A typical use case is to cache computationally expensive
     resources served by a particular API.
@@ -466,7 +477,8 @@ class ApiContext(Context):
     * must call the super class constructor with the
       *server_ctx* context, from their own constructor, if any.
 
-    :param server_ctx: The server context.
+    Args:
+        server_ctx: The server context.
     """
 
     def __init__(self, server_ctx: Context):
@@ -533,10 +545,13 @@ class ApiRequest:
         ``reverse_url_prefix`` shall be used for prefixing
         the returned URL.
 
-        :param path: The path component.
-        :param query: Optional query string.
-        :param reverse: Whether the reverse URL shall be returned.
-        :return: Full reverse URL for *path* and *query*.
+        Args:
+            path: The path component.
+            query: Optional query string.
+            reverse: Whether the reverse URL shall be returned.
+
+        Returns:
+            Full reverse URL for *path* and *query*.
         """
 
     @property
@@ -592,11 +607,14 @@ class ApiRequest:
         argument. If *type* is not given, but *default* is, then *type*
         will be inferred from *default*.
 
-        :param name: The name of the argument
-        :param type: The requested data type.
-            Must be a callable type, e.g. bool, int.
-        :param default: Optional default value.
-        :return: The value of the query argument.
+        Args:
+            name: The name of the argument
+            type: The requested data type. Must be a callable type, e.g.
+                bool, int.
+            default: Optional default value.
+
+        Returns:
+            The value of the query argument.
         """
         if type is None and default is not None:
             type = builtin_type(default)
@@ -611,10 +629,14 @@ class ApiRequest:
     ) -> Sequence[ArgT]:
         """Get the values of query argument given by *name*.
         If *type* is given, a sequence of that type will be returned.
-        :param name: The name of the argument
-        :param type: The requested data type.
-            Must be a callable type, e.g. bool, int.
-        :return: The values of the query argument.
+
+        Args:
+            name: The name of the argument
+            type: The requested data type. Must be a callable type, e.g.
+                bool, int.
+
+        Returns:
+            The values of the query argument.
         """
 
 
@@ -639,13 +661,13 @@ class ApiResponse(ABC):
 
 
 class ApiHandler(Generic[ServerContextT], ABC):
-    """
-    Base class for all API handlers.
+    """Base class for all API handlers.
 
-    :param ctx: The API context.
-    :param request: The API handler's request.
-    :param response: The API handler's response.
-    :param kwargs: Client keyword arguments (not used in base class).
+    Args:
+        ctx: The API context.
+        request: The API handler's request.
+        response: The API handler's response.
+        kwargs: Client keyword arguments (not used in base class).
     """
 
     def __init__(
@@ -684,7 +706,8 @@ class ApiHandler(Generic[ServerContextT], ABC):
         Any method with an __openapi__ attribute is assumed to be
         handled.
 
-        :return: a list of the method names handled by this handler
+        Returns:
+            a list of the method names handled by this handler
         """
         return [
             name
@@ -722,15 +745,15 @@ class ApiHandler(Generic[ServerContextT], ABC):
 
 
 class ApiRoute:
-    """
-    An API route.
+    """An API route.
 
-    :param api_name: The name of the API to which this route belongs to.
-    :param path: The route path which may include path variable templates.
-    :param handler_cls: The route handler class.
-        Must be derived from ```ApiHandler```.
-    :param handler_kwargs: Optional keyword arguments passed to
-        the *handler_cls* when it is instantiated.
+    Args:
+        api_name: The name of the API to which this route belongs to.
+        path: The route path which may include path variable templates.
+        handler_cls: The route handler class. Must be derived from
+            ```ApiHandler```.
+        handler_kwargs: Optional keyword arguments passed to the
+            *handler_cls* when it is instantiated.
     """
 
     def __init__(
@@ -791,20 +814,22 @@ class ApiRoute:
         Returns a dictionary of the form
         {'path': '/this/routes/path', 'methods': ['get', 'post']}
 
-        :return: a dictionary describing this route
+        Returns:
+            a dictionary describing this route
         """
         return {"path": self.path, "methods": self.handler_cls.defined_methods()}
 
 
 class ApiStaticRoute:
-    """
-    An API static route.
+    """An API static route.
 
-    :param path: The route path.
-    :param dir_path: A local directory path.
-    :param default_filename: Optional default filename, e.g., "index.html".
-    :param api_name: Optional name of the API to which this route belongs to.
-    :param openapi_metadata: Optional OpenAPI operation metadata.
+    Args:
+        path: The route path.
+        dir_path: A local directory path.
+        default_filename: Optional default filename, e.g., "index.html".
+        api_name: Optional name of the API to which this route belongs
+            to.
+        openapi_metadata: Optional OpenAPI operation metadata.
     """
 
     def __init__(
@@ -831,13 +856,13 @@ class ApiStaticRoute:
 
 
 class ApiError(Exception):
-    """
-    An API error.
+    """An API error.
     This exception should be raised to terminate the current request
     with a defined HTTP status code.
 
-    :param status_code: The HTTP status code
-    :param message: Optional message
+    Args:
+        status_code: The HTTP status code
+        message: Optional message
     """
 
     def __init__(self, status_code: int, message: Optional[str] = None):

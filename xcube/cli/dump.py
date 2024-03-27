@@ -40,9 +40,7 @@ import click
     help="Dump also variable encoding information.",
 )
 def dump(input, variable, encoding):
-    """
-    Dump contents of an input dataset.
-    """
+    """Dump contents of an input dataset."""
     from xcube.core.dsio import open_dataset
     from xcube.core.dump import dump_dataset
 

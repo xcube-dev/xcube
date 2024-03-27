@@ -117,8 +117,7 @@ def level(
     quiet: bool,
     verbosity: int,
 ):
-    """
-    Generate multi-resolution levels.
+    """Generate multi-resolution levels.
 
     Transform the given dataset by INPUT into the levels of a
     multi-level pyramid with spatial resolution decreasing by a

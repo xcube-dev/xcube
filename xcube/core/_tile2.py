@@ -395,33 +395,35 @@ def compute_rgba_tile(
     10. turn that array into an RGBA image.
     11. encode RGBA image into PNG bytes.
 
-    :param ml_dataset: Multi-level dataset
-    :param variable_names: Single variable name
-        or a sequence of three names.
-    :param tile_x: Tile X coordinate
-    :param tile_y: Tile Y coordinate
-    :param tile_z:  Tile Z coordinate
-    :param cmap_provider: Provider for colormaps.
-    :param crs_name: Spatial tile coordinate reference system.
-        Must be a geographical CRS, such as "EPSG:4326", or
-        web mercator, i.e. "EPSG:3857". Defaults to "CRS84".
-    :param tile_size: The tile size in pixels.
-        Can be a scalar or an integer width/height pair.
-        Defaults to 256.
-    :param cmap_name: Color map name. Only used if a single
-        variable name is given. Defaults to "bone".
-    :param value_ranges: A single value range, or value ranges
-        for each variable name.
-    :param non_spatial_labels: Labels for the non-spatial dimensions
-        in the given variables.
-    :param tile_enlargement: Enlargement in pixels applied to
-        the computed source tile read from the data.
-        Can be used to increase the accuracy of the borders of target
-        tiles at high zoom levels. Defaults to 1.
-    :param format: Either 'png', 'image/png' or 'numpy'.
-    :param trace_perf: If set, detailed performance
-        metrics are logged using the level of the "xcube" logger.
-    :return: PNG bytes or unit8 numpy array, depending on *format*
+    Args:
+        ml_dataset: Multi-level dataset
+        variable_names: Single variable name or a sequence of three
+            names.
+        tile_x: Tile X coordinate
+        tile_y: Tile Y coordinate
+        tile_z: Tile Z coordinate
+        cmap_provider: Provider for colormaps.
+        crs_name: Spatial tile coordinate reference system. Must be a
+            geographical CRS, such as "EPSG:4326", or web mercator, i.e.
+            "EPSG:3857". Defaults to "CRS84".
+        tile_size: The tile size in pixels. Can be a scalar or an
+            integer width/height pair. Defaults to 256.
+        cmap_name: Color map name. Only used if a single variable name
+            is given. Defaults to "bone".
+        value_ranges: A single value range, or value ranges for each
+            variable name.
+        non_spatial_labels: Labels for the non-spatial dimensions in the
+            given variables.
+        tile_enlargement: Enlargement in pixels applied to the computed
+            source tile read from the data. Can be used to increase the
+            accuracy of the borders of target tiles at high zoom levels.
+            Defaults to 1.
+        format: Either 'png', 'image/png' or 'numpy'.
+        trace_perf: If set, detailed performance metrics are logged
+            using the level of the "xcube" logger.
+
+    Returns:
+        PNG bytes or unit8 numpy array, depending on *format*
     :raise TileNotFoundException
     :raise TileRequestException
     """

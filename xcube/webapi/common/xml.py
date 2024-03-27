@@ -30,17 +30,19 @@ class Node(abc.ABC):
 
     @abc.abstractmethod
     def add(self, *elements: "Element") -> "Node":
-        """
-        Adds child elements to this element.
-        :param elements: Child elements
+        """Adds child elements to this element.
+
+        Args:
+            *elements: Child elements
         """
         pass
 
     @abc.abstractmethod
     def to_xml(self, indent: int = 2) -> str:
-        """
-        Converts this node into valid XML text using UTF-8 encoding.
-        :param indent: Indent in spaces. Defaults to 2.
+        """Converts this node into valid XML text using UTF-8 encoding.
+
+        Args:
+            indent: Indent in spaces. Defaults to 2.
         """
         pass
 
@@ -50,13 +52,13 @@ class Node(abc.ABC):
 
 
 class Element(Node):
-    """
-    An XML element node.
+    """An XML element node.
 
-    :param tag: Tag name
-    :param attrs: Attributes
-    :param text: Text
-    :param elements: Child elements
+    Args:
+        tag: Tag name
+        attrs: Attributes
+        text: Text
+        elements: Child elements
     """
 
     def __init__(
@@ -112,9 +114,10 @@ class Element(Node):
 
 
 class Document(Node):
-    """
-    An XML document.
-    :param root: The only root element.
+    """An XML document.
+
+    Args:
+        root: The only root element.
     """
 
     def __init__(self, root: Element):

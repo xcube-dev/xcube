@@ -31,12 +31,12 @@ import zarr
 def unchunk_dataset(
     dataset_path: str, var_names: Sequence[str] = None, coords_only: bool = False
 ):
-    """
-    Unchunk dataset variables in-place.
+    """Unchunk dataset variables in-place.
 
-    :param dataset_path: Path to ZARR dataset directory.
-    :param var_names: Optional list of variable names.
-    :param coords_only: Un-chunk coordinate variables only.
+    Args:
+        dataset_path: Path to ZARR dataset directory.
+        var_names: Optional list of variable names.
+        coords_only: Un-chunk coordinate variables only.
     """
 
     is_zarr = os.path.isfile(os.path.join(dataset_path, ".zgroup"))

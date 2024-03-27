@@ -90,9 +90,7 @@ class CacheStore(metaclass=ABCMeta):
 
 
 class MemoryCacheStore(CacheStore):
-    """
-    Simple memory store.
-    """
+    """Simple memory store."""
 
     def can_load_from_key(self, key) -> bool:
         # This store type does not maintain key-value pairs on its own
@@ -102,29 +100,36 @@ class MemoryCacheStore(CacheStore):
         raise NotImplementedError()
 
     def store_value(self, key, value):
-        """
-        Return (value, 1).
-        :param key: the key
-        :param value: the original value
-        :return: the tuple (stored value, size) where stored value is the sequence [key, value].
+        """Return (value, 1).
+
+        Args:
+            key: the key
+            value: the original value
+
+        Returns:
+            the tuple (stored value, size) where stored value is the
+            sequence [key, value].
         """
         return [key, value], _compute_object_size(value)
 
     def restore_value(self, key, stored_value):
-        """
-        :param key: the key
-        :param stored_value: the stored representation of the value
-        :return: the original value.
+        """Args:
+            key: the key
+            stored_value: the stored representation of the value
+
+        Returns:
+            the original value.
         """
         if key != stored_value[0]:
             raise ValueError("key does not match stored value")
         return stored_value[1]
 
     def discard_value(self, key, stored_value):
-        """
-        Clears the value in the given stored_value.
-        :param key: the key
-        :param stored_value: the stored representation of the value
+        """Clears the value in the given stored_value.
+
+        Args:
+            key: the key
+            stored_value: the stored representation of the value
         """
         if key != stored_value[0]:
             raise ValueError("key does not match stored value")
@@ -132,9 +137,7 @@ class MemoryCacheStore(CacheStore):
 
 
 class FileCacheStore(CacheStore):
-    """
-    Simple file store for values which can be written and read as bytes, e.g. encoded PNG images.
-    """
+    """Simple file store for values which can be written and read as bytes, e.g. encoded PNG images."""
 
     def __init__(self, cache_dir: str, ext: str):
         self.cache_dir = cache_dir

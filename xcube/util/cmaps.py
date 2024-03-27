@@ -309,12 +309,15 @@ class ColormapProvider(ABC):
         * have alpha blending (*cm_name* with suffix `"_alpha"`),
         * both (*cm_name* with suffix `"_r_alpha"`).
 
-        :param cm_name: Colormap name.
-        :param num_colors: Optional number of colors, that is,
-            the resolution of the colormap gradient.
-        :return: A tuple comprising the base name
-            of *cm_name* after striping any suffixes, and
-            the colormap as an instance of ``matplotlib.colors.Colormap``.
+        Args:
+            cm_name: Colormap name.
+            num_colors: Optional number of colors, that is, the
+                resolution of the colormap gradient.
+
+        Returns:
+            A tuple comprising the base name of *cm_name* after striping
+            any suffixes, and the colormap as an instance of
+            ``matplotlib.colors.Colormap``.
         """
 
 
@@ -631,13 +634,14 @@ _REGISTRY_JSON = None
     version="0.13.0",
 )
 def get_cmaps() -> List:
-    """
-    Return a JSON-serializable tuple containing records of the form:
+    """Return a JSON-serializable tuple containing records of the form:
      (<cmap-category>, <cmap-category-description>, <cmap-tuples>),
     where <cmap-tuples> is a tuple containing records of the form
     (<cmap-name>, <cbar-png-bytes>), and where
     <cbar-png-bytes> are encoded PNG images of size 256 x 2 pixels,
-    :return: all known matplotlib color maps
+
+    Returns:
+        all known matplotlib color maps
     """
     registry = _get_registry()
     global _REGISTRY_JSON
@@ -655,8 +659,7 @@ def get_cmaps() -> List:
 def get_cmap(
     cmap_name: str, default_cmap_name: str = "viridis", num_colors: Optional[int] = None
 ) -> Tuple[str, matplotlib.colors.Colormap]:
-    """
-    Get color mapping for color bar name *cmap_name*.
+    """Get color mapping for color bar name *cmap_name*.
 
     If *num_colors* is a positive integer,
     a resampled mapping will be returned that contains *num_colors*
@@ -667,10 +670,13 @@ def get_cmap(
 
     Otherwise, a tuple (actual_cmap_name, cmap) is returned.
 
-    :param cmap_name: Color bar name.
-    :param num_colors: Number of colours in returned color mapping.
-    :param default_cmap_name: Default color bar name. (Ignored)
-    :return: A tuple (actual_cmap_name, cmap).
+    Args:
+        cmap_name: Color bar name.
+        num_colors: Number of colours in returned color mapping.
+        default_cmap_name: Default color bar name. (Ignored)
+
+    Returns:
+        A tuple (actual_cmap_name, cmap).
     """
     registry = _get_registry()
     return registry.get_cmap(cmap_name, num_colors=num_colors)
@@ -682,8 +688,7 @@ def get_cmap(
     version="0.13.0",
 )
 def ensure_cmaps_loaded():
-    """
-    Loads all color maps from matplotlib and registers additional ones,
+    """Loads all color maps from matplotlib and registers additional ones,
     if not done before.
     """
     _get_registry()

@@ -47,12 +47,12 @@ _LAB_INFO_FILE = "~/.xcube/jupyterlab/lab-info.json"
 
 
 class Viewer:
-    """
-    Experimental class that represents the xcube Viewer
+    """Experimental class that represents the xcube Viewer
     in Jupyter Notebooks.
 
-    :param server_config: Server configuration.
-        See "xcube serve --show configschema".
+    Args:
+        server_config: Server configuration. See "xcube serve --show
+            configschema".
     """
 
     def __init__(self, server_config: Optional[Mapping[str, Any]] = None):
@@ -136,22 +136,25 @@ class Viewer:
         style: Optional[str] = None,
         color_mappings: Dict[str, Dict[str, Any]] = None,
     ):
-        """
-        Add a dataset to this viewer.
+        """Add a dataset to this viewer.
 
-        :param dataset: The dataset to me added. Must be an instance of
-            ``xarray.Dataset`` or ``xcube.core.mldataset.MultiLevelDataset``.
-        :param ds_id: Optional dataset identifier.
-            If not given, an identifier will be generated and returned.
-        :param title: Optional dataset title.
-            Overrides a title given by dataset metadata.
-        :param style: Optional name of a style that must exist
-            in the server configuration.
-        :param color_mappings: Maps a variable name to a specific
-            color mapping that is a dictionary comprising a "ValueRange"
-            (a pair of numbers) and a "ColorBar"
-            (a matplotlib color bar name).
-        :return: The dataset identifier.
+        Args:
+            dataset: The dataset to me added. Must be an instance of
+                ``xarray.Dataset`` or
+                ``xcube.core.mldataset.MultiLevelDataset``.
+            ds_id: Optional dataset identifier. If not given, an
+                identifier will be generated and returned.
+            title: Optional dataset title. Overrides a title given by
+                dataset metadata.
+            style: Optional name of a style that must exist in the
+                server configuration.
+            color_mappings: Maps a variable name to a specific color
+                mapping that is a dictionary comprising a "ValueRange"
+                (a pair of numbers) and a "ColorBar" (a matplotlib color
+                bar name).
+
+        Returns:
+            The dataset identifier.
         """
         if not self._check_server_running():
             return
@@ -164,24 +167,24 @@ class Viewer:
         )
 
     def remove_dataset(self, ds_id: str):
-        """
-        Remove a dataset from this viewer.
+        """Remove a dataset from this viewer.
 
-        :param ds_id: The identifier of the dataset to be removed.
+        Args:
+            ds_id: The identifier of the dataset to be removed.
         """
         if not self._check_server_running():
             return
         self.datasets_ctx.remove_dataset(ds_id)
 
     def show(self, width: Union[int, str] = "100%", height: Union[str, int] = 800):
-        """
-        Show this viewer as an iframe.
+        """Show this viewer as an iframe.
         Intended to be used in a Jupyter notebook.
         If used outside a Jupyter notebook the viewer will be shown
         as a new browser tab.
 
-        :param width: The width of the viewer's iframe.
-        :param height: The height of the viewer's iframe.
+        Args:
+            width: The width of the viewer's iframe.
+            height: The height of the viewer's iframe.
         """
         try:
             from IPython.core.display import HTML

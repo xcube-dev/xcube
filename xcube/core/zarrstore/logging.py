@@ -32,8 +32,7 @@ from xcube.util.perf import measure_time_cm
 
 
 class LoggingZarrStore(zarr.storage.BaseStore):
-    """
-    A Zarr Store that logs all method calls on another store *other*
+    """A Zarr Store that logs all method calls on another store *other*
     including execution time.
     """
 

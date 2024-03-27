@@ -21,10 +21,10 @@
 
 
 class DataStoreError(Exception):
-    """
-    Raised on error in any of the data store, opener, or writer methods.
+    """Raised on error in any of the data store, opener, or writer methods.
 
-    :param message: The error message.
+    Args:
+        message: The error message.
     """
 
     def __init__(self, message: str):

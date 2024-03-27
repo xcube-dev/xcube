@@ -35,8 +35,7 @@ from .base import CRS_WGS84
 
 
 class GridCoords:
-    """
-    Grid coordinates comprising x and y of
+    """Grid coordinates comprising x and y of
     type xarray.DataArray.
     """
 
@@ -46,8 +45,7 @@ class GridCoords:
 
 
 class GridMappingProxy:
-    """
-    Grid mapping comprising *crs* of type pyproj.crs.CRS,
+    """Grid mapping comprising *crs* of type pyproj.crs.CRS,
     grid coordinates, an optional name, coordinates, and a
     tile size (= spatial chunk sizes).
     """
@@ -73,17 +71,19 @@ def get_dataset_grid_mapping_proxies(
     missing_projected_crs: pyproj.crs.CRS = None,
     emit_warnings: bool = False,
 ) -> Dict[Union[Hashable, None], GridMappingProxy]:
-    """
-    Find grid mappings encoded as described in the CF conventions
+    """Find grid mappings encoded as described in the CF conventions
     [Horizontal Coordinate Reference Systems, Grid Mappings, and Projections]
     (http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#grid-mappings-and-projections).
 
-    :param dataset:
-    :param missing_latitude_longitude_crs:
-    :param missing_rotated_latitude_longitude_crs:
-    :param missing_projected_crs:
-    :param emit_warnings:
-    :return:
+    Args:
+        dataset
+        missing_latitude_longitude_crs
+        missing_rotated_latitude_longitude_crs
+        missing_projected_crs
+        emit_warnings
+
+    Returns:
+
     """
     grid_mapping_proxies: Dict[Union[Hashable, None], GridMappingProxy] = dict()
 
@@ -264,8 +264,7 @@ def _complement_grid_mapping_coords(
 
 
 def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
-    """
-    Find potential coordinate variables.
+    """Find potential coordinate variables.
 
     We need this function as we can not rely on xarray.Dataset.coords,
     because 2D coordinate arrays are most likely not indicated as such
@@ -336,16 +335,16 @@ def add_spatial_ref(
     crs_var_name: Optional[str] = "spatial_ref",
     xy_dim_names: Optional[Tuple[str, str]] = None,
 ):
-    """
-    Helper function that allows adding a spatial reference to an
+    """Helper function that allows adding a spatial reference to an
     existing Zarr dataset.
 
-    :param dataset_store: The dataset's existing Zarr store or path.
-    :param crs: The spatial coordinate reference system.
-    :param crs_var_name: The name of the variable that will hold the
-        spatial reference. Defaults to "spatial_ref".
-    :param xy_dim_names: The names of the x and y dimensions.
-        Defaults to ("x", "y").
+    Args:
+        dataset_store: The dataset's existing Zarr store or path.
+        crs: The spatial coordinate reference system.
+        crs_var_name: The name of the variable that will hold the
+            spatial reference. Defaults to "spatial_ref".
+        xy_dim_names: The names of the x and y dimensions. Defaults to
+            ("x", "y").
     """
     assert_instance(dataset_store, (MutableMapping, str), name="group_store")
     assert_instance(crs_var_name, str, name="crs_var_name")

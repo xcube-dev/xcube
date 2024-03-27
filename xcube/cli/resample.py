@@ -170,9 +170,7 @@ def resample(
     verbosity,
     dry_run,
 ):
-    """
-    Resample data along the time dimension.
-    """
+    """Resample data along the time dimension."""
     configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     if base is not None:

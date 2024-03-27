@@ -269,11 +269,16 @@ def new_job(job_id: int, job_request: JobRequest) -> Job:
 def is_job_status(job: Job, status: str) -> bool:
     """Report whether a specified job has the specified status.
 
-    :param job: a job specification (string-keyed dictionary)
-    :param status: a string representing a recognized status
-    :return: True if the status is recognized and the specified job has the
-             specified status
-    :raises ValueError: if the status is not recognized
+    Args:
+        job: a job specification (string-keyed dictionary)
+        status: a string representing a recognized status
+
+    Returns:
+        True if the status is recognized and the specified job has the
+        specified status
+
+    Raises:
+        ValueError: if the status is not recognized
     """
     _assert_valid_job_status(status)
     return job["state"]["status"] == status
@@ -282,11 +287,14 @@ def is_job_status(job: Job, status: str) -> bool:
 def set_job_status(job: Job, status: str, error: Optional[BaseException] = None):
     """Set the status of a job.
 
-    :param job: a job specification (string-keyed dictionary)
-    :param status: a string representing a recognized status
-    :param error: if supplied, annotate the job specification with information
-                  from this exception
-    :raises ValueError: if the status is not recognized
+    Args:
+        job: a job specification (string-keyed dictionary)
+        status: a string representing a recognized status
+        error: if supplied, annotate the job specification with
+            information from this exception
+
+    Raises:
+        ValueError: if the status is not recognized
     """
     _assert_valid_job_status(status)
     job_id = job["jobId"]
@@ -305,8 +313,9 @@ def set_job_status(job: Job, status: str, error: Optional[BaseException] = None)
 def set_job_result(job: Job, result: Dict[str, Any]):
     """Set the result of a compute job.
 
-    :param job: job specifier (string-keyed dictionary)
-    :param result: results of the job
+    Args:
+        job: job specifier (string-keyed dictionary)
+        result: results of the job
     """
     job["result"] = result
 

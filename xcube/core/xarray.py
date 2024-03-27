@@ -26,8 +26,7 @@ from xcube.core.verify import verify_cube
 
 @xr.register_dataset_accessor("xcube")
 class DatasetAccessor:
-    """
-    The xcube xarray API.
+    """The xcube xarray API.
 
     The API is made available via the ``xcube`` attribute of
     xarray.Dataset instances.
@@ -100,8 +99,7 @@ class DatasetAccessor:
 
     @classmethod
     def new(cls, **kwargs) -> xr.Dataset:
-        """
-        Create a new empty cube. Useful for testing.
+        """Create a new empty cube. Useful for testing.
 
         Refer to :func:`xcube.core.new.new_cube` for details.
         """
@@ -109,25 +107,29 @@ class DatasetAccessor:
 
     @classmethod
     def open(cls, input_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
-        """
-        The ``read`` method as context manager that auto-closes the data cube read.
+        """The ``read`` method as context manager that auto-closes the data cube read.
 
-        :param input_path: input path
-        :param format_name: format, e.g. "zarr" or "netcdf4"
-        :param kwargs: format-specific keyword arguments
-        :return: dataset object
+        Args:
+            input_path: input path
+            format_name: format, e.g. "zarr" or "netcdf4"
+            **kwargs: format-specific keyword arguments
+
+        Returns:
+            dataset object
         """
         return open_cube(input_path, format_name=format_name, **kwargs)
 
     def write(self, output_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
-        """
-        Write this cube to *output_path*.
+        """Write this cube to *output_path*.
         If *format* is not provided it will be guessed from *output_path*.
 
-        :param output_path: output path
-        :param format_name: format, e.g. "zarr" or "netcdf4"
-        :param kwargs: format-specific keyword arguments
-        :return: the input dataset
+        Args:
+            output_path: output path
+            format_name: format, e.g. "zarr" or "netcdf4"
+            **kwargs: format-specific keyword arguments
+
+        Returns:
+            the input dataset
         """
         return write_cube(self._dataset, output_path, format_name=format_name, **kwargs)
 
@@ -140,17 +142,25 @@ class DatasetAccessor:
         method: str = "nearest",
         cube_asserted: bool = False,
     ):
-        """
-        Extract values from cube variables at given coordinates in *points*.
+        """Extract values from cube variables at given coordinates in *points*.
 
-        :param points: Dictionary that maps dimension name to coordinate arrays.
-        :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
-        :param index_name_pattern: A naming pattern for the computed indexes columns.
-               Must include "{name}" which will be replaced by the dimension name.
-        :param include_indexes: Whether to include computed indexes in return value.
-        :param method: "nearest" or "linear".
-        :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-        :return: A new data frame whose columns are values from *cube* variables at given *points*.
+        Args:
+            points: Dictionary that maps dimension name to coordinate
+                arrays.
+            var_names: An optional list of names of data variables in
+                *cube* whose values shall be extracted.
+            index_name_pattern: A naming pattern for the computed
+                indexes columns. Must include "{name}" which will be
+                replaced by the dimension name.
+            include_indexes: Whether to include computed indexes in
+                return value.
+            method: "nearest" or "linear".
+            cube_asserted: If False, *cube* will be verified, otherwise
+                it is expected to be a valid cube.
+
+        Returns:
+            A new data frame whose columns are values from *cube*
+            variables at given *points*.
         """
         return get_cube_values_for_points(
             self._dataset,
@@ -170,16 +180,23 @@ class DatasetAccessor:
         method: str = "nearest",
         cube_asserted: bool = False,
     ) -> xr.Dataset:
-        """
-        Get values from this cube at given *indexes*.
+        """Get values from this cube at given *indexes*.
 
-        :param indexes: A mapping from column names to index and fraction arrays for all cube dimensions.
-        :param var_names: An optional list of names of data variables in *cube* whose values shall be extracted.
-        :param index_name_pattern: A naming pattern for the computed indexes columns.
-               Must include "{name}" which will be replaced by the dimension name.
-        :param method: "nearest" or "linear".
-        :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-        :return: A new data frame whose columns are values from *cube* variables at given *indexes*.
+        Args:
+            indexes: A mapping from column names to index and fraction
+                arrays for all cube dimensions.
+            var_names: An optional list of names of data variables in
+                *cube* whose values shall be extracted.
+            index_name_pattern: A naming pattern for the computed
+                indexes columns. Must include "{name}" which will be
+                replaced by the dimension name.
+            method: "nearest" or "linear".
+            cube_asserted: If False, *cube* will be verified, otherwise
+                it is expected to be a valid cube.
+
+        Returns:
+            A new data frame whose columns are values from *cube*
+            variables at given *indexes*.
         """
         return get_cube_values_for_indexes(
             self._dataset,
@@ -198,19 +215,27 @@ class DatasetAccessor:
         index_dtype=np.float64,
         cube_asserted: bool = False,
     ):
-        """
-        Get indexes of given coordinates in *points* into this cube.
+        """Get indexes of given coordinates in *points* into this cube.
 
-        :param points: A mapping from column names to column data arrays, which must all have the same length.
-        :param dim_name_mapping: A mapping from dimension names in *cube* to column names in *points*.
-        :param index_name_pattern: A naming pattern for the computed indexes columns.
-               Must include "{name}" which will be replaced by the dimension name.
-        :param index_dtype: Numpy data type for the indexes. If it is a floating point type (default),
-               then *indexes* will contain fractions, which may be used for interpolation.
-               For out-of-range coordinates in *points*, indexes will be -1 if *index_dtype* is an integer type, and NaN,
-               if *index_dtype* is a floating point types.
-        :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-        :return: A dataset containing the index columns.
+        Args:
+            points: A mapping from column names to column data arrays,
+                which must all have the same length.
+            dim_name_mapping: A mapping from dimension names in *cube*
+                to column names in *points*.
+            index_name_pattern: A naming pattern for the computed
+                indexes columns. Must include "{name}" which will be
+                replaced by the dimension name.
+            index_dtype: Numpy data type for the indexes. If it is a
+                floating point type (default), then *indexes* will
+                contain fractions, which may be used for interpolation.
+                For out-of-range coordinates in *points*, indexes will
+                be -1 if *index_dtype* is an integer type, and NaN, if
+                *index_dtype* is a floating point types.
+            cube_asserted: If False, *cube* will be verified, otherwise
+                it is expected to be a valid cube.
+
+        Returns:
+            A dataset containing the index columns.
         """
         return get_cube_point_indexes(
             self._dataset,
@@ -227,8 +252,7 @@ class DatasetAccessor:
         coord_values: Union[xr.DataArray, np.ndarray],
         index_dtype=np.float64,
     ) -> Union[xr.DataArray, np.ndarray]:
-        """
-        Compute the indexes into a coordinate variable *coord_var_name* of this cube
+        """Compute the indexes into a coordinate variable *coord_var_name* of this cube
         for the given coordinate values *coord_values*.
 
         The coordinate variable's labels must be monotonic increasing or decreasing,
@@ -240,13 +264,19 @@ class DatasetAccessor:
 
         Returns the indexes as an array-like object of type *dtype*.
 
-        :param coord_var_name: Name of a coordinate variable.
-        :param coord_values: Array-like coordinate values.
-        :param index_dtype: Numpy data type for the indexes. If it is a floating point type (default),
-               then *indexes* will contain fractions, which may be used for interpolation.
-               For out-of-range coordinates in *points*, indexes will be -1 if *index_dtype* is an integer type, and NaN,
-               if *index_dtype* is a floating point types.
-        :return: The indexes and their fractions as a tuple of numpy int64 and float64 arrays.
+        Args:
+            coord_var_name: Name of a coordinate variable.
+            coord_values: Array-like coordinate values.
+            index_dtype: Numpy data type for the indexes. If it is a
+                floating point type (default), then *indexes* will
+                contain fractions, which may be used for interpolation.
+                For out-of-range coordinates in *points*, indexes will
+                be -1 if *index_dtype* is an integer type, and NaN, if
+                *index_dtype* is a floating point types.
+
+        Returns:
+            The indexes and their fractions as a tuple of numpy int64
+            and float64 arrays.
         """
         return get_dataset_indexes(
             self._dataset,
@@ -258,54 +288,63 @@ class DatasetAccessor:
     def chunk(
         self, chunk_sizes: Dict[str, int] = None, format_name: str = None
     ) -> xr.Dataset:
-        """
-        Chunk this dataset and update encodings for given format.
+        """Chunk this dataset and update encodings for given format.
 
-        :param chunk_sizes: mapping from dimension name to new chunk size
-        :param format_name: format, e.g. "zarr" or "netcdf4"
-        :return: the re-chunked dataset
+        Args:
+            chunk_sizes: mapping from dimension name to new chunk size
+            format_name: format, e.g. "zarr" or "netcdf4"
+
+        Returns:
+            the re-chunked dataset
         """
         return chunk_dataset(
             self._dataset, chunk_sizes=chunk_sizes, format_name=format_name
         )
 
     def vars_to_dim(self, dim_name: str = "newdim"):
-        """
-        Convert data variables into a dimension
+        """Convert data variables into a dimension
 
-        :param dim_name: The name of the new dimension ['vars']
-        :return: A new xcube dataset with the new dimension.
+        Args:
+            dim_name: The name of the new dimension ['vars']
+
+        Returns:
+            A new xcube dataset with the new dimension.
         """
         return vars_to_dim(self._dataset, dim_name)
 
     def dump(self, var_names=None, show_var_encoding=False) -> str:
-        """
-        Dump this dataset or its variables into a text string.
+        """Dump this dataset or its variables into a text string.
 
-        :param var_names: names of variables to be dumped
-        :param show_var_encoding: also dump variable encodings?
-        :return: the dataset dump
+        Args:
+            var_names: names of variables to be dumped
+            show_var_encoding: also dump variable encodings?
+
+        Returns:
+            the dataset dump
         """
         return dump_dataset(
             self._dataset, var_names=var_names, show_var_encoding=show_var_encoding
         )
 
     def verify(self) -> List[str]:
-        """
-        Verify that this dataset is a valid xcube dataset.
+        """Verify that this dataset is a valid xcube dataset.
 
         Returns a list of issues, which is empty if this dataset is a valid xcube dataset.
 
-        :return: List of issues or empty list.
+        Returns:
+            List of issues or empty list.
         """
         return verify_cube(self._dataset)
 
     def select_variables_subset(self, var_names: Sequence[str] = None):
-        """
-        Select data variable from given *dataset* and create new dataset.
+        """Select data variable from given *dataset* and create new dataset.
 
-        :param var_names: The names of data variables to select.
-        :return: A new dataset. It is empty, if *var_names* is empty. It is *dataset*, if *var_names* is None.
+        Args:
+            var_names: The names of data variables to select.
+
+        Returns:
+            A new dataset. It is empty, if *var_names* is empty. It is
+            *dataset*, if *var_names* is None.
         """
         return select_variables_subset(self._dataset, var_names)
 
@@ -315,21 +354,32 @@ class DatasetAccessor:
         " class xcube.core.mldataset.MultiLevelDataset",
     )
     def levels(self, **kwargs) -> List[xr.Dataset]:
-        """
-        Transform this dataset into the levels of a multi-level pyramid with spatial resolution
+        """Transform this dataset into the levels of a multi-level pyramid with spatial resolution
         decreasing by a factor of two in both spatial dimensions.
 
         It is assumed that the spatial dimensions of each variable are the inner-most, that is, the last two elements
         of a variable's shape provide the spatial dimension sizes.
 
-        :param spatial_dims: If given, only variables are considered whose last to dimension elements match the given *spatial_dims*.
-        :param spatial_shape: If given, only variables are considered whose last to shape elements match the given *spatial_shape*.
-        :param spatial_tile_shape: If given, chunking will match the provided *spatial_tile_shape*.
-        :param var_names: Variables to consider. If None, all variables with at least two dimensions are considered.
-        :param max_num_levels: If given, the maximum number of pyramid levels.
-        :param post_process_level: If given, the function will be called for each level and must return a dataset.
-        :param progress_monitor: If given, the function will be called for each level.
-        :return: A list of dataset instances representing the multi-level pyramid.
+        Args:
+            spatial_dims: If given, only variables are considered whose
+                last to dimension elements match the given
+                *spatial_dims*.
+            spatial_shape: If given, only variables are considered whose
+                last to shape elements match the given *spatial_shape*.
+            spatial_tile_shape: If given, chunking will match the
+                provided *spatial_tile_shape*.
+            var_names: Variables to consider. If None, all variables
+                with at least two dimensions are considered.
+            max_num_levels: If given, the maximum number of pyramid
+                levels.
+            post_process_level: If given, the function will be called
+                for each level and must return a dataset.
+            progress_monitor: If given, the function will be called for
+                each level.
+
+        Returns:
+            A list of dataset instances representing the multi-level
+            pyramid.
         """
         return compute_levels(self._dataset, **kwargs)
 

@@ -54,8 +54,9 @@ class ZarrStoreHolder:
     so that the dataset and its Zarr store are no longer in sync.
     This may be an issue and limit the application of the new property.
 
-    :param dataset: The xarray dataset that is
-        associated with a Zarr store.
+    Args:
+        dataset: The xarray dataset that is associated with a Zarr
+            store.
     """
 
     def __init__(self, dataset: xr.Dataset):
@@ -69,7 +70,8 @@ class ZarrStoreHolder:
         ``GenericZarrStore.from_dataset()`` to create and set
         one.
 
-        :return: The Zarr store.
+        Returns:
+            The Zarr store.
         """
         if self._zarr_store is None:
             # Double-checked locking pattern
@@ -88,7 +90,9 @@ class ZarrStoreHolder:
 
     def set(self, zarr_store: collections.abc.MutableMapping) -> None:
         """Set the Zarr store of a dataset.
-        :param zarr_store: The Zarr store.
+
+        Args:
+            zarr_store: The Zarr store.
         """
         assert_instance(zarr_store, collections.abc.MutableMapping, name="zarr_store")
         with self._lock:

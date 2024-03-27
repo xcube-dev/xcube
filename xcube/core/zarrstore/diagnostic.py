@@ -29,7 +29,8 @@ class DiagnosticZarrStore(zarr.storage.Store):
     """A diagnostic Zarr store used for testing and investigating
     behaviour of Zarr and xarray's Zarr backend.
 
-    :param store: Wrapped Zarr store.
+    Args:
+        store: Wrapped Zarr store.
     """
 
     def __init__(self, store: collections.abc.MutableMapping):

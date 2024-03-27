@@ -72,13 +72,18 @@ def update_dataset_attrs(
 def update_dataset_spatial_attrs(
     dataset: xr.Dataset, update_existing: bool = False, in_place: bool = False
 ) -> xr.Dataset:
-    """
-    Update spatial CF/THREDDS attributes of given *dataset*.
+    """Update spatial CF/THREDDS attributes of given *dataset*.
 
-    :param dataset: The dataset.
-    :param update_existing: If ``True``, any existing attributes will be updated.
-    :param in_place: If ``True``, *dataset* will be modified in place and returned.
-    :return: A new dataset, if *in_place* if ``False`` (default), else the passed and modified *dataset*.
+    Args:
+        dataset: The dataset.
+        update_existing: If ``True``, any existing attributes will be
+            updated.
+        in_place: If ``True``, *dataset* will be modified in place and
+            returned.
+
+    Returns:
+        A new dataset, if *in_place* if ``False`` (default), else the
+        passed and modified *dataset*.
     """
     if not in_place:
         dataset = dataset.copy()
@@ -99,13 +104,18 @@ def update_dataset_spatial_attrs(
 def update_dataset_temporal_attrs(
     dataset: xr.Dataset, update_existing: bool = False, in_place: bool = False
 ) -> xr.Dataset:
-    """
-    Update temporal CF/THREDDS attributes of given *dataset*.
+    """Update temporal CF/THREDDS attributes of given *dataset*.
 
-    :param dataset: The dataset.
-    :param update_existing: If ``True``, any existing attributes will be updated.
-    :param in_place: If ``True``, *dataset* will be modified in place and returned.
-    :return: A new dataset, if *in_place* is ``False`` (default), else the passed and modified *dataset*.
+    Args:
+        dataset: The dataset.
+        update_existing: If ``True``, any existing attributes will be
+            updated.
+        in_place: If ``True``, *dataset* will be modified in place and
+            returned.
+
+    Returns:
+        A new dataset, if *in_place* is ``False`` (default), else the
+        passed and modified *dataset*.
     """
     coord_data = [_TIME_ATTRS_DATA]
     if not in_place:
@@ -164,8 +174,7 @@ def update_dataset_temporal_attrs(
 def update_dataset_var_attrs(
     dataset: xr.Dataset, var_attrs_list: NameDictPairList
 ) -> xr.Dataset:
-    """
-    Update the attributes of variables in given *dataset*.
+    """Update the attributes of variables in given *dataset*.
     Optionally rename variables according to a given attribute named "name".
 
     *var_attrs_list* must be a sequence of pairs of the form (<var_name>, <var_attrs>) where <var_name> is a string
@@ -173,9 +182,13 @@ def update_dataset_var_attrs(
     If <var_attrs> contains an attribute "name", the variable named <var_name> will be renamed to that attribute's
     value.
 
-    :param dataset: A dataset.
-    :param var_attrs_list: List of tuples of the form (variable name, properties dictionary).
-    :return: A shallow copy of *dataset* with updated / renamed variables.
+    Args:
+        dataset: A dataset.
+        var_attrs_list: List of tuples of the form (variable name,
+            properties dictionary).
+
+    Returns:
+        A shallow copy of *dataset* with updated / renamed variables.
     """
     if not var_attrs_list:
         return dataset
@@ -222,15 +235,16 @@ def update_dataset_chunk_encoding(
     format_name: str = None,
     in_place: bool = False,
 ) -> xr.Dataset:
-    """
-    Update each variable's encoding in *dataset* with respect to *chunk_sizes*
+    """Update each variable's encoding in *dataset* with respect to *chunk_sizes*
     so *dataset* is written in chunks for given *format_name*.
 
-    :param dataset: input dataset.
-    :param chunk_sizes: the chunk sizes to be used for the encoding.
-        If None, any chunking encoding is removed.
-    :param format_name: format name, e.g. "zarr" or "netcdf4".
-    :param in_place: If ``True``, *dataset* will be modified in place and returned.
+    Args:
+        dataset: input dataset.
+        chunk_sizes: the chunk sizes to be used for the encoding. If
+            None, any chunking encoding is removed.
+        format_name: format name, e.g. "zarr" or "netcdf4".
+        in_place: If ``True``, *dataset* will be modified in place and
+            returned.
     """
     if format_name == FORMAT_NAME_ZARR:
         chunk_sizes_attr_name = "chunks"

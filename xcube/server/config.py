@@ -177,8 +177,11 @@ def get_url_prefix(config: Mapping[str, Any]) -> str:
     """Get the sanitized URL prefix so, if given, it starts with
     a leading slash and ends without one.
 
-    :param config: Server configuration.
-    :return: Sanitized URL prefix, may be an empty string.
+    Args:
+        config: Server configuration.
+
+    Returns:
+        Sanitized URL prefix, may be an empty string.
     """
     return _sanitize_url_prefix(config.get("url_prefix"))
 
@@ -187,8 +190,11 @@ def get_reverse_url_prefix(config: Mapping[str, Any]) -> str:
     """Get the sanitized reverse URL prefix so, if given, it starts with
     a leading slash and ends without one.
 
-    :param config: Server configuration.
-    :return: Sanitized URL prefix, may be an empty string.
+    Args:
+        config: Server configuration.
+
+    Returns:
+        Sanitized URL prefix, may be an empty string.
     """
     return _sanitize_url_prefix(
         config.get("reverse_url_prefix", config.get("url_prefix"))
@@ -199,8 +205,11 @@ def _sanitize_url_prefix(url_prefix: Optional[str]) -> str:
     """Get a sanitized URL prefix so, if given, it starts with
     a leading slash and ends without one.
 
-    :param url_prefix: URL prefix path.
-    :return: Sanitized URL prefix path, may be an empty string.
+    Args:
+        url_prefix: URL prefix path.
+
+    Returns:
+        Sanitized URL prefix path, may be an empty string.
     """
     if not url_prefix:
         return ""

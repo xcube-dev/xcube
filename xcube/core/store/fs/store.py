@@ -693,8 +693,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
 
 class FsDataStore(BaseFsDataStore, FsAccessor):
-    """
-    Specialization of a :class:BaseFsDataStore that
+    """Specialization of a :class:BaseFsDataStore that
     also implements a :class:FsAccessor which serves
     the filesystem.
 
@@ -708,20 +707,21 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
     * ``includes``: if not given or if any pattern matches the identifier,
       the identifier is reported.
 
-    :param root: Root or base directory.
-        Defaults to "".
-    :param max_depth: Maximum recursion depth. None means limitless.
-        Defaults to 1.
-    :param read_only: Whether this is a read-only store.
-        Defaults to False.
-    :param includes: Optional sequence of wildcards that include
-        certain filesystem paths. Affects the data identifiers (paths)
-        returned by `get_data_ids()`. By default, all paths are included.
-    :param excludes: Optional sequence of wildcards that exclude
-        certain filesystem paths. Affects the data identifiers (paths)
-        returned by `get_data_ids()`. By default, no paths are excluded.
-    :param storage_options: Parameters specific to the underlying filesystem.
-        Used to instantiate the filesystem.
+    Args:
+        root: Root or base directory. Defaults to "".
+        max_depth: Maximum recursion depth. None means limitless.
+            Defaults to 1.
+        read_only: Whether this is a read-only store. Defaults to False.
+        includes: Optional sequence of wildcards that include certain
+            filesystem paths. Affects the data identifiers (paths)
+            returned by `get_data_ids()`. By default, all paths are
+            included.
+        excludes: Optional sequence of wildcards that exclude certain
+            filesystem paths. Affects the data identifiers (paths)
+            returned by `get_data_ids()`. By default, no paths are
+            excluded.
+        storage_options: Parameters specific to the underlying
+            filesystem. Used to instantiate the filesystem.
     """
 
     def __init__(

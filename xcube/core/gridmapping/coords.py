@@ -70,8 +70,7 @@ class CoordsGridMapping(GridMapping, abc.ABC):
 
 
 class Coords1DGridMapping(CoordsGridMapping):
-    """
-    Grid mapping constructed from
+    """Grid mapping constructed from
     1D coordinate variables and a CRS.
     """
 
@@ -81,8 +80,7 @@ class Coords1DGridMapping(CoordsGridMapping):
 
 
 class Coords2DGridMapping(CoordsGridMapping):
-    """
-    Grid mapping constructed from
+    """Grid mapping constructed from
     2D coordinate variables and a CRS.
     """
 
@@ -313,24 +311,24 @@ def grid_mapping_to_coords(
     reuse_coords: bool = False,
     exclude_bounds: bool = False,
 ) -> Dict[str, xr.DataArray]:
-    """
-    Get CF-compliant axis coordinate variables and cell
+    """Get CF-compliant axis coordinate variables and cell
     boundary coordinate variables.
 
     Defined only for grid mappings with regular x,y coordinates.
 
-    :param grid_mapping: A regular grid mapping.
-    :param xy_var_names: Optional coordinate variable
-        names (x_var_name, y_var_name).
-    :param xy_dim_names: Optional coordinate dimensions
-        names (x_dim_name, y_dim_name).
-    :param reuse_coords: Whether to either reuse target
-        coordinate arrays from target_gm or to compute
-        new ones.
-    :param exclude_bounds: If True, do not create
-        bounds coordinates. Defaults to False. Ignored if
-        *reuse_coords* is True.
-    :return: dictionary with coordinate variables
+    Args:
+        grid_mapping: A regular grid mapping.
+        xy_var_names: Optional coordinate variable names (x_var_name,
+            y_var_name).
+        xy_dim_names: Optional coordinate dimensions names (x_dim_name,
+            y_dim_name).
+        reuse_coords: Whether to either reuse target coordinate arrays
+            from target_gm or to compute new ones.
+        exclude_bounds: If True, do not create bounds coordinates.
+            Defaults to False. Ignored if *reuse_coords* is True.
+
+    Returns:
+        dictionary with coordinate variables
     """
 
     if xy_var_names:

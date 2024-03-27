@@ -34,9 +34,7 @@ from ...datatype import GEO_DATA_FRAME_TYPE
 
 
 class GeoDataFrameFsDataAccessor(FsDataAccessor):
-    """
-    Extension name: "geodataframe:<format_id>:<protocol>"
-    """
+    """Extension name: 'geodataframe:<format_id>:<protocol>'."""
 
     @classmethod
     def get_data_type(cls) -> DataType:
@@ -92,9 +90,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor):
 
 
 class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor):
-    """
-    Extension name: "geodataframe:shapefile:<protocol>"
-    """
+    """Extension name: 'geodataframe:shapefile:<protocol>'."""
 
     @classmethod
     def get_format_id(cls) -> str:
@@ -106,9 +102,7 @@ class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor):
 
 
 class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor):
-    """
-    Extension name: "geodataframe:geojson:<protocol>"
-    """
+    """Extension name: 'geodataframe:geojson:<protocol>'."""
 
     @classmethod
     def get_format_id(cls) -> str:

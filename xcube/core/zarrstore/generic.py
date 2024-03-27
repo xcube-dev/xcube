@@ -42,8 +42,7 @@ OnClose = Callable[[Dict[str, Any]], None]
 
 
 class GenericArray(Dict[str, any]):
-    """
-    Represent a generic array in the ``GenericZarrStore`` as
+    """Represent a generic array in the ``GenericZarrStore`` as
     dictionary of properties.
 
     Although all properties of this class are optional,
@@ -90,41 +89,42 @@ class GenericArray(Dict[str, any]):
     Note that if the value of a named keyword argument is None,
     it will not be stored.
 
-    :param array: Optional array info dictionary
-    :param name: Optional array name
-    :param data: Optional array data.
-        Mutually exclusive with *get_data*.
-        Must be a bytes object or a numpy array.
-    :param get_data: Optional array data chunk getter.
-        Mutually exclusive with *data*.
-        Called for a requested data chunk of an array.
-        Must return a bytes object or a numpy array.
-    :param get_data_params: Optional keyword-arguments passed
-        to *get_data*.
-    :param dtype: Optional array data type.
-        Either a string using syntax of the Zarr spec or a ``numpy.dtype``.
-        For string encoded data types, see
-        https://zarr.readthedocs.io/en/stable/spec/v2.html#data-type-encoding
-    :param dims: Optional sequence of dimension names.
-    :param shape: Optional sequence of shape sizes for each dimension.
-    :param chunks: Optional sequence of chunk sizes for each dimension.
-    :param fill_value: Optional fill value, see
-        https://zarr.readthedocs.io/en/stable/spec/v2.html#fill-value-encoding
-    :param compressor: Optional compressor.
-        If given, it must be an instance of ``numcodecs.abc.Codec``.
-    :param filters: Optional sequence of filters, see
-        https://zarr.readthedocs.io/en/stable/spec/v2.html#filters.
-    :param order: Optional array endian ordering.
-        If given, must be "C" or "F". Defaults to "C".
-    :param attrs: Optional array attributes.
-        If given, must be JSON-serializable.
-    :param on_close: Optional array close handler.
-        Called if the store is closed.
-    :param chunk_encoding: Optional encoding type of the chunk
-        data returned for the array. Can be "bytes" (the default)
-        or "ndarray" for array chunks that are numpy.ndarray instances.
-    :param kwargs: Other keyword arguments passed directly to the
-        dictionary constructor.
+    Args:
+        array: Optional array info dictionary
+        name: Optional array name
+        data: Optional array data. Mutually exclusive with *get_data*.
+            Must be a bytes object or a numpy array.
+        get_data: Optional array data chunk getter. Mutually exclusive
+            with *data*. Called for a requested data chunk of an array.
+            Must return a bytes object or a numpy array.
+        get_data_params: Optional keyword-arguments passed to
+            *get_data*.
+        dtype: Optional array data type. Either a string using syntax of
+            the Zarr spec or a ``numpy.dtype``. For string encoded data
+            types, see
+            https://zarr.readthedocs.io/en/stable/spec/v2.html#data-
+            type-encoding
+        dims: Optional sequence of dimension names.
+        shape: Optional sequence of shape sizes for each dimension.
+        chunks: Optional sequence of chunk sizes for each dimension.
+        fill_value: Optional fill value, see
+            https://zarr.readthedocs.io/en/stable/spec/v2.html#fill-
+            value-encoding
+        compressor: Optional compressor. If given, it must be an
+            instance of ``numcodecs.abc.Codec``.
+        filters: Optional sequence of filters, see
+            https://zarr.readthedocs.io/en/stable/spec/v2.html#filters.
+        order: Optional array endian ordering. If given, must be "C" or
+            "F". Defaults to "C".
+        attrs: Optional array attributes. If given, must be JSON-
+            serializable.
+        on_close: Optional array close handler. Called if the store is
+            closed.
+        chunk_encoding: Optional encoding type of the chunk data
+            returned for the array. Can be "bytes" (the default) or
+            "ndarray" for array chunks that are numpy.ndarray instances.
+        kwargs: Other keyword arguments passed directly to the
+            dictionary constructor.
     """
 
     def __init__(

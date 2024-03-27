@@ -50,8 +50,7 @@ class ServiceConfig(JsonObject):
 
     @classmethod
     def normalize(cls, service_config: ServiceConfigLike) -> "ServiceConfig":
-        """
-        Normalize given *service_config* to an instance of
+        """Normalize given *service_config* to an instance of
         :class:ServiceConfig.
 
         If *service_config* is already a ServiceConfig it is returned as is.

@@ -3,11 +3,14 @@ from typing import Type
 
 
 def register_json_formatter(cls: Type, to_dict_method_name: str = "to_dict"):
-    """
-    TODO
-    :param cls:
-    :param to_dict_method_name:
-    :return:
+    """TODO
+
+    Args:
+        cls
+        to_dict_method_name
+
+    Returns:
+
     """
     if not hasattr(cls, to_dict_method_name) or not callable(
         getattr(cls, to_dict_method_name)
@@ -33,9 +36,7 @@ def register_json_formatter(cls: Type, to_dict_method_name: str = "to_dict"):
 
 
 def enable_asyncio():
-    """
-    Enable asyncio package to be executable in Jupyter Notebooks.
-    """
+    """Enable asyncio package to be executable in Jupyter Notebooks."""
     try:
         import IPython
 

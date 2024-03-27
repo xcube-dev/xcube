@@ -35,25 +35,22 @@ def compute_ij_bboxes(
     ij_border: int,
     ij_boxes: np.ndarray,
 ):
-    """
-    Compute bounding boxes in the image's i,j coordinates from given
+    """Compute bounding boxes in the image's i,j coordinates from given
     x,y coordinates *x_image*, *y_image* and bounding boxes
     in x,y coordinates *xy_boxes*.
 
     *ij_boxes* must be pre-allocated to match shape of
     *xy_boxes* and initialised with negative integers.
 
-    :param x_image: The x coordinates image.
-        A 2D array of shape (height, width).
-    :param y_image: The y coordinates image.
-        A 2D array of shape (height, width).
-    :param xy_boxes: The x,y bounding boxes.
-    :param xy_border: A border added to the
-        x,y bounding boxes.
-    :param ij_border: A border added to the resulting
-        i,j bounding boxes.
-    :param ij_boxes: The resulting
-        i,j bounding boxes.
+    Args:
+        x_image: The x coordinates image. A 2D array of shape (height,
+            width).
+        y_image: The y coordinates image. A 2D array of shape (height,
+            width).
+        xy_boxes: The x,y bounding boxes.
+        xy_border: A border added to the x,y bounding boxes.
+        ij_border: A border added to the resulting i,j bounding boxes.
+        ij_boxes: The resulting i,j bounding boxes.
     """
     h = x_image.shape[0]
     w = x_image.shape[1]

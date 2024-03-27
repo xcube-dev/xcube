@@ -33,9 +33,10 @@ class OpInfo:
     ):
         """Create information about a compute operation
 
-        :param params_schema: map of parameter names to their JSON Schema
-                              definitions
-        :param param_py_types: map of parameter names to their Python types
+        Args:
+            params_schema: map of parameter names to their JSON Schema
+                definitions
+            param_py_types: map of parameter names to their Python types
         """
         self.params_schema = params_schema
         self.param_py_types = param_py_types
@@ -46,8 +47,11 @@ class OpInfo:
         The supplied function is modified in-place (with the addition of an
         attribute referencing this information instance) and returned.
 
-        :param function: the function to associate with this information
-        :return: the same function (with an attribute added)
+        Args:
+            function: the function to associate with this information
+
+        Returns:
+            the same function (with an attribute added)
         """
         setattr(function, _ATTR_NAME_OP_INFO, self)
         return function
@@ -56,10 +60,15 @@ class OpInfo:
     def get_op_info(cls, op: Callable) -> "OpInfo":
         """Get the information object for a specified function
 
-        :param op: the function for which information is requested
-        :return: the function’s associated information object, if present
-        :raises ValueError: if there is no associated information object
-                            (i.e. the function is not an operation)
+        Args:
+            op: the function for which information is requested
+
+        Returns:
+            the function’s associated information object, if present
+
+        Raises:
+            ValueError: if there is no associated information object
+                (i.e. the function is not an operation)
         """
         op_info = getattr(op, _ATTR_NAME_OP_INFO, None)
         if not isinstance(op_info, OpInfo):
@@ -75,8 +84,11 @@ class OpInfo:
         The returned information object contains a parameter type dictionary
         and JSON schema created by analysis of the supplied function.
 
-        :param op: a function
-        :return: operation information for the supplied function
+        Args:
+            op: a function
+
+        Returns:
+            operation information for the supplied function
         """
         members = dict(inspect.getmembers(op))
         annotations = members.get("__annotations__")
@@ -157,8 +169,9 @@ class OpInfo:
         as the value in the returned type dictionary. Otherwise `None` will
         be used.
 
-        :return: a dictionary mapping operation parameter names to their
-                 effective Python types
+        Returns:
+            a dictionary mapping operation parameter names to their
+            effective Python types
         """
         py_types = self.param_py_types.copy()
         for param_name, param_schema in self.param_schemas.items():
@@ -176,15 +189,16 @@ class OpInfo:
 
     @property
     def param_schemas(self) -> Dict[str, Any]:
-        """
-        :return: a mapping of parameter names to their JSON schemas
+        """Returns:
+        a mapping of parameter names to their JSON schemas
         """
         return self.params_schema.get("properties", {})
 
     def set_param_schemas(self, schemas: Dict[str, Any]):
         """Set JSON schemas for operation parameters
 
-        :param schemas: a mapping of parameter names to their JSON schemas
+        Args:
+            schemas: a mapping of parameter names to their JSON schemas
         """
         self.params_schema["properties"] = schemas
 
@@ -196,17 +210,19 @@ class OpInfo:
         with any schemas for the individual parameters in a sub-dictionary
         under the `properties` key.
 
-        :param schema: the schema with which to update the parameters
-                       dictionary schema
+        Args:
+            schema: the schema with which to update the parameters
+                dictionary schema
         """
         self.params_schema.update(schema)
 
     def update_param_schema(self, param_name: str, schema: Dict[str, Any]):
         """Update the JSON Schema for a single parameter
 
-        :param param_name: name of the parameter
-        :param schema: schema with which to update the parameter’s current
-                       schema
+        Args:
+            param_name: name of the parameter
+            schema: schema with which to update the parameter’s
+                current schema
         """
         param_schemas = self.param_schemas
         param_schema = param_schemas.get(param_name, {})
@@ -218,15 +234,19 @@ class OpInfo:
     def get_param_py_type(self, param_name: str) -> PyType:
         """Get the Python type for a parameter
 
-        :param param_name: name of parameter
-        :return: Python type of specified parameter
+        Args:
+            param_name: name of parameter
+
+        Returns:
+            Python type of specified parameter
         """
         return self.param_py_types[param_name]
 
     def set_param_py_type(self, param_name: str, py_type: PyType):
         """Set the Python type for a parameter
 
-        :param param_name: name of parameter
-        :param py_type: Python type of specified parameter
+        Args:
+            param_name: name of parameter
+            py_type: Python type of specified parameter
         """
         self.param_py_types[param_name] = py_type

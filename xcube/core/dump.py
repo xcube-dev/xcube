@@ -23,13 +23,15 @@ import xarray as xr
 
 
 def dump_dataset(dataset: xr.Dataset, var_names=None, show_var_encoding=False) -> str:
-    """
-    Dumps a dataset or variables into a text string.
+    """Dumps a dataset or variables into a text string.
 
-    :param dataset: input dataset
-    :param var_names: names of variables to be dumped
-    :param show_var_encoding: also dump variable encodings?
-    :return: the dataset dump
+    Args:
+        dataset: input dataset
+        var_names: names of variables to be dumped
+        show_var_encoding: also dump variable encodings?
+
+    Returns:
+        the dataset dump
     """
     lines = []
     if not var_names:
@@ -60,13 +62,15 @@ def dump_dataset(dataset: xr.Dataset, var_names=None, show_var_encoding=False) -
 
 
 def dump_var_encoding(var: xr.DataArray, header="Encoding:", indent=4) -> str:
-    """
-    Dump the encoding information of a variable into a text string.
+    """Dump the encoding information of a variable into a text string.
 
-    :param var: Dataset variable.
-    :param header: Title/header string.
-    :param indent: Indention in spaces.
-    :return: the variable dump
+    Args:
+        var: Dataset variable.
+        header: Title/header string.
+        indent: Indention in spaces.
+
+    Returns:
+        the variable dump
     """
     lines = [header]
     max_len = 0
