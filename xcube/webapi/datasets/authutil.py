@@ -33,16 +33,16 @@ def assert_scopes(
     granted_scopes: Optional[Set[str]],
     is_substitute: bool = False,
 ):
-    """
-    Assert scopes.
+    """Assert scopes.
     Raise ServiceAuthError if one of *required_scopes* is
     not in *granted_scopes*.
 
-    :param required_scopes: The list of required scopes
-    :param granted_scopes: The set of granted scopes.
-        If user is not authenticated, its value is None.
-    :param is_substitute: True, if the resource to be checked
-        is a substitute.
+    Args:
+        required_scopes: The list of required scopes
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
+        is_substitute: True, if the resource to be checked is a
+            substitute.
     """
     missing_scope = _get_missing_scope(
         required_scopes, granted_scopes, is_substitute=is_substitute
@@ -56,8 +56,7 @@ def check_scopes(
     granted_scopes: Optional[Set[str]],
     is_substitute: bool = False,
 ) -> bool:
-    """
-    Check scopes.
+    """Check scopes.
 
     This function is used to filter out a resource's sub-resources for
     which a given client has no permission.
@@ -66,12 +65,15 @@ def check_scopes(
     If *granted_scopes* exists and *is_substitute*, fail too.
     Else succeed.
 
-    :param required_scopes: The list of required scopes
-    :param granted_scopes: The set of granted scopes.
-        If user is not authenticated, its value is None.
-    :param is_substitute: True, if the resource to be checked
-        is a substitute.
-    :return: True, if scopes are ok.
+    Args:
+        required_scopes: The list of required scopes
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
+        is_substitute: True, if the resource to be checked is a
+            substitute.
+
+    Returns:
+        True, if scopes are ok.
     """
     return (
         _get_missing_scope(required_scopes, granted_scopes, is_substitute=is_substitute)
@@ -84,16 +86,18 @@ def _get_missing_scope(
     granted_scopes: Optional[Set[str]],
     is_substitute: bool = False,
 ) -> Optional[str]:
-    """
-    Return the first required scope that is
+    """Return the first required scope that is
     fulfilled by any granted scope
 
-    :param required_scopes: The list of required scopes
-    :param granted_scopes: The set of granted scopes.
-        If user is not authenticated, its value is None.
-    :param is_substitute: True, if the resource to be checked
-        is a substitute.
-    :return: The missing scope.
+    Args:
+        required_scopes: The list of required scopes
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
+        is_substitute: True, if the resource to be checked is a
+            substitute.
+
+    Returns:
+        The missing scope.
     """
     is_authenticated = granted_scopes is not None
     if is_authenticated:

@@ -116,25 +116,18 @@ class ProgressState:
 
 
 class ProgressObserver(ABC):
-    """
-    A progress observer is notified about nested state changes when using the
+    """A progress observer is notified about nested state changes when using the
     :class:observe_progress context manager.
     """
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
-        """
-        Called, if an observed code block begins execution.
-        """
+        """Called, if an observed code block begins execution."""
 
     def on_update(self, state_stack: Sequence[ProgressState]):
-        """
-        Called, if the progress state has changed within an observed code block.
-        """
+        """Called, if the progress state has changed within an observed code block."""
 
     def on_end(self, state_stack: Sequence[ProgressState]):
-        """
-        Called, if an observed block of code ends execution.
-        """
+        """Called, if an observed block of code ends execution."""
 
     def activate(self):
         _ProgressContext.instance().add_observer(self)
@@ -217,11 +210,12 @@ _ProgressContext.set_instance()
 
 
 class new_progress_observers:
-    """
-    Takes zero or more progress observers and activates them in the enclosed context.
+    """Takes zero or more progress observers and activates them in the enclosed context.
     Progress observers from an outer context will no longer be active.
 
-    :param observers: progress observers that will temporarily replace existing ones.
+    Args:
+        observers: progress observers that will temporarily replace
+            existing ones.
     """
 
     def __init__(self, *observers: ProgressObserver):
@@ -238,12 +232,12 @@ class new_progress_observers:
 
 
 class add_progress_observers:
-    """
-    Takes zero or more progress observers and uses them only in the
+    """Takes zero or more progress observers and uses them only in the
     enclosed context. Any progress observers from an outer context
     remain active.
 
-    :param observers: progress observers to be added temporarily.
+    Args:
+        observers: progress observers to be added temporarily.
     """
 
     def __init__(self, *observers: ProgressObserver):
@@ -259,11 +253,11 @@ class add_progress_observers:
 
 
 class observe_progress:
-    """
-    Context manager for observing progress in the enclosed context.
+    """Context manager for observing progress in the enclosed context.
 
-    :param label: A label.
-    :param total_work: The total work.
+    Args:
+        label: A label.
+        total_work: The total work.
     """
 
     def __init__(self, label: str, total_work: float):
@@ -311,14 +305,14 @@ class observe_progress:
 
 
 class observe_dask_progress(dask.callbacks.Callback):
-    """
-    Observe progress made by Dask tasks.
+    """Observe progress made by Dask tasks.
 
-    :param label: A label.
-    :param total_work: The total work.
-    :param interval: Time in seconds to between progress reports.
-    :param initial_interval: Time in seconds to wait before progress
-        is reported.
+    Args:
+        label: A label.
+        total_work: The total work.
+        interval: Time in seconds to between progress reports.
+        initial_interval: Time in seconds to wait before progress is
+            reported.
     """
 
     def __init__(

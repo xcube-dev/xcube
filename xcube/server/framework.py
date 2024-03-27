@@ -32,59 +32,60 @@ from .asyncexec import AsyncExecution
 
 
 class Framework(AsyncExecution, abc.ABC):
-    """
-    An abstract web server framework.
-    """
+    """An abstract web server framework."""
 
     @property
     @abc.abstractmethod
     def config_schema(self) -> Optional[JsonObjectSchema]:
         """Returns an optional JSON Schema for
         the web server configuration. Returning None
-        indicates that configuration is not possible."""
+        indicates that configuration is not possible.
+        """
 
     @abc.abstractmethod
     def add_static_routes(self, routes: Sequence[ApiStaticRoute], url_prefix: str):
-        """
-        Adds the given static routes to this web server.
+        """Adds the given static routes to this web server.
 
-        :param routes: The static routes to be added.
-        :param url_prefix: URL prefix, may be an empty string.
+        Args:
+            routes: The static routes to be added.
+            url_prefix: URL prefix, may be an empty string.
         """
 
     @abc.abstractmethod
     def add_routes(self, routes: Sequence[ApiRoute], url_prefix: str):
-        """
-        Adds the given routes to this web server.
+        """Adds the given routes to this web server.
 
-        :param routes: The routes to be added.
-        :param url_prefix: URL prefix, may be an empty string.
+        Args:
+            routes: The routes to be added.
+            url_prefix: URL prefix, may be an empty string.
         """
 
     @abc.abstractmethod
     def update(self, ctx: Context):
-        """
-        Called, when the server context has changed.
+        """Called, when the server context has changed.
 
         This is the case immediately after instantiation and before
         start() is called. It may then be called on any context change,
         likely due to a configuration change.
 
-        :param ctx: The current server context.
+        Args:
+            ctx: The current server context.
         """
 
     @abc.abstractmethod
     def start(self, ctx: Context):
-        """
-        Starts the web service.
-        :param ctx: The initial server context.
+        """Starts the web service.
+
+        Args:
+            ctx: The initial server context.
         """
 
     @abc.abstractmethod
     def stop(self, ctx: Context):
-        """
-        Stops the web service.
-        :param ctx: The current server context.
+        """Stops the web service.
+
+        Args:
+            ctx: The current server context.
         """
 
 

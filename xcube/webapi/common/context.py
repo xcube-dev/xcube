@@ -69,8 +69,7 @@ class ResourcesContext(ApiContext):
 
     @property
     def can_authenticate(self) -> bool:
-        """
-        Test whether the user can authenticate.
+        """Test whether the user can authenticate.
         Even if authentication service is configured, user authentication
         may still be optional. In this case the server will publish
         the resources configured to be free for everyone.
@@ -79,9 +78,7 @@ class ResourcesContext(ApiContext):
 
     @property
     def must_authenticate(self) -> bool:
-        """
-        Test whether the user must authenticate.
-        """
+        """Test whether the user must authenticate."""
         return self._auth_ctx.must_authenticate
 
     @property

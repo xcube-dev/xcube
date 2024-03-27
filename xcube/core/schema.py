@@ -28,14 +28,16 @@ from xcube.core.gridmapping import GridMapping
 
 
 class CubeSchema:
-    """
-    A schema that can be used to create new xcube datasets.
+    """A schema that can be used to create new xcube datasets.
     The given *shape*, *dims*, and *chunks*, *coords* apply to all data variables.
 
-    :param shape: A tuple of dimension sizes.
-    :param coords: A dictionary of coordinate variables. Must have values for all *dims*.
-    :param dims: A sequence of dimension names. Defaults to ``('time', 'lat', 'lon')``.
-    :param chunks: A tuple of chunk sizes in each dimension.
+    Args:
+        shape: A tuple of dimension sizes.
+        coords: A dictionary of coordinate variables. Must have values
+            for all *dims*.
+        dims: A sequence of dimension names. Defaults to ``('time',
+            'lat', 'lon')``.
+        chunks: A tuple of chunk sizes in each dimension.
     """
 
     def __init__(
@@ -216,11 +218,13 @@ class CubeSchema:
 
 # TODO (forman): code duplication with xcube.core.verify._check_data_variables(), line 76
 def get_cube_schema(cube: xr.Dataset) -> CubeSchema:
-    """
-    Derive cube schema from given *cube*.
+    """Derive cube schema from given *cube*.
 
-    :param cube: The data cube.
-    :return: The cube schema.
+    Args:
+        cube: The data cube.
+
+    Returns:
+        The cube schema.
     """
 
     xy_var_names = get_dataset_xy_var_names(
@@ -393,15 +397,16 @@ def get_dataset_bounds_var_name(
 
 
 def get_dataset_chunks(dataset: xr.Dataset) -> Dict[Hashable, int]:
-    """
-    Get the most common chunk sizes for each
+    """Get the most common chunk sizes for each
     chunked dimension of *dataset*.
 
     Note: Only data variables are considered.
 
-    :param dataset: A dataset.
-    :return: A dictionary that maps dimension names
-        to common chunk sizes.
+    Args:
+        dataset: A dataset.
+
+    Returns:
+        A dictionary that maps dimension names to common chunk sizes.
     """
 
     # Record the frequencies of chunk sizes for
@@ -448,20 +453,22 @@ def rechunk_cube(
     chunks: Optional[Dict[str, int]] = None,
     tile_size: Optional[Tuple[int, int]] = None,
 ) -> Tuple[xr.Dataset, GridMapping]:
-    """
-    Re-chunk data variables of *cube* so they all share the same chunk
+    """Re-chunk data variables of *cube* so they all share the same chunk
     sizes for their dimensions.
 
     This functions rechunks *cube* for maximum compatibility with
     the Zarr format. Therefore it removes the "chunks" encoding
     from all variables.
 
-    :param cube: A data cube
-    :param gm: The cube's grid mapping
-    :param chunks: Optional mapping of dimension names to chunk sizes
-    :param tile_size: Optional tile sizes, i.e. chunk size of
-        spatial dimensions, given as (width, height)
-    :return: A potentially rechunked *cube* and adjusted grid mapping.
+    Args:
+        cube: A data cube
+        gm: The cube's grid mapping
+        chunks: Optional mapping of dimension names to chunk sizes
+        tile_size: Optional tile sizes, i.e. chunk size of spatial
+            dimensions, given as (width, height)
+
+    Returns:
+        A potentially rechunked *cube* and adjusted grid mapping.
     """
 
     # get initial, common cube chunk sizes from given cube

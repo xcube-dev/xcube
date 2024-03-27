@@ -152,7 +152,8 @@ def freeze_value(value: Any) -> Any:
 
 def defrost_value(value: Any) -> Any:
     """Defrost given *value*, that is, return a deeply
-    mutable version of it."""
+    mutable version of it.
+    """
     if isinstance(value, Frozen):
         return value.defrost()
     return value

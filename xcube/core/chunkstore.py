@@ -258,8 +258,7 @@ def _str_to_bytes(s: str):
     version="0.12.1",
 )
 class LoggingStore(LoggingZarrStore):
-    """
-    A Zarr Store that logs all method calls on another store *other*
+    """A Zarr Store that logs all method calls on another store *other*
     including execution time.
     """
 
@@ -281,6 +280,4 @@ class LoggingStore(LoggingZarrStore):
     version="0.12.1",
 )
 class MutableLoggingStore(LoggingStore):
-    """
-    Mutable version of :class:LoggingStore.
-    """
+    """Mutable version of :class:LoggingStore."""

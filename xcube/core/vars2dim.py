@@ -30,14 +30,20 @@ def vars_to_dim(
     var_name="data",
     cube_asserted: bool = False,
 ):
-    """
-    Convert data variables into a dimension.
+    """Convert data variables into a dimension.
 
-    :param cube: The xcube dataset.
-    :param dim_name: The name of the new dimension and coordinate variable. Defaults to 'var'.
-    :param var_name: The name of the new, single data variable. Defaults to 'data'.
-    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: A new xcube dataset with data variables turned into a new dimension.
+    Args:
+        cube: The xcube dataset.
+        dim_name: The name of the new dimension and coordinate variable.
+            Defaults to 'var'.
+        var_name: The name of the new, single data variable. Defaults to
+            'data'.
+        cube_asserted: If False, *cube* will be verified, otherwise it
+            is expected to be a valid cube.
+
+    Returns:
+        A new xcube dataset with data variables turned into a new
+        dimension.
     """
 
     if not cube_asserted:

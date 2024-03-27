@@ -51,9 +51,7 @@ class AuthContext(ApiContext):
 
     @property
     def must_authenticate(self) -> bool:
-        """
-        Test whether the user must authenticate.
-        """
+        """Test whether the user must authenticate."""
         return self.auth_config is not None and self.auth_config.is_required
 
     @cached_property

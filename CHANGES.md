@@ -10,6 +10,11 @@
 
 * Renamed xcube's main branch from `master` to `main` on GitHub.
 
+* xcube's code base changed its docstring format from reST style to the much better 
+  readable [Google style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
+  Existing docstrings have been converted using the awesome [docconvert](https://github.com/cbillingham/docconvert) 
+  tool.
+
 
 ## Changes in 1.4.1
 

@@ -58,25 +58,27 @@ def new_temp_file(
     dir_path: str = None,
     text_mode: bool = False,
 ) -> Tuple[int, str]:
-    """
-    Create new temporary file using ``tempfile.mkstemp()```.
+    """Create new temporary file using ``tempfile.mkstemp()```.
     The file will be removed later when the process ends.
 
-    :param prefix: If not ``None``, the file name will
-        begin with that prefix; otherwise, a default prefix is used.
-    :param suffix: If not ``None``, the file name will
-        end with that suffix, otherwise there will be no suffix.
-    :param dir_path: If not ``None``, the file will be created
-        in that directory; otherwise, a default directory is used.
-        The default directory is chosen from a platform-dependent
-        list, but the user of the application can control the
-        directory location by setting the *TMPDIR*, *TEMP* or *TMP*
-        environment variables.
-    :param text_mode: If specified and true, the file is opened in
-        text mode. Otherwise, (the default) the file is opened in
-        binary mode.
-    :return: A tuple comprising the file descriptor (an int) and the
-        absolute path to the new file.
+    Args:
+        prefix: If not ``None``, the file name will begin with that
+            prefix; otherwise, a default prefix is used.
+        suffix: If not ``None``, the file name will end with that
+            suffix, otherwise there will be no suffix.
+        dir_path: If not ``None``, the file will be created in that
+            directory; otherwise, a default directory is used. The
+            default directory is chosen from a platform-dependent list,
+            but the user of the application can control the directory
+            location by setting the *TMPDIR*, *TEMP* or *TMP*
+            environment variables.
+        text_mode: If specified and true, the file is opened in text
+            mode. Otherwise, (the default) the file is opened in binary
+            mode.
+
+    Returns:
+        A tuple comprising the file descriptor (an int) and the absolute
+        path to the new file.
     """
     prefix = DEFAULT_TEMP_FILE_PREFIX if prefix is None else prefix
     fd, file_path = tempfile.mkstemp(
@@ -86,12 +88,14 @@ def new_temp_file(
 
 
 def remove_dir_later(dir_path: str) -> str:
-    """
-    Remove directory later when the process ends.
+    """Remove directory later when the process ends.
     Removal failures are ignored.
 
-    :param dir_path: Path to directory
-    :return: The absolute path to the directory.
+    Args:
+        dir_path: Path to directory
+
+    Returns:
+        The absolute path to the directory.
     """
     dir_path = os.path.abspath(dir_path)
 
@@ -107,12 +111,14 @@ def remove_dir_later(dir_path: str) -> str:
 
 
 def remove_file_later(file_path: str) -> str:
-    """
-    Remove file later when the process ends.
+    """Remove file later when the process ends.
     Removal failures are ignored.
 
-    :param file_path: path to a file
-    :return: The absolute path to the file.
+    Args:
+        file_path: path to a file
+
+    Returns:
+        The absolute path to the file.
     """
     file_path = os.path.abspath(file_path)
 

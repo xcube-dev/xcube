@@ -27,16 +27,12 @@ from fsspec.implementations.local import LocalFileSystem
 
 
 def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
-    """
-    Check whether *fs* is a local filesystem.
-    """
+    """Check whether *fs* is a local filesystem."""
     return "file" in fs.protocol or isinstance(fs, LocalFileSystem)
 
 
 def get_fs_path_class(fs: fsspec.AbstractFileSystem) -> Type[pathlib.PurePath]:
-    """
-    Get the appropriate ``pathlib.PurePath`` class for the filesystem *fs*.
-    """
+    """Get the appropriate ``pathlib.PurePath`` class for the filesystem *fs*."""
     if is_local_fs(fs):
         # Will return PurePosixPath or a PureWindowsPath object
         return pathlib.PurePath
@@ -46,8 +42,7 @@ def get_fs_path_class(fs: fsspec.AbstractFileSystem) -> Type[pathlib.PurePath]:
 
 
 def resolve_path(path: pathlib.PurePath) -> pathlib.PurePath:
-    """
-    Resolve "." and ".." occurrences in *path* without I/O and
+    """Resolve "." and ".." occurrences in *path* without I/O and
     return a new path.
     """
     reversed_parts = reversed(path.parts)

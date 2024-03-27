@@ -51,20 +51,20 @@ R = TypeVar("R", bound=JsonObject)
 
 
 class RemoteCubeGenerator(CubeGenerator):
-    """
-    A cube generator that uses a remote cube generator remote.
+    """A cube generator that uses a remote cube generator remote.
 
     Creates cube views from one or more cube stores, resamples them to a
     common grid, optionally performs some cube transformation, and writes
     the resulting cube to some target cube store.
 
-    :param service_config: An remote configuration object.
-    :param verbosity: Level of verbosity, 0 means off.
-    :param raise_on_error: Whether to raise a CubeGeneratorError
-        exception on generator failures. If False, the default,
-        the returned result will have the "status" field set to "error"
-        while other fields such as "message", "traceback", "output"
-        provide more failure details.
+    Args:
+        service_config: An remote configuration object.
+        verbosity: Level of verbosity, 0 means off.
+        raise_on_error: Whether to raise a CubeGeneratorError exception
+            on generator failures. If False, the default, the returned
+            result will have the "status" field set to "error" while
+            other fields such as "message", "traceback", "output"
+            provide more failure details.
     """
 
     def __init__(
@@ -315,8 +315,7 @@ class RemoteCubeGenerator(CubeGenerator):
 
     @classmethod
     def __dump_json(cls, method, url, request_data, response_data):
-        """
-        Dump debug info as JSON to stdout.
+        """Dump debug info as JSON to stdout.
 
         Used for debugging only.
         """

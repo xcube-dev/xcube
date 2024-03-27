@@ -91,8 +91,7 @@ def compute(
     output_var_name: str,
     output_var_dtype: str,
 ):
-    """
-    Compute a cube from one or more other cubes.
+    """Compute a cube from one or more other cubes.
 
     The command computes a cube variable from other cube variables in CUBEs
     using a user-provided Python function in SCRIPT.

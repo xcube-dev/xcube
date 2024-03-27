@@ -47,18 +47,20 @@ def new_data_opener(
     extension_registry: Optional[ExtensionRegistry] = None,
     **opener_params,
 ) -> "DataOpener":
-    """
-    Get an instance of the data opener identified by *opener_id*.
+    """Get an instance of the data opener identified by *opener_id*.
 
     The optional, extra opener parameters *opener_params* may
     be used by data store (``xcube.core.store.DataStore``)
     implementations so they can share their internal state with the opener.
 
-    :param opener_id: The data opener identifier.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :param opener_params: Extra opener parameters.
-    :return: A data opener instance.
+    Args:
+        opener_id: The data opener identifier.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+        **opener_params: Extra opener parameters.
+
+    Returns:
+        A data opener instance.
     """
     assert_given(opener_id, "opener_id")
     extension_registry = extension_registry or get_extension_registry()
@@ -74,18 +76,20 @@ def new_data_writer(
     extension_registry: Optional[ExtensionRegistry] = None,
     **writer_params,
 ) -> "DataWriter":
-    """
-    Get an instance of the data writer identified by *writer_id*.
+    """Get an instance of the data writer identified by *writer_id*.
 
     The optional, extra writer parameters *writer_params* may be used by
     data store (``xcube.core.store.DataStore``) implementations so they
     can share their internal state with the writer.
 
-    :param writer_id: The data writer identifier.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :param writer_params: Extra writer parameters.
-    :return: A data writer instance.
+    Args:
+        writer_id: The data writer identifier.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+        **writer_params: Extra writer parameters.
+
+    Returns:
+        A data writer instance.
     """
     assert_given(writer_id, "writer_id")
     extension_registry = extension_registry or get_extension_registry()
@@ -100,14 +104,16 @@ def find_data_opener_extensions(
     predicate: ExtensionPredicate = None,
     extension_registry: Optional[ExtensionRegistry] = None,
 ) -> List[Extension]:
-    """
-    Get registered data opener extensions using the optional
+    """Get registered data opener extensions using the optional
     filter function *predicate*.
 
-    :param predicate: An optional filter function.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :return: List of matching extensions.
+    Args:
+        predicate: An optional filter function.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+
+    Returns:
+        List of matching extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
     return extension_registry.find_extensions(
@@ -119,14 +125,16 @@ def find_data_writer_extensions(
     predicate: ExtensionPredicate = None,
     extension_registry: Optional[ExtensionRegistry] = None,
 ) -> List[Extension]:
-    """
-    Get registered data writer extensions using the optional filter
+    """Get registered data writer extensions using the optional filter
     function *predicate*.
 
-    :param predicate: An optional filter function.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :return: List of matching extensions.
+    Args:
+        predicate: An optional filter function.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+
+    Returns:
+        List of matching extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
     return extension_registry.find_extensions(
@@ -137,17 +145,20 @@ def find_data_writer_extensions(
 def get_data_accessor_predicate(
     data_type: DataTypeLike = None, format_id: str = None, storage_id: str = None
 ) -> ExtensionPredicate:
-    """
-    Get a predicate that checks if a data accessor extensions's name is
+    """Get a predicate that checks if a data accessor extensions's name is
     compliant with *data_type*, *format_id*, *storage_id*.
 
-    :param data_type: Optional data data type to be supported.
-        May be given as type alias name, as a type,
-        or as a DataType instance.
-    :param format_id: Optional data format identifier to be supported.
-    :param storage_id: Optional data storage identifier to be supported.
-    :return: A filter function.
-    :raise DataStoreError: If an error occurs.
+    Args:
+        data_type: Optional data data type to be supported. May be given
+            as type alias name, as a type, or as a DataType instance.
+        format_id: Optional data format identifier to be supported.
+        storage_id: Optional data storage identifier to be supported.
+
+    Returns:
+        A filter function.
+
+    Raises:
+        DataStoreError: If an error occurs.
     """
     if any((data_type, format_id, storage_id)):
         data_type = DataType.normalize(data_type) if data_type is not None else None
@@ -182,8 +193,7 @@ def get_data_accessor_predicate(
 
 
 class DataOpener(ABC):
-    """
-    An interface that specifies a parameterized `open_data()` operation.
+    """An interface that specifies a parameterized `open_data()` operation.
 
     Possible open parameters are implementation-specific and
     are described by a JSON Schema.
@@ -196,8 +206,7 @@ class DataOpener(ABC):
 
     @abstractmethod
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
-        """
-        Get the schema for the parameters passed as *open_params* to
+        """Get the schema for the parameters passed as *open_params* to
         :meth:open_data(data_id, open_params).
         If *data_id* is given, the returned schema will be tailored
         to the constraints implied by the identified data resource.
@@ -205,29 +214,37 @@ class DataOpener(ABC):
         is optional, and if it is omitted, the returned schema will be
         less restrictive.
 
-        :param data_id: An optional data resource identifier.
-        :return: The schema for the parameters in *open_params*.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: An optional data resource identifier.
+
+        Returns:
+            The schema for the parameters in *open_params*.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def open_data(self, data_id: str, **open_params) -> Any:
-        """
-        Open the data resource given by the data resource identifier
+        """Open the data resource given by the data resource identifier
         *data_id* using the supplied *open_params*.
 
         Raises if *data_id* does not exist.
 
-        :param data_id: The data resource identifier.
-        :param open_params: Opener-specific parameters.
-        :return: An xarray.Dataset instance.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: The data resource identifier.
+            **open_params: Opener-specific parameters.
+
+        Returns:
+            An xarray.Dataset instance.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
 
 class DataDeleter(ABC):
-    """
-    An interface that specifies a parameterized `delete_data()` operation.
+    """An interface that specifies a parameterized `delete_data()` operation.
 
     Possible delete parameters are implementation-specific and
     are described by a JSON Schema.
@@ -235,8 +252,7 @@ class DataDeleter(ABC):
 
     @abstractmethod
     def get_delete_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
-        """
-        Get the schema for the parameters passed as *delete_params*
+        """Get the schema for the parameters passed as *delete_params*
         to :meth:delete_data.
         If *data_id* is given, the returned schema will be tailored to
         the constraints implied by the identified data resource.
@@ -244,25 +260,31 @@ class DataDeleter(ABC):
         is optional, and if it is omitted, the returned schema will
         be less restrictive.
 
-        :param data_id: An optional data resource identifier.
-        :return: The schema for the parameters in *delete_params*.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: An optional data resource identifier.
+
+        Returns:
+            The schema for the parameters in *delete_params*.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def delete_data(self, data_id: str, **delete_params):
-        """
-        Delete a data resource. Raises if *data_id* does not exist.
+        """Delete a data resource. Raises if *data_id* does not exist.
 
-        :param data_id: A data resource identifier known to exist.
-        :param delete_params: Deleter-specific parameters.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: A data resource identifier known to exist.
+            **delete_params: Deleter-specific parameters.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
 
 class DataWriter(DataDeleter, ABC):
-    """
-    An interface that specifies a parameterized `write_data()` operation.
+    """An interface that specifies a parameterized `write_data()` operation.
 
     Possible write parameters are implementation-specific and
     are described by a JSON Schema.
@@ -270,67 +292,78 @@ class DataWriter(DataDeleter, ABC):
 
     @abstractmethod
     def get_write_data_params_schema(self) -> JsonObjectSchema:
-        """
-        Get the schema for the parameters passed as *write_params* to
+        """Get the schema for the parameters passed as *write_params* to
         :meth:write_data(data resource, data_id, open_params).
 
-        :return: The schema for the parameters in *write_params*.
-        :raise DataStoreError: If an error occurs.
+        Returns:
+            The schema for the parameters in *write_params*.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def write_data(
         self, data: Any, data_id: str, replace: bool = False, **write_params
     ) -> str:
-        """
-        Write a data resource using the supplied *data_id* and *write_params*.
+        """Write a data resource using the supplied *data_id* and *write_params*.
 
-        :param data: The data resource's in-memory representation
-            to be written.
-        :param data_id: A unique data resource identifier.
-        :param replace: Whether to replace an existing data resource.
-        :param write_params: Writer-specific parameters.
-        :return: The data resource identifier used to write the data resource.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data: The data resource's in-memory representation to be
+                written.
+            data_id: A unique data resource identifier.
+            replace: Whether to replace an existing data resource.
+            **write_params: Writer-specific parameters.
+
+        Returns:
+            The data resource identifier used to write the data
+            resource.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
 
 class DataTimeSliceUpdater(DataWriter, ABC):
-    """
-    An interface that specifies writing of time slice data.
-    """
+    """An interface that specifies writing of time slice data."""
 
     @abstractmethod
     def append_data_time_slice(self, data_id: str, time_slice: xr.Dataset):
-        """
-        Append a time slice to the identified data resource.
+        """Append a time slice to the identified data resource.
 
-        :param data_id: The data resource identifier.
-        :param time_slice: The time slice data to be inserted.
-            Must be compatible with the data resource.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: The data resource identifier.
+            time_slice: The time slice data to be inserted. Must be
+                compatible with the data resource.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def insert_data_time_slice(self, data_id: str, time_slice: Any, time_index: int):
-        """
-        Insert a time slice into the identified data resource at given index.
+        """Insert a time slice into the identified data resource at given index.
 
-        :param data_id: The data resource identifier.
-        :param time_slice: The time slice data to be inserted.
-            Must be compatible with the data resource.
-        :param time_index: The time index.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: The data resource identifier.
+            time_slice: The time slice data to be inserted. Must be
+                compatible with the data resource.
+            time_index: The time index.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def replace_data_time_slice(self, data_id: str, time_slice: Any, time_index: int):
-        """
-        Replace a time slice in the identified data resource at given index.
+        """Replace a time slice in the identified data resource at given index.
 
-        :param data_id: The data resource identifier.
-        :param time_slice: The time slice data to be inserted.
-            Must be compatible with the data resource.
-        :param time_index: The time index.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: The data resource identifier.
+            time_slice: The time slice data to be inserted. Must be
+                compatible with the data resource.
+            time_index: The time index.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """

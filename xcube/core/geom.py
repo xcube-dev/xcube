@@ -305,40 +305,41 @@ def mask_dataset_by_geometry(
     save_geometry_mask: Union[str, bool] = False,
     save_geometry_wkt: Union[str, bool] = False,
 ) -> Optional[xr.Dataset]:
-    """
-    Mask a dataset according to the given geometry. The cells of
+    """Mask a dataset according to the given geometry. The cells of
     variables of the returned dataset will have NaN-values where their
     spatial coordinates are not intersecting
     the given geometry.
 
-    :param dataset: The dataset
-    :param geometry: A geometry-like object,
-        see py:function:`convert_geometry`.
-    :param tile_size: If given, the unconditional spatial chunk sizes
-        in x- and y-direction in pixels.
-        May be given as integer scalar or x,y-pair of integers.
-    :param excluded_vars: Optional sequence of names of data variables
-        that should not be masked (but still may be clipped).
-    :param no_clip: If True, the function will not clip the dataset
-        before masking, this is, the returned dataset will have the same
-        dimension size as the given *dataset*.
-    :param all_touched: If True, all pixels intersected by geometry outlines
-        will be included in the mask. If False, only pixels whose center is
-        within the polygon or that are selected by Bresenham’s line
-        algorithm will be included in the mask.
-        The default value is set to `False`.
-    :param save_geometry_mask: If the value is a string,
-        the effective geometry mask array is stored as a 2D data variable
-        named by *save_geometry_mask*. If the value is True,
-        the name "geometry_mask" is used.
-    :param save_geometry_wkt: If the value is a string,
-        the effective intersection geometry is stored as
-        a Geometry WKT string in the global attribute named
-        by *save_geometry*.
-        If the value is True, the name "geometry_wkt" is used.
-    :return: The dataset spatial subset, or None if the bounding box
-        of the dataset has a no or a zero area intersection with the
-        bounding box of the geometry.
+    Args:
+        dataset: The dataset
+        geometry: A geometry-like object, see
+            py:function:`convert_geometry`.
+        tile_size: If given, the unconditional spatial chunk sizes in x-
+            and y-direction in pixels. May be given as integer scalar or
+            x,y-pair of integers.
+        excluded_vars: Optional sequence of names of data variables that
+            should not be masked (but still may be clipped).
+        no_clip: If True, the function will not clip the dataset before
+            masking, this is, the returned dataset will have the same
+            dimension size as the given *dataset*.
+        all_touched: If True, all pixels intersected by geometry
+            outlines will be included in the mask. If False, only pixels
+            whose center is within the polygon or that are selected by
+            Bresenham’s line algorithm will be included in the mask.
+            The default value is set to `False`.
+        save_geometry_mask: If the value is a string, the effective
+            geometry mask array is stored as a 2D data variable named by
+            *save_geometry_mask*. If the value is True, the name
+            "geometry_mask" is used.
+        save_geometry_wkt: If the value is a string, the effective
+            intersection geometry is stored as a Geometry WKT string in
+            the global attribute named by *save_geometry*. If the value
+            is True, the name "geometry_wkt" is used.
+
+    Returns:
+        The dataset spatial subset, or None if the bounding box of the
+        dataset has a no or a zero area intersection with the bounding
+        box of the geometry.
     """
     geometry = normalize_geometry(geometry)
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
@@ -453,21 +454,22 @@ def clip_dataset_by_geometry(
     geometry: GeometryLike,
     save_geometry_wkt: Union[str, bool] = False,
 ) -> Optional[xr.Dataset]:
-    """
-    Spatially clip a dataset according to the bounding box of a
+    """Spatially clip a dataset according to the bounding box of a
     given geometry.
 
-    :param dataset: The dataset
-    :param geometry: A geometry-like object,
-        see py:function:`convert_geometry`.
-    :param save_geometry_wkt: If the value is a string,
-        the effective intersection geometry is stored as
-        a Geometry WKT string in the global attribute named
-        by *save_geometry*. If the value is True, the name
-        "geometry_wkt" is used.
-    :return: The dataset spatial subset, or None if the bounding
-        box of the dataset has a no or a zero area
-        intersection with the bounding box of the geometry.
+    Args:
+        dataset: The dataset
+        geometry: A geometry-like object, see
+            py:function:`convert_geometry`.
+        save_geometry_wkt: If the value is a string, the effective
+            intersection geometry is stored as a Geometry WKT string in
+            the global attribute named by *save_geometry*. If the value
+            is True, the name "geometry_wkt" is used.
+
+    Returns:
+        The dataset spatial subset, or None if the bounding box of the
+        dataset has a no or a zero area intersection with the bounding
+        box of the geometry.
     """
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     intersection_geometry = intersect_geometries(
@@ -556,8 +558,7 @@ def intersect_geometries(
 def normalize_geometry(
     geometry: Optional[GeometryLike],
 ) -> Optional[shapely.geometry.base.BaseGeometry]:
-    """
-    Convert a geometry-like object into a shapely geometry
+    """Convert a geometry-like object into a shapely geometry
     object (``shapely.geometry.BaseGeometry``).
 
     A geometry-like object may be any shapely geometry object,
@@ -577,8 +578,11 @@ def normalize_geometry(
     * In all other cases, 2D geometries are assumed to _not cross
       the anti-meridian at all_.
 
-    :param geometry: A geometry-like object
-    :return: Shapely geometry object or None.
+    Args:
+        geometry: A geometry-like object
+
+    Returns:
+        Shapely geometry object or None.
     """
 
     if isinstance(geometry, shapely.geometry.base.BaseGeometry):

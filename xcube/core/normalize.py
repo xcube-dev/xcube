@@ -39,8 +39,7 @@ Datetime = Union[np.datetime64, cftime.datetime, datetime]
 
 
 class DatasetIsNotACubeError(BaseException):
-    """
-    Raised, if at least a subset of a dataset's variables
+    """Raised, if at least a subset of a dataset's variables
     have data cube dimensions ('time' , [...], y_dim_name, x_dim_name),
     where y_dim_name and x_dim_name are determined by a dataset's
     :class:GridMapping.
@@ -50,8 +49,7 @@ class DatasetIsNotACubeError(BaseException):
 
 
 def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Normalize the geo- and time-coding upon opening the given
+    """Normalize the geo- and time-coding upon opening the given
     dataset w.r.t. a common (CF-compatible) convention.
 
     Will throw a value error if the dataset could not not be
@@ -64,8 +62,7 @@ def cubify_dataset(ds: xr.Dataset) -> xr.Dataset:
 def normalize_dataset(
     ds: xr.Dataset, reverse_decreasing_lat: bool = False
 ) -> xr.Dataset:
-    """
-    Normalize the geo- and time-coding upon opening the given
+    """Normalize the geo- and time-coding upon opening the given
     dataset w.r.t. a common (CF-compatible) convention.
 
     That is,
@@ -86,10 +83,13 @@ def normalize_dataset(
     Finally, it will be ensured that a "time" coordinate variable will
     be of type *datetime*.
 
-    :param ds: The dataset to normalize.
-    :param reverse_decreasing_lat: Whether decreasing latitude values
-        shall be normalized so they are increasing
-    :return: The normalized dataset, or the original dataset, if it is
+    Args:
+        ds: The dataset to normalize.
+        reverse_decreasing_lat: Whether decreasing latitude values shall
+            be normalized so they are increasing
+
+    Returns:
+        The normalized dataset, or the original dataset, if it is
         already "normal".
     """
     ds = _normalize_zonal_lat_lon(ds)
@@ -110,8 +110,7 @@ def encode_cube(
     grid_mapping: Optional[GridMapping] = None,
     non_cube_subset: Optional[xr.Dataset] = None,
 ) -> xr.Dataset:
-    """
-    Encode a *cube* with its *grid_mapping*, and additional variables in
+    """Encode a *cube* with its *grid_mapping*, and additional variables in
     *non_cube_subset* into a new dataset.
 
     This is the inverse of the operation :func:decode_cube:
@@ -128,12 +127,15 @@ def encode_cube(
     cube's spatial CRS. *non_cube_subset*, if given may be used
     to add non-cube variables the to resulting dataset.
 
-    :param cube: data cube dataset, whose dimensions should
-        be ("time" , [...], y_dim_name, x_dim_name)
-    :param grid_mapping: Optional grid mapping for *cube*.
-    :param non_cube_subset: An optional dataset providing
-        non-cube data variables.
-    :return:
+    Args:
+        cube: data cube dataset, whose dimensions should be ("time" ,
+            [...], y_dim_name, x_dim_name)
+        grid_mapping: Optional grid mapping for *cube*.
+        non_cube_subset: An optional dataset providing non-cube data
+            variables.
+
+    Returns:
+
     """
     if non_cube_subset is not None:
         dataset = cube.assign(**non_cube_subset.data_vars)
@@ -162,8 +164,7 @@ def decode_cube(
     force_non_empty: bool = False,
     force_geographic: bool = False,
 ) -> Tuple[xr.Dataset, GridMapping, xr.Dataset]:
-    """
-    Decode a *dataset* into a cube variable subset, a grid mapping, and
+    """Decode a *dataset* into a cube variable subset, a grid mapping, and
     the non-cube variables of *dataset*.
 
     This is the inverse of the operation :func:encode_cube:
@@ -176,22 +177,26 @@ def decode_cube(
     Here y_dim_name and x_dim_name are determined by the
     :class:GridMapping derived from *dataset*.
 
-    :param dataset: The dataset.
-    :param normalize: Whether to normalize the *dataset*,
-        before the cube subset is determined.
-        If normalisation fails, the cube subset is created from *dataset*.
-    :param force_copy: whether to create a copy of this dataset
-        even if this dataset is identical to its cube subset.
-    :param force_non_empty: whether the resulting cube
-        must have at least one data variable.
-        If True, a :class:DatasetIsNotACubeError may be raised.
-    :param force_geographic: whether a geographic grid mapping
-        is required.
-        If True, a :class:DatasetIsNotACubeError may be raised.
-    :return: A 3-tuple comprising the data cube subset of *dataset*
-        the cube's grid mapping, and the remaining variables.
-    :raise DatasetIsNotACubeError: If it is not possible to
-        determine a data cube subset from *dataset*.
+    Args:
+        dataset: The dataset.
+        normalize: Whether to normalize the *dataset*, before the cube
+            subset is determined. If normalisation fails, the cube
+            subset is created from *dataset*.
+        force_copy: whether to create a copy of this dataset even if
+            this dataset is identical to its cube subset.
+        force_non_empty: whether the resulting cube must have at least
+            one data variable. If True, a :class:DatasetIsNotACubeError
+            may be raised.
+        force_geographic: whether a geographic grid mapping is required.
+            If True, a :class:DatasetIsNotACubeError may be raised.
+
+    Returns:
+        A 3-tuple comprising the data cube subset of *dataset* the
+        cube's grid mapping, and the remaining variables.
+
+    Raises:
+        DatasetIsNotACubeError: If it is not possible to determine a
+            data cube subset from *dataset*.
     """
     if normalize:
         try:
@@ -247,11 +252,14 @@ def decode_cube(
 
 
 def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
-    """
-    In case that the dataset only contains lat_centers and is a zonal mean dataset,
+    """In case that the dataset only contains lat_centers and is a zonal mean dataset,
     the longitude dimension created and filled with the variable value of certain latitude.
-    :param ds: some xarray dataset
-    :return: a normalized xarray dataset
+
+    Args:
+        ds: some xarray dataset
+
+    Returns:
+        a normalized xarray dataset
     """
 
     if "latitude_centers" not in ds.coords or "lon" in ds.coords:
@@ -313,10 +321,13 @@ def _normalize_zonal_lat_lon(ds: xr.Dataset) -> xr.Dataset:
 
 
 def _normalize_lat_lon(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Rename variables named 'longitude' or 'long' to 'lon', and 'latitude' to 'lon'.
-    :param ds: some xarray dataset
-    :return: a normalized xarray dataset, or the original one
+    """Rename variables named 'longitude' or 'long' to 'lon', and 'latitude' to 'lon'.
+
+    Args:
+        ds: some xarray dataset
+
+    Returns:
+        a normalized xarray dataset, or the original one
     """
     lat_name = get_lat_dim_name_impl(ds)
     lon_name = get_lon_dim_name_impl(ds)
@@ -335,14 +346,17 @@ def _normalize_lat_lon(ds: xr.Dataset) -> xr.Dataset:
 
 
 def _normalize_lat_lon_2d(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Detect 2D 'lat', 'lon' variables that span a equi-rectangular grid. Then:
+    """Detect 2D 'lat', 'lon' variables that span a equi-rectangular grid. Then:
     Drop original 'lat', 'lon' variables
     Rename original dimensions names of 'lat', 'lon' variables, usually ('y', 'x'), to
     ('lat', 'lon').
     Insert new 1D 'lat', 'lon' coordinate variables with dimensions 'lat' and 'lon', respectively.
-    :param ds: some xarray dataset
-    :return: a normalized xarray dataset, or the original one
+
+    Args:
+        ds: some xarray dataset
+
+    Returns:
+        a normalized xarray dataset, or the original one
     """
     if not ("lat" in ds and "lon" in ds):
         return ds
@@ -391,11 +405,14 @@ def _normalize_lat_lon_2d(ds: xr.Dataset) -> xr.Dataset:
 
 
 def _normalize_lon_360(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Fix the longitude of the given dataset ``ds`` so that it ranges from -180 to +180 degrees.
+    """Fix the longitude of the given dataset ``ds`` so that it ranges from -180 to +180 degrees.
 
-    :param ds: The dataset whose longitudes may be given in the range 0 to 360.
-    :return: The fixed dataset or the original dataset.
+    Args:
+        ds: The dataset whose longitudes may be given in the range 0 to
+            360.
+
+    Returns:
+        The fixed dataset or the original dataset.
     """
 
     if "lon" not in ds.coords:
@@ -443,10 +460,13 @@ def _normalize_lon_360(ds: xr.Dataset) -> xr.Dataset:
 
 
 def _reverse_decreasing_lat(ds: xr.Dataset) -> xr.Dataset:
-    """
-    In case the latitude decreases, invert it
-    :param ds: some xarray dataset
-    :return: a normalized xarray dataset
+    """In case the latitude decreases, invert it
+
+    Args:
+        ds: some xarray dataset
+
+    Returns:
+        a normalized xarray dataset
     """
     try:
         if _is_lat_decreasing(ds.lat):
@@ -461,11 +481,11 @@ def _reverse_decreasing_lat(ds: xr.Dataset) -> xr.Dataset:
 
 
 def _normalize_jd2datetime(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Convert the time dimension of the given dataset from Julian date to
+    """Convert the time dimension of the given dataset from Julian date to
     datetime.
 
-    :param ds: Dataset on which to run conversion
+    Args:
+        ds: Dataset on which to run conversion
     """
 
     try:
@@ -508,8 +528,7 @@ def _normalize_jd2datetime(ds: xr.Dataset) -> xr.Dataset:
 
 
 def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Turn potential coordinate variables from data variables into coordinate variables.
+    """Turn potential coordinate variables from data variables into coordinate variables.
 
     Any data variable is considered a coordinate variable
 
@@ -517,9 +536,12 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
     * whose number of dimensions is two and where the first dimension name is also a variable name
         and whose last dimension is named "bnds".
 
-    :param ds: The dataset
-    :return: The same dataset or a shallow copy with potential coordinate
-             variables turned into coordinate variables.
+    Args:
+        ds: The dataset
+
+    Returns:
+        The same dataset or a shallow copy with potential coordinate
+        variables turned into coordinate variables.
     """
 
     if "bnds" not in ds.dims:
@@ -547,8 +569,7 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
 
 
 def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
-    """
-    Add a time coordinate variable and their associated bounds coordinate variables
+    """Add a time coordinate variable and their associated bounds coordinate variables
     if either temporal CF attributes ``time_coverage_start`` and ``time_coverage_end``
     are given or time information can be extracted from the file name but the time dimension is
     missing.
@@ -561,8 +582,11 @@ def normalize_missing_time(ds: xr.Dataset) -> xr.Dataset:
     with dimensions ['time', 'bnds'] and shape [1,2].
     Both are of data type ``datetime64``.
 
-    :param ds: Dataset to adjust
-    :return: Adjusted dataset
+    Args:
+        ds: Dataset to adjust
+
+    Returns:
+        Adjusted dataset
     """
     time_coverage_start, time_coverage_end = _get_time_coverage_from_ds(ds)
 
@@ -666,8 +690,7 @@ def _get_time_coverage_from_ds(ds: xr.Dataset) -> (pd.Timestamp, pd.Timestamp):
 
 
 def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Dataset:
-    """
-    Adjust the global spatial attributes of the dataset by doing some
+    """Adjust the global spatial attributes of the dataset by doing some
     introspection of the dataset and adjusting the appropriate attributes
     accordingly.
 
@@ -678,9 +701,12 @@ def adjust_spatial_attrs(ds: xr.Dataset, allow_point: bool = False) -> xr.Datase
     `Attribute Convention for Data Discovery
     <http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery>`_
 
-    :param ds: Dataset to adjust
-    :param allow_point: Whether to accept single point cells
-    :return: Adjusted dataset
+    Args:
+        ds: Dataset to adjust
+        allow_point: Whether to accept single point cells
+
+    Returns:
+        Adjusted dataset
     """
 
     copied = False
@@ -743,16 +769,18 @@ def is_bounds_var(ds: xr.Dataset, var: xr.DataArray):
 def get_geo_spatial_attrs_from_var(
     ds: xr.Dataset, var_name: str, allow_point: bool = False
 ) -> Optional[dict]:
-    """
-    Get spatial boundaries, resolution and units of the given dimension of the given
+    """Get spatial boundaries, resolution and units of the given dimension of the given
     dataset. If the 'bounds' are explicitly defined, these will be used for
     boundary calculation, otherwise it will rest purely on information gathered
     from 'dim' itself.
 
-    :param ds: The dataset
-    :param var_name: The variable/dimension name.
-    :param allow_point: True, if it is ok to have no actual spatial extent.
-    :return: A dictionary {'attr_name': attr_value}
+    Args:
+        ds: The dataset
+        var_name: The variable/dimension name.
+        allow_point: True, if it is ok to have no actual spatial extent.
+
+    Returns:
+        A dictionary {'attr_name': attr_value}
     """
 
     if var_name not in ds:
@@ -851,19 +879,25 @@ def get_geo_spatial_attrs_from_var(
 
 
 def get_lon_dim_name_impl(ds: Union[xr.Dataset, xr.DataArray]) -> Optional[str]:
-    """
-    Get the name of the longitude dimension.
-    :param ds: An xarray Dataset
-    :return: the name or None
+    """Get the name of the longitude dimension.
+
+    Args:
+        ds: An xarray Dataset
+
+    Returns:
+        the name or None
     """
     return _get_dim_name(ds, ["lon", "longitude", "long"])
 
 
 def get_lat_dim_name_impl(ds: Union[xr.Dataset, xr.DataArray]) -> Optional[str]:
-    """
-    Get the name of the latitude dimension.
-    :param ds: An xarray Dataset
-    :return: the name or None
+    """Get the name of the latitude dimension.
+
+    Args:
+        ds: An xarray Dataset
+
+    Returns:
+        the name or None
     """
     return _get_dim_name(ds, ["lat", "latitude"])
 
@@ -878,9 +912,7 @@ def _get_dim_name(
 
 
 def _is_lat_decreasing(lat: xr.DataArray) -> bool:
-    """
-    Determine if the latitude is decreasing
-    """
+    """Determine if the latitude is decreasing"""
     if lat[0] > lat[-1]:
         return True
 

@@ -47,15 +47,17 @@ def new_data_store(
     extension_registry: Optional[ExtensionRegistry] = None,
     **data_store_params,
 ) -> Union["DataStore", "MutableDataStore"]:
-    """
-    Create a new data store instance for given
+    """Create a new data store instance for given
     *data_store_id* and *data_store_params*.
 
-    :param data_store_id: A data store identifier.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :param data_store_params: Data store specific parameters.
-    :return: A new data store instance
+    Args:
+        data_store_id: A data store identifier.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+        **data_store_params: Data store specific parameters.
+
+    Returns:
+        A new data store instance
     """
     data_store_class = get_data_store_class(
         data_store_id, extension_registry=extension_registry
@@ -71,13 +73,15 @@ def new_data_store(
 def get_data_store_class(
     data_store_id: str, extension_registry: Optional[ExtensionRegistry] = None
 ) -> Union[Type["DataStore"], Type["MutableDataStore"]]:
-    """
-    Get the class for the data store identified by *data_store_id*.
+    """Get the class for the data store identified by *data_store_id*.
 
-    :param data_store_id: A data store identifier.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :return: The class for the data store.
+    Args:
+        data_store_id: A data store identifier.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+
+    Returns:
+        The class for the data store.
     """
     extension_registry = extension_registry or get_extension_registry()
     if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
@@ -91,14 +95,16 @@ def get_data_store_class(
 def get_data_store_params_schema(
     data_store_id: str, extension_registry: Optional[ExtensionRegistry] = None
 ) -> JsonObjectSchema:
-    """
-    Get the JSON schema for instantiating a new data store
+    """Get the JSON schema for instantiating a new data store
     identified by *data_store_id*.
 
-    :param data_store_id: A data store identifier.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :return: The JSON schema for the data store's parameters.
+    Args:
+        data_store_id: A data store identifier.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+
+    Returns:
+        The JSON schema for the data store's parameters.
     """
     data_store_class = get_data_store_class(
         data_store_id, extension_registry=extension_registry
@@ -110,14 +116,16 @@ def find_data_store_extensions(
     predicate: ExtensionPredicate = None,
     extension_registry: Optional[ExtensionRegistry] = None,
 ) -> List[Extension]:
-    """
-    Find data store extensions using the optional filter
+    """Find data store extensions using the optional filter
     function *predicate*.
 
-    :param predicate: An optional filter function.
-    :param extension_registry: Optional extension registry.
-        If not given, the global extension registry will be used.
-    :return: List of data store extensions.
+    Args:
+        predicate: An optional filter function.
+        extension_registry: Optional extension registry. If not given,
+            the global extension registry will be used.
+
+    Returns:
+        List of data store extensions.
     """
     extension_registry = extension_registry or get_extension_registry()
     return extension_registry.find_extensions(
@@ -131,8 +139,7 @@ def find_data_store_extensions(
 
 
 class DataStore(DataOpener, DataSearcher, ABC):
-    """
-    A data store represents a collection of data resources that
+    """A data store represents a collection of data resources that
     can be enumerated, queried, and opened in order to obtain
     in-memory representations of the data. The same data resource may be
     made available using different data types. Therefore, many methods
@@ -150,8 +157,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
 
     @classmethod
     def get_data_store_params_schema(cls) -> JsonObjectSchema:
-        """
-        Get descriptions of parameters that must or can be used to
+        """Get descriptions of parameters that must or can be used to
         instantiate a new DataStore object.
         Parameters are named and described by the properties of the
         returned JSON object schema.
@@ -163,31 +169,35 @@ class DataStore(DataOpener, DataSearcher, ABC):
     @classmethod
     @abstractmethod
     def get_data_types(cls) -> Tuple[str, ...]:
-        """
-        Get alias names for all data types supported by this store.
+        """Get alias names for all data types supported by this store.
         The first entry in the tuple represents this store's
         default data type.
 
-        :return: The tuple of supported data types.
+        Returns:
+            The tuple of supported data types.
         """
 
     @abstractmethod
     def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
-        """
-        Get alias names for of data types that are supported
+        """Get alias names for of data types that are supported
         by this store for the given *data_id*.
 
-        :param data_id: An identifier of data that is provided by this store
-        :return: A tuple of data types that apply to the given *data_id*.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: An identifier of data that is provided by this
+                store
+
+        Returns:
+            A tuple of data types that apply to the given *data_id*.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def get_data_ids(
         self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
     ) -> Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
-        """
-        Get an iterator over the data resource identifiers for the
+        """Get an iterator over the data resource identifiers for the
         given type *data_type*. If *data_type* is omitted, all data
         resource identifiers are returned.
 
@@ -221,82 +231,93 @@ class DataStore(DataOpener, DataSearcher, ABC):
         ``("ESACCI-L4_GHRSST-SSTdepth-OSTIA-GLOB_CDR2.1-v02.0-fv01.0.zarr",
         {"title": "Level-4 GHRSST Analysed Sea Surface Temperature"})``.
 
-        :param data_type: If given, only data identifiers that are
-            available as this type are returned.
-            If this is omitted, all available data identifiers are returned.
-        :param include_attrs: A sequence of names of attributes to
-            be returned for each dataset identifier.
-            If given, the store will attempt to provide the set of
-            requested dataset attributes in addition to the data ids.
-            (added in xcube 0.8.0)
-        :return: An iterator over the identifiers and titles of data
+        Args:
+            data_type: If given, only data identifiers that are
+                available as this type are returned. If this is omitted,
+                all available data identifiers are returned.
+            include_attrs: A sequence of names of attributes to be
+                returned for each dataset identifier. If given, the
+                store will attempt to provide the set of requested
+                dataset attributes in addition to the data ids. (added
+                in xcube 0.8.0)
+
+        Returns:
+            An iterator over the identifiers and titles of data
             resources provided by this data store.
-        :raise DataStoreError: If an error occurs.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     def list_data_ids(
         self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
     ) -> Union[List[str], List[Tuple[str, Dict[str, Any]]]]:
-        """
-        Convenience version of `get_data_ids()` that returns a list rather
+        """Convenience version of `get_data_ids()` that returns a list rather
         than an iterator.
 
-        :param data_type: If given, only data identifiers that are
-            available as this type are returned.
-            If this is omitted, all available data identifiers are returned.
-        :param include_attrs: A sequence of names of attributes to
-            be returned for each dataset identifier.
-            If given, the store will attempt to provide the set of
-            requested dataset attributes in addition to the data ids.
-            (added in xcube 0.8.0)
-        :return: A list comprising the identifiers and titles of data
+        Args:
+            data_type: If given, only data identifiers that are
+                available as this type are returned. If this is omitted,
+                all available data identifiers are returned.
+            include_attrs: A sequence of names of attributes to be
+                returned for each dataset identifier. If given, the
+                store will attempt to provide the set of requested
+                dataset attributes in addition to the data ids. (added
+                in xcube 0.8.0)
+
+        Returns:
+            A list comprising the identifiers and titles of data
             resources provided by this data store.
-        :raise DataStoreError: If an error occurs.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
         return list(self.get_data_ids(data_type=data_type, include_attrs=include_attrs))
 
     @abstractmethod
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
-        """
-        Check if the data resource given by *data_id* is
+        """Check if the data resource given by *data_id* is
         available in this store.
 
-        :param data_id: A data identifier
-        :param data_type: An optional data type.
-            If given, it will also be checked whether the data
-            is available as the specified type.
-            May be given as type alias name, as a type,
-            or as a :class:DataType instance.
-        :return: True, if the data resource is available in this store,
-            False otherwise.
+        Args:
+            data_id: A data identifier
+            data_type: An optional data type. If given, it will also be
+                checked whether the data is available as the specified
+                type. May be given as type alias name, as a type, or as
+                a :class:DataType instance.
+
+        Returns:
+            True, if the data resource is available in this store, False
+            otherwise.
         """
 
     @abstractmethod
     def describe_data(
         self, data_id: str, data_type: DataTypeLike = None
     ) -> DataDescriptor:
-        """
-        Get the descriptor for the data resource given by *data_id*.
+        """Get the descriptor for the data resource given by *data_id*.
 
         Raises a :class:DataStoreError if *data_id* does not
         exist in this store or the data is not available as the
         specified *data_type*.
 
-        :param data_id: An identifier of data provided by this store
-        :param data_type: If given, the descriptor of the data will
-            describe the data as specified by the data type.
-            May be given as type alias name, as a type,
-            or as a :class:DataType instance.
+        Args:
+            data_id: An identifier of data provided by this store
+            data_type: If given, the descriptor of the data will
+                describe the data as specified by the data type. May be
+                given as type alias name, as a type, or as a
+                :class:DataType instance.
         :return a data-type specific data descriptor
-        :raise DataStoreError: If an error occurs.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def get_data_opener_ids(
         self, data_id: str = None, data_type: DataTypeLike = None
     ) -> Tuple[str, ...]:
-        """
-        Get identifiers of data openers that can be used to open data
+        """Get identifiers of data openers that can be used to open data
         resources from this store.
 
         If *data_id* is given, data accessors are restricted to the ones
@@ -310,23 +331,26 @@ class DataStore(DataOpener, DataSearcher, ABC):
         it should verify that *data_type* is either None or equal to
         that single data type.
 
-        :param data_id: An optional data resource identifier that is
-            known to exist in this data store.
-        :param data_type: An optional data type that is known to be
-            supported by this data store.
-            May be given as type alias name, as a type,
-            or as a :class:DataType instance.
-        :return: A tuple of identifiers of data openers that can be
-            used to open data resources.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: An optional data resource identifier that is known
+                to exist in this data store.
+            data_type: An optional data type that is known to be
+                supported by this data store. May be given as type alias
+                name, as a type, or as a :class:DataType instance.
+
+        Returns:
+            A tuple of identifiers of data openers that can be used to
+            open data resources.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def get_open_data_params_schema(
         self, data_id: str = None, opener_id: str = None
     ) -> JsonObjectSchema:
-        """
-        Get the schema for the parameters passed as *open_params* to
+        """Get the schema for the parameters passed as *open_params* to
         :meth:open_data(data_id, open_params).
 
         If *data_id* is given, the returned schema will be tailored
@@ -385,17 +409,21 @@ class DataStore(DataOpener, DataSearcher, ABC):
           * `variable_names == ["<var_1>", "<var_2>", ...]` only
             include data variables named "<var_1>", "<var_2>", ...
 
-        :param data_id: An optional data identifier that is known
-            to exist in this data store.
-        :param opener_id: An optional data opener identifier.
-        :return: The schema for the parameters in *open_params*.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: An optional data identifier that is known to exist
+                in this data store.
+            opener_id: An optional data opener identifier.
+
+        Returns:
+            The schema for the parameters in *open_params*.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
-        """
-        Open the data given by the data resource identifier *data_id*
+        """Open the data given by the data resource identifier *data_id*
         using the supplied *open_params*.
 
         The data type of the return value depends on the data opener
@@ -409,19 +437,23 @@ class DataStore(DataOpener, DataSearcher, ABC):
 
         Raises if *data_id* does not exist in this store.
 
-        :param data_id: The data identifier that is known to exist
-            in this data store.
-        :param opener_id: An optional data opener identifier.
-        :param open_params: Opener-specific parameters.
-        :return: An in-memory representation of the data resources
-            identified by *data_id* and *open_params*.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: The data identifier that is known to exist in this
+                data store.
+            opener_id: An optional data opener identifier.
+            **open_params: Opener-specific parameters.
+
+        Returns:
+            An in-memory representation of the data resources identified
+            by *data_id* and *open_params*.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
 
 class MutableDataStore(DataStore, DataWriter, ABC):
-    """
-    A mutable data store is a data store that also allows for adding,
+    """A mutable data store is a data store that also allows for adding,
     updating, and removing data resources.
 
     MutableDataStore is an abstract base class that any mutable data
@@ -430,8 +462,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
     @abstractmethod
     def get_data_writer_ids(self, data_type: DataTypeLike = None) -> Tuple[str, ...]:
-        """
-        Get identifiers of data writers that can be used to write data
+        """Get identifiers of data writers that can be used to write data
         resources to this store.
 
         If *data_type* is given, only writers that support this
@@ -441,19 +472,22 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         it should verify that *data_type* is either None or equal to
         that single data type.
 
-        :param data_type: An optional data type specifier that is
-            known to be supported by this data store.
-            May be given as type alias name, as a type,
-            or as a :class:DataType instance.
-        :return: A tuple of identifiers of data writers that can
-            be used to write data resources.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_type: An optional data type specifier that is known to
+                be supported by this data store. May be given as type
+                alias name, as a type, or as a :class:DataType instance.
+
+        Returns:
+            A tuple of identifiers of data writers that can be used to
+            write data resources.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
-        """
-        Get the schema for the parameters passed as *write_params* to
+        """Get the schema for the parameters passed as *write_params* to
         :meth:write_data(data, data_id, open_params).
 
         If *writer_id* is given, the returned schema will be tailored
@@ -470,9 +504,14 @@ class MutableDataStore(DataStore, DataWriter, ABC):
             writer_params_schema = get_writer(writer_id).get_write_data_params_schema()
             return subtract_param_schemas(writer_params_schema, store_params_schema)
 
-        :param writer_id: An optional data writer identifier.
-        :return: The schema for the parameters in *write_params*.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            writer_id: An optional data writer identifier.
+
+        Returns:
+            The schema for the parameters in *write_params*.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
@@ -484,8 +523,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         replace: bool = False,
         **write_params,
     ) -> str:
-        """
-        Write a data in-memory instance using the supplied *data_id*
+        """Write a data in-memory instance using the supplied *data_id*
          and *write_params*.
 
         If data identifier *data_id* is not given, a writer-specific default
@@ -508,20 +546,24 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         Raises if *data_id* does not exist in this store.
 
-        :param data: The data in-memory instance to be written.
-        :param data_id: An optional data identifier that is known to
-            be unique in this data store.
-        :param writer_id: An optional data writer identifier.
-        :param replace: Whether to replace an existing data resource.
-        :param write_params: Writer-specific parameters.
-        :return: The data identifier used to write the data.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data: The data in-memory instance to be written.
+            data_id: An optional data identifier that is known to be
+                unique in this data store.
+            writer_id: An optional data writer identifier.
+            replace: Whether to replace an existing data resource.
+            **write_params: Writer-specific parameters.
+
+        Returns:
+            The data identifier used to write the data.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def delete_data(self, data_id: str, **delete_params):
-        """
-        Delete the data resource identified by *data_id*.
+        """Delete the data resource identified by *data_id*.
 
         Typically, an implementation would delete the data resource
         from the physical storage and also remove any registered metadata
@@ -529,15 +571,17 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         Raises if *data_id* does not exist in this store.
 
-        :param data_id: An data identifier that is known to exist
-            in this data store.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: An data identifier that is known to exist in this
+                data store.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def register_data(self, data_id: str, data: Any):
-        """
-        Register the in-memory representation of a data resource *data*
+        """Register the in-memory representation of a data resource *data*
         using the given data resource identifier *data_id*.
 
         This method can be used to register data resources that are
@@ -549,16 +593,18 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         An implementation should just store the metadata of *data*.
         It should not write *data*.
 
-        :param data_id: A data resource identifier that is known
-            to be unique in this data store.
-        :param data: An in-memory representation of a data resource.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: A data resource identifier that is known to be
+                unique in this data store.
+            data: An in-memory representation of a data resource.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """
 
     @abstractmethod
     def deregister_data(self, data_id: str):
-        """
-        De-register a data resource identified by *data_id* from
+        """De-register a data resource identified by *data_id* from
         this data store.
 
         This method can be used to de-register data resources so it
@@ -572,7 +618,10 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         Raises if *data_id* does not exist in this store.
 
-        :param data_id: A data resource identifier that is
-            known to exist in this data store.
-        :raise DataStoreError: If an error occurs.
+        Args:
+            data_id: A data resource identifier that is known to exist
+                in this data store.
+
+        Raises:
+            DataStoreError: If an error occurs.
         """

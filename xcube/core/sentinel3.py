@@ -9,14 +9,16 @@ def open_sentinel3_product(
     var_names: Set[str] = None,
     chunks: Mapping[str, Union[int, Tuple[int, ...]]] = None,
 ) -> xr.Dataset:
-    """
-    Open a Sentinel-3 product from given path.
+    """Open a Sentinel-3 product from given path.
 
-    :param chunks:
-    :param path: Sentinel-3 product path
-    :param var_names: Optional variable names to be included.
-    :param chunks: Optional mapping from dimension name to chunk sizes or chunk size tuples.
-    :return: A dataset representation of the Sentinel-3 product.
+    Args:
+        chunks: Optional mapping from dimension name to chunk sizes or
+            chunk size tuples.
+        path: Sentinel-3 product path
+        var_names: Optional variable names to be included.
+
+    Returns:
+        A dataset representation of the Sentinel-3 product.
     """
     x_name = "longitude"
     y_name = "latitude"
@@ -79,11 +81,13 @@ def _open_dataset(dataset_path, chunks=None) -> xr.Dataset:
 
 
 def is_sentinel3_product(path: str) -> bool:
-    """
-    Test if given *path* is likely a Sentinel-3 product path.
+    """Test if given *path* is likely a Sentinel-3 product path.
 
-    :param path: (directory) path
-    :return: True, if so
+    Args:
+        path: (directory) path
+
+    Returns:
+        True, if so
     """
     return os.path.isdir(path) and os.path.isfile(
         os.path.join(path, "geo_coordinates.nc")

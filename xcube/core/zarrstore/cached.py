@@ -38,10 +38,10 @@ class CachedZarrStore(zarr.storage.Store):
     Note that iterating keys and containment checks are performed
     on *store* only.
 
-    :param store: A Zarr store that is known
-        to be slow in reading values.
-    :param cache: A writable Zarr store that can
-        read values faster than *store*.
+    Args:
+        store: A Zarr store that is known to be slow in reading values.
+        cache: A writable Zarr store that can read values faster than
+            *store*.
     """
 
     _readable = True  # Because the base class is readable

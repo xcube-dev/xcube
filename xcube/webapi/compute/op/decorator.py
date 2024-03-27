@@ -15,13 +15,16 @@ def operation(
 ):
     """Decorator that registers a function as an operation.
 
-    :param _op: the function to register as an operation
-    :param params_schema: JSON Schema for the function's parameters
-           (a JSON object schema mapping parameter names to their individual
-           schemas)
-    :param op_registry: the registry in which to register the operation
-    :return: the decorated operation, if an operation was supplied;
-       otherwise, a decorator function
+    Args:
+        _op: the function to register as an operation
+        params_schema: JSON Schema for the function's parameters (a JSON
+            object schema mapping parameter names to their individual
+            schemas)
+        op_registry: the registry in which to register the operation
+
+    Returns:
+        the decorated operation, if an operation was supplied;
+        otherwise, a decorator function
     """
 
     def decorator(op: Callable):
@@ -53,16 +56,20 @@ def op_param(
 
     See also
     https://json-schema.org/draft/2020-12/json-schema-validation.html#name-a-vocabulary-for-basic-meta
-    :param name: name of the parameter to apply schema information to
-    :param json_type: JSON Schema type of the parameter
-    :param py_type: Python type of the parameter
-    :param title: title of the parameter
-    :param description: description of the parameter
-    :param default: default value for the parameter
-    :param required: whether the parameter is required
-    :param schema: JSON Schema describing the parameter
-    :param op_registry: registry in which to register the operation
-    :return: parameterized decorator for a compute operation function
+
+    Args:
+        name: name of the parameter to apply schema information to
+        json_type: JSON Schema type of the parameter
+        py_type: Python type of the parameter
+        title: title of the parameter
+        description: description of the parameter
+        default: default value for the parameter
+        required: whether the parameter is required
+        schema: JSON Schema describing the parameter
+        op_registry: registry in which to register the operation
+
+    Returns:
+        parameterized decorator for a compute operation function
     """
 
     def decorator(op: Callable):

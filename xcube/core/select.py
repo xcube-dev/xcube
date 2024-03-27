@@ -48,8 +48,7 @@ def select_subset(
     time_range: Optional[TimeRange] = None,
     grid_mapping: Optional[GridMapping] = None,
 ):
-    """
-    Create a subset from *dataset* given *var_names*,
+    """Create a subset from *dataset* given *var_names*,
     *bbox*, *time_range*.
 
     This is a high-level convenience function that may invoke
@@ -58,14 +57,17 @@ def select_subset(
     * :func:select_spatial_subset
     * :func:select_temporal_subset
 
-    :param dataset: The dataset.
-    :param var_names: Optional variable names.
-    :param bbox: Optional bounding box in the dataset's
-        CRS coordinate units.
-    :param time_range: Optional time range
-    :param grid_mapping: Optional dataset grid mapping.
-    :return: a subset of *dataset*, or unchanged *dataset*
-        if no keyword-arguments are used.
+    Args:
+        dataset: The dataset.
+        var_names: Optional variable names.
+        bbox: Optional bounding box in the dataset's CRS coordinate
+            units.
+        time_range: Optional time range
+        grid_mapping: Optional dataset grid mapping.
+
+    Returns:
+        a subset of *dataset*, or unchanged *dataset* if no keyword-
+        arguments are used.
     """
     if var_names is not None:
         dataset = select_variables_subset(dataset, var_names=var_names)
@@ -81,13 +83,15 @@ def select_subset(
 def select_variables_subset(
     dataset: xr.Dataset, var_names: Optional[Collection[str]] = None
 ) -> xr.Dataset:
-    """
-    Select data variable from given *dataset* and create new dataset.
+    """Select data variable from given *dataset* and create new dataset.
 
-    :param dataset: The dataset from which to select variables.
-    :param var_names: The names of data variables to select.
-    :return: A new dataset. It is empty, if *var_names* is empty.
-        It is *dataset*, if *var_names* is None.
+    Args:
+        dataset: The dataset from which to select variables.
+        var_names: The names of data variables to select.
+
+    Returns:
+        A new dataset. It is empty, if *var_names* is empty. It is
+        *dataset*, if *var_names* is None.
     """
     if var_names is None:
         return dataset
@@ -105,23 +109,22 @@ def select_spatial_subset(
     xy_border: float = 0.0,
     grid_mapping: Optional[GridMapping] = None,
 ) -> Optional[xr.Dataset]:
-    """
-    Select a spatial subset of *dataset* for the
+    """Select a spatial subset of *dataset* for the
     bounding box *ij_bbox* or *xy_bbox*.
 
     *ij_bbox* or *xy_bbox* must not be given both.
 
-    :param xy_bbox: Bounding box in coordinates of the dataset's CRS.
-    :param xy_border: Extra border added to *xy_bbox*.
-    :param dataset: Source dataset.
-    :param ij_bbox: Bounding box (i_min, i_min, j_max, j_max)
-        in pixel coordinates.
-    :param ij_border: Extra border added to *ij_bbox*
-        in number of pixels
-    :param xy_bbox: The bounding box in x,y coordinates.
-    :param xy_border: Border in units of the x,y coordinates.
-    :param grid_mapping: Optional dataset grid mapping.
-    :return: Spatial dataset subset
+    Args:
+        xy_bbox: The bounding box in x,y coordinates.
+        xy_border: Border in units of the x,y coordinates.
+        dataset: Source dataset.
+        ij_bbox: Bounding box (i_min, i_min, j_max, j_max) in pixel
+            coordinates.
+        ij_border: Extra border added to *ij_bbox* in number of pixels
+        grid_mapping: Optional dataset grid mapping.
+
+    Returns:
+        Spatial dataset subset
     """
 
     if ij_bbox is None and xy_bbox is None:
@@ -180,15 +183,17 @@ def select_spatial_subset(
 def select_temporal_subset(
     dataset: xr.Dataset, time_range: TimeRange, time_name: str = "time"
 ) -> xr.Dataset:
-    """
-    Select a temporal subset from *dataset* given *time_range*.
+    """Select a temporal subset from *dataset* given *time_range*.
 
-    :param dataset: The dataset. Must include time
-    :param time_range: Time range given as two time stamps
-        (start, end) that may be (ISO) strings or datetime objects.
-    :param time_name: optional name of the time coordinate variable.
-        Defaults to "time".
-    :return:
+    Args:
+        dataset: The dataset. Must include time
+        time_range: Time range given as two time stamps (start, end)
+            that may be (ISO) strings or datetime objects.
+        time_name: optional name of the time coordinate variable.
+            Defaults to "time".
+
+    Returns:
+
     """
     assert_given(time_range, "time_range")
     time_name = time_name or "time"
@@ -287,20 +292,20 @@ def select_label_subset(
     >>>                                 predicate={"CHL": is_valid_slice})
     ```
 
-    :param dataset: The dataset.
-    :param dim: The name of the dimension
-        from which to select the labels.
-    :param predicate: The predicate function
-        or a mapping from variable names
-        to variable-specific predicate functions.
-    :param use_dask: Whether to use a Dask graph that will
-        compute the validity of labels in parallel.
-        For a large number of labels, very complex Dask
-        graphs will result (every label is a node)
-        whose overhead may compensate the performance gain.
-    :return: A new dataset with labels along *dim*
-        selected by the *predicate*.
-        If all labels are selected, *dataset* is returned without change.
+    Args:
+        dataset: The dataset.
+        dim: The name of the dimension from which to select the labels.
+        predicate: The predicate function or a mapping from variable
+            names to variable-specific predicate functions.
+        use_dask: Whether to use a Dask graph that will compute the
+            validity of labels in parallel. For a large number of
+            labels, very complex Dask graphs will result (every label is
+            a node) whose overhead may compensate the performance gain.
+
+    Returns:
+        A new dataset with labels along *dim* selected by the
+        *predicate*. If all labels are selected, *dataset* is returned
+        without change.
     """
     if callable(predicate):
         predicate_lookup = {

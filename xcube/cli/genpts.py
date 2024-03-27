@@ -43,8 +43,7 @@ DEFAULT_NUM_POINTS_MAX = 100
     default=DEFAULT_NUM_POINTS_MAX,
 )
 def genpts(cube: str, output_path: str, num_points_max: int):
-    """
-    Generate synthetic data points from CUBE.
+    """Generate synthetic data points from CUBE.
 
     Generates synthetic data points for a given data CUBE and write points to a CSV and GeoJSON file.
     The primary use of the tool is to point datasets for machine learning tasks

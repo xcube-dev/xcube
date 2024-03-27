@@ -152,9 +152,7 @@ def rectify(
     verbosity: int = 0,
     dry_run: bool = DEFAULT_DRY_RUN,
 ):
-    """
-    Rectify a dataset to WGS-84 using its per-pixel geo-locations.
-    """
+    """Rectify a dataset to WGS-84 using its per-pixel geo-locations."""
     configure_cli_output(quiet=quiet, verbosity=verbosity)
 
     input_path = dataset

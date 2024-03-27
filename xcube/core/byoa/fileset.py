@@ -44,13 +44,14 @@ class _FileSetDetails:
     def __init__(
         self, fs: fsspec.AbstractFileSystem, root: str, local_path: Union[None, str]
     ):
-        """
-        Stores file system details about a FileSet instance.
+        """Stores file system details about a FileSet instance.
         Internal helper class.
-        :param fs: file system
-        :param root: root in file system
-        :param local_path: the local or network path.
-            None, if this is not a local path.
+
+        Args:
+            fs: file system
+            root: root in file system
+            local_path: the local or network path. None, if this is not
+                a local path.
         """
         self._fs = fs
         self._root = root
@@ -92,8 +93,7 @@ class _FileSetDetails:
 
 
 class FileSet(JsonObject):
-    """
-    A set of files that can found at some abstract root *path*.
+    """A set of files that can found at some abstract root *path*.
     The *path* may identify local or remote filesystems.
     A filesystem may require specific *parameters*, e.g.
     user credentials.
@@ -126,16 +126,17 @@ class FileSet(JsonObject):
     The *includes*, if any, are applied before the
     *excludes*, if any.
 
-    :param path: Root path of the file set.
-    :param sub_path: An optional sub-path relative to *path*.
-        If given, this is where the actual file sets starts.
-        For example, the only top-level directory entry in a
-        ZIP archive. In archive files from GitHub this would
-        be typically "<gh_repo>-<gh-release-name>".
-        Note: wildcard characters are not yet allowed.
-    :param includes: Wildcard patterns used to include a file.
-    :param excludes: Wildcard patterns used to exclude a file.
-    :param storage_params: File system specific storage parameters.
+    Args:
+        path: Root path of the file set.
+        sub_path: An optional sub-path relative to *path*. If given,
+            this is where the actual file sets starts. For example, the
+            only top-level directory entry in a ZIP archive. In archive
+            files from GitHub this would be typically "<gh_repo>-<gh-
+            release-name>". Note: wildcard characters are not yet
+            allowed.
+        includes: Wildcard patterns used to include a file.
+        excludes: Wildcard patterns used to exclude a file.
+        storage_params: File system specific storage parameters.
     """
 
     def __init__(
@@ -191,8 +192,7 @@ class FileSet(JsonObject):
 
     @property
     def storage_params(self) -> Optional[Dict[str, Any]]:
-        """
-        Get optional parameters for the file system
+        """Get optional parameters for the file system
         :attribute:path is referring to.
         """
         return self._storage_params
@@ -208,8 +208,7 @@ class FileSet(JsonObject):
         return self._excludes
 
     def keys(self) -> Iterator[str]:
-        """
-        Get keys in this file set.
+        """Get keys in this file set.
         A key is a normalized path relative to the root *path*.
         The forward slash "/" is used as path separator.
         """
@@ -219,15 +218,13 @@ class FileSet(JsonObject):
                 yield key
 
     def get_local_path(self) -> Optional[str]:
-        """
-        Get the local path, if this file set is local,
+        """Get the local path, if this file set is local,
         otherwise return None.
         """
         return self._get_details().local_path
 
     def is_local(self) -> bool:
-        """
-        Test whether this file set refers to a local file or directory.
+        """Test whether this file set refers to a local file or directory.
         The test is made on this path's protocol.
         """
         if self._details is not None:
@@ -236,9 +233,7 @@ class FileSet(JsonObject):
         return protocol is None or protocol == "file"
 
     def to_local(self) -> "FileSet":
-        """
-        Turn this file set into a locally existing file set.
-        """
+        """Turn this file set into a locally existing file set."""
         if self.is_local():
             return self
 
@@ -303,23 +298,23 @@ class FileSet(JsonObject):
             )
 
     def is_local_dir(self) -> bool:
-        """
-        Test whether this file set refers to an existing local directory.
-        """
+        """Test whether this file set refers to an existing local directory."""
         local_path = self.get_local_path()
         return os.path.isdir(local_path) if local_path is not None else False
 
     def to_local_dir(self, dir_path: str = None) -> "FileSet":
-        """
-        Convert this file set into a file set that refers to a
+        """Convert this file set into a file set that refers to a
         directory in the local file system.
 
         The *dir_path* parameter is used only if this fileset
         does not already refer to an existing local directory.
 
-        :param dir_path: An optional directory path.
-            If not given, a temporary directory is created.
-        :return: The file set representing the local directory.
+        Args:
+            dir_path: An optional directory path. If not given, a
+                temporary directory is created.
+
+        Returns:
+            The file set representing the local directory.
         """
         file_set = self.to_local()
         if (
@@ -332,20 +327,20 @@ class FileSet(JsonObject):
         return file_set._write_local_dir(dir_path)
 
     def is_local_zip(self):
-        """
-        Test whether this file set refers to an existing local ZIP archive.
-        """
+        """Test whether this file set refers to an existing local ZIP archive."""
         local_path = self.get_local_path()
         return zipfile.is_zipfile(local_path) if local_path is not None else False
 
     def to_local_zip(self, zip_path: str = None) -> "FileSet":
-        """
-        Zip this file set and return it as a new local directory file set.
+        """Zip this file set and return it as a new local directory file set.
         If this is already a ZIP archive, return this file set.
 
-        :param zip_path: An optional path for the new ZIP archive.
-            If not given, a temporary file will be created.
-        :return: The file set representing the local ZIP archive.
+        Args:
+            zip_path: An optional path for the new ZIP archive. If not
+                given, a temporary file will be created.
+
+        Returns:
+            The file set representing the local ZIP archive.
         """
         file_set = self.to_local()
         if (

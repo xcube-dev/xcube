@@ -38,16 +38,17 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
     """A multi-level dataset whose level datasets are
     created by down-sampling a base dataset.
 
-    :param base_dataset: The base dataset for the level at index zero.
-    :param grid_mapping: Optional grid mapping for *base_dataset*.
-    :param num_levels: Optional number of levels.
-    :param ds_id: Optional dataset identifier.
-    :param agg_methods: Optional aggregation methods.
-        May be given as string or as mapping from variable name pattern
-        to aggregation method. Valid aggregation methods are
-        None, "first", "min", "max", "mean", "median".
-        If None, the default, "first" is used for integer variables
-        and "mean" for floating point variables.
+    Args:
+        base_dataset: The base dataset for the level at index zero.
+        grid_mapping: Optional grid mapping for *base_dataset*.
+        num_levels: Optional number of levels.
+        ds_id: Optional dataset identifier.
+        agg_methods: Optional aggregation methods. May be given as
+            string or as mapping from variable name pattern to
+            aggregation method. Valid aggregation methods are None,
+            "first", "min", "max", "mean", "median". If None, the
+            default, "first" is used for integer variables and "mean"
+            for floating point variables.
     """
 
     def __init__(
@@ -84,14 +85,16 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         return get_num_levels(gm.size, gm.tile_size)
 
     def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
-        """
-        Compute the dataset at level *index*: If *index* is zero, return
+        """Compute the dataset at level *index*: If *index* is zero, return
         the base image passed to constructor, otherwise down-sample the
         dataset for the level at given *index*.
 
-        :param index: the level index
-        :param parameters: currently unused
-        :return: the dataset for the level at *index*.
+        Args:
+            index: the level index
+            parameters: currently unused
+
+        Returns:
+            the dataset for the level at *index*.
         """
         assert_instance(index, int, name="index")
         if index < 0:

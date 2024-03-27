@@ -46,8 +46,7 @@ def extract(
     indexes=False,
     refs=False,
 ):
-    """
-    Extract cube points.
+    """Extract cube points.
 
     Extracts data cells from CUBE at coordinates given in each POINTS record and writes the resulting values to given
     output path and format.

@@ -188,17 +188,19 @@ def new_cluster(
     given to ``new_cluster``, it will override the value from the environment
     variable.
 
-    :param provider: identifier of the provider to use. Currently, only
-        'coiled' is supported.
-    :param name: name to use as an identifier for the cluster
-    :param software: identifier for the software environment to be used.
-    :param n_workers: number of workers in the cluster
-    :param resource_tags: tags to apply to the cloud resources forming the
-        cluster
-    :param account: cluster provider account name
-    :param **kwargs: further named arguments will be passed on to the
-        cluster creation function
-    :param region: default region where workers of the cluster will be deployed set to eu-central-1
+    Args:
+        provider: identifier of the provider to use. Currently, only
+            'coiled' is supported.
+        name: name to use as an identifier for the cluster
+        software: identifier for the software environment to be used.
+        n_workers: number of workers in the cluster
+        resource_tags: tags to apply to the cloud resources forming the
+            cluster
+        account: cluster provider account name
+        **kwargs: further named arguments will be passed on to the
+            cluster creation function
+        region: default region where workers of the cluster will be
+            deployed set to eu-central-1
     """
 
     if resource_tags is None:
@@ -296,9 +298,7 @@ def _collate_cluster_resource_tags(extra_tags: Dict[str, str]) -> Dict[str, str]
 
 
 class _NestedList:
-    """
-    Utility class whose instances are used as input to dask.block().
-    """
+    """Utility class whose instances are used as input to dask.block()."""
 
     def __init__(self, shape: Sequence[int], fill_value: Any = None):
         self._shape = tuple(shape)

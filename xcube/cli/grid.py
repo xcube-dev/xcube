@@ -262,8 +262,7 @@ def list_resolutions(
     num_results: int,
     sep: str,
 ):
-    """
-    List resolutions close to a target resolution.
+    """List resolutions close to a target resolution.
 
     Lists possible resolutions of a fixed Earth grid that are close to a given target
     resolution TARGET_RES within a maximum allowed deviation DELTA_RES.
@@ -343,8 +342,7 @@ def list_resolutions(
 def list_levels(
     res: str, height: int, coverage: str, level_min: Optional[int], sep: str
 ):
-    """
-    List levels for a resolution or a tile size.
+    """List levels for a resolution or a tile size.
 
     Lists the given number of LEVELS for given resolution RES or given height in grid cells HEIGHT.
     which can both be used to define a fixed Earth grid.
@@ -396,8 +394,7 @@ def adjust_box(
     coverage: str,
     tile_factor: Optional[int],
 ):
-    """
-    Adjust a bounding box to a fixed Earth grid.
+    """Adjust a bounding box to a fixed Earth grid.
 
     Adjusts a bounding box given by GEOM  to a fixed Earth grid by the
     inverse resolution INV_RES in degrees^-1 units, which must be an integer number.
@@ -495,8 +492,7 @@ def _fetch_coverage_from_option(coverage_str: str) -> fractions.Fraction:
 
 @click.group()
 def grid():
-    """
-    Find spatial xcube dataset resolutions and adjust bounding boxes.
+    """Find spatial xcube dataset resolutions and adjust bounding boxes.
 
     We find suitable resolutions with respect to a possibly regional fixed Earth grid and adjust regional spatial
     bounding boxes to that grid. We also try to select the resolutions such

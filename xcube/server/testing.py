@@ -100,11 +100,14 @@ class ServerTestCase(unittest.TestCase, ABC):
     ) -> urllib3.response.HTTPResponse:
         """Fetches the response for given request.
 
-        :param path: Route request path
-        :param method: HTTP request method, default to "GET"
-        :param headers: HTTP request headers
-        :param body: HTTP request body
-        :return: A response object
+        Args:
+            path: Route request path
+            method: HTTP request method, default to "GET"
+            headers: HTTP request headers
+            body: HTTP request body
+
+        Returns:
+            A response object
         """
         if path.startswith("/"):
             path = path[1:]
@@ -122,11 +125,14 @@ class ServerTestCase(unittest.TestCase, ABC):
     ) -> Tuple[Union[type(None), bool, int, float, str, list, dict], int]:
         """Fetches the response's JSON value for given request.
 
-        :param path: Route request path
-        :param method: HTTP request method, default to "GET"
-        :param headers: HTTP request headers
-        :param body: HTTP request body
-        :return: A json object parsed from response data
+        Args:
+            path: Route request path
+            method: HTTP request method, default to "GET"
+            headers: HTTP request headers
+            body: HTTP request body
+
+        Returns:
+            A json object parsed from response data
         """
         response = self.fetch(path, method=method, headers=headers, body=body)
         return json.loads(response.data), response.status
@@ -134,7 +140,8 @@ class ServerTestCase(unittest.TestCase, ABC):
     def assertResponseOK(self, response: urllib3.response.HTTPResponse):
         """Assert that response has status code 200.
 
-        :param response: The response from a ``self.fetch()`` call
+        Args:
+            response: The response from a ``self.fetch()`` call
         """
         self.assertResponse(response, expected_status=200)
 
@@ -145,8 +152,9 @@ class ServerTestCase(unittest.TestCase, ABC):
         has the given status code 404, and
         has the given error message *expected_message*, if given.
 
-        :param response: The response from a ``self.fetch()`` call
-        :param expected_message: The expected error message or part of it.
+        Args:
+            response: The response from a ``self.fetch()`` call
+            expected_message: The expected error message or part of it.
         """
         self.assertResponse(
             response, expected_status=404, expected_message=expected_message
@@ -159,8 +167,9 @@ class ServerTestCase(unittest.TestCase, ABC):
         has the given status code 400, and
         has the given error message *expected_message*, if given.
 
-        :param response: The response from a ``self.fetch()`` call
-        :param expected_message: The expected error message or part of it.
+        Args:
+            response: The response from a ``self.fetch()`` call
+            expected_message: The expected error message or part of it.
         """
         self.assertResponse(
             response, expected_status=400, expected_message=expected_message
@@ -176,9 +185,10 @@ class ServerTestCase(unittest.TestCase, ABC):
         has the given status code *expected_status*, if given, and
         has the given error message *expected_message*, if given.
 
-        :param response: The response from a ``self.fetch()`` call
-        :param expected_status: The expected status code.
-        :param expected_message: The expected error message or part of it.
+        Args:
+            response: The response from a ``self.fetch()`` call
+            expected_status: The expected status code.
+            expected_message: The expected error message or part of it.
         """
         message = self.parse_error_message(response)
         if expected_status is not None:

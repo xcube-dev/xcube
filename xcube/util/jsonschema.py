@@ -267,11 +267,11 @@ class JsonDateAndTimeSchemaBase:
 
 
 class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
-    """
-    JSON schema for date instances.
+    """JSON schema for date instances.
 
-    :param min_date: optional minimum date.
-    :param max_date: optional maximum date.
+    Args:
+        min_date: optional minimum date.
+        max_date: optional maximum date.
     """
 
     # noinspection PyShadowingBuiltins
@@ -294,12 +294,16 @@ class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
     def new_range(
         cls, min_date: str = None, max_date: str = None, nullable: bool = False
     ) -> "JsonArraySchema":
-        """
-        Return a schema for a date range.
-        :param min_date: optional minimum date.
-        :param max_date: optional maximum date.
-        :param nullable: whether the whole range as well as individual start and end may be None.
-        :return: a JsonArraySchema with two items.
+        """Return a schema for a date range.
+
+        Args:
+            min_date: optional minimum date.
+            max_date: optional maximum date.
+            nullable: whether the whole range as well as individual
+                start and end may be None.
+
+        Returns:
+            a JsonArraySchema with two items.
         """
         return JsonArraySchema(
             items=[
@@ -311,11 +315,11 @@ class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
 
 
 class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
-    """
-    JSON schema for date-time instances.
+    """JSON schema for date-time instances.
 
-    :param min_datetime: optional minimum date-time.
-    :param max_datetime: optional maximum date-time.
+    Args:
+        min_datetime: optional minimum date-time.
+        max_datetime: optional maximum date-time.
     """
 
     # noinspection PyShadowingBuiltins
@@ -338,12 +342,16 @@ class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
     def new_range(
         cls, min_datetime: str = None, max_datetime: str = None, nullable: bool = False
     ) -> "JsonArraySchema":
-        """
-        Return a schema for a date-time range.
-        :param min_datetime: optional minimum date.
-        :param max_datetime: optional maximum date.
-        :param nullable: whether the whole range as well as individual start and end dates may be None.
-        :return: a JsonArraySchema with two items.
+        """Return a schema for a date-time range.
+
+        Args:
+            min_datetime: optional minimum date.
+            max_datetime: optional maximum date.
+            nullable: whether the whole range as well as individual
+                start and end dates may be None.
+
+        Returns:
+            a JsonArraySchema with two items.
         """
         return JsonArraySchema(
             items=[
@@ -521,8 +529,7 @@ class JsonObjectSchema(JsonSchema):
     def process_kwargs_subset(
         self, kwargs: Dict[str, Any], keywords: Sequence[str]
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        """
-        Utility that helps processing keyword-arguments. in *kwargs*:
+        """Utility that helps processing keyword-arguments. in *kwargs*:
 
         Pop every keyword in *keywords* contained in this object schema's properties
         from *kwargs* and put the keyword and value from *kwargs* into a new dictionary.
@@ -665,8 +672,7 @@ class JsonObjectSchema(JsonSchema):
 
 
 class JsonObject(ABC):
-    """
-    The abstract base class for objects
+    """The abstract base class for objects
 
     * whose instances can be created from a JSON-serializable
       dictionary using their :meth:from_dict class method;

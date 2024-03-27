@@ -37,8 +37,9 @@ class ObjectStorage(collections.abc.Mapping):
     * "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
     * "{dataset_id}/{*path}" for other datasets.
 
-    :param datasets: Mapping from dataset Identifier
-        to (multi-level) datasets.
+    Args:
+        datasets: Mapping from dataset Identifier to (multi-level)
+            datasets.
     """
 
     def __init__(self, datasets: Mapping[str, Union[xr.Dataset, MultiLevelDataset]]):
@@ -64,7 +65,8 @@ class ObjectStorage(collections.abc.Mapping):
     def __contains__(self, key: str) -> bool:
         """Overridden to avoid a call to __getitem__(),
         which will load data, but we want this to happen
-        for direct __getitem__() calls only."""
+        for direct __getitem__() calls only.
+        """
         try:
             zarr_store, item_key = self._parse_key(key)
         except (KeyError, ApiError.NotFound):

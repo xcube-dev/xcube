@@ -32,8 +32,7 @@ import xarray as xr
 
 
 class MaskSet:
-    """
-    A set of mask variables derived from a variable *flag_var* with the following
+    """A set of mask variables derived from a variable *flag_var* with the following
     CF attributes:
 
       - One or both of `flag_masks` and `flag_values`
@@ -45,9 +44,10 @@ class MaskSet:
     Each mask is represented by an `xarray.DataArray`, has the name of the flag,
     is of type `numpy.unit8`, and has the dimensions of the given *flag_var*.
 
-    :param flag_var: an `xarray.DataArray` that defines flag values.
-           The CF attributes `flag_meanings` and one or both of
-           `flag_masks` and `flag_values` are expected to exist and be valid.
+    Args:
+        flag_var: an `xarray.DataArray` that defines flag values. The CF
+            attributes `flag_meanings` and one or both of `flag_masks`
+            and `flag_values` are expected to exist and be valid.
     """
 
     def __init__(self, flag_var: xr.DataArray):
@@ -94,13 +94,15 @@ class MaskSet:
 
     @classmethod
     def get_mask_sets(cls, dataset: xr.Dataset) -> Dict[str, "MaskSet"]:
-        """
-        For each "flag" variable in given *dataset*, turn it into a ``MaskSet``,
+        """For each "flag" variable in given *dataset*, turn it into a ``MaskSet``,
         store it in a dictionary.
 
-        :param dataset: The dataset
-        :return: A mapping of flag names to ``MaskSet``.
-            Will be empty if there are no flag variables in *dataset*.
+        Args:
+            dataset: The dataset
+
+        Returns:
+            A mapping of flag names to ``MaskSet``. Will be empty if
+            there are no flag variables in *dataset*.
         """
         masks = {}
         for var_name in dataset.variables:

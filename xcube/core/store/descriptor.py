@@ -113,21 +113,21 @@ def _get_common_dataset_descriptor_props(
 
 
 class DataDescriptor(JsonObject):
-    """
-    A generic descriptor for any data.
+    """A generic descriptor for any data.
     Also serves as a base class for more specific data descriptors.
 
-    :param data_id: An identifier for the data
-    :param data_type: A type specifier for the data
-    :param crs: A coordinate reference system identifier,
-        as an EPSG, PROJ or WKT string
-    :param bbox: A bounding box of the data
-    :param time_range: Start and end time delimiting this
-        data's temporal extent
-    :param time_period: The data's periodicity if it is
-        evenly temporally resolved.
-    :param open_params_schema: A JSON schema describing the
-        parameters that may be used to open this data.
+    Args:
+        data_id: An identifier for the data
+        data_type: A type specifier for the data
+        crs: A coordinate reference system identifier, as an EPSG, PROJ
+            or WKT string
+        bbox: A bounding box of the data
+        time_range: Start and end time delimiting this data's temporal
+            extent
+        time_period: The data's periodicity if it is evenly temporally
+            resolved.
+        open_params_schema: A JSON schema describing the parameters that
+            may be used to open this data.
     """
 
     def __init__(
@@ -182,32 +182,32 @@ class DataDescriptor(JsonObject):
 
 
 class DatasetDescriptor(DataDescriptor):
-    """
-    A descriptor for a gridded, N-dimensional dataset represented
+    """A descriptor for a gridded, N-dimensional dataset represented
     by xarray.Dataset. Comprises a description of the data variables
     contained in the dataset.
 
     Regrading *time_range* and *time_period* parameters, please refer to
     https://github.com/dcs4cop/xcube/blob/main/docs/source/storeconv.md#date-time-and-duration-specifications
 
-    :param data_id: An identifier for the data
-    :param data_type: The data type of the data described
-    :param crs: A coordinate reference system identifier,
-        as an EPSG, PROJ or WKT string
-    :param bbox: A bounding box of the data
-    :param time_range: Start and end time delimiting this data's
-        temporal extent
-    :param time_period: The data's periodicity
-        if it is evenly temporally resolved
-    :param spatial_res: The spatial extent of a pixel in crs units
-    :param dims: A mapping of the dataset's dimensions to their sizes
-    :param coords: mapping of the dataset's data coordinate names
-        to instances of :class:VariableDescriptor
-    :param data_vars: A mapping of the dataset's variable names
-        to instances of :class:VariableDescriptor
-    :param attrs: A mapping containing arbitrary attributes of the dataset
-    :param open_params_schema: A JSON schema describing the parameters
-        that may be used to open this data
+    Args:
+        data_id: An identifier for the data
+        data_type: The data type of the data described
+        crs: A coordinate reference system identifier, as an EPSG, PROJ
+            or WKT string
+        bbox: A bounding box of the data
+        time_range: Start and end time delimiting this data's temporal
+            extent
+        time_period: The data's periodicity if it is evenly temporally
+            resolved
+        spatial_res: The spatial extent of a pixel in crs units
+        dims: A mapping of the dataset's dimensions to their sizes
+        coords: mapping of the dataset's data coordinate names to
+            instances of :class:VariableDescriptor
+        data_vars: A mapping of the dataset's variable names to
+            instances of :class:VariableDescriptor
+        attrs: A mapping containing arbitrary attributes of the dataset
+        open_params_schema: A JSON schema describing the parameters that
+            may be used to open this data
     """
 
     def __init__(
@@ -275,18 +275,18 @@ class DatasetDescriptor(DataDescriptor):
 
 
 class VariableDescriptor(JsonObject):
-    """
-    A descriptor for dataset variable represented by
+    """A descriptor for dataset variable represented by
     xarray.DataArray instances.
     They are part of dataset descriptor for an gridded, N-dimensional
     dataset represented by
     xarray.Dataset.
 
-    :param name: The variable name
-    :param dtype: The data type of the variable.
-    :param dims: A list of the names of the variable's dimensions.
-    :param chunks: A list of the chunk sizes of the variable's dimensions
-    :param attrs: A mapping containing arbitrary attributes of the variable
+    Args:
+        name: The variable name
+        dtype: The data type of the variable.
+        dims: A list of the names of the variable's dimensions.
+        chunks: A list of the chunk sizes of the variable's dimensions
+        attrs: A mapping containing arbitrary attributes of the variable
     """
 
     def __init__(
@@ -335,14 +335,14 @@ class VariableDescriptor(JsonObject):
 
 
 class MultiLevelDatasetDescriptor(DatasetDescriptor):
-    """
-    A descriptor for a gridded, N-dimensional, multi-level,
+    """A descriptor for a gridded, N-dimensional, multi-level,
     multi-resolution dataset represented by
     xcube.core.mldataset.MultiLevelDataset.
 
-    :param data_id: An identifier of the multi-level dataset
-    :param num_levels: The number of levels of this multi-level dataset
-    :param data_type: A type specifier for the multi-level dataset
+    Args:
+        data_id: An identifier of the multi-level dataset
+        num_levels: The number of levels of this multi-level dataset
+        data_type: A type specifier for the multi-level dataset
     """
 
     def __init__(
@@ -376,14 +376,14 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
 
 
 class GeoDataFrameDescriptor(DataDescriptor):
-    """
-    A descriptor for a geo-vector dataset represented by a
+    """A descriptor for a geo-vector dataset represented by a
     geopandas.GeoDataFrame instance.
 
-    :param data_id: An identifier of the geopandas.GeoDataFrame
-    :param feature_schema: A schema describing the properties
-        of the vector data
-    :param kwargs: Parameters passed to super :class:DataDescriptor
+    Args:
+        data_id: An identifier of the geopandas.GeoDataFrame
+        feature_schema: A schema describing the properties of the vector
+            data
+        kwargs: Parameters passed to super :class:DataDescriptor
     """
 
     def __init__(

@@ -51,21 +51,21 @@ from ..response import CubeReference
 
 
 class LocalCubeGenerator(CubeGenerator):
-    """
-    Generator tool for data cubes.
+    """Generator tool for data cubes.
 
     Creates cube views from one or more cube stores, resamples them to a
     common grid, optionally performs some cube transformation, and writes
     the resulting cube to some target cube store.
 
-    :param store_pool: An optional pool of pre-configured data stores
-        referenced from *gen_config* input/output configurations.
-    :param verbosity: Level of verbosity, 0 means off.
-    :param raise_on_error: Whether to raise a CubeGeneratorError
-        exception on generator failures. If False, the default,
-        the returned result will have the "status" field set to "error"
-        while other fields such as "message", "traceback", "output"
-        provide more failure details.
+    Args:
+        store_pool: An optional pool of pre-configured data stores
+            referenced from *gen_config* input/output configurations.
+        verbosity: Level of verbosity, 0 means off.
+        raise_on_error: Whether to raise a CubeGeneratorError exception
+            on generator failures. If False, the default, the returned
+            result will have the "status" field set to "error" while
+            other fields such as "message", "traceback", "output"
+            provide more failure details.
     """
 
     def __init__(

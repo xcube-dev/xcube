@@ -40,21 +40,23 @@ def get_data_store_instance(
     store_params: Dict[str, Any] = None,
     store_pool: "DataStorePool" = None,
 ) -> "DataStoreInstance":
-    """
-    Get a data store instance for identifier *store_id*.
+    """Get a data store instance for identifier *store_id*.
 
     If *store_id* is prefixed by a "@", it is an "instance identifier".
     In this case the store instance is retrieved from
     the expected *store_pool* argument. Otherwise a new store instance
     is created using optional *store_params*.
 
-    :param store_id: Store identifier, may be prefixed by
-        a "@" to indicate a store instance identifier.
-    :param store_params: Store parameters, only valid if *store_id*
-        is not an instance identifier.
-    :param store_pool: A pool of configured store instances used
-        if *store_id* is an instance identifier.
-    :return: a DataStoreInstance object
+    Args:
+        store_id: Store identifier, may be prefixed by a "@" to indicate
+            a store instance identifier.
+        store_params: Store parameters, only valid if *store_id* is not
+            an instance identifier.
+        store_pool: A pool of configured store instances used if
+            *store_id* is an instance identifier.
+
+    Returns:
+        a DataStoreInstance object
     :raise: DataStoreError if a configured store does not exist
     """
     if store_id.startswith("@"):
@@ -105,16 +107,16 @@ DATA_STORE_POOL_SCHEMA = JsonObjectSchema(
 
 
 class DataStoreConfig:
-    """
-    The configuration of a data store.
+    """The configuration of a data store.
     The class is used by :class:DataStorePool to instantiate
     stores in a deferred manner.
 
-    :param store_id: the data store identifier
-    :param store_params: optional store parameters
-    :param title: a human-readable title for the store instance
-    :param description: a human-readable description of the store instance
-    :param user_data: optional user-data
+    Args:
+        store_id: the data store identifier
+        store_params: optional store parameters
+        title: a human-readable title for the store instance
+        description: a human-readable description of the store instance
+        user_data: optional user-data
     """
 
     def __init__(
@@ -178,8 +180,7 @@ class DataStoreConfig:
 
 
 class DataStoreInstance:
-    """
-    Internal class used by DataStorePool to maintain
+    """Internal class used by DataStorePool to maintain
     store configurations + instances.
     """
 

@@ -27,11 +27,12 @@ from xcube.util.config import load_configs
 
 
 class ConfigChangeObserver:
-    """
-    An observer for configuration changes.
-    :param server: The server
-    :param config_paths: Configuration file paths.
-    :param check_after: Time in seconds between two observations.
+    """An observer for configuration changes.
+
+    Args:
+        server: The server
+        config_paths: Configuration file paths.
+        check_after: Time in seconds between two observations.
     """
 
     def __init__(self, server: Server, config_paths: Sequence[str], check_after: float):

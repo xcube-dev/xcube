@@ -228,11 +228,14 @@ class CubeConfig(JsonObject):
             self.variable_metadata = dict(variable_metadata)
 
     def drop_props(self, name: Union[str, Iterable[str]]):
-        """
-        Drop one or more named properties from this configuration.
-        :param name: the name of the property to be dropped.
-        :param names: more names of properties to be dropped.
-        :return: a new cube configuration.
+        """Drop one or more named properties from this configuration.
+
+        Args:
+            name: the name of the property to be dropped.
+            names: more names of properties to be dropped.
+
+        Returns:
+            a new cube configuration.
         """
         if not name:
             return self

@@ -206,9 +206,10 @@ class _ModuleEntryPoint:
         return self._module_name
 
     def load(self) -> Optional[Callable]:
-        """
-        Load function "init_plugin()" either from "<module_name>.plugin" or "<module_name>"
-        :return: plugin init function
+        """Load function "init_plugin()" either from "<module_name>.plugin" or "<module_name>"
+
+        Returns:
+            plugin init function
         """
         try:
             plugin_module = importlib.import_module(
@@ -230,9 +231,7 @@ class _ModuleEntryPoint:
 
 
 class ExtensionComponent(metaclass=abc.ABCMeta):
-    """
-    Utility base class for extension components.
-    """
+    """Utility base class for extension components."""
 
     def __init__(self, extension_point: str, name: str):
         if not extension_point:
@@ -248,22 +247,22 @@ class ExtensionComponent(metaclass=abc.ABCMeta):
 
     @property
     def extension_point(self) -> str:
-        """
-        :return: The extension point for this component.
+        """Returns:
+        The extension point for this component.
         """
         return self._extension_point
 
     @property
     def extension(self) -> Optional[Extension]:
-        """
-        :return: The extension for this component.
-            None, if it has not (yet) been registered as an extension.
+        """Returns:
+        The extension for this component. None, if it has not (yet)
+        been registered as an extension.
         """
         return get_extension_registry().get_extension(self._extension_point, self._name)
 
     def get_metadata_attr(self, key: str, default: Any = None) -> Any:
-        """
-        :return: A metadata attribute for *key* and given *default* value.
+        """Returns:
+        A metadata attribute for *key* and given *default* value.
         """
         extension = self.extension
         return extension.metadata.get(key, default) if extension is not None else ""

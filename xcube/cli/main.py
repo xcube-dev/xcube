@@ -75,9 +75,7 @@ from xcube.version import version
     " (warnings are hidden by default).",
 )
 def cli(traceback=False, scheduler=None, log_level=None, log_file=None, warnings=None):
-    """
-    xcube Toolkit
-    """
+    """xcube Toolkit"""
     configure_logging(log_file=log_file, log_level=log_level)
     configure_warnings(warnings)
 

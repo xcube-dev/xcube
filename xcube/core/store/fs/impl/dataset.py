@@ -142,9 +142,7 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 
 class DatasetFsDataAccessor(FsDataAccessor, ABC):
-    """
-    Opener/writer extension name: "dataset:<format>:<protocol>"
-    """
+    """Opener/writer extension name: 'dataset:<format>:<protocol>'."""
 
     @classmethod
     def get_data_type(cls) -> DataType:
@@ -152,9 +150,7 @@ class DatasetFsDataAccessor(FsDataAccessor, ABC):
 
 
 class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
-    """
-    Opener/writer extension name: "dataset:zarr:<protocol>"
-    """
+    """Opener/writer extension name: 'dataset:zarr:<protocol>'."""
 
     @classmethod
     def get_format_id(cls) -> str:
@@ -233,9 +229,7 @@ NETCDF_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 
 class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
-    """
-    Opener/writer extension name: "dataset:netcdf:<protocol>"
-    """
+    """Opener/writer extension name: 'dataset:netcdf:<protocol>'."""
 
     @classmethod
     def get_format_id(cls) -> str:
@@ -314,7 +308,7 @@ GEOTIFF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     """
-    Opener/writer extension name: "dataset:geotiff:<protocol>"
+    Opener/writer extension name: 'dataset:geotiff:<protocol>'.
     """
 
     @classmethod

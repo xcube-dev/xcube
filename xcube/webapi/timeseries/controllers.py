@@ -75,27 +75,27 @@ def get_time_series(
     For non-point geometries that cover spatial areas, there
     will be values for all keys given by *agg_methods*.
 
-    :param ctx: Service context object
-    :param ds_name: The dataset identifier.
-    :param var_name: The variable name.
-    :param geo_json: The GeoJSON object that is a or has
-        a geometry or collection of geometries.
-    :param agg_methods: Spatial aggregation methods
-        for geometries that cover a spatial area.
-    :param start_date: An optional start date.
-    :param end_date: An optional end date.
-    :param tolerance: Time tolerance in seconds that expands
-        the given time range. Defaults to one second.
-    :param max_valids: Optional number of valid points.
-        If it is None (default),
-        also missing values are returned as NaN;
-        if it is -1,
-        only valid values are returned;
-        if it is a positive integer,
-        the most recent valid values are returned.
-    :param incl_ancillary_vars: For point geometries,
-        include values of ancillary variables, if any.
-    :return: Time-series data structure.
+    Args:
+        ctx: Service context object
+        ds_name: The dataset identifier.
+        var_name: The variable name.
+        geo_json: The GeoJSON object that is a or has a geometry or
+            collection of geometries.
+        agg_methods: Spatial aggregation methods for geometries that
+            cover a spatial area.
+        start_date: An optional start date.
+        end_date: An optional end date.
+        tolerance: Time tolerance in seconds that expands the given time
+            range. Defaults to one second.
+        max_valids: Optional number of valid points. If it is None
+            (default), also missing values are returned as NaN; if it is
+            -1, only valid values are returned; if it is a positive
+            integer, the most recent valid values are returned.
+        incl_ancillary_vars: For point geometries, include values of
+            ancillary variables, if any.
+
+    Returns:
+        Time-series data structure.
     """
     if tolerance:
         timedelta = pd.Timedelta(tolerance, unit="seconds")

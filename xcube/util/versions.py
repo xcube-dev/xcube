@@ -62,10 +62,10 @@ _XCUBE_VERSIONS = None
 
 
 def get_xcube_versions() -> Dict[str, str]:
-    """
-    Get a mapping from xcube package names to package versions.
+    """Get a mapping from xcube package names to package versions.
 
-    :return: A mapping of the package names to package versions
+    Returns:
+        A mapping of the package names to package versions
     The result computed from the evaluating the expression.
     """
     from .plugin import get_plugins
@@ -81,16 +81,18 @@ def get_xcube_versions() -> Dict[str, str]:
 def get_versions(
     dependency_names: List[str], plugin_names: List[str]
 ) -> Dict[str, str]:
-    """
-    Get a mapping from package names to package versions.
+    """Get a mapping from package names to package versions.
     The input is divided into names of packages that are external dependencies
     and into names of xcube plugins.
 
-    :param dependency_names: A list of names of packages of which the versions
-        shall be found
-    :param plugin_names: A list of names of xcube plugins of which the versions
-        shall be found
-    :return: A mapping of the package names to package versions
+    Args:
+        dependency_names: A list of names of packages of which the
+            versions shall be found
+        plugin_names: A list of names of xcube plugins of which the
+            versions shall be found
+
+    Returns:
+        A mapping of the package names to package versions
     The result computed from the evaluating the expression.
     """
     # Idea borrowed from xarray.print_versions

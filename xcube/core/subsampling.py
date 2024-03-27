@@ -166,8 +166,7 @@ def assert_valid_agg_methods(agg_methods: Optional[AggMethods]):
 def find_agg_method(
     agg_methods: AggMethods, var_name: Hashable, var_dtype: np.dtype
 ) -> str:
-    """
-    Find aggregation method in *agg_methods*
+    """Find aggregation method in *agg_methods*
     for given *var_name* and *var_dtype*.
     """
     assert_valid_agg_methods(agg_methods)

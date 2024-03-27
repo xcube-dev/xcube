@@ -45,29 +45,30 @@ def affine_transform_dataset(
     gm_name: Optional[str] = None,
     reuse_coords: bool = False,
 ) -> xr.Dataset:
-    """
-    Resample dataset according to an affine transformation.
+    """Resample dataset according to an affine transformation.
 
     The affine transformation will be applied only if the CRS of
     *source_gm* and the CRS of *target_gm* are both geographic or equal.
     Otherwise, a ``ValueError`` will be raised.
 
-    :param dataset: The source dataset
-    :param source_gm: Source grid mapping of *dataset*.
-        Must be regular. Must have same CRS as *target_gm*.
-    :param target_gm: Target grid mapping.
-        Must be regular. Must have same CRS as *source_gm*.
-    :param var_configs: Optional resampling configurations
-        for individual variables.
-    :param encode_cf: Whether to encode the target grid mapping
-        into the resampled dataset in a CF-compliant way.
-        Defaults to ``True``.
-    :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs". Used only if *encode_cf* is ``True``.
-    :param reuse_coords: Whether to either reuse target
-        coordinate arrays from target_gm or to compute
-        new ones.
-    :return: The resampled target dataset.
+    Args:
+        dataset: The source dataset
+        source_gm: Source grid mapping of *dataset*. Must be regular.
+            Must have same CRS as *target_gm*.
+        target_gm: Target grid mapping. Must be regular. Must have same
+            CRS as *source_gm*.
+        var_configs: Optional resampling configurations for individual
+            variables.
+        encode_cf: Whether to encode the target grid mapping into the
+            resampled dataset in a CF-compliant way. Defaults to
+            ``True``.
+        gm_name: Name for the grid mapping variable. Defaults to "crs".
+            Used only if *encode_cf* is ``True``.
+        reuse_coords: Whether to either reuse target coordinate arrays
+            from target_gm or to compute new ones.
+
+    Returns:
+        The resampled target dataset.
     """
     # Are source and target both geographic grid mappings?
     both_geographic = source_gm.crs.is_geographic and target_gm.crs.is_geographic
@@ -109,17 +110,19 @@ def resample_dataset(
     xy_dim_names: Tuple[str, str],
     var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
 ) -> xr.Dataset:
-    """
-    Resample dataset according to an affine transformation.
+    """Resample dataset according to an affine transformation.
 
-    :param dataset: The source dataset
-    :param matrix: Affine transformation matrix.
-    :param size: Target image size.
-    :param tile_size: Target image tile size.
-    :param xy_dim_names: Names of the spatial dimensions.
-    :param var_configs: Optional resampling configurations
-        for individual variables.
-    :return: The resampled target dataset.
+    Args:
+        dataset: The source dataset
+        matrix: Affine transformation matrix.
+        size: Target image size.
+        tile_size: Target image tile size.
+        xy_dim_names: Names of the spatial dimensions.
+        var_configs: Optional resampling configurations for individual
+            variables.
+
+    Returns:
+        The resampled target dataset.
     """
     ((i_scale, _, i_off), (_, j_scale, j_off)) = matrix
     width, height = size
@@ -233,17 +236,19 @@ def _transform_array(
     spline_order: int,
     recover_nan: bool,
 ) -> da.Array:
-    """
-    Apply affine transformation to ND-image.
+    """Apply affine transformation to ND-image.
 
-    :param image: ND-image with shape (..., size_y, size_x)
-    :param scale: Scaling factors (1, ..., 1, sy, sx)
-    :param offset: Offset values (0, ..., 0, oy, ox)
-    :param shape: (..., size_y, size_x)
-    :param chunks: (..., chunk_size_y, chunk_size_x)
-    :param spline_order: 0 ... 5
-    :param recover_nan: True/False
-    :return: Transformed ND-image.
+    Args:
+        image: ND-image with shape (..., size_y, size_x)
+        scale: Scaling factors (1, ..., 1, sy, sx)
+        offset: Offset values (0, ..., 0, oy, ox)
+        shape: (..., size_y, size_x)
+        chunks: (..., chunk_size_y, chunk_size_x)
+        spline_order: 0 ... 5
+        recover_nan: True/False
+
+    Returns:
+        Transformed ND-image.
     """
     assert_true(len(scale) == image.ndim, "invalid scale")
     assert_true(len(offset) == image.ndim, "invalid offset")

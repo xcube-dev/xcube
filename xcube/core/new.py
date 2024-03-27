@@ -56,8 +56,7 @@ def new_cube(
     crs_name=None,
     time_encoding_dtype="int64",
 ):
-    """
-    Create a new empty cube. Useful for creating cubes templates with
+    """Create a new empty cube. Useful for creating cubes templates with
     predefined coordinate variables and metadata. The function is also
     heavily used by xcube's unit tests.
 
@@ -67,47 +66,53 @@ def new_cube(
 
         def my_func(time: int, y: int, x: int) -> Union[bool, int, float]
 
-    :param title: A title. Defaults to 'Test Cube'.
-    :param width: Horizontal number of grid cells. Defaults to 360.
-    :param height: Vertical number of grid cells. Defaults to 180.
-    :param x_name: Name of the x coordinate variable. Defaults to 'lon'.
-    :param y_name: Name of the y coordinate variable. Defaults to 'lat'.
-    :param x_dtype: Data type of x coordinates. Defaults to 'float64'.
-    :param y_dtype: Data type of y coordinates. Defaults to 'float64'.
-    :param x_units: Units of the x coordinates. Defaults to 'degrees_east'.
-    :param y_units: Units of the y coordinates. Defaults to 'degrees_north'.
-    :param x_start: Minimum x value. Defaults to -180.
-    :param y_start: Minimum y value. Defaults to -90.
-    :param x_res: Spatial resolution in x-direction. Defaults to 1.0.
-    :param y_res: Spatial resolution in y-direction. Defaults to 1.0.
-    :param inverse_y: Whether to create an inverse y axis. Defaults to False.
-    :param time_name: Name of the time coordinate variable. Defaults to 'time'.
-    :param time_periods: Number of time steps. Defaults to 5.
-    :param time_freq: Duration of each time step. Defaults to `1D'.
-    :param time_start: First time value. Defaults to '2010-01-01T00:00:00'.
-    :param time_dtype: Numpy data type for time coordinates.
-        Defaults to 'datetime64[s]'.
-        If used, parameter 'use_cftime' must be False.
-    :param time_units: Units for time coordinates.
-        Defaults to 'seconds since 1970-01-01T00:00:00'.
-    :param time_calendar: Calender for time coordinates.
-        Defaults to 'proleptic_gregorian'.
-    :param use_cftime: If True, the time will be given as data types
-        according to the 'cftime' package. If used, the time_calendar
-        parameter must be also be given with an appropriate value
-        such as 'gregorian' or 'julian'. If used, parameter 'time_dtype'
-        must be None.
-    :param drop_bounds: If True, coordinate bounds variables are not created.
-        Defaults to False.
-    :param variables: Dictionary of data variables to be added.
-        None by default.
-    :param crs: pyproj-compatible CRS string or instance
-        of pyproj.CRS or None
-    :param crs_name: Name of the variable that will
-        hold the CRS information. Ignored, if *crs* is not given.
-    :param time_encoding_dtype: data type used to encode the time variable when
-        serializing the dataset
-    :return: A cube instance
+    Args:
+        title: A title. Defaults to 'Test Cube'.
+        width: Horizontal number of grid cells. Defaults to 360.
+        height: Vertical number of grid cells. Defaults to 180.
+        x_name: Name of the x coordinate variable. Defaults to 'lon'.
+        y_name: Name of the y coordinate variable. Defaults to 'lat'.
+        x_dtype: Data type of x coordinates. Defaults to 'float64'.
+        y_dtype: Data type of y coordinates. Defaults to 'float64'.
+        x_units: Units of the x coordinates. Defaults to 'degrees_east'.
+        y_units: Units of the y coordinates. Defaults to
+            'degrees_north'.
+        x_start: Minimum x value. Defaults to -180.
+        y_start: Minimum y value. Defaults to -90.
+        x_res: Spatial resolution in x-direction. Defaults to 1.0.
+        y_res: Spatial resolution in y-direction. Defaults to 1.0.
+        inverse_y: Whether to create an inverse y axis. Defaults to
+            False.
+        time_name: Name of the time coordinate variable. Defaults to
+            'time'.
+        time_periods: Number of time steps. Defaults to 5.
+        time_freq: Duration of each time step. Defaults to `1D'.
+        time_start: First time value. Defaults to '2010-01-01T00:00:00'.
+        time_dtype: Numpy data type for time coordinates. Defaults to
+            'datetime64[s]'. If used, parameter 'use_cftime' must be
+            False.
+        time_units: Units for time coordinates. Defaults to 'seconds
+            since 1970-01-01T00:00:00'.
+        time_calendar: Calender for time coordinates. Defaults to
+            'proleptic_gregorian'.
+        use_cftime: If True, the time will be given as data types
+            according to the 'cftime' package. If used, the
+            time_calendar parameter must be also be given with an
+            appropriate value such as 'gregorian' or 'julian'. If used,
+            parameter 'time_dtype' must be None.
+        drop_bounds: If True, coordinate bounds variables are not
+            created. Defaults to False.
+        variables: Dictionary of data variables to be added. None by
+            default.
+        crs: pyproj-compatible CRS string or instance of pyproj.CRS or
+            None
+        crs_name: Name of the variable that will hold the CRS
+            information. Ignored, if *crs* is not given.
+        time_encoding_dtype: data type used to encode the time variable
+            when serializing the dataset
+
+    Returns:
+        A cube instance
     """
     y_dtype = y_dtype if y_dtype is not None else y_dtype
     y_res = y_res if y_res is not None else x_res
