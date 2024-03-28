@@ -82,9 +82,10 @@ class ComputeContext(ResourcesContext):
     def __init__(self, server_ctx: Context, op_registry: OpRegistry = OP_REGISTRY):
         """Create a new compute context
 
-        :param server_ctx: the current server context object
-        :param op_registry: the registry of compute operations to use for
-                            this context
+        Args:
+            server_ctx: the current server context object
+            op_registry: the registry of compute operations to use for
+                this context
         """
         super().__init__(server_ctx)
         self._datasets_ctx: DatasetsContext = server_ctx.get_api_ctx("datasets")

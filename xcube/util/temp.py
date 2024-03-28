@@ -29,15 +29,15 @@ DEFAULT_TEMP_FILE_PREFIX = "xcube-"
 
 
 def new_temp_dir(prefix: str = None, suffix: str = None, dir_path: str = None) -> str:
-    """Create new temporary directory using ``tempfile.mkdtemp()```
+    """Create new temporary directory using `tempfile.mkdtemp()`.
     The directory will be removed later when the process ends.
 
     Args:
-        prefix: If not ``None``, the file name will
+        prefix: If not `None`, the file name will
             begin with that prefix; otherwise, a default prefix is used.
-        suffix: If not ``None``, the file name will
+        suffix: If not `None`, the file name will
             end with that suffix, otherwise there will be no suffix.
-        dir_path: If not ``None``, the file will be created
+        dir_path: If not `None`, the file will be created
             in that directory; otherwise, a default directory is used.
             The default directory is chosen from a platform-dependent
             list, but the user of the application can control the
@@ -58,15 +58,15 @@ def new_temp_file(
     dir_path: str = None,
     text_mode: bool = False,
 ) -> Tuple[int, str]:
-    """Create new temporary file using ``tempfile.mkstemp()```.
+    """Create new temporary file using `tempfile.mkstemp()```.
     The file will be removed later when the process ends.
 
     Args:
-        prefix: If not ``None``, the file name will begin with that
+        prefix: If not `None`, the file name will begin with that
             prefix; otherwise, a default prefix is used.
-        suffix: If not ``None``, the file name will end with that
+        suffix: If not `None`, the file name will end with that
             suffix, otherwise there will be no suffix.
-        dir_path: If not ``None``, the file will be created in that
+        dir_path: If not `None`, the file will be created in that
             directory; otherwise, a default directory is used. The
             default directory is chosen from a platform-dependent list,
             but the user of the application can control the directory
