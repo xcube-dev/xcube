@@ -42,7 +42,7 @@ class DataType:
     using alias names.
 
     For example, the aliases "dataset" and "xarray.Dataset" both
-    refer to the Python data type `xarray.Dataset```.
+    refer to the Python data type `xarray.Dataset`.
 
     Args:
         dtype: The Python data type.

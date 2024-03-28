@@ -90,26 +90,24 @@ def rasterize_features(
     created variables from feature properties can be specified.
     It is a mapping of feature property names to mappings of
     variable properties.
-    Here is an example variable properties mapping:
+    Here is an example variable properties mapping:::
 
-    ```python
-    {
-        'name': 'land_class',  # (str) - the variable's name,
-                               # default is the feature property name;
-        'dtype' np.int16,      # (str|np.dtype) - the variable's dtype,
-                               # default is np.float64;
-        'fill_value': -999,    # (bool|int|float|np.nparray) -
-                               # the variable's fill value,
-                               # default is np.nan;
-        'attrs': {},           # (Mapping[str, Any]) -
-                               # the variable's fill value, default is {};
-        'converter': int,      # (Callable[[Any], Any]) -
-                               # a converter function used to convert
-                               # from property feature value to variable
-                               # value, default is float.
-                               # Deprecated, no longer used.
-    }
-    ```
+        {
+            'name': 'land_class',  # (str) - the variable's name,
+                                   # default is the feature property name;
+            'dtype' np.int16,      # (str|np.dtype) - the variable's dtype,
+                                   # default is np.float64;
+            'fill_value': -999,    # (bool|int|float|np.nparray) -
+                                   # the variable's fill value,
+                                   # default is np.nan;
+            'attrs': {},           # (Mapping[str, Any]) -
+                                   # the variable's fill value, default is {};
+            'converter': int,      # (Callable[[Any], Any]) -
+                                   # a converter function used to convert
+                                   # from property feature value to variable
+                                   # value, default is float.
+                                   # Deprecated, no longer used.
+        }
 
     Note that newly created variables will have data type `np.float64`
     because `np.nan` is used to encode missing values. `fill_value` and

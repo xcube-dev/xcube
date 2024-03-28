@@ -123,16 +123,13 @@ def compute_dataset(
     If *input_cubes* is empty, *input_var_names* must be empty too, and *input_cube_schema*
     must be given, so that a new cube can be created.
 
-    The full signature of *cube_func* is:
-
-    ```python
+    The full signature of *cube_func* is:::
 
         def cube_func(*input_vars: np.ndarray,
                       input_params: Dict[str, Any] = None,
                       dim_coords: Dict[str, np.ndarray] = None,
                       dim_ranges: Dict[str, Tuple[int, int]] = None) -> np.ndarray:
             pass
-    ```
 
     The arguments are:
 

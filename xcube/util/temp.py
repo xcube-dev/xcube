@@ -58,7 +58,7 @@ def new_temp_file(
     dir_path: str = None,
     text_mode: bool = False,
 ) -> Tuple[int, str]:
-    """Create new temporary file using `tempfile.mkstemp()```.
+    """Create new temporary file using `tempfile.mkstemp()`.
     The file will be removed later when the process ends.
 
     Args:

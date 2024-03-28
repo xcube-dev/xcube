@@ -53,11 +53,9 @@ class ChunkStore(MutableMapping):
     fetch or compute their chunks by a user-defined function *get_chunk*.
     Implements the standard Python `MutableMapping` interface.
 
-    This is how the *get_chunk* function is called:
+    This is how the *get_chunk* function is called:::
 
-    ```python
         data = get_chunk(chunk_store, var_name, chunk_indexes)
-    ```
 
     where `chunk_store` is this store, `var_name` is the name of
     the variable for which data is fetched, and `chunk_indexes` is

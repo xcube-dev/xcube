@@ -500,13 +500,11 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         Given here is a pseudo-code implementation for stores that support
         multiple writers and where the store has common parameters with
-        the writer:
+        the writer:::
 
-        ```python
             store_params_schema = self.get_data_store_params_schema()
             writer_params_schema = get_writer(writer_id).get_write_data_params_schema()
             return subtract_param_schemas(writer_params_schema, store_params_schema)
-        ```
 
         Args:
             writer_id: An optional data writer identifier.
@@ -540,7 +538,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         just support a single one.
 
         Given here is a pseudo-code implementation for stores that support
-        multiple writers:
+        multiple writers:::
 
             writer_id = writer_id or self.gen_data_id()
             path = self.resolve_data_id_to_path(data_id)
@@ -548,7 +546,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
             get_writer(writer_id).write_data(data, path, **write_params)
             self.register_data(data_id, data)
 
-        Raises if *data_id* does not exist in this store.
+        Raises, if *data_id* does not exist in this store.
 
         Args:
             data: The data in-memory instance to be written.

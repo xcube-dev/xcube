@@ -113,12 +113,10 @@ def encode_cube(
     """Encode a *cube* with its *grid_mapping*, and additional variables in
     *non_cube_subset* into a new dataset.
 
-    This is the inverse of the operation `decode_cube()`:
+    This is the inverse of the operation `decode_cube()`:::
 
-    ```python
         cube, gm, non_cube = decode_cube(dataset)
         dataset = encode_cube(cube, gm, non_cube)
-    ```
 
     The returned data cube comprises all variables in *cube*,
     whose dimensions should be ("time" , [...], y_dim_name, x_dim_name),
@@ -169,12 +167,10 @@ def decode_cube(
     """Decode a *dataset* into a cube variable subset, a grid mapping, and
     the non-cube variables of *dataset*.
 
-    This is the inverse of the operation `encode_cube()`:
+    This is the inverse of the operation `encode_cube()`:::
 
-    ```python
         cube, gm, non_cube = decode_cube(dataset)
         dataset = encode_cube(cube, gm, non_cube)
-    ```
 
     The returned data cube comprises all variables in *dataset*
     whose dimensions are ("time" , [...], y_dim_name, x_dim_name).

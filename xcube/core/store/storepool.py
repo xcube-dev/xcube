@@ -220,9 +220,8 @@ class DataStorePool:
     Actual data store instantiation only takes place lazily.
     A pool is may be created using it `from_dict()` (or `from_file()`)
     which receives a (JSON) dictionary that maps store instance names to
-    store configurations:
+    store configurations:::
 
-    ```
         {
             "<store_instance_id>": {
                 "store_id": "<store_id>",
@@ -235,7 +234,6 @@ class DataStorePool:
             },
             ...
         }
-    ```
 
     Args:
         store_configs: A dictionary that maps store instance
