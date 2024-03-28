@@ -36,9 +36,10 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     i.e. read or computed by the abstract method
     ``get_dataset_lazily(index, **kwargs)``.
 
-    :param ds_id: Optional dataset identifier.
-    :param parameters: Optional keyword arguments that will be
-        passed to the ``get_dataset_lazily`` method.
+    Args:
+        ds_id: Optional dataset identifier.
+        parameters: Optional keyword arguments that will be passed to
+            the ``get_dataset_lazily`` method.
     """
 
     def __init__(
@@ -95,8 +96,11 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def get_dataset(self, index: int) -> xr.Dataset:
         """Get or compute the dataset for the level at given *index*.
 
-        :param index: the level index
-        :return: the dataset for the level at *index*.
+        Args:
+            index: the level index
+
+        Returns:
+            the dataset for the level at *index*.
         """
         if index not in self._level_datasets:
             with self._lock:
@@ -113,8 +117,9 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         has the correct spatial dimension sizes for the
         given level at *index*.
 
-        :param index: the level index
-        :param level_dataset: the dataset for the level at *index*.
+        Args:
+            index: the level index
+            level_dataset: the dataset for the level at *index*.
         """
         with self._lock:
             self._level_datasets[index] = level_dataset
@@ -123,7 +128,8 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def _get_num_levels_lazily(self) -> int:
         """Retrieve, i.e. read or compute, the number of levels.
 
-        :return: the number of dataset levels.
+        Returns:
+            the number of dataset levels.
         """
 
     @abstractmethod
@@ -131,17 +137,21 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         """Retrieve, i.e. read or compute, the dataset for the
         level at given *index*.
 
-        :param index: the level index
-        :param parameters: *parameters* keyword argument that
-            was passed to constructor.
-        :return: the dataset for the level at *index*.
+        Args:
+            index: the level index
+            parameters: *parameters* keyword argument that was passed to
+                constructor.
+
+        Returns:
+            the dataset for the level at *index*.
         """
 
     def _get_grid_mapping_lazily(self) -> GridMapping:
         """Retrieve, i.e. read or compute, the tile grid used
         by the multi-level dataset.
 
-        :return: the dataset for the level at *index*.
+        Returns:
+            the dataset for the level at *index*.
         """
         return GridMapping.from_dataset(self.get_dataset(0))
 

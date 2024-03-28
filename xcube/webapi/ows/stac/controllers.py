@@ -93,9 +93,12 @@ _CONFORMANCE = (
 def get_root(ctx: DatasetsContext, base_url: str):
     """Return content for the STAC/OGC root endpoint (a STAC catalogue)
 
-    :param ctx: the datasets context
-    :param base_url: the base URL of the server
-    :return: content for the root endpoint
+    Args:
+        ctx: the datasets context
+        base_url: the base URL of the server
+
+    Returns:
+        content for the root endpoint
     """
     c_id, c_title, c_description = _get_catalog_metadata(ctx.config)
 
@@ -180,7 +183,8 @@ def _root_link(base_url):
 def get_conformance() -> dict[str, list[str]]:
     """Return conformance data for this API implementation
 
-    :return: a dictionary containing a list of conformance specifiers
+    Returns:
+        a dictionary containing a list of conformance specifiers
     """
     return {"conformsTo": _CONFORMANCE}
 
@@ -191,9 +195,12 @@ def get_collections(ctx: StacContext, base_url: str) -> dict[str, Any]:
     These include a union collection representing all the datasets,
     as well as an individual named collection per dataset.
 
-    :param ctx: a datasets context
-    :param base_url: the base URL of the current server
-    :return: a STAC dictionary listing the available collections
+    Args:
+        ctx: a datasets context
+        base_url: the base URL of the current server
+
+    Returns:
+        a STAC dictionary listing the available collections
     """
     return {
         "collections": [_get_datasets_collection(ctx, base_url)]
@@ -216,11 +223,13 @@ def get_collections(ctx: StacContext, base_url: str) -> dict[str, Any]:
 def get_collection(ctx: StacContext, base_url: str, collection_id: str) -> dict:
     """Return a STAC representation of a collection
 
-    :param ctx: a datasets context
-    :param base_url: the base URL of the current server
-    :param collection_id: the ID of the collection to describe
-    :return: a STAC object representing the collection, if found
-    :raises: ApiError.NotFound if no collection with the given ID exists
+    Args:
+        ctx: a datasets context
+        base_url: the base URL of the current server
+        collection_id: the ID of the collection to describe
+
+    Returns:
+        a STAC object representing the collection, if found
     """
     ds_ctx = ctx.datasets_ctx
     all_datasets_collection_id, _, _ = _get_collection_metadata(ctx.config)
@@ -238,11 +247,14 @@ def get_single_collection_items(
 ) -> dict:
     """Get the singleton item list for a single-dataset collection
 
-    :param ctx: a datasets context
-    :param base_url: the base URL of the current server
-    :param collection_id: the ID of a single-dataset collection
-    :return: a FeatureCollection dictionary with a singleton feature
-        list containing a feature for the requested dataset
+    Args:
+        ctx: a datasets context
+        base_url: the base URL of the current server
+        collection_id: the ID of a single-dataset collection
+
+    Returns:
+        a FeatureCollection dictionary with a singleton feature list
+        containing a feature for the requested dataset
     """
     feature = _get_dataset_feature(
         ctx,
@@ -273,13 +285,16 @@ def get_datasets_collection_items(
 ) -> dict:
     """Get the items in the unified datasets collection
 
-    :param ctx: a datasets context
-    :param base_url: base URL of the current server
-    :param collection_id: the ID of the unified datasets collection
-    :param limit: the maximum number of items to return
-    :param cursor: the index of the first item to return
-    :return: A STAC dictionary of the items in the unified datasets collection,
-        limited by the specified limit and cursor values
+    Args:
+        ctx: a datasets context
+        base_url: base URL of the current server
+        collection_id: the ID of the unified datasets collection
+        limit: the maximum number of items to return
+        cursor: the index of the first item to return
+
+    Returns:
+        A STAC dictionary of the items in the unified datasets
+        collection, limited by the specified limit and cursor values
     """
     _assert_valid_collection(ctx, collection_id)
     all_configs = ctx.get_dataset_configs()
@@ -334,14 +349,17 @@ def get_collection_item(
     or that the collection ID will be the dataset ID and the feature ID
     will be the default feature ID for a single-collection dataset.
 
-    :param ctx: a datasets context
-    :param base_url: the base URL of the current server
-    :param collection_id: the ID of the unified datasets collection or of
-        a single-dataset collection
-    :param feature_id: the ID of a single dataset within the unified
-       collection or of the default feature within a single-dataset collection
-    :return: a STAC object representing the specified item, if found
-    :raises: ApiError.NotFound, if the specified item is not found
+    Args:
+        ctx: a datasets context
+        base_url: the base URL of the current server
+        collection_id: the ID of the unified datasets collection or of a
+            single-dataset collection
+        feature_id: the ID of a single dataset within the unified
+            collection or of the default feature within a single-dataset
+            collection
+
+    Returns:
+        a STAC object representing the specified item, if found
     """
     dataset_ids = {c["Identifier"] for c in ctx.get_dataset_configs()}
 
@@ -374,10 +392,13 @@ def get_collection_item(
 def get_collection_queryables(ctx: DatasetsContext, collection_id: str) -> dict:
     """Get a JSON schema of queryable parameters for the specified collection
 
-    :param ctx: a datasets context
-    :param collection_id: the ID of a collection
-    :return: a JSON schema of queryable parameters, if the collection was found
-    :raises: ApiError.NotFound, if the collection was not found
+    Args:
+        ctx: a datasets context
+        collection_id: the ID of a collection
+
+    Returns:
+        a JSON schema of queryable parameters, if the collection was
+        found
     """
     _assert_valid_collection(ctx, collection_id)
     schema = JsonObjectSchema(
@@ -395,10 +416,14 @@ def get_collection_schema(
     https://docs.ogc.org/DRAFTS/19-087.html#_collection_schema_response_collectionscollectionidschema
     for links to a metaschema defining the schema.
 
-    :param ctx: a datasets context
-    :param base_url: the base URL at which this API is being served
-    :param collection_id: the ID of a dataset in the provided context
-    :return: a JSON schema representing the specified dataset's data variables
+    Args:
+        ctx: a datasets context
+        base_url: the base URL at which this API is being served
+        collection_id: the ID of a dataset in the provided context
+
+    Returns:
+        a JSON schema representing the specified dataset's data
+        variables
     """
     if collection_id == DEFAULT_COLLECTION_ID:
         # The default collection contains multiple datasets, so a range
@@ -663,9 +688,12 @@ def get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
     The dictionary format is defined by the schema at
     https://github.com/opengeospatial/ogcapi-coverages/blob/master/standard/openapi/schemas/common-geodata/extent.yaml
 
-    :param ds: a dataset
-    :return: a dictionary representation of the grid of the dataset's
-             time variable
+    Args:
+        ds: a dataset
+
+    Returns:
+        a dictionary representation of the grid of the dataset's time
+        variable
     """
     if "time" not in ds:
         return {}
@@ -881,9 +909,12 @@ def get_datacube_dimensions(
     """Create the value of the "datacube:dimensions" property
     for the given *dataset*.
 
-    :param dataset: the dataset to describe
-    :param grid_mapping: the dataset's grid mapping
-    :return: a dictionary of the datacube properties of the dataset
+    Args:
+        dataset: the dataset to describe
+        grid_mapping: the dataset's grid mapping
+
+    Returns:
+        a dictionary of the datacube properties of the dataset
     """
     x_dim_name, y_dim_name = grid_mapping.xy_dim_names
     x_var_name, y_var_name = grid_mapping.xy_var_names

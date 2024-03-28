@@ -37,10 +37,10 @@ def get_config_dict(
     profile_mode: bool = False,
     no_sort_mode: bool = False,
 ):
-    """
-    Get a configuration dictionary from given (command-line) arguments.
+    """Get a configuration dictionary from given (command-line) arguments.
 
-    :return: Configuration dictionary
+    Returns:
+        Configuration dictionary
     :raise OSError, ValueError
     """
 

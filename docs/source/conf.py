@@ -27,7 +27,7 @@ from xcube.version import version
 
 
 project = 'xcube'
-copyright = '2023, Brockmann Consult GmbH'
+copyright = '2018-2024, Brockmann Consult GmbH'
 author = 'Brockmann Consult GmbH'
 
 # The full version, including alpha/beta/rc tags
@@ -59,6 +59,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
     'sphinx_autodoc_annotation',
     'sphinx_markdown_tables',
     'sphinxarg.ext',

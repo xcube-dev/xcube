@@ -46,15 +46,17 @@ def encode_grid_mapping(
     the function sets the attribute "grid_mapping" to *gm_name*.
     The grid mapping CRS is encoded in a new 0-D variable named *gm_name*.
 
-    :param ds: The dataset.
-    :param gm: The dataset's grid mapping.
-    :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs".
-    :param force: Whether to force encoding of grid mapping even
-        if CRS is geographic and spatial dimension names are "lon", "lat".
-        Optional value, if not provided, *force* will be assumed ``True``
-        if a former grid mapping was encoded in *ds*.
-    :return: A copy of *ds* with *gm* encoded into it.
+    Args:
+        ds: The dataset.
+        gm: The dataset's grid mapping.
+        gm_name: Name for the grid mapping variable. Defaults to "crs".
+        force: Whether to force encoding of grid mapping even if CRS is
+            geographic and spatial dimension names are "lon", "lat".
+            Optional value, if not provided, *force* will be assumed
+            ``True`` if a former grid mapping was encoded in *ds*.
+
+    Returns:
+        A copy of *ds* with *gm* encoded into it.
     """
     assert_instance(ds, xr.Dataset, "ds")
     assert_instance(gm, GridMapping, "gm")

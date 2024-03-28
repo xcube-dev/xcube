@@ -65,13 +65,16 @@ _DEPRECATION_VERSION = "0.12.1"
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def open_cube(input_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
-    """
-    Open a xcube dataset from *input_path*.
+    """Open a xcube dataset from *input_path*.
     If *format* is not provided it will be guessed from *input_path*.
-    :param input_path: input path
-    :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param kwargs: format-specific keyword arguments
-    :return: xcube dataset
+
+    Args:
+        input_path: input path
+        format_name: format, e.g. "zarr" or "netcdf4"
+        **kwargs: format-specific keyword arguments
+
+    Returns:
+        xcube dataset
     """
     return open_dataset(input_path, format_name=format_name, is_cube=True, **kwargs)
 
@@ -84,15 +87,19 @@ def write_cube(
     cube_asserted: bool = False,
     **kwargs,
 ) -> xr.Dataset:
-    """
-    Write a xcube dataset to *output_path*.
+    """Write a xcube dataset to *output_path*.
     If *format* is not provided it will be guessed from *output_path*.
-    :param cube: xcube dataset to be written.
-    :param output_path: output path
-    :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param kwargs: format-specific keyword arguments
-    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: xcube dataset *cube*
+
+    Args:
+        cube: xcube dataset to be written.
+        output_path: output path
+        format_name: format, e.g. "zarr" or "netcdf4"
+        **kwargs: format-specific keyword arguments
+        cube_asserted: If False, *cube* will be verified, otherwise it
+            is expected to be a valid cube.
+
+    Returns:
+        xcube dataset *cube*
     """
     if not cube_asserted:
         assert_cube(cube)
@@ -103,14 +110,18 @@ def write_cube(
 def open_dataset(
     input_path: str, format_name: str = None, is_cube: bool = False, **kwargs
 ) -> xr.Dataset:
-    """
-    Open a dataset from *input_path*.
+    """Open a dataset from *input_path*.
     If *format* is not provided it will be guessed from *output_path*.
-    :param input_path: input path
-    :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param is_cube: Whether a ValueError will be raised, if the dataset read from *input_path* is not a xcube dataset.
-    :param kwargs: format-specific keyword arguments
-    :return: dataset object
+
+    Args:
+        input_path: input path
+        format_name: format, e.g. "zarr" or "netcdf4"
+        is_cube: Whether a ValueError will be raised, if the dataset
+            read from *input_path* is not a xcube dataset.
+        **kwargs: format-specific keyword arguments
+
+    Returns:
+        dataset object
     """
     format_name = format_name if format_name else guess_dataset_format(input_path)
     if format_name is None:
@@ -128,14 +139,17 @@ def open_dataset(
 def write_dataset(
     dataset: xr.Dataset, output_path: str, format_name: str = None, **kwargs
 ) -> xr.Dataset:
-    """
-    Write dataset to *output_path*.
+    """Write dataset to *output_path*.
     If *format* is not provided it will be guessed from *output_path*.
-    :param dataset: Dataset to be written.
-    :param output_path: output path
-    :param format_name: format, e.g. "zarr" or "netcdf4"
-    :param kwargs: format-specific keyword arguments
-    :return: the input dataset
+
+    Args:
+        dataset: Dataset to be written.
+        output_path: output path
+        format_name: format, e.g. "zarr" or "netcdf4"
+        **kwargs: format-specific keyword arguments
+
+    Returns:
+        the input dataset
     """
     format_name = format_name if format_name else guess_dataset_format(output_path)
     if format_name is None:
@@ -149,9 +163,10 @@ def write_dataset(
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
-    """
-    An abstract base class that represents dataset input/output.
-    :param name: A unique dataset I/O identifier.
+    """An abstract base class that represents dataset input/output.
+
+    Args:
+        name: A unique dataset I/O identifier.
     """
 
     def __init__(self, name: str):
@@ -159,8 +174,8 @@ class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
 
     @property
     def description(self) -> str:
-        """
-        :return: A description for this input processor
+        """Returns:
+        A description for this input processor
         """
         return self.get_metadata_attr("description", "")
 
@@ -171,20 +186,22 @@ class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
 
     @property
     def modes(self) -> Set[str]:
-        """
-        A set describing the modes of this dataset I/O.
+        """A set describing the modes of this dataset I/O.
         Must be one or more of "r" (read), "w" (write), and "a" (append).
         """
         return self.get_metadata_attr("modes", set())
 
     @abstractmethod
     def fitness(self, path: str, path_type: str = None) -> float:
-        """
-        Compute a fitness of this dataset I/O in the interval [0 to 1]
+        """Compute a fitness of this dataset I/O in the interval [0 to 1]
         for reading/writing from/to the given *path*.
-        :param path: The path or URL.
-        :param path_type: Either "file", "dir", "url", or None.
-        :return: the chance in range [0 to 1]
+
+        Args:
+            path: The path or URL.
+            path_type: Either "file", "dir", "url", or None.
+
+        Returns:
+            the chance in range [0 to 1]
         """
         return 0.0
 
@@ -250,10 +267,13 @@ def find_dataset_io(
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def guess_dataset_format(path: str) -> Optional[str]:
-    """
-    Guess a dataset format for a file system path or URL given by *path*.
-    :param path: A file system path or URL.
-    :return: The name of a dataset format guessed from *path*.
+    """Guess a dataset format for a file system path or URL given by *path*.
+
+    Args:
+        path: A file system path or URL.
+
+    Returns:
+        The name of a dataset format guessed from *path*.
     """
     dataset_io_fitness_list = guess_dataset_ios(path)
     if dataset_io_fitness_list:
@@ -263,13 +283,16 @@ def guess_dataset_format(path: str) -> Optional[str]:
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def guess_dataset_ios(path: str) -> List[Tuple[DatasetIO, float]]:
-    """
-    Guess suitable DatasetIO objects for a file system path or URL given by *path*.
+    """Guess suitable DatasetIO objects for a file system path or URL given by *path*.
     Returns a list of (DatasetIO, fitness) tuples, sorted by descending fitness values.
     Fitness values are in the interval (0, 1].
     The first entry is the most appropriate DatasetIO object.
-    :param path: A file system path or URL.
-    :return: A list of (DatasetIO, fitness) tuples.
+
+    Args:
+        path: A file system path or URL.
+
+    Returns:
+        A list of (DatasetIO, fitness) tuples.
     """
     if os.path.isfile(path):
         input_type = "file"
@@ -308,9 +331,10 @@ def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[Data
 # noinspection PyAbstractClass
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class MemDatasetIO(DatasetIO):
-    """
-    An in-memory  dataset I/O. Keeps all datasets in a dictionary.
-    :param datasets: The initial datasets as a path to dataset mapping.
+    """An in-memory  dataset I/O. Keeps all datasets in a dictionary.
+
+    Args:
+        datasets: The initial datasets as a path to dataset mapping.
     """
 
     def __init__(self, datasets: Dict[str, xr.Dataset] = None):
@@ -358,9 +382,7 @@ class MemDatasetIO(DatasetIO):
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class Netcdf4DatasetIO(DatasetIO):
-    """
-    A dataset I/O that reads from / writes to NetCDF files.
-    """
+    """A dataset I/O that reads from / writes to NetCDF files."""
 
     def __init__(self):
         super().__init__(FORMAT_NAME_NETCDF4)
@@ -412,9 +434,7 @@ class Netcdf4DatasetIO(DatasetIO):
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class ZarrDatasetIO(DatasetIO):
-    """
-    A dataset I/O that reads from / writes to Zarr directories or archives.
-    """
+    """A dataset I/O that reads from / writes to Zarr directories or archives."""
 
     def __init__(self):
         super().__init__(FORMAT_NAME_ZARR)
@@ -456,18 +476,26 @@ class ZarrDatasetIO(DatasetIO):
         max_cache_size: int = None,
         **kwargs,
     ) -> xr.Dataset:
-        """
-        Read dataset from some Zarr storage.
-        :param path: File path or object storage URL.
-        :param s3_kwargs: if *path* is an object storage URL, keyword-arguments passed to S3 file system,
-            that is ``s3fs.S3FileSystem(**s3_kwargs, ...)``.
-        :param s3_client_kwargs: if *path* is an object storage URL, keyword-arguments passed to S3 (boto3) client,
-            that is ``s3fs.S3FileSystem(..., client_kwargs=s3_client_kwargs)``.
-        :param max_cache_size: if this is a positive integer, the store will be wrapped in an in-memory cache,
-            that is ``store = zarr.LRUStoreCache(store, max_size=max_cache_size)``.
-        :param kwargs: Keyword-arguments passed to xarray Zarr adapter,
-            that is ``xarray.open_zarr(..., **kwargs)``. In addition, the parameter **
-        :return:
+        """Read dataset from some Zarr storage.
+
+        Args:
+            path: File path or object storage URL.
+            s3_kwargs: if *path* is an object storage URL, keyword-
+                arguments passed to S3 file system, that is
+                ``s3fs.S3FileSystem(**s3_kwargs, ...)``.
+            s3_client_kwargs: if *path* is an object storage URL,
+                keyword-arguments passed to S3 (boto3) client, that is
+                ``s3fs.S3FileSystem(...,
+                client_kwargs=s3_client_kwargs)``.
+            max_cache_size: if this is a positive integer, the store
+                will be wrapped in an in-memory cache, that is ``store =
+                zarr.LRUStoreCache(store, max_size=max_cache_size)``.
+            **kwargs: Keyword-arguments passed to xarray Zarr adapter,
+                that is ``xarray.open_zarr(..., **kwargs)``. In
+                addition, the parameter **
+
+        Returns:
+
         """
         path_or_store = path
         consolidated = False
@@ -572,9 +600,7 @@ class ZarrDatasetIO(DatasetIO):
 # noinspection PyAbstractClass
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 class CsvDatasetIO(DatasetIO):
-    """
-    A dataset I/O that reads from / writes to CSV files.
-    """
+    """A dataset I/O that reads from / writes to CSV files."""
 
     def __init__(self):
         super().__init__(FORMAT_NAME_CSV)
@@ -596,10 +622,11 @@ class CsvDatasetIO(DatasetIO):
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def rimraf(*paths: str):
-    """
-    The UNIX command `rm -rf` for xcube.
+    """The UNIX command `rm -rf` for xcube.
     Recursively remove directory or single file.
-    :param paths: one or more directories or files
+
+    Args:
+        *paths: one or more directories or files
     """
     for path in paths:
         if os.path.isdir(path):
@@ -622,8 +649,7 @@ def get_path_or_s3_store(
     s3_client_kwargs: Mapping[str, Any] = None,
     mode: str = "r",
 ) -> Tuple[Union[str, Dict], bool]:
-    """
-    If *path_or_url* is an object storage URL, return a object storage
+    """If *path_or_url* is an object storage URL, return a object storage
     Zarr store (mapping object) using *s3_client_kwargs* and *mode* and
     a flag indicating whether the Zarr datasets is consolidated.
 
@@ -631,11 +657,14 @@ def get_path_or_s3_store(
     returned as-is plus a flag indicating whether the Zarr datasets
     is consolidated.
 
-    :param path_or_url: A path or a URL.
-    :param s3_kwargs: keyword arguments for S3 file system.
-    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
-    :param mode: access mode "r" or "w". "r" is default.
-    :return: A tuple (path_or_obs_store, consolidated).
+    Args:
+        path_or_url: A path or a URL.
+        s3_kwargs: keyword arguments for S3 file system.
+        s3_client_kwargs: keyword arguments for S3 boto3 client.
+        mode: access mode "r" or "w". "r" is default.
+
+    Returns:
+        A tuple (path_or_obs_store, consolidated).
     """
     if is_s3_url(path_or_url) or s3_kwargs is not None or s3_client_kwargs is not None:
         s3, root = parse_s3_fs_and_root(
@@ -661,8 +690,7 @@ def parse_s3_fs_and_root(
     s3_client_kwargs: Mapping[str, Any] = None,
     mode: str = "r",
 ) -> Tuple[s3fs.S3FileSystem, str]:
-    """
-    Parses *s3_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
+    """Parses *s3_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
     new tuple (*obs_fs*, *root_path*). For example
 
     ```
@@ -670,12 +698,15 @@ def parse_s3_fs_and_root(
     obs_map = s3fs.S3Map(root=root_path, s3=obs_fs)
     ```
 
-    :param s3_url: Object storage URL, e.g. "s3://bucket/root",
-        or "https://bucket.s3.amazonaws.com/root".
-    :param s3_kwargs: keyword arguments for S3 file system.
-    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
-    :param mode: Access mode "r" or "w",  "r" is default.
-    :return: A tuple (*obs_fs*, *root_path*).
+    Args:
+        s3_url: Object storage URL, e.g. "s3://bucket/root", or
+            "https://bucket.s3.amazonaws.com/root".
+        s3_kwargs: keyword arguments for S3 file system.
+        s3_client_kwargs: keyword arguments for S3 boto3 client.
+        mode: Access mode "r" or "w",  "r" is default.
+
+    Returns:
+        A tuple (*obs_fs*, *root_path*).
     """
 
     root, s3_kwargs, s3_client_kwargs = parse_s3_url_and_kwargs(
@@ -696,17 +727,19 @@ def new_s3_file_system(
     s3_config_param_name: str = "s3_kwargs",
     check_path: str = None,
 ) -> s3fs.S3FileSystem:
-    """
-    Wrapper for s3fs.S3FileSystem() constructor that issues warnings
+    """Wrapper for s3fs.S3FileSystem() constructor that issues warnings
     in case the file system can not be created.
 
-    :param s3_kwargs: keyword arguments for S3 file system.
-    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
-    :param s3_config_param_name: the name of the configuration parameter.
-    :param check_path: an optional root path.
-        If given, we call s3.exists(check_path)
-        as a check whether S3 file system is valid.
-    :return: A s3fs.S3FileSystem instance.
+    Args:
+        s3_kwargs: keyword arguments for S3 file system.
+        s3_client_kwargs: keyword arguments for S3 boto3 client.
+        s3_config_param_name: the name of the configuration parameter.
+        check_path: an optional root path. If given, we call
+            s3.exists(check_path) as a check whether S3 file system is
+            valid.
+
+    Returns:
+        A s3fs.S3FileSystem instance.
     """
 
     s3_kwargs = s3_kwargs or {}
@@ -739,18 +772,21 @@ def parse_s3_url_and_kwargs(
     s3_kwargs: Mapping[str, Any] = None,
     s3_client_kwargs: Mapping[str, Any] = None,
 ) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
-    """
-    Parses *obs_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
+    """Parses *obs_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
     new tuple (*root*, *s3_kwargs*, *s3_client_kwargs*) with updated kwargs whose elements
     can be passed to the s3fs.S3FileSystem and s3fs.S3Map constructors as follows:::
 
         obs_fs = s3fs.S3FileSystem(**s3_kwargs, client_kwargs=s3_client_kwargs)
         obs_map = s3fs.S3Map(root=root, s3=obs_fs)
 
-    :param s3_url: Object storage URL, e.g. "s3://bucket/root", or "https://bucket.s3.amazonaws.com/root".
-    :param s3_kwargs: keyword arguments for S3 file system.
-    :param s3_client_kwargs: keyword arguments for S3 boto3 client.
-    :return: A tuple (root, s3_kwargs, s3_client_kwargs).
+    Args:
+        s3_url: Object storage URL, e.g. "s3://bucket/root", or
+            "https://bucket.s3.amazonaws.com/root".
+        s3_kwargs: keyword arguments for S3 file system.
+        s3_client_kwargs: keyword arguments for S3 boto3 client.
+
+    Returns:
+        A tuple (root, s3_kwargs, s3_client_kwargs).
     """
     endpoint_url, root = split_s3_url(s3_url)
 
@@ -778,9 +814,7 @@ def parse_s3_url_and_kwargs(
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def split_s3_url(path: str) -> Tuple[Optional[str], str]:
-    """
-    If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)
-    """
+    """If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)"""
     url = urllib3.util.parse_url(path)
     if all((url.scheme, url.host, url.path)) and url.scheme != "s3":
         if url.port is not None:
@@ -796,11 +830,13 @@ def split_s3_url(path: str) -> Tuple[Optional[str], str]:
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def is_s3_url(path_or_url: str) -> bool:
-    """
-    Test if *path_or_url* is a potential object storage URL.
+    """Test if *path_or_url* is a potential object storage URL.
 
-    :param path_or_url: Path or URL to test.
-    :return: True, if so.
+    Args:
+        path_or_url: Path or URL to test.
+
+    Returns:
+        True, if so.
     """
     return (
         path_or_url.startswith("https://")

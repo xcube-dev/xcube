@@ -30,8 +30,7 @@ def compute_array_expr(
     errors: str = "raise",
     result_name: str = None,
 ):
-    """
-    Safely evaluate a Python expression and return the result.
+    """Safely evaluate a Python expression and return the result.
 
     The namespace is expected to contain variable references
     which, when evaluated, return numpy-like data arrays.
@@ -42,13 +41,16 @@ def compute_array_expr(
     "np.logical_and(B01 <= 0, np.logical_not(np.fmin(B01) > 2))"
     which is then being evaluated instead.
 
-    :param expr: A valid Python expression.
-    :param namespace: A dictionary that represents the namespace
-        for the evaluation.
-    :param result_name: Name of the result (used for error messages only)
-    :param errors: How to deal with errors raised when
-        evaluating the expression. May be one of "raise" or "warn".
-    :return: The result computed from the evaluating the expression.
+    Args:
+        expr: A valid Python expression.
+        namespace: A dictionary that represents the namespace for the
+            evaluation.
+        result_name: Name of the result (used for error messages only)
+        errors: How to deal with errors raised when evaluating the
+            expression. May be one of "raise" or "warn".
+
+    Returns:
+        The result computed from the evaluating the expression.
     """
     expr = transpile_expr(expr, warn=errors == "warn")
     return compute_expr(
@@ -62,16 +64,18 @@ def compute_expr(
     errors: str = "raise",
     result_name: str = None,
 ):
-    """
-    Safely evaluate a Python expression and return the result.
+    """Safely evaluate a Python expression and return the result.
 
-    :param expr: A valid Python expression.
-    :param namespace: A dictionary that represents the namespace
-        for the evaluation.
-    :param result_name: Name of the result (used for error messages only)
-    :param errors: How to deal with errors raised when
-        evaluating the expression. May be one of "raise" or "warn".
-    :return: The result computed from the evaluating the expression.
+    Args:
+        expr: A valid Python expression.
+        namespace: A dictionary that represents the namespace for the
+            evaluation.
+        result_name: Name of the result (used for error messages only)
+        errors: How to deal with errors raised when evaluating the
+            expression. May be one of "raise" or "warn".
+
+    Returns:
+        The result computed from the evaluating the expression.
     """
     try:
         result = eval(expr, namespace, None)
@@ -89,11 +93,11 @@ def compute_expr(
 
 
 def transpile_expr(expr: str, warn=False) -> str:
-    """
-    Transpile a Python expression into a numpy/xarray array expression.
+    """Transpile a Python expression into a numpy/xarray array expression.
 
-    :param expr: The Python expression
-    :param warn: If warnings shall be emitted
+    Args:
+        expr: The Python expression
+        warn: If warnings shall be emitted
     :return The numpy array expression
     """
     return _ExprTranspiler(expr, warn).transpile()
@@ -101,8 +105,7 @@ def transpile_expr(expr: str, warn=False) -> str:
 
 # noinspection PyMethodMayBeStatic
 class _ExprTranspiler:
-    """
-    Transpile a Python expression into a numpy/xarray array expression.
+    """Transpile a Python expression into a numpy/xarray array expression.
 
     See https://greentreesnakes.readthedocs.io/en/latest/nodes.html#expressions
     """

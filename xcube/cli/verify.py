@@ -29,8 +29,7 @@ from xcube.constants import LOG
 @click.command(name="verify")
 @click.argument("cube")
 def verify(cube):
-    """
-    Perform cube verification.
+    """Perform cube verification.
 
     \b
     The tool verifies that CUBE

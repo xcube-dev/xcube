@@ -35,7 +35,7 @@ class MappedMultiLevelDataset(LazyMultiLevelDataset):
         ds_id: str = None,
         mapper_params: Dict[str, Any] = None,
     ):
-        """ """
+        """"""
         super().__init__(ds_id=ds_id, parameters=mapper_params)
         self._ml_dataset = ml_dataset
         self._mapper_function = mapper_function

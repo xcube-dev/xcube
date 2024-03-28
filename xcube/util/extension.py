@@ -34,19 +34,19 @@ ExtensionPredicate = Callable[["Extension"], bool]
 
 
 class Extension:
-    """
-    An extension that provides a component of any type.
+    """An extension that provides a component of any type.
 
     Extensions are registered in a :class:`ExtensionRegistry`.
 
     Extension objects are not meant to be instantiated directly. Instead,
     :meth:`ExtensionRegistry.add_extension` is used to register extensions.
 
-    :param point: extension point identifier
-    :param name: extension name
-    :param component: extension component
-    :param loader: extension component loader function
-    :param metadata: extension metadata
+    Args:
+        point: extension point identifier
+        name: extension name
+        component: extension component
+        loader: extension component loader function
+        metadata: extension metadata
     """
 
     # noinspection PyShadowingBuiltins
@@ -131,8 +131,7 @@ register_json_formatter(Extension)
 
 # noinspection PyShadowingBuiltins
 class ExtensionRegistry:
-    """
-    A registry of extensions.
+    """A registry of extensions.
     Typically used by plugins to register extensions.
     """
 
@@ -140,35 +139,41 @@ class ExtensionRegistry:
         self._extension_points = {}
 
     def has_extension(self, point: str, name: str) -> bool:
-        """
-        Test if an extension with given *point* and *name* is registered.
+        """Test if an extension with given *point* and *name* is registered.
 
-        :param point: extension point identifier
-        :param name: extension name
-        :return: True, if extension exists
+        Args:
+            point: extension point identifier
+            name: extension name
+
+        Returns:
+            True, if extension exists
         """
         return point in self._extension_points and name in self._extension_points[point]
 
     def get_extension(self, point: str, name: str) -> Optional[Extension]:
-        """
-        Get registered extension for given *point* and *name*.
+        """Get registered extension for given *point* and *name*.
 
-        :param point: extension point identifier
-        :param name: extension name
-        :return: the extension or None, if no such exists
+        Args:
+            point: extension point identifier
+            name: extension name
+
+        Returns:
+            the extension or None, if no such exists
         """
         if point not in self._extension_points:
             return None
         return self._extension_points[point].get(name)
 
     def get_component(self, point: str, name: str) -> Any:
-        """
-        Get extension component for given *point* and *name*.
+        """Get extension component for given *point* and *name*.
         Raises a ValueError if no such extension exists.
 
-        :param point: extension point identifier
-        :param name: extension name
-        :return: extension component
+        Args:
+            point: extension point identifier
+            name: extension name
+
+        Returns:
+            extension component
         """
         extension = self.get_extension(point, name)
         if extension is None:
@@ -180,15 +185,17 @@ class ExtensionRegistry:
     def find_extensions(
         self, point: str, predicate: ExtensionPredicate = None
     ) -> List[Extension]:
-        """
-        Find extensions for *point* and optional filter function *predicate*.
+        """Find extensions for *point* and optional filter function *predicate*.
 
         The filter function is called with an extension and should return
         a truth value to indicate a match or mismatch.
 
-        :param point: extension point identifier
-        :param predicate: optional filter function
-        :return: list of matching extensions
+        Args:
+            point: extension point identifier
+            predicate: optional filter function
+
+        Returns:
+            list of matching extensions
         """
         if point not in self._extension_points:
             return []
@@ -202,15 +209,17 @@ class ExtensionRegistry:
     def find_components(
         self, point: str, predicate: ExtensionPredicate = None
     ) -> List[Component]:
-        """
-        Find extension components for *point* and optional filter function *predicate*.
+        """Find extension components for *point* and optional filter function *predicate*.
 
         The filter function is called with an extension and should return
         a truth value to indicate a match or mismatch.
 
-        :param point: extension point identifier
-        :param predicate: optional filter function
-        :return: list of matching extension components
+        Args:
+            point: extension point identifier
+            predicate: optional filter function
+
+        Returns:
+            list of matching extension components
         """
         return [
             extension.component
@@ -225,8 +234,7 @@ class ExtensionRegistry:
         loader: ComponentLoader = None,
         **metadata,
     ) -> Extension:
-        """
-        Register an extension *component* or an extension component *loader* for
+        """Register an extension *component* or an extension component *loader* for
         the given extension *point*, *name*, and additional *metadata*.
 
         Either *component* or *loader* must be specified, but not both.
@@ -237,12 +245,15 @@ class ExtensionRegistry:
         is requested for the first time. Consider using the function :func:`import_component` to create a
         loader that lazily imports a component from a module and optionally executes it.
 
-        :param point: extension point identifier
-        :param name: extension name
-        :param component: extension component
-        :param loader: extension component loader function
-        :param metadata: extension metadata
-        :return: a registered extension
+        Args:
+            point: extension point identifier
+            name: extension name
+            component: extension component
+            loader: extension component loader function
+            **metadata: extension metadata
+
+        Returns:
+            a registered extension
         """
         extension = Extension(
             point, name, component=component, loader=loader, **metadata
@@ -254,11 +265,11 @@ class ExtensionRegistry:
         return extension
 
     def remove_extension(self, point: str, name: str):
-        """
-        Remove registered extension *name* from given *point*.
+        """Remove registered extension *name* from given *point*.
 
-        :param point: extension point identifier
-        :param name: extension name
+        Args:
+            point: extension point identifier
+            name: extension name
         """
         point_extensions = self._extension_points[point]
         del point_extensions[name]
@@ -288,8 +299,7 @@ def import_component(
     call_args: Sequence[Any] = None,
     call_kwargs: Mapping[str, Any] = None,
 ) -> ComponentLoader:
-    """
-    Return a component loader that imports a module or module component from *spec*.
+    """Return a component loader that imports a module or module component from *spec*.
     To import a module, *spec* should be the fully qualified module name. To import a
     component, *spec* must also append the component name to the fully qualified module name
     separated by a color (":") character.
@@ -306,13 +316,21 @@ def import_component(
 
     Finally, the component is returned.
 
-    :param spec: String of the form "module_path" or "module_path:component_name"
-    :param transform: callable that takes two positional arguments,
-        the imported component and the extension of type :class:`Extension`
-    :param call: Whether to finally call the component with given *call_args* and *call_kwargs*
-    :param call_args: arguments passed to a callable component if *call* flag is set
-    :param call_kwargs: keyword arguments passed to callable component if *call* flag is set
-    :return: a component loader
+    Args:
+        spec: String of the form "module_path" or
+            "module_path:component_name"
+        transform: callable that takes two positional arguments, the
+            imported component and the extension of type
+            :class:`Extension`
+        call: Whether to finally call the component with given
+            *call_args* and *call_kwargs*
+        call_args: arguments passed to a callable component if *call*
+            flag is set
+        call_kwargs: keyword arguments passed to callable component if
+            *call* flag is set
+
+    Returns:
+        a component loader
     """
 
     # noinspection PyUnusedLocal
@@ -329,13 +347,16 @@ def import_component(
 
 
 def _import_component(component_spec: str, force_component: bool = False):
-    """
-    Import a module or module component from *spec*.
+    """Import a module or module component from *spec*.
 
-    :param component_spec: String of the form "module_name" or "module_name:component_name" where
-        module_name must an absolute, fully qualified path to a module.
-    :param force_component: If True, *spec* must specify a component name
-    :return: the imported module or module component
+    Args:
+        component_spec: String of the form "module_name" or
+            "module_name:component_name" where module_name must an
+            absolute, fully qualified path to a module.
+        force_component: If True, *spec* must specify a component name
+
+    Returns:
+        the imported module or module component
     """
     if ":" in component_spec:
         module_name, component_name = component_spec.split(":", maxsplit=1)

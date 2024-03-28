@@ -78,8 +78,7 @@ def gen2(
     quiet: bool = False,
     verbosity: int = 0,
 ):
-    """
-    Generator tool for data cubes.
+    """Generator tool for data cubes.
 
     Creates a cube view from one or more cube stores, optionally performs some
     cube transformation, and writes the resulting cube to some target cube

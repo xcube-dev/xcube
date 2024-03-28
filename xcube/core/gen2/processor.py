@@ -41,29 +41,28 @@ METHOD_NAME_PARAMS_SCHEMA_GETTER = "get_process_params_schema"
 
 
 class DatasetProcessor(ABC):
-    """
-    A generic dataset processor.
-    """
+    """A generic dataset processor."""
 
     @abstractmethod
     def process_dataset(self, dataset: xr.Dataset, **process_params) -> xr.Dataset:
-        """
-        Process *dataset* into a new dataset using the
+        """Process *dataset* into a new dataset using the
         given processing parameters *process_params*.
 
         The passed *process_params* must validate against
         the JSON schema returned by the :meth:get_process_params_schema
         class method.
 
-        :param dataset: The dataset to be processed.
-        :param process_params: The processing parameters.
-        :return: A new dataset.
+        Args:
+            dataset: The dataset to be processed.
+            **process_params: The processing parameters.
+
+        Returns:
+            A new dataset.
         """
 
     @classmethod
     def get_process_params_schema(cls) -> JsonObjectSchema:
-        """
-        Get the JSON Schema for the processing parameters passed
+        """Get the JSON Schema for the processing parameters passed
         to :meth:process_dataset.
 
         The parameters are described by the JSON Object Schema's
@@ -72,6 +71,7 @@ class DatasetProcessor(ABC):
         The default implementation returns a JSON Schema
         that allows for any parameters of any type.
 
-        :return: a JSON Object Schema.
+        Returns:
+            a JSON Object Schema.
         """
         return JsonObjectSchema(additional_properties=True)

@@ -35,9 +35,7 @@ from xcube.util import extension
 
 
 def init_plugin(ext_registry: extension.ExtensionRegistry):
-    """
-    Register xcube's standard extensions.
-    """
+    """Register xcube's standard extensions."""
     _register_input_processors(ext_registry)
     _register_dataset_ios(ext_registry)
     _register_cli_commands(ext_registry)
@@ -48,9 +46,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
 
 
 def _register_input_processors(ext_registry: extension.ExtensionRegistry):
-    """
-    Register xcube's standard input processors used by "xcube gen" and gen_cube().
-    """
+    """Register xcube's standard input processors used by "xcube gen" and gen_cube()."""
     ext_registry.add_extension(
         loader=extension.import_component("xcube.core.gen.iproc:DefaultInputProcessor"),
         point=EXTENSION_POINT_INPUT_PROCESSORS,
@@ -60,9 +56,7 @@ def _register_input_processors(ext_registry: extension.ExtensionRegistry):
 
 
 def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
-    """
-    Register xcube's standard dataset I/O components used by various CLI and API functions.
-    """
+    """Register xcube's standard dataset I/O components used by various CLI and API functions."""
     ext_registry.add_extension(
         loader=extension.import_component("xcube.core.dsio:ZarrDatasetIO", call=True),
         point=EXTENSION_POINT_DATASET_IOS,
@@ -132,9 +126,7 @@ _FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
 
 
 def _register_data_stores(ext_registry: extension.ExtensionRegistry):
-    """
-    Register xcube's standard data stores.
-    """
+    """Register xcube's standard data stores."""
     fs_ds_cls_factory = "xcube.core.store.fs.registry:get_fs_data_store_class"
     for storage_id, storage_description in _FS_STORAGE_ITEMS:
         fs_ds_cls_loader = extension.import_component(
@@ -158,9 +150,7 @@ def _register_data_stores(ext_registry: extension.ExtensionRegistry):
 
 
 def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
-    """
-    Register xcube's standard data accessors.
-    """
+    """Register xcube's standard data accessors."""
     factory = "xcube.core.store.fs.registry:get_fs_data_accessor_class"
 
     # noinspection PyShadowingNames
@@ -190,9 +180,7 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
 
 
 def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
-    """
-    Register xcube's standard CLI commands.
-    """
+    """Register xcube's standard CLI commands."""
 
     cli_command_names = [
         "chunk",
@@ -229,9 +217,7 @@ def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
 
 
 def _register_server_apis(ext_registry: extension.ExtensionRegistry):
-    """
-    Register xcube's standard server APIs.
-    """
+    """Register xcube's standard server APIs."""
     server_api_names = [
         "meta",
         "auth",

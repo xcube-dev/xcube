@@ -38,18 +38,21 @@ from xcube.util.plugin import get_extension_registry
 
 
 class ReprojectionInfo:
-    """
-    Characterize input datasets so we can reproject.
+    """Characterize input datasets so we can reproject.
 
-    :param xy_names: Names of variables providing the spatial x- and y-coordinates,
-           e.g. ('longitude', 'latitude')
-    :param xy_tp_names: Optional names of tie-point variables providing the spatial y- and y-coordinates,
-           e.g. ('TP_longitude', 'TP_latitude')
-    :param xy_crs: Optional spatial reference system, e.g. 'EPSG:4326' or WKT or proj4 mapping
-    :param xy_gcp_step: Optional step size for collecting ground control points from spatial
-           coordinate arrays denoted by *xy_names*.
-    :param xy_tp_gcp_step: Optional step size for collecting ground control points from spatial
-           coordinate arrays denoted by *xy_tp_names*.
+    Args:
+        xy_names: Names of variables providing the spatial x- and
+            y-coordinates, e.g. ('longitude', 'latitude')
+        xy_tp_names: Optional names of tie-point variables providing the
+            spatial y- and y-coordinates, e.g. ('TP_longitude',
+            'TP_latitude')
+        xy_crs: Optional spatial reference system, e.g. 'EPSG:4326' or
+            WKT or proj4 mapping
+        xy_gcp_step: Optional step size for collecting ground control
+            points from spatial coordinate arrays denoted by *xy_names*.
+        xy_tp_gcp_step: Optional step size for collecting ground control
+            points from spatial coordinate arrays denoted by
+            *xy_tp_names*.
     """
 
     def __init__(
@@ -137,14 +140,14 @@ class ReprojectionInfo:
 
 
 class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
-    """
-    Read and process inputs for the gen tool.
+    """Read and process inputs for the gen tool.
 
     An InputProcessor can be configured by the following parameters:
 
     * ``input_reader``: The input format identifier. Required, no default.
 
-    :param name: A unique input processor identifier.
+    Args:
+        name: A unique input processor identifier.
     """
 
     def __init__(self, name: str, **parameters):
@@ -155,8 +158,8 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
 
     @property
     def description(self) -> str:
-        """
-        :return: A description for this input processor
+        """Returns:
+        A description for this input processor
         """
         return self.get_metadata_attr("description", "")
 
@@ -174,43 +177,52 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
 
     @property
     def input_reader_params(self) -> dict:
-        """
-        :return: The input reader parameters for this input processor.
+        """Returns:
+        The input reader parameters for this input processor.
         """
         return self.parameters.get("input_reader_params", {})
 
     @abstractmethod
     def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
-        """
-        Return a tuple of two floats representing start/stop time (which may be same) in days since 1970.
-        :param dataset: The dataset.
-        :return: The time-range tuple of the dataset or None.
+        """Return a tuple of two floats representing start/stop time (which may be same) in days since 1970.
+
+        Args:
+            dataset: The dataset.
+
+        Returns:
+            The time-range tuple of the dataset or None.
         """
         raise NotImplementedError()
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
-        """
-        Get a set of names of variables that are required as input for the pre-processing and processing
+        """Get a set of names of variables that are required as input for the pre-processing and processing
         steps and should therefore not be dropped.
         However, the processing or post-processing steps may later remove them.
 
         Returns ``None`` by default.
 
-        :param dataset: The dataset.
-        :return: Collection of names of variables to be prevented from being dropping.
+        Args:
+            dataset: The dataset.
+
+        Returns:
+            Collection of names of variables to be prevented from being
+            dropping.
         """
         return None
 
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
-        """
-        Do any pre-processing before reprojection.
+        """Do any pre-processing before reprojection.
         All variables in the output dataset must be 2D arrays with dimensions "lat" and "lon", in this order.
         For example, perform dataset validation, masking, and/or filtering using provided configuration parameters.
 
         The default implementation returns the unchanged *dataset*.
 
-        :param dataset: The dataset.
-        :return: The pre-processed dataset or the original one, if no pre-processing is required.
+        Args:
+            dataset: The dataset.
+
+        Returns:
+            The pre-processed dataset or the original one, if no pre-
+            processing is required.
         """
         return dataset
 
@@ -228,38 +240,44 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         output_resampling: str,
         include_non_spatial_vars=False,
     ) -> xr.Dataset:
-        """
-        Perform spatial transformation into the cube's WGS84 SRS such that all variables in the output dataset
+        """Perform spatial transformation into the cube's WGS84 SRS such that all variables in the output dataset
         * must be 2D arrays with dimensions "lat" and "lon", in this order, and
         * must have shape (*dst_size[-1]*, *dst_size[-2]*), and
         * must have *dst_region* as their bounding box in geographic coordinates.
 
-        :param dataset: The input dataset.
-        :param geo_coding: The input's geo-coding.
-        :param output_geom: The output's spatial image geometry.
-        :param output_resampling: The output's spatial resampling method.
-        :param include_non_spatial_vars: Whether to include non-spatial variables in the output.
-        :return: The transformed output dataset or the original one, if no transformation is required.
+        Args:
+            dataset: The input dataset.
+            geo_coding: The input's geo-coding.
+            output_geom: The output's spatial image geometry.
+            output_resampling: The output's spatial resampling method.
+            include_non_spatial_vars: Whether to include non-spatial
+                variables in the output.
+
+        Returns:
+            The transformed output dataset or the original one, if no
+            transformation is required.
         """
         raise NotImplementedError()
 
     def post_process(self, dataset: xr.Dataset) -> xr.Dataset:
-        """
-        Do any post-processing transformation. The input is a 3D array with dimensions ("time", "lat", "lon").
+        """Do any post-processing transformation. The input is a 3D array with dimensions ("time", "lat", "lon").
         Post-processing may, for example, generate new "wavelength" dimension for variables whose name follow
         a certain pattern.
 
         The default implementation returns the unchanged *dataset*.
 
-        :param dataset: The dataset.
-        :return: The post-processed dataset or the original one, if no post-processing is required.
+        Args:
+            dataset: The dataset.
+
+        Returns:
+            The post-processed dataset or the original one, if no post-
+            processing is required.
         """
         return dataset
 
 
 class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
-    """
-    Read and process inputs for the gen tool.
+    """Read and process inputs for the gen tool.
 
     An XYInputProcessor can be configured by the following parameters:
 
@@ -286,10 +304,13 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
         return default_parameters
 
     def get_reprojection_info(self, dataset: xr.Dataset) -> ReprojectionInfo:
-        """
-        Information about special fields in input datasets used for reprojection.
-        :param dataset: The dataset.
-        :return: The reprojection information of the dataset or None.
+        """Information about special fields in input datasets used for reprojection.
+
+        Args:
+            dataset: The dataset.
+
+        Returns:
+            The reprojection information of the dataset or None.
         """
         parameters = self.parameters
         return ReprojectionInfo(
@@ -301,8 +322,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
         )
 
     def get_extra_vars(self, dataset: xr.Dataset) -> Optional[Collection[str]]:
-        """
-        Return the names of variables containing spatial coordinates.
+        """Return the names of variables containing spatial coordinates.
         They should not be removed, as they are required for the reprojection.
         """
         reprojection_info = self.get_reprojection_info(dataset)
@@ -323,9 +343,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
         output_resampling: str,
         include_non_spatial_vars=False,
     ) -> xr.Dataset:
-        """
-        Perform reprojection using tie-points / ground control points.
-        """
+        """Perform reprojection using tie-points / ground control points."""
         reprojection_info = self.get_reprojection_info(dataset)
 
         warn_prefix = "unsupported argument in np-GCP rectification mode"
@@ -388,8 +406,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
 
 
 class DefaultInputProcessor(XYInputProcessor):
-    """
-    Default input processor that expects input datasets to have the xcube standard format:
+    """Default input processor that expects input datasets to have the xcube standard format:
 
     * Have dimensions ``lat``, ``lon``, optionally ``time`` of length 1;
     * have coordinate variables ``lat[lat]``, ``lon[lat]``, ``time[time]`` (opt.), ``time_bnds[time, 2]`` (opt.);
@@ -507,11 +524,14 @@ class DefaultInputProcessor(XYInputProcessor):
 
 
 def _normalize_lon_360(dataset: xr.Dataset) -> xr.Dataset:
-    """
-    Fix the longitude of the given dataset ``dataset`` so that it ranges from -180 to +180 degrees.
+    """Fix the longitude of the given dataset ``dataset`` so that it ranges from -180 to +180 degrees.
 
-    :param dataset: The dataset whose longitudes may be given in the range 0 to 360.
-    :return: The fixed dataset or the original dataset.
+    Args:
+        dataset: The dataset whose longitudes may be given in the range
+            0 to 360.
+
+    Returns:
+        The fixed dataset or the original dataset.
     """
 
     if "lon" not in dataset.coords:

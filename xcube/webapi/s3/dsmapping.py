@@ -46,9 +46,10 @@ class DatasetsMapping(collections.abc.Mapping):
     more user-friendly. If *is_multi_level* is True, the new names
     will always have ".levels" suffix, otherwise the ".zarr" suffix.
 
-    :param datasets_ctx: The datasets' context
-    :param is_multi_level: Whether this is a multi-level datasets'
-        object storage
+    Args:
+        datasets_ctx: The datasets' context
+        is_multi_level: Whether this is a multi-level datasets' object
+            storage
     """
 
     def __init__(self, datasets_ctx: DatasetsContext, is_multi_level: bool = False):
@@ -93,7 +94,8 @@ class DatasetsMapping(collections.abc.Mapping):
         Overridden to avoid a call to __getitem__(),
         which will open the dataset (or raise ApiError!),
         but we want this to happen for direct __getitem__()
-        calls only."""
+        calls only.
+        """
         return s3_name in self._s3_names
 
     def __getitem__(self, s3_name: str) -> Union[xr.Dataset, MultiLevelDataset]:

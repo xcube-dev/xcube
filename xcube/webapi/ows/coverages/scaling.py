@@ -47,12 +47,14 @@ class CoverageScaling:
     def __init__(self, request: CoverageRequest, crs: pyproj.CRS, ds: xr.Dataset):
         """Create a new scaling from a coverages request object
 
-        :param request: a request optionally including scaling parameters.
-          If any scaling parameters are present, the returned instance will
-          correspond to them. If no scaling parameters are present, a
-          default scaling will be used (currently 1:1)
-        :param crs: the CRS of the dataset to be scaled
-        :param ds: the dataset to be scaled
+        Args:
+            request: a request optionally including scaling parameters.
+                If any scaling parameters are present, the returned
+                instance will correspond to them. If no scaling
+                parameters are present, a default scaling will be used
+                (currently 1:1)
+            crs: the CRS of the dataset to be scaled
+            ds: the dataset to be scaled
         """
         h_dim = get_h_dim(ds)
         v_dim = get_v_dim(ds)
@@ -109,7 +111,8 @@ class CoverageScaling:
         dimensions; the effective factor may be different when the scaling
         is applied to a GridMapping.
 
-        :return: a 2-tuple of the x and y scale factors, in that order
+        Returns:
+            a 2-tuple of the x and y scale factors, in that order
         """
         if self._scale is not None:
             return self._scale
@@ -122,8 +125,9 @@ class CoverageScaling:
     def size(self) -> tuple[float, float]:
         """Return the final coverage size produced by this scaling
 
-        :return: a 2-tuple of the scaled x and y sizes, in that order,
-          in pixels
+        Returns:
+            a 2-tuple of the scaled x and y sizes, in that order, in
+            pixels
         """
         if self._final_size is not None:
             return self._final_size
@@ -149,10 +153,13 @@ class CoverageScaling:
         the CRS which has either a name or abbreviation matching any string
         in the supplied set.
 
-        :param valid_identifiers: a set of axis identifiers
-        :return: the abbreviation of the first axis in this scaling's CRS
-          whose name or abbreviation is in the supplied set, or `None` if
-          no such axis exists
+        Args:
+            valid_identifiers: a set of axis identifiers
+
+        Returns:
+            the abbreviation of the first axis in this scaling's CRS
+            whose name or abbreviation is in the supplied set, or `None`
+            if no such axis exists
         """
         for axis in self._crs.axis_info:
             if not hasattr(axis, "abbrev"):
@@ -172,10 +179,13 @@ class CoverageScaling:
 
         The supplied grid mapping is regularized before being scaled.
 
-        :param gm: a grid mapping to be scaled
-        :return: the supplied grid mapping, scaled according to this scaling.
-          If this scaling is 1:1, the returned grid mapping may be the
-          original object.
+        Args:
+            gm: a grid mapping to be scaled
+
+        Returns:
+            the supplied grid mapping, scaled according to this scaling.
+            If this scaling is 1:1, the returned grid mapping may be the
+            original object.
         """
         if self.factor == (1, 1):
             return gm

@@ -72,8 +72,7 @@ def get_time_series(
     use_groupby: bool = False,
     cube_asserted: Optional[bool] = None,
 ) -> Optional[xr.Dataset]:
-    """
-    Get a time series dataset from a data *cube*.
+    """Get a time series dataset from a data *cube*.
 
     *geometry* may be provided as a (shapely) geometry object, a valid
     GeoJSON object, a valid WKT string,
@@ -96,20 +95,22 @@ def get_time_series(
     output variables remain,
     the function returns ``None``.
 
-    :param cube: The xcube dataset
-    :param grid_mapping: Grid mapping of *cube*.
-    :param geometry: Optional geometry
-    :param var_names: Optional sequence of names of variables to be included.
-    :param start_date: Optional start date.
-    :param end_date: Optional end date.
-    :param agg_methods: Aggregation methods. May be single string or
-        sequence of strings. Possible values are
-        'mean', 'median', 'min', 'max', 'std', 'count'. Defaults to 'mean'.
-        Ignored if geometry is a point.
-    :param use_groupby: Use group-by operation. May increase or decrease
-        runtime performance and/or memory consumption.
-    :param cube_asserted: Deprecated and ignored since xcube 0.11.0.
-        No replacement.
+    Args:
+        cube: The xcube dataset
+        grid_mapping: Grid mapping of *cube*.
+        geometry: Optional geometry
+        var_names: Optional sequence of names of variables to be
+            included.
+        start_date: Optional start date.
+        end_date: Optional end date.
+        agg_methods: Aggregation methods. May be single string or
+            sequence of strings. Possible values are 'mean', 'median',
+            'min', 'max', 'std', 'count'. Defaults to 'mean'. Ignored if
+            geometry is a point.
+        use_groupby: Use group-by operation. May increase or decrease
+            runtime performance and/or memory consumption.
+        cube_asserted: Deprecated and ignored since xcube 0.11.0. No
+            replacement.
     """
     if cube_asserted is not None:
         warnings.warn(

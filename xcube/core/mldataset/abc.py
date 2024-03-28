@@ -33,8 +33,7 @@ from xcube.util.types import normalize_scalar_or_pair
 
 
 class MultiLevelDataset(metaclass=ABCMeta):
-    """
-    A multi-level dataset of decreasing spatial resolutions
+    """A multi-level dataset of decreasing spatial resolutions
     (a multi-resolution pyramid).
 
     The pyramid level at index zero provides the original spatial dimensions.
@@ -51,37 +50,34 @@ class MultiLevelDataset(metaclass=ABCMeta):
     @property
     @abstractmethod
     def ds_id(self) -> str:
-        """
-        :return: the dataset identifier.
+        """Returns:
+        the dataset identifier.
         """
 
     @ds_id.setter
     @abstractmethod
     def ds_id(self, ds_id: str):
-        """
-        Set the dataset identifier.
-        """
+        """Set the dataset identifier."""
 
     @property
     @abstractmethod
     def grid_mapping(self) -> GridMapping:
-        """
-        :return: the CF-conformal grid mapping
+        """Returns:
+        the CF-conformal grid mapping
         """
 
     @property
     @abstractmethod
     def num_levels(self) -> int:
-        """
-        :return: the number of pyramid levels.
+        """Returns:
+        the number of pyramid levels.
         """
 
     @cached_property
     def resolutions(self) -> Sequence[Tuple[float, float]]:
-        """
-        :return: the x,y resolutions for each level given in the
-            spatial units of the dataset's CRS
-            (i.e. ``self.grid_mapping.crs``).
+        """Returns:
+        the x,y resolutions for each level given in the spatial
+        units of the dataset's CRS (i.e. ``self.grid_mapping.crs``).
         """
         x_res_0, y_res_0 = self.grid_mapping.xy_res
         return [
@@ -91,10 +87,10 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
     @cached_property
     def avg_resolutions(self) -> Sequence[float]:
-        """
-        :return: the average x,y resolutions for each level given in the
-            spatial units of the dataset's CRS
-            (i.e. ``self.grid_mapping.crs``).
+        """Returns:
+        the average x,y resolutions for each level given in the
+        spatial units of the dataset's CRS (i.e.
+        ``self.grid_mapping.crs``).
         """
         x_res_0, y_res_0 = self.grid_mapping.xy_res
         xy_res_0 = math.sqrt(x_res_0 * y_res_0)
@@ -102,27 +98,29 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
     @property
     def base_dataset(self) -> xr.Dataset:
-        """
-        :return: the base dataset for lowest level at index 0.
+        """Returns:
+        the base dataset for lowest level at index 0.
         """
         return self.get_dataset(0)
 
     @property
     def datasets(self) -> Sequence[xr.Dataset]:
-        """
-        Get datasets for all levels.
+        """Get datasets for all levels.
 
         Calling this method will trigger any lazy dataset instantiation.
 
-        :return: the datasets for all levels.
+        Returns:
+            the datasets for all levels.
         """
         return [self.get_dataset(index) for index in range(self.num_levels)]
 
     @abstractmethod
     def get_dataset(self, index: int) -> xr.Dataset:
-        """
-        :param index: the level index
-        :return: the dataset for the level at *index*.
+        """Args:
+            index: the level index
+
+        Returns:
+            the dataset for the level at *index*.
         """
 
     def close(self):
@@ -144,8 +142,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         )
 
     def derive_tiling_scheme(self, tiling_scheme: TilingScheme):
-        """
-        Derive a new tiling scheme for the given one with defined
+        """Derive a new tiling scheme for the given one with defined
         minimum and maximum level indices.
         """
         min_level, max_level = tiling_scheme.get_levels_for_resolutions(
@@ -154,11 +151,13 @@ class MultiLevelDataset(metaclass=ABCMeta):
         return tiling_scheme.derive(min_level=min_level, max_level=max_level)
 
     def get_level_for_resolution(self, xy_res: ScalarOrPair[float]) -> int:
-        """
-        Get the index of the level that best represents the given resolution.
+        """Get the index of the level that best represents the given resolution.
 
-        :param xy_res: the resolution in x- and y-direction
-        :return: a level ranging from 0 to self.num_levels - 1
+        Args:
+            xy_res: the resolution in x- and y-direction
+
+        Returns:
+            a level ranging from 0 to self.num_levels - 1
         """
         given_x_res, given_y_res = normalize_scalar_or_pair(xy_res, item_type=float)
         for level, (x_res, y_res) in enumerate(self.resolutions):

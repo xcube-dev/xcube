@@ -48,9 +48,7 @@ from ...datatype import MULTI_LEVEL_DATASET_TYPE
 
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
-    """
-    Opener/writer extension name "mldataset:levels:<protocol>".
-    """
+    """Opener/writer extension name 'mldataset:levels:<protocol>'."""
 
     @classmethod
     def get_data_type(cls) -> DataType:
@@ -153,9 +151,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
 
 
 class DatasetLevelsFsDataAccessor(MultiLevelDatasetLevelsFsDataAccessor):
-    """
-    Opener/writer extension name "dataset:levels:<protocol>".
-    """
+    """Opener/writer extension name 'dataset:levels:<protocol>'."""
 
     @classmethod
     def get_data_type(cls) -> DataType:

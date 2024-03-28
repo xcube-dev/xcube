@@ -42,8 +42,7 @@ from ...constants import LOG
 
 
 class CodeConfig(JsonObject):
-    """
-    Code configuration object.
+    """Code configuration object.
 
     Instances should always be created using one of the factory methods:
 
@@ -51,24 +50,23 @@ class CodeConfig(JsonObject):
     * :meth:from_code
     * :meth:from_file_set
 
-    :param _callable: Optional function or class.
-        Cannot be given if *inline_code* or *file_set* are given.
-    :param callable_ref: Optional reference to the callable
-        in the *file_set*. Must have form "<module-name>:<callable-name>".
-    :param inline_code: Optional inline Python code string.
-        Cannot be given if *_callable* or *file_set* are given.
-    :param file_set: A file set that contains Python
-        modules or packages.
-        Must be of type :class:FileSet.
-        Cannot be given if *_callable* or *inline_code* are given.
-    :param install_required: Whether *file_set* contains
-        Python modules or packages that must be installed.
-        Can only be True if *file_set* is given.
-    :param callable_params: Optional parameters that are supposed to
-        be passed as keyword-arguments to the callable.
-        Stored as part of the configuration, but this class
-        does not apply them.
-        Must be a dictionary, if given.
+    Args:
+        _callable: Optional function or class. Cannot be given if
+            *inline_code* or *file_set* are given.
+        callable_ref: Optional reference to the callable in the
+            *file_set*. Must have form "<module-name>:<callable-name>".
+        inline_code: Optional inline Python code string. Cannot be given
+            if *_callable* or *file_set* are given.
+        file_set: A file set that contains Python modules or packages.
+            Must be of type :class:FileSet. Cannot be given if
+            *_callable* or *inline_code* are given.
+        install_required: Whether *file_set* contains Python modules or
+            packages that must be installed. Can only be True if
+            *file_set* is given.
+        callable_params: Optional parameters that are supposed to be
+            passed as keyword-arguments to the callable. Stored as part
+            of the configuration, but this class does not apply them.
+            Must be a dictionary, if given.
     """
 
     def __init__(
@@ -131,24 +129,26 @@ class CodeConfig(JsonObject):
         module_name: str = None,
         callable_params: Dict[str, Any] = None,
     ) -> "CodeConfig":
-        """
-        Create a code configuration from the given *code* which may be
+        """Create a code configuration from the given *code* which may be
         given as one or more plain text strings or callables.
 
         This will create a configuration that uses an inline
         ``code_string`` which contains the source code.
 
-        :param code: The code.
-        :param callable_name: The callable name.
-            If not given, will be inferred from first callable.
-            Otherwise, it defaults to "process_dataset".
-        :param module_name: The module name. If not given,
-            defaults to "user_code".
-        :param callable_params: Optional parameters that are supposed to
-            be passed as keyword-arguments to the callable.
-            Stored as part of the configuration, but this class
-            does not apply them. Must be a dictionary, if given.
-        :return: A new code configuration.
+        Args:
+            *code: The code.
+            callable_name: The callable name. If not given, will be
+                inferred from first callable. Otherwise, it defaults to
+                "process_dataset".
+            module_name: The module name. If not given, defaults to
+                "user_code".
+            callable_params: Optional parameters that are supposed to be
+                passed as keyword-arguments to the callable. Stored as
+                part of the configuration, but this class does not apply
+                them. Must be a dictionary, if given.
+
+        Returns:
+            A new code configuration.
         """
         assert_given(code, "code")
         inline_code, callable_ref = _normalize_inline_code(
@@ -164,8 +164,7 @@ class CodeConfig(JsonObject):
     def from_callable(
         cls, _callable: Callable, callable_params: Optional[Dict[str, Any]] = None
     ) -> "CodeConfig":
-        """
-        Create a code configuration from the callable *_callable*.
+        """Create a code configuration from the callable *_callable*.
 
         Note, the resulting code configuration is only
         valid in a local context. It cannot be JSON-serialized.
@@ -173,12 +172,15 @@ class CodeConfig(JsonObject):
         To pass such configurations to a service, convert it first
         using the :meth:to_service first.
 
-        :param _callable: A function or class
-        :param callable_params: Optional parameters that are supposed to
-            be passed as keyword-arguments to the callable.
-            Stored as part of the configuration, but this class
-            does not apply them. Must be a dictionary, if given.
-        :return: A new code configuration.
+        Args:
+            _callable: A function or class
+            callable_params: Optional parameters that are supposed to be
+                passed as keyword-arguments to the callable. Stored as
+                part of the configuration, but this class does not apply
+                them. Must be a dictionary, if given.
+
+        Returns:
+            A new code configuration.
         """
         assert_given(_callable, "_callable")
         return CodeConfig(_callable=_callable, callable_params=callable_params)
@@ -191,20 +193,22 @@ class CodeConfig(JsonObject):
         callable_params: Optional[Dict[str, Any]] = None,
         install_required: Optional[bool] = None,
     ) -> "CodeConfig":
-        """
-        Create a code configuration from a file set.
+        """Create a code configuration from a file set.
 
-        :param file_set: The file set.
-            Can be a path or a :class:FileSet instance.
-        :param callable_ref: Reference to the callable in the *file_set*,
-            must have form "<module-name>:<callable-name>"
-        :param install_required: Whether the *file_set* is
-            a package that must be installed.
-        :param callable_params: Optional parameters that are supposed to
-            be passed as keyword-arguments to the callable.
-            Stored as part of the configuration, but this class
-            does not apply them. Must be a dictionary, if given.
-        :return: A new code configuration.
+        Args:
+            file_set: The file set. Can be a path or a :class:FileSet
+                instance.
+            callable_ref: Reference to the callable in the *file_set*,
+                must have form "<module-name>:<callable-name>"
+            install_required: Whether the *file_set* is a package that
+                must be installed.
+            callable_params: Optional parameters that are supposed to be
+                passed as keyword-arguments to the callable. Stored as
+                part of the configuration, but this class does not apply
+                them. Must be a dictionary, if given.
+
+        Returns:
+            A new code configuration.
         """
         assert_given(file_set, "file_set")
         assert_given(callable_ref, "callable_ref")
@@ -227,24 +231,26 @@ class CodeConfig(JsonObject):
         gh_username: Optional[str] = None,
         gh_token: Optional[str] = None,
     ):
-        """
-        Create a code configuration from a GitHub archive.
+        """Create a code configuration from a GitHub archive.
 
-        :param gh_org: GitHub organisation name or username
-        :param gh_repo:  GitHub repository name
-        :param gh_tag: GitHub release tag
-        :param gh_release: The name of a GitHub release. It is used to
-            form the sub-path into the archive. The sub-path has the form
-            "<gh_repo>-<gh_release>".
-        :param callable_ref: Reference to the callable in the *file_set*,
-            must have form "<module-name>:<callable-name>"
-        :param callable_params: Optional parameters that are supposed to
-            be passed as keyword-arguments to the callable.
-            Stored as part of the configuration, but this class
-            does not apply them. Must be a dictionary, if given.
-        :param gh_username: Optional GitHub username.
-        :param gh_token: Optional GitHub username.
-        :return:
+        Args:
+            gh_org: GitHub organisation name or username
+            gh_repo: GitHub repository name
+            gh_tag: GitHub release tag
+            gh_release: The name of a GitHub release. It is used to form
+                the sub-path into the archive. The sub-path has the form
+                "<gh_repo>-<gh_release>".
+            callable_ref: Reference to the callable in the *file_set*,
+                must have form "<module-name>:<callable-name>"
+            callable_params: Optional parameters that are supposed to be
+                passed as keyword-arguments to the callable. Stored as
+                part of the configuration, but this class does not apply
+                them. Must be a dictionary, if given.
+            gh_username: Optional GitHub username.
+            gh_token: Optional GitHub username.
+
+        Returns:
+
         """
         assert_given(gh_org, "gh_org")
         assert_given(gh_org, "gh_repo")
@@ -264,8 +270,7 @@ class CodeConfig(JsonObject):
         )
 
     def for_service(self) -> "CodeConfig":
-        """
-        Convert this code configuration so can be used by the
+        """Convert this code configuration so can be used by the
         generator service.
 
         The returned code configuration defines either
@@ -275,8 +280,7 @@ class CodeConfig(JsonObject):
         return _for_service(self)
 
     def for_local(self) -> "CodeConfig":
-        """
-        Convert this code configuration so can be used by the
+        """Convert this code configuration so can be used by the
         local generator. This means, the returned configuration
         can be used to load executable code. i.e.
         :meth:get_callable() will return a callable.
@@ -291,12 +295,12 @@ class CodeConfig(JsonObject):
         return _for_local(self)
 
     def get_callable(self) -> Callable:
-        """
-        Get the callable specified by this configuration.
+        """Get the callable specified by this configuration.
 
         In the common case, this will require importing the callable.
 
-        :return: A callable
+        Returns:
+            A callable
         :raise ImportError if the callable can not be imported
         """
         if self._callable is None:
@@ -304,18 +308,19 @@ class CodeConfig(JsonObject):
         return self._callable
 
     def set_callable(self, func_or_class: Callable):
-        """
-        Set the callable that is represented by this configuration.
-        :param func_or_class: A callable
+        """Set the callable that is represented by this configuration.
+
+        Args:
+            func_or_class: A callable
         """
         assert_true(callable(func_or_class), f"func_or_class must be callable")
         self._callable = func_or_class
 
     def _load_callable(self) -> Callable:
-        """
-        Load the callable specified by this configuration.
+        """Load the callable specified by this configuration.
 
-        :return: A callable
+        Returns:
+            A callable
         :raise ImportError if the callable can not be imported
         """
         code_config = self.for_local()
@@ -417,15 +422,17 @@ def _for_local(code_config: CodeConfig) -> "CodeConfig":
 def _load_callable(
     dir_path: str, callable_ref: str, install_required: bool
 ) -> Callable:
-    """
-    Load the callable from given *dir_path* using the
+    """Load the callable from given *dir_path* using the
     callable reference *callable_red*.
-    :param dir_path: A local directory path
-        (local ZIPs should work too).
-    :param callable_ref: A callable reference of form "module:callable"
-    :param install_required: Whether source code in *dir_path*
-        must be installed using setup.
-    :return: The loaded callable
+
+    Args:
+        dir_path: A local directory path (local ZIPs should work too).
+        callable_ref: A callable reference of form "module:callable"
+        install_required: Whether source code in *dir_path* must be
+            installed using setup.
+
+    Returns:
+        The loaded callable
     """
     module_name, callable_name = _normalize_callable_ref(callable_ref)
     if install_required:
@@ -470,16 +477,18 @@ def _next_user_module_name() -> str:
 def _callable_to_module(
     _callable: Callable, callable_params: Dict[str, Any] = None
 ) -> CodeConfig:
-    """
-    Create a code configuration from the callable *_callable*.
+    """Create a code configuration from the callable *_callable*.
 
     This will create a configuration that uses a ``file_set``
     which contains the source code for the *func_or_class*.
 
-    :param _callable: A function or class
-    :param callable_params: The parameters passed
-        as keyword-arguments to the callable.
-    :return: A new code configuration.
+    Args:
+        _callable: A function or class
+        callable_params: The parameters passed as keyword-arguments to
+            the callable.
+
+    Returns:
+        A new code configuration.
     """
     callable_name = _callable.__name__
     if not callable_name:

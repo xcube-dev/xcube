@@ -47,8 +47,7 @@ def rectify_dataset(
     compute_subset: bool = True,
     uv_delta: float = 1e-3,
 ) -> Optional[xr.Dataset]:
-    """
-    Reproject dataset *source_ds* using its per-pixel
+    """Reproject dataset *source_ds* using its per-pixel
     x,y coordinates or the given *source_gm*.
 
     The function expects *source_ds* or the given
@@ -73,36 +72,37 @@ def rectify_dataset(
     arrays. Otherwise, the returned dataset will be composed
     of ordinary numpy arrays.
 
-    :param source_ds: Source dataset grid mapping.
-    :param var_names: Optional variable name or sequence of
-        variable names.
-    :param source_gm: Source dataset grid mapping.
-    :param xy_var_names: Optional tuple of the x- and y-coordinate
-        variables in *source_ds*. Ignored if *source_gm* is given.
-    :param target_gm: Optional target geometry. If not given,
-        output geometry will be computed to spatially fit *dataset*
-        and to retain its spatial resolution.
-    :param encode_cf: Whether to encode the target grid mapping
-        into the resampled dataset in a CF-compliant way.
-        Defaults to ``True``.
-    :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs". Used only if *encode_cf* is ``True``.
-    :param tile_size: Optional tile size for the output.
-    :param is_j_axis_up: Whether y coordinates are increasing with
-        positive image j axis.
-    :param output_ij_names: If given, a tuple of variable names in
-        which to store the computed source pixel coordinates in
-        the returned output.
-    :param compute_subset: Whether to compute a spatial subset
-        from *dataset* using *output_geom*. If set, the function
-        may return ``None`` in case there is no overlap.
-    :param uv_delta: A normalized value that is used to determine
-        whether x,y coordinates in the output are contained
-        in the triangles defined by the input x,y coordinates.
-        The higher this value, the more inaccurate the rectification
-        will be.
-    :return: a reprojected dataset, or None if the requested output
-        does not intersect with *dataset*.
+    Args:
+        source_ds: Source dataset grid mapping.
+        var_names: Optional variable name or sequence of variable names.
+        source_gm: Source dataset grid mapping.
+        xy_var_names: Optional tuple of the x- and y-coordinate
+            variables in *source_ds*. Ignored if *source_gm* is given.
+        target_gm: Optional target geometry. If not given, output
+            geometry will be computed to spatially fit *dataset* and to
+            retain its spatial resolution.
+        encode_cf: Whether to encode the target grid mapping into the
+            resampled dataset in a CF-compliant way. Defaults to
+            ``True``.
+        gm_name: Name for the grid mapping variable. Defaults to "crs".
+            Used only if *encode_cf* is ``True``.
+        tile_size: Optional tile size for the output.
+        is_j_axis_up: Whether y coordinates are increasing with positive
+            image j axis.
+        output_ij_names: If given, a tuple of variable names in which to
+            store the computed source pixel coordinates in the returned
+            output.
+        compute_subset: Whether to compute a spatial subset from
+            *dataset* using *output_geom*. If set, the function may
+            return ``None`` in case there is no overlap.
+        uv_delta: A normalized value that is used to determine whether
+            x,y coordinates in the output are contained in the triangles
+            defined by the input x,y coordinates. The higher this value,
+            the more inaccurate the rectification will be.
+
+    Returns:
+        a reprojected dataset, or None if the requested output does not
+        intersect with *dataset*.
     """
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
@@ -193,15 +193,16 @@ def _select_variables(
     source_gm: GridMapping,
     var_names: Union[None, str, Sequence[str]],
 ) -> Mapping[str, xr.DataArray]:
-    """
-    Select variables from *dataset*.
+    """Select variables from *dataset*.
 
-    :param source_ds: Source dataset.
-    :param source_gm: Optional dataset geo-coding.
-    :param var_names: Optional variable name
-        or sequence of variable names.
-    :return: The selected variables as a variable name
-        to ``xr.DataArray`` mapping
+    Args:
+        source_ds: Source dataset.
+        source_gm: Optional dataset geo-coding.
+        var_names: Optional variable name or sequence of variable names.
+
+    Returns:
+        The selected variables as a variable name to ``xr.DataArray``
+        mapping
     """
     spatial_var_names = source_gm.xy_var_names
     spatial_shape = tuple(reversed(source_gm.size))
@@ -238,8 +239,7 @@ def _is_2d_spatial_var(var: xr.DataArray, shape, dims) -> bool:
 def _compute_ij_images_xarray_numpy(
     src_geo_coding: GridMapping, output_geom: GridMapping, uv_delta: float
 ) -> np.ndarray:
-    """
-    Compute numpy.ndarray destination image with source
+    """Compute numpy.ndarray destination image with source
     pixel i,j coords from xarray.DataArray x,y sources.
     """
     dst_width = output_geom.width
@@ -270,8 +270,7 @@ def _compute_ij_images_xarray_numpy(
 def _compute_ij_images_xarray_dask(
     src_geo_coding: GridMapping, output_geom: GridMapping, uv_delta: float
 ) -> da.Array:
-    """
-    Compute dask.array.Array destination image
+    """Compute dask.array.Array destination image
     with source pixel i,j coords from xarray.DataArray x,y sources.
     """
     dst_width = output_geom.width
@@ -345,8 +344,7 @@ def _compute_ij_images_xarray_dask_block(
     dst_is_j_axis_up: bool,
     uv_delta: float,
 ) -> np.ndarray:
-    """
-    Compute dask.array.Array destination block with source
+    """Compute dask.array.Array destination block with source
     pixel i,j coords from xarray.DataArray x,y sources.
     """
     dst_src_ij_block = np.full(block_shape, np.nan, dtype=dtype)
@@ -393,8 +391,7 @@ def _compute_ij_images_numpy_parallel(
     dst_y_scale: float,
     uv_delta: float,
 ):
-    """
-    Compute numpy.ndarray destination image with source
+    """Compute numpy.ndarray destination image with source
     pixel i,j coords from numpy.ndarray x,y sources in
     parallel mode.
     """
@@ -431,8 +428,7 @@ def _compute_ij_images_numpy_sequential(
     dst_y_scale: float,
     uv_delta: float,
 ):
-    """
-    Compute numpy.ndarray destination image with source pixel i,j coords
+    """Compute numpy.ndarray destination image with source pixel i,j coords
     from numpy.ndarray x,y sources NOT in parallel mode.
     """
     src_height = src_x_image.shape[-2]
@@ -467,8 +463,7 @@ def _compute_ij_images_for_source_line(
     dst_y_scale: float,
     uv_delta: float,
 ):
-    """
-    Compute numpy.ndarray destination image with source
+    """Compute numpy.ndarray destination image with source
     pixel i,j coords from a numpy.ndarray x,y source line.
     """
     src_width = src_x_image.shape[-1]
@@ -565,8 +560,7 @@ def _compute_var_image_xarray_numpy(
     dst_src_ij_images: np.ndarray,
     fill_value: Union[int, float, complex] = np.nan,
 ) -> np.ndarray:
-    """
-    Extract source pixels from xarray.DataArray source
+    """Extract source pixels from xarray.DataArray source
     with numpy.ndarray data.
     """
     return _compute_var_image_numpy(src_var.values, dst_src_ij_images, fill_value)
@@ -577,8 +571,7 @@ def _compute_var_image_xarray_dask(
     dst_src_ij_images: np.ndarray,
     fill_value: Union[int, float, complex] = np.nan,
 ) -> da.Array:
-    """
-    Extract source pixels from xarray.DataArray source
+    """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
     """
     return da.map_blocks(
@@ -597,8 +590,7 @@ def _compute_var_image_numpy(
     dst_src_ij_images: np.ndarray,
     fill_value: Union[int, float, complex] = np.nan,
 ) -> np.ndarray:
-    """
-    Extract source pixels from numpy.ndarray source
+    """Extract source pixels from numpy.ndarray source
     with numba in parallel mode.
     """
     dst_width = dst_src_ij_images.shape[-1]
@@ -615,8 +607,7 @@ def _compute_var_image_xarray_dask_block(
     dst_src_ij_images: np.ndarray,
     fill_value: Union[int, float, complex] = np.nan,
 ) -> np.ndarray:
-    """
-    Extract source pixels from np.ndarray source
+    """Extract source pixels from np.ndarray source
     and return a block of a dask array.
     """
     dst_width = dst_src_ij_images.shape[-1]
@@ -631,8 +622,7 @@ def _compute_var_image_xarray_dask_block(
 def _compute_var_image_numpy_parallel(
     src_var_image: np.ndarray, dst_src_ij_images: np.ndarray, dst_var_image: np.ndarray
 ):
-    """
-    Extract source pixels from np.ndarray source
+    """Extract source pixels from np.ndarray source
     using numba parallel mode.
     """
     dst_height = dst_var_image.shape[-2]
@@ -648,8 +638,7 @@ def _compute_var_image_numpy_parallel(
 def _compute_var_image_numpy_sequential(
     src_var_image: np.ndarray, dst_src_ij_images: np.ndarray, dst_var_image: np.ndarray
 ):
-    """
-    Extract source pixels from np.ndarray source
+    """Extract source pixels from np.ndarray source
     NOT using numba parallel mode.
     """
     dst_height = dst_var_image.shape[-2]
@@ -666,8 +655,7 @@ def _compute_var_image_for_dest_line(
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
 ):
-    """
-    Extract source pixels from *src_values* np.ndarray
+    """Extract source pixels from *src_values* np.ndarray
     and write into dst_values np.ndarray.
     """
     src_width = src_var_image.shape[-1]

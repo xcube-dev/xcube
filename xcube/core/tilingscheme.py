@@ -52,8 +52,7 @@ EARTH_CIRCUMFERENCE_WGS84 = 2 * math.pi * EARTH_EQUATORIAL_RADIUS_WGS84
 
 
 class TilingScheme:
-    """
-    A scheme for subdividing the world into a tiled, multi-resolution
+    """A scheme for subdividing the world into a tiled, multi-resolution
     image pyramid.
 
     Two standard tiling schemes are pre-defined:
@@ -61,15 +60,16 @@ class TilingScheme:
     1. TilingScheme.WEB_MERCATOR
     2. TilingScheme.GEOGRAPHIC
 
-    :param num_level_zero_tiles: The number of tiles
-        in x and y direction at lowest resolution level (zero).
-    :param crs_name: Name of the spatial coordinate reference system.
-    :param map_height: The height of the world map in units of the
-        spatial coordinate reference system.
-    :param tile_size: The tile size to be used for
-        both x and y directions. Defaults to 256.
-    :param min_level: Optional minimum resolution level.
-    :param max_level: Optional maximum resolution level.
+    Args:
+        num_level_zero_tiles: The number of tiles in x and y direction
+            at lowest resolution level (zero).
+        crs_name: Name of the spatial coordinate reference system.
+        map_height: The height of the world map in units of the spatial
+            coordinate reference system.
+        tile_size: The tile size to be used for both x and y directions.
+            Defaults to 256.
+        min_level: Optional minimum resolution level.
+        max_level: Optional maximum resolution level.
     """
 
     # The web mercator tiling schema with 1 x 1 level zero tiles
@@ -125,8 +125,7 @@ class TilingScheme:
 
     @property
     def map_width(self) -> float:
-        """
-        The height of the map in units
+        """The height of the map in units
         of the map's spatial coordinate reference system.
         """
         num_tiles_x0, num_tiles_y0 = self.num_level_zero_tiles
@@ -134,16 +133,14 @@ class TilingScheme:
 
     @property
     def map_height(self) -> float:
-        """
-        The height of the map in units
+        """The height of the map in units
         of the map's spatial coordinate reference system.
         """
         return self._map_height
 
     @property
     def map_extent(self) -> Tuple[float, float, float, float]:
-        """
-        The extent of the map in units
+        """The extent of the map in units
         of the map's spatial coordinate reference system.
         """
         map_width_05 = self.map_width / 2
@@ -152,8 +149,7 @@ class TilingScheme:
 
     @property
     def map_origin(self) -> Tuple[float, float]:
-        """
-        The origin of the map (upper, left pixel of the upper left tile)
+        """The origin of the map (upper, left pixel of the upper left tile)
         in units of the map's spatial coordinate reference system.
         """
         map_extent = self.map_extent
@@ -191,12 +187,14 @@ class TilingScheme:
 
     @classmethod
     def for_crs(cls, crs: Union[pyproj.CRS, str], **kwargs) -> "TilingScheme":
-        """
-        Get a new tiling scheme for the named coordinate reference system.
+        """Get a new tiling scheme for the named coordinate reference system.
 
-        :param crs: The spatial coordinate reference system.
-        :param kwargs: subset of constructor arguments
-        :return: a tiling scheme
+        Args:
+            crs: The spatial coordinate reference system.
+            **kwargs: subset of constructor arguments
+
+        Returns:
+            a tiling scheme
         """
         assert_instance(crs, (pyproj.CRS, str), name="crs")
         crs_name = crs.srs if isinstance(crs, pyproj.CRS) else crs
@@ -209,20 +207,21 @@ class TilingScheme:
         return tiling_scheme.derive(**kwargs) if kwargs else tiling_scheme
 
     def derive(self, **kwargs):
-        """
-        Derive a new tiling scheme using a subset of constructor
+        """Derive a new tiling scheme using a subset of constructor
         arguments *kwargs*.
 
-        :param kwargs: subset of constructor arguments
-        :return: a new tiling scheme
+        Args:
+            **kwargs: subset of constructor arguments
+
+        Returns:
+            a new tiling scheme
         """
         args = self.to_dict()
         args.update({k: v for k, v in kwargs.items() if v is not None})
         return TilingScheme(**args)
 
     def to_dict(self):
-        """
-        Return a JSON-serializable dictionary
+        """Return a JSON-serializable dictionary
         representation of this tiling scheme.
         """
         d = dict(
@@ -241,13 +240,17 @@ class TilingScheme:
         max_level: Optional[int] = None,
         unit_name: Optional[str] = None,
     ) -> List[float]:
-        """
-        Get spatial resolutions for this tiling scheme.
+        """Get spatial resolutions for this tiling scheme.
 
-        :param min_level: Optional minimum level. Defaults to self.min_level.
-        :param max_level: Optional maximum level. Defaults to self.max_level.
-        :param unit_name: The spatial unit for the returned resolutions.
-        :return: List of spatial resolutions.
+        Args:
+            min_level: Optional minimum level. Defaults to
+                self.min_level.
+            max_level: Optional maximum level. Defaults to
+                self.max_level.
+            unit_name: The spatial unit for the returned resolutions.
+
+        Returns:
+            List of spatial resolutions.
         """
         unit_factor = get_unit_factor(
             self.map_unit_name, unit_name or self.map_unit_name
@@ -266,8 +269,7 @@ class TilingScheme:
     def get_levels_for_resolutions(
         self, resolutions: Sequence[float], unit_name: str
     ) -> Tuple[int, int]:
-        """
-        Get the minimum and maximum level indices into this tiling scheme
+        """Get the minimum and maximum level indices into this tiling scheme
         for the given spatial *resolutions*.
 
         The resolutions are typically those of a multi-resolution dataset,
@@ -275,9 +277,12 @@ class TilingScheme:
         hence the smallest resolution value. Subsequent resolution values
         are monotonically increasing.
 
-        :param resolutions: A sequence of spatial resolutions.
-        :param unit_name: The spatial units for *resolutions*.
-        :return: the range of levels in this tiling scheme.
+        Args:
+            resolutions: A sequence of spatial resolutions.
+            unit_name: The spatial units for *resolutions*.
+
+        Returns:
+            the range of levels in this tiling scheme.
         """
         assert_given(resolutions, name="resolutions")
         assert_instance(unit_name, str, name="unit_name")
@@ -295,8 +300,7 @@ class TilingScheme:
     def get_resolutions_level(
         self, level: int, resolutions: Sequence[float], unit_name: str
     ) -> int:
-        """
-        Get the level in the sequence of spatial *resolutions*
+        """Get the level in the sequence of spatial *resolutions*
         for given *map_level*.
 
         The resolutions are typically those of a multi-resolution dataset,
@@ -304,12 +308,15 @@ class TilingScheme:
         hence the smallest resolution value. Subsequent resolution values
         are monotonically increasing.
 
-        :param level: A level within this tiling scheme.
-        :param resolutions: A sequence of spatial resolutions.
-            Values must be monotonically increasing. First entry
-            is the highest resolution at level zero.
-        :param unit_name: The spatial units for *resolutions*.
-        :return: The multi-resolution level.
+        Args:
+            level: A level within this tiling scheme.
+            resolutions: A sequence of spatial resolutions. Values must
+                be monotonically increasing. First entry is the highest
+                resolution at level zero.
+            unit_name: The spatial units for *resolutions*.
+
+        Returns:
+            The multi-resolution level.
         """
         assert_given(resolutions, name="resolutions")
         assert_instance(unit_name, str, name="unit_name")
@@ -345,13 +352,15 @@ class TilingScheme:
     def get_tile_extent(
         self, tile_x: int, tile_y: int, tile_z: int
     ) -> Optional[Tuple[float, float, float, float]]:
-        """
-        Get the extent in units of the CRS for the given tile coordinates.
+        """Get the extent in units of the CRS for the given tile coordinates.
 
-        :param tile_x: The tile's column index
-        :param tile_y: The tile's row index
-        :param tile_z: The tile's level index
-        :return: The tile's extent
+        Args:
+            tile_x: The tile's column index
+            tile_y: The tile's row index
+            tile_z: The tile's level index
+
+        Returns:
+            The tile's extent
         """
         if tile_z < 0:
             return None
@@ -398,8 +407,7 @@ TilingScheme.GEOGRAPHIC = TilingScheme(
 
 
 def get_unit_factor(unit_name_from: str, unit_name_to: str) -> float:
-    """
-    Get the factor to convert from one unit into another
+    """Get the factor to convert from one unit into another
     with units given by *unit_name_from* and *unit_name_to*.
     """
     from_meter = _is_meter_unit(unit_name_from)

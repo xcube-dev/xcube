@@ -33,13 +33,13 @@ def assert_valid_params(
     schema: Optional[JsonObjectSchema] = None,
     name: str = "params",
 ):
-    """
-    Assert that constructor/method parameters *params* are valid.
+    """Assert that constructor/method parameters *params* are valid.
 
-    :param params: Dictionary of keyword arguments
-        passed to a constructor/method.
-    :param schema: The JSON Schema that *params* must adhere to.
-    :param name: Name of the *params* variable.
+    Args:
+        params: Dictionary of keyword arguments passed to a
+            constructor/method.
+        schema: The JSON Schema that *params* must adhere to.
+        name: Name of the *params* variable.
     """
     _assert_valid(params, schema, name, "parameterization", _validate_params)
 
@@ -49,12 +49,12 @@ def assert_valid_config(
     schema: Optional[JsonObjectSchema] = None,
     name: str = "config",
 ):
-    """
-    Assert that JSON object *config* is valid.
+    """Assert that JSON object *config* is valid.
 
-    :param config: JSON object used for configuration.
-    :param schema: The JSON Schema that *config* must adhere to.
-    :param name: Name of the *config* variable.
+    Args:
+        config: JSON object used for configuration.
+        schema: The JSON Schema that *config* must adhere to.
+        name: Name of the *config* variable.
     """
     _assert_valid(config, schema, name, "configuration", _validate_config)
 

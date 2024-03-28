@@ -376,16 +376,18 @@ def get_bbox_geometry(
 def get_time_chunk_size(
     ts_ds: Optional[xr.Dataset], var_name: str, ds_id: str
 ) -> Optional[int]:
-    """
-    Get the time chunk size for variable *var_name*
+    """Get the time chunk size for variable *var_name*
     in time-chunked dataset *ts_ds*.
 
     Internal function.
 
-    :param ts_ds: time-chunked dataset
-    :param var_name: variable name
-    :param ds_id: original dataset identifier
-    :return: the time chunk size (integer) or None
+    Args:
+        ts_ds: time-chunked dataset
+        var_name: variable name
+        ds_id: original dataset identifier
+
+    Returns:
+        the time chunk size (integer) or None
     """
     if ts_ds is not None:
         ts_var: Optional[xr.DataArray] = ts_ds.get(var_name)

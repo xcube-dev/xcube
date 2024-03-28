@@ -26,9 +26,7 @@ UNDEFINED_STR = "UNDEFINED"
 
 
 class _Undefined:
-    """
-    Represents the UNDEFINED value.
-    """
+    """Represents the UNDEFINED value."""
 
     _hash_code = hash(UNDEFINED_STR) + 1
 

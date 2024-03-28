@@ -220,7 +220,8 @@ def _has_datetime64_time(var: xr.DataArray, time_name) -> bool:
 
     *time_name* specifies the name of the time dimension.
 
-    It is assumed that a *time_name* key is present in var.dims."""
+    It is assumed that a *time_name* key is present in var.dims.
+    """
     return (
         hasattr(var[time_name], "dtype")
         and hasattr(var[time_name].dtype, "type")

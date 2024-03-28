@@ -31,19 +31,19 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
     """A multi-level dataset that is a combination of other
     multi-level datasets.
 
-    :param ml_datasets: The multi-level datasets to be combined.
-        At least two must be provided.
-    :param ds_id: Optional dataset identifier.
-    :param combiner_function: An optional function used to combine the
-        datasets, for example ``xarray.merge``.
-        If given, it receives a list of datasets
-        (``xarray.Dataset`` instances) and *combiner_params* as keyword
-        arguments.
-        If not given or ``None`` is passed, a copy of the first dataset
-        is made, which is then subsequently updated by the remaining datasets
-        using ``xarray.Dataset.update()``.
-    :param combiner_params: Parameters to the *combiner_function*
-        passed as keyword arguments.
+    Args:
+        ml_datasets: The multi-level datasets to be combined. At least
+            two must be provided.
+        ds_id: Optional dataset identifier.
+        combiner_function: An optional function used to combine the
+            datasets, for example ``xarray.merge``. If given, it
+            receives a list of datasets (``xarray.Dataset`` instances)
+            and *combiner_params* as keyword arguments. If not given or
+            ``None`` is passed, a copy of the first dataset is made,
+            which is then subsequently updated by the remaining datasets
+            using ``xarray.Dataset.update()``.
+        combiner_params: Parameters to the *combiner_function* passed as
+            keyword arguments.
     """
 
     def __init__(

@@ -75,31 +75,39 @@ def gen_cube(
     dry_run: bool = False,
     monitor: Callable[..., None] = None,
 ) -> bool:
-    """
-    Generate a xcube dataset from one or more input files.
+    """Generate a xcube dataset from one or more input files.
 
-    :param no_sort_mode:
-    :param input_paths: The input paths.
-    :param input_processor_name: Name of a registered input processor
-        (xcube.core.gen.inputprocessor.InputProcessor) to be used to transform the inputs.
-    :param input_processor_params: Parameters to be passed to the input processor.
-    :param input_reader_name: Name of a registered input reader (xcube.core.util.dsio.DatasetIO).
-    :param input_reader_params: Parameters passed to the input reader.
-    :param output_region: Output region as tuple of floats: (lon_min, lat_min, lon_max, lat_max).
-    :param output_size: The spatial dimensions of the output as tuple of ints: (width, height).
-    :param output_resampling: The resampling method for the output.
-    :param output_path: The output directory.
-    :param output_writer_name: Name of an output writer
-        (xcube.core.util.dsio.DatasetIO) used to write the cube.
-    :param output_writer_params: Parameters passed to the output writer.
-    :param output_metadata: Extra metadata passed to output cube.
-    :param output_variables: Output variables.
-    :param processed_variables: Processed variables computed on-the-fly.
-    :param profile_mode: Whether profiling should be enabled.
-    :param append_mode: Deprecated. The function will always either insert, replace, or append new time slices.
-    :param dry_run: Doesn't write any data. For testing.
-    :param monitor: A progress monitor.
-    :return: True for success.
+    Args:
+        no_sort_mode
+        input_paths: The input paths.
+        input_processor_name: Name of a registered input processor
+            (xcube.core.gen.inputprocessor.InputProcessor) to be used to
+            transform the inputs.
+        input_processor_params: Parameters to be passed to the input
+            processor.
+        input_reader_name: Name of a registered input reader
+            (xcube.core.util.dsio.DatasetIO).
+        input_reader_params: Parameters passed to the input reader.
+        output_region: Output region as tuple of floats: (lon_min,
+            lat_min, lon_max, lat_max).
+        output_size: The spatial dimensions of the output as tuple of
+            ints: (width, height).
+        output_resampling: The resampling method for the output.
+        output_path: The output directory.
+        output_writer_name: Name of an output writer
+            (xcube.core.util.dsio.DatasetIO) used to write the cube.
+        output_writer_params: Parameters passed to the output writer.
+        output_metadata: Extra metadata passed to output cube.
+        output_variables: Output variables.
+        processed_variables: Processed variables computed on-the-fly.
+        profile_mode: Whether profiling should be enabled.
+        append_mode: Deprecated. The function will always either insert,
+            replace, or append new time slices.
+        dry_run: Doesn't write any data. For testing.
+        monitor: A progress monitor.
+
+    Returns:
+        True for success.
     """
 
     if append_mode is not None:

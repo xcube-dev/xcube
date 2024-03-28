@@ -168,8 +168,7 @@ class FsAccessor:
 
 
 class FsDataAccessor(DataOpener, DataWriter, FsAccessor, ABC):
-    """
-    Abstract base class for data accessors that
+    """Abstract base class for data accessors that
     use an underlying filesystem.
 
     A ``FsDataAccessor`` is responsible for exactly one data type
@@ -185,15 +184,12 @@ class FsDataAccessor(DataOpener, DataWriter, FsAccessor, ABC):
     @classmethod
     @abstractmethod
     def get_data_type(cls) -> DataType:
-        """
-        Get the supported data type.
-        """
+        """Get the supported data type."""
 
     @classmethod
     @abstractmethod
     def get_format_id(cls) -> str:
-        """
-        Get the format identifier,
+        """Get the format identifier,
         for example "zarr" or "geojson".
         """
 

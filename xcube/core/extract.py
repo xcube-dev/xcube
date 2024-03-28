@@ -35,8 +35,7 @@ def get_cube_values_for_points(
     method: str = DEFAULT_INTERP_POINT_METHOD,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
-    """
-    Extract values from *cube* variables at given
+    """Extract values from *cube* variables at given
     coordinates in *points*.
 
     Returns a new dataset with values of variables from *cube* selected
@@ -44,28 +43,32 @@ def get_cube_values_for_points(
     provided in *points*. All variables will be 1-D and have the same order
     as the rows in points.
 
-    :param cube: The cube dataset.
-    :param points: Dictionary that maps dimension name to coordinate arrays.
-    :param var_names: An optional list of names of data variables in *cube*
-        whose values shall be extracted.
-    :param include_coords: Whether to include the cube coordinates for each
-        point in return value.
-    :param include_bounds: Whether to include the cube coordinate boundaries
-        (if any) for each point in return value.
-    :param include_indexes: Whether to include computed indexes into the cube
-        for each point in return value.
-    :param index_name_pattern: A naming pattern for the computed index columns.
-        Must include "{name}" which will be replaced by the index'
-        dimension name.
-    :param include_refs: Whether to include point (reference) values from
-        *points* in return value.
-    :param ref_name_pattern: A naming pattern for the computed point data
-        columns. Must include "{name}" which will be replaced by the point's
-        attribute name.
-    :param method: "nearest" or "linear".
-    :param cube_asserted: If False, *cube* will be verified, otherwise it
-        is expected to be a valid cube.
-    :return: A new data frame whose columns are values from *cube* variables
+    Args:
+        cube: The cube dataset.
+        points: Dictionary that maps dimension name to coordinate
+            arrays.
+        var_names: An optional list of names of data variables in *cube*
+            whose values shall be extracted.
+        include_coords: Whether to include the cube coordinates for each
+            point in return value.
+        include_bounds: Whether to include the cube coordinate
+            boundaries (if any) for each point in return value.
+        include_indexes: Whether to include computed indexes into the
+            cube for each point in return value.
+        index_name_pattern: A naming pattern for the computed index
+            columns. Must include "{name}" which will be replaced by the
+            index' dimension name.
+        include_refs: Whether to include point (reference) values from
+            *points* in return value.
+        ref_name_pattern: A naming pattern for the computed point data
+            columns. Must include "{name}" which will be replaced by the
+            point's attribute name.
+        method: "nearest" or "linear".
+        cube_asserted: If False, *cube* will be verified, otherwise it
+            is expected to be a valid cube.
+
+    Returns:
+        A new data frame whose columns are values from *cube* variables
         at given *points*.
     """
     if not cube_asserted:
@@ -127,25 +130,27 @@ def get_cube_values_for_indexes(
     method: str = DEFAULT_INTERP_POINT_METHOD,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
-    """
-    Get values from the *cube* at given *indexes*.
+    """Get values from the *cube* at given *indexes*.
 
-    :param cube: A cube dataset.
-    :param indexes: A mapping from column names to index and fraction arrays
-        for all cube dimensions.
-    :param include_coords: Whether to include the cube coordinates for each
-        point in return value.
-    :param include_bounds: Whether to include the cube coordinate boundaries
-        (if any) for each point in return value.
-    :param data_var_names: An optional list of names of data variables in
-        *cube* whose values shall be extracted.
-    :param index_name_pattern: A naming pattern for the computed
-        indexes columns. Must include "{name}" which will be replaced by
-        the dimension name.
-    :param method: "nearest" or "linear".
-    :param cube_asserted: If False, *cube* will be verified, otherwise it
-        is expected to be a valid cube.
-    :return: A new data frame whose columns are values from *cube* variables
+    Args:
+        cube: A cube dataset.
+        indexes: A mapping from column names to index and fraction
+            arrays for all cube dimensions.
+        include_coords: Whether to include the cube coordinates for each
+            point in return value.
+        include_bounds: Whether to include the cube coordinate
+            boundaries (if any) for each point in return value.
+        data_var_names: An optional list of names of data variables in
+            *cube* whose values shall be extracted.
+        index_name_pattern: A naming pattern for the computed indexes
+            columns. Must include "{name}" which will be replaced by the
+            dimension name.
+        method: "nearest" or "linear".
+        cube_asserted: If False, *cube* will be verified, otherwise it
+            is expected to be a valid cube.
+
+    Returns:
+        A new data frame whose columns are values from *cube* variables
         at given *indexes*.
     """
     if not cube_asserted:
@@ -256,27 +261,28 @@ def get_cube_point_indexes(
     index_dtype=np.float64,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
-    """
-    Get indexes of given point coordinates *points* into the given *dataset*.
+    """Get indexes of given point coordinates *points* into the given *dataset*.
 
-    :param cube: The cube dataset.
-    :param points: A mapping from column names to column data arrays, which
-        must all have the same length.
-    :param dim_name_mapping: A mapping from dimension names in *cube* to
-        column names in *points*.
-    :param index_name_pattern: A naming pattern for the computed
-        indexes columns. Must include "{name}" which will be replaced by
-        the dimension name.
-    :param index_dtype: Numpy data type for the indexes. If it is a
-        floating point type (default),
-        then *indexes* will contain fractions, which may be
-        used for interpolation.
-        For out-of-range coordinates in *points*, indexes will be -1
-        if *index_dtype* is an integer type, and NaN,
-        if *index_dtype* is a floating point types.
-    :param cube_asserted: If False, *cube* will be verified, otherwise
-        it is expected to be a valid cube.
-    :return: A dataset containing the index columns.
+    Args:
+        cube: The cube dataset.
+        points: A mapping from column names to column data arrays, which
+            must all have the same length.
+        dim_name_mapping: A mapping from dimension names in *cube* to
+            column names in *points*.
+        index_name_pattern: A naming pattern for the computed indexes
+            columns. Must include "{name}" which will be replaced by the
+            dimension name.
+        index_dtype: Numpy data type for the indexes. If it is a
+            floating point type (default), then *indexes* will contain
+            fractions, which may be used for interpolation. For out-of-
+            range coordinates in *points*, indexes will be -1 if
+            *index_dtype* is an integer type, and NaN, if *index_dtype*
+            is a floating point types.
+        cube_asserted: If False, *cube* will be verified, otherwise it
+            is expected to be a valid cube.
+
+    Returns:
+        A dataset containing the index columns.
     """
     if not cube_asserted:
         assert_cube(cube)
@@ -313,8 +319,7 @@ def get_dataset_indexes(
     coord_values: SeriesLike,
     index_dtype=np.float64,
 ) -> Union[xr.DataArray, np.ndarray]:
-    """
-    Compute the indexes and their fractions into a coordinate variable
+    """Compute the indexes and their fractions into a coordinate variable
     *coord_var_name* of a *dataset* for the given coordinate values
     *coord_values*.
 
@@ -329,17 +334,19 @@ def get_dataset_indexes(
     Returns a tuple of indexes as int64 array and fractions as
     float64 array.
 
-    :param dataset: A cube dataset.
-    :param coord_var_name: Name of a coordinate variable.
-    :param coord_values: Array-like coordinate values.
-    :param index_dtype: Numpy data type for the indexes.
-        If it is floating point type (default), then *indexes*
-        contain fractions, which may be used for interpolation.
-        If *dtype* is an integer type out-of-range coordinates
-        are indicated by index -1, and NaN if it is is a
-        floating point type.
-    :return: The indexes and their fractions as a tuple of
-        numpy int64 and float64 arrays.
+    Args:
+        dataset: A cube dataset.
+        coord_var_name: Name of a coordinate variable.
+        coord_values: Array-like coordinate values.
+        index_dtype: Numpy data type for the indexes. If it is floating
+            point type (default), then *indexes* contain fractions,
+            which may be used for interpolation. If *dtype* is an
+            integer type out-of-range coordinates are indicated by index
+            -1, and NaN if it is is a floating point type.
+
+    Returns:
+        The indexes and their fractions as a tuple of numpy int64 and
+        float64 arrays.
     """
     coord_var = dataset[coord_var_name]
     n1 = coord_var.size

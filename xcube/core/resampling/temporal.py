@@ -43,8 +43,7 @@ def resample_in_time(
     metadata: Dict[str, Any] = None,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
-    """
-    Resample a dataset in the time dimension.
+    """Resample a dataset in the time dimension.
 
     The argument *method* may be one or a sequence of
     ``'all'``, ``'any'``,
@@ -64,27 +63,29 @@ def resample_in_time(
     In this case, use the ``compute()`` or ``load()`` method
     to convert dask arrays into numpy arrays.
 
-    :param dataset: The xcube dataset.
-    :param frequency: Temporal aggregation frequency.
-        Use format "<count><offset>" where <offset> is one of
-        'H', 'D', 'W', 'M', 'Q', 'Y'.
-    :param method: Resampling method or sequence of
-        resampling methods.
-    :param offset: Offset used to adjust the resampled time labels.
-        Uses same syntax as *frequency*.
-    :param base: Deprecated since xcube 1.0.4.
-        No longer used as of pandas 2.0.
-    :param time_chunk_size: If not None, the chunk size to be
-        used for the "time" dimension.
-    :param var_names: Variable names to include.
-    :param tolerance: Time tolerance for selective
-        upsampling methods. Defaults to *frequency*.
-    :param interp_kind: Kind of interpolation
-        if *method* is 'interpolation'.
-    :param metadata: Output metadata.
-    :param cube_asserted: If False, *cube* will be verified,
-        otherwise it is expected to be a valid cube.
-    :return: A new xcube dataset resampled in time.
+    Args:
+        dataset: The xcube dataset.
+        frequency: Temporal aggregation frequency. Use format
+            "<count><offset>" where <offset> is one of 'H', 'D', 'W',
+            'M', 'Q', 'Y'.
+        method: Resampling method or sequence of resampling methods.
+        offset: Offset used to adjust the resampled time labels. Uses
+            same syntax as *frequency*.
+        base: Deprecated since xcube 1.0.4. No longer used as of pandas
+            2.0.
+        time_chunk_size: If not None, the chunk size to be used for the
+            "time" dimension.
+        var_names: Variable names to include.
+        tolerance: Time tolerance for selective upsampling methods.
+            Defaults to *frequency*.
+        interp_kind: Kind of interpolation if *method* is
+            'interpolation'.
+        metadata: Output metadata.
+        cube_asserted: If False, *cube* will be verified, otherwise it
+            is expected to be a valid cube.
+
+    Returns:
+        A new xcube dataset resampled in time.
     """
     if not cube_asserted:
         assert_cube(dataset)

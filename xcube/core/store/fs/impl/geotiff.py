@@ -38,13 +38,13 @@ from .dataset import DatasetGeoTiffFsDataAccessor
 
 
 class GeoTIFFMultiLevelDataset(LazyMultiLevelDataset):
-    """
-    A multi-level dataset for GeoTIFF format
+    """A multi-level dataset for GeoTIFF format.
 
-    @param fs: fsspec.AbstractFileSystem object.
-    @param root: Optional root path identifier.
-    @param data_id: dataset identifier.
-    @param open_params: keyword arguments.
+    Args:
+        fs: fsspec.AbstractFileSystem object.
+        root: Optional root path identifier.
+        data_id: dataset identifier.
+        open_params: keyword arguments.
     """
 
     def __init__(

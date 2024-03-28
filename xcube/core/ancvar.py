@@ -91,9 +91,7 @@ def find_ancillary_var_names(
 
 
 def _get_standard_name_modifier(variable, ancillary_var):
-    """
-    See CF Conventions v 1.7, Appendix C: Standard Name Modifiers
-    """
+    """See CF Conventions v 1.7, Appendix C: Standard Name Modifiers"""
     if "standard_name" in ancillary_var.attrs:
         ancillary_var_std_name = ancillary_var.attrs["standard_name"]
         ancillary_var_std_name_parts = ancillary_var_std_name.split(" ")

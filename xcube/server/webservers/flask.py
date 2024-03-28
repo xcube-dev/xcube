@@ -31,8 +31,7 @@ from xcube.util.jsonschema import JsonObjectSchema
 
 
 class FlaskFramework(Framework):
-    """
-    The Flask web server framework.
+    """The Flask web server framework.
 
     TODO: implement me!
     """

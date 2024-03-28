@@ -168,8 +168,7 @@ def serve(
     verbosity: int,
     paths: List[str],
 ):
-    """
-    Run the xcube Server for the given configuration and/or the given
+    """Run the xcube Server for the given configuration and/or the given
     raster dataset paths given by PATHS.
 
     Each of the PATHS arguments can point to a raster dataset such as a Zarr

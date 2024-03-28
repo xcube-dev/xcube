@@ -36,8 +36,7 @@ def evaluate_dataset(
     processed_variables: NameDictPairList = None,
     errors: str = "raise",
 ) -> xr.Dataset:
-    """
-    Compute new variables or mask existing variables in *dataset*
+    """Compute new variables or mask existing variables in *dataset*
     by the evaluation of Python expressions, that may refer to other
     existing or new variables.
     Returns a new dataset that contains the old and new variables,
@@ -69,12 +68,15 @@ def evaluate_dataset(
 
     Other attributes will be stored as variable metadata as-is.
 
-    :param dataset: A dataset.
-    :param processed_variables: Optional list of variable
-        name-attributes pairs that will processed in the given order.
-    :param errors: How to deal with errors while evaluating expressions.
-           May be be one of "raise", "warn", or "ignore".
-    :return: new dataset with computed variables
+    Args:
+        dataset: A dataset.
+        processed_variables: Optional list of variable name-attributes
+            pairs that will processed in the given order.
+        errors: How to deal with errors while evaluating expressions.
+            May be be one of "raise", "warn", or "ignore".
+
+    Returns:
+        new dataset with computed variables
     """
 
     if processed_variables:

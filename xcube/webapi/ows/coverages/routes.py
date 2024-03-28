@@ -104,8 +104,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/domainset")
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/domainset/")
 class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
-    """
-    Describe the domain set of a coverage
+    """Describe the domain set of a coverage
 
     The domain set is the set of input parameters (e.g. geographical extent,
     time span) for which the coverage is defined.
@@ -125,8 +124,7 @@ class CoveragesDomainsetHandler(ApiHandler[CoveragesContext]):
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangetype")
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangetype/")
 class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
-    """
-    Describe the range type of a coverage
+    """Describe the range type of a coverage
 
     The range type describes the types of the data contained in the range
     of this coverage. For a data cube, these would typically correspond to
@@ -146,8 +144,7 @@ class CoveragesRangetypeHandler(ApiHandler[CoveragesContext]):
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/metadata")
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/metadata/")
 class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
-    """
-    Return coverage metadata
+    """Return coverage metadata
 
     The metadata is taken from the source dataset's attributes
     """
@@ -166,8 +163,7 @@ class CoveragesMetadataHandler(ApiHandler[CoveragesContext]):
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangeset")
 @api.route(PATH_PREFIX + "/collections/{collectionId}/coverage/rangeset/")
 class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
-    """
-    Handle rangeset endpoint with a "not allowed" response
+    """Handle rangeset endpoint with a "not allowed" response
 
     This endpoint has been deprecated
     (see https://github.com/m-mohr/geodatacube-api/pull/1 ),
@@ -191,17 +187,19 @@ class CoveragesRangesetHandler(ApiHandler[CoveragesContext]):
 def negotiate_content_type(
     request: ApiRequest, available: Collection[str]
 ) -> Optional[str]:
-    """
-    Determine a MIME content type based on client and server capabilities
+    """Determine a MIME content type based on client and server capabilities
 
     Client preferences are determined both from the standard HTTP Accept
     header provided by the client, and by an optional `f` parameter which
     can override the Accept header.
 
-    :param request: HTTP request with Accept header and/or f parameter
-    :param available: List of MIME types that the server can produce
-    :return: the MIME type that is most acceptable to both client and server,
-             or None if there is no MIME type acceptable to both
+    Args:
+        request: HTTP request with Accept header and/or f parameter
+        available: List of MIME types that the server can produce
+
+    Returns:
+        the MIME type that is most acceptable to both client and server,
+        or None if there is no MIME type acceptable to both
     """
     if "f" in request.query:  # overrides headers
         content_type = request.query["f"][0]

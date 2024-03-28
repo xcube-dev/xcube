@@ -29,11 +29,11 @@ from xcube.core.schema import get_dataset_xy_var_names, get_dataset_time_var_nam
 
 
 def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
-    """
-    Assert that the given *dataset* is a valid xcube dataset.
+    """Assert that the given *dataset* is a valid xcube dataset.
 
-    :param dataset: The dataset to be validated.
-    :param name: Optional parameter name.
+    Args:
+        dataset: The dataset to be validated.
+        name: Optional parameter name.
     :raise: ValueError, if dataset is not a valid xcube dataset
     """
     report = verify_cube(dataset)
@@ -47,8 +47,7 @@ def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
 
 
 def verify_cube(dataset: xr.Dataset) -> List[str]:
-    """
-    Verify the given *dataset* for being a valid xcube dataset.
+    """Verify the given *dataset* for being a valid xcube dataset.
 
     The tool verifies that *dataset*
     * defines two spatial x,y coordinate variables, that are 1D, non-empty, using correct units;
@@ -59,8 +58,11 @@ def verify_cube(dataset: xr.Dataset) -> List[str]:
 
     Returns a list of issues, which is empty if *dataset* is a valid xcube dataset.
 
-    :param dataset: A dataset to be verified.
-    :return: List of issues or empty list.
+    Args:
+        dataset: A dataset to be verified.
+
+    Returns:
+        List of issues or empty list.
     """
     report = []
 

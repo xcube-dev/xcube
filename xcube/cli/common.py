@@ -41,9 +41,7 @@ def cli_option_traceback(func):
 
 
 def cli_option_quiet(func):
-    """
-    Decorator for adding a reusable CLI option `--quiet`/'-q'.
-    """
+    """Decorator for adding a reusable CLI option `--quiet`/'-q'."""
 
     # noinspection PyUnusedLocal
     def _callback(ctx: click.Context, param: click.Option, value: bool):
@@ -62,8 +60,7 @@ def cli_option_quiet(func):
 
 
 def cli_option_verbosity(func):
-    """
-    Decorator for adding a reusable CLI option `--verbose`/'-v' that
+    """Decorator for adding a reusable CLI option `--verbose`/'-v' that
     can be used multiple times.
     The related kwarg is named `verbosity` and is of type int (= count).
     """
@@ -92,8 +89,7 @@ def cli_option_verbosity(func):
 
 
 def cli_option_dry_run(func):
-    """
-    Decorator for adding a reusable CLI option `--dry-run`/'-d'.
+    """Decorator for adding a reusable CLI option `--dry-run`/'-d'.
     The related kwarg is named `dry_run` and is of type bool.
     """
 
@@ -157,13 +153,15 @@ def cli_option_scheduler(func):
 
 
 def parse_cli_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
-    """
-    Parse a string value of the form [<kw>=<arg>{,<kw>=<arg>}] into a dictionary.
+    """Parse a string value of the form [<kw>=<arg>{,<kw>=<arg>}] into a dictionary.
     <kw> must be a valid Python identifier, <arg> must be a Python literal.
 
-    :param value: A string value.
-    :param metavar: Name of a meta-variable used in CLI.
-    :return: a dictionary of keyword-arguments
+    Args:
+        value: A string value.
+        metavar: Name of a meta-variable used in CLI.
+
+    Returns:
+        a dictionary of keyword-arguments
     """
     if value:
         try:
@@ -193,23 +191,30 @@ def parse_cli_sequence(
     separator: str = ",",
     error_type: Type[Exception] = click.ClickException,
 ) -> Optional[Tuple[Any, ...]]:
-    """
-    Parse a CLI argument that is supposed to be a sequence.
+    """Parse a CLI argument that is supposed to be a sequence.
 
-    :param seq_value: A string, a string sequence, or None.
-    :param metavar: CLI metavar name
-    :param item_parser: an optional function that takes a string and parses it
-    :param item_validator: a optional function that takes a parsed value and parses it
-    :param allow_none: whether it is ok for *seq_value* to be None
-    :param allow_empty_items: whether it is ok to have empty values in *seq_value*
-    :param strip_items: whether to strip values in *seq_value*
-    :param item_plural_name: a name for multiple items
-    :param num_items: expected number of items
-    :param num_items_min: expected minimum number of items
-    :param num_items_max: expected maximum number of items
-    :param separator: expected separator if *seq_value* is a string, default is ','.
-    :param error_type: value error to be raised in case, defaults to ``click.ClickException``
-    :return: parsed and validated *seq_value* as a tuple of values
+    Args:
+        seq_value: A string, a string sequence, or None.
+        metavar: CLI metavar name
+        item_parser: an optional function that takes a string and parses
+            it
+        item_validator: a optional function that takes a parsed value
+            and parses it
+        allow_none: whether it is ok for *seq_value* to be None
+        allow_empty_items: whether it is ok to have empty values in
+            *seq_value*
+        strip_items: whether to strip values in *seq_value*
+        item_plural_name: a name for multiple items
+        num_items: expected number of items
+        num_items_min: expected minimum number of items
+        num_items_max: expected maximum number of items
+        separator: expected separator if *seq_value* is a string,
+            default is ','.
+        error_type: value error to be raised in case, defaults to
+            ``click.ClickException``
+
+    Returns:
+        parsed and validated *seq_value* as a tuple of values
     """
     if seq_value is None:
         if allow_none:
@@ -258,8 +263,7 @@ def parse_cli_sequence(
 
 
 def assert_positive_int_item(item: int):
-    """
-    A validator for positive integer number sequences.
+    """A validator for positive integer number sequences.
     Frequently used to validate counts or image and tile sizes passes as args to the CLI.
     """
     if item <= 0:

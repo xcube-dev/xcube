@@ -35,8 +35,7 @@ def optimize_dataset(
     unchunk_coords: Union[bool, str, Sequence[str]] = False,
     exception_type: Type[Exception] = ValueError,
 ):
-    """
-    Optimize a dataset for faster access.
+    """Optimize a dataset for faster access.
 
     Reduces the number of metadata and coordinate data files in xcube dataset given by given by *dataset_path*.
     Consolidated cubes open much faster from remote locations, e.g. in object storage,
@@ -50,14 +49,18 @@ def optimize_dataset(
     *unchunk_coords* can be a name, or list of names of the coordinate variable(s) to be consolidated.
     If boolean ``True`` is used, coordinate all variables will be consolidated.
 
-    :param input_path: Path to input dataset with ZARR format.
-    :param output_path: Path to output dataset with ZARR format. May contain "{input}" template string,
-           which is replaced by the input path's file name without file name extension.
-    :param in_place: Whether to modify the dataset in place.
-           If False, a copy is made and *output_path* must be given.
-    :param unchunk_coords: The name of a coordinate variable or a list of coordinate variables whose chunks should
-           be consolidated. Pass ``True`` to consolidate chunks of all coordinate variables.
-    :param exception_type: Type of exception to be used on value errors.
+    Args:
+        input_path: Path to input dataset with ZARR format.
+        output_path: Path to output dataset with ZARR format. May
+            contain "{input}" template string, which is replaced by the
+            input path's file name without file name extension.
+        in_place: Whether to modify the dataset in place. If False, a
+            copy is made and *output_path* must be given.
+        unchunk_coords: The name of a coordinate variable or a list of
+            coordinate variables whose chunks should be consolidated.
+            Pass ``True`` to consolidate chunks of all coordinate
+            variables.
+        exception_type: Type of exception to be used on value errors.
     """
 
     if not os.path.isfile(os.path.join(input_path, ".zgroup")):

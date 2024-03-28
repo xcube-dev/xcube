@@ -42,8 +42,7 @@ AffineTransformMatrix = Tuple[
 
 
 def _to_int_or_float(x: Number) -> Number:
-    """
-    If x is an int or is close to an int return it
+    """If x is an int or is close to an int return it
     as int otherwise as float. Helps avoiding errors
     introduced by inaccurate floating point ops.
     """
@@ -156,17 +155,19 @@ _RESOLUTION_SET = set(k / 100 for k in _RESOLUTIONS.keys())
 
 
 def round_to_fraction(value: float, digits: int = 2, resolution: float = 1) -> Fraction:
-    """
-    Round *value* at position given by significant
+    """Round *value* at position given by significant
     *digits* and return result as fraction.
 
-    :param value: The value
-    :param digits: The number of significant digits.
-        Must be an integer >= 1. Default is 2.
-    :param resolution: The rounding resolution
-        for the least significant digit.
-        Must be one of (0.1, 0.2, 0.25, 0.5, 1). Default is 1.
-    :return: The rounded value as fraction.Fraction instance.
+    Args:
+        value: The value
+        digits: The number of significant digits. Must be an integer >=
+            1. Default is 2.
+        resolution: The rounding resolution for the least significant
+            digit. Must be one of (0.1, 0.2, 0.25, 0.5, 1). Default is
+            1.
+
+    Returns:
+        The rounded value as fraction.Fraction instance.
     """
     if digits < 1:
         raise ValueError("digits must be a positive integer")
@@ -195,8 +196,7 @@ def round_to_fraction(value: float, digits: int = 2, resolution: float = 1) -> F
 def scale_xy_res_and_size(
     xy_res: Tuple[float, float], size: Tuple[int, int], xy_scale: Tuple[float, float]
 ) -> Tuple[Tuple[float, float], Tuple[int, int]]:
-    """
-    Scale given *xy_res* and *size* using *xy_scale*.
+    """Scale given *xy_res* and *size* using *xy_scale*.
     Make sure, size components are not less than 2.
     """
     x_res, y_res = xy_res

@@ -39,33 +39,33 @@ class ReferenceDataStore(DataStore):
     """A data store that uses kerchunk reference files to
     open referred NetCDF datasets as if they were Zarr datasets.
 
-    :param refs: The list of reference JSON files to use for this
-        instance. Files (URLs or local paths) are used in
-        conjunction with target_options and target_protocol
-        to open and parse JSON at this location.
-    :param target_protocol: Used for loading the reference files.
-        If not given, protocol will be derived from the given path.
-    :param target_options: Extra filesystem options for loading
-        the reference files.
-    :param remote_protocol: The protocol of the filesystem on which
-        the references will be evaluated. If not given, will be derived
-        from the first URL in the references that has a protocol.
-    :param remote_options: Extra filesystem options for loading the
-        referenced data.
-    :param max_gap: See ``max_block``.
-    :param max_block: For merging multiple concurrent requests to the same
-        remote file. Neighboring byte ranges will only be
-        merged when their inter-range gap is <= `max_gap`.
-        Default is 64KB. Set to 0 to only merge when it
-        requires no extra bytes. Pass a negative number to
-        disable merging, appropriate for local target files.
-        Neighboring byte ranges will only be merged when the
-        size of the aggregated range is <= ``max_block``.
-        Default is 256MB.
-    :param cache_size: Maximum size of LRU cache, where
-        cache_size*record_size denotes the total number of
-        references that can be loaded in memory at once.
-        Only used for lazily loaded references.
+    Args:
+        refs: The list of reference JSON files to use for this instance.
+            Files (URLs or local paths) are used in conjunction with
+            target_options and target_protocol to open and parse JSON at
+            this location.
+        target_protocol: Used for loading the reference files. If not
+            given, protocol will be derived from the given path.
+        target_options: Extra filesystem options for loading the
+            reference files.
+        remote_protocol: The protocol of the filesystem on which the
+            references will be evaluated. If not given, will be derived
+            from the first URL in the references that has a protocol.
+        remote_options: Extra filesystem options for loading the
+            referenced data.
+        max_gap: See ``max_block``.
+        max_block: For merging multiple concurrent requests to the same
+            remote file. Neighboring byte ranges will only be merged
+            when their inter-range gap is <= `max_gap`. Default is 64KB.
+            Set to 0 to only merge when it requires no extra bytes. Pass
+            a negative number to disable merging, appropriate for local
+            target files. Neighboring byte ranges will only be merged
+            when the size of the aggregated range is <= ``max_block``.
+            Default is 256MB.
+        cache_size: Maximum size of LRU cache, where
+            cache_size*record_size denotes the total number of
+            references that can be loaded in memory at once. Only used
+            for lazily loaded references.
     """
 
     def __init__(

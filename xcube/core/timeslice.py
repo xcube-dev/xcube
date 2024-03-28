@@ -77,12 +77,12 @@ def append_time_slice(
     time_slice: xr.Dataset,
     chunk_sizes: Dict[str, int] = None,
 ):
-    """
-    Append time slice to existing zarr dataset.
+    """Append time slice to existing zarr dataset.
 
-    :param store: A zarr store.
-    :param time_slice: Time slice to insert
-    :param chunk_sizes: desired chunk sizes
+    Args:
+        store: A zarr store.
+        time_slice: Time slice to insert
+        chunk_sizes: desired chunk sizes
     """
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name="zarr")
@@ -110,13 +110,13 @@ def insert_time_slice(
     time_slice: xr.Dataset,
     chunk_sizes: Dict[str, int] = None,
 ):
-    """
-    Insert time slice into existing zarr dataset.
+    """Insert time slice into existing zarr dataset.
 
-    :param store: A zarr store.
-    :param insert_index: Time index
-    :param time_slice: Time slice to insert
-    :param chunk_sizes: desired chunk sizes
+    Args:
+        store: A zarr store.
+        insert_index: Time index
+        time_slice: Time slice to insert
+        chunk_sizes: desired chunk sizes
     """
     update_time_slice(
         store, insert_index, time_slice, "insert", chunk_sizes=chunk_sizes
@@ -129,13 +129,13 @@ def replace_time_slice(
     time_slice: xr.Dataset,
     chunk_sizes: Dict[str, int] = None,
 ):
-    """
-    Replace time slice in existing zarr dataset.
+    """Replace time slice in existing zarr dataset.
 
-    :param store: A zarr store.
-    :param insert_index: Time index
-    :param time_slice: Time slice to insert
-    :param chunk_sizes: desired chunk sizes
+    Args:
+        store: A zarr store.
+        insert_index: Time index
+        time_slice: Time slice to insert
+        chunk_sizes: desired chunk sizes
     """
     update_time_slice(
         store, insert_index, time_slice, "replace", chunk_sizes=chunk_sizes
@@ -149,14 +149,14 @@ def update_time_slice(
     mode: str,
     chunk_sizes: Dict[str, int] = None,
 ):
-    """
-    Update existing zarr dataset by new time slice.
+    """Update existing zarr dataset by new time slice.
 
-    :param store: A zarr store.
-    :param insert_index: Time index
-    :param time_slice: Time slice to insert
-    :param mode: Update mode, 'insert' or 'replace'
-    :param chunk_sizes: desired chunk sizes
+    Args:
+        store: A zarr store.
+        insert_index: Time index
+        time_slice: Time slice to insert
+        mode: Update mode, 'insert' or 'replace'
+        chunk_sizes: desired chunk sizes
     """
 
     if mode not in ("insert", "replace"):

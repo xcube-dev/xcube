@@ -179,7 +179,8 @@ Make sure your change
 
 Create new module in `xcube.core` and add your functions.
 For any functions added make sure naming is in line with other API.
-Add clear doc-string to the new API. Use Sphinx RST format.
+Add clear doc-string to the new API using 
+[Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
 
 Decide if your API methods requires [xcube datasets](./cubespec.md) as 
 inputs, if so, name the primary dataset argument `cube` and add a 
@@ -279,9 +280,13 @@ Make sure your change
 1. Wait for reviewers to review your PR and respond to comments and
    suggestions. Reviewers can also commit to your branch with additional
    changes.
-1. Once all reviewers have given an "accept" review, the PR should be
-   merged. The last reviewer to give an "accept" should perform the merge;
-   if they forget, the PR author should merge.
+1. Once all reviewers have given an "approve" review and all CI checks have
+   passed, the PR should be merged. If the PR has been assigned, one of the
+   assignees should merge. If the PR is unassigned:
+   1. By default, the PR author should merge.
+   1. If there are no comments requiring attention from the PR author (e.g.
+      optional change suggestions accompanying an approving review), then the
+      last reviewer may merge after approving.
 1. Remove issue label "in progress".
 1. Delete the feature branch.
 1. If the PR completely solves the associated issue: close the issue, if it
