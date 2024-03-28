@@ -538,7 +538,8 @@ class JsonObjectSchema(JsonSchema):
 
         The original *kwargs* is not touched.
 
-        :return a tuple of two new keyword-argument dictionaries
+        Returns:
+            a tuple of two new keyword-argument dictionaries
         """
         old_kwargs = dict(kwargs)
         new_kwargs = {}
