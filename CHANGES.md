@@ -1,5 +1,15 @@
 ## Changes in 1.4.2 (in development)
 
+* Enhanced spatial resampling in module `xcube.core.resampling`: (#955)
+    - Added optional keyword argument `interpolation` to `rectify_dataset()` 
+      with values `"nearest"` or `"linear"`.  The latter performs a linear 
+      interpolation between adjacent source pixels. 
+    - Added optional keyword argument `rectify_kwargs` to `resample_in_space()`.
+      If given, it is spread into keyword arguments passed to the internal 
+      `rectify_dataset()` delegation, if any.
+    - Deprecated unused keyword argument `xy_var_names` of 
+      function `rectify_dataset()`.
+
 * Update dependencies to better match imports; remove the defaults channel;
   turn adlfs into a soft dependency. (#945)
 

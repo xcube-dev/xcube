@@ -17,7 +17,6 @@ nan = np.nan
 
 # noinspection PyMethodMayBeStatic
 class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
-
     def test_rectify_2x2_to_default(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
 
@@ -81,6 +80,43 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
             ),
         )
 
+    def test_rectify_2x2_to_7x7_lin_interpol(self):
+        source_ds = self.new_2x2_dataset_with_irregular_coords()
+
+        target_gm = GridMapping.regular(
+            size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
+        )
+
+        target_ds = rectify_dataset(
+            source_ds, target_gm=target_gm, interpolation="linear"
+        )
+
+        lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
+        np.testing.assert_almost_equal(
+            lon.values, np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=lon.dtype)
+        )
+        np.testing.assert_almost_equal(
+            lat.values,
+            np.array([56.0, 55.0, 54.0, 53.0, 52.0, 51.0, 50.0], dtype=lat.dtype),
+        )
+        _nan_ = nan
+        np.testing.assert_almost_equal(
+            rad.values,
+            np.array(
+                [
+                    [_nan_, 1.000, _nan_, _nan_, _nan_, _nan_, _nan_],
+                    [_nan_, 1.478, 1.391, _nan_, _nan_, _nan_, _nan_],
+                    [_nan_, 1.957, 1.870, 1.783, 1.696, _nan_, _nan_],
+                    [_nan_, 2.435, 2.348, 2.261, 2.174, 2.087, 2.000],
+                    [3.000, 2.929, 2.857, 2.786, 2.714, _nan_, _nan_],
+                    [_nan_, 3.500, 3.429, 3.357, _nan_, _nan_, _nan_],
+                    [_nan_, _nan_, 4.000, _nan_, _nan_, _nan_, _nan_],
+                ],
+                dtype=rad.dtype,
+            ),
+            decimal=3,
+        )
+
     def test_rectify_2x2_to_7x7_subset(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
 
@@ -111,6 +147,18 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                 ],
                 dtype=rad.dtype,
             ),
+        )
+
+    def test_rectify_2x2_to_7x7_deprecations(self):
+        source_ds = self.new_2x2_dataset_with_irregular_coords()
+
+        target_gm = GridMapping.regular(
+            size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
+        )
+
+        # Just to cover emitting deprecation warning
+        rectify_dataset(
+            source_ds, target_gm=target_gm, xy_var_names=("X", "Y")
         )
 
     def test_rectify_2x2_to_13x13(self):
@@ -788,7 +836,6 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
 
 class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
-
     def test_rectify_dataset(self):
         source_ds = create_s2plus_dataset()
 

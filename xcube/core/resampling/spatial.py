@@ -47,6 +47,7 @@ def resample_in_space(
     var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
+    rectify_kwargs: Optional[dict] = None,
 ):
     """
     Resample a dataset in the spatial dimensions.
@@ -149,7 +150,7 @@ def resample_in_space(
         # If the source is not regular, we need to rectify it,
         # so the target is regular. Our rectification implementation
         # works only correctly if source pixel size >= target pixel
-        # size. Therefore check if we must downscale source first.
+        # size. Therefore, check if we must downscale source first.
         x_scale = source_gm.x_res / target_gm.x_res
         y_scale = source_gm.y_res / target_gm.y_res
         if x_scale > _SCALE_LIMIT and y_scale > _SCALE_LIMIT:
@@ -161,6 +162,7 @@ def resample_in_space(
                 target_gm=target_gm,
                 encode_cf=encode_cf,
                 gm_name=gm_name,
+                **(rectify_kwargs or {})
             )
 
         # Source has higher resolution than target.
@@ -199,6 +201,7 @@ def resample_in_space(
             target_gm=target_gm,
             encode_cf=encode_cf,
             gm_name=gm_name,
+            **(rectify_kwargs or {})
         )
 
     # If CRSes are not both geographic and their CRSes are different
