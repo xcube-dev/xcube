@@ -157,9 +157,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
         # Just to cover emitting deprecation warning
-        rectify_dataset(
-            source_ds, target_gm=target_gm, xy_var_names=("X", "Y")
-        )
+        rectify_dataset(source_ds, target_gm=target_gm, xy_var_names=("X", "Y"))
 
     def test_rectify_2x2_to_13x13(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
