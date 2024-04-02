@@ -17,27 +17,40 @@ represents the Earth's geoid. The following figure illustrates the situation:
 <img src="rectify/geoid.png" alt="Geoid" style="width:40em;display:block;margin-left:auto;margin-right:auto"/>
 
 Thus, for each source pixel we have a spatial coordinates pair *x,y* which
-is assumed to refer to an image pixel's center at *i + ½,j + ½*. 
-The combined *x,y* images represent the surface of the Earth geoid as seen from 
-the satellite. While the deltas between the pixel coordinates, *Δx* and *Δy*, are 
-generally not constant in the source image geometry, we demand a unique spatial 
-pixel size *Δx = Δy = const.* in the target image geometry.
+is assumed to refer to an image pixel's center at *i + ½, j + ½*. 
+The combined *x, y* images represent the surface of the Earth geoid as seen 
+from the satellite. 
+
+<img src="rectify/olci-input.png" alt="OLCI L1B Input" style="width:60em;display:block;margin-left:auto;margin-right:auto"/>
+
+While the deltas between the pixel coordinates, 
+*Δx* and *Δy*, are generally not constant in the source image geometry, we 
+demand a unique spatial pixel size *Δx = Δy = const.* in the target image 
+geometry.
 
 The transformation algorithm described here is fast and simple.  
 Given that the spatial pixel size in the target geometry is equal or less the 
 pixel size of the source geometry, the algorithm is also general and accurate:
-we walk through all *P = x,y* in the source image, span triangles between adjacent 
-*P1, P2, P3*, and "paint" the triangles into a new 
-rectified target image that contains the fractional source pixel coordinates
-*i + u,j + v*.
+we walk through all *P = x, y* in the source image, span triangles between 
+adjacent *P1, P2, P3*, and "paint" the triangles into a new 
+rectified target image that contains the fractional source pixel 
+coordinates *i + u, j + v*.
 
-<img src="rectify/source-coords.png" alt="Source coordinates" style="width:40em;display:block;margin-left:auto;margin-right:auto"/>
+<img src="rectify/source-coords.png" alt="Source coordinates" style="width:60em;display:block;margin-left:auto;margin-right:auto"/>
 
-The spatial surface described by the field of supporting points *P(i+½, j+½) = x,y*
-is representing the Earth's rough geoid surface. As the true surface is a 2D-fractal, 
-there is no defined "best guess" for any point *P(i,j)* in between the supporting 
-points at *P(i+½, j+½)*. Hence, we use triangulation for its simplicity so that any 
-in-between *P* is found by linear interpolation.
+The spatial surface described by the field of supporting points 
+*P(i+½, j+½) = x, y* is representing the Earth's rough geoid surface. 
+As the true surface is a 2D-fractal, there is no defined "best guess" for 
+any point *P(i,j)* in between the supporting points at *P(i+½, j+½)*. 
+Hence, we use triangulation for its simplicity so that any in-between 
+*P* is found by linear interpolation.
 
 
+<img src="rectify/algo-1.png" alt="Algorithm #1" style="width:60em;display:block;margin-left:auto;margin-right:auto"/>
 
+<img src="rectify/algo-2.png" alt="Algorithm #2" style="width:60em;display:block;margin-left:auto;margin-right:auto"/>
+
+<img src="rectify/algo-3.png" alt="Algorithm #3" style="width:60em;display:block;margin-left:auto;margin-right:auto"/>
+
+
+<img src="rectify/olci-output.png" alt="OLCI L1C Output" style="width:60em;display:block;margin-left:auto;margin-right:auto"/>
