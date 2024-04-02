@@ -33,6 +33,9 @@ from xcube.util.dask import compute_array_from_func
 from .cf import maybe_encode_grid_mapping
 
 
+_INTERPOLATIONS = {"nearest": 0, "linear": 1, "bilinear": 2}
+
+
 def rectify_dataset(
     source_ds: xr.Dataset,
     *,
@@ -100,14 +103,14 @@ def rectify_dataset(
             defined by the input x,y coordinates. The higher this value,
             the more inaccurate the rectification will be.
         interpolation: Interpolation method for computing output pixels.
-            If given, must be "nearest" or "linear". The default is
-            "nearest". Applies to source variables of floating point only.
-            If you need to apply a linear interpolation to integer data,
-            convert to float first.
-            A linear interpolation, if any, is applied between immediately
-            adjacent source pixels.
-        xy_var_names: Deprecated. No longer used since 1.0.0.
-            No replacement.
+            If given, must be "nearest", "linear", or "bilinear".
+            The default is "nearest". The "linear" interpolation is
+            performed between 3 and "bilinear" between 4 adjacent source
+            pixels. Both are applied only to variables of
+            floating point type. If you need to interpolate between
+            integer data you should cast it to float first.
+        xy_var_names: Deprecated. No longer used since 1.0.0,
+            no replacement.
 
     Returns:
         a reprojected dataset, or None if the requested output does not
@@ -148,6 +151,10 @@ def rectify_dataset(
 
     src_vars = _select_variables(source_ds, source_gm, var_names)
 
+    interpolation_mode = _INTERPOLATIONS.get(interpolation or "nearest")
+    if interpolation_mode is None:
+        raise ValueError(f"invalid interpolation: {interpolation!r}")
+
     if target_gm.is_tiled:
         compute_dst_src_ij_images = _compute_ij_images_xarray_dask
         compute_dst_var_image = _compute_var_image_xarray_dask
@@ -174,9 +181,7 @@ def rectify_dataset(
             src_var,
             dst_src_ij_array,
             fill_value=np.nan,
-            interpolation=int(
-                interpolation == "linear" and np.issubdtype(src_var.dtype, np.floating)
-            ),
+            interpolation=interpolation_mode,
         )
         dst_var = xr.DataArray(
             dst_var_array,
@@ -721,12 +726,24 @@ def _compute_var_image_for_dest_line(
         u = src_i_f - src_i0
         v = src_j_f - src_j0
         if interpolation == 0:
+            # nearest
             if u > 0.5:
                 src_i0 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             if v > 0.5:
                 src_j0 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             dst_var_image[..., dst_j, dst_i] = src_var_image[..., src_j0, src_i0]
+        elif interpolation == 1:
+            # linear
+            src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
+            src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
+            value_00 = src_var_image[..., src_j0, src_i0]
+            value_01 = src_var_image[..., src_j0, src_i1]
+            value_10 = src_var_image[..., src_j1, src_i0]
+            dst_var_image[..., dst_j, dst_i] = (
+                value_00 + u * (value_01 - value_00) + v * (value_10 - value_00)
+            )
         else:
+            # bilinear
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             value_00 = src_var_image[..., src_j0, src_i0]

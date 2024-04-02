@@ -2,8 +2,9 @@
 
 * Enhanced spatial resampling in module `xcube.core.resampling`: (#955)
     - Added optional keyword argument `interpolation` to `rectify_dataset()` 
-      with values `"nearest"` or `"linear"`.  The latter performs a linear 
-      interpolation between adjacent source pixels. 
+      with values `"nearest"`, `"linear"`, or `"bilinear"`. 
+      `"linear"` interpolates between 3 and `"bilinear"` between 4 adjacent 
+      source pixels. 
     - Added optional keyword argument `rectify_kwargs` to `resample_in_space()`.
       If given, it is spread into keyword arguments passed to the internal 
       `rectify_dataset()` delegation, if any.
