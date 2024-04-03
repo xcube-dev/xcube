@@ -290,7 +290,7 @@ class CodeConfig(JsonObject):
         a local directory. This directory may be used without
         package installation (i.e. added to Python's sys.path) or
         used after installation (i.e. by executing
-        ```python setup.py install```).
+        ``python setup.py install``).
         """
         return _for_local(self)
 

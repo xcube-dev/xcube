@@ -98,7 +98,7 @@ class FileSet(JsonObject):
     A filesystem may require specific *parameters*, e.g.
     user credentials.
 
-    This implementation is based on the ```fsspec```
+    This implementation is based on the ``fsspec``
     package and the documentation about the different
     possible file systems and their specific parameters
     can be found at https://filesystem-spec.readthedocs.io/.

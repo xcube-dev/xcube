@@ -43,12 +43,10 @@ class ZarrStoreHolder:
     For that concept to work, datasets must be associated
     with their Zarr stores explicitly.
     Therefore, the xcube data store framework sets the
-    Zarr stores of datasets after opening them ``xr.open_zarr()``:
+    Zarr stores of datasets after opening them ``xr.open_zarr()``:::
 
-    ```python
-    dataset = xr.open_zarr(zarr_store, **open_params)
-    dataset.zarr_store.set(zarr_store)
-    ```
+        dataset = xr.open_zarr(zarr_store, **open_params)
+        dataset.zarr_store.set(zarr_store)
 
     Note, that the dataset may change after the Zarr store has been set,
     so that the dataset and its Zarr store are no longer in sync.
