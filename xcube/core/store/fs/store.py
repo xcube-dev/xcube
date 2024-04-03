@@ -129,20 +129,21 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     * ``includes``: if not given or if any pattern matches the identifier,
       the identifier is reported.
 
-    :param fs: Optional filesystem. If not given,
-        :meth:_load_fs() must return a filesystem instance.
-    :param root: Root or base directory.
-        Defaults to "".
-    :param max_depth: Maximum recursion depth. None means limitless.
-        Defaults to 1.
-    :param read_only: Whether this is a read-only store.
-        Defaults to False.
-    :param includes: Optional sequence of wildcards that identify included
-        filesystem paths. Affects the data identifiers (paths)
-        returned by `get_data_ids()`. By default, all paths are included.
-    :param excludes: Optional sequence of wildcards that identify excluded
-        filesystem paths. Affects the data identifiers (paths)
-        returned by `get_data_ids()`. By default, no paths are excluded.
+    Args:
+        fs: Optional filesystem. If not given,
+            :meth:`_load_fs` must return a filesystem instance.
+        root: Root or base directory.
+            Defaults to "".
+        max_depth: Maximum recursion depth. None means limitless.
+            Defaults to 1.
+        read_only: Whether this is a read-only store.
+            Defaults to False.
+        includes: Optional sequence of wildcards that identify included
+            filesystem paths. Affects the data identifiers (paths)
+            returned by `get_data_ids()`. By default, all paths are included.
+        excludes: Optional sequence of wildcards that identify excluded
+            filesystem paths. Affects the data identifiers (paths)
+            returned by `get_data_ids()`. By default, no paths are excluded.
     """
 
     def __init__(
@@ -177,9 +178,9 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @property
     def fs(self) -> fsspec.AbstractFileSystem:
-        """
-        Return the underlying filesystem .
-        :return: An instance of ``fsspec.AbstractFileSystem``.
+        """The underlying filesystem.
+
+        Returns: An instance of ``fsspec.AbstractFileSystem``.
         """
         if self._fs is None:
             # Lazily instantiate filesystem.
@@ -188,10 +189,11 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return self._fs
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
-        """
-        Get an instance of the underlying filesystem.
-        Default implementation raises NotImplementedError.
-        :return: An instance of ``fsspec.AbstractFileSystem``.
+        """Get an instance of the underlying filesystem.
+        Default implementation raises ``NotImplementedError``.
+
+        Returns: An instance of ``fsspec.AbstractFileSystem``.
+        Raises: NotImplementedError
         """
         raise NotImplementedError("unknown filesystem")
 
@@ -693,8 +695,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
 
 class FsDataStore(BaseFsDataStore, FsAccessor):
-    """Specialization of a :class:BaseFsDataStore that
-    also implements a :class:FsAccessor which serves
+    """Specialization of a :class:`BaseFsDataStore` that
+    also implements a :class:`FsAccessor` which serves
     the filesystem.
 
     The data store is capable of filtering the data identifiers reported

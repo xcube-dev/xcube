@@ -53,28 +53,36 @@ def compute_cube(
     vectorize: bool = None,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
-    """
-    Compute a new output data cube with a single variable named *output_var_name*
-    from variables named *input_var_names* contained in zero, one, or more
-    input data cubes in *input_cubes* using a cube factory function *cube_func*.
+    """Compute a new output data cube with a single variable named
+    *output_var_name* from variables named *input_var_names* contained in
+    zero, one, or more input data cubes in *input_cubes* using a cube
+    factory function *cube_func*.
 
     For a more detailed description of the function usage,
-    please refer to :func:compute_dataset.
+    please refer to :func:`compute_dataset`.
 
-    :param cube_func: The cube factory function.
-    :param input_cubes: An optional sequence of input cube datasets, must be provided if *input_cube_schema* is not.
-    :param input_cube_schema: An optional input cube schema,
-    must be provided if *input_cubes* is not.
-    Will be ignored if *input_cubes* is provided.
-    :param input_var_names: A sequence of variable names
-    :param input_params: Optional dictionary with processing parameters passed to *cube_func*.
-    :param output_var_name: Optional name of the output variable, defaults to ``'output'``.
-    :param output_var_dtype: Optional numpy datatype of the output variable, defaults to ``'float32'``.
-    :param output_var_attrs: Optional metadata attributes for the output variable.
-    :param vectorize: Whether all *input_cubes* have the same variables which are concatenated and passed as vectors
-        to *cube_func*. Not implemented yet.
-    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: A new dataset that contains the computed output variable.
+    Args:
+        cube_func: The cube factory function.
+        input_cubes: An optional sequence of input cube datasets,
+            must be provided if *input_cube_schema* is not.
+        input_cube_schema: An optional input cube schema,
+            must be provided if *input_cubes* is not.
+            Will be ignored if *input_cubes* is provided.
+        input_var_names: A sequence of variable names
+        input_params: Optional dictionary with processing parameters
+            passed to *cube_func*.
+        output_var_name: Optional name of the output variable,
+            defaults to ``'output'``.
+        output_var_dtype: Optional numpy datatype of the output variable,
+            defaults to ``'float32'``.
+        output_var_attrs: Optional metadata attributes for the output variable.
+        vectorize: Whether all *input_cubes* have the same variables which
+            are concatenated and passed as vectors
+            to *cube_func*. Not implemented yet.
+        cube_asserted: If False, *cube* will be verified,
+            otherwise it is expected to be a valid cube.
+    Returns:
+        A new dataset that contains the computed output variable.
     """
     return compute_dataset(
         cube_func,

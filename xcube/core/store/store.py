@@ -151,7 +151,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
     Store implementers should follow the conventions outlined in
     https://xcube.readthedocs.io/en/latest/storeconv.html .
 
-    The :class:DataStore is an abstract base class that both read-only and
+    The :class:`DataStore` is an abstract base class that both read-only and
     mutable data stores must implement.
     """
 
@@ -284,7 +284,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
             data_type: An optional data type. If given, it will also be
                 checked whether the data is available as the specified
                 type. May be given as type alias name, as a type, or as
-                a :class:DataType instance.
+                a :class:`DataType` instance.
 
         Returns:
             True, if the data resource is available in this store, False
@@ -297,7 +297,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
     ) -> DataDescriptor:
         """Get the descriptor for the data resource given by *data_id*.
 
-        Raises a :class:DataStoreError if *data_id* does not
+        Raises a :class:`DataStoreError` if *data_id* does not
         exist in this store or the data is not available as the
         specified *data_type*.
 
@@ -306,8 +306,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
             data_type: If given, the descriptor of the data will
                 describe the data as specified by the data type. May be
                 given as type alias name, as a type, or as a
-                :class:DataType instance.
-        :return a data-type specific data descriptor
+                :class:`DataType` instance.
+
+        Returns: a data-type specific data descriptor
 
         Raises:
             DataStoreError: If an error occurs.
@@ -336,7 +337,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
                 to exist in this data store.
             data_type: An optional data type that is known to be
                 supported by this data store. May be given as type alias
-                name, as a type, or as a :class:DataType instance.
+                name, as a type, or as a :class:`DataType` instance.
 
         Returns:
             A tuple of identifiers of data openers that can be used to
@@ -351,7 +352,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
         self, data_id: str = None, opener_id: str = None
     ) -> JsonObjectSchema:
         """Get the schema for the parameters passed as *open_params* to
-        :meth:open_data(data_id, open_params).
+        :meth:`open_data`.
 
         If *data_id* is given, the returned schema will be tailored
         to the constraints implied by the identified data resource.
@@ -475,7 +476,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         Args:
             data_type: An optional data type specifier that is known to
                 be supported by this data store. May be given as type
-                alias name, as a type, or as a :class:DataType instance.
+                alias name, as a type, or as a :class:`DataType` instance.
 
         Returns:
             A tuple of identifiers of data writers that can be used to
@@ -488,7 +489,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
     @abstractmethod
     def get_write_data_params_schema(self, writer_id: str = None) -> JsonObjectSchema:
         """Get the schema for the parameters passed as *write_params* to
-        :meth:write_data(data, data_id, open_params).
+        :meth:`write_data`.
 
         If *writer_id* is given, the returned schema will be tailored
         to the constraints implied by the identified writer.

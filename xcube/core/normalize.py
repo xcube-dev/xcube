@@ -42,7 +42,7 @@ class DatasetIsNotACubeError(BaseException):
     """Raised, if at least a subset of a dataset's variables
     have data cube dimensions ('time' , [...], y_dim_name, x_dim_name),
     where y_dim_name and x_dim_name are determined by a dataset's
-    :class:GridMapping.
+    :class:`GridMapping`.
     """
 
     pass
@@ -113,7 +113,7 @@ def encode_cube(
     """Encode a *cube* with its *grid_mapping*, and additional variables in
     *non_cube_subset* into a new dataset.
 
-    This is the inverse of the operation :func:decode_cube:
+    This is the inverse of the operation :func:`decode_cube`:::
 
         cube, gm, non_cube = decode_cube(dataset)
         dataset = encode_cube(cube, gm, non_cube)
@@ -167,7 +167,7 @@ def decode_cube(
     """Decode a *dataset* into a cube variable subset, a grid mapping, and
     the non-cube variables of *dataset*.
 
-    This is the inverse of the operation :func:encode_cube:
+    This is the inverse of the operation :func:`encode_cube`:::
 
         cube, gm, non_cube = decode_cube(dataset)
         dataset = encode_cube(cube, gm, non_cube)
@@ -175,7 +175,7 @@ def decode_cube(
     The returned data cube comprises all variables in *dataset*
     whose dimensions are ("time" , [...], y_dim_name, x_dim_name).
     Here y_dim_name and x_dim_name are determined by the
-    :class:GridMapping derived from *dataset*.
+    :class:`GridMapping` derived from *dataset*.
 
     Args:
         dataset: The dataset.
@@ -185,10 +185,10 @@ def decode_cube(
         force_copy: whether to create a copy of this dataset even if
             this dataset is identical to its cube subset.
         force_non_empty: whether the resulting cube must have at least
-            one data variable. If True, a :class:DatasetIsNotACubeError
+            one data variable. If True, a :class:`DatasetIsNotACubeError`
             may be raised.
         force_geographic: whether a geographic grid mapping is required.
-            If True, a :class:DatasetIsNotACubeError may be raised.
+            If True, a :class:`DatasetIsNotACubeError` may be raised.
 
     Returns:
         A 3-tuple comprising the data cube subset of *dataset* the

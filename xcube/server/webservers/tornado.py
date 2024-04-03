@@ -232,9 +232,13 @@ class TornadoFramework(Framework):
         one of the RFC 2396 reserved characters is found or the end of
         the *pattern* is reached.
 
-        :param path: URL path
-        :return: equivalent regex pattern
-        :raise ValueError: if *pattern* is invalid
+        Args:
+            path: URL path
+
+        Returns: equivalent regex pattern
+
+        Raises:
+            ValueError: if *pattern* is invalid
         """
         var_pattern = r"(?P<%s>[^\;\/\?\:\@\&\=\+\$\,]+)"
         rest_var_pattern = r"\/?(?P<%s>.*)"

@@ -53,9 +53,9 @@ def select_subset(
 
     This is a high-level convenience function that may invoke
 
-    * :func:select_variables_subset
-    * :func:select_spatial_subset
-    * :func:select_temporal_subset
+    * :func:`select_variables_subset`
+    * :func:`select_spatial_subset`
+    * :func:`select_temporal_subset`
 
     Args:
         dataset: The dataset.
