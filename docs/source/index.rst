@@ -31,9 +31,11 @@ cubes from EO data.
    :maxdepth: 1
 
    cubespec
+   mldatasets
    storeconv
    devguide
    plugins
+   rectify
 
 
 Indices and tables
