@@ -234,6 +234,7 @@ def update_dataset_chunk_encoding(
     chunk_sizes: Dict[str, int] = None,
     format_name: str = None,
     in_place: bool = False,
+    data_vars_only: bool = False
 ) -> xr.Dataset:
     """Update each variable's encoding in *dataset* with respect to *chunk_sizes*
     so *dataset* is written in chunks for given *format_name*.
@@ -245,6 +246,7 @@ def update_dataset_chunk_encoding(
         format_name: format name, e.g. "zarr" or "netcdf4".
         in_place: If ``True``, *dataset* will be modified in place and
             returned.
+        data_vars_only: only chunk data variables, not coordinates
     """
     if format_name == FORMAT_NAME_ZARR:
         chunk_sizes_attr_name = "chunks"
@@ -254,7 +256,7 @@ def update_dataset_chunk_encoding(
         return dataset
     if not in_place:
         dataset = dataset.copy()
-    for var_name in dataset.variables:
+    for var_name in dataset.data_vars if data_vars_only else dataset.variables:
         var = dataset[var_name]
         if chunk_sizes is not None:
 
