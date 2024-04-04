@@ -8,7 +8,10 @@ from xcube.core.update import update_dataset_chunk_encoding
 
 
 def chunk_dataset(
-    dataset: xr.Dataset, chunk_sizes: Dict[str, int] = None, format_name: str = None
+    dataset: xr.Dataset,
+    chunk_sizes: Dict[str, int] = None,
+    format_name: str = None,
+    data_vars_only: bool = False,
 ) -> xr.Dataset:
     """Chunk *dataset* using *chunk_sizes* and optionally
     update encodings for given *format_name*.
@@ -17,14 +20,23 @@ def chunk_dataset(
         dataset: input dataset
         chunk_sizes: mapping from dimension name to new chunk size
         format_name: optional format, e.g. "zarr" or "netcdf4"
+        data_vars_only: only chunk data variables, not coordinates
 
     Returns:
         the (re)chunked dataset
     """
-    dataset = dataset.chunk(chunks=chunk_sizes)
+
+    if data_vars_only:
+        for variable in dataset.data_vars:
+            dataset[variable] = dataset[variable].chunk(chunk_sizes)
+    else:
+        dataset = dataset.chunk(chunks=chunk_sizes)
     if format_name:
         dataset = update_dataset_chunk_encoding(
-            dataset, chunk_sizes=chunk_sizes, format_name=format_name
+            dataset,
+            chunk_sizes=chunk_sizes,
+            format_name=format_name,
+            data_vars_only=data_vars_only,
         )
     return dataset
 
