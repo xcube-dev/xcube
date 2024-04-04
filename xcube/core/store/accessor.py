@@ -207,7 +207,7 @@ class DataOpener(ABC):
     @abstractmethod
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         """Get the schema for the parameters passed as *open_params* to
-        :meth:open_data(data_id, open_params).
+        :meth:`open_data`.
         If *data_id* is given, the returned schema will be tailored
         to the constraints implied by the identified data resource.
         Some openers might not support this, therefore *data_id*
@@ -253,7 +253,7 @@ class DataDeleter(ABC):
     @abstractmethod
     def get_delete_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         """Get the schema for the parameters passed as *delete_params*
-        to :meth:delete_data.
+        to :meth:`delete_data`.
         If *data_id* is given, the returned schema will be tailored to
         the constraints implied by the identified data resource.
         Some deleters might not support this, therefore *data_id*
@@ -293,7 +293,7 @@ class DataWriter(DataDeleter, ABC):
     @abstractmethod
     def get_write_data_params_schema(self) -> JsonObjectSchema:
         """Get the schema for the parameters passed as *write_params* to
-        :meth:write_data(data resource, data_id, open_params).
+        :meth:`write_data`.
 
         Returns:
             The schema for the parameters in *write_params*.

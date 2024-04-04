@@ -61,24 +61,27 @@ def compute_levels(
     the inner-most, that is, the last two elements of a variable's
     shape provide the spatial dimension sizes.
 
-    :param dataset: The input dataset to be turned into
-        a multi-level pyramid.
-    :param spatial_dims: If given, only variables are considered
-        whose last to dimension elements match the given *spatial_dims*.
-    :param spatial_shape: If given, only variables are
-        considered whose last to shape elements match the
-        given *spatial_shape*.
-    :param spatial_tile_shape: If given, chunking will match the
-        provided *spatial_tile_shape*.
-    :param var_names: Variables to consider. If None, all variables
-        with at least two dimensions are considered.
-    :param num_levels_max: If given, the maximum number
-        of pyramid levels.
-    :param post_process_level: If given, the function will be
-        called for each level and must return a dataset.
-    :param progress_monitor: If given, the function will be
-        called for each level.
-    :return: A list of dataset instances representing
+    Args:
+        dataset: The input dataset to be turned into
+            a multi-level pyramid.
+        spatial_dims: If given, only variables are considered
+            whose last to dimension elements match the given
+            *spatial_dims*.
+        spatial_shape: If given, only variables are
+            considered whose last to shape elements match the
+            given *spatial_shape*.
+        spatial_tile_shape: If given, chunking will match the
+            provided *spatial_tile_shape*.
+        var_names: Variables to consider. If None, all variables
+            with at least two dimensions are considered.
+        num_levels_max: If given, the maximum number
+            of pyramid levels.
+        post_process_level: If given, the function will be
+            called for each level and must return a dataset.
+        progress_monitor: If given, the function will be
+            called for each level.
+    Returns:
+        A list of dataset instances representing
         the multi-level pyramid.
     """
     dropped_vars, spatial_shape, spatial_tile_shape = _filter_level_source_dataset(

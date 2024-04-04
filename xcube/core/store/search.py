@@ -16,7 +16,7 @@ class DataSearcher(ABC):
         cls, data_type: DataTypeLike = None
     ) -> JsonObjectSchema:
         """Get the schema for the parameters that can be passed
-        as *search_params* to :meth:search_data().
+        as *search_params* to :meth:`search_data`.
         Parameters are named and described by the properties of the
         returned JSON object schema.
 
@@ -38,7 +38,7 @@ class DataSearcher(ABC):
         to data resources of that type.
 
         Returns an iterator over the search results which are
-        returned as :class:DataDescriptor objects.
+        returned as :class:`DataDescriptor` objects.
 
         If a store implementation supports only a single data type,
         it should verify that *data_type*
@@ -99,7 +99,7 @@ class DefaultSearchMixin(DataSearcher):
             **search_params: Not supported (yet)
 
         Returns:
-            an iterator of :class:DataDescriptor instances
+            an iterator of :class:`DataDescriptor` instances
         """
         search_params_schema = self.get_search_params_schema(data_type=data_type)
         assert_valid_params(

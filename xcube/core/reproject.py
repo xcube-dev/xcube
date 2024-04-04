@@ -50,13 +50,14 @@ def reproject_xy_to_wgs84(
     include_xy_vars: bool = False,
     include_non_spatial_vars: bool = False,
 ) -> xr.Dataset:
-    """
-    Reprojection of xarray datasets with 2D geo-coding, e.g. with variables lon(y,x), lat(y, x) to
-    EPSG:4326 (WGS-84) coordinate reference system.
+    """Reprojection of xarray datasets with 2D geo-coding,
+    e.g. with variables lon(y,x), lat(y, x) to EPSG:4326 (WGS-84)
+    coordinate reference system.
 
-    If *dst_resampling* is a string, it provides the default resampling for all variables.
-    If *dst_resampling* is a dictionary, it provides a mapping from variable names to the desired
-    resampling for that variable.
+    If *dst_resampling* is a string, it provides the default
+    resampling for all variables.
+    If *dst_resampling* is a dictionary, it provides a mapping
+    from variable names to the desired resampling for that variable.
 
     The resampling may be one of the following up-sampling algorithms:
 
@@ -76,20 +77,24 @@ def reproject_xy_to_wgs84(
     * ``Q1``
     * ``Q3``
 
-    :param src_dataset:
-    :param src_xy_var_names:
-    :param src_xy_tp_var_names:
-    :param src_xy_crs:
-    :param src_xy_gcp_step:
-    :param src_xy_tp_gcp_step:
-    :param dst_size:
-    :param dst_region:
-    :param dst_resampling: The spatial resampling algorithm. Either a string that provides the default resampling
-           algorithm name or a dictionary that maps variable names to per-variable resampling algorithm names.
-    :param include_non_spatial_vars:
-    :param include_xy_vars: Whether to include the variables given by *src_xy_var_names*.
-           Useful for projection-validation.
-    :return: the reprojected dataset
+    Args:
+        src_dataset:
+        src_xy_var_names:
+        src_xy_tp_var_names:
+        src_xy_crs:
+        src_xy_gcp_step:
+        src_xy_tp_gcp_step:
+        dst_size:
+        dst_region:
+        dst_resampling: The spatial resampling algorithm.
+            Either a string that provides the default resampling
+            algorithm name or a dictionary that maps variable names to
+            per-variable resampling algorithm names.
+        include_non_spatial_vars:
+        include_xy_vars: Whether to include the variables
+            given by *src_xy_var_names*. Useful for projection-validation.
+    Returns:
+        the reprojected dataset
     """
     x_name, y_name = src_xy_var_names
     tp_x_name, tp_y_name = src_xy_tp_var_names or (None, None)

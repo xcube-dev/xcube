@@ -38,7 +38,8 @@ class TimeSliceTest(unittest.TestCase):
         cube = self.make_cube(start_date, num_days)
         cube.to_zarr(self.CUBE_PATH)
 
-    def make_cube(self, start_date, num_days: int) -> xr.Dataset:
+    @staticmethod
+    def make_cube(start_date, num_days: int) -> xr.Dataset:
         cube = new_cube(
             time_periods=num_days,
             time_freq="1D",
@@ -46,7 +47,9 @@ class TimeSliceTest(unittest.TestCase):
             variables=dict(precipitation=0.1, temperature=270.5, soil_moisture=0.2),
         )
         chunk_sizes = dict(time=1, lat=90, lon=90)
-        cube = chunk_dataset(cube, chunk_sizes, format_name="zarr")
+        cube = chunk_dataset(
+            cube, chunk_sizes, format_name="zarr", data_vars_only=True
+        )
         return cube
 
     def test_find_time_slice(self):

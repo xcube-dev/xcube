@@ -85,9 +85,11 @@ class FsAccessor:
         Returns the filesystem and *params* reduced by
         the used parameters.
 
-        :param params: Parameters passed to a filesystem
-            data store, opener, or writer call.
-        :return: A tuple comprising the filesystem, an optional root path,
+        Args:
+            params: Parameters passed to a filesystem
+                data store, opener, or writer call.
+
+        Returns: A tuple comprising the filesystem, an optional root path,
             and the modified *params*.
         """
         params = dict(params)

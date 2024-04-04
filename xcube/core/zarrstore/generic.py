@@ -347,13 +347,14 @@ class GenericZarrStore(zarr.storage.Store):
     static (numpy) arrays or from a callable that provides the
     array's data chunks as bytes or numpy arrays.
 
-    :param arrays: Arrays to be added.
-        Typically, these will be instances of ``GenericArray``.
-    :param attrs: Optional attributes of the top-level group.
-        If given, it must be JSON serializable.
-    :param array_defaults: Optional array defaults for
-        array properties not passed to ``add_array``.
-        Typically, this will be an instance of ``GenericArray``.
+    Args:
+        arrays: Arrays to be added.
+            Typically, these will be instances of ``GenericArray``.
+        attrs: Optional attributes of the top-level group.
+            If given, it must be JSON serializable.
+        array_defaults: Optional array defaults for
+            array properties not passed to ``add_array``.
+            Typically, this will be an instance of ``GenericArray``.
     """
 
     # Shortcut for GenericArray
@@ -375,13 +376,13 @@ class GenericZarrStore(zarr.storage.Store):
     def add_array(
         self, array: Optional[GenericArrayLike] = None, **array_kwargs
     ) -> None:
-        """
-        Add a new array to this store.
+        """Add a new array to this store.
 
-        :param array: Optional array properties.
-            Typically, this will be an instance of ``GenericArray``.
-        :param array_kwargs: Keyword arguments form
-            for the properties of ``GenericArray``.
+        Args:
+            array: Optional array properties.
+                Typically, this will be an instance of ``GenericArray``.
+            array_kwargs: Keyword arguments form
+                for the properties of ``GenericArray``.
         """
         effective_array = GenericArray(self._array_defaults or {})
         if array:
@@ -422,8 +423,11 @@ class GenericZarrStore(zarr.storage.Store):
 
     def listdir(self, path: str = "") -> List[str]:
         """List a store path.
-        :param path: The path.
-        :return: List of sorted directory entries.
+
+        Args:
+            path: The path.
+
+        Returns: List of sorted directory entries.
         """
         if path == "":
             return sorted([".zmetadata", ".zgroup", ".zattrs", *self._arrays.keys()])
@@ -434,7 +438,9 @@ class GenericZarrStore(zarr.storage.Store):
     def rmdir(self, path: str = "") -> None:
         """The general form removes store paths.
         This implementation can remove entire arrays only.
-        :param path: The array's name.
+
+        Args:
+            path: The array's name.
         """
         if path not in self._arrays:
             raise ValueError(f"{path}: can only remove existing arrays")
@@ -453,8 +459,9 @@ class GenericZarrStore(zarr.storage.Store):
         """The general form renames store paths.
         This implementation can rename arrays only.
 
-        :param src_path: Source array name.
-        :param dst_path: Target array name.
+        Args:
+            src_path: Source array name.
+            dst_path: Target array name.
         """
         array = self._arrays.get(src_path)
         if array is None:
@@ -549,9 +556,11 @@ class GenericZarrStore(zarr.storage.Store):
         * ``order``- defaults to "C"
         * ``chunk_encoding`` - defaults to "bytes"
 
-        :param dataset: The dataset
-        :param array_defaults: Array default values.
-        :return: A new Zarr store instance.
+        Args:
+            dataset: The dataset
+            array_defaults: Array default values.
+
+        Returns: A new Zarr store instance.
         """
 
         def _get_dataset_data(ds=None, chunk_info=None, array_info=None) -> np.ndarray:

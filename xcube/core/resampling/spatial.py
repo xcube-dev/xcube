@@ -63,7 +63,7 @@ def resample_in_space(
     If *source_gm* is almost equal to *target_gm*, this
     function is a no-op and *dataset* is returned unchanged.
 
-    Otherwise the function computes a spatially
+    Otherwise, the function computes a spatially
     resampled version of *dataset* and returns it.
 
     Using *var_configs*, the resampling of individual
@@ -103,17 +103,18 @@ def resample_in_space(
     In all other cases, no affine transformation is applied and
     the resampling is a direct rectification.
 
-    :param dataset: The source dataset.
-    :param source_gm: The source grid mapping.
-    :param target_gm: The target grid mapping. Must be regular.
-    :param var_configs: Optional resampling configurations
-        for individual variables.
-    :param encode_cf: Whether to encode the target grid mapping
-        into the resampled dataset in a CF-compliant way.
-        Defaults to ``True``.
-    :param gm_name: Name for the grid mapping variable.
-        Defaults to "crs". Used only if *encode_cf* is ``True``.
-    :return: The spatially resampled dataset.
+    Args:
+        dataset: The source dataset.
+        source_gm: The source grid mapping.
+        target_gm: The target grid mapping. Must be regular.
+        var_configs: Optional resampling configurations
+            for individual variables.
+        encode_cf: Whether to encode the target grid mapping
+            into the resampled dataset in a CF-compliant way.
+            Defaults to ``True``.
+        gm_name: Name for the grid mapping variable.
+            Defaults to "crs". Used only if *encode_cf* is ``True``.
+    Returns: The spatially resampled dataset.
     """
     if source_gm is None:
         # No source grid mapping given, so do derive it from dataset
