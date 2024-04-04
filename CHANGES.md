@@ -5,6 +5,8 @@
       with values `"nearest"`, `"linear"`, or `"bilinear"`. 
       `"linear"` interpolates between 3 and `"bilinear"` between 4 adjacent 
       source pixels. 
+    - Added a documentation page that explains the algorithm used in
+      `rectify_dataset()`. 
     - Added optional keyword argument `rectify_kwargs` to `resample_in_space()`.
       If given, it is spread into keyword arguments passed to the internal 
       `rectify_dataset()` delegation, if any.
