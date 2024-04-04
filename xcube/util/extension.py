@@ -39,7 +39,7 @@ class Extension:
     Extensions are registered in a :class:`ExtensionRegistry`.
 
     Extension objects are not meant to be instantiated directly. Instead,
-    :meth:`ExtensionRegistry.add_extension` is used to register extensions.
+    :meth:`ExtensionRegistry#add_extension` is used to register extensions.
 
     Args:
         point: extension point identifier

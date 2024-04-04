@@ -43,48 +43,61 @@ class CacheStore(metaclass=ABCMeta):
 
     @abstractmethod
     def can_load_from_key(self, key) -> bool:
-        """
-        Test whether a stored value representation can be loaded from the given key.
-        :param key: the key
-        :return: True, if so
+        """Test whether a stored value representation
+        can be loaded from the given key.
+
+        Args:
+            key: the key
+
+        Returns: True, if so
         """
         pass
 
     @abstractmethod
     def load_from_key(self, key):
-        """
-        Load a stored value representation of the value and its size from the given key.
-        :param key: the key
-        :return: a 2-element sequence containing the stored representation of the value and it's size
+        """Load a stored value representation of the value
+        and its size from the given key.
+
+        Args:
+            key: the key
+
+        Returns: a 2-element sequence containing the stored representation of the value and it's size
         """
         pass
 
     @abstractmethod
     def store_value(self, key, value):
-        """
-        Store a value and return it's stored representation and size in any unit, e.g. in bytes.
-        :param key: the key
-        :param value: the value
-        :return: a 2-element sequence containing the stored representation of the value and it's size
+        """Store a value and return it's stored representation
+        and size in any unit, e.g. in bytes.
+
+        Args:
+            key: the key
+            value: the value
+
+        Returns: a 2-element sequence containing the stored
+            representation of the value and it's size
         """
         pass
 
     @abstractmethod
     def restore_value(self, key, stored_value):
-        """
-        Restore a vale from its stored representation.
-        :param key: the key
-        :param stored_value: the stored representation of the value
-        :return: the item
+        """Restore a vale from its stored representation.
+
+        Args:
+            key: the key
+            stored_value: the stored representation of the value
+
+        Returns: the item
         """
         pass
 
     @abstractmethod
     def discard_value(self, key, stored_value):
-        """
-        Discard a value from it's storage.
-        :param key: the key
-        :param stored_value: the stored representation of the value
+        """Discard a value from it's storage.
+
+        Args:
+            key: the key
+            stored_value: the stored representation of the value
         """
         pass
 
@@ -206,9 +219,18 @@ _T0 = time.process_time()
 
 
 class Cache:
-    """
-    An implementation of a cache.
+    """An implementation of a cache.
     See https://en.wikipedia.org/wiki/Cache_algorithms
+
+    Args:
+        store: the cache store, see CacheStore interface
+        capacity: the size capacity in units used by the store's
+            ``store()`` method
+        threshold: a number greater than zero and less than one
+        policy: cache replacement policy. This is a function that
+            maps a :class:`Cache.Item` to a numerical value.
+            See :data:`POLICY_LRU`, :data:`POLICY_MRU`,
+            :data:`POLICY_LFU`, :data:`POLICY_RR`
     """
 
     class Item:
@@ -268,16 +290,6 @@ class Cache:
         policy=POLICY_LRU,
         parent_cache=None,
     ):
-        """
-        Constructor.
-
-        :param store: the cache store, see CacheStore interface
-        :param capacity: the size capacity in units used by the store's store() method
-        :param threshold: a number greater than zero and less than one
-        :param policy: cache replacement policy. This is a function that maps a :py:class:`Cache.Item`
-                       to a numerical value. See :py:data:`POLICY_LRU`,
-                       :py:data:`POLICY_MRU`, :py:data:`POLICY_LFU`, :py:data:`POLICY_RR`
-        """
         self._store = store
         self._capacity = capacity
         self._threshold = threshold
