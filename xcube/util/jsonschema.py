@@ -529,16 +529,19 @@ class JsonObjectSchema(JsonSchema):
     def process_kwargs_subset(
         self, kwargs: Dict[str, Any], keywords: Sequence[str]
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-        """Utility that helps processing keyword-arguments. in *kwargs*:
+        """Utility that helps to process keyword-arguments.
 
-        Pop every keyword in *keywords* contained in this object schema's properties
-        from *kwargs* and put the keyword and value from *kwargs* into a new dictionary.
+        Pops every keyword in *keywords* contained in this object schema's
+        properties from *kwargs* and put the keyword and value from *kwargs*
+        into a new dictionary.
 
-        Return a 2-element tuple, first *kwargs* with, second the and *kwargs* without the keywords from *keywords*.
+        Return a 2-element tuple, first *kwargs* with the keywords
+        from *keywords*., second *kwargs* without the keywords
+        from *keywords*.
 
         The original *kwargs* is not touched.
 
-        :return a tuple of two new keyword-argument dictionaries
+        Returns: a tuple of two new keyword-argument dictionaries
         """
         old_kwargs = dict(kwargs)
         new_kwargs = {}
@@ -675,12 +678,12 @@ class JsonObject(ABC):
     """The abstract base class for objects
 
     * whose instances can be created from a JSON-serializable
-      dictionary using their :meth:from_dict class method;
+      dictionary using their :meth:`from_dict` class method;
     * whose instances can be converted into a JSON-serializable dictionary
-      using their :meth:to_dict instance method.
+      using their :meth:`to_dict` instance method.
 
-    Derived concrete classes must only implement the :meth:get_schema class method
-    that must return a :class:JsonObjectSchema.
+    Derived concrete classes must only implement the :meth:`get_schema` class method
+    that must return a :class:`JsonObjectSchema`.
 
     Instances of this class have a JSON representation in Jupyter/IPython Notebooks.
     """

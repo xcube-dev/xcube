@@ -46,9 +46,9 @@ class CodeConfig(JsonObject):
 
     Instances should always be created using one of the factory methods:
 
-    * :meth:from_callable
-    * :meth:from_code
-    * :meth:from_file_set
+    * :meth:`from_callable`
+    * :meth:`from_code`
+    * :meth:`from_file_set`
 
     Args:
         _callable: Optional function or class. Cannot be given if
@@ -58,7 +58,7 @@ class CodeConfig(JsonObject):
         inline_code: Optional inline Python code string. Cannot be given
             if *_callable* or *file_set* are given.
         file_set: A file set that contains Python modules or packages.
-            Must be of type :class:FileSet. Cannot be given if
+            Must be of type :class:`FileSet`. Cannot be given if
             *_callable* or *inline_code* are given.
         install_required: Whether *file_set* contains Python modules or
             packages that must be installed. Can only be True if
@@ -170,7 +170,7 @@ class CodeConfig(JsonObject):
         valid in a local context. It cannot be JSON-serialized.
 
         To pass such configurations to a service, convert it first
-        using the :meth:to_service first.
+        using the :meth:`to_service` first.
 
         Args:
             _callable: A function or class
@@ -283,14 +283,14 @@ class CodeConfig(JsonObject):
         """Convert this code configuration so can be used by the
         local generator. This means, the returned configuration
         can be used to load executable code. i.e.
-        :meth:get_callable() will return a callable.
+        :meth:`get_callable` will return a callable.
 
         The returned code configuration defines either
         a callable (member _callable) or a file set that represents
         a local directory. This directory may be used without
         package installation (i.e. added to Python's sys.path) or
         used after installation (i.e. by executing
-        ```python setup.py install```).
+        ``python setup.py install``).
         """
         return _for_local(self)
 
@@ -301,7 +301,9 @@ class CodeConfig(JsonObject):
 
         Returns:
             A callable
-        :raise ImportError if the callable can not be imported
+
+        Raises:
+            ImportError: if the callable can not be imported
         """
         if self._callable is None:
             self.set_callable(self._load_callable())
@@ -321,7 +323,9 @@ class CodeConfig(JsonObject):
 
         Returns:
             A callable
-        :raise ImportError if the callable can not be imported
+
+        Raises:
+            ImportError: if the callable can not be imported
         """
         code_config = self.for_local()
         return _load_callable(

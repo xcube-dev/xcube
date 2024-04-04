@@ -53,7 +53,7 @@ def register_fs_accessor_class(fs_accessor_class: Type[FsAccessor]):
 
     Args:
         fs_accessor_class: a concrete class that extends
-            :class:FsAccessor.
+            :class:`FsAccessor`.
     """
     protocol = fs_accessor_class.get_protocol()
     _FS_ACCESSOR_CLASSES[protocol] = fs_accessor_class
@@ -77,7 +77,7 @@ def get_fs_accessor_class(protocol: str) -> Type[FsAccessor]:
             "memory".
 
     Returns:
-        A class that derives from :class:FsAccessor
+        A class that derives from :class:`FsAccessor`
     """
     fs_accessor_class = _FS_ACCESSOR_CLASSES.get(protocol)
     if fs_accessor_class is None:
@@ -113,11 +113,11 @@ def register_fs_data_accessor_class(fs_data_accessor_class: Type[FsDataAccessor]
 
     Such data accessor classes are used to dynamically
     construct concrete data store classes by combining
-    them with a concrete :class:FsAccessor.
+    them with a concrete :class:`FsAccessor`.
 
     Args:
         fs_data_accessor_class: an abstract class that extends
-            :class:FsDataAccessor.
+            :class:`FsDataAccessor`.
     """
     data_type = fs_data_accessor_class.get_data_type()
     format_id = fs_data_accessor_class.get_format_id()
@@ -151,7 +151,7 @@ def get_fs_data_accessor_class(
         format_id: The format identifier, for example "zarr", "geojson".
 
     Returns:
-        A class that derives from :class:FsAccessor
+        A class that derives from :class:`FsAccessor`
     """
     accessor_id = f"{data_type_alias}:{format_id}"
     data_accessor_class = _FS_DATA_ACCESSOR_CLASSES.get(accessor_id)
@@ -183,7 +183,7 @@ def get_fs_data_store_class(protocol: str) -> Type[FsDataStore]:
             "memory".
 
     Returns:
-        A class that derives from :class:FsDataStore
+        A class that derives from :class:`FsDataStore`
     """
     fs_accessor_class = get_fs_accessor_class(protocol)
 
@@ -236,7 +236,7 @@ def new_fs_data_store(
             filesystem.
 
     Returns:
-        A new data store instance of type :class:FsDataStore.
+        A new data store instance of type :class:`FsDataStore`.
     """
     fs_data_store_class = get_fs_data_store_class(protocol)
     store_params_schema = fs_data_store_class.get_data_store_params_schema()

@@ -34,7 +34,9 @@ def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
     Args:
         dataset: The dataset to be validated.
         name: Optional parameter name.
-    :raise: ValueError, if dataset is not a valid xcube dataset
+
+    Raises:
+        ValueError, if dataset is not a valid xcube dataset
     """
     report = verify_cube(dataset)
     if report:

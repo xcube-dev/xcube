@@ -6,9 +6,11 @@ import xarray as xr
 import rioxarray  # this is needed for adding crs to a dataset and used as rio
 
 from test.sampledata import create_highroc_dataset
+from xcube.core.new import new_cube
 from xcube.core.update import (
     update_dataset_attrs,
     update_dataset_spatial_attrs,
+    update_dataset_chunk_encoding,
 )
 from xcube.core.update import update_dataset_var_attrs
 
@@ -422,3 +424,38 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
         }
         ds4 = xr.Dataset(coords=self._create_coords()[0], attrs=incomplete_attrs)
         assert_has_attrs(update_dataset_spatial_attrs(ds4), new_attrs)
+
+
+class UpdateDatasetChunkEncodingTest(unittest.TestCase):
+
+    def test_update_dataset_chunk_encoding_data_vars_only(self):
+        cube = update_dataset_chunk_encoding(
+            new_cube(
+                time_periods=5,
+                time_freq="1D",
+                time_start="2019-01-01",
+                variables=dict(
+                    precipitation=0.1,
+                    temperature=270.5,
+                    soil_moisture=0.2),
+            ),
+            chunk_sizes=dict(time=1, lat=90, lon=90),
+            format_name="zarr",
+            in_place=False,
+            data_vars_only=True
+        )
+        self.assertEqual(
+            {"chunks": (1, 90, 90)}, cube.precipitation.encoding
+        )
+        self.assertEqual(
+            {"chunks": (1, 90, 90)}, cube.temperature.encoding
+        )
+        self.assertEqual(
+            {"chunks": (1, 90, 90)}, cube.soil_moisture.encoding
+        )
+        self.assertEqual({}, cube.lat.encoding)
+        self.assertEqual({}, cube.lon.encoding)
+        self.assertEqual({}, cube.lat.encoding)
+        self.assertEqual({}, cube.lat_bnds.encoding)
+        self.assertEqual({}, cube.lon_bnds.encoding)
+        self.assertNotIn("chunks", cube.time.encoding)

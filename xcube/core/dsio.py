@@ -691,12 +691,10 @@ def parse_s3_fs_and_root(
     mode: str = "r",
 ) -> Tuple[s3fs.S3FileSystem, str]:
     """Parses *s3_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
-    new tuple (*obs_fs*, *root_path*). For example
+    new tuple (*obs_fs*, *root_path*). For example::
 
-    ```
-    obs_fs, root_path = parse_s3_fs_and_root(s3_url, s3_kwargs, s3_client_kwargs)
-    obs_map = s3fs.S3Map(root=root_path, s3=obs_fs)
-    ```
+        obs_fs, root_path = parse_s3_fs_and_root(s3_url, s3_kwargs, s3_client_kwargs)
+        obs_map = s3fs.S3Map(root=root_path, s3=obs_fs)
 
     Args:
         s3_url: Object storage URL, e.g. "s3://bucket/root", or

@@ -80,7 +80,7 @@ class NewCubeDataTestMixin(unittest.TestCase):
         """open data un-packed (the default)"""
         data_1 = xr.open_zarr(self.path, mask_and_scale=True)
         self.assertEqual(np.float64, data_1.var_a.dtype)
-        self.assertEqual(np.float32, data_1.var_b.dtype)
+        self.assertEqual(np.float64, data_1.var_b.dtype)
         self.assertEqual(np.uint8, data_1.var_c.dtype)
         self.assertTrue(np.isnan(data_1.var_a[0, 0, 0]))
         self.assertEqual(8.5, data_1.var_a[1, 0, 0].values)
@@ -263,7 +263,7 @@ class FsDataStoresTestMixin(ABC):
             )
             # assert dtype is as expected
             self.assertEqual(np.float64, dataset.var_a.dtype)
-            self.assertEqual(np.float32, dataset.var_b.dtype)
+            self.assertEqual(np.float64, dataset.var_b.dtype)
             self.assertEqual(np.uint8, dataset.var_c.dtype)
             # assert dtype encoding is as expected
             self.assertEqual(np.float64, dataset.var_a.encoding.get("dtype"))

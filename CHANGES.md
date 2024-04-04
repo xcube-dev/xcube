@@ -5,11 +5,15 @@
       with values `"nearest"`, `"linear"`, or `"bilinear"`. 
       `"linear"` interpolates between 3 and `"bilinear"` between 4 adjacent 
       source pixels. 
+    - Added a documentation page that explains the algorithm used in
+      `rectify_dataset()`. 
     - Added optional keyword argument `rectify_kwargs` to `resample_in_space()`.
       If given, it is spread into keyword arguments passed to the internal 
       `rectify_dataset()` delegation, if any.
     - Deprecated unused keyword argument `xy_var_names` of 
       function `rectify_dataset()`.
+
+* Replace use of deprecated method in testing module. (#961)
 
 * Update dependencies to better match imports; remove the defaults channel;
   turn adlfs into a soft dependency. (#945)
@@ -26,6 +30,10 @@
   Existing docstrings have been converted using the awesome [docconvert](https://github.com/cbillingham/docconvert) 
   tool.
 
+* Add a `data_vars_only` parameter to `chunk_dataset` and
+  `update_dataset_chunk_encoding` (#958).
+
+* Update some unit tests to make them compatible with xarray 2024.3.0 (#958).
 
 ## Changes in 1.4.1
 

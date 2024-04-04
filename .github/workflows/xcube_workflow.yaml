@@ -24,7 +24,9 @@ jobs:
           environment-file: environment.yml
           init-shell: >-
             bash
-          cache-environment: true
+          # Don't cache the environment, since this would prevent us from
+          # catching test failures caused by updated versions of dependencies.
+          cache-environment: false
           post-cleanup: 'all'
       # Setup xcube
       - name: setup-xcube
