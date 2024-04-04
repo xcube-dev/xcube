@@ -1,5 +1,7 @@
 ## Changes in 1.4.2 (in development)
 
+* Replace use of deprecated method in testing module. (#961)
+
 * Update dependencies to better match imports; remove the defaults channel;
   turn adlfs into a soft dependency. (#945)
 
