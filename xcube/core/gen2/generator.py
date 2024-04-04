@@ -64,12 +64,12 @@ class CubeGenerator(ABC):
 
         The *service_config* parameter can be passed in different ways:
 
-        * An instance of :class:ServiceConfig.
+        * An instance of :class:`ServiceConfig`.
         * A ``str``. Then it is interpreted as a path to a YAML or JSON file
           and the remote configuration is loaded from this file.
           The file content may include template variables that are
           interpolated by environment variables,
-          e.g. "${XCUBE_GEN_CLIENT_SECRET}".
+          e.g. ``"${XCUBE_GEN_CLIENT_SECRET}"``.
         * A ``dict``. Then it is interpreted as a remote configuration
           JSON object.
 
@@ -84,7 +84,7 @@ class CubeGenerator(ABC):
         Similar to *service_config*, the *stores_config* parameter
         can be passed in different ways:
 
-        * An instance of :class:DataStorePool.
+        * An instance of :class:`DataStorePool`.
         * A ``str``. Then it is interpreted as a YAML or JSON file path
           and the stores configuration is loaded from this file.
         * A ``dict``. Then it is interpreted as a stores configuration
@@ -93,15 +93,16 @@ class CubeGenerator(ABC):
         The *service_config* and *stores_config* parameters cannot
         be given both.
 
-        :param service_config: Service configuration.
-        :param stores_config: Data stores configuration.
-        :param raise_on_error: Whether to raise a CubeGeneratorError
-            exception on generator failures. If False, the default,
-            the returned result will have the "status" field set to "error"
-            while other fields such as "message", "traceback", "output"
-            provide more failure details.
-        :param verbosity: Level of verbosity, 0 means off.
-        :param kwargs: Extra arguments passed to the generator constructors.
+        Args:
+            service_config: Service configuration.
+            stores_config: Data stores configuration.
+            raise_on_error: Whether to raise a CubeGeneratorError
+                exception on generator failures. If False, the default,
+                the returned result will have the "status" field set to "error"
+                while other fields such as "message", "traceback", "output"
+                provide more failure details.
+            verbosity: Level of verbosity, 0 means off.
+            kwargs: Extra arguments passed to the generator constructors.
         """
         if service_config is not None:
             from .remote.config import ServiceConfig
@@ -147,8 +148,7 @@ class CubeGenerator(ABC):
         self._verbosity = verbosity
 
     def get_cube_info(self, request: CubeGeneratorRequestLike) -> CubeInfoResult:
-        """
-        Get data cube information for given *request*.
+        """Get data cube information for given *request*.
 
         The *request* argument can be
         * an instance of ``CubeGeneratorRequest``;
@@ -158,11 +158,15 @@ class CubeGenerator(ABC):
           YAML or JSON file, which is loaded and
           parsed into a ``CubeGeneratorRequest``.
 
-        :param request: Cube generator request.
-        :return: a cube information result
-            of type :class:CubeInfoResult
-        :raises CubeGeneratorError: if cube info generation failed
-        :raises DataStoreError: if data store access failed
+        Args:
+            request: Cube generator request.
+
+        Returns: a cube information result
+            of type :class:`CubeInfoResult`
+
+        Raises:
+            CubeGeneratorError: if cube info generation failed
+            DataStoreError: if data store access failed
         """
         try:
             result = self._get_cube_info(request)
@@ -176,8 +180,7 @@ class CubeGenerator(ABC):
         return result
 
     def generate_cube(self, request: CubeGeneratorRequestLike) -> CubeGeneratorResult:
-        """
-        Generate the data cube for given *request*.
+        """Generate the data cube for given *request*.
 
         The *request* argument can be
         * an instance of ``CubeGeneratorRequest``;
@@ -189,13 +192,19 @@ class CubeGenerator(ABC):
 
         Returns the cube reference which can be used as ``data_id`` in
         ``store.open_data(data_id)`` where *store*  refers to the
-        store configured in ``output_config`` of the cube generator request.
+        store configured in ``output_config`` of the cube generator
+        request.
 
-        :param request: Cube generator request.
-        :return: the cube generation result
-            of type :class:CubeGeneratorResult
-        :raises CubeGeneratorError: if cube generation failed
-        :raises DataStoreError: if data store access failed
+        Args:
+            request: Cube generator request.
+
+        Returns:
+            the cube generation result of type
+            :class:`CubeGeneratorResult`.
+
+        Raises:
+            CubeGeneratorError: if cube generation failed
+            DataStoreError: if data store access failed
         """
 
         if self._verbosity:

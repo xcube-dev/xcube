@@ -28,13 +28,13 @@ _DEFAULT_NAME = "value"
 def assert_not_none(
     value: Any, name: str = None, exception_type: Type[Exception] = ValueError
 ):
-    """
-    Assert *value* is not None.
+    """Assert *value* is not None.
     Otherwise, raise *exception_type*.
 
-    :param value: The value to test.
-    :param name: Name of a variable that holds *value*.
-    :param exception_type: The exception type. Default is ```ValueError```.
+    Args:
+        value: The value to test.
+        name: Name of a variable that holds *value*.
+        exception_type: The exception type. Default is ``ValueError``.
     """
     if value is None:
         raise exception_type(f"{name or _DEFAULT_NAME} must not be None")
@@ -49,7 +49,7 @@ def assert_given(
     Args:
         value: The value to test.
         name: Name of a variable that holds *value*.
-        exception_type: The exception type. Default is ```ValueError```.
+        exception_type: The exception type. Default is ``ValueError``.
     """
     if not value:
         raise exception_type(f"{name or _DEFAULT_NAME} must be given")
@@ -68,7 +68,7 @@ def assert_instance(
         value: The value to test.
         dtype: A type or tuple of types.
         name: Name of a variable that holds *value*.
-        exception_type: The exception type. Default is ```TypeError```.
+        exception_type: The exception type. Default is ``TypeError``.
     """
     if not isinstance(value, dtype):
         raise exception_type(
@@ -91,7 +91,7 @@ def assert_subclass(
         value: The value to test.
         cls: A class or tuple of classes.
         name: Name of a variable that holds *value*.
-        exception_type: The exception type. Default is ```TypeError```.
+        exception_type: The exception type. Default is ``TypeError``.
     """
     if not issubclass(value, cls):
         raise exception_type(
@@ -112,7 +112,7 @@ def assert_in(
         value: The value to test for membership.
         container: The container.
         name: Name of a variable that holds *value*.
-        exception_type: The exception type. Default is ```ValueError```.
+        exception_type: The exception type. Default is ``ValueError``.
     """
     if value not in container:
         raise exception_type(f"{name or _DEFAULT_NAME} " f"must be one of {container}")
@@ -125,7 +125,7 @@ def assert_true(value: Any, message: str, exception_type: Type[Exception] = Valu
     Args:
         value: The value to test.
         message: The error message used if the assertion fails.
-        exception_type: The exception type. Default is ```ValueError```.
+        exception_type: The exception type. Default is ``ValueError``.
     """
     if not value:
         raise exception_type(message)
@@ -140,7 +140,7 @@ def assert_false(
     Args:
         value: The value to test.
         message: The error message used if the assertion fails.
-        exception_type: The exception type. Default is ```ValueError```.
+        exception_type: The exception type. Default is ``ValueError``.
     """
     if value:
         raise exception_type(message)

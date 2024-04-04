@@ -97,26 +97,24 @@ class Api(Generic[ServerContextT]):
     *on_stop* arguments to the constructor.
 
     Each extension API module must export an instance of this
-    class. A typical use case of this class:
+    class. A typical use case of this class:::
 
-    ```
-    class DatasetsContext(ApiContext)
-        def update(self, prev_ctx: Optional[Context]):
-            config = self.config
-            ...
+        class DatasetsContext(ApiContext)
+            def update(self, prev_ctx: Optional[Context]):
+                config = self.config
+                ...
 
-        def get_datasets(self):
-            ...
+            def get_datasets(self):
+                ...
 
-    api = Api("datasets",
-              config_schema=DATASET_CONFIG_SCHEMA,
-              create_ctx=DatasetsApiContext)
+        api = Api("datasets",
+                  config_schema=DATASET_CONFIG_SCHEMA,
+                  create_ctx=DatasetsApiContext)
 
-    @api.route("/datasets")
-    class DatasetsHandler(ApiHandler[DatasetsContext]):
-        def get(self):
-            return self.ctx.get_datasets()
-    ```
+        @api.route("/datasets")
+        class DatasetsHandler(ApiHandler[DatasetsContext]):
+            def get(self):
+                return self.ctx.get_datasets()
 
     Args:
         name: The API name. Must be unique within a server.
@@ -751,7 +749,7 @@ class ApiRoute:
         api_name: The name of the API to which this route belongs to.
         path: The route path which may include path variable templates.
         handler_cls: The route handler class. Must be derived from
-            ```ApiHandler```.
+            ``ApiHandler``.
         handler_kwargs: Optional keyword arguments passed to the
             *handler_cls* when it is instantiated.
     """

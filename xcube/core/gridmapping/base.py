@@ -67,16 +67,16 @@ class GridMapping(abc.ABC):
     This class cannot be instantiated directly. Use one of its factory methods
     to create instances:
 
-    * :meth:regular()
-    * :meth:from_dataset()
-    * :meth:from_coords()
+    * :meth:`regular`
+    * :meth:`from_dataset`
+    * :meth:`from_coords`
 
     Some instance methods can be used to derive new instances:
 
-    * :meth:derive()
-    * :meth:scale()
-    * :meth:transform()
-    * :meth:to_regular()
+    * :meth:`derive`
+    * :meth:`scale`
+    * :meth:`transform`
+    * :meth:`to_regular`
 
     This class is thread-safe.
 
@@ -415,7 +415,8 @@ class GridMapping(abc.ABC):
         """Do the x,y coordinates for a regular grid?
         A regular grid has a constant delta in both
         x- and y-directions of the x- and y-coordinates.
-        :return None, if this property cannot be determined,
+
+        Returns: None, if this property cannot be determined,
             True or False otherwise.
         """
         return self._is_regular
@@ -424,7 +425,8 @@ class GridMapping(abc.ABC):
     def is_j_axis_up(self) -> Optional[bool]:
         """Does the positive image j-axis point up?
         By default, the positive image j-axis points down.
-         :return None, if this property cannot be determined,
+
+        Returns: None, if this property cannot be determined,
             True or False otherwise.
         """
         return self._is_j_axis_up

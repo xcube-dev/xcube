@@ -53,9 +53,9 @@ def select_subset(
 
     This is a high-level convenience function that may invoke
 
-    * :func:select_variables_subset
-    * :func:select_spatial_subset
-    * :func:select_temporal_subset
+    * :func:`select_variables_subset`
+    * :func:`select_spatial_subset`
+    * :func:`select_temporal_subset`
 
     Args:
         dataset: The dataset.
@@ -256,12 +256,10 @@ def select_label_subset(
     If *predicate* returns False for any given label,
     that label will be dropped from dimension *dim*.
 
-    Predicate functions are defined as follows:
+    Predicate functions are defined as follows:::
 
-    ```python
         def predicate(slice_array: xr.DataArray, slice_info: Dict) -> bool:
             ...
-    ```
 
     Here, *slice_array* is a variable's array slice for the given label.
     The argument *slice_info* is a dictionary that contains the
@@ -278,19 +276,17 @@ def select_label_subset(
 
     The following example selects only time labels
     from a 3-D (time, y, x) cube where the 2-D (y, x) images
-    of variable "CHL" comprises more than 50% valid values:
+    of variable "CHL" comprises more than 50% valid values:::
 
-    ```
-    >>> chl_data = np.random.random((5, 10, 20))
-    >>> chl_data = np.where(chl_data > 0.5, chl_data, np.nan)
-    >>> ds = xr.Dataset({"CHL": (["time", "y", "x"], chl_data)})
-    >>>
-    >>> def is_valid_slice(slice_array, slice_label):
-    >>>     return np.sum(np.isnan(slice_array)) / slice_array.size <= 0.5
-    >>>
-    >>> ds_subset = select_label_subset(ds, "time",
-    >>>                                 predicate={"CHL": is_valid_slice})
-    ```
+        >>> chl_data = np.random.random((5, 10, 20))
+        >>> chl_data = np.where(chl_data > 0.5, chl_data, np.nan)
+        >>> ds = xr.Dataset({"CHL": (["time", "y", "x"], chl_data)})
+        >>>
+        >>> def is_valid_slice(slice_array, slice_label):
+        >>>     return np.sum(np.isnan(slice_array)) / slice_array.size <= 0.5
+        >>>
+        >>> ds_subset = select_label_subset(ds, "time",
+        >>>                                 predicate={"CHL": is_valid_slice})
 
     Args:
         dataset: The dataset.

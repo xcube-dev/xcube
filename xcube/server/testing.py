@@ -30,7 +30,6 @@ from contextlib import closing
 from typing import Dict, Optional, Any, Union, Tuple
 
 import urllib3
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 from urllib3.exceptions import MaxRetryError
 
 from xcube.server.server import Server
@@ -53,7 +52,7 @@ class ServerTestCase(unittest.TestCase, ABC):
         config = self.get_config()
         config.update({"port": self.port, "address": "localhost"})
         self.add_config(config)
-        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+        asyncio.set_event_loop(asyncio.new_event_loop())
         er = self.get_extension_registry()
         self.add_extension(er)
         self.server = Server(

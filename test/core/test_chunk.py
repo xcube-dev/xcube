@@ -7,6 +7,7 @@ from test.sampledata import new_test_dataset
 from xcube.core.chunk import chunk_dataset
 from xcube.core.chunk import compute_chunk_slices
 from xcube.core.chunk import get_empty_dataset_chunks
+from xcube.core.new import new_cube
 
 
 class ChunkDatasetTest(unittest.TestCase):
@@ -61,6 +62,45 @@ class ChunkDatasetTest(unittest.TestCase):
             {"chunks": (1, 10, 20)}, chunked_dataset.precipitation.encoding
         )
         self.assertEqual({"chunks": (1, 10, 20)}, chunked_dataset.temperature.encoding)
+
+    def test_chunk_dataset_data_vars_only(self):
+        cube = chunk_dataset(
+            new_cube(
+                time_periods=5,
+                time_freq="1D",
+                time_start="2019-01-01",
+                variables=dict(
+                    precipitation=0.1,
+                    temperature=270.5,
+                    soil_moisture=0.2),
+            ),
+            dict(time=1, lat=90, lon=90),
+            format_name="zarr",
+            data_vars_only=True
+        )
+        self.assertEqual((1, 90, 90), cube.precipitation.data.chunksize)
+        self.assertEqual(
+            {"chunks": (1, 90, 90)}, cube.precipitation.encoding
+        )
+        self.assertEqual((1, 90, 90), cube.precipitation.data.chunksize)
+        self.assertEqual(
+            {"chunks": (1, 90, 90)}, cube.temperature.encoding
+        )
+        self.assertEqual((1, 90, 90), cube.precipitation.data.chunksize)
+        self.assertEqual(
+            {"chunks": (1, 90, 90)}, cube.soil_moisture.encoding
+        )
+        self.assertIsNone(cube.lat.chunks)
+        self.assertEqual({}, cube.lat.encoding)
+        self.assertIsNone(cube.lon.chunks)
+        self.assertEqual({}, cube.lon.encoding)
+        self.assertIsNone(cube.lat_bnds.chunks)
+        self.assertEqual({}, cube.lat_bnds.encoding)
+        self.assertIsNone(cube.lon_bnds.chunks)
+        self.assertEqual({}, cube.lon_bnds.encoding)
+        self.assertIsNone(cube.time.chunks)
+        self.assertNotIn("chunks", cube.time.encoding)
+
 
     def test_unchunk_dataset(self):
         dataset = new_test_dataset(
