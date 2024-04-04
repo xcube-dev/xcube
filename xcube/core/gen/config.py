@@ -41,7 +41,8 @@ def get_config_dict(
 
     Returns:
         Configuration dictionary
-    :raise OSError, ValueError
+
+    Raises: OSError, ValueError
     """
 
     config = load_configs(*config_files) if config_files else {}

@@ -40,7 +40,7 @@ class DatasetAccessor:
         minus the data variables from :attr:cube.
         May be the same as this dataset.
     * :attr:gm The grid mapping used by this dataset.
-        It is an instance of :class:GridMapping.
+        It is an instance of :class:`GridMapping`.
         May be None, if this dataset does not define a grid mapping.
     """
 

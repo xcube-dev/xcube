@@ -110,33 +110,35 @@ def rasterize_features(
                                # Deprecated, no longer used.
     }
 
-    Note that newly created variables will have data type `np.float64`
-    because `np.nan` is used to encode missing values. `fill_value` and
-    `dtype` are used to encode the variables when persisting the data.
+    Note that newly created variables will have data type ``np.float64``
+    because ``np.nan`` is used to encode missing values. ``fill_value`` and
+    ``dtype`` are used to encode the variables when persisting the data.
 
     Currently, the coordinates of the geometries in the given
     *features* must use the same CRS as the given *dataset*.
 
-    :param dataset: The xarray dataset.
-    :param features: A ``geopandas.GeoDataFrame`` instance
-        or a sequence of GeoJSON features.
-    :param feature_props: Sequence of names of numeric feature
-        properties to be rasterized.
-    :param var_props: Optional mapping of feature property name
-        to a name or a 5-tuple (name, dtype, fill_value,
-        attributes, converter) for the new variable.
-    :param tile_size: If given, the unconditional spatial chunk sizes
-        in x- and y-direction in pixels.
-        May be given as integer scalar or x,y-pair of integers.
-    :param all_touched: If True, all pixels intersected by a
-        feature's geometry outlines will be included.
-        If False, only pixels whose center is
-        within the feature polygon or that are selected by Bresenham’s line
-        algorithm will be included in the mask.
-        The default is False.
-    :param in_place: Whether to add new variables to *dataset*.
-        If False, a copy will be created and returned.
-    :return: dataset with rasterized feature_property
+    Args:
+        dataset: The xarray dataset.
+        features: A ``geopandas.GeoDataFrame`` instance
+            or a sequence of GeoJSON features.
+        feature_props: Sequence of names of numeric feature
+            properties to be rasterized.
+        var_props: Optional mapping of feature property name
+            to a name or a 5-tuple (name, dtype, fill_value,
+            attributes, converter) for the new variable.
+        tile_size: If given, the unconditional spatial chunk sizes
+            in x- and y-direction in pixels.
+            May be given as integer scalar or x,y-pair of integers.
+        all_touched: If True, all pixels intersected by a
+            feature's geometry outlines will be included.
+            If False, only pixels whose center is
+            within the feature polygon or that are selected by Bresenham’s line
+            algorithm will be included in the mask.
+            The default is False.
+        in_place: Whether to add new variables to *dataset*.
+            If False, a copy will be created and returned.
+    Returns:
+        dataset with rasterized feature_property
     """
 
     var_props = var_props or {}
@@ -313,7 +315,7 @@ def mask_dataset_by_geometry(
     Args:
         dataset: The dataset
         geometry: A geometry-like object, see
-            py:function:`convert_geometry`.
+            :func:`convert_geometry`.
         tile_size: If given, the unconditional spatial chunk sizes in x-
             and y-direction in pixels. May be given as integer scalar or
             x,y-pair of integers.
@@ -460,7 +462,7 @@ def clip_dataset_by_geometry(
     Args:
         dataset: The dataset
         geometry: A geometry-like object, see
-            py:function:`convert_geometry`.
+            :func:`convert_geometry`.
         save_geometry_wkt: If the value is a string, the effective
             intersection geometry is stored as a Geometry WKT string in
             the global attribute named by *save_geometry*. If the value
