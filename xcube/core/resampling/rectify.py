@@ -141,8 +141,6 @@ def rectify_dataset(
         if source_ds_subset is None:
             return None
         if source_ds_subset is not source_ds:
-            # TODO: GridMapping.from_dataset() may be expensive.
-            #   Find a more effective way.
             source_gm = GridMapping.from_dataset(source_ds_subset)
             source_ds = source_ds_subset
 
@@ -271,7 +269,6 @@ def _compute_ij_images_xarray_numpy(
     dst_y_offset = output_geom.y_min if output_geom.is_j_axis_up else output_geom.y_max
     dst_x_scale = output_geom.x_res
     dst_y_scale = output_geom.y_res if output_geom.is_j_axis_up else -output_geom.y_res
-    # TODO: GridMapping: this will cause out-of-memory problems!
     x_values, y_values = src_geo_coding.xy_coords.values
     _compute_ij_images_numpy_parallel(
         x_values,
@@ -543,21 +540,31 @@ def _compute_ij_images_for_source_line(
         # u from p0 right to p1, v from p0 down to p2
         # noinspection PyTypeChecker
         det_a = _fdet(dst_p0x, dst_p0y, dst_p1x, dst_p1y, dst_p2x, dst_p2y)
+        if np.isnan(det_a):
+            det_a = 0.0
+
         # u from p3 left to p2, v from p3 up to p1
         # noinspection PyTypeChecker
         det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
+        if np.isnan(det_b):
+            det_b = 0.0
 
-        if np.isnan(det_a) or np.isnan(det_b):
-            # print('no plane at:', src_i0, src_j0)
+        if det_a == 0.0 and det_b == 0.0:
+            # Both the triangles do not exist.
             continue
 
         for dst_j in range(dst_j_min, dst_j_max + 1):
             dst_y = dst_y_offset + (dst_j + 0.5) * dst_y_scale
             for dst_i in range(dst_i_min, dst_i_max + 1):
-                dst_x = dst_x_offset + (dst_i + 0.5) * dst_x_scale
 
-                # TODO: use two other combinations,
-                #       if one of the dst_px<n>,dst_py<n> pairs is missing.
+                sentinel = dst_src_ij_images[0, dst_j, dst_i]
+                if not np.isnan(sentinel):
+                    # If we have a source pixel in dst_i, dst_j already,
+                    # there is no need to compute another one.
+                    # One is as good as the other.
+                    continue
+
+                dst_x = dst_x_offset + (dst_i + 0.5) * dst_x_scale
 
                 src_i = src_j = -1
 
