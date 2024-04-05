@@ -8,9 +8,8 @@
     - Function `rectify_dataset()` is now ~2 times faster by early 
       detection of already transformed target pixels.      
     - Added optional keyword argument `rectify_kwargs` to 
-    - `resample_in_space()`.
-      If given, it is spread into keyword arguments passed to the internal 
-      `rectify_dataset()` delegation, if any.
+      `resample_in_space()`. If given, it is spread into keyword arguments 
+      passed to the internal `rectify_dataset()` delegation, if any.
     - Deprecated unused keyword argument `xy_var_names` of 
       function `rectify_dataset()`.
 
