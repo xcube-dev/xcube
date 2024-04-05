@@ -43,7 +43,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_rectify_2x2_to_7x7(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
-        # Add offset to "rad" so it's values do not lie on a plane
+        # Add offset to "rad" so its values do not lie on a plane
         source_ds["rad"] = source_ds.rad + xr.DataArray(
             np.array([[0.0, 0.0], [0.0, 1.0]]), dims=("y", "x")
         )
@@ -80,7 +80,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_rectify_2x2_to_7x7_linear_interpol(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
-        # Add offset to "rad" so it's values do not lie on a plane
+        # Add offset to "rad" so its values do not lie on a plane
         source_ds["rad"] = source_ds.rad + xr.DataArray(
             np.array([[0.0, 0.0], [0.0, 1.0]]), dims=("y", "x")
         )
@@ -120,7 +120,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
     def test_rectify_2x2_to_7x7_bilinear_interpol(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
-        # Add offset to "rad" so it's values do not lie on a plane
+        # Add offset to "rad" so its values do not lie on a plane
         source_ds["rad"] = source_ds.rad + xr.DataArray(
             np.array([[0.0, 0.0], [0.0, 1.0]]), dims=("y", "x")
         )

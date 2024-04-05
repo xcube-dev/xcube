@@ -45,8 +45,8 @@ is shown here:
 ## Algorithm Description
 
 The input to the rectification algorithm is satellite imagery in satellite 
-viewing perspective. In addition, two images - one for each spatial 
-dimension - provide the terrain corrected spatial coordinates.
+viewing perspective. In addition, two images – one for each spatial 
+dimension – provide the terrain corrected spatial coordinates.
 Thus, for each source pixel we have a given spatial coordinate pair *x,y*,
 which is assumed to refer to a source image pixel's center at *i+½,j+½*. 
 The expected algorithm input is:
@@ -58,7 +58,7 @@ The expected algorithm input is:
 
 The output produced by the algorithm is 
 
-* *N* target measurement images retrieved from source measurement images
+* *N* target measurement images generated from source measurement images
   by projection.
 * Target image geometry given as pixel size *Δx=Δy* and the coordinate 
   offset of the upper left target image pixel *x0,y0*. Pixel size and 
@@ -86,7 +86,7 @@ neighbor lookup or by interpolation.
 ![Source coordinates](rectify/source-coords.png)
 
 The true geoid surface is fractal, hence there is no defined "best guess" for 
-any point *P(i+u,j+v)* with *0 ≤ u ≤ 1, 0 ≤ v ≤ 1* in between the given coordinates 
+any point *P(i+u, j+v)* with *0 ≤ u ≤ 1, 0 ≤ v ≤ 1* in between the given coordinates 
 points at *P(i+½, j+½)*. Hence, we use triangulation for its simplicity so 
 that any in-between *P* is found by linear interpolation.
 
@@ -113,9 +113,9 @@ target lookup images.
 After all source pixels have been processed, the resulting target lookup 
 images containing the fractional source pixel indexes, *i + ½ + u* 
 and *j + ½ + v*, can be used to efficiently map a source measurement image 
-*V* into target measurements image. The pixel values of the source
-measurement image are given as *V1 = V(i,j)*, *V2 = V(i+1,j)*,
-*V3 = V(i,j+1)*, and *V4 = V(i+1,j+1)* here and
+*V* into the target measurement image. The pixel values of the source
+measurement image are given as *V1 = V(i, j)*, *V2 = V(i+1, j)*,
+*V3 = V(i ,j+1)*, and *V4 = V(i+1, j+1)* here and
 are represented by different colour values, e.g., measurements such 
 as radiances or reflectances:
 
@@ -132,14 +132,14 @@ The fractions *u,v* can also be used to perform a linear interpolation
 between the three adjacent source measurements pixels that formed
 the original triangle:
 
-*V = VA + u (V2 - V1) + u (V3 - V1)*  
+*V = VA + u (V2 − V1) + u (V3 − V1)*  
 
 Using bilinear interpolation between the four adjacent source 
 measurements pixels:
 
-*V = VA + v (VB - VA)*  
+*V = VA + v (VB − VA)*  
 
 with
 
-*VA = V1 + u (V2 - V1)*  
-*VB = V3 + u (V4 - V3)* 
+*VA = V1 + u (V2 − V1)*  
+*VB = V3 + u (V4 − V3)* 
