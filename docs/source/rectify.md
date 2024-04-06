@@ -15,21 +15,21 @@ The following figure shows a Sentinel-3 OLCI Level-1b scene in its original
 satellite perspective. In addition to the measured reflectances, the data 
 product also provides the latitude and longitude for each pixel as two 
 individual coordinate images. To the right, the absolute value of the 
-gradient vectors  of the latitude and longitude  *|(∇ lon)² + (∇ lat)²|* 
+gradient vectors of the latitude and longitude  *|(∇ lon)² + (∇ lat)²|* 
 are shown:  
 
 <!-- <img src="rectify/olci-input.png" alt="OLCI L1B Input" style="width:60em;display:block;margin-left:auto;margin-right:auto"/> -->
 ![OLCI L1B Input](rectify/olci-input.png)
 
 The given coordinates, latitude and longitude, are _terrain corrected_ with 
-respect to a digital elevation model (DEM) that represents the Earth's geoid.
-Therefore, the gradient vectors are not monotonically varying over the scene, 
-instead they represent the roughness of the geoid surface. Areas of high 
+respect to a digital elevation model (DEM) that approximates the Earth's true fractal
+surface. Therefore, the gradient vectors are not monotonically varying over the scene, 
+instead they represent the roughness of the DEM. Areas of high 
 surface roughness are indicated by the red circles in the figure above.
 The figure below should explain the cause of the effect. 
 
-<!-- <img src="rectify/geoid.png" alt="Geoid" style="width:30em;display:block;margin-left:auto;margin-right:auto"/> -->
-![Geoid](rectify/geoid.png)
+<!-- <img src="rectify/dem.png" alt="Geoid" style="width:30em;display:block;margin-left:auto;margin-right:auto"/> -->
+![DEM](rectify/dem.png)
 
 A _rectification_ is the transformation of satellite imagery from its original 
 viewing geometry into a target geometry that forms a regular grid in a defined 
@@ -68,6 +68,7 @@ The output produced by the algorithm is
   (explained below);
 
 In the following, the CRS of the target and source is assumed to be the same.
+This is not a limitation, see [remarks](#remarks) below.
 
 While the gradient of the coordinate images, *Δx* and *Δy* per pixel, is 
 generally not constant in the source image geometry, we demand that the
@@ -85,10 +86,11 @@ neighbor lookup or by interpolation.
 <!-- <img src="rectify/source-coords.png" alt="Source coordinates" style="width:60em;display:block;margin-left:auto;margin-right:auto"/> -->
 ![Source coordinates](rectify/source-coords.png)
 
-The true geoid surface is fractal, hence there is no defined "best guess" for 
-any point *P(i+u, j+v)* with *0 ≤ u ≤ 1, 0 ≤ v ≤ 1* in between the given coordinates 
-points at *P(i+½, j+½)*. Hence, we use triangulation for its simplicity so 
-that any in-between *P* is found by linear interpolation.
+The true Earth surface is unknown in between any given coordinates 
+points *P(i+½, j+½)* and its neighborhood, and there is no defined "best guess" 
+for any point *P(i+u, j+v)* with *0 ≤ u ≤ 1, 0 ≤ v ≤ 1*. Hence, 
+we use triangulation for its simplicity so that any in-between *P* is 
+found by linear interpolation.
 
 From the coordinates *(P1, P2, P3)* of the first source triangle, the bounding
 box in pixel coordinates in the target image can be exactly determined, 
@@ -143,3 +145,37 @@ with
 
 *VA = V1 + u (V2 − V1)*  
 *VB = V3 + u (V4 − V3)* 
+
+## Limitations
+
+1. Spatial target resolution should be ≥ source resolution, 
+   so that triangles refer to multiple pixels in the target image.
+   - However, if target resolution is much higher than source resolution, 
+     and source is at low resolution, results will be inaccurate, 
+     as curved source pixel boundaries need to be taken into account for 
+     many projections.
+2. If target resolution < source resolution, target bounding boxes refer to single 
+   source pixels.
+   - However, if target resolution is much smaller than source resolution, 
+     it may be advisable to down-sample source images first or to apply 
+     convolution filters, e.g. Gaussian.
+   - The algorithm can easily be adapted to aggregate such pixel values 
+     in the target image.  
+
+## Remarks
+
+The algorithm description assumes that the source CRS and target CRS are
+the same. Different reference systems can be easily and efficiently supported 
+by initially transforming each coordinate *P(i, j) = (x, y)* in the 
+source coordinate images into the desired target CRS, i.e., 
+*P_new = transform_coord(P, CRS_S, CRS_T)*.
+
+If *x, y* are decimal longitude and latitude, and the north or south poles 
+are in the scene, then the algorithm will fail. One can get around this problem
+by transforming all source coordinates to a another suitable CRS first
+or by transforming longitude values *x* into complex numbers and optionally
+normalizing latitudes *y* to the same range from -1 to +1:
+
+*x' = cos(x) + i sin(x)*
+*y' = sin(y)*
+
