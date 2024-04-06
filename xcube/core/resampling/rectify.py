@@ -556,7 +556,6 @@ def _compute_ij_images_for_source_line(
         for dst_j in range(dst_j_min, dst_j_max + 1):
             dst_y = dst_y_offset + (dst_j + 0.5) * dst_y_scale
             for dst_i in range(dst_i_min, dst_i_max + 1):
-
                 sentinel = dst_src_ij_images[0, dst_j, dst_i]
                 if not np.isnan(sentinel):
                     # If we have a source pixel in dst_i, dst_j already,
@@ -738,17 +737,27 @@ def _compute_var_image_for_dest_line(
                 src_i0 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             if v > 0.5:
                 src_j0 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
-            dst_var_image[..., dst_j, dst_i] = src_var_image[..., src_j0, src_i0]
+            dst_var_value = src_var_image[..., src_j0, src_i0]
         elif interpolation == 1:
             # linear
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
-            value_00 = src_var_image[..., src_j0, src_i0]
             value_01 = src_var_image[..., src_j0, src_i1]
             value_10 = src_var_image[..., src_j1, src_i0]
-            dst_var_image[..., dst_j, dst_i] = (
-                value_00 + u * (value_01 - value_00) + v * (value_10 - value_00)
-            )
+            if u + v < 1.0:
+                # Closest triangle
+                value_00 = src_var_image[..., src_j0, src_i0]
+                dst_var_value = (
+                    value_00 + u * (value_01 - value_00) + v * (value_10 - value_00)
+                )
+            else:
+                # Opposite triangle
+                value_11 = src_var_image[..., src_j1, src_i1]
+                dst_var_value = (
+                    value_11
+                    + (1.0 - u) * (value_10 - value_11)
+                    + (1.0 - v) * (value_01 - value_11)
+                )
         else:
             # bilinear
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
@@ -759,7 +768,8 @@ def _compute_var_image_for_dest_line(
             value_11 = src_var_image[..., src_j1, src_i1]
             value_u0 = value_00 + u * (value_01 - value_00)
             value_u1 = value_10 + u * (value_11 - value_10)
-            dst_var_image[..., dst_j, dst_i] = value_u0 + v * (value_u1 - value_u0)
+            dst_var_value = value_u0 + v * (value_u1 - value_u0)
+        dst_var_image[..., dst_j, dst_i] = dst_var_value
 
 
 @nb.njit(

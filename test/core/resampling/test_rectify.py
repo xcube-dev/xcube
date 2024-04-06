@@ -109,8 +109,8 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
                     [_nan_, 1.478, 1.391, _nan_, _nan_, _nan_, _nan_],
                     [_nan_, 1.957, 1.870, 1.784, 1.697, _nan_, _nan_],
                     [_nan_, 2.435, 2.348, 2.261, 2.174, 2.087, 2.000],
-                    [3.000, 2.929, 2.857, 2.786, 2.714, _nan_, _nan_],
-                    [_nan_, 4.000, 3.429, 3.357, _nan_, _nan_, _nan_],
+                    [3.000, 3.000, 3.000, 3.000, 3.000, _nan_, _nan_],
+                    [_nan_, 4.000, 4.000, 4.000, _nan_, _nan_, _nan_],
                     [_nan_, _nan_, 5.000, _nan_, _nan_, _nan_, _nan_],
                 ],
                 dtype=rad.dtype,
@@ -923,7 +923,6 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
 
         target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=None)
         self.assertEqual(None, target_ds.rrs_665.chunks)
-        print(repr(target_ds.rrs_665.values))
         np.testing.assert_almost_equal(
             target_ds.rrs_665.values, expected_data, decimal=3
         )
