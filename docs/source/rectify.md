@@ -90,15 +90,15 @@ The true Earth surface is unknown in between any given coordinates
 points *P(i+½, j+½)* and its neighborhood, and there is no defined "best guess" 
 for any point *P(i+u, j+v)* with *0 ≤ u ≤ 1, 0 ≤ v ≤ 1*. Hence, 
 we use triangulation for its simplicity so that any in-between *P* is 
-found by linear interpolation.
+found by triangular interpolation.
 
 From the coordinates *(P1, P2, P3)* of the first source triangle, the bounding
 box in pixel coordinates in the target image can be exactly determined, 
 because the target grid is regular, *P = x0 + i Δx, y0 - j Δy*, for each 
 target pixel *i,j*, target pixel size *Δx,Δy*, and *x0,y0* being the 
-coordinates of the upper left pixel at *i=½,j=½*. Given *P* and the plane
-given by *(P1, P2, P3)* the parameters *u,v* can be computed according to
-*P = P1 + u (P2 – P1) + v (P3 – P1)*. 
+coordinates of the upper left pixel at *i=½, j=½*. Given *P* and the plane
+given by *(P1, P2, P3)* the parameters *u, v* can be computed from
+triangular interpolation form *P = P1 + u (P2 – P1) + v (P3 – P1)*. 
 If *0 ≤ u ≤ 1, 0 ≤ u ≤ 1, u+v ≤ 1*, then *P* is a point within the 
 triangle. 
 
@@ -119,7 +119,7 @@ and *j + ½ + v*, can be used to efficiently map a source measurement image
 measurement image are given as *V1 = V(i, j)*, *V2 = V(i+1, j)*,
 *V3 = V(i ,j+1)*, and *V4 = V(i+1, j+1)* here and
 are represented by different colour values, e.g., measurements such 
-as radiances or reflectances:
+as radiances, reflectances, or higher level data variables:
 
 <!-- <img src="rectify/algo-3.png" alt="Algorithm #3" style="width:60em;display:block;margin-left:auto;margin-right:auto"/> -->
 ![Algorithm #3](rectify/algo-3.png)
@@ -130,14 +130,15 @@ to:
 
 *V = V2 if u > ½; V3 if v > ½; V1 else*  
 
-The fractions *u,v* can also be used to perform a linear interpolation 
-between the three adjacent source measurements pixels that formed
-the original triangle:
+The fractions *u, v* can also be used to perform the triangular interpolation 
+between the three adjacent source measurements pixels. Note that the *u, v* 
+were found from the three coordinate pairs that formed the original source 
+triangle:
 
 *V = VA + u (V2 − V1) + u (V3 − V1)*  
 
 Using bilinear interpolation between the four adjacent source 
-measurements pixels:
+measurements pixels also takes the fourth source coordinate *P4* into account:
 
 *V = VA + v (VB − VA)*  
 
