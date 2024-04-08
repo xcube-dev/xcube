@@ -135,7 +135,7 @@ between the three adjacent source measurements pixels. Note that the *u, v*
 were found from the three coordinate pairs that formed the original source 
 triangle:
 
-*V = VA + u (V2 − V1) + u (V3 − V1)*  
+*V = VA + u (V2 − V1) + v (V3 − V1)*  
 
 Using bilinear interpolation between the four adjacent source 
 measurements pixels also takes the fourth source coordinate *P4* into account:
