@@ -2,8 +2,8 @@
 
 * Enhanced spatial resampling in module `xcube.core.resampling` (#955): 
     - Added optional keyword argument `interpolation` to function
-      `rectify_dataset()` with values `"nearest"`, `"linear"`, 
-      and `"bilinear"` where `"linear"` interpolates between 3 
+      `rectify_dataset()` with values `"nearest"`, `"triangular"`, 
+      and `"bilinear"` where `"triangular"` interpolates between 3 
       and `"bilinear"` between 4 adjacent source pixels. 
     - Function `rectify_dataset()` is now ~2 times faster by early 
       detection of already transformed target pixels.      
