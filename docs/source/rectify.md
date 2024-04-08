@@ -28,7 +28,7 @@ instead they represent the roughness of the DEM. Areas of high
 surface roughness are indicated by the red circles in the figure above.
 The figure below should explain the cause of the effect. 
 
-<!-- <img src="rectify/dem.png" alt="Geoid" style="width:30em;display:block;margin-left:auto;margin-right:auto"/> -->
+<!-- <img src="rectify/dem.png" alt="DEM" style="width:30em;display:block;margin-left:auto;margin-right:auto"/> -->
 ![DEM](rectify/dem.png)
 
 A _rectification_ is the transformation of satellite imagery from its original 
@@ -144,38 +144,66 @@ measurements pixels:
 with
 
 *VA = V1 + u (V2 − V1)*  
-*VB = V3 + u (V4 − V3)* 
-
-## Limitations
-
-1. Spatial target resolution should be ≥ source resolution, 
-   so that triangles refer to multiple pixels in the target image.
-   - However, if target resolution is much higher than source resolution, 
-     and source is at low resolution, results will be inaccurate, 
-     as curved source pixel boundaries need to be taken into account for 
-     many projections.
-2. If target resolution < source resolution, target bounding boxes refer to single 
-   source pixels.
-   - However, if target resolution is much smaller than source resolution, 
-     it may be advisable to down-sample source images first or to apply 
-     convolution filters, e.g. Gaussian.
-   - The algorithm can easily be adapted to aggregate such pixel values 
-     in the target image.  
+*VB = V3 + u (V4 − V3)*  
 
 ## Remarks
 
-The algorithm description assumes that the source CRS and target CRS are
+**(1)** The target pixel size should be less or equal the source 
+pixel size, so that triangle patches in the source refer to multiple pixels 
+in the target image.
+However, if the target pixel size is distinctly smaller than the source pixel size, 
+and the source has a low spatial resolution, results will be inaccurate, 
+as curved source pixel boundaries need to be taken into account for 
+many projections.
+
+**(2)** If the target pixel size is greater than the source pixel size, target 
+bounding boxes refer to single source pixels only.
+However, if the target pixel size is distinctly larger than the source pixel size, 
+a prepended down-sampling or convolution of source images should be taken into 
+account, e.g., using a Gaussian filter. Note, the algorithm can also be easily 
+adapted to aggregate values of source pixels that refer to same target pixels.  
+
+**(3)** The algorithm description assumes that the source CRS and target CRS be
 the same. Different reference systems can be easily and efficiently supported 
 by initially transforming each coordinate *P(i, j) = (x, y)* in the 
 source coordinate images into the desired target CRS, i.e., 
 *P_new = transform_coord(P, CRS_S, CRS_T)*.
 
-If *x, y* are decimal longitude and latitude, and the north or south poles 
-are in the scene, then the algorithm will fail. One can get around this problem
-by transforming all source coordinates to a another suitable CRS first
+**(4)** If *x, y* are decimal longitude and latitude, and the north or south poles 
+are in the scene, than the algorithm will fail. One can get around this problem
+by transforming source coordinates into a another suitable CRS first
 or by transforming longitude values *x* into complex numbers and optionally
 normalizing latitudes *y* to the same range from -1 to +1:
 
-*x' = cos(x) + i sin(x)*
-*y' = sin(y)*
+*x' = cos(x) + i sin(x)*  
+*y' = 2y / π  
+
+**(5)** The algorithm can be rewritten to use bilinear surface patches comprising 
+the adjacent four coordinates *(P1, P2, P2, P4)* instead of two triangles.
+The bilinear interpolation between the four coordinates is
+
+*PA = P2 + u (P2 − P1)*  
+*PB = P3 + u (P4 − P3)*  
+*P = PA + v (BB − PA)*  
+
+Given that *P* is a known point on that surface the above can be rewritten as the two 
+equations in *u* and *v*
+
+*0 = a + u b + v c + u v d*  
+*0 = e + u f + v g + u v h*
+
+with the solutions for *u* and *v* (from [Wolfram Alpha](https://www.wolframalpha.com/input?i2d=true&i=0+%3D+a+%2B+u+*+b+%2B+v+*+c+%2B+u+*+v+*+d%5C%2844%29+0+%3D+e+%2B+u+*+f+%2B+v+*+g+%2B+u+*+v+*+h+for+u%5C%2844%29+v)):
+
+![solve-bilinear](rectify/solve-bilinear.png)
+
+and with the differences
+
+*a = P1.x − P.x*  
+*b = P2.x − P1.x*  
+*c = P3.x − P1.x*  
+*d = P4.x − P3.x*  
+*e = P1.y − P.y*  
+*f = P2.y − P1.y*  
+*g = P3.y − P1.y*  
+*h = P4.y − P3.y*  
 
