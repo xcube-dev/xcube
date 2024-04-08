@@ -20,6 +20,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 from typing import Mapping, Optional, Sequence, Tuple, Union
+import warnings
 
 import dask.array as da
 import numba as nb
@@ -32,12 +33,14 @@ from xcube.util.dask import compute_array_from_func
 from .cf import maybe_encode_grid_mapping
 
 
+_INTERPOLATIONS = {"nearest": 0, "triangular": 1, "bilinear": 2}
+
+
 def rectify_dataset(
     source_ds: xr.Dataset,
     *,
     var_names: Union[str, Sequence[str]] = None,
     source_gm: GridMapping = None,
-    xy_var_names: Tuple[str, str] = None,
     target_gm: GridMapping = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
@@ -46,6 +49,8 @@ def rectify_dataset(
     output_ij_names: Tuple[str, str] = None,
     compute_subset: bool = True,
     uv_delta: float = 1e-3,
+    interpolation: Optional[str] = None,
+    xy_var_names: Tuple[str, str] = None,
 ) -> Optional[xr.Dataset]:
     """Reproject dataset *source_ds* using its per-pixel
     x,y coordinates or the given *source_gm*.
@@ -76,8 +81,6 @@ def rectify_dataset(
         source_ds: Source dataset grid mapping.
         var_names: Optional variable name or sequence of variable names.
         source_gm: Source dataset grid mapping.
-        xy_var_names: Optional tuple of the x- and y-coordinate
-            variables in *source_ds*. Ignored if *source_gm* is given.
         target_gm: Optional target geometry. If not given, output
             geometry will be computed to spatially fit *dataset* and to
             retain its spatial resolution.
@@ -99,11 +102,27 @@ def rectify_dataset(
             x,y coordinates in the output are contained in the triangles
             defined by the input x,y coordinates. The higher this value,
             the more inaccurate the rectification will be.
+        interpolation: Interpolation method for computing output pixels.
+            If given, must be "nearest", "triangular", or "bilinear".
+            The default is "nearest". The "triangular" interpolation is
+            performed between 3 and "bilinear" between 4 adjacent source
+            pixels. Both are applied only to variables of
+            floating point type. If you need to interpolate between
+            integer data you should cast it to float first.
+        xy_var_names: Deprecated. No longer used since 1.0.0,
+            no replacement.
 
     Returns:
         a reprojected dataset, or None if the requested output does not
         intersect with *dataset*.
     """
+    if xy_var_names:
+        warnings.warn(
+            "argument 'xy_var_names' has been deprecated in 1.4.2"
+            " and may be removed anytime.",
+            category=DeprecationWarning,
+        )
+
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
 
@@ -122,24 +141,17 @@ def rectify_dataset(
         if source_ds_subset is None:
             return None
         if source_ds_subset is not source_ds:
-            # TODO: GridMapping.from_dataset() may be expensive.
-            #   Find a more effective way.
             source_gm = GridMapping.from_dataset(source_ds_subset)
             source_ds = source_ds_subset
-
-    # if src_geo_coding.xy_var_names != output_geom.xy_var_names:
-    #     output_geom = output_geom.derive(
-    #           xy_var_names=src_geo_coding.xy_var_names
-    #     )
-    # if src_geo_coding.xy_dim_names != output_geom.xy_dim_names:
-    #     output_geom = output_geom.derive(
-    #           xy_dim_names=src_geo_coding.xy_dim_names
-    #     )
 
     if tile_size is not None or is_j_axis_up is not None:
         target_gm = target_gm.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)
 
     src_vars = _select_variables(source_ds, source_gm, var_names)
+
+    interpolation_mode = _INTERPOLATIONS.get(interpolation or "nearest")
+    if interpolation_mode is None:
+        raise ValueError(f"invalid interpolation: {interpolation!r}")
 
     if target_gm.is_tiled:
         compute_dst_src_ij_images = _compute_ij_images_xarray_dask
@@ -159,14 +171,21 @@ def rectify_dataset(
         dst_var_coords = {
             d: src_var.coords[d] for d in dst_var_dims if d in src_var.coords
         }
+        # noinspection PyTypeChecker
         dst_var_coords.update(
             {d: dst_ds_coords[d] for d in dst_var_dims if d in dst_ds_coords}
         )
         dst_var_array = compute_dst_var_image(
-            src_var, dst_src_ij_array, fill_value=np.nan
+            src_var,
+            dst_src_ij_array,
+            fill_value=np.nan,
+            interpolation=interpolation_mode,
         )
         dst_var = xr.DataArray(
-            dst_var_array, dims=dst_var_dims, coords=dst_var_coords, attrs=src_var.attrs
+            dst_var_array,
+            dims=dst_var_dims,
+            coords=dst_var_coords,
+            attrs=src_var.attrs,
         )
         dst_vars[src_var_name] = dst_var
 
@@ -224,8 +243,8 @@ def _select_variables(
         if not _is_2d_spatial_var(src_var, spatial_shape, spatial_dims):
             raise ValueError(
                 f"cannot rectify variable {var_name!r}"
-                f" as its shape or dimensions "
-                f"do not match those of {spatial_var_names[0]!r}"
+                f" as its shape or dimensions"
+                f" do not match those of {spatial_var_names[0]!r}"
                 f" and {spatial_var_names[1]!r}"
             )
         src_vars[var_name] = src_var
@@ -250,7 +269,6 @@ def _compute_ij_images_xarray_numpy(
     dst_y_offset = output_geom.y_min if output_geom.is_j_axis_up else output_geom.y_max
     dst_x_scale = output_geom.x_res
     dst_y_scale = output_geom.y_res if output_geom.is_j_axis_up else -output_geom.y_res
-    # TODO: GridMapping: this will cause out-of-memory problems!
     x_values, y_values = src_geo_coding.xy_coords.values
     _compute_ij_images_numpy_parallel(
         x_values,
@@ -520,32 +538,47 @@ def _compute_ij_images_for_source_line(
             dst_j_max = dst_height - 1
 
         # u from p0 right to p1, v from p0 down to p2
+        # noinspection PyTypeChecker
         det_a = _fdet(dst_p0x, dst_p0y, dst_p1x, dst_p1y, dst_p2x, dst_p2y)
-        # u from p3 left to p2, v from p3 up to p1
-        det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
+        if np.isnan(det_a):
+            det_a = 0.0
 
-        if np.isnan(det_a) or np.isnan(det_b):
-            # print('no plane at:', src_i0, src_j0)
+        # u from p3 left to p2, v from p3 up to p1
+        # noinspection PyTypeChecker
+        det_b = _fdet(dst_p3x, dst_p3y, dst_p2x, dst_p2y, dst_p1x, dst_p1y)
+        if np.isnan(det_b):
+            det_b = 0.0
+
+        if det_a == 0.0 and det_b == 0.0:
+            # Both the triangles do not exist.
             continue
 
         for dst_j in range(dst_j_min, dst_j_max + 1):
             dst_y = dst_y_offset + (dst_j + 0.5) * dst_y_scale
             for dst_i in range(dst_i_min, dst_i_max + 1):
-                dst_x = dst_x_offset + (dst_i + 0.5) * dst_x_scale
+                sentinel = dst_src_ij_images[0, dst_j, dst_i]
+                if not np.isnan(sentinel):
+                    # If we have a source pixel in dst_i, dst_j already,
+                    # there is no need to compute another one.
+                    # One is as good as the other.
+                    continue
 
-                # TODO: use two other combinations,
-                #       if one of the dst_px<n>,dst_py<n> pairs is missing.
+                dst_x = dst_x_offset + (dst_i + 0.5) * dst_x_scale
 
                 src_i = src_j = -1
 
                 if det_a != 0.0:
+                    # noinspection PyTypeChecker
                     u = _fu(dst_x, dst_y, dst_p0x, dst_p0y, dst_p2x, dst_p2y) / det_a
+                    # noinspection PyTypeChecker
                     v = _fv(dst_x, dst_y, dst_p0x, dst_p0y, dst_p1x, dst_p1y) / det_a
                     if u >= u_min and v >= v_min and u + v <= uv_max:
                         src_i = src_i0 + _fclamp(u, 0.0, 1.0)
                         src_j = src_j0 + _fclamp(v, 0.0, 1.0)
                 if src_i == -1 and det_b != 0.0:
+                    # noinspection PyTypeChecker
                     u = _fu(dst_x, dst_y, dst_p3x, dst_p3y, dst_p1x, dst_p1y) / det_b
+                    # noinspection PyTypeChecker
                     v = _fv(dst_x, dst_y, dst_p3x, dst_p3y, dst_p2x, dst_p2y) / det_b
                     if u >= u_min and v >= v_min and u + v <= uv_max:
                         src_i = src_i1 - _fclamp(u, 0.0, 1.0)
@@ -559,17 +592,21 @@ def _compute_var_image_xarray_numpy(
     src_var: xr.DataArray,
     dst_src_ij_images: np.ndarray,
     fill_value: Union[int, float, complex] = np.nan,
+    interpolation: int = 0,
 ) -> np.ndarray:
     """Extract source pixels from xarray.DataArray source
     with numpy.ndarray data.
     """
-    return _compute_var_image_numpy(src_var.values, dst_src_ij_images, fill_value)
+    return _compute_var_image_numpy(
+        src_var.values, dst_src_ij_images, fill_value, interpolation
+    )
 
 
 def _compute_var_image_xarray_dask(
     src_var: xr.DataArray,
     dst_src_ij_images: np.ndarray,
     fill_value: Union[int, float, complex] = np.nan,
+    interpolation: int = 0,
 ) -> da.Array:
     """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
@@ -579,6 +616,7 @@ def _compute_var_image_xarray_dask(
         src_var.values,
         dst_src_ij_images,
         fill_value,
+        interpolation,
         dtype=src_var.dtype,
         drop_axis=0,
     )
@@ -588,7 +626,8 @@ def _compute_var_image_xarray_dask(
 def _compute_var_image_numpy(
     src_var: np.ndarray,
     dst_src_ij_images: np.ndarray,
-    fill_value: Union[int, float, complex] = np.nan,
+    fill_value: Union[int, float, complex],
+    interpolation: int,
 ) -> np.ndarray:
     """Extract source pixels from numpy.ndarray source
     with numba in parallel mode.
@@ -597,7 +636,9 @@ def _compute_var_image_numpy(
     dst_height = dst_src_ij_images.shape[-2]
     dst_shape = src_var.shape[:-2] + (dst_height, dst_width)
     dst_values = np.full(dst_shape, fill_value, dtype=src_var.dtype)
-    _compute_var_image_numpy_parallel(src_var, dst_src_ij_images, dst_values)
+    _compute_var_image_numpy_parallel(
+        src_var, dst_src_ij_images, dst_values, interpolation
+    )
     return dst_values
 
 
@@ -605,7 +646,8 @@ def _compute_var_image_numpy(
 def _compute_var_image_xarray_dask_block(
     src_var_image: np.ndarray,
     dst_src_ij_images: np.ndarray,
-    fill_value: Union[int, float, complex] = np.nan,
+    fill_value: Union[int, float, complex],
+    interpolation: int,
 ) -> np.ndarray:
     """Extract source pixels from np.ndarray source
     and return a block of a dask array.
@@ -614,13 +656,18 @@ def _compute_var_image_xarray_dask_block(
     dst_height = dst_src_ij_images.shape[-2]
     dst_shape = src_var_image.shape[:-2] + (dst_height, dst_width)
     dst_values = np.full(dst_shape, fill_value, dtype=src_var_image.dtype)
-    _compute_var_image_numpy_sequential(src_var_image, dst_src_ij_images, dst_values)
+    _compute_var_image_numpy_sequential(
+        src_var_image, dst_src_ij_images, dst_values, interpolation
+    )
     return dst_values
 
 
 @nb.njit(nogil=True, parallel=True, cache=True)
 def _compute_var_image_numpy_parallel(
-    src_var_image: np.ndarray, dst_src_ij_images: np.ndarray, dst_var_image: np.ndarray
+    src_var_image: np.ndarray,
+    dst_src_ij_images: np.ndarray,
+    dst_var_image: np.ndarray,
+    interpolation: int,
 ):
     """Extract source pixels from np.ndarray source
     using numba parallel mode.
@@ -628,7 +675,11 @@ def _compute_var_image_numpy_parallel(
     dst_height = dst_var_image.shape[-2]
     for dst_j in nb.prange(dst_height):
         _compute_var_image_for_dest_line(
-            dst_j, src_var_image, dst_src_ij_images, dst_var_image
+            dst_j,
+            src_var_image,
+            dst_src_ij_images,
+            dst_var_image,
+            interpolation,
         )
 
 
@@ -636,7 +687,10 @@ def _compute_var_image_numpy_parallel(
 # and nb.prange, we end up in infinite JIT compilation :(
 @nb.njit(nogil=True, cache=True)
 def _compute_var_image_numpy_sequential(
-    src_var_image: np.ndarray, dst_src_ij_images: np.ndarray, dst_var_image: np.ndarray
+    src_var_image: np.ndarray,
+    dst_src_ij_images: np.ndarray,
+    dst_var_image: np.ndarray,
+    interpolation: int,
 ):
     """Extract source pixels from np.ndarray source
     NOT using numba parallel mode.
@@ -644,7 +698,7 @@ def _compute_var_image_numpy_sequential(
     dst_height = dst_var_image.shape[-2]
     for dst_j in range(dst_height):
         _compute_var_image_for_dest_line(
-            dst_j, src_var_image, dst_src_ij_images, dst_var_image
+            dst_j, src_var_image, dst_src_ij_images, dst_var_image, interpolation
         )
 
 
@@ -654,6 +708,7 @@ def _compute_var_image_for_dest_line(
     src_var_image: np.ndarray,
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
+    interpolation: int,
 ):
     """Extract source pixels from *src_values* np.ndarray
     and write into dst_values np.ndarray.
@@ -670,16 +725,51 @@ def _compute_var_image_for_dest_line(
         src_j_f = dst_src_ij_images[1, dst_j, dst_i]
         if np.isnan(src_i_f) or np.isnan(src_j_f):
             continue
-        # Note int() is 2x faster than math.floor() and should yield the same results for only positive i,j.
-        src_i = int(src_i_f)
-        src_j = int(src_j_f)
-        u = src_i_f - src_i
-        v = src_j_f - src_j
-        if u > 0.5:
-            src_i = _iclamp(src_i + 1, src_i_min, src_i_max)
-        if v > 0.5:
-            src_j = _iclamp(src_j + 1, src_j_min, src_j_max)
-        dst_var_image[..., dst_j, dst_i] = src_var_image[..., src_j, src_i]
+        # Note int() is 2x faster than math.floor() and
+        # should yield the same results for only positive i,j.
+        src_i0 = int(src_i_f)
+        src_j0 = int(src_j_f)
+        u = src_i_f - src_i0
+        v = src_j_f - src_j0
+        if interpolation == 0:
+            # interpolation == "nearest"
+            if u > 0.5:
+                src_i0 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
+            if v > 0.5:
+                src_j0 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
+            dst_var_value = src_var_image[..., src_j0, src_i0]
+        elif interpolation == 1:
+            # interpolation == "triangular"
+            src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
+            src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
+            value_01 = src_var_image[..., src_j0, src_i1]
+            value_10 = src_var_image[..., src_j1, src_i0]
+            if u + v < 1.0:
+                # Closest triangle
+                value_00 = src_var_image[..., src_j0, src_i0]
+                dst_var_value = (
+                    value_00 + u * (value_01 - value_00) + v * (value_10 - value_00)
+                )
+            else:
+                # Opposite triangle
+                value_11 = src_var_image[..., src_j1, src_i1]
+                dst_var_value = (
+                    value_11
+                    + (1.0 - u) * (value_10 - value_11)
+                    + (1.0 - v) * (value_01 - value_11)
+                )
+        else:
+            # interpolation == "bilinear"
+            src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
+            src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
+            value_00 = src_var_image[..., src_j0, src_i0]
+            value_01 = src_var_image[..., src_j0, src_i1]
+            value_10 = src_var_image[..., src_j1, src_i0]
+            value_11 = src_var_image[..., src_j1, src_i1]
+            value_u0 = value_00 + u * (value_01 - value_00)
+            value_u1 = value_10 + u * (value_11 - value_10)
+            dst_var_value = value_u0 + v * (value_u1 - value_u0)
+        dst_var_image[..., dst_j, dst_i] = dst_var_value
 
 
 @nb.njit(
