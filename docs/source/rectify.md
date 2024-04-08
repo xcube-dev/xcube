@@ -185,7 +185,7 @@ The bilinear interpolation between the four coordinates is
 
 *PA = P2 + u (P2 − P1)*  
 *PB = P3 + u (P4 − P3)*  
-*P = PA + v (BB − PA)*  
+*P = PA + v (PB − PA)*  
 
 Given that *P* is a known point on that surface the above can be rewritten as the two 
 equations in *u* and *v*
