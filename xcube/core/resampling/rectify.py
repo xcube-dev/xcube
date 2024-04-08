@@ -33,7 +33,7 @@ from xcube.util.dask import compute_array_from_func
 from .cf import maybe_encode_grid_mapping
 
 
-_INTERPOLATIONS = {"nearest": 0, "linear": 1, "bilinear": 2}
+_INTERPOLATIONS = {"nearest": 0, "triangular": 1, "bilinear": 2}
 
 
 def rectify_dataset(
@@ -103,8 +103,8 @@ def rectify_dataset(
             defined by the input x,y coordinates. The higher this value,
             the more inaccurate the rectification will be.
         interpolation: Interpolation method for computing output pixels.
-            If given, must be "nearest", "linear", or "bilinear".
-            The default is "nearest". The "linear" interpolation is
+            If given, must be "nearest", "triangular", or "bilinear".
+            The default is "nearest". The "triangular" interpolation is
             performed between 3 and "bilinear" between 4 adjacent source
             pixels. Both are applied only to variables of
             floating point type. If you need to interpolate between
@@ -732,14 +732,14 @@ def _compute_var_image_for_dest_line(
         u = src_i_f - src_i0
         v = src_j_f - src_j0
         if interpolation == 0:
-            # nearest
+            # interpolation == "nearest"
             if u > 0.5:
                 src_i0 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             if v > 0.5:
                 src_j0 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             dst_var_value = src_var_image[..., src_j0, src_i0]
         elif interpolation == 1:
-            # linear
+            # interpolation == "triangular"
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             value_01 = src_var_image[..., src_j0, src_i1]
@@ -759,7 +759,7 @@ def _compute_var_image_for_dest_line(
                     + (1.0 - v) * (value_01 - value_11)
                 )
         else:
-            # bilinear
+            # interpolation == "bilinear"
             src_i1 = _iclamp(src_i0 + 1, src_i_min, src_i_max)
             src_j1 = _iclamp(src_j0 + 1, src_j_min, src_j_max)
             value_00 = src_var_image[..., src_j0, src_i0]

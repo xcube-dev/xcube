@@ -78,7 +78,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
             ),
         )
 
-    def test_rectify_2x2_to_7x7_linear_interpol(self):
+    def test_rectify_2x2_to_7x7_triangular_interpol(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
         # Add offset to "rad" so its values do not lie on a plane
         source_ds["rad"] = source_ds.rad + xr.DataArray(
@@ -90,7 +90,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
         target_ds = rectify_dataset(
-            source_ds, target_gm=target_gm, interpolation="linear"
+            source_ds, target_gm=target_gm, interpolation="triangular"
         )
 
         lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
