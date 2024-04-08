@@ -193,7 +193,7 @@ equations in *u* and *v*
 *0 = a + u b + v c + u v d*  
 *0 = e + u f + v g + u v h*
 
-with the solutions for *u* and *v* (from [Wolfram Alpha](https://www.wolframalpha.com/input?i2d=true&i=0+%3D+a+%2B+u+*+b+%2B+v+*+c+%2B+u+*+v+*+d%5C%2844%29+0+%3D+e+%2B+u+*+f+%2B+v+*+g+%2B+u+*+v+*+h+for+u%5C%2844%29+v)):
+with the solutions for *u* and *v* (from Wolfram|Alpha¹):
 
 ![solve-bilinear](rectify/solve-bilinear.png)
 
@@ -208,3 +208,6 @@ and with the differences
 *g = P3.y − P1.y*  
 *h = P4.y − P3.y*  
 
+
+¹ Wolfram Alpha LLC, 2024. Wolfram|Alpha. https://www.wolframalpha.com/input?i2d=true&i=0+%3D+a+%2B+u+*+b+%2B+v+*+c+%2B+u+*+v+*+d%5C%2844%29+0+%3D+e+%2B+u+*+f+%2B+v+*+g+%2B+u+*+v+*+h+for+u%5C%2844%29+v 
+(access April 8, 2024).
