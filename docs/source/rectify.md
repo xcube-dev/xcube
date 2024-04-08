@@ -176,7 +176,7 @@ or by transforming longitude values *x* into complex numbers and optionally
 normalizing latitudes *y* to the same range from -1 to +1:
 
 *x' = cos(x) + i sin(x)*  
-*y' = 2y / π  
+*y' = 2y / π*  
 
 **(5)** The algorithm can be rewritten to use bilinear surface patches comprising 
 the adjacent four coordinates *(P1, P2, P2, P4)* instead of two triangles.
