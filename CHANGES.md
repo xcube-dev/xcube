@@ -1,4 +1,4 @@
-## Changes in 1.4.2 (in development)
+## Changes in 1.5.0
 
 * Enhanced spatial resampling in module `xcube.core.resampling` (#955): 
     - Added optional keyword argument `interpolation` to function
