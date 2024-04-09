@@ -200,6 +200,20 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
             ),
         )
 
+    def test_rectify_2x2_to_7x7_ij_only(self):
+        source_ds = self.new_2x2_dataset_with_irregular_coords()
+        source_ds = source_ds.drop_vars("rad")
+
+        target_gm = GridMapping.regular(
+            size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
+        )
+
+        target_ds = rectify_dataset(
+            source_ds, target_gm=target_gm, output_ij_names=("source_i", "source_j")
+        )
+
+        self.assertEqual({"source_i", "source_j"}, set(target_ds.data_vars.keys()))
+
     def test_rectify_2x2_to_7x7_deprecations(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
 
