@@ -80,7 +80,8 @@ source pixel *i,j*, collect the spatial coordinates *P = x,y*, span
 two triangles between four adjacent coordinates,
 *(P1, P2, P3)* and *(P2, P4, P3)*, and "paint" fractional source pixel
 coordinates into a new target lookup image. The lookup image can than be used 
-to retrieve the source pixel values for a target image, either by nearest 
+to retrieve the pixel values from a source measurement image for a given pixel
+of the corresponding target measurement image, either by nearest 
 neighbor lookup or by interpolation. 
 
 <!-- <img src="rectify/source-coords.png" alt="Source coordinates" style="width:60em;display:block;margin-left:auto;margin-right:auto"/> -->
@@ -88,7 +89,7 @@ neighbor lookup or by interpolation.
 
 The true Earth surface is unknown in between any given coordinates 
 points *P(i+½, j+½)* and its neighborhood, and there is no defined "best guess" 
-for any point *P(i+u, j+v)* with *0 ≤ u ≤ 1, 0 ≤ v ≤ 1*. Hence, 
+for any point *P(i+u, j+v)* with *0 ≤ u ≤ 1* and *0 ≤ v ≤ 1*. Hence, 
 we use triangulation for its simplicity so that any in-between *P* is 
 found by triangular interpolation.
 

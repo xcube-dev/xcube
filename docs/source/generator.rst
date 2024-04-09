@@ -1,10 +1,10 @@
-The xcube generator
-===================
+Cube Generator
+==============
 
 Introduction
 ------------
 
-The *generator* is an xcube feature which allows users to create,
+The *cube generator* is an xcube feature which allows users to create,
 manipulate, and write xcube datasets according to a supplied
 configuration. The same configuration can be used to generate a dataset
 on the user's local computer or remotely, using an online server.

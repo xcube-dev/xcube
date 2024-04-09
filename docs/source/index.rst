@@ -25,17 +25,17 @@ cubes from EO data.
    viewer
    dataaccess
    generator
+   plugins
 
 .. toctree::
    :caption: Other Resources
    :maxdepth: 1
 
-   cubespec
-   mldatasets
-   storeconv
-   devguide
-   plugins
-   rectify
+   Dataset Convention <cubespec>
+   Multi-Resolution Datasets <mldatasets>
+   Data Store Conventions <storeconv>
+   Spatial Rectification <rectify>
+   Developer Guide <devguide>
 
 
 Indices and tables
