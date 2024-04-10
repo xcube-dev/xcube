@@ -1,3 +1,7 @@
+## Changes in 1.5.1
+
+* Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
+
 ## Changes in 1.5.0
 
 * Enhanced spatial resampling in module `xcube.core.resampling` (#955): 
