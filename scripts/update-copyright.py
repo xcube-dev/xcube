@@ -45,8 +45,6 @@ def _update_copyright(file_path: str, header_lines: list[str], prefix: str):
             f.writelines(lines[old_header_size:])
         if old_header_size == 0:
             print("Added missing CR header: ", file_path)
-        else:
-            exit(0)
     else:
         print("Not a CR header: ", file_path)
 

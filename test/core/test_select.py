@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import itertools
 import json
 import math
@@ -452,7 +456,6 @@ def new_virtual_dataset(
 
 
 class VirtualChunkStore(MutableMapping):
-
     def __init__(self, entries: Dict[str, bytes] = None):
         if entries:
             self._entries: Dict[str, bytes] = dict(entries)
@@ -516,7 +519,6 @@ class VirtualChunkStore(MutableMapping):
         values: np.ndarray,
         attrs: Dict[str, Any] = None,
     ) -> Dict[str, bytes]:
-
         zarray = {
             "zarr_format": 2,
             "chunks": list(values.shape),

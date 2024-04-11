@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -81,7 +85,6 @@ class UpdateVariablePropsTest(unittest.TestCase):
 
 
 class UpdateGlobalAttributesTest(unittest.TestCase):
-
     @staticmethod
     def _create_coords():
         num_lons = 8
@@ -427,32 +430,22 @@ class UpdateGlobalAttributesTest(unittest.TestCase):
 
 
 class UpdateDatasetChunkEncodingTest(unittest.TestCase):
-
     def test_update_dataset_chunk_encoding_data_vars_only(self):
         cube = update_dataset_chunk_encoding(
             new_cube(
                 time_periods=5,
                 time_freq="1D",
                 time_start="2019-01-01",
-                variables=dict(
-                    precipitation=0.1,
-                    temperature=270.5,
-                    soil_moisture=0.2),
+                variables=dict(precipitation=0.1, temperature=270.5, soil_moisture=0.2),
             ),
             chunk_sizes=dict(time=1, lat=90, lon=90),
             format_name="zarr",
             in_place=False,
-            data_vars_only=True
+            data_vars_only=True,
         )
-        self.assertEqual(
-            {"chunks": (1, 90, 90)}, cube.precipitation.encoding
-        )
-        self.assertEqual(
-            {"chunks": (1, 90, 90)}, cube.temperature.encoding
-        )
-        self.assertEqual(
-            {"chunks": (1, 90, 90)}, cube.soil_moisture.encoding
-        )
+        self.assertEqual({"chunks": (1, 90, 90)}, cube.precipitation.encoding)
+        self.assertEqual({"chunks": (1, 90, 90)}, cube.temperature.encoding)
+        self.assertEqual({"chunks": (1, 90, 90)}, cube.soil_moisture.encoding)
         self.assertEqual({}, cube.lat.encoding)
         self.assertEqual({}, cube.lon.encoding)
         self.assertEqual({}, cube.lat.encoding)

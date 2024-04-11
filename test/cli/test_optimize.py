@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from test.cli.helpers import CliDataTest
 from test.core.test_optimize import (
     TEST_CUBE,
@@ -62,7 +66,6 @@ class OptimizeDataTest(CliDataTest):
 
 
 class OptimizeTest(CliDataTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["optimize", "--help"])
         self.assertEqual(0, result.exit_code)

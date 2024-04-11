@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 import time
 import unittest
@@ -148,7 +152,6 @@ class PyramidTest(unittest.TestCase):
         expected_shapes,
         expected_chunks,
     ):
-
         input_path = get_path("pyramid-input.zarr")
         output_path = get_path("pyramid-output")
 

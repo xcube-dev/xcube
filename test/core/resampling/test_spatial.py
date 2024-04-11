@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -13,7 +17,6 @@ nan = np.nan
 
 
 class ResampleInSpaceTest(unittest.TestCase):
-
     def test_affine_transform_dataset(self):
         source_ds = new_cube(variables={"CHL": 10.0, "TSM": 8.5})
         source_gm = GridMapping.from_dataset(source_ds)

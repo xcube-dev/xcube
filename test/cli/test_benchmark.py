@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 import unittest
 
@@ -6,7 +10,6 @@ from test.cli.helpers import CliDataTest
 
 @unittest.skip("Very slow tests, execute on demand only")
 class BenchmarkCliTest(CliDataTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["benchmark", "--help"])
         self.assertEqual(0, result.exit_code)

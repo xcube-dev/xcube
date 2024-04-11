@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import json
 import unittest
 
@@ -8,7 +12,6 @@ from xcube.core.gen2.config import OutputConfig
 
 
 class InputConfigTest(unittest.TestCase):
-
     def test_from_dict(self):
         json_instance = dict(store_id="sentinelhub", data_id="S2L2A")
         input_config = InputConfig.from_dict(json_instance)
@@ -28,7 +31,6 @@ class InputConfigTest(unittest.TestCase):
 
 
 class OutputConfigTest(unittest.TestCase):
-
     def test_from_dict(self):
         json_instance = dict(store_id="s3", data_id="CHL.zarr")
         output_config = OutputConfig.get_schema().from_instance(json_instance)
@@ -48,7 +50,6 @@ class OutputConfigTest(unittest.TestCase):
 
 
 class CubeConfigTest(unittest.TestCase):
-
     def test_from_dict(self):
         json_instance = dict(
             variable_names=["B03", "B04"],
@@ -134,7 +135,6 @@ class CubeConfigTest(unittest.TestCase):
 
 
 class CallbackConfigTest(unittest.TestCase):
-
     def test_to_dict(self):
         with self.assertRaises(ValueError) as e:
             CallbackConfig()

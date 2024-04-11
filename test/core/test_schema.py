@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -11,7 +15,6 @@ from xcube.core.schema import get_dataset_xy_var_names
 
 
 class CubeSchemaTest(unittest.TestCase):
-
     def test_new(self):
         cube = new_cube(variables=dict(a=2, b=3, c=4))
         schema = CubeSchema.new(cube)
@@ -208,7 +211,6 @@ class CubeSchemaTest(unittest.TestCase):
 
 
 class GetDatasetChunksTest(unittest.TestCase):
-
     def test_empty_dataset(self):
         dataset = xr.Dataset()
         self.assertEqual({}, get_dataset_chunks(dataset))
@@ -245,7 +247,6 @@ class GetDatasetChunksTest(unittest.TestCase):
 
 
 class GetDatasetXYVarNamesTest(unittest.TestCase):
-
     def test_find_by_cf_standard_name_attr(self):
         dataset = xr.Dataset(
             coords=dict(
@@ -260,7 +261,6 @@ class GetDatasetXYVarNamesTest(unittest.TestCase):
         self.assertEqual(("u", "v"), get_dataset_xy_var_names(dataset))
 
     def test_find_by_cf_long_name_attr(self):
-
         dataset = xr.Dataset(
             coords=dict(
                 u=xr.DataArray(
@@ -282,7 +282,6 @@ class GetDatasetXYVarNamesTest(unittest.TestCase):
         self.assertEqual(("a", "b"), get_dataset_xy_var_names(dataset))
 
     def test_find_by_var_name(self):
-
         dataset = xr.Dataset(
             coords=dict(
                 x=xr.DataArray([1, 2, 3]),

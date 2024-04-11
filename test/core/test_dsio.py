@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 import os.path
 import unittest
@@ -72,7 +76,6 @@ class OpenWriteDatasetTest(unittest.TestCase):
             np.testing.assert_array_equal(ds.lon.values, self.dataset.lon.values)
 
     def test_write_dataset(self):
-
         dataset = new_cube()
         try:
             write_dataset(dataset, TEST_NC_FILE_2)
@@ -84,7 +87,6 @@ class OpenWriteDatasetTest(unittest.TestCase):
 
 # noinspection PyAbstractClass
 class MyDatasetIO(DatasetIO):
-
     def __init__(self):
         super().__init__("test")
 
@@ -105,7 +107,6 @@ class MyDatasetIO(DatasetIO):
 
 
 class DatasetIOTest(unittest.TestCase):
-
     def test_read_raises(self):
         ds_io = MyDatasetIO()
         with self.assertRaises(NotImplementedError):
@@ -143,7 +144,6 @@ class DatasetIOTest(unittest.TestCase):
 
 
 class MemDatasetIOTest(unittest.TestCase):
-
     def test_props(self):
         ds_io = MemDatasetIO()
         self.assertEqual("mem", ds_io.name)
@@ -207,7 +207,6 @@ class MemDatasetIOTest(unittest.TestCase):
 
 
 class Netcdf4DatasetIOTest(unittest.TestCase):
-
     def test_props(self):
         ds_io = Netcdf4DatasetIO()
         self.assertEqual("netcdf4", ds_io.name)
@@ -246,7 +245,6 @@ class Netcdf4DatasetIOTest(unittest.TestCase):
 
 
 class ZarrDatasetIOTest(unittest.TestCase):
-
     def test_props(self):
         ds_io = ZarrDatasetIO()
         self.assertEqual("zarr", ds_io.name)
@@ -283,7 +281,6 @@ class ZarrDatasetIOTest(unittest.TestCase):
 
 
 class ZarrDatasetS3IOTest(S3Test):
-
     def test_write_to_and_read_from_s3(self):
         s3_conn = boto3.client("s3", endpoint_url=MOTO_SERVER_ENDPOINT_URL)
         s3_conn.create_bucket(Bucket="upload_bucket", ACL="public-read")
@@ -313,7 +310,6 @@ class ZarrDatasetS3IOTest(S3Test):
 
 
 class CsvDatasetIOTest(unittest.TestCase):
-
     def test_props(self):
         ds_io = CsvDatasetIO()
         self.assertEqual("csv", ds_io.name)
@@ -335,7 +331,6 @@ class CsvDatasetIOTest(unittest.TestCase):
 
 
 class FindDatasetIOTest(unittest.TestCase):
-
     def test_find_by_name(self):
         ds_io = find_dataset_io("netcdf4")
         self.assertIsInstance(ds_io, Netcdf4DatasetIO)
