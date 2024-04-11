@@ -1,3 +1,7 @@
+## Changes in 1.5.2 (in development)
+
+* Update of xcube plugins auto-recognition when plugin uses `pyproject.toml'file (#963)
+
 ## Changes in 1.5.0
 
 * Enhanced spatial resampling in module `xcube.core.resampling` (#955): 
