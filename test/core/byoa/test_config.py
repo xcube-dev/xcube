@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os.path
 import unittest
 
@@ -18,7 +22,6 @@ LOCAL_PREFIXED_MODULE_ZIP = os.path.join(
 
 
 class CodeConfigTest(unittest.TestCase):
-
     def test_from_code_string(self):
         code_config = CodeConfig.from_code(
             INLINE_CODE, module_name="user_code_1", callable_params={"text": "good bye"}

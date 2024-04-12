@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -22,7 +26,6 @@ from xcube.core.timecoord import to_time_in_days_since_1970
 
 
 class AddTimeCoordsTest(unittest.TestCase):
-
     def test_add_time_coords_point(self):
         dataset = create_highroc_dataset()
         dataset_with_time = add_time_coords(dataset, (365 * 47 + 20, 365 * 47 + 20))
@@ -89,7 +92,6 @@ class AddTimeCoordsTest(unittest.TestCase):
 
 
 class GetTimeRangeTest(unittest.TestCase):
-
     def test_get_time_range_from_data(self):
         cube = new_cube(drop_bounds=True)
         time_range = get_time_range_from_data(cube)

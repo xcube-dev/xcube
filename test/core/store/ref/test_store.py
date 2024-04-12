@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2020-2024 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import glob
 import json
@@ -107,7 +90,6 @@ class KerchunkMixin:
 
 # noinspection PyUnresolvedReferences
 class ReferenceDataStoreTestBase(KerchunkMixin, ABC):
-
     @abstractmethod
     def get_store(self) -> DataStore:
         pass
@@ -283,7 +265,6 @@ class NormalizeRefTest(unittest.TestCase):
 
 @unittest.skipUnless(has_kerchunk, reason="kerchunk not installed")
 class ReferenceFilesystemTest(KerchunkMixin, unittest.TestCase):
-
     def test_xarray_open_zarr(self):
         cube_ref_path = self.ref_paths[0]
         fs = fsspec.filesystem("reference", fo=cube_ref_path, remote_protocol="file")

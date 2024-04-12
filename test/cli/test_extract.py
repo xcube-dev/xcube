@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 import os.path
 import warnings
@@ -45,7 +49,6 @@ REF_COLS = [
 
 
 class ExtractCliTest(CliDataTest):
-
     @classmethod
     def setUpClass(cls):
         # We parse CSV-output from CLI using pandas in these tests.

@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from io import StringIO
 
@@ -182,7 +186,6 @@ class ToNameDictPairTest(unittest.TestCase):
 
 
 class FlattenDictTest(unittest.TestCase):
-
     def test_flatten_dict(self):
         with self.assertRaises(ValueError):
             # noinspection PyTypeChecker
@@ -374,7 +377,6 @@ class MergeDictsTest(unittest.TestCase):
 
 
 class LoadConfigsTest(unittest.TestCase):
-
     def tearDown(self) -> None:
         fs: fsspec.AbstractFileSystem = fsspec.filesystem("memory")
         fs.rm("/", recursive=True)

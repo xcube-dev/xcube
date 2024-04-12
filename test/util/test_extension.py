@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from typing import Any
 
@@ -150,7 +154,6 @@ class ImportTest(unittest.TestCase):
         self.assertIs(_TestComponent, component)
 
     def test_import_and_transform_component(self):
-
         def transform(imported_component: Any, loaded_extension_: Extension):
             return imported_component(-1, name=loaded_extension_.name)
 

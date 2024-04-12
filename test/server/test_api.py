@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import unittest
 from typing import Optional
@@ -37,7 +20,6 @@ from .mocks import mock_server
 
 
 class ApiTest(unittest.TestCase):
-
     def test_basic_props(self):
         api = Api("datasets", description="What an API!")
         self.assertEqual("datasets", api.name)
@@ -127,7 +109,6 @@ class ApiTest(unittest.TestCase):
 
 
 class ApiRouteTest(unittest.TestCase):
-
     def test_equal(self):
         class DatasetHandler(ApiHandler):
             # noinspection PyMethodMayBeStatic
@@ -224,7 +205,6 @@ class ApiContextTest(unittest.TestCase):
 
 class ApiHandlerTest(unittest.TestCase):
     class DatasetsContext(ApiContext):
-
         def on_update(self, prev_ctx: Optional[Context]):
             pass
 
@@ -275,7 +255,6 @@ class ApiHandlerTest(unittest.TestCase):
 
 
 class ApiRequestTest(unittest.TestCase):
-
     def test_urls(self):
         request = MockApiRequest(dict(details="1"), reverse_url_prefix="/proxy/9192")
         self.assertEqual("http://localhost:8080/datasets?details=1", request.url)
@@ -309,7 +288,6 @@ class ApiRequestTest(unittest.TestCase):
 
 
 class ApiErrorTest(unittest.TestCase):
-
     def test_base_class(self):
         error = ApiError(428)
         self.assertIsInstance(error, Exception)

@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from abc import ABCMeta
 from typing import List, Dict, Optional
@@ -14,7 +18,6 @@ TEST_ZARR_DIR = "test.zarr"
 
 
 class CliTest(unittest.TestCase, metaclass=ABCMeta):
-
     def invoke_cli(self, args: List[str]):
         self.runner = click.testing.CliRunner(mix_stderr=False)
         # noinspection PyTypeChecker
@@ -22,7 +25,6 @@ class CliTest(unittest.TestCase, metaclass=ABCMeta):
 
 
 class CliDataTest(CliTest, metaclass=ABCMeta):
-
     def outputs(self) -> List[str]:
         return []
 

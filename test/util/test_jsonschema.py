@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from collections import namedtuple
 from typing import Dict, Any
@@ -17,7 +21,6 @@ from xcube.util.jsonschema import JsonStringSchema
 
 
 class JsonComplexSchemaTest(unittest.TestCase):
-
     def test_base_props_validated(self):
         with self.assertRaises(ValueError) as cm:
             JsonComplexSchema()
@@ -80,7 +83,6 @@ class JsonComplexSchemaTest(unittest.TestCase):
 
 
 class JsonSimpleSchemaTest(unittest.TestCase):
-
     def test_base_props_validated(self):
         with self.assertRaises(ValueError) as cm:
             JsonSimpleSchema("int")
@@ -120,7 +122,6 @@ class JsonSimpleSchemaTest(unittest.TestCase):
 
 
 class JsonNullSchemaTest(unittest.TestCase):
-
     def test_to_json_null(self):
         self.assertEqual(None, JsonNullSchema().to_instance(None))
 
@@ -129,7 +130,6 @@ class JsonNullSchemaTest(unittest.TestCase):
 
 
 class JsonBooleanSchemaTest(unittest.TestCase):
-
     def test_to_json_boolean(self):
         self.assertEqual(True, JsonBooleanSchema().to_instance(True))
 
@@ -138,7 +138,6 @@ class JsonBooleanSchemaTest(unittest.TestCase):
 
 
 class JsonIntegerSchemaTest(unittest.TestCase):
-
     def test_to_instance(self):
         self.assertEqual(
             45, JsonIntegerSchema(minimum=0, maximum=100, multiple_of=5).to_instance(45)
@@ -223,7 +222,6 @@ class JsonStringSchemaTest(unittest.TestCase):
 
 
 class JsonDateSchemaTest(unittest.TestCase):
-
     def test_to_instance(self):
         self.assertEqual(
             "2020-06-03",
@@ -311,7 +309,6 @@ class JsonDateSchemaTest(unittest.TestCase):
 
 
 class JsonDatetimeSchemaTest(unittest.TestCase):
-
     def test_to_instance(self):
         self.assertEqual(
             "2020-06-12T12:30:19Z",
@@ -398,7 +395,6 @@ class JsonDatetimeSchemaTest(unittest.TestCase):
 
 
 class JsonArraySchemaTest(unittest.TestCase):
-
     def test_to_instance(self):
         self.assertEqual(
             [False, 2, "U"], JsonArraySchema().to_instance([False, 2, "U"])
@@ -475,7 +471,6 @@ class JsonArraySchemaTest(unittest.TestCase):
 
 
 class JsonObjectSchemaTest(unittest.TestCase):
-
     def test_from_json_object(self):
         value = {"name": "Bibo", "age": 12, "deleted": True}
 

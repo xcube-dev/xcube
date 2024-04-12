@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from abc import ABC, abstractmethod
 from typing import Tuple
@@ -161,7 +165,6 @@ class MemoryFsStoreSubsetTest(FsStoreSubset.CommonTest):
 
 
 class FileFsStoreSubsetTest(FsStoreSubset.CommonTest):
-
     @classmethod
     def get_fs_root(cls) -> Tuple[fsspec.AbstractFileSystem, str]:
         return fsspec.get_filesystem_class("file")(), new_temp_dir()

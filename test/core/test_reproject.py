@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -13,7 +17,6 @@ nan = np.nan
 
 
 class ReprojectTest(unittest.TestCase):
-
     def test_reproject_xy_to_wgs84_highroc(self):
         dst_width = 12
         dst_height = 9

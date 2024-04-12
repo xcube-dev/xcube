@@ -1,8 +1,11 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from test.cli.helpers import CliTest
 
 
 class GenCliTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["gen", "time_irregular", "--help"])
         self.assertEqual(0, result.exit_code)

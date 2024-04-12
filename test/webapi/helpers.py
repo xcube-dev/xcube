@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import collections.abc
 import os
 from typing import Any, Mapping
@@ -30,17 +34,22 @@ def get_server(
 
     This function is used for testing API contexts and controllers.
 
-    :param server_config: Server configuration string or mapping.
-        If it is just a filename, it is resolved against test resource
-        directory "${project}/test/webapi/res".
-        If it is a relative path, it is resolved against the current
-        working directory (not recommended).
-        Defaults to ``'config.yml'``.
-    :param framework: Web framework, defaults to a MockFramework.
-    :param extension_registry: Extension registry,
-        defaults to xcube's populated default extension registry
-    :return: The API context object
-    :raise AssertionError: if API context object can not be determined
+    Args:
+        server_config: Server configuration string or mapping.
+            If it is just a filename, it is resolved against test resource
+            directory "${project}/test/webapi/res".
+            If it is a relative path, it is resolved against the current
+            working directory (not recommended).
+            Defaults to ``'config.yml'``.
+        framework: Web framework, defaults to a MockFramework.
+        extension_registry: Extension registry,
+            defaults to xcube's populated default extension registry
+
+    Returns:
+        The API context object
+
+    Raise:
+        AssertionError: if API context object can not be determined
     """
     server_config = server_config or "config.yml"
     if isinstance(server_config, str):
@@ -71,25 +80,29 @@ def get_api_ctx(
     extension_registry: Optional[ExtensionRegistry] = None,
 ) -> T:
     """Get the API context object for the given
-    API name *api_name*,
-    API context class *api_ctx_cls*,
+    API name *api_name*, API context class *api_ctx_cls*,
     and server configuration path or dictionary *server_config*.
 
     This function is used for testing API contexts and controllers.
 
-    :param api_name: The name of the API, e.g. "auth"
-    :param api_ctx_cls: The API context class
-    :param server_config: Server configuration string or dictionary.
-        If it is just a filename, it is resolved against test resource
-        directory "${project}/test/webapi/res".
-        If it is a relative path, it is resolved against the current
-        working directory (not recommended).
-        Defaults to ``'config.yml'``.
-    :param framework: Web framework, defaults to a MockFramework.
-    :param extension_registry: Extension registry,
-        defaults to xcube's populated default extension registry
-    :return: The API context object
-    :raise AssertionError: if API context object can not be determined
+    Args:
+        api_name: The name of the API, e.g. "auth"
+        api_ctx_cls: The API context class
+        server_config: Server configuration string or dictionary.
+            If it is just a filename, it is resolved against test resource
+            directory "${project}/test/webapi/res".
+            If it is a relative path, it is resolved against the current
+            working directory (not recommended).
+            Defaults to ``'config.yml'``.
+        framework: Web framework, defaults to a MockFramework.
+        extension_registry: Extension registry,
+            defaults to xcube's populated default extension registry
+
+    Returns:
+        The API context object
+
+    Raises:
+         AssertionError: if API context object can not be determined
     """
     server = get_server(
         server_config or "config.yml",
