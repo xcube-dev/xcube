@@ -8,14 +8,17 @@ import xarray as xr
 
 
 def new_test_dataset(time, height=180, **indexers):
-    """
-    Create a test dataset with dimensions ("time", "lat", "lon") and data variables given by *indexers*.
+    """Create a test dataset with dimensions ("time", "lat", "lon")
+    and data variables given by *indexers*.
 
-    :param time: Single date/time string or sequence of date-time strings.
-    :param height: Size of the latitude dimension.
-    :param indexers: Variable name to value mapping.
-           Value may be a scalar or a vector of same length as *time*.
-    :return: test dataset
+    Args:
+        time: Single date/time string or sequence of date-time strings.
+        height: Size of the latitude dimension.
+        indexers: Variable name to value mapping.
+            Value may be a scalar or a vector of same length as *time*.
+
+    Returns:
+         test dataset
     """
     # TODO (forman): get rid of this code here, utilise xcube.core.new_cube() instead
     time = [time] if isinstance(time, str) else time
