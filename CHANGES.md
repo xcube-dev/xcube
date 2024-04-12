@@ -1,3 +1,6 @@
+## Changes in 1.5.2 (in development)
+
+
 ## Changes in 1.5.1
 
 * Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
