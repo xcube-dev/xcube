@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os.path
 from typing import List
 
@@ -8,7 +12,6 @@ from xcube.core.verify import assert_cube
 
 
 class ResampleTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["resample", "--help"])
         self.assertEqual(0, result.exit_code)

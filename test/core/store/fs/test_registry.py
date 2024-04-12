@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from abc import ABC, abstractmethod
 import collections.abc
 import os.path
@@ -418,7 +422,6 @@ class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
 
 class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
-
     def create_data_store(self) -> FsDataStore:
         root = ROOT_DIR
         self.prepare_fs(fsspec.filesystem("memory"), root)
@@ -426,7 +429,6 @@ class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
 
 class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
-
     def create_data_store(self) -> FsDataStore:
         root = ROOT_DIR
         storage_options = dict(

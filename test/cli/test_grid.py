@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from fractions import Fraction
 from typing import List
@@ -16,7 +20,6 @@ from xcube.cli.grid import (
 
 
 class GridToolsTest(unittest.TestCase):
-
     def test_factor_out_two(self):
         with self.assertRaises(ValueError):
             factor_out_two(-1)
@@ -92,7 +95,6 @@ class GridToolsTest(unittest.TestCase):
 
 
 class GridCliTest(unittest.TestCase):
-
     @classmethod
     def invoke_cli(cls, args: List[str]):
         runner = click.testing.CliRunner()

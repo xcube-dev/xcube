@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 from typing import List
 import xarray as xr
@@ -6,7 +10,6 @@ from xcube.core.verify import assert_cube
 
 
 class RectifyTest(CliDataTest):
-
     def outputs(self) -> List[str]:
         return ["out.zarr"]
 

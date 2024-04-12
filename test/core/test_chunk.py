@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import collections.abc
 import unittest
 
@@ -11,7 +15,6 @@ from xcube.core.new import new_cube
 
 
 class ChunkDatasetTest(unittest.TestCase):
-
     def test_chunk_dataset(self):
         dataset = new_test_dataset(
             ["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
@@ -69,27 +72,18 @@ class ChunkDatasetTest(unittest.TestCase):
                 time_periods=5,
                 time_freq="1D",
                 time_start="2019-01-01",
-                variables=dict(
-                    precipitation=0.1,
-                    temperature=270.5,
-                    soil_moisture=0.2),
+                variables=dict(precipitation=0.1, temperature=270.5, soil_moisture=0.2),
             ),
             dict(time=1, lat=90, lon=90),
             format_name="zarr",
-            data_vars_only=True
+            data_vars_only=True,
         )
         self.assertEqual((1, 90, 90), cube.precipitation.data.chunksize)
-        self.assertEqual(
-            {"chunks": (1, 90, 90)}, cube.precipitation.encoding
-        )
+        self.assertEqual({"chunks": (1, 90, 90)}, cube.precipitation.encoding)
         self.assertEqual((1, 90, 90), cube.precipitation.data.chunksize)
-        self.assertEqual(
-            {"chunks": (1, 90, 90)}, cube.temperature.encoding
-        )
+        self.assertEqual({"chunks": (1, 90, 90)}, cube.temperature.encoding)
         self.assertEqual((1, 90, 90), cube.precipitation.data.chunksize)
-        self.assertEqual(
-            {"chunks": (1, 90, 90)}, cube.soil_moisture.encoding
-        )
+        self.assertEqual({"chunks": (1, 90, 90)}, cube.soil_moisture.encoding)
         self.assertIsNone(cube.lat.chunks)
         self.assertEqual({}, cube.lat.encoding)
         self.assertIsNone(cube.lon.chunks)
@@ -100,7 +94,6 @@ class ChunkDatasetTest(unittest.TestCase):
         self.assertEqual({}, cube.lon_bnds.encoding)
         self.assertIsNone(cube.time.chunks)
         self.assertNotIn("chunks", cube.time.encoding)
-
 
     def test_unchunk_dataset(self):
         dataset = new_test_dataset(
@@ -118,7 +111,6 @@ class ChunkDatasetTest(unittest.TestCase):
 
 
 class GetEmptyDatasetChunksTest(unittest.TestCase):
-
     def test_not_chunked(self):
         dataset = new_test_dataset(
             ["2010-01-01", "2010-01-02"], precipitation=0.4, temperature=275.2
@@ -200,7 +192,6 @@ class GetEmptyDatasetChunksTest(unittest.TestCase):
 
 
 class ComputeChunkSlicesTest(unittest.TestCase):
-
     def test_compute_chunk_slices(self):
         chunk_slices = compute_chunk_slices(((1, 1), (90, 90), (90, 90, 90, 90)))
         self.assertEqual(

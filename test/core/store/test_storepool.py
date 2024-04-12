@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import json
 import os
 import unittest
@@ -14,7 +18,6 @@ from xcube.core.store import get_data_store_instance
 
 
 class GetDataStoreTest(unittest.TestCase):
-
     def test_get_data_store_instance_new_inst(self):
         instance = get_data_store_instance("memory")
         self.assertIsInstance(instance, DataStoreInstance)
@@ -83,7 +86,6 @@ class GetDataStoreTest(unittest.TestCase):
 
 
 class DataStoreConfigTest(unittest.TestCase):
-
     def test_constructor_and_instance_props(self):
         store_config = DataStoreConfig(
             "file", store_params={"root": "."}, title="Local", description="Local files"

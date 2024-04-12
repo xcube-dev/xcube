@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 import urllib.request
 
@@ -33,7 +37,6 @@ XCUBE_SERVER_IS_RUNNING = is_server_running()
 
 @unittest.skipUnless(XCUBE_SERVER_IS_RUNNING, SKIP_HELP)
 class S3CompatibilityTest(unittest.TestCase):
-
     def test_s3_datasets_bucket(self):
         store = new_data_store(
             "s3",

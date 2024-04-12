@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 import unittest
 from typing import Any, Dict, Optional, Sequence, Tuple
@@ -30,7 +34,6 @@ def clean_up():
 
 
 class DefaultProcessTest(unittest.TestCase):
-
     def setUp(self):
         clean_up()
 

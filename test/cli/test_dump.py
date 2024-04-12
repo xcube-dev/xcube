@@ -1,9 +1,12 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from test.cli.helpers import CliDataTest, TEST_NC_FILE
 import xarray as xr
 
 
 class DumpTest(CliDataTest):
-
     def test_dump_ds(self):
         self.maxDiff = None
         with xr.set_options(display_width=80):

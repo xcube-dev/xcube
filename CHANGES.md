@@ -1,3 +1,7 @@
+## Changes in 1.5.2 (in development)
+
+* Updated copyright notices in all source code files. 
+
 ## Changes in 1.5.0
 
 * Enhanced spatial resampling in module `xcube.core.resampling` (#955): 

@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os.path
 from typing import List, Tuple, Optional, Dict
 
@@ -9,7 +13,6 @@ from xcube.core.store import new_fs_data_store
 
 
 class LevelTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["level", "--help"])
         self.assertEqual(0, result.exit_code)

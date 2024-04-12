@@ -1,10 +1,13 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 from xcube.util.geojson import GeoJSON
 
 
 class GeoJSONTest(unittest.TestCase):
-
     def test_is_point(self):
         self.assertTrue(GeoJSON.is_point(dict(type="Point", coordinates=[2.13, 42.2])))
         self.assertFalse(GeoJSON.is_point(dict(type="Feature", properties=None)))
