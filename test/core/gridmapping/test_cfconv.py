@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import shutil
 import unittest
 from typing import Set
@@ -274,7 +278,6 @@ class XarrayDecodeCfTest(unittest.TestCase):
 
 
 class AddSpatialRefTest(S3Test, unittest.TestCase):
-
     def test_add_spatial_ref(self):
         self.assert_add_spatial_ref_ok(None, None)
         self.assert_add_spatial_ref_ok(None, ("cx", "cy"))
@@ -282,7 +285,6 @@ class AddSpatialRefTest(S3Test, unittest.TestCase):
         self.assert_add_spatial_ref_ok("crs", ("cx", "cy"))
 
     def assert_add_spatial_ref_ok(self, crs_var_name, xy_dim_names):
-
         root = "eurodatacube-test/xcube-eea"
         data_id = "test.zarr"
         crs = pyproj.CRS.from_string("EPSG:3035")

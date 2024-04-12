@@ -1,5 +1,7 @@
 ## Changes in 1.5.2 (in development)
 
+* Updated copyright notices in all source code files. 
+
 * Fixed xcube plugin auto-recognition in case a plugin project
   uses `pyproject.toml` file. (#963)
 

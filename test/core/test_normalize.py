@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 """
 Test for the normalization operation
 """
@@ -124,7 +128,6 @@ class EncodeCubeTest(TestCase):
 
 
 class TestNormalize(TestCase):
-
     def test_normalize_zonal_lat_lon(self):
         resolution = 10
         lat_size = 3
@@ -721,7 +724,6 @@ class AdjustSpatialTest(TestCase):
 
 
 class NormalizeCoordVarsTest(TestCase):
-
     def test_ds_with_potential_coords(self):
         ds = xr.Dataset(
             {
@@ -969,7 +971,6 @@ class NormalizeMissingTimeTest(TestCase):
 
 
 class Fix360Test(TestCase):
-
     def test_fix_360_lon(self):
         # The following simulates a strangely geo-coded soil moisture dataset we found
         lon_size = 360

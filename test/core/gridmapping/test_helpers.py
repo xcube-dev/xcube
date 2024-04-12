@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from fractions import Fraction
 
@@ -145,7 +149,6 @@ class RoundToFractionTest(unittest.TestCase):
 
 
 class ToIntOrFloatTest(unittest.TestCase):
-
     def test_down_to_int(self):
         result = _to_int_or_float(90.0001)
         self.assertEqual(90, result)

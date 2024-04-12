@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from typing import Sequence
 
@@ -36,7 +40,6 @@ class _TestProgressObserver(ProgressObserver):
 
 
 class ObserveProgressTest(unittest.TestCase):
-
     def test_observe_progress(self):
         observer = _TestProgressObserver()
         observer.activate()
@@ -271,7 +274,6 @@ class ObserveProgressTest(unittest.TestCase):
 
 
 class ProgressStateTest(unittest.TestCase):
-
     def test_progress_state_props(self):
         state = ProgressState("computing", 100, 3)
         self.assertEqual("computing", state.label)

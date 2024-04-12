@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import pyproj.crs
@@ -14,7 +18,6 @@ import numpy as np
 
 # noinspection PyMethodMayBeStatic
 class TransformTest(unittest.TestCase):
-
     def test_transform(self):
         gm = GridMapping.regular(
             size=(3, 3), xy_min=(10, 53), xy_res=0.1, crs=CRS_CRS84

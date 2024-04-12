@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import unittest
 from typing import Optional, List
@@ -40,7 +23,6 @@ nan = np.nan
 
 
 class ColormapProviderMock(ColormapProvider):
-
     def get_cmap(self, cm_name: str, num_colors: Optional[int] = None):
         return cm_name, matplotlib.cm.get_cmap(cm_name, lut=num_colors)
 
@@ -49,7 +31,6 @@ CMAP_PROVIDER = ColormapProviderMock()
 
 
 class Tile2Test(unittest.TestCase):
-
     @staticmethod
     def _get_ml_dataset(crs_name: str) -> MultiLevelDataset:
         crs = pyproj.CRS.from_string(crs_name)
@@ -213,7 +194,6 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
 
 
 class ComputeRgbaTileTest(Tile2Test, unittest.TestCase):
-
     def test_compute_rgba_tile_with_color_mapping(self):
         crs_name = WEB_MERCATOR_CRS_NAME
         ml_ds = self._get_ml_dataset(crs_name)

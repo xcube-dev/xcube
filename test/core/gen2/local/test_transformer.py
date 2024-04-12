@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import xarray as xr
@@ -14,7 +18,6 @@ CALLBACK_MOCK_URL = "https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback"
 
 
 class CubeIdentityTest(unittest.TestCase):
-
     def test_it(self):
         cube = new_cube(variables=dict(a=0.5))
         gm = GridMapping.from_dataset(cube)
@@ -29,7 +32,6 @@ class CubeIdentityTest(unittest.TestCase):
 
 
 class MyTiler(CubeTransformer):
-
     def transform_cube(
         self, cube: xr.Dataset, gm: GridMapping, cube_config: CubeConfig
     ) -> TransformedCube:
@@ -41,7 +43,6 @@ class MyTiler(CubeTransformer):
 
 
 class TransformCubeTest(unittest.TestCase):
-
     def test_non_empty_cube(self):
         cube = new_cube(variables=dict(a=0.5))
         gm = GridMapping.from_dataset(cube)

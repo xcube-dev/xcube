@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 import unittest.mock
 import os
@@ -84,7 +88,6 @@ class DaskTest(unittest.TestCase):
 
 
 class CoiledMock:
-
     def __init__(self):
         self.software_name = None
         self.software_container = None

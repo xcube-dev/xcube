@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import itertools
 import os
 import re
@@ -224,7 +228,9 @@ def new_cluster(
     cluster_account = (
         account
         if account is not None
-        else account_from_env_var if account_from_env_var is not None else "bc"
+        else account_from_env_var
+        if account_from_env_var is not None
+        else "bc"
     )
 
     if provider == "coiled":

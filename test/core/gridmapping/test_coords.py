@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import dask.array as da
@@ -15,7 +19,6 @@ NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 # noinspection PyMethodMayBeStatic
 class Coords1DGridMappingTest(unittest.TestCase):
-
     def test_1d_j_axis_down(self):
         x_coords = xr.DataArray(np.linspace(1.5, 8.5, 8), dims="lon")
         y_coords = xr.DataArray(np.linspace(4.5, -4.5, 10), dims="lat")
@@ -167,7 +170,6 @@ class Coords1DGridMappingTest(unittest.TestCase):
 
 
 class Coords2DGridMappingTest(unittest.TestCase):
-
     def test_2d(self):
         x_coords = xr.DataArray(
             [

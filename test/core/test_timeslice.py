@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -47,9 +51,7 @@ class TimeSliceTest(unittest.TestCase):
             variables=dict(precipitation=0.1, temperature=270.5, soil_moisture=0.2),
         )
         chunk_sizes = dict(time=1, lat=90, lon=90)
-        cube = chunk_dataset(
-            cube, chunk_sizes, format_name="zarr", data_vars_only=True
-        )
+        cube = chunk_dataset(cube, chunk_sizes, format_name="zarr", data_vars_only=True)
         return cube
 
     def test_find_time_slice(self):

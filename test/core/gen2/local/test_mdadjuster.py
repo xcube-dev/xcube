@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import pyproj
@@ -10,7 +14,6 @@ from xcube.core.new import new_cube
 
 
 class CubeMetadataAdjusterTest(unittest.TestCase):
-
     def test_metadata_adjusted_geo_crs(self):
         (x1, x2), (y1, y2) = (53, 54), (11, 12)
         cube1 = new_cube(
