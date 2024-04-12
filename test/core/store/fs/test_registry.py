@@ -334,19 +334,19 @@ class FsDataStoresTestMixin(ABC):
         open_params: Optional[Dict[str, Any]] = None,
         assert_data_ok: Optional[Callable[[Any], Any]] = None,
     ):
-        """
-        Call all DataStore operations to ensure data of type
+        """Call all DataStore operations to ensure data of type
         xr.Dataset//MultiLevelDataset is supported by *data_store*.
 
-        :param data_store: The filesystem data store instance.
-        :param filename_ext: Filename extension that identifies
-            a supported dataset format.
-        :param expected_data_type_alias: The expected data type alias.
-        :param expected_return_type: The expected data type.
-        :param expected_descriptor_type: The expected data descriptor type.
-        :param write_params: Optional write parameters
-        :param open_params: Optional open parameters
-        :param assert_data_ok: Optional function to assert read data is ok
+        Args:
+            data_store: The filesystem data store instance.
+            filename_ext: Filename extension that identifies
+                a supported dataset format.
+            expected_data_type_alias: The expected data type alias.
+            expected_return_type: The expected data type.
+            expected_descriptor_type: The expected data descriptor type.
+            write_params: Optional write parameters
+            open_params: Optional open parameters
+            assert_data_ok: Optional function to assert read data is ok
         """
 
         data_id = f"{DATA_PATH}/ds{filename_ext}"
