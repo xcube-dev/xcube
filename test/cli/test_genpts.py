@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os.path
 from typing import List
 
@@ -12,7 +16,6 @@ TEST_GEOJSON = os.path.join(os.path.dirname(__file__), "out.geojson")
 
 
 class GenptsCliTest(CliDataTest):
-
     def outputs(self) -> List[str]:
         return [TEST_CSV, TEST_GEOJSON]
 

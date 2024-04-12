@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from typing import Type
 
@@ -21,7 +25,6 @@ from xcube.util.jsonschema import JsonObjectSchema
 
 
 class NewDataDescriptorTest(unittest.TestCase):
-
     def test_new_dataset_descriptor(self):
         cube = new_cube(variables=dict(a=4.1, b=7.4))
         descriptor = new_data_descriptor("cube", cube)
@@ -76,7 +79,6 @@ class NewDataDescriptorTest(unittest.TestCase):
 
 
 class DataDescriptorTest(unittest.TestCase):
-
     def test_from_dict_no_data_id(self):
         with self.assertRaises(jsonschema.exceptions.ValidationError):
             descriptor_dict = dict()
@@ -170,7 +172,6 @@ class DataDescriptorTest(unittest.TestCase):
 
 
 class DatasetDescriptorTest(unittest.TestCase):
-
     def test_get_schema(self):
         schema = DatasetDescriptor.get_schema()
         self.assertIsInstance(schema, JsonObjectSchema)
@@ -341,7 +342,6 @@ class DatasetDescriptorTest(unittest.TestCase):
 
 
 class VariableDescriptorTest(unittest.TestCase):
-
     def test_variable_descriptor_basic(self):
         vd1 = VariableDescriptor(
             "gz", "zughysz", ["rtdswgt", "dref", "zdrs5ge"], chunks=(3, 321, 4)

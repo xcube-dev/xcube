@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import dask.array as da
@@ -262,7 +266,6 @@ class RasterizeFeaturesIntoDataset(unittest.TestCase):
 
 
 class DatasetGeometryTest(unittest.TestCase):
-
     def setUp(self) -> None:
         width = 16
         height = 8
@@ -397,7 +400,6 @@ class DatasetGeometryTest(unittest.TestCase):
 
 
 class GetDatasetGeometryTest(unittest.TestCase):
-
     def test_nominal(self):
         ds1, ds2 = _get_nominal_datasets()
         bounds = get_dataset_geometry(ds1)

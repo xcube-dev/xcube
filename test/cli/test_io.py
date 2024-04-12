@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import json
 import os.path
 
@@ -8,14 +12,12 @@ from xcube.core.dsio import rimraf
 
 
 class IOTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["io", "--help"])
         self.assertEqual(0, result.exit_code)
 
 
 class IOStoreTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["io", "store", "--help"])
         self.assertEqual(0, result.exit_code)
@@ -84,7 +86,6 @@ class IOStoreTest(CliTest):
 
 
 class IOOpenerTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["io", "opener", "--help"])
         self.assertEqual(0, result.exit_code)
@@ -105,7 +106,6 @@ class IOOpenerTest(CliTest):
 
 
 class IOWriterTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["io", "writer", "--help"])
         self.assertEqual(0, result.exit_code)

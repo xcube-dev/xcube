@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import xarray as xr
@@ -9,7 +13,6 @@ from xcube.core.new import new_cube
 
 
 class CubeRechunkerTest(unittest.TestCase):
-
     def test_chunks_are_smaller_than_sizes(self):
         cube1 = new_cube(variables=dict(chl=0.6, tsm=0.9, flags=16))
         for var in cube1.variables.values():

@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 from unittest import TestCase
 
@@ -41,7 +45,6 @@ class DeprecatedApiTest(TestCase):
 
 
 class ColormapRegistryTest(TestCase):
-
     def setUp(self) -> None:
         self.registry = ColormapRegistry()
 
@@ -187,7 +190,6 @@ class ColormapRegistryTest(TestCase):
 
 
 class ColormapTest(TestCase):
-
     def setUp(self) -> None:
         self.colormap = Colormap("coolwarm", cat_name="Diverging")
 

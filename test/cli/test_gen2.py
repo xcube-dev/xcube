@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import json
 import os
 import os.path
@@ -11,7 +15,6 @@ result_levels = "out.levels"
 
 
 class Gen2CliTest(CliTest):
-
     def setUp(self) -> None:
         rimraf(result_file, result_zarr, result_levels)
 

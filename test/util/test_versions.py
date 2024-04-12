@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import xcube.version as xcube_version
@@ -5,7 +9,6 @@ from xcube.util.versions import get_xcube_versions
 
 
 class GetVersionsTest(unittest.TestCase):
-
     def test_it_contains_what_is_expected(self):
         versions = get_xcube_versions()
         self.assertIsInstance(versions, dict)

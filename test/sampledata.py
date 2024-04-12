@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -291,7 +295,6 @@ def create_cmems_sst_flag_var():
 
 
 class SourceDatasetMixin:
-
     @classmethod
     def new_2x2_dataset_with_irregular_coords(cls):
         lon = np.array([[1.0, 6.0], [0.0, 2.0]])

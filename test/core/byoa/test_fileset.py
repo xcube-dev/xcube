@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 import os.path
 import unittest
@@ -78,7 +82,6 @@ class FileSetToLocalTest(unittest.TestCase):
 
 
 class FileSetTest(unittest.TestCase):
-
     def test_is_local(self):
         self.assertTrue(FileSet("test_data/user_code").is_local())
         self.assertTrue(FileSet("test_data/user_code.zip").is_local())

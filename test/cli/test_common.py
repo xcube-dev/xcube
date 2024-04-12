@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import click
@@ -9,7 +13,6 @@ from xcube.cli.common import parse_cli_sequence
 
 
 class ClickUtilTest(unittest.TestCase):
-
     def test_parse_cli_kwargs(self):
         self.assertEqual(dict(), parse_cli_kwargs("", metavar="<chunks>"))
         self.assertEqual(

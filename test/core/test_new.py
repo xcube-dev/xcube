@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -6,7 +10,6 @@ from xcube.core.new import new_cube
 
 
 class NewCubeTest(unittest.TestCase):
-
     def test_new_cube_with_bounds(self):
         cube = new_cube()
         self.assertEqual({"lon": 360, "lat": 180, "time": 5, "bnds": 2}, cube.dims)

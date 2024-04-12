@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import click
@@ -14,7 +18,6 @@ TEST_OPTIONS_FILE = "options.yaml"
 
 
 class PatchTest(CliTest):
-
     def test_help_option(self):
         result = self.invoke_cli(["patch", "--help"])
         self.assertEqual(0, result.exit_code)

@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 from xcube.util.extension import ExtensionRegistry
@@ -32,13 +36,11 @@ class EntryPoint:
 
 
 class EntryPointBad(EntryPoint):
-
     def load(self):
         raise RuntimeError()
 
 
 class PluginTest(unittest.TestCase):
-
     def setUp(self):
         self.ext_registry = ExtensionRegistry()
 
