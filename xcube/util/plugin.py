@@ -66,7 +66,8 @@ def discover_plugin_modules(module_prefixes=None):
             # print(f'xcube plugin module found: {module_name}')
             entry_points.append(_ModuleEntryPoint(module_name))
 
-    # discover plugins if they are installed in a editable mode (see PR #963)
+    # Discover plugins if they are installed in a editable mode.
+    # See https://github.com/xcube-dev/xcube/issues/963
     for module_prefix in module_prefixes:
         for path_hook in fnmatch.filter(
             sys.path,
