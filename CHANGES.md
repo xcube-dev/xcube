@@ -1,6 +1,7 @@
 ## Changes in 1.5.2 (in development)
 
-* Update of xcube plugins auto-recognition when plugin uses `pyproject.toml'file (#963)
+* Fixed xcube plugin auto-recognition in case a plugin project
+  uses `pyproject.toml` file. (#963)
 
 ## Changes in 1.5.0
 
