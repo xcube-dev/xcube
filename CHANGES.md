@@ -1,5 +1,8 @@
 ## Changes in 1.5.2 (in development)
 
+* xcube server can now read SNAP color palette definition files (`*.cpd`) with
+  alpha values. (#932)
+
 
 ## Changes in 1.5.1
 

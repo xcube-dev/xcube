@@ -544,7 +544,7 @@ def load_snap_cpd_colormap(snap_cpd_path: str) -> Colormap:
     else:
         norm = matplotlib.colors.Normalize(vmin, vmax)
     colors = list(
-        zip(map(norm, samples), ["#%02x%02x%02x" % color for _, color in points])
+        zip(map(norm, samples), ["#%02x%02x%02x%02x" % color for _, color in points])
     )
     cm_name, _ = os.path.splitext(os.path.basename(snap_cpd_path))
     return Colormap(
@@ -556,7 +556,7 @@ def load_snap_cpd_colormap(snap_cpd_path: str) -> Colormap:
 
 
 Sample = float
-Color = Tuple[int, int, int]
+Color = Tuple[int, int, int, int]
 Palette = List[Tuple[Sample, Color]]
 LogScaled = bool
 
@@ -594,12 +594,21 @@ def _parse_snap_cpd_file(cpd_file_path: str) -> Tuple[Palette, LogScaled]:
         points = []
         for i in range(num_points):
             try:
-                r, g, b = map(int, entries.get(f"color{i}", "").split(","))
+                rgba = tuple(map(int, entries.get(f"color{i}", "").split(",")))
+            except ValueError:
+                raise ValueError(illegal_format_msg)
+            try:
                 sample = float(entries.get(f"sample{i}"))
             except ValueError:
                 raise ValueError(illegal_format_msg)
-            points.append((sample, (r, g, b)))
+            if len(rgba) == 4:
+                points.append((sample, rgba))
+            elif len(rgba) == 3:
+                points.append((sample, (*rgba, 255)))
+            else:
+                raise ValueError(illegal_format_msg)
 
+        # noinspection PyTypeChecker
         return points, log_scaled
 
 

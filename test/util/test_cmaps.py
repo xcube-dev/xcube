@@ -176,6 +176,20 @@ class ColormapRegistryTest(TestCase):
             matplotlib.colors.Normalize,
         )
 
+    def test_load_snap_cpd_colormap_with_alpha(self):
+        cmap_name = os.path.join(os.path.dirname(__file__), "transparent_red.cpd")
+        colormap = load_snap_cpd_colormap(cmap_name)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("transparent_red", colormap.cm_name)
+        self.assertIsInstance(
+            colormap.cmap,
+            matplotlib.colors.LinearSegmentedColormap,
+        )
+        self.assertIsInstance(
+            colormap.norm,
+            matplotlib.colors.Normalize,
+        )
+
     def test_load_snap_cpd_colormap_invalid(self):
         cmap_name = os.path.join(
             os.path.dirname(__file__), "chl_DeM2_200_invalid_for_testing.cpd"
