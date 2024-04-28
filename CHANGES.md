@@ -3,6 +3,7 @@
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)
 
+* xcube server's tile API can now handle user-defined colormaps from xcube viewer.
 
 ## Changes in 1.5.1
 

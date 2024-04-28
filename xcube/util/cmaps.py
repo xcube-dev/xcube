@@ -2,13 +2,13 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-
+import ast
 import base64
 import io
 import os
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Any, Union
 
 import fsspec
 import matplotlib
@@ -346,9 +346,14 @@ class ColormapRegistry(ColormapProvider):
         if num_colors is not None:
             assert_instance(num_colors, int, name="num_colors")
 
-        cm_name, reverse, alpha = parse_cm_name(cm_name)
+        colormap: Optional[Colormap] = None
+        if cm_name.startswith("{"):
+            cm_name, colormap = parse_cm_code(cm_name)
 
-        colormap = self._colormaps.get(cm_name)
+        cm_name, reverse, alpha = parse_cm_name(cm_name)
+        if colormap is None:
+            colormap = self._colormaps.get(cm_name)
+
         if colormap is None:
             cm_name = DEFAULT_CMAP_NAME
             colormap = self._colormaps[cm_name]
@@ -432,6 +437,23 @@ class ColormapRegistry(ColormapProvider):
                     cmap_reversed=getattr(cmo, cm_name + REVERSED_SUFFIX, None),
                 )
             )
+
+
+def parse_cm_code(cm_code: str) -> Union[Tuple[str, Colormap], Tuple[None, None]]:
+    # Note, if we get performance issues here, we should
+    # cache cm_code -> colormap
+    try:
+        user_color_map: Dict[str, Any] = ast.literal_eval(cm_code)
+        cm_name = user_color_map["name"]
+        colors = user_color_map["colors"]
+        return cm_name, Colormap(
+            cm_name,  # May be better to strip "_alpha" or "_r" or both
+            cat_name=CUSTOM_CATEGORY.name,
+            cmap=matplotlib.colors.LinearSegmentedColormap.from_list(cm_name, colors),
+        )
+    except (SyntaxError, KeyError, ValueError, TypeError):
+        pass
+    return None, None
 
 
 def parse_cm_name(cm_name) -> Tuple[str, bool, bool]:
