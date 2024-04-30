@@ -1,9 +1,11 @@
 ## Changes in 1.5.2 (in development)
 
+* xcube server's tile API can now handle user-defined colormaps from xcube viewer.
+
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)
 
-* xcube server's tile API can now handle user-defined colormaps from xcube viewer.
+* Make tests compatible with PyTest 8.2.0. (#973)
 
 ## Changes in 1.5.1
 
