@@ -3,6 +3,7 @@
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)
 
+* Make tests compatible with PyTest 8.2.0. (#973)
 
 ## Changes in 1.5.1
 
