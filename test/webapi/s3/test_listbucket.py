@@ -31,6 +31,9 @@ class S3BucketTest(unittest.TestCase, metaclass=ABCMeta):
 
 
 class ListS3BucketTest(S3BucketTest, metaclass=ABCMeta):
+
+    __test__ = False
+
     @abstractmethod
     def list_bucket(self, bucket_dict, **kwargs):
         pass

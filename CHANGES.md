@@ -1,5 +1,6 @@
 ## Changes in 1.5.2 (in development)
 
+* Make tests compatible with PyTest 8.2.0. (#973)
 
 ## Changes in 1.5.1
 
