@@ -2,9 +2,9 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import ast
 import base64
 import io
+import json
 import os
 from abc import ABC, abstractmethod
 from functools import cached_property
@@ -443,7 +443,7 @@ def parse_cm_code(cm_code: str) -> Union[Tuple[str, Colormap], Tuple[None, None]
     # Note, if we get performance issues here, we should
     # cache cm_code -> colormap
     try:
-        user_color_map: Dict[str, Any] = ast.literal_eval(cm_code)
+        user_color_map: Dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
         colors = user_color_map["colors"]
         return cm_name, Colormap(
