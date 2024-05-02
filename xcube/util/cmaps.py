@@ -18,7 +18,7 @@ from PIL import Image
 from deprecated import deprecated
 
 from xcube.constants import LOG
-from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_instance, assert_given
 
 try:
     # noinspection PyPackageRequirements
@@ -439,7 +439,7 @@ class ColormapRegistry(ColormapProvider):
             )
 
 
-def parse_cm_code(cm_code: str) -> Union[Tuple[str, Colormap], Tuple[None, None]]:
+def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
     # Note, if we get performance issues here, we should
     # cache cm_code -> colormap
     try:
@@ -452,11 +452,15 @@ def parse_cm_code(cm_code: str) -> Union[Tuple[str, Colormap], Tuple[None, None]
             cmap=matplotlib.colors.LinearSegmentedColormap.from_list(cm_name, colors),
         )
     except (SyntaxError, KeyError, ValueError, TypeError):
-        pass
-    return None, None
+        # If we arrive here, the submitted user-specific cm_code is wrong
+        # We do not log or emit a warning here because this would
+        # impact performance for all other users.
+        # Use fallback color map "Reds" to indicate error
+        return "Reds", None
 
 
 def parse_cm_name(cm_name) -> Tuple[str, bool, bool]:
+    assert_given(cm_name, name="cm_name")
     alpha = cm_name.endswith(ALPHA_SUFFIX)
     if alpha:
         cm_name = cm_name[0 : -len(ALPHA_SUFFIX)]
