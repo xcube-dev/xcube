@@ -6,6 +6,8 @@ import os
 from unittest import TestCase
 
 import matplotlib.colors
+import numpy as np
+import pytest
 
 from xcube.util.cmaps import Colormap
 from xcube.util.cmaps import ColormapCategory
@@ -14,6 +16,8 @@ from xcube.util.cmaps import DEFAULT_CMAP_NAME
 from xcube.util.cmaps import ensure_cmaps_loaded
 from xcube.util.cmaps import get_cmap
 from xcube.util.cmaps import get_cmaps
+from xcube.util.cmaps import parse_cm_name
+from xcube.util.cmaps import parse_cm_code
 from xcube.util.cmaps import load_snap_cpd_colormap
 
 registry = ColormapRegistry()
@@ -31,6 +35,17 @@ class DeprecatedApiTest(TestCase):
 
         cm_name, cmap = get_cmap("bone", num_colors=512)
         self.assertEqual("bone", cm_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+        # User-defined color bars, #975
+        cm_name, cmap = get_cmap(
+            '{"name": "ucb783473",'
+            ' "colors": ['
+            '[0.0, "#00000000"], '
+            '[1.0, "#ffffffff"]'
+            "]}"
+        )
+        self.assertEqual("ucb783473", cm_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_get_cmaps(self):
@@ -249,3 +264,31 @@ class ColormapTest(TestCase):
             "6C3wo7u+hS8PX1PsPRnqDgAAAABJRU5ErkJggg==",
             base64,
         )
+
+
+class ColormapParseTest(TestCase):
+    def test_parse_cm_name(self):
+        self.assertEqual(("viridis", False, False), parse_cm_name("viridis"))
+        self.assertEqual(("viridis", True, False), parse_cm_name("viridis_r"))
+        self.assertEqual(("viridis", False, True), parse_cm_name("viridis_alpha"))
+        self.assertEqual(("viridis", True, True), parse_cm_name("viridis_r_alpha"))
+
+    # User-defined color bars, #975
+    def test_parse_cm_code(self):
+        cm_name, cmap = parse_cm_code(
+            '{"name": "ucb783473",'
+            ' "colors": ['
+            '[0.0, "#00000000"], '
+            '[1.0, "#ffffffff"]'
+            "]}"
+        )
+        self.assertEqual("ucb783473", cm_name)
+        self.assertIsInstance(cmap, Colormap)
+        self.assertEqual("ucb783473", cmap.cm_name)
+        colors = cmap.cmap(np.array([0, 0.5, 1]))
+        self.assertEqual([0.0, 0.0, 0.0, 0.0], list(colors[0]))
+        self.assertEqual([1.0, 1.0, 1.0, 1.0], list(colors[2]))
+
+        cm_name, cmap = parse_cm_code("{}")
+        self.assertEqual("Reds", cm_name)
+        self.assertEqual(None, cmap)
