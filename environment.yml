@@ -21,7 +21,7 @@ dependencies:
   - jdcal >=1.4
   - jsonschema >=3.2
   - mashumaro
-  - matplotlib-base >=3.0
+  - matplotlib-base >=3.8.3
   - netcdf4 >=1.5
   - numcodecs >=0.12.1
   - numba >=0.52
