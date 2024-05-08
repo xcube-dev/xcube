@@ -95,6 +95,8 @@ Cube Resampling
 
 .. autofunction:: xcube.core.resampling.rectify_dataset
 
+For implementation details refer to :doc:`rectify`.
+
 .. autofunction:: xcube.core.resampling.resample_in_space
 
 .. autofunction:: xcube.core.resampling.resample_in_time

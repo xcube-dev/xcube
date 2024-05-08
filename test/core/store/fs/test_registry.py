@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from abc import ABC, abstractmethod
 import collections.abc
 import os.path
@@ -330,19 +334,19 @@ class FsDataStoresTestMixin(ABC):
         open_params: Optional[Dict[str, Any]] = None,
         assert_data_ok: Optional[Callable[[Any], Any]] = None,
     ):
-        """
-        Call all DataStore operations to ensure data of type
+        """Call all DataStore operations to ensure data of type
         xr.Dataset//MultiLevelDataset is supported by *data_store*.
 
-        :param data_store: The filesystem data store instance.
-        :param filename_ext: Filename extension that identifies
-            a supported dataset format.
-        :param expected_data_type_alias: The expected data type alias.
-        :param expected_return_type: The expected data type.
-        :param expected_descriptor_type: The expected data descriptor type.
-        :param write_params: Optional write parameters
-        :param open_params: Optional open parameters
-        :param assert_data_ok: Optional function to assert read data is ok
+        Args:
+            data_store: The filesystem data store instance.
+            filename_ext: Filename extension that identifies
+                a supported dataset format.
+            expected_data_type_alias: The expected data type alias.
+            expected_return_type: The expected data type.
+            expected_descriptor_type: The expected data descriptor type.
+            write_params: Optional write parameters
+            open_params: Optional open parameters
+            assert_data_ok: Optional function to assert read data is ok
         """
 
         data_id = f"{DATA_PATH}/ds{filename_ext}"
@@ -418,7 +422,6 @@ class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
 
 class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
-
     def create_data_store(self) -> FsDataStore:
         root = ROOT_DIR
         self.prepare_fs(fsspec.filesystem("memory"), root)
@@ -426,7 +429,6 @@ class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
 
 
 class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
-
     def create_data_store(self) -> FsDataStore:
         root = ROOT_DIR
         storage_options = dict(

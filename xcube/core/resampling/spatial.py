@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2023 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 from typing import Union, Callable, Mapping, Hashable, Any, Optional
 
@@ -47,6 +30,7 @@ def resample_in_space(
     var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
+    rectify_kwargs: Optional[dict] = None,
 ):
     """
     Resample a dataset in the spatial dimensions.
@@ -150,7 +134,7 @@ def resample_in_space(
         # If the source is not regular, we need to rectify it,
         # so the target is regular. Our rectification implementation
         # works only correctly if source pixel size >= target pixel
-        # size. Therefore check if we must downscale source first.
+        # size. Therefore, check if we must downscale source first.
         x_scale = source_gm.x_res / target_gm.x_res
         y_scale = source_gm.y_res / target_gm.y_res
         if x_scale > _SCALE_LIMIT and y_scale > _SCALE_LIMIT:
@@ -162,6 +146,7 @@ def resample_in_space(
                 target_gm=target_gm,
                 encode_cf=encode_cf,
                 gm_name=gm_name,
+                **(rectify_kwargs or {})
             )
 
         # Source has higher resolution than target.
@@ -200,6 +185,7 @@ def resample_in_space(
             target_gm=target_gm,
             encode_cf=encode_cf,
             gm_name=gm_name,
+            **(rectify_kwargs or {})
         )
 
     # If CRSes are not both geographic and their CRSes are different

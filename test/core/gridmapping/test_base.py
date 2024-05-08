@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -18,7 +22,6 @@ NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 
 class _TestGridMapping(GridMapping):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.rgm = GridMapping.regular(

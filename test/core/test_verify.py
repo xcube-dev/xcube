@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -8,7 +12,6 @@ from xcube.core.verify import verify_cube, assert_cube
 
 
 class AssertAndVerifyCubeTest(unittest.TestCase):
-
     def test_assert_cube_ok(self):
         cube = new_cube(variables=dict(precipitation=0.5))
         self.assertIs(cube, assert_cube(cube))

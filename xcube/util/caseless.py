@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from typing import Dict, TypeVar, Optional
 
 
@@ -12,7 +16,6 @@ _VT_co = TypeVar("_VT_co", covariant=True)
 
 
 class _CaselessDict(dict):
-
     def __init__(self, *args, **kwargs: _VT):
         super().__init__(*args, **kwargs)
         self._lc_keys = {k.lower() if isinstance(k, str) else k: k for k in self.keys()}

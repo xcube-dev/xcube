@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -16,7 +20,6 @@ NOT_A_GEO_CRS = pyproj.crs.CRS(5243)
 
 # noinspection PyMethodMayBeStatic
 class RegularGridMappingTest(unittest.TestCase):
-
     def test_default_props(self):
         gm = GridMapping.regular((1000, 1000), (10, 53), 0.01, CRS_WGS84)
         self.assertEqual((1000, 1000), gm.size)

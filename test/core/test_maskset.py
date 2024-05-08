@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from typing import Tuple
 
@@ -116,7 +120,6 @@ class MaskSetTest(unittest.TestCase):
         mask_name: str,
         expected_chunks: Tuple[Tuple[int, ...], ...] = None,
     ):
-
         mask = getattr(mask_set, mask_name)
 
         self.assertIsInstance(mask, xr.DataArray)

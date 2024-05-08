@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 from typing import Set
 
@@ -19,7 +23,6 @@ POLYGON_GEOMETRY = dict(
 
 
 class GetTimeSeriesTest(unittest.TestCase):
-
     def test_point(self):
         ts_ds = get_time_series(self.cube, geometry=POINT_GEOMETRY)
         self.assert_dataset_ok(ts_ds, 1, {"A", "B"})

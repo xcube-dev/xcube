@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import numpy as np
@@ -140,7 +144,6 @@ class GetCubeValuesForPointsTest(unittest.TestCase):
 
 # noinspection PyMethodMayBeStatic
 class GetDatasetIndexesTest(unittest.TestCase):
-
     def test_get_dataset_indexes_for_single_cell(self):
         dataset = new_cube(width=360, height=180, drop_bounds=True)
         cell = dataset.isel(time=2, lat=20, lon=30)

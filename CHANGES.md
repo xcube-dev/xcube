@@ -1,4 +1,33 @@
-## Changes in 1.4.2 (in development)
+## Changes in 1.5.2 (in development)
+
+* Make tests compatible with PyTest 8.2.0. (#973)
+
+## Changes in 1.5.1
+
+* Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
+
+* Fixed xcube plugin auto-recognition in case a plugin project
+  uses `pyproject.toml` file. (#963)
+
+* Updated copyright notices in all source code files. 
+
+
+## Changes in 1.5.0
+
+* Enhanced spatial resampling in module `xcube.core.resampling` (#955): 
+    - Added optional keyword argument `interpolation` to function
+      `rectify_dataset()` with values `"nearest"`, `"triangular"`, 
+      and `"bilinear"` where `"triangular"` interpolates between 3 
+      and `"bilinear"` between 4 adjacent source pixels. 
+    - Function `rectify_dataset()` is now ~2 times faster by early 
+      detection of already transformed target pixels.      
+    - Added a documentation page that explains the algorithm used in
+      `rectify_dataset()`.
+    - Added optional keyword argument `rectify_kwargs` to 
+      `resample_in_space()`. If given, it is spread into keyword arguments 
+      passed to the internal `rectify_dataset()` delegation, if any.
+    - Deprecated unused keyword argument `xy_var_names` of 
+      function `rectify_dataset()`.
 
 * Replace use of deprecated method in testing module. (#961)
 
