@@ -2,13 +2,13 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-
 import base64
 import io
+import json
 import os
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Any, Union
 
 import fsspec
 import matplotlib
@@ -18,7 +18,7 @@ from PIL import Image
 from deprecated import deprecated
 
 from xcube.constants import LOG
-from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_instance, assert_given
 
 try:
     # noinspection PyPackageRequirements
@@ -346,9 +346,14 @@ class ColormapRegistry(ColormapProvider):
         if num_colors is not None:
             assert_instance(num_colors, int, name="num_colors")
 
-        cm_name, reverse, alpha = parse_cm_name(cm_name)
+        colormap: Optional[Colormap] = None
+        if cm_name.startswith("{"):
+            cm_name, colormap = parse_cm_code(cm_name)
 
-        colormap = self._colormaps.get(cm_name)
+        cm_name, reverse, alpha = parse_cm_name(cm_name)
+        if colormap is None:
+            colormap = self._colormaps.get(cm_name)
+
         if colormap is None:
             cm_name = DEFAULT_CMAP_NAME
             colormap = self._colormaps[cm_name]
@@ -434,7 +439,28 @@ class ColormapRegistry(ColormapProvider):
             )
 
 
+def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
+    # Note, if we get performance issues here, we should
+    # cache cm_code -> colormap
+    try:
+        user_color_map: Dict[str, Any] = json.loads(cm_code)
+        cm_name = user_color_map["name"]
+        colors = user_color_map["colors"]
+        return cm_name, Colormap(
+            cm_name,  # May be better to strip "_alpha" or "_r" or both
+            cat_name=CUSTOM_CATEGORY.name,
+            cmap=matplotlib.colors.LinearSegmentedColormap.from_list(cm_name, colors),
+        )
+    except (SyntaxError, KeyError, ValueError, TypeError):
+        # If we arrive here, the submitted user-specific cm_code is wrong
+        # We do not log or emit a warning here because this would
+        # impact performance for all other users.
+        # Use fallback color map "Reds" to indicate error
+        return "Reds", None
+
+
 def parse_cm_name(cm_name) -> Tuple[str, bool, bool]:
+    assert_given(cm_name, name="cm_name")
     alpha = cm_name.endswith(ALPHA_SUFFIX)
     if alpha:
         cm_name = cm_name[0 : -len(ALPHA_SUFFIX)]
@@ -544,7 +570,7 @@ def load_snap_cpd_colormap(snap_cpd_path: str) -> Colormap:
     else:
         norm = matplotlib.colors.Normalize(vmin, vmax)
     colors = list(
-        zip(map(norm, samples), ["#%02x%02x%02x" % color for _, color in points])
+        zip(map(norm, samples), ["#%02x%02x%02x%02x" % color for _, color in points])
     )
     cm_name, _ = os.path.splitext(os.path.basename(snap_cpd_path))
     return Colormap(
@@ -556,7 +582,7 @@ def load_snap_cpd_colormap(snap_cpd_path: str) -> Colormap:
 
 
 Sample = float
-Color = Tuple[int, int, int]
+Color = Tuple[int, int, int, int]
 Palette = List[Tuple[Sample, Color]]
 LogScaled = bool
 
@@ -594,12 +620,21 @@ def _parse_snap_cpd_file(cpd_file_path: str) -> Tuple[Palette, LogScaled]:
         points = []
         for i in range(num_points):
             try:
-                r, g, b = map(int, entries.get(f"color{i}", "").split(","))
+                rgba = tuple(map(int, entries.get(f"color{i}", "").split(",")))
+            except ValueError:
+                raise ValueError(illegal_format_msg)
+            try:
                 sample = float(entries.get(f"sample{i}"))
             except ValueError:
                 raise ValueError(illegal_format_msg)
-            points.append((sample, (r, g, b)))
+            if len(rgba) == 4:
+                points.append((sample, rgba))
+            elif len(rgba) == 3:
+                points.append((sample, (*rgba, 255)))
+            else:
+                raise ValueError(illegal_format_msg)
 
+        # noinspection PyTypeChecker
         return points, log_scaled
 
 

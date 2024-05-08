@@ -1,5 +1,17 @@
 ## Changes in 1.5.2 (in development)
 
+* xcube server's tile API can now handle user-defined colormaps from xcube 
+  viewer. Custom color bars are still passed using query parameter `cmap` to 
+  endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}`,
+  but in the case of custom color bars it is a JSON-encoded object with the 
+  following format: `{"name": <name>, "colors": <colors>}`, where `<name>` is 
+  a unique name and `<colors>` is a list of pairs 
+  `[[<v1>,<c1>], [<v2>,<c2>], [<v3>,<c3>], ...]` that map a sample value 
+  to a hexadecimal color value using CSS format `"#RRGGBBAA"`. (#975)
+
+* xcube server can now read SNAP color palette definition files (`*.cpd`) with
+  alpha values. (#932)
+
 * Make tests compatible with PyTest 8.2.0. (#973)
 
 ## Changes in 1.5.1
