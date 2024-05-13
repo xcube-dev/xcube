@@ -10,16 +10,21 @@
   to a hexadecimal color value using CSS format `"#RRGGBBAA"`. If 
   `discrete` is `true`, a  (#975)
 
-* xcube server's tile API now supports a new query parameter `norm` 
-  for endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}`. It can be 
-  used to specify the data normalisation step before the color mapping is 
-  applied. Its possible values are 
+* xcube server's tile API now allows specifying the data normalisation step 
+  before a color mapping is applied to the variable data to be visualized.
+  This affects endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}` and the WMTS
+  API. The possible normalisation values are 
   - `lin`: linear mapping of data values between `vmin` and `vmax` to range 0 to 1
     (uses `matplotlib.colors.Normalize(vmin, vmax)`).
   - `log`: logarithmic mapping of data values between `vmin` and `vmax` to range 0 to 1
     (uses `matplotlib.colors.LogNorm(vmin, vmax)`).
   - `cat`: categorical mapping of data values into to indexes into the color mapping.
     (uses `matplotlib.colors.BoundaryNorm(categories)`).
+  
+  The normalisation can be specified in three different ways (in order): 
+  - Query parameter `norm`. 
+  - Property `Norm` in the `Styles/ColorMapping` element in xcube server configuration.
+  - Data variable attribute `color_norm`.
 
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)

@@ -221,6 +221,7 @@ class Colormap:
         cmap_reversed: Optional[matplotlib.colors.Colormap] = None,
         cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
         norm: Optional[matplotlib.colors.Normalize] = None,
+        categories: Optional[List[int]] = None,
     ):
         self._cm_name = cm_name
         self._cat_name = cat_name
@@ -230,6 +231,7 @@ class Colormap:
         self._cmap_reversed_alpha = None
         self._cmap_png_base64: Optional[str] = None
         self._norm = norm
+        self._categories = categories
 
     @property
     def cm_name(self) -> str:
@@ -273,6 +275,10 @@ class Colormap:
     @property
     def norm(self) -> Optional[matplotlib.colors.Normalize]:
         return self._norm
+
+    @property
+    def categories(self) -> Optional[List[int]]:
+        return self._categories
 
 
 class ColormapProvider(ABC):
@@ -445,9 +451,16 @@ def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
         user_color_map: Dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
         cm_items = user_color_map["colors"]
-        cm_norm = user_color_map.get("norm", "lin")
-        # TODO: process norm "lin", "log", "cat"
-        if cm_norm == "lin":
+        cm_discrete = user_color_map.get("discrete", False)
+        if cm_discrete:
+            categories: List[str] = list(map(lambda c: c[0], cm_items))
+            colors: List[str] = list(map(lambda c: c[1], cm_items))
+            return cm_name, Colormap(
+                cm_name,  # May be better to strip "_alpha" or "_r" or both
+                cat_name=CUSTOM_CATEGORY.name,
+                cmap=matplotlib.colors.ListedColormap(colors),
+            )
+        else:
             return cm_name, Colormap(
                 cm_name,  # May be better to strip "_alpha" or "_r" or both
                 cat_name=CUSTOM_CATEGORY.name,
@@ -455,14 +468,6 @@ def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
                     cm_name, cm_items
                 ),
             )
-        if cm_norm == "cat":
-            colors: List[str] = list(map(lambda c: c[1], cm_items))
-            return cm_name, Colormap(
-                cm_name,  # May be better to strip "_alpha" or "_r" or both
-                cat_name=CUSTOM_CATEGORY.name,
-                cmap=matplotlib.colors.ListedColormap(colors),
-            )
-        raise ValueError(f"invalid norm: {cm_norm!r}")
     except (SyntaxError, KeyError, ValueError, TypeError):
         # If we arrive here, the submitted user-specific cm_code is wrong
         # We do not log or emit a warning here because this would

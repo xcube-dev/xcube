@@ -474,6 +474,8 @@ def compute_rgba_tile(
     if var_tiles is None:
         return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
+    _, cm = cmap_provider.get_cmap(cmap_name)
+
     norm_var_tiles = []
     for var_tile, value_range in zip(var_tiles, value_ranges):
         with measure_time("Normalizing data tile"):
@@ -483,7 +485,12 @@ def compute_rgba_tile(
                 value_min, value_max = value_max, value_min
             if math.isclose(value_min, value_max):
                 value_max = value_min + 1
-            norm = matplotlib.colors.Normalize(value_min, value_max, clip=True)
+            if cmap_norm == "cat":
+                norm = matplotlib.colors.BoundaryNorm(ncolors=cm.N, clip=True)
+            elif cmap_norm == "log":
+                norm = matplotlib.colors.LogNorm(value_min, value_max, clip=True)
+            else:
+                norm = matplotlib.colors.Normalize(value_min, value_max, clip=True)
             norm_var_tile = norm(var_tile)
 
         norm_var_tiles.append(norm_var_tile)
@@ -491,7 +498,6 @@ def compute_rgba_tile(
     with measure_time("Encoding tile as RGBA image"):
         if len(norm_var_tiles) == 1:
             var_tile_norm = norm_var_tiles[0]
-            _, cm = cmap_provider.get_cmap(cmap_name)
             var_tile_rgba = cm(var_tile_norm)
             var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
         else:
