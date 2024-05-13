@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Dict, Tuple, List, Optional, Any
 
+from deprecated import deprecated
 import fsspec
 import matplotlib
 import matplotlib.colors
