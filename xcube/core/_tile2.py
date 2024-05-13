@@ -474,23 +474,27 @@ def compute_rgba_tile(
     if var_tiles is None:
         return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
+    # TODO: make cmap_provider.get_cmap() return an xcube Colormap,
+    #    so we have colormap.boundaries available when creating the
+    #    BoundaryNorm for cmap_norm == "cat".
     _, cm = cmap_provider.get_cmap(cmap_name)
 
     norm_var_tiles = []
     for var_tile, value_range in zip(var_tiles, value_ranges):
         with measure_time("Normalizing data tile"):
             var_tile = var_tile[::-1, :]
-            value_min, value_max = value_range
-            if value_max < value_min:
-                value_min, value_max = value_max, value_min
-            if math.isclose(value_min, value_max):
-                value_max = value_min + 1
             if cmap_norm == "cat":
-                norm = matplotlib.colors.BoundaryNorm(ncolors=cm.N, clip=True)
-            elif cmap_norm == "log":
-                norm = matplotlib.colors.LogNorm(value_min, value_max, clip=True)
+                norm = matplotlib.colors.BoundaryNorm(ncolors=cm.N, clip=False)
             else:
-                norm = matplotlib.colors.Normalize(value_min, value_max, clip=True)
+                value_min, value_max = value_range
+                if value_max < value_min:
+                    value_min, value_max = value_max, value_min
+                if math.isclose(value_min, value_max):
+                    value_max = value_min + 1
+                if cmap_norm == "log":
+                    norm = matplotlib.colors.LogNorm(value_min, value_max, clip=False)
+                else:
+                    norm = matplotlib.colors.Normalize(value_min, value_max, clip=False)
             norm_var_tile = norm(var_tile)
 
         norm_var_tiles.append(norm_var_tile)

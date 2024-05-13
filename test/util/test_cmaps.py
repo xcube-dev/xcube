@@ -37,17 +37,6 @@ class DeprecatedApiTest(TestCase):
         self.assertEqual("bone", cm_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
-        # User-defined color bars, #975
-        cm_name, cmap = get_cmap(
-            '{"name": "ucb783473",'
-            ' "colors": ['
-            '[0.0, "#00000000"], '
-            '[1.0, "#ffffffff"]'
-            "]}"
-        )
-        self.assertEqual("ucb783473", cm_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
-
     def test_get_cmaps(self):
         cmaps = get_cmaps()
         self.assertIsInstance(cmaps, list)
@@ -85,6 +74,18 @@ class ColormapRegistryTest(TestCase):
     def test_get_cmap_reversed_alpha(self):
         cmap_name, cmap = self.registry.get_cmap("plasma_r_alpha")
         self.assertEqual("plasma", cmap_name)
+        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+
+    def test_get_cmap_from_code(self):
+        # User-defined color bars, #975
+        cm_name, cmap = self.registry.get_cmap(
+            '{"name": "ucb783473",'
+            ' "colors": ['
+            '[0.0, "#00000000"], '
+            '[1.0, "#ffffffff"]'
+            "]}"
+        )
+        self.assertEqual("ucb783473", cm_name)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
 
     def test_get_cmap_num_colors(self):

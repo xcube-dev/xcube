@@ -8,7 +8,7 @@ import json
 import os
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Dict, Tuple, List, Optional, Any
+from typing import Dict, Tuple, List, Optional, Any, Union
 
 from deprecated import deprecated
 import fsspec
@@ -222,7 +222,7 @@ class Colormap:
         cmap_reversed: Optional[matplotlib.colors.Colormap] = None,
         cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
         norm: Optional[matplotlib.colors.Normalize] = None,
-        categories: Optional[List[int]] = None,
+        boundaries: Optional[List[Union[int, float]]] = None,
     ):
         self._cm_name = cm_name
         self._cat_name = cat_name
@@ -232,7 +232,7 @@ class Colormap:
         self._cmap_reversed_alpha = None
         self._cmap_png_base64: Optional[str] = None
         self._norm = norm
-        self._categories = categories
+        self._boundaries = boundaries
 
     @property
     def cm_name(self) -> str:
@@ -278,8 +278,8 @@ class Colormap:
         return self._norm
 
     @property
-    def categories(self) -> Optional[List[int]]:
-        return self._categories
+    def boundaries(self) -> Optional[List[Union[int, float]]]:
+        return self._boundaries
 
 
 class ColormapProvider(ABC):
@@ -452,18 +452,32 @@ def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
         user_color_map: Dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
         cm_items = user_color_map["colors"]
-        cm_discrete = user_color_map.get("discrete", False)
-        if cm_discrete:
-            categories: List[str] = list(map(lambda c: c[0], cm_items))
-            colors: List[str] = list(map(lambda c: c[1], cm_items))
+        cm_type = user_color_map.get("type", "node")
+        cm_base_name, _, _ = parse_cm_name(cm_name)
+        if cm_type == "index" or cm_type == "bound":
+            if cm_type == "index":
+                bounds: List[int] = []
+                colors: List[str] = []
+                n = len(cm_items)
+                for i, (value, color) in enumerate(cm_items):
+                    index = int(value)
+                    colors.append(color)
+                    bounds.append(index)
+                    if i == n - 1 or index != cm_items[i + 1]:
+                        bounds.append(index + 1)
+                        colors.append("#00000000")
+            else:
+                bounds: List[Union[int, float]] = list(map(lambda c: c[0], cm_items))
+                colors: List[str] = list(map(lambda c: c[1], cm_items[:-1]))
             return cm_name, Colormap(
-                cm_name,  # May be better to strip "_alpha" or "_r" or both
+                cm_base_name,
                 cat_name=CUSTOM_CATEGORY.name,
                 cmap=matplotlib.colors.ListedColormap(colors),
+                boundaries=bounds,
             )
         else:
             return cm_name, Colormap(
-                cm_name,  # May be better to strip "_alpha" or "_r" or both
+                cm_base_name,
                 cat_name=CUSTOM_CATEGORY.name,
                 cmap=matplotlib.colors.LinearSegmentedColormap.from_list(
                     cm_name, cm_items
