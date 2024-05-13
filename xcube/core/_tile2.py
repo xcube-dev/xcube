@@ -18,6 +18,7 @@ from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.cmaps import ColormapProvider
+from xcube.util.cmaps import DEFAULT_CMAP_NAME
 from xcube.util.perf import measure_time_cm
 from xcube.util.projcache import ProjCache
 from xcube.util.timeindex import ensure_time_label_compatible
@@ -30,7 +31,7 @@ from .tilingscheme import DEFAULT_TILE_SIZE
 from .tilingscheme import TilingScheme
 
 DEFAULT_VALUE_RANGE = (0.0, 1.0)
-DEFAULT_CMAP_NAME = "bone"
+DEFAULT_CMAP_NORM = "lin"
 DEFAULT_FORMAT = "png"
 DEFAULT_TILE_ENLARGEMENT = 1
 
@@ -342,6 +343,7 @@ def compute_rgba_tile(
     crs_name: str = DEFAULT_CRS_NAME,
     tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
     cmap_name: str = None,
+    cmap_norm: str = DEFAULT_CMAP_NORM,
     value_ranges: Optional[Union[ValueRange, Sequence[ValueRange]]] = None,
     non_spatial_labels: Optional[Dict[str, Any]] = None,
     format: str = DEFAULT_FORMAT,
@@ -394,7 +396,9 @@ def compute_rgba_tile(
         tile_size: The tile size in pixels. Can be a scalar or an
             integer width/height pair. Defaults to 256.
         cmap_name: Color map name. Only used if a single variable name
-            is given. Defaults to "bone".
+            is given. Defaults to "viridis".
+        cmap_norm: Color map normalisation. One of "lin" (linear), "log"
+            (logarithmic), "cat" (categorical). Defaults to "lin".
         value_ranges: A single value range, or value ranges for each
             variable name.
         non_spatial_labels: Labels for the non-spatial dimensions in the
@@ -508,13 +512,18 @@ def compute_rgba_tile(
 def get_var_cmap_params(
     var: xr.DataArray,
     cmap_name: Optional[str],
+    cmap_norm: Optional[str],
     cmap_range: Tuple[Optional[float], Optional[float]],
     valid_range: Optional[Tuple[float, float]],
-) -> Tuple[str, Tuple[float, float]]:
+) -> Tuple[str, str, Tuple[float, float]]:
     if cmap_name is None:
         cmap_name = var.attrs.get("color_bar_name")
         if cmap_name is None:
             cmap_name = DEFAULT_CMAP_NAME
+    if cmap_norm is None:
+        cmap_norm = var.attrs.get("color_norm")
+        if cmap_norm is None:
+            cmap_norm = DEFAULT_CMAP_NORM
     cmap_vmin, cmap_vmax = cmap_range
     if cmap_vmin is None:
         cmap_vmin = var.attrs.get("color_value_min")
@@ -528,7 +537,7 @@ def get_var_cmap_params(
             cmap_vmax = valid_range[1]
         if cmap_vmax is None:
             cmap_vmax = DEFAULT_VALUE_RANGE[1]
-    return cmap_name, (cmap_vmin, cmap_vmax)
+    return cmap_name, cmap_norm, (cmap_vmin, cmap_vmax)
 
 
 def get_var_valid_range(var: xr.DataArray) -> Optional[Tuple[float, float]]:

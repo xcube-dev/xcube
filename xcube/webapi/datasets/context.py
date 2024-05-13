@@ -500,8 +500,9 @@ class DatasetsContext(ResourcesContext):
 
     def get_color_mapping(
         self, ds_id: str, var_name: str
-    ) -> Tuple[str, Tuple[float, float]]:
+    ) -> Tuple[str, str, Tuple[float, float]]:
         cmap_name = None
+        cmap_norm = None
         cmap_vmin, cmap_vmax = None, None
         color_mappings = self.get_color_mappings(ds_id)
         if color_mappings:
@@ -509,17 +510,18 @@ class DatasetsContext(ResourcesContext):
             if color_mapping:
                 assert "ColorFile" not in color_mapping
                 cmap_name = color_mapping.get("ColorBar")
+                cmap_norm = color_mapping.get("Norm")
                 cmap_vmin, cmap_vmax = color_mapping.get("ValueRange", (None, None))
 
         cmap_range = cmap_vmin, cmap_vmax
-        if cmap_name is not None and None not in cmap_range:
+        if cmap_name and cmap_norm and None not in cmap_range:
             # noinspection PyTypeChecker
-            return cmap_name, cmap_range
+            return cmap_name, cmap_norm, cmap_range
 
         ds = self.get_dataset(ds_id, expected_var_names=[var_name])
         var = ds[var_name]
         valid_range = get_var_valid_range(var)
-        return get_var_cmap_params(var, cmap_name, cmap_range, valid_range)
+        return get_var_cmap_params(var, cmap_name, cmap_norm, cmap_range, valid_range)
 
     def _get_cm_styles(self) -> Tuple[Dict[str, Any], ColormapRegistry]:
         custom_colormaps = {}

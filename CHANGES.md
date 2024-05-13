@@ -4,10 +4,22 @@
   viewer. Custom color bars are still passed using query parameter `cmap` to 
   endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}`,
   but in the case of custom color bars it is a JSON-encoded object with the 
-  following format: `{"name": <name>, "colors": <colors>}`, where `<name>` is 
-  a unique name and `<colors>` is a list of pairs 
+  following format: `{"name": <str>, "colors": <list>, "discrete": <bool>}`, 
+  where `name` is a unique name and `colors` is a list of pairs 
   `[[<v1>,<c1>], [<v2>,<c2>], [<v3>,<c3>], ...]` that map a sample value 
-  to a hexadecimal color value using CSS format `"#RRGGBBAA"`. (#975)
+  to a hexadecimal color value using CSS format `"#RRGGBBAA"`. If 
+  `discrete` is `true`, a  (#975)
+
+* xcube server's tile API now supports a new query parameter `norm` 
+  for endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}`. It can be 
+  used to specify the data normalisation step before the color mapping is 
+  applied. Its possible values are 
+  - `lin`: linear mapping of data values between `vmin` and `vmax` to range 0 to 1
+    (uses `matplotlib.colors.Normalize(vmin, vmax)`).
+  - `log`: logarithmic mapping of data values between `vmin` and `vmax` to range 0 to 1
+    (uses `matplotlib.colors.LogNorm(vmin, vmax)`).
+  - `cat`: categorical mapping of data values into to indexes into the color mapping.
+    (uses `matplotlib.colors.BoundaryNorm(categories)`).
 
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)

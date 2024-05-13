@@ -166,11 +166,11 @@ class DatasetsContextTest(unittest.TestCase):
     def test_get_color_mapping(self):
         ctx = get_datasets_ctx()
         cm = ctx.get_color_mapping("demo", "conc_chl")
-        self.assertEqual(("plasma", (0.0, 24.0)), cm)
+        self.assertEqual(("plasma", "lin", (0.0, 24.0)), cm)
         cm = ctx.get_color_mapping("demo", "conc_tsm")
-        self.assertEqual(("PuBuGn", (0.0, 100.0)), cm)
+        self.assertEqual(("PuBuGn", "lin", (0.0, 100.0)), cm)
         cm = ctx.get_color_mapping("demo", "kd489")
-        self.assertEqual(("jet", (0.0, 6.0)), cm)
+        self.assertEqual(("jet", "lin", (0.0, 6.0)), cm)
         with self.assertRaises(ApiError.NotFound):
             ctx.get_color_mapping("demo", "_")
 

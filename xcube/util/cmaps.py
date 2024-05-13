@@ -8,14 +8,13 @@ import json
 import os
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Dict, Tuple, List, Optional, Any, Union
+from typing import Dict, Tuple, List, Optional, Any
 
 import fsspec
 import matplotlib
 import matplotlib.colors
 import numpy as np
 from PIL import Image
-from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.util.assertions import assert_instance, assert_given
@@ -359,17 +358,17 @@ class ColormapRegistry(ColormapProvider):
             colormap = self._colormaps[cm_name]
 
         if reverse and alpha:
-            cmap = colormap.cmap_reversed_alpha
+            cmap: matplotlib.colors.Colormap = colormap.cmap_reversed_alpha
         elif reverse:
-            cmap = colormap.cmap_reversed
+            cmap: matplotlib.colors.Colormap = colormap.cmap_reversed
         elif alpha:
-            cmap = colormap.cmap_alpha
+            cmap: matplotlib.colors.Colormap = colormap.cmap_alpha
         else:
-            cmap = colormap.cmap
+            cmap: matplotlib.colors.Colormap = colormap.cmap
         if num_colors is not None:
             try:
                 # noinspection PyProtectedMember
-                cmap = cmap._resample(num_colors)
+                cmap = cmap.resampled(num_colors)
             except (ValueError, AttributeError, NotImplementedError):
                 pass
         return cm_name, cmap
@@ -445,12 +444,25 @@ def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
     try:
         user_color_map: Dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
-        colors = user_color_map["colors"]
-        return cm_name, Colormap(
-            cm_name,  # May be better to strip "_alpha" or "_r" or both
-            cat_name=CUSTOM_CATEGORY.name,
-            cmap=matplotlib.colors.LinearSegmentedColormap.from_list(cm_name, colors),
-        )
+        cm_items = user_color_map["colors"]
+        cm_norm = user_color_map.get("norm", "lin")
+        # TODO: process norm "lin", "log", "cat"
+        if cm_norm == "lin":
+            return cm_name, Colormap(
+                cm_name,  # May be better to strip "_alpha" or "_r" or both
+                cat_name=CUSTOM_CATEGORY.name,
+                cmap=matplotlib.colors.LinearSegmentedColormap.from_list(
+                    cm_name, cm_items
+                ),
+            )
+        if cm_norm == "cat":
+            colors: List[str] = list(map(lambda c: c[1], cm_items))
+            return cm_name, Colormap(
+                cm_name,  # May be better to strip "_alpha" or "_r" or both
+                cat_name=CUSTOM_CATEGORY.name,
+                cmap=matplotlib.colors.ListedColormap(colors),
+            )
+        raise ValueError(f"invalid norm: {cm_norm!r}")
     except (SyntaxError, KeyError, ValueError, TypeError):
         # If we arrive here, the submitted user-specific cm_code is wrong
         # We do not log or emit a warning here because this would
