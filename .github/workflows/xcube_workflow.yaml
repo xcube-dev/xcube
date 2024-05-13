@@ -41,7 +41,7 @@ jobs:
         run: |
           pip install pytest pytest-cov
 
-          pytest --cov=./ --cov-report=xml
+          pytest --cov=xcube --cov-report=xml
       - uses: codecov/codecov-action@v1
         with:
           verbose: true # optional (default = false)
