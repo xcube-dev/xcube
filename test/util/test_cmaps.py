@@ -7,9 +7,8 @@ from unittest import TestCase
 
 import matplotlib.colors
 import numpy as np
-import pytest
 
-from xcube.util.cmaps import Colormap
+from xcube.util.cmaps import Colormap, CUSTOM_CATEGORY
 from xcube.util.cmaps import ColormapCategory
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import DEFAULT_CMAP_NAME
@@ -53,45 +52,150 @@ class ColormapRegistryTest(TestCase):
         self.registry = ColormapRegistry()
 
     def test_get_cmap(self):
-        cmap_name, cmap = self.registry.get_cmap("plasma")
-        self.assertEqual("plasma", cmap_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+        cmap, colormap = self.registry.get_cmap("bone")
+        self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("bone", colormap.cm_name)
+        self.assertEqual("Sequential (2)", colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
 
-        cmap_name, cmap = self.registry.get_cmap("PLASMA")
-        self.assertEqual(DEFAULT_CMAP_NAME, cmap_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+    def test_get_cmap_invalid(self):
+        cmap, colormap = self.registry.get_cmap("BONE")
+        self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual(DEFAULT_CMAP_NAME, colormap.cm_name)
+        self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
 
     def test_get_cmap_alpha(self):
-        cmap_name, cmap = self.registry.get_cmap("plasma_alpha")
-        self.assertEqual("plasma", cmap_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+        cmap, colormap = self.registry.get_cmap("bone_alpha")
+        self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("Sequential (2)", colormap.cat_name)
+        self.assertEqual("bone", colormap.cm_name)
+        self.assertEqual(None, colormap.bounds)
 
     def test_get_cmap_reversed(self):
-        cmap_name, cmap = self.registry.get_cmap("plasma_r")
-        self.assertEqual("plasma", cmap_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+        cmap, colormap = self.registry.get_cmap("plasma_r")
+        self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("plasma", colormap.cm_name)
+        self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
 
     def test_get_cmap_reversed_alpha(self):
-        cmap_name, cmap = self.registry.get_cmap("plasma_r_alpha")
-        self.assertEqual("plasma", cmap_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+        cmap, colormap = self.registry.get_cmap("plasma_r_alpha")
+        self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("plasma", colormap.cm_name)
+        self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
 
-    def test_get_cmap_from_code(self):
+    def test_get_cmap_from_code_type_node_norm(self):
         # User-defined color bars, #975
-        cm_name, cmap = self.registry.get_cmap(
-            '{"name": "ucb783473",'
+        cmap, colormap = self.registry.get_cmap(
+            '{"name": "ucb783472",'
             ' "colors": ['
             '[0.0, "#00000000"], '
+            '[0.6, "#ff0000aa"], '
             '[1.0, "#ffffffff"]'
             "]}"
         )
-        self.assertEqual("ucb783473", cm_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+        self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("ucb783472", colormap.cm_name)
+        self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
+
+    def test_get_cmap_from_code_type_node_not_norm(self):
+        # User-defined color bars, #975
+        cmap, colormap = self.registry.get_cmap(
+            '{"name": "ucb783482",'
+            ' "colors": ['
+            '[-1.2, "#00000000"], '
+            '[0.0, "#ff0000aa"], '
+            '[1.2, "#ffffffff"]'
+            "]}"
+        )
+        self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("ucb783482", colormap.cm_name)
+        self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
+
+    def test_get_cmap_from_code_type_index(self):
+        # User-defined color bars, #975
+        cmap, colormap = self.registry.get_cmap(
+            '{"name": "ucb783473",'
+            ' "colors": ['
+            '[1, "#00000000"], '
+            '[2, "#ff0000aa"], '
+            '[5, "#ffffffff"]'
+            '], "type": "index"}'
+        )
+        self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("ucb783473", colormap.cm_name)
+        self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
+        self.assertEqual([1, 2, 3, 5, 6], colormap.bounds)
+
+    def test_get_cmap_from_code_type_bound(self):
+        # User-defined color bars, #975
+        cmap, colormap = self.registry.get_cmap(
+            '{"name": "ucb783474",'
+            ' "colors": ['
+            '[0.0, "#00000000"], '
+            '[0.6, "#ff0000aa"], '
+            '[1.0, "#ffffffff"]'
+            '], "type": "bound"}'
+        )
+        self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("ucb783474", colormap.cm_name)
+        self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
+        self.assertEqual([0.0, 0.6, 1.0], colormap.bounds)
+
+    def test_get_cmap_from_code_reversed_alpha(self):
+        # User-defined color bars, #975
+        cmap, colormap = self.registry.get_cmap(
+            '{"name": "ucb783475_r_alpha",'
+            ' "colors": ['
+            '[0.0, "#00000000"], '
+            '[0.5, "#ff0000aa"], '
+            '[1.0, "#ffffffff"]'
+            "]}"
+        )
+        self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("ucb783475", colormap.cm_name)
+        self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
+
+    def test_get_cmap_from_code_invalid(self):
+        # User-defined color bars, #975
+        cmap, colormap = self.registry.get_cmap(
+            '{"name": "ucb783475_r_alpha", "colors": [[0.0, "#0000'
+        )
+        self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("Reds", colormap.cm_name)
+        self.assertEqual("Sequential", colormap.cat_name)
+        self.assertEqual(None, colormap.bounds)
 
     def test_get_cmap_num_colors(self):
-        cmap_name, cmap = self.registry.get_cmap("plasma", num_colors=32)
-        self.assertEqual("plasma", cmap_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
+        cmap, colormap = self.registry.get_cmap("plasma", num_colors=32)
+        self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertEqual(32, cmap.N)
+        self.assertIsInstance(colormap, Colormap)
+        self.assertEqual("plasma", colormap.cm_name)
+        self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
+        self.assertEqual(256, colormap.cmap.N)
 
     def test_categories(self):
         categories = self.registry.categories

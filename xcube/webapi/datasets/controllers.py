@@ -586,8 +586,7 @@ def get_legend(
     except (ValueError, TypeError):
         raise ApiError.BadRequest("Invalid color legend parameter(s)")
 
-    cmap_name, cmap = ctx.colormap_registry.get_cmap(cmap_name)
-    colormap = ctx.colormap_registry.colormaps.get(cmap_name)
+    cmap_name, cmap, colormap = ctx.colormap_registry.get_cmap(cmap_name)
     assert colormap is not None
 
     norm = None
