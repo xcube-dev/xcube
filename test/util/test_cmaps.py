@@ -134,7 +134,7 @@ class ColormapRegistryTest(TestCase):
             '[1, "#00000000"], '
             '[2, "#ff0000aa"], '
             '[5, "#ffffffff"]'
-            '], "type": "index"}'
+            '], "type": "key"}'
         )
         self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
