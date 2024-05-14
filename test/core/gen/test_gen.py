@@ -853,3 +853,6 @@ def gen_cube_wrapper(
         ),
         output,
     )
+
+
+unittest.main("test_gen")

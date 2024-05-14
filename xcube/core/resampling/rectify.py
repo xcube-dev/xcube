@@ -17,6 +17,7 @@ from .cf import maybe_encode_grid_mapping
 
 
 _INTERPOLATIONS = {"nearest": 0, "triangular": 1, "bilinear": 2}
+nb.config.DISABLE_JIT = False
 
 
 def rectify_dataset(
