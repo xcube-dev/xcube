@@ -496,7 +496,7 @@ def compute_rgba_tile(
             var_tile_rgba = cmap(norm_var_tile)
             var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
     else:
-        with measure_time("Encoding tile as RGBA image"):
+        with measure_time("Encoding 3 tiles as RGBA image"):
             norm_var_tiles = []
             for var_tile, value_range in zip(var_tiles, value_ranges):
                 norm = get_continuous_norm(value_range, cmap_norm)
