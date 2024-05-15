@@ -14,6 +14,8 @@
 
 * Make tests compatible with PyTest 8.2.0. (#973)
 
+* Fix broken table of contents links in dataset convention document.
+
 ## Changes in 1.5.1
 
 * Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
