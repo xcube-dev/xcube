@@ -14,7 +14,7 @@ jobs:
   unittest:
     runs-on: ubuntu-latest
     env:
-      NUMBA_DISABLE_JIT: 1
+      NUMBA_DISABLE_JIT: 0
     steps:
       - name: git-checkout
         uses: actions/checkout@v4
@@ -41,8 +41,7 @@ jobs:
       - name: unittest-xcube
         shell: bash -l {0}
         run: |
-          python -m cProfile -s cumulative test/core/gen/test_gen.py > temp_file && head -n 1000 temp_file
-      # pytest --cov=xcube --cov-report=xml
+          pytest --cov=xcube --cov-report=xml
       - uses: codecov/codecov-action@v4
         with:
           verbose: true # optional (default = false)
