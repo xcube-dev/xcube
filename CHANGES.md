@@ -14,6 +14,8 @@
 
 * Make tests compatible with PyTest 8.2.0. (#973)
 
+* Fix broken table of contents links in dataset convention document.
+
 * NUMBA_DISABLE_JIT set to False to enable `numba.jit` in github workflow (#946)
 
 
@@ -65,6 +67,9 @@
   `update_dataset_chunk_encoding` (#958).
 
 * Update some unit tests to make them compatible with xarray 2024.3.0 (#958).
+
+* Added documentation page "How do I ..." that points users to applicable
+  xcube Python API.
 
 ## Changes in 1.4.1
 
