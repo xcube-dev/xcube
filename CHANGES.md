@@ -65,6 +65,9 @@
 
 * Update some unit tests to make them compatible with xarray 2024.3.0 (#958).
 
+* Added documentation page "How do I ..." that points users to applicable
+  xcube Python API.
+
 ## Changes in 1.4.1
 
 ### Enhancements
