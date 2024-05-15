@@ -303,7 +303,6 @@ def _new_tile_dataset(
             name=var_name,
             attrs=dict(**original_var.attrs, grid_mapping="crs"),
         )
-    print(pyproj.CRS(crs).to_cf())
     return xr.Dataset(
         data_vars=dict(
             **data_vars, crs=xr.DataArray((), attrs=pyproj.CRS(crs).to_cf())
@@ -342,8 +341,8 @@ def compute_rgba_tile(
     cmap_provider: ColormapProvider,
     crs_name: str = DEFAULT_CRS_NAME,
     tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
-    cmap_name: str = None,
-    cmap_norm: str = DEFAULT_CMAP_NORM,
+    cmap_name: str = Optional[DEFAULT_CMAP_NAME],
+    cmap_norm: str = Optional[DEFAULT_CMAP_NORM],
     value_ranges: Optional[Union[ValueRange, Sequence[ValueRange]]] = None,
     non_spatial_labels: Optional[Dict[str, Any]] = None,
     format: str = DEFAULT_FORMAT,
@@ -395,10 +394,13 @@ def compute_rgba_tile(
             "EPSG:3857". Defaults to "CRS84".
         tile_size: The tile size in pixels. Can be a scalar or an
             integer width/height pair. Defaults to 256.
-        cmap_name: Color map name. Only used if a single variable name
-            is given. Defaults to "viridis".
+        cmap_name: Color map name.
+            Only used if a single variable name is given.
+            Defaults to "viridis".
         cmap_norm: Color map normalisation. One of "lin" (linear), "log"
-            (logarithmic), "cat" (categorical). Defaults to "lin".
+            (logarithmic), "cat" (categorical).
+            Only used if a single variable name is given.
+            Defaults to "lin".
         value_ranges: A single value range, or value ranges for each
             variable name.
         non_spatial_labels: Labels for the non-spatial dimensions in the
@@ -474,36 +476,32 @@ def compute_rgba_tile(
     if var_tiles is None:
         return TransparentRgbaTilePool.INSTANCE.get(tile_size, format)
 
-    cmap, colormap = cmap_provider.get_cmap(cmap_name)
+    cmap_norm = cmap_norm or DEFAULT_CMAP_NORM
 
-    norm_var_tiles = []
-    for var_tile, value_range in zip(var_tiles, value_ranges):
-        with measure_time("Normalizing data tile"):
-            var_tile = var_tile[::-1, :]
+    if len(var_tiles) == 1:
+        with measure_time("Decoding color mapping"):
+            # Note, we measure here because cmap_name may be an
+            # JSON-encoded user-defined color map.
+            cmap, colormap = cmap_provider.get_cmap(cmap_name or DEFAULT_CMAP_NAME)
+
+        with measure_time("Encoding tile as RGBA image"):
+            var_tile, value_range = var_tiles[0], value_ranges[0]
             if cmap_norm == "cat" and colormap.bounds:
                 norm = matplotlib.colors.BoundaryNorm(
                     colormap.bounds, ncolors=cmap.N, clip=False
                 )
             else:
-                value_min, value_max = value_range
-                if value_max < value_min:
-                    value_min, value_max = value_max, value_min
-                if math.isclose(value_min, value_max):
-                    value_max = value_min + 1
-                if cmap_norm == "log":
-                    norm = matplotlib.colors.LogNorm(value_min, value_max, clip=True)
-                else:
-                    norm = matplotlib.colors.Normalize(value_min, value_max, clip=True)
-            norm_var_tile = norm(var_tile)
-
-        norm_var_tiles.append(norm_var_tile)
-
-    with measure_time("Encoding tile as RGBA image"):
-        if len(norm_var_tiles) == 1:
-            var_tile_norm = norm_var_tiles[0]
-            var_tile_rgba = cmap(var_tile_norm)
+                norm = get_continuous_norm(value_range, cmap_norm)
+            norm_var_tile = norm(var_tile[::-1, :])
+            var_tile_rgba = cmap(norm_var_tile)
             var_tile_rgba = (255 * var_tile_rgba).astype(np.uint8)
-        else:
+    else:
+        with measure_time("Encoding tile as RGBA image"):
+            norm_var_tiles = []
+            for var_tile, value_range in zip(var_tiles, value_ranges):
+                norm = get_continuous_norm(value_range, cmap_norm)
+                norm_var_tiles.append(norm(var_tile[::-1, :]))
+
             r, g, b = norm_var_tiles
             var_tile_rgba = np.zeros((tile_height, tile_width, 4), dtype=np.uint8)
             var_tile_rgba[..., 0] = 255 * r
@@ -516,6 +514,20 @@ def compute_rgba_tile(
             return _encode_rgba_as_png(var_tile_rgba)
     else:  # format == 'numpy'
         return var_tile_rgba
+
+
+def get_continuous_norm(
+    value_range: Tuple[float, float], cmap_norm: Optional[str]
+) -> matplotlib.colors.Normalize:
+    value_min, value_max = value_range
+    if value_max < value_min:
+        value_min, value_max = value_max, value_min
+    if math.isclose(value_min, value_max):
+        value_max = value_min + 1
+    if cmap_norm == "log":
+        return matplotlib.colors.LogNorm(value_min, value_max, clip=True)
+    else:
+        return matplotlib.colors.Normalize(value_min, value_max, clip=True)
 
 
 def get_var_cmap_params(

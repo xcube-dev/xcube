@@ -578,7 +578,7 @@ def get_legend(
 
     try:
         cmap_name = params.get("cmap", params.get("cbar", default_cmap_cbar))
-        cmap_norm = float(params.get("norm", str(default_cmap_norm)))
+        cmap_norm = params.get("norm", str(default_cmap_norm))
         cmap_vmin = float(params.get("vmin", str(default_cmap_vmin)))
         cmap_vmax = float(params.get("vmax", str(default_cmap_vmax)))
         cmap_w = int(params.get("width", "256"))
@@ -586,7 +586,7 @@ def get_legend(
     except (ValueError, TypeError):
         raise ApiError.BadRequest("Invalid color legend parameter(s)")
 
-    cmap_name, cmap, colormap = ctx.colormap_registry.get_cmap(cmap_name)
+    cmap, colormap = ctx.colormap_registry.get_cmap(cmap_name)
     assert colormap is not None
 
     norm = None

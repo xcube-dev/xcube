@@ -80,7 +80,12 @@ def _compute_ml_dataset_tile(
                 float(args.pop(f"{c}vmax", value_ranges[i][1])),
             )
     else:
-        if cmap_name is None or value_min is None or value_max is None:
+        if (
+            cmap_name is None
+            or cmap_norm is None
+            or value_min is None
+            or value_max is None
+        ):
             default_cmap_name, default_cmap_norm, default_value_range = (
                 ctx.datasets_ctx.get_color_mapping(ds_id, var_name)
             )
