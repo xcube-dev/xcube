@@ -681,7 +681,7 @@ def get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
     if "time" not in ds:
         return {}
 
-    if ds.dims["time"] < 2:
+    if ds.sizes["time"] < 2:
         time_is_regular = False
     else:
         time_diffs = ds.time.diff(dim="time").astype("uint64")
@@ -689,7 +689,7 @@ def get_time_grid(ds: xr.Dataset) -> dict[str, Any]:
 
     return dict(
         [
-            ("cellsCount", ds.dims["time"]),
+            ("cellsCount", ds.sizes["time"]),
             (
                 (
                     "resolution",
@@ -911,7 +911,7 @@ def get_datacube_dimensions(
         and dataset["time"].ndim == 1
     ):
         dc_dimensions.update(time=_get_dc_temporal_dimension(dataset["time"]))
-    for dim_name in dataset.dims.keys():
+    for dim_name in dataset.sizes.keys():
         if dim_name not in {x_dim_name, y_dim_name, "time"} and dim_name in dataset:
             dc_dimensions.update(
                 {dim_name: _get_dc_additional_dimension(dataset[dim_name])}

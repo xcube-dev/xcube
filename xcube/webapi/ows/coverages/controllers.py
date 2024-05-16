@@ -481,7 +481,7 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     grid = dict(
         type="GeneralGridCoverage",
         srsName=get_crs_from_dataset(ds).to_string(),
-        axisLabels=list(ds.dims.keys()),
+        axisLabels=list(ds.sizes.keys()),
         axis=_get_axes_properties(ds),
         gridLimits=grid_limits,
     )
@@ -683,7 +683,7 @@ def get_collection_envelope(ds_ctx, collection_id):
     return {
         "type": "EnvelopeByAxis",
         "srsName": get_crs_from_dataset(ds).to_string(),
-        "axisLabels": list(ds.dims.keys()),
+        "axisLabels": list(ds.sizes.keys()),
         "axis": _get_axes_properties(ds),
     }
 

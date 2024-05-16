@@ -24,7 +24,7 @@ class Vars2DimTest(CliDataTest):
 
         ds = xr.open_zarr(output_path)
         self.assertIn("var", ds.dims)
-        self.assertEqual(3, ds.dims["var"])
+        self.assertEqual(3, ds.sizes["var"])
         self.assertIn("var", ds.coords)
         self.assertIn("data", ds.data_vars)
         var_names = ds["var"]
