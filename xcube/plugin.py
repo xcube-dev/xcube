@@ -210,6 +210,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         "datasets",
         "tiles",
         "timeseries",
+        "statistics",
         "volumes",
         "ows.coverages",
         "ows.stac",
