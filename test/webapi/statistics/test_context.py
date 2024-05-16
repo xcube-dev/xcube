@@ -12,7 +12,7 @@ from xcube.webapi.datasets.context import DatasetsContext
 from xcube.webapi.statistics.context import StatisticsContext
 
 
-def get_tiles_ctx(
+def get_statistics_ctx(
     server_config: Union[str, ServerConfig] = "config.yml"
 ) -> StatisticsContext:
     return get_api_ctx("statistics", StatisticsContext, server_config)
@@ -20,7 +20,7 @@ def get_tiles_ctx(
 
 class TilesContextTest(unittest.TestCase):
     def test_ctx_ok(self):
-        ctx = get_tiles_ctx()
+        ctx = get_statistics_ctx()
         self.assertIsInstance(ctx, StatisticsContext)
         self.assertIsInstance(ctx.server_ctx, Context)
         self.assertIsInstance(ctx.datasets_ctx, DatasetsContext)

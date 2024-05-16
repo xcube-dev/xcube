@@ -3,23 +3,14 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import Union
 
-from test.webapi.helpers import get_api_ctx
-from xcube.server.api import ServerConfig
-from xcube.webapi.statistics.context import StatisticsContext
 from xcube.webapi.statistics.controllers import compute_statistics
-
-
-def get_tiles_ctx(
-    server_config: Union[str, ServerConfig] = "config.yml"
-) -> StatisticsContext:
-    return get_api_ctx("statistics", StatisticsContext, server_config)
+from .test_context import get_statistics_ctx
 
 
 class StatisticsControllerTest(unittest.TestCase):
     def test_compute_statistics(self):
-        ctx = get_tiles_ctx()
+        ctx = get_statistics_ctx()
         result = compute_statistics(ctx, "demo", "conc_tsm", {})
         self.assertIsInstance(result, dict)
         self.assertEqual({}, result)
