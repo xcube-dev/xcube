@@ -18,7 +18,7 @@ class DumpDatasetTest(unittest.TestCase):
         for var in dataset.variables.values():
             var.encoding.update({"_FillValue": 999.0})
 
-        print(dataset.dims)
+        print(dataset.sizes)
 
         text = dump_dataset(dataset)
         self.assertIn("<xarray.Dataset>", text)

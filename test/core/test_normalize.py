@@ -1004,7 +1004,6 @@ class Fix360Test(TestCase):
 
         new_ds = normalize_dataset(ds)
         self.assertIsNot(ds, new_ds)
-        self.assertEqual(ds.dims, new_ds.dims)
         self.assertEqual(ds.sizes, new_ds.sizes)
         assert_array_almost_equal(new_ds.lon, np.linspace(-179.5, 179.5, 360))
         assert_array_almost_equal(new_ds.lat, np.linspace(-65.0, 64.0, 130))

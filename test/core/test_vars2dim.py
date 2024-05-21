@@ -14,7 +14,7 @@ class VarsToDimTest(unittest.TestCase):
 
         ds = vars_to_dim(dataset)
 
-        self.assertIn("var", ds.dims)
+        self.assertIn("var", ds.sizes)
         self.assertEqual(2, ds.sizes["var"])
         self.assertIn("var", ds.coords)
         self.assertIn("data", ds.data_vars)

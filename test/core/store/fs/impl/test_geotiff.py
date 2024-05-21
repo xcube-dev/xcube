@@ -122,7 +122,7 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         dataset = ml_dataset.get_dataset(0)
         self.assertEqual(["band_1", "band_2", "band_3"], list(dataset.data_vars))
         self.assertEqual((343, 343), dataset.band_1.shape)
-        self.assertEqual(2, len(dataset.dims))
+        self.assertEqual(2, len(dataset.sizes))
         self.assertEqual("geotiff", ml_data_opener.get_format_id())
         self.assertIsInstance(
             ml_data_opener.get_open_data_params_schema(cog_path), JsonSchema

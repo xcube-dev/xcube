@@ -40,21 +40,21 @@ class CombinedMultiLevelDatasetTest(unittest.TestCase):
         }
 
         ds0 = ml_ds.get_dataset(0)
-        self.assertEqual({"time": 14, "lat": 720, "lon": 1440, "bnds": 2}, ds0.dims)
+        self.assertEqual({"time": 14, "lat": 720, "lon": 1440, "bnds": 2}, ds0.sizes)
         self.assertEqual(expected_var_names, set(map(str, ds0.data_vars)))
         self.assertTrue(
             all(v.dims == ("time", "lat", "lon") for v in ds0.data_vars.values())
         )
 
         ds1 = ml_ds.get_dataset(1)
-        self.assertEqual({"time": 14, "lat": 360, "lon": 720}, ds1.dims)
+        self.assertEqual({"time": 14, "lat": 360, "lon": 720}, ds1.sizes)
         self.assertEqual(expected_var_names, set(map(str, ds1.data_vars)))
         self.assertTrue(
             all(v.dims == ("time", "lat", "lon") for v in ds1.data_vars.values())
         )
 
         ds2 = ml_ds.get_dataset(2)
-        self.assertEqual({"time": 14, "lat": 180, "lon": 360}, ds2.dims)
+        self.assertEqual({"time": 14, "lat": 180, "lon": 360}, ds2.sizes)
         self.assertEqual(expected_var_names, set(map(str, ds2.data_vars)))
         self.assertTrue(
             all(v.dims == ("time", "lat", "lon") for v in ds2.data_vars.values())

@@ -755,7 +755,7 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
     return {
         "cube:dimensions": cube_dimensions,
         "cube:variables": _get_dc_variables(dataset, cube_dimensions),
-        "xcube:dims": to_json_value(dataset.dims),
+        "xcube:dims": to_json_value(dataset.sizes),
         "xcube:data_vars": _get_xc_variables(dataset.data_vars),
         "xcube:coords": _get_xc_variables(dataset.coords),
         "xcube:attrs": to_json_value(dataset.attrs),
@@ -906,7 +906,7 @@ def get_datacube_dimensions(
         y_dim_name: _get_dc_spatial_dimension(dataset[y_var_name], "y", grid_mapping),
     }
     if (
-        "time" in dataset.dims
+        "time" in dataset.sizes
         and "time" in dataset.coords
         and dataset["time"].ndim == 1
     ):

@@ -735,7 +735,7 @@ class DefaultProcessTest(unittest.TestCase):
         expected_output_vars: Sequence[str] = ("analysed_sst",),
     ):
         self.assertEqual(
-            {"lat": 180, "lon": 320, "bnds": 2, "time": expected_time_dim}, cube.dims
+            {"lat": 180, "lon": 320, "bnds": 2, "time": expected_time_dim}, cube.sizes
         )
         self.assertEqual(
             {"lon", "lat", "time", "lon_bnds", "lat_bnds", "time_bnds"},

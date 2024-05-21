@@ -126,7 +126,7 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
 
         # Test coordinates
         dim_sizes = ("time", 1), ("y", self.tile_h), ("x", self.tile_w)
-        self.assertEqual(dict(dim_sizes), dataset.dims)
+        self.assertEqual(dict(dim_sizes), dataset.sizes)
         for var_name, expected_size in dim_sizes:
             self.assertIn(var_name, dataset.coords)
             var = dataset[var_name]
