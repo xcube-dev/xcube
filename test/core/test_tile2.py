@@ -17,14 +17,15 @@ from xcube.core.tile import compute_rgba_tile
 from xcube.core.tile import compute_tiles
 from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
 from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
-from xcube.util.cmaps import ColormapProvider
+from xcube.util.cmaps import ColormapProvider, Colormap
 
 nan = np.nan
 
 
 class ColormapProviderMock(ColormapProvider):
     def get_cmap(self, cm_name: str, num_colors: Optional[int] = None):
-        return cm_name, matplotlib.cm.get_cmap(cm_name, lut=num_colors)
+        cmap = matplotlib.cm.get_cmap(cm_name, lut=num_colors)
+        return cmap, Colormap(cm_name, cmap=cmap)
 
 
 CMAP_PROVIDER = ColormapProviderMock()

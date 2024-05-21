@@ -14,8 +14,9 @@ from .controllers import get_crs_name_from_tms_id
 from .controllers import get_wmts_capabilities_xml
 from ...datasets import PATH_PARAM_DATASET_ID
 from ...datasets import PATH_PARAM_VAR_NAME
-from ...datasets import QUERY_PARAM_CBAR
+from ...datasets import QUERY_PARAM_CMAP
 from ...datasets import QUERY_PARAM_CRS
+from ...datasets import QUERY_PARAM_NORM
 from ...datasets import QUERY_PARAM_VMAX
 from ...datasets import QUERY_PARAM_VMIN
 from ...tiles import PATH_PARAM_X
@@ -46,7 +47,8 @@ TILE_PARAMETERS = [
     QUERY_PARAM_CRS,
     QUERY_PARAM_VMIN,
     QUERY_PARAM_VMAX,
-    QUERY_PARAM_CBAR,
+    QUERY_PARAM_CMAP,
+    QUERY_PARAM_NORM,
     QUERY_PARAM_TIME,
     QUERY_PARAM_RETINA,
 ]
@@ -58,9 +60,10 @@ TMS_TILE_PARAMETERS = [
     PATH_PARAM_Y,
     PATH_PARAM_X,
     QUERY_PARAM_CRS,
+    QUERY_PARAM_NORM,
     QUERY_PARAM_VMIN,
     QUERY_PARAM_VMAX,
-    QUERY_PARAM_CBAR,
+    QUERY_PARAM_CMAP,
     QUERY_PARAM_TIME,
     QUERY_PARAM_RETINA,
 ]

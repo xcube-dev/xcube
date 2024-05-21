@@ -8,7 +8,8 @@ from .context import TilesContext
 from .controllers import compute_ml_dataset_tile
 from ..datasets import PATH_PARAM_DATASET_ID
 from ..datasets import PATH_PARAM_VAR_NAME
-from ..datasets import QUERY_PARAM_CBAR
+from ..datasets import QUERY_PARAM_CMAP
+from ..datasets import QUERY_PARAM_NORM
 from ..datasets import QUERY_PARAM_CRS
 from ..datasets import QUERY_PARAM_VMAX
 from ..datasets import QUERY_PARAM_VMIN
@@ -70,7 +71,8 @@ TILE_PARAMETERS = [
     QUERY_PARAM_CRS,
     QUERY_PARAM_VMIN,
     QUERY_PARAM_VMAX,
-    QUERY_PARAM_CBAR,
+    QUERY_PARAM_CMAP,
+    QUERY_PARAM_NORM,
     QUERY_PARAM_TIME,
     QUERY_PARAM_FORMAT,
     QUERY_PARAM_RETINA,
@@ -101,7 +103,7 @@ class TilesHandler(ApiHandler[TilesContext]):
 class NewTilesHandler(TilesHandler):
     @api.operation(
         operation_id="getTile",
-        summary="Get the image tile for a variable" " and given tile grid coordinates.",
+        summary="Get the image tile for a variable and given tile grid coordinates.",
         parameters=TILE_PARAMETERS,
     )
     async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):
@@ -117,8 +119,10 @@ class OldTilesHandler(TilesHandler):
     @api.operation(
         operation_id="getDatasetVariableTile",
         tags=["datasets"],
-        summary="Get the image tile for a variable"
-        " and given tile grid coordinates. (deprecated)",
+        summary=(
+            "Get the image tile for a variable"
+            " and given tile grid coordinates. (deprecated)"
+        ),
         parameters=TILE_PARAMETERS,
     )
     async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):

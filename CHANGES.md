@@ -1,23 +1,62 @@
-## Changes in 1.5.2 (in development)
+## Changes in 1.6.0 (in development)
+
+### Enhancements
 
 * xcube server's tile API can now handle user-defined colormaps from xcube 
   viewer. Custom color bars are still passed using query parameter `cmap` to 
   endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}`,
   but in the case of custom color bars it is a JSON-encoded object with the 
-  following format: `{"name": <name>, "colors": <colors>}`, where `<name>` is 
-  a unique name and `<colors>` is a list of pairs 
-  `[[<v1>,<c1>], [<v2>,<c2>], [<v3>,<c3>], ...]` that map a sample value 
-  to a hexadecimal color value using CSS format `"#RRGGBBAA"`. (#975)
+  following format: `{"name": <str>, "type": <str>, "colors": <list>}`. (#975) 
+  The object properties are
+  - `name`: a unique name.
+  - `type`: optional type of control values.
+  - `colors`: a list of pairs `[[<v1>,<c1>], [<v2>,<c2>], [<v3>,<c3>], ...]` 
+    that map a control value to a hexadecimal color value using CSS format
+    `"#RRGGBBAA"`. 
+  
+  The `type` values are
+  - `"node"`: control points are nodes of a continuous color gradient.
+  - `"bound"`: control points form bounds that map to a color, which means
+     the last color is unused.
+  - `"key"`: control points are keys (integers) that identify a color.
+
+* xcube server's tile API now allows specifying the data normalisation step 
+  before a color mapping is applied to the variable data to be visualized.
+  This affects endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}` and the WMTS
+  API. The possible normalisation values are 
+  - `lin`: linear mapping of data values between `vmin` and `vmax` to range 0 to 1
+    (uses `matplotlib.colors.Normalize(vmin, vmax)`).
+  - `log`: logarithmic mapping of data values between `vmin` and `vmax` to range 0 to 1
+    (uses `matplotlib.colors.LogNorm(vmin, vmax)`).
+  - `cat`: categorical mapping of data values to indices into the color mapping.
+    (uses `matplotlib.colors.BoundaryNorm(categories)`). This normalisation
+    currently only works with user-defined colormaps of type
+    `key` or `bound` (see above).
+  
+  The normalisation can be specified in three different ways (in order): 
+  1. As query parameter `norm` passed to the tile endpoint. 
+  2. Property `Norm` in the `Styles/ColorMapping` element in xcube server configuration.
+  3. Data variable attribute `color_norm`.
 
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)
+
+### Incompatible API changes
+
+* The `get_cmap()` method of `util.cmaps.ColormapProvider` now returns a 
+  `Tuple[matplotlib.colors.Colormap, Colormap]` instead of
+  `Tuple[str, matplotlib.colors.Colormap]`.
+
+### Other changes
 
 * Make tests compatible with PyTest 8.2.0. (#973)
 
 * Fix broken table of contents links in dataset convention document.
 
 * Addressed all warnings from xarray indicating that `Dataset.dims` will
-  some be replaced by `Dataset.sizes`. (#981)
+  be replaced by `Dataset.sizes`. (#981)
+
+* NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow. (#946)
 
 
 ## Changes in 1.5.1
