@@ -53,7 +53,7 @@
 
 * Fix broken table of contents links in dataset convention document.
 
-* NUMBA_DISABLE_JIT set to False to enable `numba.jit` in github workflow (#946)
+* NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow (#946)
 
 
 ## Changes in 1.5.1
