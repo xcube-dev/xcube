@@ -11,7 +11,7 @@ by sample value. `<color>` can be
 * or a valid [HTML color name](https://www.w3schools.com/colors/colors_names.asp)
   such as `Orange`, `BlanchedAlmond` or `MediumSeaGreen`.  
 
-The color value may be suffixed by a opaqueness (alpha) value in the range
+The color value may be suffixed by an opaqueness (alpha) value in the range
 0 to 1, for example `110,220,230,0.5` or `#FFA500,0.8` or `Blue,0`. 
 Hexadecimal values can also be written including an alpha value, 
 such as `#FFA500CD`.

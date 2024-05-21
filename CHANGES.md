@@ -28,7 +28,7 @@
     (uses `matplotlib.colors.Normalize(vmin, vmax)`).
   - `log`: logarithmic mapping of data values between `vmin` and `vmax` to range 0 to 1
     (uses `matplotlib.colors.LogNorm(vmin, vmax)`).
-  - `cat`: categorical mapping of data values into to indexes into the color mapping.
+  - `cat`: categorical mapping of data values to indices into the color mapping.
     (uses `matplotlib.colors.BoundaryNorm(categories)`). This normalisation
     currently only works with user-defined colormaps of type
     `key` or `bound` (see above).
