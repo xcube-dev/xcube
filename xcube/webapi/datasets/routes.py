@@ -4,6 +4,8 @@
 
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
+from xcube.util.assertions import assert_true
+from xcube.util.cmaps import DEFAULT_CMAP_NAME
 from .api import api
 from .context import DatasetsContext
 from .controllers import find_dataset_places
@@ -14,7 +16,6 @@ from .controllers import get_dataset_place_group
 from .controllers import get_datasets
 from .controllers import get_legend
 from ..places import PATH_PARAM_PLACE_GROUP_ID
-from ...util.assertions import assert_true
 
 PATH_PARAM_DATASET_ID = {
     "name": "datasetId",
@@ -51,11 +52,18 @@ QUERY_PARAM_VMAX = {
     "schema": {"type": "number", "default": 1},
 }
 
-QUERY_PARAM_CBAR = {
-    "name": "cbar",
+QUERY_PARAM_CMAP = {
+    "name": "cmap",
     "in": "query",
-    "description": "Name of the (matplotlib) color bar" " for color mapping",
-    "schema": {"type": "string", "default": "bone"},
+    "description": "Name of the (matplotlib) color mapping",
+    "schema": {"type": "string", "default": DEFAULT_CMAP_NAME},
+}
+
+QUERY_PARAM_NORM = {
+    "name": "norm",
+    "in": "query",
+    "description": "Name of the data normalisation applied before color mapping",
+    "schema": {"enum": ["lin", "log", "cat"], "default": "lin"},
 }
 
 
@@ -200,7 +208,7 @@ class LegendHandler(ApiHandler[DatasetsContext]):
 LEGEND_PARAMETERS = [
     PATH_PARAM_DATASET_ID,
     PATH_PARAM_VAR_NAME,
-    QUERY_PARAM_CBAR,
+    QUERY_PARAM_CMAP,
     QUERY_PARAM_VMIN,
     QUERY_PARAM_VMAX,
     {

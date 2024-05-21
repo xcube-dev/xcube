@@ -250,8 +250,11 @@ def get_dataset(
         variable_dict["tileLevelMin"] = tiling_scheme.min_level
         variable_dict["tileLevelMax"] = tiling_scheme.max_level
 
-        cmap_name, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(ds_id, var_name)
+        cmap_name, cmap_norm, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(
+            ds_id, var_name
+        )
         variable_dict["colorBarName"] = cmap_name
+        variable_dict["colorBarNorm"] = cmap_norm
         variable_dict["colorBarMin"] = cmap_vmin
         variable_dict["colorBarMax"] = cmap_vmax
 
@@ -569,12 +572,13 @@ def _get_dataset_tile_url2(
 def get_legend(
     ctx: DatasetsContext, ds_id: str, var_name: str, params: Mapping[str, str]
 ):
-    default_cmap_cbar, (default_cmap_vmin, default_cmap_vmax) = ctx.get_color_mapping(
-        ds_id, var_name
+    default_cmap_cbar, default_cmap_norm, (default_cmap_vmin, default_cmap_vmax) = (
+        ctx.get_color_mapping(ds_id, var_name)
     )
 
     try:
-        cmap_name = params.get("cbar", params.get("cmap", default_cmap_cbar))
+        cmap_name = params.get("cmap", params.get("cbar", default_cmap_cbar))
+        cmap_norm = params.get("norm", str(default_cmap_norm))
         cmap_vmin = float(params.get("vmin", str(default_cmap_vmin)))
         cmap_vmax = float(params.get("vmax", str(default_cmap_vmax)))
         cmap_w = int(params.get("width", "256"))
@@ -582,18 +586,20 @@ def get_legend(
     except (ValueError, TypeError):
         raise ApiError.BadRequest("Invalid color legend parameter(s)")
 
-    cmap_name, cmap = ctx.colormap_registry.get_cmap(cmap_name)
-    colormap = ctx.colormap_registry.colormaps.get(cmap_name)
+    cmap, colormap = ctx.colormap_registry.get_cmap(cmap_name)
     assert colormap is not None
 
-    norm = colormap.norm
+    norm = None
+    if cmap_norm == "lin":
+        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+    elif cmap_norm == "log":
+        norm = matplotlib.colors.LogNorm(vmin=cmap_vmin, vmax=cmap_vmax)
+    elif cmap_norm == "cat":
+        norm = matplotlib.colors.BoundaryNorm(list(range(cmap.N + 1)), ncolors=cmap.N)
+    if norm is None:
+        norm = colormap.norm
     if norm is None:
         norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
-
-    try:
-        _, cmap = ctx.colormap_registry.get_cmap(cmap_name)
-    except ValueError:
-        raise ApiError.NotFound(f"Colormap {cmap_name!r} not found")
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)

@@ -4,7 +4,8 @@
 
 from .routes import PATH_PARAM_DATASET_ID
 from .routes import PATH_PARAM_VAR_NAME
-from .routes import QUERY_PARAM_CBAR
+from .routes import QUERY_PARAM_CMAP
+from .routes import QUERY_PARAM_NORM
 from .routes import QUERY_PARAM_CRS
 from .routes import QUERY_PARAM_VMAX
 from .routes import QUERY_PARAM_VMIN

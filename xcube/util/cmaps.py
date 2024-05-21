@@ -10,12 +10,12 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Dict, Tuple, List, Optional, Any, Union
 
+from deprecated import deprecated
 import fsspec
 import matplotlib
 import matplotlib.colors
 import numpy as np
 from PIL import Image
-from deprecated import deprecated
 
 from xcube.constants import LOG
 from xcube.util.assertions import assert_instance, assert_given
@@ -222,6 +222,7 @@ class Colormap:
         cmap_reversed: Optional[matplotlib.colors.Colormap] = None,
         cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
         norm: Optional[matplotlib.colors.Normalize] = None,
+        bounds: Optional[List[Union[int, float]]] = None,
     ):
         self._cm_name = cm_name
         self._cat_name = cat_name
@@ -231,6 +232,7 @@ class Colormap:
         self._cmap_reversed_alpha = None
         self._cmap_png_base64: Optional[str] = None
         self._norm = norm
+        self._bounds = bounds
 
     @property
     def cm_name(self) -> str:
@@ -275,12 +277,16 @@ class Colormap:
     def norm(self) -> Optional[matplotlib.colors.Normalize]:
         return self._norm
 
+    @property
+    def bounds(self) -> Optional[List[Union[int, float]]]:
+        return self._bounds
+
 
 class ColormapProvider(ABC):
     @abstractmethod
     def get_cmap(
         self, cm_name: str, num_colors: Optional[int] = None
-    ) -> Tuple[str, matplotlib.colors.Colormap]:
+    ) -> Tuple[matplotlib.colors.Colormap, Colormap]:
         """Get a colormap for the given *cm_name*.
 
         If *cm_name* is not available, the method may choose another
@@ -298,9 +304,10 @@ class ColormapProvider(ABC):
                 resolution of the colormap gradient.
 
         Returns:
-            A tuple comprising the base name of *cm_name* after striping
-            any suffixes, and the colormap as an instance of
-            ``matplotlib.colors.Colormap``.
+            A tuple (cmap, colormap) comprising
+            the colormap as an instance of
+            ``matplotlib.colors.Colormap`` styled according to
+            the given *cm_name* suffix(es), and the base colormap object.
         """
 
 
@@ -341,7 +348,7 @@ class ColormapRegistry(ColormapProvider):
 
     def get_cmap(
         self, cm_name: str, num_colors: Optional[int] = None
-    ) -> Tuple[str, matplotlib.colors.Colormap]:
+    ) -> Tuple[matplotlib.colors.Colormap, Colormap]:
         assert_instance(cm_name, str, name="cm_name")
         if num_colors is not None:
             assert_instance(num_colors, int, name="num_colors")
@@ -359,20 +366,16 @@ class ColormapRegistry(ColormapProvider):
             colormap = self._colormaps[cm_name]
 
         if reverse and alpha:
-            cmap = colormap.cmap_reversed_alpha
+            cmap: matplotlib.colors.Colormap = colormap.cmap_reversed_alpha
         elif reverse:
-            cmap = colormap.cmap_reversed
+            cmap: matplotlib.colors.Colormap = colormap.cmap_reversed
         elif alpha:
-            cmap = colormap.cmap_alpha
+            cmap: matplotlib.colors.Colormap = colormap.cmap_alpha
         else:
-            cmap = colormap.cmap
+            cmap: matplotlib.colors.Colormap = colormap.cmap
         if num_colors is not None:
-            try:
-                # noinspection PyProtectedMember
-                cmap = cmap._resample(num_colors)
-            except (ValueError, AttributeError, NotImplementedError):
-                pass
-        return cm_name, cmap
+            cmap = cmap.resampled(num_colors)
+        return cmap, colormap
 
     def to_json(self) -> List:
         result = []
@@ -445,16 +448,49 @@ def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
     try:
         user_color_map: Dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
-        colors = user_color_map["colors"]
-        return cm_name, Colormap(
-            cm_name,  # May be better to strip "_alpha" or "_r" or both
-            cat_name=CUSTOM_CATEGORY.name,
-            cmap=matplotlib.colors.LinearSegmentedColormap.from_list(cm_name, colors),
-        )
+        cm_items = user_color_map["colors"]
+        cm_type = user_color_map.get("type", "node")
+        cm_base_name, _, _ = parse_cm_name(cm_name)
+        if cm_type == "key" or cm_type == "bound":
+            if cm_type == "key":
+                bounds: List[int] = []
+                colors: List[str] = []
+                n = len(cm_items)
+                for i, (value, color) in enumerate(cm_items):
+                    index = int(value)
+                    colors.append(color)
+                    bounds.append(index)
+                    if i == n - 1 or index + 1 != int(cm_items[i + 1][0]):
+                        # insert transparent region
+                        bounds.append(index + 1)
+                        colors.append("#00000000")
+            else:  # cm_type == "bound"
+                bounds: List[Union[int, float]] = list(map(lambda c: c[0], cm_items))
+                colors: List[str] = list(map(lambda c: c[1], cm_items[:-1]))
+            return cm_name, Colormap(
+                cm_base_name,
+                cat_name=CUSTOM_CATEGORY.name,
+                cmap=matplotlib.colors.ListedColormap(colors),
+                bounds=bounds,
+            )
+        else:
+            vmin = cm_items[0][0]
+            vmax = cm_items[-1][0]
+            if vmin != 0 or vmax != 1:
+                values, colors = zip(*cm_items)
+                norm_values = (np.array(values) - vmin) / (vmax - vmin)
+                cm_items = list(zip(norm_values, colors))
+            return cm_name, Colormap(
+                cm_base_name,
+                cat_name=CUSTOM_CATEGORY.name,
+                cmap=matplotlib.colors.LinearSegmentedColormap.from_list(
+                    cm_base_name, cm_items
+                ),
+            )
     except (SyntaxError, KeyError, ValueError, TypeError):
         # If we arrive here, the submitted user-specific cm_code is wrong
         # We do not log or emit a warning here because this would
-        # impact performance for all other users.
+        # impact performance for current users of xcube-server.
         # Use fallback color map "Reds" to indicate error
         return "Reds", None
 
@@ -696,7 +732,8 @@ def get_cmap(
         A tuple (actual_cmap_name, cmap).
     """
     registry = _get_registry()
-    return registry.get_cmap(cmap_name, num_colors=num_colors)
+    cmap, colormap = registry.get_cmap(cmap_name, num_colors=num_colors)
+    return colormap.cm_name, cmap
 
 
 @deprecated(

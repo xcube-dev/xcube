@@ -54,6 +54,7 @@ def _compute_ml_dataset_tile(
     crs_name = args.pop("crs", crs_name or DEFAULT_CRS_NAME)
     retina = args.pop("retina", None) == "1"
     cmap_name = args.pop("cmap", args.pop("cbar", None))
+    cmap_norm = args.pop("norm", None)
     value_min = float(args.pop("vmin", 0.0))
     value_max = float(args.pop("vmax", 1.0))
     format = args.pop("format", DEFAULT_FORMAT)
@@ -79,17 +80,24 @@ def _compute_ml_dataset_tile(
                 float(args.pop(f"{c}vmax", value_ranges[i][1])),
             )
     else:
-        if cmap_name is None or value_min is None or value_max is None:
-            default_cmap_name, (
-                default_value_min,
-                default_value_min,
-            ) = ctx.datasets_ctx.get_color_mapping(ds_id, var_name)
+        if (
+            cmap_name is None
+            or cmap_norm is None
+            or value_min is None
+            or value_max is None
+        ):
+            default_cmap_name, default_cmap_norm, default_value_range = (
+                ctx.datasets_ctx.get_color_mapping(ds_id, var_name)
+            )
+            default_value_min, default_value_max = default_value_range
             if cmap_name is None:
                 cmap_name = default_cmap_name
+            if cmap_norm is None:
+                cmap_norm = default_cmap_norm
             if value_min is None:
                 value_min = default_value_min
             if value_max is None:
-                value_max = default_value_min
+                value_max = default_value_max
         var_names = (var_name,)
         value_ranges = ((value_min, value_max),)
 
@@ -104,6 +112,7 @@ def _compute_ml_dataset_tile(
             crs_name=crs_name,
             tile_size=(2 if retina else 1) * DEFAULT_TILE_SIZE,
             cmap_name=cmap_name,
+            cmap_norm=cmap_norm,
             value_ranges=value_ranges,
             non_spatial_labels=args,
             format=format,
