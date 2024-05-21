@@ -55,6 +55,9 @@
 
 * NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow (#946)
 
+* add GitHub workflow to perform an automatic release on PyPI
+  after GitHub release (#982)
+
 
 ## Changes in 1.5.1
 
