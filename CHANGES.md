@@ -16,6 +16,10 @@
 
 * Fix broken table of contents links in dataset convention document.
 
+* Addressed all warnings from xarray indicating that `Dataset.dims` will
+  some be replaced by `Dataset.sizes`. (#981)
+
+
 ## Changes in 1.5.1
 
 * Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
