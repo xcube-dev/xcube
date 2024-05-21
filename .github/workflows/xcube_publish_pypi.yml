@@ -6,18 +6,16 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: publish to TestPyPI
+name: publish to PyPI
 
-on: push
+on:
+  release:
+    types: [published]
 
 jobs:
-  publish-to-testpypi:
-    name: Publish Python distribution to TestPyPI
+  deploy:
+    name: Publish to PyPI
     runs-on: ubuntu-latest
-
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/xcube
 
     steps:
     - uses: actions/checkout@v4
@@ -30,8 +28,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install build
     - name: Build package
-      run: python -m build
-    - name: Publish distribution to TestPyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
+      run: |
+        export PYPI_XCUBE_NAME="xcube-core"
+        python -m build
+    - name: Publish to TestPyPI
+      run: |
+        pip install twine
+        python -m twine upload --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} dist/*

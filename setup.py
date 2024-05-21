@@ -22,6 +22,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 from setuptools import setup, find_packages
+import os
 
 requirements = [
     #
@@ -65,10 +66,12 @@ with open('xcube/version.py') as f:
 
 # noinspection PyTypeChecker
 setup(
-    name="xcube",
+    name=os.getenv("PYPI_XCUBE_NAME", "xcube"),
     version=version,
     description=('xcube is a Python package for generating and exploiting '
                  'data cubes powered by xarray, dask, and zarr.'),
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     license='MIT',
     author='xcube Development Team',
     packages=packages,
