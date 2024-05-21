@@ -16,6 +16,9 @@
 
 * Fix broken table of contents links in dataset convention document.
 
+* NUMBA_DISABLE_JIT set to False to enable `numba.jit` in github workflow (#946)
+
+
 ## Changes in 1.5.1
 
 * Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
