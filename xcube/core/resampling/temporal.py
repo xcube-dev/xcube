@@ -18,7 +18,6 @@ def resample_in_time(
     frequency: str,
     method: Union[str, Sequence[str]],
     offset=None,
-    base=None,
     tolerance=None,
     interp_kind=None,
     time_chunk_size=None,
@@ -54,8 +53,6 @@ def resample_in_time(
         method: Resampling method or sequence of resampling methods.
         offset: Offset used to adjust the resampled time labels. Uses
             same syntax as *frequency*.
-        base: Deprecated since xcube 1.0.4. No longer used as of pandas
-            2.0.
         time_chunk_size: If not None, the chunk size to be used for the
             "time" dimension.
         var_names: Variable names to include.
@@ -72,9 +69,6 @@ def resample_in_time(
     """
     if not cube_asserted:
         assert_cube(dataset)
-
-    if base is not None:
-        warnings.warn("Keyword 'base' is deprecated and no longer used.")
 
     if frequency == "all":
         time_gap = np.array(dataset.time[-1]) - np.array(dataset.time[0])

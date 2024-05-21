@@ -4,11 +4,10 @@
 
 import collections.abc
 import fnmatch
-from typing import Dict, Tuple, Hashable, Optional, Mapping, Union
+from typing import Tuple, Hashable, Optional, Mapping, Union
 
 import numpy as np
 import xarray as xr
-from deprecated import deprecated
 
 from xcube.util.assertions import assert_instance, assert_in, assert_true
 

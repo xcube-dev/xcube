@@ -24,6 +24,8 @@ _DEPRECATED_WRITE = (
 )
 
 
+# Note, we cannot remove this deprecated code as long as
+# xcube.core.xarray.DatasetAccessor.levels is using it.
 @deprecated(version="0.10.2", reason=_DEPRECATED_WRITE)
 def compute_levels(
     dataset: xr.Dataset,

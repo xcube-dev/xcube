@@ -47,6 +47,26 @@
   `Tuple[matplotlib.colors.Colormap, Colormap]` instead of
   `Tuple[str, matplotlib.colors.Colormap]`.
 
+* Removed API deprecated since many releases:
+  - Removed keyword argument `base` from function 
+    `xcube.core.resampling.temporal.resample_in_time()`.
+  - Removed option `base` from CLI command `xcube resample`.
+  - Removed keyword argument `assert_cube` from 
+    `xcube.core.timeseries.get_time_series()`.
+  - Removed property `xcube.core.xarray.DatasetAccessor.levels`.
+  - Removed function `xcube.core.tile.parse_non_spatial_labels()`.
+  - Removed keyword argument `tag` from context manager 
+    `xcube.util.perf.measure_time()`.
+  - Removed function `xcube.core.geom.convert_geometry()`.
+  - Removed function `xcube.core.geom.is_dataset_y_axis_inverted()`.
+  - Removed function `xcube.util.assertions.assert_condition()`.
+  - Removed function `xcube.util.cmaps.get_cmaps()`.
+  - Removed function `xcube.util.cmaps.get_cmap()`.
+  - Removed function `xcube.util.cmaps.ensure_cmaps_loaded()`.
+  - Removed endpoint `/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}`
+    from xcube server.
+
+
 ### Other changes
 
 * Make tests compatible with PyTest 8.2.0. (#973)

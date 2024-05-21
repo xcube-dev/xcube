@@ -4,7 +4,6 @@
 
 from unittest import TestCase
 
-from xcube.util.assertions import assert_condition
 from xcube.util.assertions import assert_false
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_in
@@ -84,9 +83,3 @@ class AssertTest(TestCase):
         with self.assertRaises(ValueError) as e:
             assert_false(True, "Should be false")
         self.assertEqual(("Should be false",), e.exception.args)
-
-    def test_assert_condition(self):
-        assert_condition(True, "Should be true")
-        with self.assertRaises(ValueError) as e:
-            assert_condition(False, "Should be true")
-        self.assertEqual(("Should be true",), e.exception.args)

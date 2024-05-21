@@ -15,7 +15,6 @@ import shapely.geometry
 import shapely.geometry
 import shapely.wkt
 import xarray as xr
-from deprecated import deprecated
 
 from xcube.core.schema import get_dataset_bounds_var_name
 from xcube.core.schema import get_dataset_chunks
@@ -620,31 +619,6 @@ def normalize_geometry(
     if invalid_box_coords:
         raise ValueError(_INVALID_BOX_COORDS_MSG)
     raise ValueError(_INVALID_GEOMETRY_MSG)
-
-
-@deprecated(
-    version="0.11.2",
-    reason="convert_geometry() has been" " renamed to normalize_geometry()",
-)
-def convert_geometry(
-    geometry: Optional[GeometryLike],
-) -> Optional[shapely.geometry.base.BaseGeometry]:
-    return normalize_geometry(geometry)
-
-
-convert_geometry.__doc__ = normalize_geometry.__doc__
-
-
-@deprecated(
-    version="0.11.2", reason='Uses wrong definition of "inverted". No longer used.'
-)
-def is_dataset_y_axis_inverted(
-    dataset: Union[xr.Dataset, xr.DataArray], xy_var_names: Tuple[str, str] = None
-) -> bool:
-    if xy_var_names is None:
-        xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
-    y_var = dataset[xy_var_names[1]]
-    return float(y_var[0]) < float(y_var[-1])
 
 
 def is_lon_lat_dataset(

@@ -25,6 +25,8 @@ from xcube.util.assertions import assert_instance
 GetChunk = Callable[["ChunkStore", str, Tuple[int, ...]], bytes]
 
 
+# Note, we cannot remove this deprecated code as long as
+# xcube.core.compute.compute_dataset() is using it.
 @deprecated(
     reason="This class shall no longer be used."
     " If similar functionality is needed,"

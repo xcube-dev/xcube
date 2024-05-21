@@ -2,7 +2,6 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import warnings
 from typing import Any, Union, Tuple, Type, Container
 
 _DEFAULT_NAME = "value"
@@ -126,17 +125,4 @@ def assert_false(
         exception_type: The exception type. Default is ``ValueError``.
     """
     if value:
-        raise exception_type(message)
-
-
-def assert_condition(
-    condition: Any, message: str, exception_type: Type[Exception] = ValueError
-):
-    """Deprecated. Use assert_true()"""
-    warnings.warn(
-        "assert_condition() has been deprecated. "
-        "Use assert_true() or assert_false() instead.",
-        DeprecationWarning,
-    )
-    if not condition:
         raise exception_type(message)
