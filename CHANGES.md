@@ -28,7 +28,7 @@
     (uses `matplotlib.colors.Normalize(vmin, vmax)`).
   - `log`: logarithmic mapping of data values between `vmin` and `vmax` to range 0 to 1
     (uses `matplotlib.colors.LogNorm(vmin, vmax)`).
-  - `cat`: categorical mapping of data values into to indexes into the color mapping.
+  - `cat`: categorical mapping of data values to indices into the color mapping.
     (uses `matplotlib.colors.BoundaryNorm(categories)`). This normalisation
     currently only works with user-defined colormaps of type
     `key` or `bound` (see above).
@@ -50,6 +50,11 @@
 ### Other changes
 
 * Make tests compatible with PyTest 8.2.0. (#973)
+
+* Fix broken table of contents links in dataset convention document.
+
+* NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow (#946)
+
 
 ## Changes in 1.5.1
 
@@ -99,6 +104,9 @@
   `update_dataset_chunk_encoding` (#958).
 
 * Update some unit tests to make them compatible with xarray 2024.3.0 (#958).
+
+* Added documentation page "How do I ..." that points users to applicable
+  xcube Python API.
 
 ## Changes in 1.4.1
 

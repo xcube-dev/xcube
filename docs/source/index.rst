@@ -14,6 +14,7 @@ cubes from EO data.
    overview
    examples
    installation
+   howdoi
 
 .. toctree::
    :caption: User Guide

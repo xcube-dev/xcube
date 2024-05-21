@@ -97,7 +97,9 @@ def resample_in_space(
             Defaults to ``True``.
         gm_name: Name for the grid mapping variable.
             Defaults to "crs". Used only if *encode_cf* is ``True``.
-    Returns: The spatially resampled dataset.
+
+    Returns: The spatially resampled dataset, or None if the requested
+        output area does not intersect with *dataset*.
     """
     if source_gm is None:
         # No source grid mapping given, so do derive it from dataset

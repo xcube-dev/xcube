@@ -23,19 +23,19 @@ _may_ is optional and recommended in cases (like good to have).
 
 ## Table of Contents
 
-- [Data Model and Format](#Data-Model-and-Format)
-- [Metadata](#Metadata)
-- [Spatial Reference](#Spatial-Reference)
-- [Temporal Reference](#Temporal-Reference)
-- [Encoding of Units](#Encoding-of-Units)
-- [Encoding of Flags](#Encoding-of-Flags)
-- [Encoding of Missing Values](#Encoding-of-Missing-Values)
-- [Encoding of Scale/Offset Values](#Encoding-of-ScaleOffset-Values)
-- [Multi-Resolution Datasets](#Multi-Resolution-Datasets)
-- [Multi-Band Datasets](#Multi-Band-Datasets)
-- [Metadata Consolidation](#Metadata-Consolidation)
-- [Zip Archives](#Zip-Archives)
-- [Dataset Examples](#Dataset-Examples)
+- [Data Model and Format](#data-model-and-format)
+- [Metadata](#metadata)
+- [Spatial Reference](#spatial-reference)
+- [Temporal Reference](#temporal-reference)
+- [Encoding of Units](#encoding-of-units)
+- [Encoding of Flags](#encoding-of-flags)
+- [Encoding of Missing Values](#encoding-of-missing-values)
+- [Encoding of Scale/Offset Values](#encoding-of-scale-offset-values)
+- [Multi-Resolution Datasets](#multi-resolution-datasets)
+- [Multi-Band Datasets](#multi-band-datasets)
+- [Metadata Consolidation](#metadata-consolidation)
+- [Zip Archives](#zip-archives)
+- [Dataset Examples](#dataset-examples)
 
 
 ## Data Model and Format
