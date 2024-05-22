@@ -55,6 +55,9 @@
 
 * NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow (#946)
 
+* Added GitHub workflow to perform an automatic xcube release on PyPI after a GitHub
+  release. To install xcube via the `pip` tool use `pip install xcube-core`,  
+  since the name "xcube" is already taken on PyPI by another software. (#982)
 
 ## Changes in 1.5.1
 

@@ -21,7 +21,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+import os
+
 from setuptools import setup, find_packages
+
 
 requirements = [
     #
@@ -65,10 +68,12 @@ with open('xcube/version.py') as f:
 
 # noinspection PyTypeChecker
 setup(
-    name="xcube",
+    name=os.getenv("XCUBE_PYPI_NAME", "xcube"),
     version=version,
     description=('xcube is a Python package for generating and exploiting '
                  'data cubes powered by xarray, dask, and zarr.'),
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     license='MIT',
     author='xcube Development Team',
     packages=packages,
