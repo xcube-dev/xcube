@@ -29,6 +29,7 @@ jobs:
         pip install build
     - name: Build package
       run: |
+        # Usage is in setup.py since name "xcube" is already taken on PyPI
         export XCUBE_PYPI_NAME="xcube-core"
         python -m build
     - name: Publish to TestPyPI
