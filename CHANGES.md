@@ -1,5 +1,8 @@
 ## Changes in 1.6.0 (in development)
 
+* Refactored xcube workflow to build docker images only on release and deleted the 
+  update xcube tag job
+
 ### Enhancements
 
 * xcube server's tile API can now handle user-defined colormaps from xcube 
