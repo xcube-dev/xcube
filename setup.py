@@ -96,4 +96,32 @@ setup(
         ],
     },
     install_requires=requirements,
+    # these links will be shown in the left panel on PyPI
+    project_urls={
+        "documentation": "https://xcube.readthedocs.io/en/latest/",
+        "source": "https://github.com/xcube-dev/xcube",
+        "download": "https://pypi.org/project/xcube-core/#files",
+        "tracker": "https://github.com/xcube-dev/xcube/issues",
+        "release notes": "https://github.com/xcube-dev/xcube/releases"
+    },
+    # these classifiers will be shown in the left panel on PyPI
+    # they to not interfer with pip install and are meta data for the user
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Science/Research',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Topic :: Software Development',
+        'Topic :: Scientific/Engineering',
+        'Typing :: Typed',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX',
+        'Operating System :: Unix',
+        'Operating System :: MacOS',
+    ]
 )
