@@ -162,9 +162,9 @@ def _check_data_variables(dataset, xy_var_names, time_var_name, report):
 
 
 def _check_dim(dataset, name, report):
-    if name not in dataset.dims:
+    if name not in dataset.sizes:
         report.append(f"missing dimension {name!r}")
-    elif dataset.dims[name] < 0:
+    elif dataset.sizes[name] < 0:
         report.append(f"size of dimension {name!r} must be a positive integer")
 
 

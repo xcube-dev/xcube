@@ -52,15 +52,15 @@ class BaseMultiLevelDatasetTest(unittest.TestCase):
 
         ds0 = ml_ds.get_dataset(0)
         self.assertIsNot(ds, ds0)
-        self.assertEqual({"time": 14, "lat": 720, "lon": 1440, "bnds": 2}, ds0.dims)
+        self.assertEqual({"time": 14, "lat": 720, "lon": 1440, "bnds": 2}, ds0.sizes)
 
         ds1 = ml_ds.get_dataset(1)
         self.assertIsNot(ds, ds1)
-        self.assertEqual({"time": 14, "lat": 360, "lon": 720}, ds1.dims)
+        self.assertEqual({"time": 14, "lat": 360, "lon": 720}, ds1.sizes)
 
         ds2 = ml_ds.get_dataset(2)
         self.assertIsNot(ds, ds2)
-        self.assertEqual({"time": 14, "lat": 180, "lon": 360}, ds2.dims)
+        self.assertEqual({"time": 14, "lat": 180, "lon": 360}, ds2.sizes)
 
         self.assertEqual([ds0, ds1, ds2], ml_ds.datasets)
 

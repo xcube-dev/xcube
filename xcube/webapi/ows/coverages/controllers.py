@@ -474,14 +474,14 @@ def get_coverage_domainset(ctx: DatasetsContext, collection_id: str):
     ds = get_dataset(ctx, collection_id)
     grid_limits = dict(
         type="GridLimits",
-        srsName=f"http://www.opengis.net/def/crs/OGC/0/Index{len(ds.dims)}D",
-        axisLabels=list(ds.dims),
-        axis=[_get_grid_limits_axis(ds, dim) for dim in ds.dims],
+        srsName=f"http://www.opengis.net/def/crs/OGC/0/Index{len(ds.sizes)}D",
+        axisLabels=list(ds.sizes),
+        axis=[_get_grid_limits_axis(ds, dim) for dim in ds.sizes],
     )
     grid = dict(
         type="GeneralGridCoverage",
         srsName=get_crs_from_dataset(ds).to_string(),
-        axisLabels=list(ds.dims.keys()),
+        axisLabels=list(ds.sizes.keys()),
         axis=_get_axes_properties(ds),
         gridLimits=grid_limits,
     )
@@ -521,7 +521,7 @@ def get_dataset(ctx: DatasetsContext, collection_id: str):
 
 
 def _get_axes_properties(ds: xr.Dataset) -> list[dict]:
-    return [_get_axis_properties(ds, dim) for dim in ds.dims]
+    return [_get_axis_properties(ds, dim) for dim in ds.sizes]
 
 
 def _get_axis_properties(ds: xr.Dataset, dim: str) -> dict[str, Any]:
@@ -683,7 +683,7 @@ def get_collection_envelope(ds_ctx, collection_id):
     return {
         "type": "EnvelopeByAxis",
         "srsName": get_crs_from_dataset(ds).to_string(),
-        "axisLabels": list(ds.dims.keys()),
+        "axisLabels": list(ds.sizes.keys()),
         "axis": _get_axes_properties(ds),
     }
 

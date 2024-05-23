@@ -306,7 +306,7 @@ def select_label_subset(
             f"predicate" f" must be callable with" f" signature {_PREDICATE_SIGNATURE}"
         )
 
-    num_labels = dataset.dims[dim]
+    num_labels = dataset.sizes[dim]
 
     valid_mask = [
         _is_label_valid(dataset, predicate_lookup, dim, index)

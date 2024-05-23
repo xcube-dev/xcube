@@ -53,7 +53,10 @@
 
 * Fix broken table of contents links in dataset convention document.
 
-* NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow (#946)
+* Addressed all warnings from xarray indicating that `Dataset.dims` will
+  be replaced by `Dataset.sizes`. (#981)
+
+* NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow. (#946)
 
 * Added GitHub workflow to perform an automatic xcube release on PyPI after a GitHub
   release. To install xcube via the `pip` tool use `pip install xcube-core`,  

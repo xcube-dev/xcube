@@ -36,7 +36,7 @@ class VerifyDataTest(CliTest):
     def test_verify_failure(self):
         cube = new_cube(variables=dict(precipitation=0.5))
         cube["chl"] = xr.DataArray(
-            np.random.rand(cube.dims["lat"], cube.dims["lon"]),
+            np.random.rand(cube.sizes["lat"], cube.sizes["lon"]),
             dims=("lat", "lon"),
             coords=dict(lat=cube.lat, lon=cube.lon),
         )

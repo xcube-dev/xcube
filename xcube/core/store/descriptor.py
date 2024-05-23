@@ -75,7 +75,7 @@ def new_data_descriptor(
 def _get_common_dataset_descriptor_props(
     data_id: str, dataset: Union[xr.Dataset, MultiLevelDataset]
 ) -> Dict[str, Any]:
-    dims = {str(k): v for k, v in dataset.dims.items()}
+    dims = {str(k): v for k, v in dataset.sizes.items()}
     coords = _build_variable_descriptor_dict(dataset.coords)
     data_vars = _build_variable_descriptor_dict(dataset.data_vars)
     spatial_res = _determine_spatial_res(dataset)

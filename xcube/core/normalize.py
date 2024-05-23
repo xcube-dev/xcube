@@ -527,7 +527,7 @@ def normalize_coord_vars(ds: xr.Dataset) -> xr.Dataset:
         variables turned into coordinate variables.
     """
 
-    if "bnds" not in ds.dims:
+    if "bnds" not in ds.sizes:
         return ds
 
     coord_var_names = set()
@@ -888,7 +888,7 @@ def _get_dim_name(
     ds: Union[xr.Dataset, xr.DataArray], possible_names: Sequence[str]
 ) -> Optional[str]:
     for name in possible_names:
-        if name in ds.dims:
+        if name in ds.sizes:
             return name
     return None
 

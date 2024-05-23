@@ -12,7 +12,7 @@ from xcube.core.new import new_cube
 class NewCubeTest(unittest.TestCase):
     def test_new_cube_with_bounds(self):
         cube = new_cube()
-        self.assertEqual({"lon": 360, "lat": 180, "time": 5, "bnds": 2}, cube.dims)
+        self.assertEqual({"lon": 360, "lat": 180, "time": 5, "bnds": 2}, cube.sizes)
         self.assertEqual(-179.5, float(cube.lon[0]))
         self.assertEqual(179.5, float(cube.lon[-1]))
         self.assertEqual(-89.5, float(cube.lat[0]))
@@ -28,7 +28,7 @@ class NewCubeTest(unittest.TestCase):
 
     def test_new_cube_without_bounds(self):
         cube = new_cube(drop_bounds=True)
-        self.assertEqual({"lon": 360, "lat": 180, "time": 5}, cube.dims)
+        self.assertEqual({"lon": 360, "lat": 180, "time": 5}, cube.sizes)
 
     def test_new_cube_with_const_vars(self):
         cube = new_cube(variables=dict(sst=274.4, chl=10.31))
