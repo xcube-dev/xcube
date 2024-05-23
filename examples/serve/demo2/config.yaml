@@ -1,0 +1,195 @@
+DatasetAttribution:
+  - "© by Brockmann Consult GmbH 2024, contains modified Copernicus Data 2019, processed by ESA"
+
+DatasetChunkCacheSize: 100M
+
+DataStores:
+  - Identifier: local_examples
+    StoreId: file
+    StoreParams:
+      root: examples/serve/demo2
+    Datasets:
+      - Path: hamburg_cube.levels
+        Title: S2L2A Hamburg
+        Identifier: hamburg_cube
+        Augmentation:
+          Path: compute_indexes.py
+          Function: compute_indexes
+        Style: S2L2A
+      - Path: sample-cog.tif
+        Identifier: sample_cog
+        Style: TIFF_RGB
+      - Path: sample-geotiff.tif
+        Identifier: sample_geotiff
+        Style: TIFF_RGB
+#  - Identifier: results_louisville
+#    StoreId: file
+#    StoreParams:
+#      root: "D:/EOData/openSR/results_louisville"
+#    Datasets:
+#      - Path: S2_louisville_cog.tif
+#        Identifier: S2_louisville_cog
+#        Title: Louisville Original
+#        Style: OPEN_SR_TIFF
+#      - Path: sr_louisville_cog.tif
+#        Identifier: sr_louisville_cog
+#        Title: Louisville Super-Res
+#        Style: OPEN_SR_TIFF
+#  - Identifier: results_buenos_aires
+#    StoreId: file
+#    StoreParams:
+#      root: "D:/EOData/openSR/results_buenos_aires"
+#    Datasets:
+#      - Path: S2_buenosAires_cog.tif
+#        Identifier: S2_buenosAires_cog
+#        Title: Buenos Aires Original
+#        Style: OPEN_SR_TIFF
+#      - Path: SR_buenosAires_cog.tif
+#        Identifier: SR_buenosAires_cog
+#        Title: Buenos Aires Super-Res
+#        Style: OPEN_SR_TIFF
+  - Identifier: results_louisville
+    StoreId: s3
+    StoreParams:
+      root: opensr-test/results_louisville
+    Datasets:
+      - Path: S2_louisville_cog.tif
+        Identifier: S2_louisville_cog
+        Title: Louisville Original
+        Style: OPEN_SR_TIFF
+      - Path: sr_louisville_cog.tif
+        Identifier: sr_louisville_cog
+        Title: Louisville Super-Res
+        Style: OPEN_SR_TIFF
+  - Identifier: results_buenos_aires
+    StoreId: s3
+    StoreParams:
+      root: opensr-test/results_buenos_aires
+    Datasets:
+      - Path: S2_buenosAires_cog.tif
+        Identifier: S2_buenosAires_cog
+        Title: Buenos Aires Original
+        Style: OPEN_SR_TIFF
+      - Path: SR_buenosAires_cog.tif
+        Identifier: SR_buenosAires_cog
+        Title: Buenos Aires Super-Res
+        Style: OPEN_SR_TIFF
+
+Styles:
+  - Identifier: S2L2A
+    ColorMappings:
+      B01:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B02:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B03:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B04:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B05:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B06:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B07:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B08:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B8A:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B09:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B10:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B11:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B12:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      SCL:
+        ColorBar: "Accent"
+        ValueRange: [ 0, 255 ]
+      rgb:
+        Red:
+          Variable: B04
+          ValueRange: [0., 0.25]
+        Green:
+          Variable: B03
+          ValueRange: [0., 0.25]
+        Blue:
+          Variable: B02
+          ValueRange: [0., 0.25]
+  - Identifier: TIFF_RGB
+    ColorMappings:
+      band_1:
+        ColorBar: bone
+        ValueRange: [ 0., 255. ]
+      band_2:
+        ColorBar: bone
+        ValueRange: [ 0., 255. ]
+      band_3:
+        ColorBar: bone
+        ValueRange: [ 0., 255. ]
+      rgb:
+        Red:
+          Variable: band_1
+          ValueRange: [ 0., 255. ]
+        Green:
+          Variable: band_2
+          ValueRange: [ 0., 255. ]
+        Blue:
+          Variable: band_3
+          ValueRange: [ 0., 255. ]
+  - Identifier: OPEN_SR_TIFF
+    ColorMappings:
+      band_1:
+        ColorBar: gray
+        ValueRange: [ 500, 5000 ]
+      band_2:
+        ColorBar: gray
+        ValueRange: [ 500, 5000 ]
+      band_3:
+        ColorBar: gray
+        ValueRange: [ 500, 5000 ]
+      band_4:
+        ColorBar: bone
+        ValueRange: [ 0, 8000 ]
+      rgb:
+        Red:
+          Variable: band_1
+          ValueRange: [ 500, 5000 ]
+        Green:
+          Variable: band_2
+          ValueRange: [ 500, 5000 ]
+        Blue:
+          Variable: band_3
+          ValueRange: [ 500, 5000 ]
+
+ServiceProvider:
+  ProviderName: "Brockmann Consult GmbH"
+  ProviderSite: "https://www.brockmann-consult.de"
+  ServiceContact:
+    IndividualName: "Norman Fomferra"
+    PositionName: "Senior Software Engineer"
+    ContactInfo:
+      Phone:
+        Voice: "+49 4152 889 303"
+        Facsimile: "+49 4152 889 330"
+      Address:
+        DeliveryPoint: "HZG / GITZ"
+        City: "Geesthacht"
+        AdministrativeArea: "Herzogtum Lauenburg"
+        PostalCode: "21502"
+        Country: "Germany"
+        ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
