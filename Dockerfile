@@ -49,6 +49,7 @@ RUN micromamba install -y -n base -f /tmp/environment.yml \
 # Copy files for xcube source install
 COPY --chown=$MAMBA_USER:$MAMBA_USER ./xcube /tmp/xcube
 COPY --chown=$MAMBA_USER:$MAMBA_USER ./setup.py /tmp/setup.py
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./README.md /tmp/README.md
 
 # Switch into /tmp to install xcube.
 WORKDIR /tmp
