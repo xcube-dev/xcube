@@ -244,6 +244,7 @@ def get_dataset(
         )
 
         tile_url = _get_dataset_tile_url2(ctx, ds_id, var_name, base_url)
+        # Note that tileUrl is no longer used since xcube viewer v0.13
         variable_dict["tileUrl"] = tile_url
         LOG.debug("Tile URL for variable %s: %s", var_name, tile_url)
 
@@ -286,6 +287,7 @@ def get_dataset(
         rgb_schema = {
             "varNames": rgb_var_names,
             "normRanges": rgb_norm_ranges,
+            # Note that tileUrl is no longer used since xcube viewer v0.13
             "tileUrl": rgb_tile_url,
             "tileLevelMin": tiling_scheme.min_level,
             "tileLevelMax": tiling_scheme.max_level,
