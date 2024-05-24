@@ -495,7 +495,7 @@ def rechunk_cube(
         variables={
             var_name: var.chunk(
                 {
-                    dim_name: cube_chunks.get(dim_name, cube.dims[dim_name])
+                    dim_name: cube_chunks.get(dim_name, cube.sizes[dim_name])
                     for dim_name in var.dims
                 }
             )

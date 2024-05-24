@@ -351,7 +351,7 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
     def _assert_clipped_dataset_has_basic_props(self, dataset):
-        self.assertEqual({"time": 5, "lat": 4, "lon": 7}, dataset.dims)
+        self.assertEqual({"time": 5, "lat": 4, "lon": 7}, dataset.sizes)
         self.assertIn("temp", dataset)
         self.assertIn("precip", dataset)
         temp = dataset["temp"]

@@ -432,7 +432,7 @@ class DefaultInputProcessor(XYInputProcessor):
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
 
-        if "time" in dataset.dims:
+        if "time" in dataset.sizes:
             # Remove time dimension of length 1.
             dataset = dataset.squeeze("time")
 
@@ -459,7 +459,7 @@ class DefaultInputProcessor(XYInputProcessor):
     def _validate(self, dataset):
         self._check_coordinate_var(dataset, "lon", min_length=2)
         self._check_coordinate_var(dataset, "lat", min_length=2)
-        if "time" in dataset.dims:
+        if "time" in dataset.sizes:
             self._check_coordinate_var(dataset, "time", max_length=1)
             required_dims = ("time", "lat", "lon")
         else:

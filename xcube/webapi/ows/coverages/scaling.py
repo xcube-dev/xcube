@@ -42,7 +42,7 @@ class CoverageScaling:
         h_dim = get_h_dim(ds)
         v_dim = get_v_dim(ds)
         for d in h_dim, v_dim:
-            size = ds.dims[d]
+            size = ds.sizes[d]
             if size == 0:
                 # Requirement 8C currently specifies a 204 rather than 404 here,
                 # but spec will soon be updated to allow 404 as an alternative.
@@ -50,7 +50,7 @@ class CoverageScaling:
                 raise ApiError.NotFound(
                     f"Requested coverage contains no data: {d} has zero size."
                 )
-        self._initial_size = ds.dims[h_dim], ds.dims[v_dim]
+        self._initial_size = ds.sizes[h_dim], ds.sizes[v_dim]
 
         self._crs = crs
         self._y_name = self.get_axis_from_crs(
