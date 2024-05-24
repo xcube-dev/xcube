@@ -62,8 +62,8 @@
   release. To install xcube via the `pip` tool use `pip install xcube-core`,  
   since the name "xcube" is already taken on PyPI by another software. (#982)
 
-* Add project urls and classifiers to `setup.py` which will be shown in the
-  left sidebar onthe [PyPI xcube-core](https://pypi.org/project/xcube-core/) webpage.
+* Add project urls and classifiers to `setup.py`, which will be shown in the
+  left sidebar on the [PyPI xcube-core](https://pypi.org/project/xcube-core/) webpage.
 
 ## Changes in 1.5.1
 
