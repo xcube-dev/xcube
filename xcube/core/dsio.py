@@ -46,7 +46,7 @@ _DEPRECATION_REASON = "Functionality is redundant. Use xcube.core.store API inst
 _DEPRECATION_VERSION = "0.12.1"
 
 
-# Note, we cannot remove deprecated code as long as
+# Note, we cannot remove this deprecated code as long as
 # xcube.core.xarray.DatasetAccessor.open() is using it.
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
 def open_cube(input_path: str, format_name: str = None, **kwargs) -> xr.Dataset:
