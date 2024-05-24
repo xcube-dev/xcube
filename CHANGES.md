@@ -1,7 +1,9 @@
 ## Changes in 1.6.0 (in development)
 
-* Refactored xcube workflow to build docker images only on release and deleted the 
-  update xcube tag job
+### Other changes
+
+*  Refactored xcube workflow to build docker images only on release and deleted the 
+  update xcube tag job.
 
 ### Enhancements
 
