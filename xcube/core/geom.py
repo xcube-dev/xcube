@@ -297,7 +297,7 @@ def mask_dataset_by_geometry(
     Args:
         dataset: The dataset
         geometry: A geometry-like object, see
-            :func:`convert_geometry`.
+            :func:`normalize_geometry`.
         tile_size: If given, the unconditional spatial chunk sizes in x-
             and y-direction in pixels. May be given as integer scalar or
             x,y-pair of integers.
@@ -444,7 +444,7 @@ def clip_dataset_by_geometry(
     Args:
         dataset: The dataset
         geometry: A geometry-like object, see
-            :func:`convert_geometry`.
+            :func:`normalize_geometry`.
         save_geometry_wkt: If the value is a string, the effective
             intersection geometry is stored as a Geometry WKT string in
             the global attribute named by *save_geometry*. If the value
