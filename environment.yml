@@ -5,6 +5,7 @@ dependencies:
   # Python
   - python >=3.9
   # Required
+  - affine >=2.2
   - botocore >=1.34.51
   - cftime >=1.6.3
   - click >=8.0
@@ -20,7 +21,7 @@ dependencies:
   - jdcal >=1.4
   - jsonschema >=3.2
   - mashumaro
-  - matplotlib >=3.8.3
+  - matplotlib-base >=3.8.3
   - netcdf4 >=1.5
   - numba >=0.52
   - numcodecs >=0.12.1
