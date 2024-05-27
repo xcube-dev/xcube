@@ -12,39 +12,11 @@ from xcube.util.cmaps import Colormap, CUSTOM_CATEGORY
 from xcube.util.cmaps import ColormapCategory
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import DEFAULT_CMAP_NAME
-from xcube.util.cmaps import ensure_cmaps_loaded
-from xcube.util.cmaps import get_cmap
-from xcube.util.cmaps import get_cmaps
 from xcube.util.cmaps import parse_cm_name
 from xcube.util.cmaps import parse_cm_code
 from xcube.util.cmaps import load_snap_cpd_colormap
 
 registry = ColormapRegistry()
-
-
-class DeprecatedApiTest(TestCase):
-    def test_get_cmap(self):
-        cm_name, cmap = get_cmap("bone")
-        self.assertEqual("bone", cm_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
-
-        cm_name, cmap = get_cmap("bonex")
-        self.assertEqual("viridis", cm_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
-
-        cm_name, cmap = get_cmap("bone", num_colors=512)
-        self.assertEqual("bone", cm_name)
-        self.assertIsInstance(cmap, matplotlib.colors.Colormap)
-
-    def test_get_cmaps(self):
-        cmaps = get_cmaps()
-        self.assertIsInstance(cmaps, list)
-        self.assertEqual(8, len(cmaps))
-        self.assertIs(cmaps, get_cmaps())
-
-    # noinspection PyMethodMayBeStatic
-    def test_ensure_cmaps_loaded(self):
-        ensure_cmaps_loaded()
 
 
 class ColormapRegistryTest(TestCase):

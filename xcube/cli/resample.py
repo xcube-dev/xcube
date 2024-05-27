@@ -104,9 +104,6 @@ DEFAULT_INTERPOLATION_KIND = "linear"
     "Some Pandas date offset strings are supported as well.",
 )
 @click.option(
-    "--base", "-B", type=int, help="Deprecated since xcube 1.0.4. No longer used."
-)
-@click.option(
     "--kind",
     "-K",
     type=str,
@@ -146,7 +143,6 @@ def resample(
     method,
     frequency,
     offset,
-    base,
     kind,
     tolerance,
     quiet,
@@ -155,9 +151,6 @@ def resample(
 ):
     """Resample data along the time dimension."""
     configure_cli_output(quiet=quiet, verbosity=verbosity)
-
-    if base is not None:
-        warnings.warn("Option 'base' is deprecated and no longer used.")
 
     input_path = cube
     config_files = config

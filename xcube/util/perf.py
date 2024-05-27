@@ -5,7 +5,6 @@
 import functools
 import logging
 import time
-import warnings
 from contextlib import AbstractContextManager
 from typing import Optional
 
@@ -13,7 +12,8 @@ from xcube.constants import LOG
 
 
 def measure_time_cm(logger=None, disabled=False):
-    """Get a context manager for measuring execution time of code blocks and logging the result.
+    """Get a context manager for measuring execution time of code blocks
+    and logging the result.
 
     Measure duration and log output:::
 
@@ -42,32 +42,10 @@ def measure_time_cm(logger=None, disabled=False):
 
 
 class measure_time(AbstractContextManager):
-    def __init__(
-        self,
-        *args,
-        tag: Optional[str] = None,
-        logger: Optional[logging.Logger] = None,
-        **kwargs
-    ):
-        self.message = tag
-        self.args = args
+    def __init__(self, *args, logger: Optional[logging.Logger] = None, **kwargs):
+        self.message = args[0] if args else None
+        self.args = args[1:] if args else ()
         self.kwargs = kwargs
-        if tag is not None:
-            warnings.warn(
-                'The keyword "tag" has been deprecated,'
-                ' use first argument "message" instead',
-                DeprecationWarning,
-            )
-        elif args:
-            self.message = args[0]
-            self.args = args[1:]
-        else:
-            warnings.warn(
-                'Calling measure_time() without "message"' " argument is deprecated.",
-                DeprecationWarning,
-            )
-            self.message = None
-            self.args = None
         if isinstance(logger, str):
             self.logger = logging.getLogger(logger)
         elif logger is None:

@@ -141,7 +141,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         ]
         try:
             with measure_time(
-                tag=f"Computed in-memory dataset" f" {self.ds_id!r} at level {index}"
+                f"Computed in-memory dataset" f" {self.ds_id!r} at level {index}"
             ):
                 computed_value = self._callable_obj(*input_datasets, **parameters)
         except Exception as e:
@@ -173,7 +173,7 @@ def augment_ml_dataset(
     from .identity import IdentityMultiLevelDataset
     from .combined import CombinedMultiLevelDataset
 
-    with measure_time(tag=f"Added augmentation from {script_path}"):
+    with measure_time(f"Added augmentation from {script_path}"):
         orig_id = ml_dataset.ds_id
         aug_id = uuid.uuid4()
         aug_inp_id = f"aug-input-{aug_id}"
@@ -202,7 +202,7 @@ def open_ml_dataset_from_python_code(
     ds_id: str = "",
     exception_type: type = ValueError,
 ) -> MultiLevelDataset:
-    with measure_time(tag=f"Opened memory dataset {script_path}"):
+    with measure_time(f"Opened memory dataset {script_path}"):
         return _open_ml_dataset_from_python_code(
             script_path,
             callable_name,

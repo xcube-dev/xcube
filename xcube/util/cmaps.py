@@ -10,7 +10,6 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from typing import Dict, Tuple, List, Optional, Any, Union
 
-from deprecated import deprecated
 import fsspec
 import matplotlib
 import matplotlib.colors
@@ -672,84 +671,3 @@ def _parse_snap_cpd_file(cpd_file_path: str) -> Tuple[Palette, LogScaled]:
 
         # noinspection PyTypeChecker
         return points, log_scaled
-
-
-############################################################################
-# Deprecated API
-
-_REGISTRY = None
-_REGISTRY_JSON = None
-
-
-@deprecated(
-    reason="Colormaps in xcube are no longer managed globally. Use"
-    " xcube.util.cmaps.ColormapRegistry.to_json() instead.",
-    version="0.13.0",
-)
-def get_cmaps() -> List:
-    """Return a JSON-serializable tuple containing records of the form:
-     (<cmap-category>, <cmap-category-description>, <cmap-tuples>),
-    where <cmap-tuples> is a tuple containing records of the form
-    (<cmap-name>, <cbar-png-bytes>), and where
-    <cbar-png-bytes> are encoded PNG images of size 256 x 2 pixels,
-
-    Returns:
-        all known matplotlib color maps
-    """
-    registry = _get_registry()
-    global _REGISTRY_JSON
-    if _REGISTRY_JSON is None:
-        _REGISTRY_JSON = registry.to_json()
-    return _REGISTRY_JSON
-
-
-# noinspection PyUnusedLocal
-@deprecated(
-    reason="Colormaps in xcube are no longer managed globally. Use"
-    " xcube.util.cmaps.ColormapRegistry.get_cmap() instead.",
-    version="0.13.0",
-)
-def get_cmap(
-    cmap_name: str, default_cmap_name: str = "viridis", num_colors: Optional[int] = None
-) -> Tuple[str, matplotlib.colors.Colormap]:
-    """Get color mapping for color bar name *cmap_name*.
-
-    If *num_colors* is a positive integer,
-    a resampled mapping will be returned that contains *num_colors*
-    color entries.
-
-    If *cmap_name* is not defined, *default_cmap_name* is used.
-    If *default_cmap_name* is undefined too, a ValueError is raised.
-
-    Otherwise, a tuple (actual_cmap_name, cmap) is returned.
-
-    Args:
-        cmap_name: Color bar name.
-        num_colors: Number of colours in returned color mapping.
-        default_cmap_name: Default color bar name. (Ignored)
-
-    Returns:
-        A tuple (actual_cmap_name, cmap).
-    """
-    registry = _get_registry()
-    cmap, colormap = registry.get_cmap(cmap_name, num_colors=num_colors)
-    return colormap.cm_name, cmap
-
-
-@deprecated(
-    reason="Colormaps in xcube are no longer managed globally."
-    " This function is obsolete.",
-    version="0.13.0",
-)
-def ensure_cmaps_loaded():
-    """Loads all color maps from matplotlib and registers additional ones,
-    if not done before.
-    """
-    _get_registry()
-
-
-def _get_registry() -> ColormapRegistry:
-    global _REGISTRY
-    if _REGISTRY is None:
-        _REGISTRY = ColormapRegistry()
-    return _REGISTRY

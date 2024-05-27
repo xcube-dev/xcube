@@ -80,7 +80,13 @@ TILE_PARAMETERS = [
 
 
 # noinspection PyPep8Naming
+@api.route("/tiles/{datasetId}/{varName}/{z}/{y}/{x}")
 class TilesHandler(ApiHandler[TilesContext]):
+    @api.operation(
+        operation_id="getTile",
+        summary="Get the image tile for a variable and given tile grid coordinates.",
+        parameters=TILE_PARAMETERS,
+    )
     async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):
         tile = await self.ctx.run_in_executor(
             None,
@@ -96,34 +102,3 @@ class TilesHandler(ApiHandler[TilesContext]):
         )
         self.response.set_header("Content-Type", "image/png")
         await self.response.finish(tile)
-
-
-# noinspection PyPep8Naming
-@api.route("/tiles/{datasetId}/{varName}/{z}/{y}/{x}")
-class NewTilesHandler(TilesHandler):
-    @api.operation(
-        operation_id="getTile",
-        summary="Get the image tile for a variable and given tile grid coordinates.",
-        parameters=TILE_PARAMETERS,
-    )
-    async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):
-        await super().get(datasetId, varName, z, y, x)
-
-
-# For backward compatibility only
-# noinspection PyPep8Naming
-@api.route("/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}")
-class OldTilesHandler(TilesHandler):
-    """Deprecated. Use /tiles/{datasetId}/{varName}/{z}/{y}/{x}."""
-
-    @api.operation(
-        operation_id="getDatasetVariableTile",
-        tags=["datasets"],
-        summary=(
-            "Get the image tile for a variable"
-            " and given tile grid coordinates. (deprecated)"
-        ),
-        parameters=TILE_PARAMETERS,
-    )
-    async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):
-        await super().get(datasetId, varName, z, y, x)
