@@ -13,10 +13,8 @@ import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
 from xcube.core.geom import clip_dataset_by_geometry
-from xcube.core.geom import convert_geometry
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.geom import get_dataset_geometry
-from xcube.core.geom import is_dataset_y_axis_inverted
 from xcube.core.geom import is_lon_lat_dataset
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.geom import normalize_geometry
@@ -632,9 +630,6 @@ class NormalizeGeometryTest(unittest.TestCase):
             normalize_geometry([12.8, -34.4, "?"])
         self.assertEqual(_INVALID_GEOMETRY_MSG, f"{cm.exception}")
 
-    def test_deprecated(self):
-        self.assertEqual(None, convert_geometry(None))
-
 
 class HelpersTest(unittest.TestCase):
     def test_is_lon_lat_dataset(self):
@@ -649,10 +644,3 @@ class HelpersTest(unittest.TestCase):
         dataset.x.attrs.update(long_name="longitude")
         dataset.y.attrs.update(long_name="latitude")
         self.assertTrue(is_lon_lat_dataset(dataset))
-
-    def test_is_dataset_y_axis_inverted(self):
-        dataset = new_cube()
-        self.assertTrue(is_dataset_y_axis_inverted(dataset))
-
-        dataset = new_cube(inverse_y=True)
-        self.assertFalse(is_dataset_y_axis_inverted(dataset))
