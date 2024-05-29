@@ -9,9 +9,11 @@ import threading
 from pathlib import Path
 from typing import Optional, Union, Mapping, Any, Tuple, Dict
 
+import fsspec
 import tornado.ioloop
 import xarray as xr
 
+from xcube.util.config import merge_config
 from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.server import Server
@@ -29,33 +31,30 @@ _LAB_URL_ENV_VAR = "XCUBE_JUPYTER_LAB_URL"
 _LAB_INFO_FILE = "~/.xcube/jupyterlab/lab-info.json"
 
 
+_DEFAULT_MAX_DEPTH = 2
+
+
 class Viewer:
-    """Experimental class that represents the xcube Viewer
-    in Jupyter Notebooks.
+    """xcube Viewer for Jupyter Notebooks.
 
     Args:
-        server_config: Server configuration. See "xcube serve --show
+        args:
+        server_config: server configuration. See "xcube serve --show
             configschema".
+        roots: paths or URLs that will each be scanned for datasets.
+        max_depth: defines the maximum subdirectory depth used to
+            search for datasets in case roots is given.
     """
 
-    def __init__(self, server_config: Optional[Mapping[str, Any]] = None):
-        server_config = dict(server_config or {})
-
-        port = server_config.get("port")
-        address = server_config.get("address")
-
-        if port is None:
-            port = _find_port()
-        if address is None:
-            address = "0.0.0.0"
-
-        server_config["port"] = port
-        server_config["address"] = address
-
-        server_url, reverse_url_prefix = _get_server_url_and_rev_prefix(port)
-        server_config["reverse_url_prefix"] = reverse_url_prefix
-
-        self._server_config = server_config
+    def __init__(
+        self,
+        server_config: Optional[Mapping[str, Any]] = None,
+        roots: Optional[Iterable[str]] = None,
+        max_depth: Optional[int] = None,
+    ):
+        self._server_config = _get_server_config(
+            server_config=server_config, roots=roots, max_depth=max_depth
+        )
 
         # Got trick from
         # https://stackoverflow.com/questions/55201748/running-a-tornado-server-within-a-jupyter-notebook
@@ -200,6 +199,36 @@ class Viewer:
         return self.is_server_running
 
 
+def _get_server_config(
+    server_config: Optional[Mapping[str, Any]] = None,
+    roots: Optional[Iterable[str]] = None,
+    max_depth: Optional[int] = None,
+) -> dict[str, Any]:
+    server_config = dict(server_config or {})
+    max_depth = max_depth or _DEFAULT_MAX_DEPTH
+
+    port = server_config.get("port")
+    address = server_config.get("address")
+
+    if port is None:
+        port = _find_port()
+    if address is None:
+        address = "0.0.0.0"
+
+    server_config["port"] = port
+    server_config["address"] = address
+
+    server_url, reverse_url_prefix = _get_server_url_and_rev_prefix(port)
+    server_config["reverse_url_prefix"] = reverse_url_prefix
+
+    if roots is not None:
+        config_stores = list(server_config.get("DataStores", []))
+        root_stores = _get_data_stores_from_roots(roots, max_depth)
+        server_config["DataStores"] = config_stores + root_stores
+
+    return server_config
+
+
 def _get_server_url_and_rev_prefix(port: int) -> Tuple[str, str]:
     lab_url = os.environ.get(_LAB_URL_ENV_VAR) or None
     has_proxy = lab_url is not None
@@ -233,3 +262,19 @@ def _find_port(start: int = 8000, end: Optional[int] = None) -> int:
             if s.connect_ex(("localhost", port)) != 0:
                 return port
     raise RuntimeError("No available port found")
+
+
+def _get_data_stores_from_roots(
+    roots: tuple[str, ...], max_depth: int
+) -> list[dict[str, dict]]:
+    extra_data_stores = []
+    for index, root in enumerate(roots):
+        protocol, path = fsspec.core.split_protocol(root)
+        extra_data_stores.append(
+            {
+                "Identifier": f"_root_{index}",
+                "StoreId": protocol or "file",
+                "StoreParams": {"root": path, "max_depth": max_depth},
+            }
+        )
+    return extra_data_stores
