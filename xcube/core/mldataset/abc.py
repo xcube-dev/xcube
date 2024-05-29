@@ -5,7 +5,8 @@
 import math
 from abc import abstractmethod, ABCMeta
 from functools import cached_property
-from typing import Sequence, Any, Dict, Callable, Tuple
+from typing import Any, Dict, Callable, Tuple
+from collections.abc import Sequence
 
 import xarray as xr
 
@@ -57,7 +58,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
         """
 
     @cached_property
-    def resolutions(self) -> Sequence[Tuple[float, float]]:
+    def resolutions(self) -> Sequence[tuple[float, float]]:
         """Returns:
         the x,y resolutions for each level given in the spatial
         units of the dataset's CRS (i.e. ``self.grid_mapping.crs``).
@@ -111,8 +112,8 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
     def apply(
         self,
-        function: Callable[[xr.Dataset, Dict[str, Any]], xr.Dataset],
-        kwargs: Dict[str, Any] = None,
+        function: Callable[[xr.Dataset, dict[str, Any]], xr.Dataset],
+        kwargs: dict[str, Any] = None,
         ds_id: str = None,
     ) -> "MultiLevelDataset":
         """Apply function to all level datasets

@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
-from typing import Iterator, List
+from typing import List
+from collections.abc import Iterator
 
 import zarr.storage
 
@@ -18,7 +19,7 @@ class DiagnosticZarrStore(zarr.storage.Store):
 
     def __init__(self, store: collections.abc.MutableMapping):
         self.store = store
-        self.records: List[str] = []
+        self.records: list[str] = []
         if hasattr(self.store, "listdir"):
             self.listdir = self._listdir
         if hasattr(self.store, "getsize"):
@@ -27,7 +28,7 @@ class DiagnosticZarrStore(zarr.storage.Store):
     def _add_record(self, record: str):
         self.records.append(record)
 
-    def _listdir(self, path: str = "") -> List[str]:
+    def _listdir(self, path: str = "") -> list[str]:
         self._add_record(f"listdir({path!r})")
         # noinspection PyUnresolvedReferences
         return self.store.listdir(path=path)

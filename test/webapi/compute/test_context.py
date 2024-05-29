@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import Union, Mapping, Any
+from typing import Union, Any
+from collections.abc import Mapping
 
 from test.webapi.helpers import get_api_ctx
 from xcube.server.api import Context

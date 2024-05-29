@@ -19,8 +19,8 @@ class ProjCache:
     INSTANCE: "ProjCache"
 
     def __init__(self):
-        self._crs_cache: Dict[str, pyproj.CRS] = dict()
-        self._transformer_cache: Dict[str, pyproj.Transformer] = dict()
+        self._crs_cache: dict[str, pyproj.CRS] = dict()
+        self._transformer_cache: dict[str, pyproj.Transformer] = dict()
 
     def get_crs(self, crs: CrsLike) -> pyproj.CRS:
         if isinstance(crs, pyproj.CRS):

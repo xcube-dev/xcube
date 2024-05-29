@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 import json
 import re
-from typing import Collection, Optional
+from typing import Optional
+from collections.abc import Collection
 import fnmatch
 from xcube.server.api import ApiHandler, ApiRequest, ApiError
 from .api import api

@@ -11,7 +11,8 @@ import sys
 import time
 import traceback
 import warnings
-from typing import Any, Callable, Dict, Sequence, Tuple
+from typing import Any, Callable, Dict, Tuple
+from collections.abc import Sequence
 
 import xarray as xr
 
@@ -40,15 +41,15 @@ from xcube.util.config import NameAnyDict, NameDictPairList, to_resolved_name_di
 def gen_cube(
     input_paths: Sequence[str] = None,
     input_processor_name: str = None,
-    input_processor_params: Dict = None,
+    input_processor_params: dict = None,
     input_reader_name: str = None,
-    input_reader_params: Dict[str, Any] = None,
-    output_region: Tuple[float, float, float, float] = None,
-    output_size: Tuple[int, int] = DEFAULT_OUTPUT_SIZE,
+    input_reader_params: dict[str, Any] = None,
+    output_region: tuple[float, float, float, float] = None,
+    output_size: tuple[int, int] = DEFAULT_OUTPUT_SIZE,
     output_resampling: str = DEFAULT_OUTPUT_RESAMPLING,
     output_path: str = DEFAULT_OUTPUT_PATH,
     output_writer_name: str = None,
-    output_writer_params: Dict[str, Any] = None,
+    output_writer_params: dict[str, Any] = None,
     output_metadata: NameAnyDict = None,
     output_variables: NameDictPairList = None,
     processed_variables: NameDictPairList = None,
@@ -199,12 +200,12 @@ def gen_cube(
 def _process_input(
     input_processor: InputProcessor,
     input_reader: DatasetIO,
-    input_reader_params: Dict[str, Any],
+    input_reader_params: dict[str, Any],
     output_writer: DatasetIO,
-    output_writer_params: Dict[str, Any],
+    output_writer_params: dict[str, Any],
     input_file: str,
-    output_size: Tuple[int, int],
-    output_region: Tuple[float, float, float, float],
+    output_size: tuple[int, int],
+    output_region: tuple[float, float, float, float],
     output_resampling: str,
     output_path: str,
     output_metadata: NameAnyDict = None,
@@ -291,7 +292,7 @@ def _process_input(
     # noinspection PyShadowingNames
     def step3(input_slice):
         extra_vars = input_processor.get_extra_vars(input_slice)
-        selected_variables = set([var_name for var_name, _ in output_variables])
+        selected_variables = {var_name for var_name, _ in output_variables}
         selected_variables.update(extra_vars or set())
         return select_variables_subset(input_slice, selected_variables)
 
@@ -435,7 +436,7 @@ def _get_tile_size(output_writer_params):
 def _update_cube(
     output_writer: DatasetIO,
     output_path: str,
-    global_attrs: Dict = None,
+    global_attrs: dict = None,
     temporal_only: bool = False,
 ):
     cube = output_writer.read(output_path)
@@ -455,7 +456,7 @@ def _update_cube(
 def _get_sorted_input_paths(
     input_processor,
     input_reader: DatasetIO,
-    input_reader_params: Dict[str, Any],
+    input_reader_params: dict[str, Any],
     input_paths: Sequence[str],
 ):
     input_path_list = []

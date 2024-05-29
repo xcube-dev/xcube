@@ -5,7 +5,7 @@
 import threading
 from time import sleep
 from timeit import default_timer
-from typing import Sequence
+from collections.abc import Sequence
 
 import requests
 
@@ -29,11 +29,11 @@ def _format_time(t):
     m, s = divmod(t, 60)
     h, m = divmod(m, 60)
     if h:
-        return "{0:2.0f}hr {1:2.0f}min {2:4.1f}s".format(h, m, s)
+        return f"{h:2.0f}hr {m:2.0f}min {s:4.1f}s"
     elif m:
-        return "{0:2.0f}min {1:4.1f}s".format(m, s)
+        return f"{m:2.0f}min {s:4.1f}s"
     else:
-        return "{0:4.1f}s".format(s)
+        return f"{s:4.1f}s"
 
 
 class _ThreadedProgressObserver(ProgressObserver):
@@ -230,6 +230,6 @@ class ConsoleProgressObserver(ProgressObserver):
     @classmethod
     def _format_state(cls, state: ProgressState, marker=None) -> str:
         if marker is None:
-            return "{} - {:3.1%}".format(state.label, state.progress)
+            return f"{state.label} - {state.progress:3.1%}"
         else:
-            return "{} - {}".format(state.label, marker)
+            return f"{state.label} - {marker}"

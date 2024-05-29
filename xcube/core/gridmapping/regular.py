@@ -58,12 +58,12 @@ class RegularGridMapping(GridMapping):
 
 
 def new_regular_grid_mapping(
-    size: Union[int, Tuple[int, int]],
-    xy_min: Tuple[float, float],
-    xy_res: Union[float, Tuple[float, float]],
+    size: Union[int, tuple[int, int]],
+    xy_min: tuple[float, float],
+    xy_res: Union[float, tuple[float, float]],
     crs: Union[str, pyproj.crs.CRS],
     *,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     is_j_axis_up: bool = False
 ) -> GridMapping:
     width, height = _normalize_int_pair(size, name="size")
@@ -105,7 +105,7 @@ def new_regular_grid_mapping(
 def to_regular_grid_mapping(
     grid_mapping: GridMapping,
     *,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     is_j_axis_up: bool = False
 ) -> GridMapping:
     if grid_mapping.is_regular:

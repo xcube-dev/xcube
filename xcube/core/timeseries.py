@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Union, Sequence, Optional, AbstractSet, Set
+from typing import Union, Optional, AbstractSet, Set
+from collections.abc import Sequence
 
 import numpy as np
 import pyproj
@@ -187,7 +188,7 @@ def get_time_series(
 
 def normalize_agg_methods(
     agg_methods: Union[str, Sequence[str]], exception_type=ValueError
-) -> Set[str]:
+) -> set[str]:
     agg_methods = agg_methods or [AGG_MEAN]
     if isinstance(agg_methods, str):
         agg_methods = [agg_methods]

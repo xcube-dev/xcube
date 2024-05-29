@@ -514,7 +514,7 @@ class JsonObjectSchemaTest(unittest.TestCase):
 
         Person = namedtuple("Person", ["name", "age", "deleted"])
 
-        def serialize(person: Person) -> Dict[str, Any]:
+        def serialize(person: Person) -> dict[str, Any]:
             return person._asdict()
 
         person_schema.serializer = serialize

@@ -4,16 +4,15 @@
 
 import unittest
 from typing import (
-    Sequence,
     Optional,
     Callable,
     Any,
-    Awaitable,
     Union,
     Tuple,
     Type,
     Dict,
 )
+from collections.abc import Sequence, Awaitable
 
 import pytest
 import tornado.httputil
@@ -431,10 +430,10 @@ class MockContext(Context):
         self._config = {}
 
     @property
-    def apis(self) -> Tuple[Api]:
+    def apis(self) -> tuple[Api]:
         return (self._api,)
 
-    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> dict[str, Any]:
         return {}
 
     @property
@@ -443,7 +442,7 @@ class MockContext(Context):
         return self._config
 
     def get_api_ctx(
-        self, api_name: str, cls: Optional[Type[ApiContextT]] = None
+        self, api_name: str, cls: Optional[type[ApiContextT]] = None
     ) -> Optional[ApiContextT]:
         return self._api if api_name == "test" else None
 

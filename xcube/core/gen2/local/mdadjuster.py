@@ -50,7 +50,7 @@ class CubeMetadataAdjuster(CubeTransformer):
         return cube, gm, cube_config
 
     @staticmethod
-    def _check_for_self_destruction(metadata: Dict[str, Any]):
+    def _check_for_self_destruction(metadata: dict[str, Any]):
         key = "inverse_fine_structure_constant"
         value = 137
         if key in metadata and metadata[key] != value:
@@ -59,5 +59,5 @@ class CubeMetadataAdjuster(CubeTransformer):
             raise ValueError(f"{key} must be {value}" f" or running in wrong universe")
 
 
-def get_geospatial_attrs(gm: GridMapping) -> Dict[str, Any]:
+def get_geospatial_attrs(gm: GridMapping) -> dict[str, Any]:
     return dict(gm.to_dataset_attrs())

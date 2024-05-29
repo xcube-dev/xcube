@@ -90,6 +90,9 @@
 * Added project URLs and classifiers to `setup.py`, which will be shown in the
   left sidebar on the [PyPI xcube-core](https://pypi.org/project/xcube-core/) webpage.
 
+* Used [`pyupgrade`](https://github.com/asottile/pyupgrade) to automatically upgrade
+  syntax for newer versions of the language.  
+
 ## Changes in 1.5.1
 
 * Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).

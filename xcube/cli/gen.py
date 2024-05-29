@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import List, Sequence
+from typing import List
+from collections.abc import Sequence
 
 import click
 
@@ -188,7 +189,7 @@ def _format_info():
     return help_text
 
 
-def _format_input_processors(input_processors: List[Extension]):
+def _format_input_processors(input_processors: list[Extension]):
     help_text = ""
     for input_processor in input_processors:
         name = input_processor.name
@@ -198,7 +199,7 @@ def _format_input_processors(input_processors: List[Extension]):
     return help_text
 
 
-def _format_dataset_ios(dataset_ios: List[Extension]):
+def _format_dataset_ios(dataset_ios: list[Extension]):
     help_text = ""
     for ds_io in dataset_ios:
         name = ds_io.name

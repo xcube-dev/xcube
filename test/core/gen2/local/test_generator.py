@@ -26,7 +26,7 @@ CALLBACK_MOCK_URL = "https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback"
 
 
 class LocalCubeGeneratorTest(unittest.TestCase):
-    REQUEST: Dict[str, Any] = dict(
+    REQUEST: dict[str, Any] = dict(
         input_config=dict(store_id="memory", data_id="S2L2A.zarr"),
         cube_config=dict(
             variable_names=["B01", "B02", "B03"],

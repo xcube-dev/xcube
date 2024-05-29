@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Tuple, Sequence, Dict, Optional, Mapping, Union, Hashable
+from typing import Tuple, Dict, Optional, Union
+from collections.abc import Sequence, Mapping, Hashable
 
 import numpy as np
 import xarray as xr
@@ -103,7 +104,7 @@ class CubeSchema:
         return len(self._dims)
 
     @property
-    def dims(self) -> Tuple[str, ...]:
+    def dims(self) -> tuple[str, ...]:
         """Tuple of dimension names."""
         return self._dims
 
@@ -168,17 +169,17 @@ class CubeSchema:
         return self._shape[0]
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         """Tuple of dimension sizes."""
         return self._shape
 
     @property
-    def chunks(self) -> Optional[Tuple[int]]:
+    def chunks(self) -> Optional[tuple[int]]:
         """Tuple of dimension chunk sizes."""
         return self._chunks
 
     @property
-    def coords(self) -> Dict[str, xr.DataArray]:
+    def coords(self) -> dict[str, xr.DataArray]:
         """Dictionary of coordinate variables."""
         return self._coords
 
@@ -284,7 +285,7 @@ def get_dataset_xy_var_names(
     coords: Union[xr.Dataset, xr.DataArray, Mapping[Hashable, xr.DataArray]],
     must_exist: bool = False,
     dataset_arg_name: str = "dataset",
-) -> Optional[Tuple[str, str]]:
+) -> Optional[tuple[str, str]]:
     if hasattr(coords, "coords"):
         coords = coords.coords
     x_var_name = None
@@ -377,7 +378,7 @@ def get_dataset_bounds_var_name(
     return None
 
 
-def get_dataset_chunks(dataset: xr.Dataset) -> Dict[Hashable, int]:
+def get_dataset_chunks(dataset: xr.Dataset) -> dict[Hashable, int]:
     """Get the most common chunk sizes for each
     chunked dimension of *dataset*.
 
@@ -392,7 +393,7 @@ def get_dataset_chunks(dataset: xr.Dataset) -> Dict[Hashable, int]:
 
     # Record the frequencies of chunk sizes for
     # each dimension d in each data variable var
-    dim_size_counts: Dict[Hashable, Dict[int, int]] = {}
+    dim_size_counts: dict[Hashable, dict[int, int]] = {}
     for var_name, var in dataset.data_vars.items():
         if var.chunks:
             for d, c in zip(var.dims, var.chunks):
@@ -413,7 +414,7 @@ def get_dataset_chunks(dataset: xr.Dataset) -> Dict[Hashable, int]:
 
     # For each dimension d, determine the most frequently
     # seen chunk size max_c
-    dim_sizes: Dict[Hashable, int] = {}
+    dim_sizes: dict[Hashable, int] = {}
     for d, size_counts in dim_size_counts.items():
         max_count = 0
         best_max_c = 0
@@ -431,9 +432,9 @@ def get_dataset_chunks(dataset: xr.Dataset) -> Dict[Hashable, int]:
 def rechunk_cube(
     cube: xr.Dataset,
     gm: GridMapping,
-    chunks: Optional[Dict[str, int]] = None,
-    tile_size: Optional[Tuple[int, int]] = None,
-) -> Tuple[xr.Dataset, GridMapping]:
+    chunks: Optional[dict[str, int]] = None,
+    tile_size: Optional[tuple[int, int]] = None,
+) -> tuple[xr.Dataset, GridMapping]:
     """Re-chunk data variables of *cube* so they all share the same chunk
     sizes for their dimensions.
 

@@ -21,7 +21,7 @@ class ComputeControllersTest(unittest.TestCase):
 
     def test_get_compute_operations_entry(self):
         result = get_compute_operations(get_compute_ctx())
-        operations: List = result["operations"]
+        operations: list = result["operations"]
 
         operations_map = {op.get("operationId"): op for op in operations}
         self.assertIn("spatial_subset", operations_map)

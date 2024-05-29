@@ -5,7 +5,8 @@
 import json
 import os.path
 import sys
-from typing import Optional, Dict, Any, Sequence, Union
+from typing import Optional, Dict, Any, Union
+from collections.abc import Sequence
 
 import jsonschema
 import yaml
@@ -24,7 +25,7 @@ from .config import OutputConfig
 from .error import CubeGeneratorError
 from ...constants import LOG
 
-CubeGeneratorRequestLike = Union[str, Dict, "CubeGeneratorRequest"]
+CubeGeneratorRequestLike = Union[str, dict, "CubeGeneratorRequest"]
 
 
 class CubeGeneratorRequest(JsonObject):
@@ -148,7 +149,7 @@ class CubeGeneratorRequest(JsonObject):
             "request must be a str, dict, " "or a CubeGeneratorRequest instance"
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert into a JSON-serializable dictionary"""
         d = {}
 
@@ -172,7 +173,7 @@ class CubeGeneratorRequest(JsonObject):
         return d
 
     @classmethod
-    def from_dict(cls, request_dict: Dict[str, Any]) -> "CubeGeneratorRequest":
+    def from_dict(cls, request_dict: dict[str, Any]) -> "CubeGeneratorRequest":
         """Create new instance from a JSON-serializable dictionary"""
         try:
             return cls.get_schema().from_instance(request_dict)
@@ -195,7 +196,7 @@ class CubeGeneratorRequest(JsonObject):
     @classmethod
     def _load_request_file(
         cls, gen_config_file: Optional[str], verbosity: int = 0
-    ) -> Dict:
+    ) -> dict:
         if gen_config_file is not None and not os.path.exists(gen_config_file):
             raise CubeGeneratorError(
                 f"Cube generator request " f'"{gen_config_file}" not found.'
@@ -208,7 +209,7 @@ class CubeGeneratorRequest(JsonObject):
                         LOG.info("Awaiting generator" " request JSON from TTY...")
                     return json.load(sys.stdin)
             else:
-                with open(gen_config_file, "r") as fp:
+                with open(gen_config_file) as fp:
                     if gen_config_file.endswith(".json"):
                         return json.load(fp)
                     else:

@@ -350,7 +350,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
         cls,
         fs,
         file_path: str,
-        tile_size: Tuple[int, int],
+        tile_size: tuple[int, int],
         overview_level: Optional[int] = None,
     ) -> xr.Dataset:
         """

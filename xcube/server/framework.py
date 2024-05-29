@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import abc
-from typing import Sequence, List, Type, Optional, Tuple
+from typing import List, Type, Optional, Tuple
+from collections.abc import Sequence
 
 from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
 from xcube.util.extension import get_extension_registry
@@ -72,7 +73,7 @@ class Framework(AsyncExecution, abc.ABC):
         """
 
 
-def get_framework_names() -> List[str]:
+def get_framework_names() -> list[str]:
     """Get the names of possible web server frameworks."""
     extension_registry = get_extension_registry()
     return [
@@ -81,7 +82,7 @@ def get_framework_names() -> List[str]:
     ]
 
 
-def get_framework_class(framework_name: str) -> Type[Framework]:
+def get_framework_class(framework_name: str) -> type[Framework]:
     """Get the web server framework class for the given *framework_name*."""
     extension_registry = get_extension_registry()
     return extension_registry.get_component(

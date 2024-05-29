@@ -44,7 +44,7 @@ DEFAULT_DEPENDENCY_NAMES = [
 _XCUBE_VERSIONS = None
 
 
-def get_xcube_versions() -> Dict[str, str]:
+def get_xcube_versions() -> dict[str, str]:
     """Get a mapping from xcube package names to package versions.
 
     Returns:
@@ -62,8 +62,8 @@ def get_xcube_versions() -> Dict[str, str]:
 
 
 def get_versions(
-    dependency_names: List[str], plugin_names: List[str]
-) -> Dict[str, str]:
+    dependency_names: list[str], plugin_names: list[str]
+) -> dict[str, str]:
     """Get a mapping from package names to package versions.
     The input is divided into names of packages that are external dependencies
     and into names of xcube plugins.

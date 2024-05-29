@@ -12,8 +12,8 @@ READ_ALL_VARIABLES_SCOPE = "read:variable:*"
 
 
 def assert_scopes(
-    required_scopes: Set[str],
-    granted_scopes: Optional[Set[str]],
+    required_scopes: set[str],
+    granted_scopes: Optional[set[str]],
     is_substitute: bool = False,
 ):
     """Assert scopes.
@@ -35,8 +35,8 @@ def assert_scopes(
 
 
 def check_scopes(
-    required_scopes: Set[str],
-    granted_scopes: Optional[Set[str]],
+    required_scopes: set[str],
+    granted_scopes: Optional[set[str]],
     is_substitute: bool = False,
 ) -> bool:
     """Check scopes.
@@ -65,8 +65,8 @@ def check_scopes(
 
 
 def _get_missing_scope(
-    required_scopes: Set[str],
-    granted_scopes: Optional[Set[str]],
+    required_scopes: set[str],
+    granted_scopes: Optional[set[str]],
     is_substitute: bool = False,
 ) -> Optional[str]:
     """Return the first required scope that is

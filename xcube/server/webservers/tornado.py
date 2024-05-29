@@ -8,7 +8,8 @@ import functools
 import logging
 import traceback
 import urllib.parse
-from typing import Any, Optional, Sequence, Union, Callable, Type, Awaitable, Mapping
+from typing import Any, Optional, Union, Callable, Type
+from collections.abc import Sequence, Awaitable, Mapping
 
 import tornado.escape
 import tornado.httputil
@@ -387,7 +388,7 @@ class TornadoApiRequest(ApiRequest):
 
     # noinspection PyShadowingBuiltins
     def get_query_args(
-        self, name: str, type: Optional[Type[ArgT]] = None
+        self, name: str, type: Optional[type[ArgT]] = None
     ) -> Sequence[ArgT]:
         name_lc = name.lower() if self._is_query_lower_case else name
         if not self.query or name_lc not in self.query:

@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import os
-from typing import Sequence
+from collections.abc import Sequence
 
 from xcube.server.server import Server
 from xcube.util.config import load_configs

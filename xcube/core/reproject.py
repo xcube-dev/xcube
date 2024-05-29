@@ -17,19 +17,19 @@ gdal.PushErrorHandler("CPLQuietErrorHandler")
 DEFAULT_RESAMPLING = "Nearest"
 DEFAULT_TP_RESAMPLING = "Bilinear"
 
-CoordRange = Tuple[float, float, float, float]
+CoordRange = tuple[float, float, float, float]
 
 
 def reproject_xy_to_wgs84(
     src_dataset: xr.Dataset,
-    src_xy_var_names: Tuple[str, str],
-    src_xy_tp_var_names: Tuple[str, str] = None,
+    src_xy_var_names: tuple[str, str],
+    src_xy_tp_var_names: tuple[str, str] = None,
     src_xy_crs: str = None,
-    src_xy_gcp_step: Union[int, Tuple[int, int]] = 10,
-    src_xy_tp_gcp_step: Union[int, Tuple[int, int]] = 1,
-    dst_size: Tuple[int, int] = None,
+    src_xy_gcp_step: Union[int, tuple[int, int]] = 10,
+    src_xy_tp_gcp_step: Union[int, tuple[int, int]] = 1,
+    dst_size: tuple[int, int] = None,
     dst_region: CoordRange = None,
-    dst_resampling: Union[str, Dict[str, str]] = DEFAULT_RESAMPLING,
+    dst_resampling: Union[str, dict[str, str]] = DEFAULT_RESAMPLING,
     include_xy_vars: bool = False,
     include_non_spatial_vars: bool = False,
 ) -> xr.Dataset:
@@ -358,7 +358,7 @@ def _get_resample_alg(dst_resampling, var_name, default):
     return resample_alg, resample_alg_name
 
 
-NAME_TO_GDAL_RESAMPLE_ALG: Dict[str, Any] = dict(
+NAME_TO_GDAL_RESAMPLE_ALG: dict[str, Any] = dict(
     # Up-sampling
     Nearest=gdal.GRA_NearestNeighbour,
     Bilinear=gdal.GRA_Bilinear,
@@ -409,7 +409,7 @@ def _ensure_valid_region(
 
 def _get_gcps(
     x_var: xr.DataArray, y_var: xr.DataArray, i_step: int, j_step: int
-) -> List[gdal.GCP]:
+) -> list[gdal.GCP]:
     x_values = x_var.values
     y_values = y_var.values
     i_size = x_var.shape[-1]
@@ -422,7 +422,7 @@ def _get_gcps(
         for i in np.linspace(0, i_size - 1, i_count, dtype=np.int32):
             x, y = float(x_values[j, i]), float(y_values[j, i])
             gcps.append(
-                gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, "%s,%s" % (i, j), str(gcp_id))
+                gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, f"{i},{j}", str(gcp_id))
             )
             gcp_id += 1
     return gcps

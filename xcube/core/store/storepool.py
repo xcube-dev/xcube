@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import os.path
-from typing import Any, Dict, Optional, List, Union, Mapping
+from typing import Any, Dict, Optional, List, Union
+from collections.abc import Mapping
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance
@@ -20,7 +21,7 @@ from ...util.config import load_json_or_yaml_config
 
 def get_data_store_instance(
     store_id: str,
-    store_params: Dict[str, Any] = None,
+    store_params: dict[str, Any] = None,
     store_pool: "DataStorePool" = None,
 ) -> "DataStoreInstance":
     """Get a data store instance for identifier *store_id*.
@@ -126,7 +127,7 @@ class DataStoreConfig:
         return self._store_id
 
     @property
-    def store_params(self) -> Optional[Dict[str, Any]]:
+    def store_params(self) -> Optional[dict[str, Any]]:
         return self._store_params
 
     @property
@@ -142,7 +143,7 @@ class DataStoreConfig:
         return self._user_data
 
     @classmethod
-    def from_dict(cls, data_store_config: Dict[str, Any]) -> "DataStoreConfig":
+    def from_dict(cls, data_store_config: dict[str, Any]) -> "DataStoreConfig":
         assert_valid_config(
             data_store_config, name="data_store_config", schema=DATA_STORE_CONFIG_SCHEMA
         )
@@ -153,7 +154,7 @@ class DataStoreConfig:
             description=data_store_config.get("description"),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         data_store_config = dict(store_id=self._store_id)
         if self._store_params:
             data_store_config.update(store_params=self._store_params)
@@ -193,10 +194,10 @@ class DataStoreInstance:
             store.close()
 
 
-DataStoreConfigDict = Dict[str, DataStoreConfig]
-DataStoreInstanceDict = Dict[str, DataStoreInstance]
+DataStoreConfigDict = dict[str, DataStoreConfig]
+DataStoreInstanceDict = dict[str, DataStoreInstance]
 
-DataStorePoolLike = Union[str, Dict[str, Any], "DataStorePool"]
+DataStorePoolLike = Union[str, dict[str, Any], "DataStorePool"]
 
 
 class DataStorePool:
@@ -239,11 +240,11 @@ class DataStorePool:
         return len(self._instances) == 0
 
     @property
-    def store_instance_ids(self) -> List[str]:
+    def store_instance_ids(self) -> list[str]:
         return sorted([k for k, v in self._instances.items()])
 
     @property
-    def store_configs(self) -> List[DataStoreConfig]:
+    def store_configs(self) -> list[DataStoreConfig]:
         return [v.store_config for k, v in self._instances.items()]
 
     def get_store_instance_id(
@@ -337,11 +338,11 @@ class DataStorePool:
         return cls.from_dict(store_configs or {})
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> "DataStorePool":
+    def from_dict(cls, d: dict[str, Any]) -> "DataStorePool":
         DATA_STORE_POOL_SCHEMA.validate_instance(d)
         return cls({k: DataStoreConfig.from_dict(v) for k, v in d.items()})
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             instance_id: instance.store_config.to_dict()
             for instance_id, instance in self._instances.items()

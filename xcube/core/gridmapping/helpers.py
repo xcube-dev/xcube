@@ -19,8 +19,8 @@ from xcube.util.assertions import assert_true
 from xcube.util.undefined import UNDEFINED
 
 Number = Union[int, float]
-AffineTransformMatrix = Tuple[
-    Tuple[Number, Number, Number], Tuple[Number, Number, Number]
+AffineTransformMatrix = tuple[
+    tuple[Number, Number, Number], tuple[Number, Number, Number]
 ]
 
 
@@ -52,8 +52,8 @@ def _normalize_crs(crs: Union[str, pyproj.CRS]) -> pyproj.CRS:
 
 
 def _normalize_int_pair(
-    value: Any, name: str = None, default: Optional[Tuple[int, int]] = UNDEFINED
-) -> Optional[Tuple[int, int]]:
+    value: Any, name: str = None, default: Optional[tuple[int, int]] = UNDEFINED
+) -> Optional[tuple[int, int]]:
     if isinstance(value, int):
         return value, value
     elif value is not None:
@@ -67,8 +67,8 @@ def _normalize_int_pair(
 
 
 def _normalize_number_pair(
-    value: Any, name: str = None, default: Optional[Tuple[Number, Number]] = UNDEFINED
-) -> Optional[Tuple[Number, Number]]:
+    value: Any, name: str = None, default: Optional[tuple[Number, Number]] = UNDEFINED
+) -> Optional[tuple[Number, Number]]:
     if isinstance(value, (float, int)):
         x, y = value, value
         return _to_int_or_float(x), _to_int_or_float(y)
@@ -98,11 +98,11 @@ def from_lon_360(lon_var: Union[np.ndarray, da.Array, xr.DataArray]):
         return da.where(lon_var <= 180.0, lon_var, lon_var - 360.0)
 
 
-def _default_xy_var_names(crs: pyproj.crs.CRS) -> Tuple[str, str]:
+def _default_xy_var_names(crs: pyproj.crs.CRS) -> tuple[str, str]:
     return ("lon", "lat") if crs.is_geographic else ("x", "y")
 
 
-def _default_xy_dim_names(crs: pyproj.crs.CRS) -> Tuple[str, str]:
+def _default_xy_dim_names(crs: pyproj.crs.CRS) -> tuple[str, str]:
     return _default_xy_var_names(crs)
 
 
@@ -134,7 +134,7 @@ _RESOLUTIONS = {
     100: (1, -1),
 }
 
-_RESOLUTION_SET = set(k / 100 for k in _RESOLUTIONS.keys())
+_RESOLUTION_SET = {k / 100 for k in _RESOLUTIONS.keys()}
 
 
 def round_to_fraction(value: float, digits: int = 2, resolution: float = 1) -> Fraction:
@@ -177,8 +177,8 @@ def round_to_fraction(value: float, digits: int = 2, resolution: float = 1) -> F
 
 
 def scale_xy_res_and_size(
-    xy_res: Tuple[float, float], size: Tuple[int, int], xy_scale: Tuple[float, float]
-) -> Tuple[Tuple[float, float], Tuple[int, int]]:
+    xy_res: tuple[float, float], size: tuple[int, int], xy_scale: tuple[float, float]
+) -> tuple[tuple[float, float], tuple[int, int]]:
     """Scale given *xy_res* and *size* using *xy_scale*.
     Make sure, size components are not less than 2.
     """

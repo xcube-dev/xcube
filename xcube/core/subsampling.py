@@ -4,7 +4,8 @@
 
 import collections.abc
 import fnmatch
-from typing import Tuple, Hashable, Optional, Mapping, Union
+from typing import Tuple, Optional, Union
+from collections.abc import Hashable, Mapping
 
 import numpy as np
 import xarray as xr
@@ -22,7 +23,7 @@ AggMethods = Union[AggMethod, Mapping[str, AggMethod]]
 def subsample_dataset(
     dataset: xr.Dataset,
     step: int,
-    xy_dim_names: Optional[Tuple[str, str]] = None,
+    xy_dim_names: Optional[tuple[str, str]] = None,
     agg_methods: Optional[AggMethods] = None,
 ) -> xr.Dataset:
     """Subsample *dataset* with given integer subsampling *step*.
@@ -110,7 +111,7 @@ def subsample_dataset(
 
 def get_dataset_agg_methods(
     dataset: xr.Dataset,
-    xy_dim_names: Optional[Tuple[str, str]] = None,
+    xy_dim_names: Optional[tuple[str, str]] = None,
     agg_methods: Optional[AggMethods] = None,
 ):
     assert_instance(dataset, xr.Dataset, name="dataset")
@@ -172,8 +173,8 @@ _FULL_SLICE = slice(None, None, None)
 
 
 def get_variable_subsampling_slices(
-    variable: xr.DataArray, step: int, xy_dim_names: Optional[Tuple[str, str]] = None
-) -> Optional[Tuple[slice, ...]]:
+    variable: xr.DataArray, step: int, xy_dim_names: Optional[tuple[str, str]] = None
+) -> Optional[tuple[slice, ...]]:
     """
     Compute subsampling slices for *variable*.
     Return None, if *variable* does not contain spatial

@@ -22,8 +22,8 @@ def make_result(
     worked,
     total_work,
     failed=False,
-    output: List[str] = None,
-    job_result: Dict[str, Any] = None,
+    output: list[str] = None,
+    job_result: dict[str, Any] = None,
 ):
     json = {
         "job_id": "93",

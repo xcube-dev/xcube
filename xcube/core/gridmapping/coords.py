@@ -78,7 +78,7 @@ def new_grid_mapping_from_coords(
     y_coords: xr.DataArray,
     crs: Union[str, pyproj.crs.CRS],
     *,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
     crs = _normalize_crs(crs)
@@ -289,11 +289,11 @@ def _abs_no_nan(array: Union[xr.DataArray, da.Array, np.ndarray]):
 
 def grid_mapping_to_coords(
     grid_mapping: GridMapping,
-    xy_var_names: Tuple[str, str] = None,
-    xy_dim_names: Tuple[str, str] = None,
+    xy_var_names: tuple[str, str] = None,
+    xy_dim_names: tuple[str, str] = None,
     reuse_coords: bool = False,
     exclude_bounds: bool = False,
-) -> Dict[str, xr.DataArray]:
+) -> dict[str, xr.DataArray]:
     """Get CF-compliant axis coordinate variables and cell
     boundary coordinate variables.
 

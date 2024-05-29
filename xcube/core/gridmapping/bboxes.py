@@ -92,7 +92,7 @@ def compute_ij_bboxes(
 
 def compute_xy_bbox(
     xy_coords: Union[xr.DataArray, np.ndarray, da.Array]
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     xy_coords = da.asarray(xy_coords)
     result = da.reduction(
         xy_coords,

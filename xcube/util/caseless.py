@@ -5,7 +5,7 @@
 from typing import Dict, TypeVar, Optional
 
 
-def caseless_dict(*args, **kwargs) -> Dict:
+def caseless_dict(*args, **kwargs) -> dict:
     """Create a dictionary that compares its string keys in a case-insensitive manner."""
     return _CaselessDict(*args, **kwargs)
 

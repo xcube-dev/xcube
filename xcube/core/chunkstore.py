@@ -5,7 +5,8 @@
 import itertools
 import json
 from collections.abc import MutableMapping
-from typing import Dict, Tuple, Callable, Any, Sequence
+from typing import Dict, Tuple, Callable, Any
+from collections.abc import Sequence
 from typing import Union
 
 import numpy as np
@@ -17,12 +18,13 @@ from xcube.constants import LOG_LEVEL_TRACE
 from xcube.core.zarrstore import LoggingZarrStore
 import collections.abc
 from logging import Logger
-from typing import Iterator, Iterable, KeysView, Optional
+from typing import Optional
+from collections.abc import Iterator, Iterable, KeysView
 
 from xcube.constants import LOG
 from xcube.util.assertions import assert_instance
 
-GetChunk = Callable[["ChunkStore", str, Tuple[int, ...]], bytes]
+GetChunk = Callable[["ChunkStore", str, tuple[int, ...]], bytes]
 
 
 # Note, we cannot remove this deprecated code as long as
@@ -65,7 +67,7 @@ class ChunkStore(MutableMapping):
         dims: Sequence[str],
         shape: Sequence[int],
         chunks: Sequence[int],
-        attrs: Dict[str, Any] = None,
+        attrs: dict[str, Any] = None,
         get_chunk: GetChunk = None,
         trace_store_calls: bool = False,
     ):
@@ -87,18 +89,18 @@ class ChunkStore(MutableMapping):
         return self._ndim
 
     @property
-    def dims(self) -> Tuple[str, ...]:
+    def dims(self) -> tuple[str, ...]:
         return self._dims
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         return self._shape
 
     @property
-    def chunks(self) -> Tuple[int, ...]:
+    def chunks(self) -> tuple[int, ...]:
         return self._chunks
 
-    def add_array(self, name: str, array: np.ndarray, attrs: Dict):
+    def add_array(self, name: str, array: np.ndarray, attrs: dict):
         shape = list(map(int, array.shape))
         dtype = str(array.dtype.str)
         array_metadata = {
@@ -121,10 +123,10 @@ class ChunkStore(MutableMapping):
         name: str,
         dtype: str,
         fill_value: Union[int, float] = None,
-        compressor: Dict[str, Any] = None,
+        compressor: dict[str, Any] = None,
         filters=None,
         order: str = "C",
-        attrs: Dict[str, Any] = None,
+        attrs: dict[str, Any] = None,
         get_chunk: GetChunk = None,
     ):
         get_chunk = get_chunk or self._get_chunk
@@ -226,7 +228,7 @@ def _trace(msg: str):
     LOG.log(LOG_LEVEL_TRACE, msg)
 
 
-def _dict_to_bytes(d: Dict):
+def _dict_to_bytes(d: dict):
     return _str_to_bytes(json.dumps(d, indent=2))
 
 

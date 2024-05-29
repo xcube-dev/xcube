@@ -80,7 +80,7 @@ class ChunkStoreTest(unittest.TestCase):
 
 def gen_index_var(dims, shape, chunks, trace_store_calls: bool = False):
     # noinspection PyUnusedLocal
-    def get_chunk(cube_store: ChunkStore, name: str, index: Tuple[int, ...]) -> bytes:
+    def get_chunk(cube_store: ChunkStore, name: str, index: tuple[int, ...]) -> bytes:
         data = np.zeros(cube_store.chunks, dtype=np.uint64)
         data_view = data.ravel()
         if data_view.base is not data:
@@ -115,7 +115,7 @@ class LoggingStoreTest(unittest.TestCase):
         self.assertWriteOk(MutableLoggingStore(self.original_store))
 
     def setUp(self) -> None:
-        self.zattrs_value = bytes()
+        self.zattrs_value = b''
         self.original_store = MemoryStore()
         self.original_store.update({"chl/.zattrs": self.zattrs_value})
 
@@ -133,7 +133,7 @@ class LoggingStoreTest(unittest.TestCase):
         self.assertEqual({"chl/.zattrs"}, set(self.original_store.keys()))
 
     def assertWriteOk(self, logging_store: MutableLoggingStore):
-        zarray_value = bytes()
+        zarray_value = b''
         logging_store["chl/.zarray"] = zarray_value
         self.assertEqual(
             {"chl/.zattrs", "chl/.zarray"}, set(self.original_store.keys())
