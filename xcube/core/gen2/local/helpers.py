@@ -15,7 +15,7 @@ def strip_cube(cube: xr.Dataset) -> xr.Dataset:
         k
         for k, v in cube.data_vars.items()
         if len(v.shape) < 3
-        or np.product(v.shape) == 0
+        or np.prod(v.shape) == 0
         or v.shape[-2] < 2
         or v.shape[-1] < 2
     ]

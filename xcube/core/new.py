@@ -26,7 +26,7 @@ def new_cube(
     y_start=-90.0,
     inverse_y=False,
     time_name="time",
-    time_dtype="datetime64[s]",
+    time_dtype="datetime64[ns]",
     time_units="seconds since 1970-01-01T00:00:00",
     time_calendar="proleptic_gregorian",
     time_periods=5,

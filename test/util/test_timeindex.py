@@ -50,7 +50,7 @@ class TimeIndexTest(TestCase):
     da_tzaware = xr.DataArray(
         np.arange(1, 4),
         coords=dict(
-            time=pd.arrays.DatetimeArray(
+            time=pd.array(
                 pd.date_range("2000-01-01T00:00:00", "2000-01-03T00:00:00", tz="CET"),
                 dtype=DatetimeTZDtype(tz="CET"),
             )

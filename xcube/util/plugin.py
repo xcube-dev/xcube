@@ -5,14 +5,13 @@
 import abc
 import fnmatch
 import importlib
+import importlib.metadata
 import pkgutil
 import sys
 import time
 import traceback
 import warnings
 from typing import Callable, Dict, Optional, Any, List
-
-from pkg_resources import iter_entry_points
 
 from xcube.constants import PLUGIN_ENTRY_POINT_GROUP_NAME
 from xcube.constants import PLUGIN_INIT_TIME__WARN_LIMIT
@@ -94,7 +93,9 @@ def load_plugins(
     else:
         # verbose=True for specified xcube plugins.
         _collect_plugins(
-            list(iter_entry_points(group=PLUGIN_ENTRY_POINT_GROUP_NAME, name=None)),
+            list(importlib.metadata.entry_points(
+                group=PLUGIN_ENTRY_POINT_GROUP_NAME
+            )),
             ext_registry,
             True,
             plugins,

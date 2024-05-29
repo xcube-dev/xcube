@@ -147,10 +147,10 @@ def _maybe_return_time_range_from_metadata(
     if maybe_consider_metadata:
         attr_start_time, attr_end_time = get_time_range_from_attrs(dataset)
         attr_start_time = pd.to_datetime(
-            attr_start_time, infer_datetime_format=False, utc=True
+            attr_start_time, utc=True
         )
         attr_end_time = pd.to_datetime(
-            attr_end_time, infer_datetime_format=False, utc=True
+            attr_end_time, utc=True
         )
         if attr_start_time is not None and attr_end_time is not None:
             try:
@@ -225,7 +225,7 @@ def remove_time_part_from_isoformat(datetime_str: str) -> str:
 
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
     date_time = pd.to_datetime(
-        time_str, format=pattern, infer_datetime_format=False, utc=True
+        time_str, format=pattern, utc=True
     )
     timedelta = date_time - REF_DATETIME
     return (

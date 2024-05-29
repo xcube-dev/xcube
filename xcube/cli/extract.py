@@ -85,7 +85,7 @@ def extract(
     time_col_names = ["time"]
 
     points = pd.read_csv(
-        points_path, parse_dates=time_col_names, infer_datetime_format=True
+        points_path, parse_dates=time_col_names
     )
     points.time = points.time.dt.tz_localize(tz=None)
     with open_dataset(cube_path) as cube:

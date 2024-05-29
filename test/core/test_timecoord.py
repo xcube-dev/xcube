@@ -154,11 +154,11 @@ class GetTimeRangeTest(unittest.TestCase):
 
         start_time_data = pd.date_range(
             start="2010-01-03T12:00:00", periods=5, freq="5D"
-        ).values.astype(dtype="datetime64[s]")
+        ).values.astype(dtype="datetime64[ns]")
         start_time = xr.DataArray(start_time_data, dims="time")
         end_time_data = pd.date_range(
             start="2010-01-07T12:00:00", periods=5, freq="5D"
-        ).values.astype(dtype="datetime64[s]")
+        ).values.astype(dtype="datetime64[ns]")
         end_time = xr.DataArray(end_time_data, dims="time")
         cube = new_cube(
             drop_bounds=True,

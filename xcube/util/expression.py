@@ -151,9 +151,9 @@ class _ExprTranspiler:
             return self._transpile(node.value)
         if isinstance(node, ast.Name):
             return self.transform_name(node)
-        if isinstance(node, ast.NameConstant):
+        if isinstance(node, ast.Constant):
             return self.transform_name_constant(node)
-        if isinstance(node, ast.Num):
+        if isinstance(node, ast.Constant):
             return self.transform_num(node)
         if isinstance(node, ast.Attribute):
             pat = self.transform_attribute(node.value, node.attr, node.ctx)
@@ -205,10 +205,10 @@ class _ExprTranspiler:
     def transform_name(self, name: ast.Name):
         return name.id
 
-    def transform_name_constant(self, node: ast.NameConstant):
+    def transform_name_constant(self, node: ast.Constant):
         return repr(node.value)
 
-    def transform_num(self, node: ast.Num):
+    def transform_num(self, node: ast.Constant):
         return str(node.n)
 
     def transform_call(self, func: ast.Name, args):

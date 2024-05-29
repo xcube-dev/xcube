@@ -433,7 +433,7 @@ def _load_callable(
         # This cannot be done temporarily (e.g., by using a context manager)
         # as additional code might be dynamically loaded later
         # from local imports.
-        LOG.warn(f"Python sys.path prepended by {dir_path}")
+        LOG.warning(f"Python sys.path prepended by {dir_path}")
         sys.path = [dir_path] + sys.path
     # Now we should be able to import the module...
     # (import_module() will raise an ImportError otherwise).

@@ -1,4 +1,4 @@
-name: xcube
+name: xcube_test
 channels:
   - conda-forge
 dependencies:

@@ -172,7 +172,11 @@ class GridMapping(abc.ABC):
                 with self._lock:
                     if other._xy_coords is not None:
                         other._xy_coords = other._xy_coords.chunk(
-                            other.xy_coords_chunks
+                            {
+                                dim: size for (dim, size) in zip(
+                                    other._xy_coords.dims, other.xy_coords_chunks
+                                    )
+                            }
                         )
         if is_j_axis_up is not None and is_j_axis_up != other._is_j_axis_up:
             other._is_j_axis_up = is_j_axis_up
@@ -180,7 +184,13 @@ class GridMapping(abc.ABC):
                 other._y_coords = other._y_coords[::-1]
             if other._xy_coords is not None:
                 other._xy_coords = other._xy_coords[:, ::-1, :]
-                other._xy_coords = other._xy_coords.chunk(other.xy_coords_chunks)
+                other._xy_coords = other._xy_coords.chunk(
+                    {
+                        dim: size for (dim, size) in zip(
+                            other._xy_coords.dims, other.xy_coords_chunks
+                            )
+                    }
+                )
 
         return other
 
