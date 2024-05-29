@@ -24,7 +24,9 @@ nan = np.nan
 
 class ColormapProviderMock(ColormapProvider):
     def get_cmap(self, cm_name: str, num_colors: Optional[int] = None):
-        cmap = matplotlib.cm.get_cmap(cm_name, lut=num_colors)
+        cmap = matplotlib.colormaps[cm_name]
+        if num_colors is not None:
+            cmap = cmap.resampled(lutsize=num_colors)
         return cmap, Colormap(cm_name, cmap=cmap)
 
 

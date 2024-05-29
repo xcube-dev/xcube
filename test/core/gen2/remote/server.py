@@ -152,7 +152,7 @@ def _get_generate_cube_result(
 
     if process is not None:
         job_id = str(process.pid)
-        start_time = datetime.datetime.utcnow().isoformat()
+        start_time = datetime.datetime.now(datetime.UTC).isoformat()
         state = {}
         JOBS[job_id] = process, result_path, start_time, state
     elif job_id in JOBS:

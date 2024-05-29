@@ -250,7 +250,7 @@ def from_time_in_days_since_1970(
 
 def timestamp_to_iso_string(
     time: Union[np.datetime64, datetime.datetime],
-    freq: str = "S",
+    freq: str = "s",
     round_fn: str = "round",
 ):
     """Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00

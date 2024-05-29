@@ -505,10 +505,10 @@ def compute_rgba_tile(
 
             r, g, b = norm_var_tiles
             var_tile_rgba = np.zeros((tile_height, tile_width, 4), dtype=np.uint8)
-            var_tile_rgba[..., 0] = 255 * r
-            var_tile_rgba[..., 1] = 255 * g
-            var_tile_rgba[..., 2] = 255 * b
-            var_tile_rgba[..., 3] = np.where(np.isfinite(r + g + b), 255, 0)
+            var_tile_rgba[:, :, 0] = (255 * r).astype(np.uint8)
+            var_tile_rgba[:, :, 1] = (255 * g).astype(np.uint8)
+            var_tile_rgba[:, :, 2] = (255 * b).astype(np.uint8)
+            var_tile_rgba[:, :, 3] = np.where(np.isfinite(r + g + b), 255, 0)
 
     if format == "png":
         with measure_time("Encoding RGBA image as PNG bytes"):

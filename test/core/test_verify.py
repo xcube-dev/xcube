@@ -83,9 +83,9 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
     def test_verify_cube(self):
         cube = new_cube()
         self.assertEqual([], verify_cube(cube))
-        ds = cube.drop("time")
+        ds = cube.drop_vars("time")
         self.assertEqual(["missing time coordinate variable"], verify_cube(ds))
-        ds = ds.drop("lat")
+        ds = ds.drop_vars("lat")
         self.assertEqual(
             [
                 "missing spatial x,y coordinate variables",

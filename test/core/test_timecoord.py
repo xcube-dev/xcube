@@ -302,20 +302,20 @@ class TimestampToIsoStringTest(unittest.TestCase):
     def test_it_with_h_res(self):
         self.assertEqual(
             "2018-09-05T00:00:00Z",
-            timestamp_to_iso_string(np.datetime64("2018-09-05"), freq="H"),
+            timestamp_to_iso_string(np.datetime64("2018-09-05"), freq="h"),
         )
         self.assertEqual(
             "2018-09-05T11:00:00Z",
-            timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42"), freq="H"),
+            timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42"), freq="h"),
         )
         self.assertEqual(
             "2018-09-05T11:00:00Z",
-            timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164"), freq="H"),
+            timestamp_to_iso_string(np.datetime64("2018-09-05 10:35:42.164"), freq="h"),
         )
         self.assertEqual(
             "2019-10-04T10:00:00Z",
             timestamp_to_iso_string(
-                pd.to_datetime("2019-10-04T10:13:48.538184"), freq="H"
+                pd.to_datetime("2019-10-04T10:13:48.538184"), freq="h"
             ),
         )
 
