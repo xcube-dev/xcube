@@ -13,7 +13,7 @@ OUTPUT_PATH = "out.zarr"
 
 
 class ComputeCliTest(CliDataTest):
-    def outputs(self) -> List[str]:
+    def outputs(self) -> list[str]:
         return [OUTPUT_PATH]
 
     def test_help_option(self):

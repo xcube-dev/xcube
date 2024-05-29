@@ -27,7 +27,7 @@ _PLUGIN_REGISTRY_INIT = dict()
 
 # Mapping of xcube entry point names
 # to JSON-serializable plugin meta-information.
-_PLUGIN_REGISTRY: Dict[str, Dict[str, Any]] = _PLUGIN_REGISTRY_INIT
+_PLUGIN_REGISTRY: dict[str, dict[str, Any]] = _PLUGIN_REGISTRY_INIT
 
 
 def init_plugins() -> None:
@@ -37,7 +37,7 @@ def init_plugins() -> None:
         _PLUGIN_REGISTRY = load_plugins()
 
 
-def get_plugins() -> Dict[str, Dict]:
+def get_plugins() -> dict[str, dict]:
     """Get mapping of "xcube_plugins" entry point names
     to JSON-serializable plugin meta-information.
     """
@@ -81,7 +81,7 @@ def discover_plugin_modules(module_prefixes=None):
 
 def load_plugins(
     entry_points=None, ext_registry: Optional[ExtensionRegistry] = None
-) -> Dict[str, Dict[str, Any]]:
+) -> dict[str, dict[str, Any]]:
     if ext_registry is None:
         from xcube.util.extension import get_extension_registry
 
@@ -108,10 +108,10 @@ def load_plugins(
 
 
 def _collect_plugins(
-    entry_points: List[Any],
+    entry_points: list[Any],
     ext_registry: ExtensionRegistry,
     verbose: bool,
-    plugins: Dict[str, Dict[str, Any]],
+    plugins: dict[str, dict[str, Any]],
 ):
     for entry_point in entry_points:
         # Note: Consider turning this into debug log,

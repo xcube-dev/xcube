@@ -66,7 +66,7 @@ DEFAULT_OUTPUT_PATH = "out.zarr"
 )
 def compute(
     script: str,
-    cube: List[str],
+    cube: list[str],
     input_var_names: str,
     input_params: str,
     output_path: str,
@@ -142,7 +142,7 @@ def compute(
     initialize_function_name = "initialize"
     finalize_function_name = "finalize"
 
-    with open(script, "r") as fp:
+    with open(script) as fp:
         code = fp.read()
 
     locals_dict = dict()

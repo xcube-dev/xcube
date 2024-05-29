@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Union, Callable, Mapping, Hashable, Any, Optional
+from typing import Union, Callable, Any, Optional
+from collections.abc import Mapping, Hashable
 
 import numpy as np
 import xarray as xr

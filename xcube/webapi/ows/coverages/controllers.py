@@ -4,7 +4,8 @@
 import os
 import re
 import tempfile
-from typing import Mapping, Sequence, Optional, Any, Literal, NamedTuple, Union
+from typing import Optional, Any, Literal, NamedTuple, Union
+from collections.abc import Mapping, Sequence
 
 import numpy as np
 import pyproj

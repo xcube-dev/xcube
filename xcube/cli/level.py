@@ -194,7 +194,7 @@ def level(
     )
 
 
-def _split_protocol_and_path(path) -> Tuple[str, str]:
+def _split_protocol_and_path(path) -> tuple[str, str]:
     if "://" in path:
         protocol, path = path.split("://", 2)
         if protocol == "https":

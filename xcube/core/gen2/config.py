@@ -4,7 +4,8 @@
 
 import collections.abc
 import numbers
-from typing import Optional, Any, Sequence, Mapping, Tuple, Union, Iterable
+from typing import Optional, Any, Tuple, Union
+from collections.abc import Sequence, Mapping, Iterable
 
 import pyproj
 
@@ -126,10 +127,10 @@ class CubeConfig(JsonObject):
         self,
         variable_names: Sequence[str] = None,
         crs: str = None,
-        bbox: Tuple[float, float, float, float] = None,
-        spatial_res: Union[float, Tuple[float]] = None,
-        tile_size: Union[int, Tuple[int, int]] = None,
-        time_range: Tuple[str, Optional[str]] = None,
+        bbox: tuple[float, float, float, float] = None,
+        spatial_res: Union[float, tuple[float]] = None,
+        tile_size: Union[int, tuple[int, int]] = None,
+        time_range: tuple[str, Optional[str]] = None,
         time_period: str = None,
         chunks: Mapping[str, Optional[int]] = None,
         metadata: Mapping[str, Any] = None,

@@ -5,7 +5,8 @@
 import os
 import os.path
 import unittest
-from typing import Set, Union, Sequence
+from typing import Set, Union
+from collections.abc import Sequence
 
 from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.chunk import chunk_dataset
@@ -230,7 +231,7 @@ class OptimizeDatasetTest(unittest.TestCase):
         self.assertEqual("Output path already exists.", f"{cm.exception}")
 
 
-def list_file_set(dir_path: str) -> Set[str]:
+def list_file_set(dir_path: str) -> set[str]:
     """Get set of all files in a directory and all of its sub-directories."""
     actual_files = set()
     for root, dirs, files in os.walk(dir_path):

@@ -9,7 +9,8 @@ import json
 import os
 import os.path
 import string
-from typing import Any, Dict, Optional, Iterable, Tuple, List, Type
+from typing import Any, Dict, Optional, Tuple, List, Type
+from collections.abc import Iterable
 
 import fsspec
 import yaml
@@ -18,8 +19,8 @@ from xcube.constants import LOG
 
 PRIMITIVE_TYPES = (int, float, str, type(None))
 
-NameAnyDict = Dict[str, Any]
-NameDictPairList = List[Tuple[str, Optional[NameAnyDict]]]
+NameAnyDict = dict[str, Any]
+NameDictPairList = list[tuple[str, Optional[NameAnyDict]]]
 
 
 def to_resolved_name_dict_pairs(
@@ -81,7 +82,7 @@ def to_name_dict_pair(name: Any, parent: Any = None, default_key=None):
     return name, value
 
 
-def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+def flatten_dict(d: dict[str, Any]) -> dict[str, Any]:
     result = dict()
     value = _flatten_dict_value(d, result, None, False)
     if value is not result:
@@ -91,7 +92,7 @@ def flatten_dict(d: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _flatten_dict_value(
-    value: Any, result: Dict[str, Any], parent_name: Optional[str], concat: bool
+    value: Any, result: dict[str, Any], parent_name: Optional[str], concat: bool
 ) -> Any:
     if isinstance(value, datetime.datetime):
         return datetime.datetime.isoformat(value)
@@ -123,7 +124,7 @@ def _flatten_dict_value(
     return result
 
 
-def merge_config(first_dict: Dict, *more_dicts):
+def merge_config(first_dict: dict, *more_dicts):
     if not more_dicts:
         output_dict = first_dict
     else:
@@ -141,8 +142,8 @@ def merge_config(first_dict: Dict, *more_dicts):
 
 
 def load_configs(
-    *config_paths: str, exception_type: Type[Exception] = ValueError
-) -> Dict[str, Any]:
+    *config_paths: str, exception_type: type[Exception] = ValueError
+) -> dict[str, Any]:
     config_dicts = []
     for config_path in config_paths:
         config_dict = load_json_or_yaml_config(
@@ -154,8 +155,8 @@ def load_configs(
 
 
 def load_json_or_yaml_config(
-    config_path: str, exception_type: Type[Exception] = ValueError
-) -> Dict[str, Any]:
+    config_path: str, exception_type: type[Exception] = ValueError
+) -> dict[str, Any]:
     try:
         config_dict = _load_json_or_yaml_config(config_path)
         LOG.info(f"Configuration loaded: {config_path}")

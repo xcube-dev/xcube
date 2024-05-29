@@ -4,7 +4,8 @@
 
 
 import importlib
-from typing import List, Any, Dict, Callable, Mapping, Sequence, Optional
+from typing import List, Any, Dict, Callable, Optional
+from collections.abc import Mapping, Sequence
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -82,11 +83,11 @@ class Extension:
         return self._name
 
     @property
-    def metadata(self) -> Dict[str, Any]:
+    def metadata(self) -> dict[str, Any]:
         """Extension metadata."""
         return dict(self._metadata)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Get a JSON-serializable dictionary representation of this extension."""
 
         # Note: we avoid loading the component!
@@ -166,7 +167,7 @@ class ExtensionRegistry:
 
     def find_extensions(
         self, point: str, predicate: ExtensionPredicate = None
-    ) -> List[Extension]:
+    ) -> list[Extension]:
         """Find extensions for *point* and optional filter function *predicate*.
 
         The filter function is called with an extension and should return
@@ -190,7 +191,7 @@ class ExtensionRegistry:
 
     def find_components(
         self, point: str, predicate: ExtensionPredicate = None
-    ) -> List[Component]:
+    ) -> list[Component]:
         """Find extension components for *point* and optional filter function *predicate*.
 
         The filter function is called with an extension and should return

@@ -4,7 +4,8 @@
 
 import functools
 import operator
-from typing import Sequence, Optional, Tuple
+from typing import Optional, Tuple
+from collections.abc import Sequence
 
 import click
 
@@ -197,13 +198,13 @@ def rectify(
 
 def _rectify(
     input_path: str,
-    xy_names: Optional[Tuple[str, str]],
+    xy_names: Optional[tuple[str, str]],
     var_names: Optional[Sequence[str]],
     output_path: str,
     output_format: Optional[str],
-    output_size: Optional[Tuple[int, int]],
-    output_tile_size: Optional[Tuple[int, int]],
-    output_point: Optional[Tuple[float, float]],
+    output_size: Optional[tuple[int, int]],
+    output_tile_size: Optional[tuple[int, int]],
+    output_point: Optional[tuple[float, float]],
     output_res: Optional[float],
     output_crs: Optional[str],
     delta: float,

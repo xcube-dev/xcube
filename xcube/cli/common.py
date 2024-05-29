@@ -4,7 +4,8 @@
 
 import logging
 import sys
-from typing import Dict, Any, Optional, Union, Sequence, Type, Tuple
+from typing import Dict, Any, Optional, Union, Type, Tuple
+from collections.abc import Sequence
 
 import click
 
@@ -156,7 +157,7 @@ def cli_option_scheduler(func):
     )(func)
 
 
-def parse_cli_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
+def parse_cli_kwargs(value: str, metavar: str = None) -> dict[str, Any]:
     """Parse a string value of the form [<kw>=<arg>{,<kw>=<arg>}] into a dictionary.
     <kw> must be a valid Python identifier, <arg> must be a Python literal.
 
@@ -193,8 +194,8 @@ def parse_cli_sequence(
     num_items_min: int = None,
     num_items_max: int = None,
     separator: str = ",",
-    error_type: Type[Exception] = click.ClickException,
-) -> Optional[Tuple[Any, ...]]:
+    error_type: type[Exception] = click.ClickException,
+) -> Optional[tuple[Any, ...]]:
     """Parse a CLI argument that is supposed to be a sequence.
 
     Args:

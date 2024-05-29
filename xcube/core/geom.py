@@ -4,7 +4,8 @@
 
 import math
 import warnings
-from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping, List
+from typing import Optional, Union, Dict, Tuple, Any, List
+from collections.abc import Sequence, Mapping
 
 import affine
 import dask.array as da
@@ -24,10 +25,10 @@ from xcube.util.geojson import GeoJSON
 from xcube.util.types import normalize_scalar_or_pair
 
 GeometryLike = Union[
-    shapely.geometry.base.BaseGeometry, Dict[str, Any], str, Sequence[Union[float, int]]
+    shapely.geometry.base.BaseGeometry, dict[str, Any], str, Sequence[Union[float, int]]
 ]
-Bounds = Tuple[float, float, float, float]
-SplitBounds = Tuple[Bounds, Optional[Bounds]]
+Bounds = tuple[float, float, float, float]
+SplitBounds = tuple[Bounds, Optional[Bounds]]
 
 Name = str
 Attrs = Mapping[Name, Any]
@@ -50,8 +51,8 @@ def rasterize_features(
     dataset: xr.Dataset,
     features: Union[GeoDataFrame, GeoJSONFeatures],
     feature_props: Sequence[Name],
-    var_props: Dict[Name, VarProps] = None,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    var_props: dict[Name, VarProps] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     all_touched: bool = False,
     in_place: bool = False,
 ) -> Optional[xr.Dataset]:
@@ -235,9 +236,9 @@ def rasterize_features(
 
 
 def _rasterize_features_into_block(
-    block_info: Dict[Union[str, None], Any] = None,
-    geometries: List[Dict[str, Any]] = None,
-    feature_data: List[np.ndarray] = None,
+    block_info: dict[Union[str, None], Any] = None,
+    geometries: list[dict[str, Any]] = None,
+    feature_data: list[np.ndarray] = None,
     x_offset: float = None,
     y_offset: float = None,
     x_res: float = None,
@@ -282,7 +283,7 @@ def _rasterize_features_into_block(
 def mask_dataset_by_geometry(
     dataset: xr.Dataset,
     geometry: GeometryLike,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     excluded_vars: Sequence[str] = None,
     no_clip: bool = False,
     all_touched: bool = False,
@@ -391,8 +392,8 @@ def mask_dataset_by_geometry(
 
 
 def _mask_block(
-    block_info: Dict[Union[str, None], Any] = None,
-    geometry: Dict[str, Any] = None,
+    block_info: dict[Union[str, None], Any] = None,
+    geometry: dict[str, Any] = None,
     x_offset: float = None,
     y_offset: float = None,
     x_res: float = None,
@@ -418,7 +419,7 @@ def _get_spatial_chunks(
     dataset: xr.Dataset,
     x_var_name: str,
     y_var_name: str,
-    tile_size: Union[None, int, Tuple[int, int]],
+    tile_size: Union[None, int, tuple[int, int]],
 ):
     width = dataset[x_var_name].size
     height = dataset[y_var_name].size
@@ -472,7 +473,7 @@ def clip_dataset_by_geometry(
 def _clip_dataset_by_geometry(
     dataset: xr.Dataset,
     intersection_geometry: shapely.geometry.base.BaseGeometry,
-    xy_var_names: Tuple[str, str],
+    xy_var_names: tuple[str, str],
     save_geometry_wkt: bool = False,
 ) -> Optional[xr.Dataset]:
     # TODO (forman): the following code is wrong,
@@ -622,7 +623,7 @@ def normalize_geometry(
 
 
 def is_lon_lat_dataset(
-    dataset: Union[xr.Dataset, xr.DataArray], xy_var_names: Tuple[str, str] = None
+    dataset: Union[xr.Dataset, xr.DataArray], xy_var_names: tuple[str, str] = None
 ) -> bool:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
@@ -638,7 +639,7 @@ def is_lon_lat_dataset(
 
 
 def get_dataset_geometry(
-    dataset: Union[xr.Dataset, xr.DataArray], xy_var_names: Tuple[str, str] = None
+    dataset: Union[xr.Dataset, xr.DataArray], xy_var_names: tuple[str, str] = None
 ) -> shapely.geometry.base.BaseGeometry:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
@@ -651,7 +652,7 @@ def get_dataset_geometry(
 
 def get_dataset_bounds(
     dataset: Union[xr.Dataset, xr.DataArray],
-    xy_var_names: Optional[Tuple[str, str]] = None,
+    xy_var_names: Optional[tuple[str, str]] = None,
 ) -> Bounds:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)

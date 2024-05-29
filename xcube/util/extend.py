@@ -7,14 +7,13 @@ import threading
 from typing import (
     Type,
     TypeVar,
-    Mapping,
-    Sequence,
     Any,
     Optional,
     Callable,
     Tuple,
     Union,
 )
+from collections.abc import Mapping, Sequence
 
 from xcube.util.assertions import assert_true
 
@@ -23,11 +22,11 @@ GET_EXTENSIONS_ATTR_NAME = "get_extensions"
 Base = TypeVar("Base")
 Ext = TypeVar("Ext")
 
-BaseClass = Type[Base]
-ExtClass = Type[Ext]
+BaseClass = type[Base]
+ExtClass = type[Ext]
 
-ExtClassItem = Tuple[str, ExtClass]
-ExtInstItem = Tuple[str, Ext]
+ExtClassItem = tuple[str, ExtClass]
+ExtInstItem = tuple[str, Ext]
 
 
 def extend(

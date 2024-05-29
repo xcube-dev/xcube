@@ -16,10 +16,10 @@ from .context import PlacesContext
 from ...server.api import ApiError
 from ...util.assertions import assert_instance
 
-GeoJsonFeatureCollection = Dict
-GeoJsonFeature = Dict
+GeoJsonFeatureCollection = dict
+GeoJsonFeature = dict
 
-GeometryLike = Union[str, Dict, shapely.geometry.base.BaseGeometry]
+GeometryLike = Union[str, dict, shapely.geometry.base.BaseGeometry]
 
 
 def find_places(

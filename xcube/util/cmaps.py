@@ -39,7 +39,7 @@ DEFAULT_CMAP_NAME = "viridis"
 
 
 class ColormapCategory:
-    def __init__(self, name: str, desc: str, cm_names: Optional[List[str]] = None):
+    def __init__(self, name: str, desc: str, cm_names: Optional[list[str]] = None):
         self.name = name
         self.desc = desc
         self.cm_names = cm_names
@@ -189,7 +189,7 @@ CUSTOM_CATEGORY = ColormapCategory(
     "Custom colormaps, e.g. loaded from SNAP *.cpd files.",
 )
 
-TEMPLATE_CATEGORIES: Dict[str, ColormapCategory] = {
+TEMPLATE_CATEGORIES: dict[str, ColormapCategory] = {
     c.name: c
     for c in (
         PERCEPTUALLY_UNIFORM_SEQUENTIAL_CATEGORY,
@@ -221,7 +221,7 @@ class Colormap:
         cmap_reversed: Optional[matplotlib.colors.Colormap] = None,
         cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
         norm: Optional[matplotlib.colors.Normalize] = None,
-        bounds: Optional[List[Union[int, float]]] = None,
+        bounds: Optional[list[Union[int, float]]] = None,
     ):
         self._cm_name = cm_name
         self._cat_name = cat_name
@@ -277,7 +277,7 @@ class Colormap:
         return self._norm
 
     @property
-    def bounds(self) -> Optional[List[Union[int, float]]]:
+    def bounds(self) -> Optional[list[Union[int, float]]]:
         return self._bounds
 
 
@@ -285,7 +285,7 @@ class ColormapProvider(ABC):
     @abstractmethod
     def get_cmap(
         self, cm_name: str, num_colors: Optional[int] = None
-    ) -> Tuple[matplotlib.colors.Colormap, Colormap]:
+    ) -> tuple[matplotlib.colors.Colormap, Colormap]:
         """Get a colormap for the given *cm_name*.
 
         If *cm_name* is not available, the method may choose another
@@ -312,8 +312,8 @@ class ColormapProvider(ABC):
 
 class ColormapRegistry(ColormapProvider):
     def __init__(self, *colormaps: Colormap):
-        self._categories: Dict[str, ColormapCategory] = {}
-        self._colormaps: Dict[str, Colormap] = {}
+        self._categories: dict[str, ColormapCategory] = {}
+        self._colormaps: dict[str, Colormap] = {}
         # Add standard Matplotlib colormaps
         self._register_mpl_cmaps()
         # Add Ocean colormaps, if any
@@ -323,11 +323,11 @@ class ColormapRegistry(ColormapProvider):
             self.register_colormap(colormap)
 
     @property
-    def categories(self) -> Dict[str, ColormapCategory]:
+    def categories(self) -> dict[str, ColormapCategory]:
         return self._categories
 
     @property
-    def colormaps(self) -> Dict[str, Colormap]:
+    def colormaps(self) -> dict[str, Colormap]:
         return self._colormaps
 
     def register_colormap(self, colormap: Colormap):
@@ -347,7 +347,7 @@ class ColormapRegistry(ColormapProvider):
 
     def get_cmap(
         self, cm_name: str, num_colors: Optional[int] = None
-    ) -> Tuple[matplotlib.colors.Colormap, Colormap]:
+    ) -> tuple[matplotlib.colors.Colormap, Colormap]:
         assert_instance(cm_name, str, name="cm_name")
         if num_colors is not None:
             assert_instance(num_colors, int, name="num_colors")
@@ -376,7 +376,7 @@ class ColormapRegistry(ColormapProvider):
             cmap = cmap.resampled(num_colors)
         return cmap, colormap
 
-    def to_json(self) -> List:
+    def to_json(self) -> list:
         result = []
         # Loop through TEMPLATE_CATEGORIES to preserve category order
         for cat_name in TEMPLATE_CATEGORIES.keys():
@@ -441,19 +441,19 @@ class ColormapRegistry(ColormapProvider):
             )
 
 
-def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
+def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
     # Note, if we get performance issues here, we should
     # cache cm_code -> colormap
     try:
-        user_color_map: Dict[str, Any] = json.loads(cm_code)
+        user_color_map: dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
         cm_items = user_color_map["colors"]
         cm_type = user_color_map.get("type", "node")
         cm_base_name, _, _ = parse_cm_name(cm_name)
         if cm_type == "key" or cm_type == "bound":
             if cm_type == "key":
-                bounds: List[int] = []
-                colors: List[str] = []
+                bounds: list[int] = []
+                colors: list[str] = []
                 n = len(cm_items)
                 for i, (value, color) in enumerate(cm_items):
                     index = int(value)
@@ -464,8 +464,8 @@ def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
                         bounds.append(index + 1)
                         colors.append("#00000000")
             else:  # cm_type == "bound"
-                bounds: List[Union[int, float]] = list(map(lambda c: c[0], cm_items))
-                colors: List[str] = list(map(lambda c: c[1], cm_items[:-1]))
+                bounds: list[Union[int, float]] = list(map(lambda c: c[0], cm_items))
+                colors: list[str] = list(map(lambda c: c[1], cm_items[:-1]))
             return cm_name, Colormap(
                 cm_base_name,
                 cat_name=CUSTOM_CATEGORY.name,
@@ -494,7 +494,7 @@ def parse_cm_code(cm_code: str) -> Tuple[str, Optional[Colormap]]:
         return "Reds", None
 
 
-def parse_cm_name(cm_name) -> Tuple[str, bool, bool]:
+def parse_cm_name(cm_name) -> tuple[str, bool, bool]:
     assert_given(cm_name, name="cm_name")
     alpha = cm_name.endswith(ALPHA_SUFFIX)
     if alpha:
@@ -507,14 +507,14 @@ def parse_cm_name(cm_name) -> Tuple[str, bool, bool]:
 
 def get_reverse_cmap(
     cm_name: str, cmap: matplotlib.colors.Colormap
-) -> Tuple[str, matplotlib.colors.Colormap]:
+) -> tuple[str, matplotlib.colors.Colormap]:
     new_cm_name = cm_name + REVERSED_SUFFIX
     return new_cm_name, cmap.reversed(name=new_cm_name)
 
 
 def get_alpha_cmap(
     cm_name: str, cmap: matplotlib.colors.Colormap
-) -> Tuple[str, matplotlib.colors.Colormap]:
+) -> tuple[str, matplotlib.colors.Colormap]:
     """Add extra colormaps with alpha gradient.
     See http://matplotlib.org/api/colors_api.html
     """
@@ -617,16 +617,16 @@ def load_snap_cpd_colormap(snap_cpd_path: str) -> Colormap:
 
 
 Sample = float
-Color = Tuple[int, int, int, int]
-Palette = List[Tuple[Sample, Color]]
+Color = tuple[int, int, int, int]
+Palette = list[tuple[Sample, Color]]
 LogScaled = bool
 
 
-def _parse_snap_cpd_file(cpd_file_path: str) -> Tuple[Palette, LogScaled]:
+def _parse_snap_cpd_file(cpd_file_path: str) -> tuple[Palette, LogScaled]:
     with fsspec.open(cpd_file_path, mode="r") as f:
         illegal_format_msg = f"Illegal SNAP *.cpd format: {cpd_file_path}"
 
-        entries: Dict[str, str] = dict()
+        entries: dict[str, str] = dict()
         for line in f.readlines():
             line = line.strip()
             if line and not line.startswith("#"):

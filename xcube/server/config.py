@@ -4,7 +4,8 @@
 
 import os.path
 from functools import cache
-from typing import Mapping, Any, Optional
+from typing import Any, Optional
+from collections.abc import Mapping
 
 from xcube.constants import DEFAULT_SERVER_ADDRESS
 from xcube.constants import DEFAULT_SERVER_PORT

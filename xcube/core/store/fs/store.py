@@ -10,16 +10,14 @@ import warnings
 from threading import RLock
 from typing import (
     Optional,
-    Iterator,
     Any,
     Tuple,
     List,
     Dict,
     Union,
-    Container,
     Callable,
-    Sequence,
 )
+from collections.abc import Iterator, Container, Sequence
 
 import fsspec
 import geopandas as gpd
@@ -91,7 +89,7 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
 }
 
 _DataId = str
-_DataIdTuple = Tuple[_DataId, Dict[str, Any]]
+_DataIdTuple = tuple[_DataId, dict[str, Any]]
 _DataIdIter = Iterator[_DataId]
 _DataIdTupleIter = Iterator[_DataIdTuple]
 _DataIds = Union[_DataIdIter, _DataIdTupleIter]
@@ -203,12 +201,12 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return self._read_only
 
     @property
-    def includes(self) -> Tuple[str]:
+    def includes(self) -> tuple[str]:
         """Wildcard patterns that include paths."""
         return self._includes
 
     @property
-    def excludes(self) -> Tuple[str]:
+    def excludes(self) -> tuple[str]:
         """Wildcard patterns that exclude paths."""
         return self._excludes
 
@@ -236,16 +234,16 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         )
 
     @classmethod
-    def get_data_types(cls) -> Tuple[str, ...]:
+    def get_data_types(cls) -> tuple[str, ...]:
         return tuple(
-            set(
+            {
                 data_type
                 for types_tuple in _FORMAT_TO_DATA_TYPE_ALIASES.values()
                 for data_type in types_tuple
-            )
+            }
         )
 
-    def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
+    def get_data_types_for_data(self, data_id: str) -> tuple[str, ...]:
         self._assert_valid_data_id(data_id)
         data_type_alias, format_id, protocol = self._guess_accessor_id_parts(data_id)
         data_type_aliases = [data_type_alias]
@@ -290,7 +288,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_opener_ids(
         self, data_id: str = None, data_type: DataTypeLike = None
-    ) -> Tuple[str, ...]:
+    ) -> tuple[str, ...]:
         data_type = DataType.normalize(data_type)
         format_id = None
         storage_id = self.protocol
@@ -325,7 +323,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         fs_path = self._convert_data_id_into_fs_path(data_id)
         return opener.open_data(fs_path, fs=self.fs, root=self.root, **open_params)
 
-    def get_data_writer_ids(self, data_type: str = None) -> Tuple[str, ...]:
+    def get_data_writer_ids(self, data_type: str = None) -> tuple[str, ...]:
         data_type = DataType.normalize(data_type)
         return tuple(
             ext.name
@@ -562,7 +560,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def _find_accessor_extensions(
         self, find_data_accessor_extensions: Callable, data_id: str = None, require=True
-    ) -> List[Extension]:
+    ) -> list[Extension]:
         if data_id:
             accessor_id_parts = self._guess_accessor_id_parts(data_id, require=require)
             if not accessor_id_parts:
@@ -598,7 +596,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def _guess_accessor_id_parts(
         self, data_id: str, require=True
-    ) -> Optional[Tuple[str, str, str]]:
+    ) -> Optional[tuple[str, str, str]]:
         assert_given(data_id, "data_id")
         ext = self._get_filename_ext(data_id)
         data_type_aliases = None
@@ -673,7 +671,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                     yield data_id
 
     @staticmethod
-    def _normalize_wc(wc: Optional[Union[str, Sequence[str]]]) -> Tuple[str]:
+    def _normalize_wc(wc: Optional[Union[str, Sequence[str]]]) -> tuple[str]:
         return tuple() if not wc else (wc,) if isinstance(wc, str) else tuple(wc)
 
 
@@ -716,7 +714,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
         read_only: bool = False,
         includes: Optional[Sequence[str]] = None,
         excludes: Optional[Sequence[str]] = None,
-        storage_options: Dict[str, Any] = None,
+        storage_options: dict[str, Any] = None,
     ):
         self._storage_options = storage_options or {}
         super().__init__(
@@ -735,7 +733,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
         return self.get_protocol()
 
     @property
-    def storage_options(self) -> Dict[str, Any]:
+    def storage_options(self) -> dict[str, Any]:
         return self._storage_options
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:

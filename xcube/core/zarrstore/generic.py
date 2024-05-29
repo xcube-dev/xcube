@@ -9,7 +9,8 @@ import json
 import math
 import threading
 import warnings
-from typing import Iterator, Dict, Tuple, Any, Callable, Optional, List, Sequence
+from typing import Dict, Tuple, Any, Callable, Optional, List
+from collections.abc import Iterator, Sequence
 from typing import Union
 
 import numcodecs.abc
@@ -19,12 +20,12 @@ import zarr.storage
 
 from xcube.util.assertions import assert_instance, assert_true
 
-GetData = Callable[[Tuple[int]], Union[bytes, np.ndarray]]
+GetData = Callable[[tuple[int]], Union[bytes, np.ndarray]]
 
-OnClose = Callable[[Dict[str, Any]], None]
+OnClose = Callable[[dict[str, Any]], None]
 
 
-class GenericArray(Dict[str, any]):
+class GenericArray(dict[str, any]):
     """Represent a generic array in the ``GenericZarrStore`` as
     dictionary of properties.
 
@@ -112,10 +113,10 @@ class GenericArray(Dict[str, any]):
 
     def __init__(
         self,
-        array: Optional[Dict[str, any]] = None,
+        array: Optional[dict[str, any]] = None,
         name: Optional[str] = None,
         get_data: Optional[GetData] = None,
-        get_data_params: Optional[Dict[str, Any]] = None,
+        get_data_params: Optional[dict[str, Any]] = None,
         data: Optional[np.ndarray] = None,
         dtype: Optional[Union[str, np.dtype]] = None,
         dims: Optional[Union[str, Sequence[str]]] = None,
@@ -125,7 +126,7 @@ class GenericArray(Dict[str, any]):
         compressor: Optional[numcodecs.abc.Codec] = None,
         filters: Optional[Sequence[numcodecs.abc.Codec]] = None,
         order: Optional[str] = None,
-        attrs: Optional[Dict[str, Any]] = None,
+        attrs: Optional[dict[str, Any]] = None,
         on_close: Optional[OnClose] = None,
         chunk_encoding: Optional[str] = None,
         **kwargs,
@@ -313,7 +314,7 @@ class GenericArray(Dict[str, any]):
         )
 
 
-GenericArrayLike = Union[GenericArray, Dict[str, Any]]
+GenericArrayLike = Union[GenericArray, dict[str, Any]]
 
 
 class GenericZarrStore(zarr.storage.Store):
@@ -346,13 +347,13 @@ class GenericZarrStore(zarr.storage.Store):
     def __init__(
         self,
         *arrays: GenericArrayLike,
-        attrs: Optional[Dict[str, Any]] = None,
+        attrs: Optional[dict[str, Any]] = None,
         array_defaults: Optional[GenericArrayLike] = None,
     ):
         self._attrs = dict(attrs) if attrs is not None else {}
         self._array_defaults = array_defaults
-        self._dim_sizes: Dict[str, int] = {}
-        self._arrays: Dict[str, GenericArray] = {}
+        self._dim_sizes: dict[str, int] = {}
+        self._arrays: dict[str, GenericArray] = {}
         for array in arrays:
             self.add_array(array)
 
@@ -404,7 +405,7 @@ class GenericZarrStore(zarr.storage.Store):
         """Return False, because arrays in this store are generative."""
         return False
 
-    def listdir(self, path: str = "") -> List[str]:
+    def listdir(self, path: str = "") -> list[str]:
         """List a store path.
 
         Args:
@@ -657,7 +658,7 @@ class GenericZarrStore(zarr.storage.Store):
 
     # noinspection PyMethodMayBeStatic
     def _get_array_data_item(
-        self, array: Dict[str, Any], chunk_index: Tuple[int]
+        self, array: dict[str, Any], chunk_index: tuple[int]
     ) -> Union[bytes, np.ndarray]:
         # Note, here array is expected to be "finalized",
         # that is, validated and normalized
@@ -735,7 +736,7 @@ class GenericZarrStore(zarr.storage.Store):
 
         return data
 
-    def _parse_array_key(self, key: str) -> Tuple[str, str]:
+    def _parse_array_key(self, key: str) -> tuple[str, str]:
         array_name_and_value_id = key.rsplit("/", maxsplit=1)
         if len(array_name_and_value_id) != 2:
             raise KeyError(key)
@@ -744,7 +745,7 @@ class GenericZarrStore(zarr.storage.Store):
             raise KeyError(key)
         return array_name, value_id
 
-    def _get_array_chunk_index(self, array_name: str, index_id: str) -> Tuple[int]:
+    def _get_array_chunk_index(self, array_name: str, index_id: str) -> tuple[int]:
         try:
             chunk_index = tuple(map(int, index_id.split(".")))
         except (ValueError, TypeError):
@@ -768,8 +769,8 @@ class GenericZarrStore(zarr.storage.Store):
 
 
 def get_array_slices(
-    shape: Tuple[int, ...], chunks: Tuple[int, ...], chunk_index: Tuple[int, ...]
-) -> Tuple[slice, ...]:
+    shape: tuple[int, ...], chunks: tuple[int, ...], chunk_index: tuple[int, ...]
+) -> tuple[slice, ...]:
     return tuple(
         slice(i * c, i * c + (c if (i + 1) * c <= s else s % c))
         for s, c, i in zip(shape, chunks, chunk_index)
@@ -777,15 +778,15 @@ def get_array_slices(
 
 
 def get_chunk_shape(
-    shape: Tuple[int, ...], chunks: Tuple[int, ...], chunk_index: Tuple[int, ...]
-) -> Tuple[int, ...]:
+    shape: tuple[int, ...], chunks: tuple[int, ...], chunk_index: tuple[int, ...]
+) -> tuple[int, ...]:
     return tuple(
         c if (i + 1) * c <= s else s % c for s, c, i in zip(shape, chunks, chunk_index)
     )
 
 
 def get_chunk_padding(
-    shape: Tuple[int, ...], chunks: Tuple[int, ...], chunk_index: Tuple[int, ...]
+    shape: tuple[int, ...], chunks: tuple[int, ...], chunk_index: tuple[int, ...]
 ):
     return tuple(
         (0, 0 if (i + 1) * c <= s else c - s % c)
@@ -793,24 +794,24 @@ def get_chunk_padding(
     )
 
 
-def get_chunk_indexes(num_chunks: Tuple[int, ...]) -> Iterator[Tuple[int, ...]]:
+def get_chunk_indexes(num_chunks: tuple[int, ...]) -> Iterator[tuple[int, ...]]:
     if not num_chunks:
         yield 0,
     else:
         yield from itertools.product(*tuple(map(range, map(int, num_chunks))))
 
 
-def get_chunk_keys(array_name: str, num_chunks: Tuple[int, ...]) -> Iterator[str]:
+def get_chunk_keys(array_name: str, num_chunks: tuple[int, ...]) -> Iterator[str]:
     for chunk_index in get_chunk_indexes(num_chunks):
         yield format_chunk_key(array_name, chunk_index)
 
 
-def format_chunk_key(array_name: str, chunk_index: Tuple[int, ...]) -> str:
+def format_chunk_key(array_name: str, chunk_index: tuple[int, ...]) -> str:
     chunk_id = ".".join(map(str, chunk_index))
     return f"{array_name}/{chunk_id}"
 
 
-def dict_to_bytes(d: Dict) -> bytes:
+def dict_to_bytes(d: dict) -> bytes:
     return str_to_bytes(json.dumps(d, indent=2))
 
 

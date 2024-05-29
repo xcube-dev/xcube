@@ -66,17 +66,17 @@ class ServerTestCase(unittest.TestCase, ABC):
         pass
 
     # noinspection PyMethodMayBeStatic
-    def get_config(self) -> Dict[str, Any]:
+    def get_config(self) -> dict[str, Any]:
         return {}
 
-    def add_config(self, config: Dict) -> None:
+    def add_config(self, config: dict) -> None:
         pass
 
     def fetch(
         self,
         path: str,
         method: str = "GET",
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         body: Optional[Any] = None,
     ) -> urllib3.response.HTTPResponse:
         """Fetches the response for given request.
@@ -101,9 +101,9 @@ class ServerTestCase(unittest.TestCase, ABC):
         self,
         path: str,
         method: str = "GET",
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[dict[str, str]] = None,
         body: Optional[Any] = None,
-    ) -> Tuple[Union[type(None), bool, int, float, str, list, dict], int]:
+    ) -> tuple[Union[type(None), bool, int, float, str, list, dict], int]:
         """Fetches the response's JSON value for given request.
 
         Args:

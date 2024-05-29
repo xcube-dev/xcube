@@ -33,7 +33,7 @@ class CubeGeneratorToken(JsonObject):
         )
 
     @classmethod
-    def from_dict(cls, value: Dict) -> "CubeGeneratorToken":
+    def from_dict(cls, value: dict) -> "CubeGeneratorToken":
         return cls.get_schema().from_instance(value)
 
 
@@ -46,7 +46,7 @@ class CubeGeneratorJobStatus(JsonObject):
         active: int = None,
         start_time: str = None,
         completion_time: str = None,
-        conditions: List[Dict[str, Any]] = None,
+        conditions: list[dict[str, Any]] = None,
         **additional_properties
     ):
         self.succeeded: Optional[int] = succeeded
@@ -54,8 +54,8 @@ class CubeGeneratorJobStatus(JsonObject):
         self.active: Optional[int] = active
         self.start_time: Optional[str] = start_time
         self.completion_time: Optional[str] = completion_time
-        self.conditions: Optional[Dict[str, Any]] = conditions
-        self.additional_properties: Dict[str, Any] = additional_properties
+        self.conditions: Optional[dict[str, Any]] = conditions
+        self.additional_properties: dict[str, Any] = additional_properties
 
     @classmethod
     def get_schema(cls) -> JsonObjectSchema:
@@ -75,7 +75,7 @@ class CubeGeneratorJobStatus(JsonObject):
         )
 
     @classmethod
-    def from_dict(cls, value: Dict) -> "CubeGeneratorJobStatus":
+    def from_dict(cls, value: dict) -> "CubeGeneratorJobStatus":
         return cls.get_schema().from_instance(value)
 
 
@@ -112,7 +112,7 @@ class CubeGeneratorProgressState(JsonObject):
         )
 
     @classmethod
-    def from_dict(cls, value: Dict) -> "CubeGeneratorProgressState":
+    def from_dict(cls, value: dict) -> "CubeGeneratorProgressState":
         return cls.get_schema().from_instance(value)
 
 
@@ -139,7 +139,7 @@ class CubeGeneratorProgress(JsonObject):
         )
 
     @classmethod
-    def from_dict(cls, value: Dict) -> "CubeGeneratorProgress":
+    def from_dict(cls, value: dict) -> "CubeGeneratorProgress":
         return cls.get_schema().from_instance(value)
 
 
@@ -151,8 +151,8 @@ class CubeGeneratorState(JsonObject):
         job_id: str,
         job_status: CubeGeneratorJobStatus,
         job_result: Optional[CubeGeneratorResult] = None,
-        output: Optional[List[str]] = None,
-        progress: Optional[List[CubeGeneratorProgress]] = None,
+        output: Optional[list[str]] = None,
+        progress: Optional[list[CubeGeneratorProgress]] = None,
         **additional_properties
     ):
         self.job_id = job_id
@@ -180,7 +180,7 @@ class CubeGeneratorState(JsonObject):
         )
 
     @classmethod
-    def from_dict(cls, value: Dict) -> "CubeGeneratorState":
+    def from_dict(cls, value: dict) -> "CubeGeneratorState":
         return cls.get_schema().from_instance(value)
 
 
@@ -204,7 +204,7 @@ class CostEstimation(JsonObject):
         )
 
     @classmethod
-    def from_dict(cls, value: Dict) -> "CostEstimation":
+    def from_dict(cls, value: dict) -> "CostEstimation":
         return cls.get_schema().from_instance(value)
 
 

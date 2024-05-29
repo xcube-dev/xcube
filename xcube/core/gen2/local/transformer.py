@@ -13,7 +13,7 @@ from .helpers import is_empty_cube
 from .helpers import strip_cube
 from ..config import CubeConfig
 
-TransformedCube = Tuple[xr.Dataset, GridMapping, CubeConfig]
+TransformedCube = tuple[xr.Dataset, GridMapping, CubeConfig]
 
 
 class CubeTransformer(ABC):

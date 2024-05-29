@@ -146,7 +146,7 @@ class GetTimeSeriesTest(unittest.TestCase):
         self,
         ts_ds: xr.Dataset,
         expected_max_number_of_observations: int = 0,
-        expected_var_names: Set = None,
+        expected_var_names: set = None,
     ):
         expected_var_names = expected_var_names or set()
         self.assertIsNotNone(ts_ds)
@@ -163,7 +163,7 @@ class GetTimeSeriesTest(unittest.TestCase):
         self.assert_variable_ok(ts_ds, "B_count", expected_var_names, self.ts_b_count)
         self.assert_variable_ok(ts_ds, "B_std", expected_var_names, self.ts_b_std)
 
-    def assert_variable_ok(self, ts_ds, name, expected_var_names: Set, expected_values):
+    def assert_variable_ok(self, ts_ds, name, expected_var_names: set, expected_values):
         if name in expected_var_names:
             self.assertIn(name, ts_ds)
             self.assertEqual(("time",), ts_ds[name].dims)

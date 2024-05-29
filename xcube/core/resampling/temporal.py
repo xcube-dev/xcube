@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Dict, Any, Sequence, Union
+from typing import Dict, Any, Union
+from collections.abc import Sequence
 
 import numpy as np
 import xarray as xr
@@ -22,7 +23,7 @@ def resample_in_time(
     interp_kind=None,
     time_chunk_size=None,
     var_names: Sequence[str] = None,
-    metadata: Dict[str, Any] = None,
+    metadata: dict[str, Any] = None,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
     """Resample a dataset in the time dimension.

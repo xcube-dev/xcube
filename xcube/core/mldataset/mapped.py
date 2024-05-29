@@ -16,7 +16,7 @@ class MappedMultiLevelDataset(LazyMultiLevelDataset):
         ml_dataset: MultiLevelDataset,
         mapper_function: Callable[[xr.Dataset], xr.Dataset],
         ds_id: str = None,
-        mapper_params: Dict[str, Any] = None,
+        mapper_params: dict[str, Any] = None,
     ):
         """"""
         super().__init__(ds_id=ds_id, parameters=mapper_params)
@@ -27,7 +27,7 @@ class MappedMultiLevelDataset(LazyMultiLevelDataset):
         return self._ml_dataset.num_levels
 
     def _get_dataset_lazily(
-        self, index: int, mapper_params: Dict[str, Any]
+        self, index: int, mapper_params: dict[str, Any]
     ) -> xr.Dataset:
         return self._mapper_function(
             self._ml_dataset.get_dataset(index), **mapper_params

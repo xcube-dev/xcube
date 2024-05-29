@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import List, Optional, Any, Mapping
+from typing import List, Optional, Any
+from collections.abc import Mapping
 
 from xcube.constants import LOG
 from xcube.server.api import ApiError
@@ -42,7 +43,7 @@ class AuthConfig:
         self,
         authority: str,
         audience: str,
-        algorithms: List[str],
+        algorithms: list[str],
         is_required: bool = False,
     ):
         self._authority = authority
@@ -71,7 +72,7 @@ class AuthConfig:
         return self._audience
 
     @property
-    def algorithms(self) -> List[str]:
+    def algorithms(self) -> list[str]:
         return self._algorithms
 
     @property

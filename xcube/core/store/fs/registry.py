@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Type, Dict, Optional, Any, Sequence
+from typing import Type, Dict, Optional, Any
+from collections.abc import Sequence
 
 import fsspec
 
@@ -28,10 +29,10 @@ from ..error import DataStoreError
 ############################################
 # FsAccessor
 
-_FS_ACCESSOR_CLASSES: Dict[str, Type[FsAccessor]] = {}
+_FS_ACCESSOR_CLASSES: dict[str, type[FsAccessor]] = {}
 
 
-def register_fs_accessor_class(fs_accessor_class: Type[FsAccessor]):
+def register_fs_accessor_class(fs_accessor_class: type[FsAccessor]):
     """Register a concrete filesystem accessor class.
 
     Args:
@@ -52,7 +53,7 @@ for cls in (
     register_fs_accessor_class(cls)
 
 
-def get_fs_accessor_class(protocol: str) -> Type[FsAccessor]:
+def get_fs_accessor_class(protocol: str) -> type[FsAccessor]:
     """Get the class for a filesystem accessor.
 
     Args:
@@ -88,10 +89,10 @@ def get_fs_accessor_class(protocol: str) -> Type[FsAccessor]:
 ############################################
 # FsDataAccessor
 
-_FS_DATA_ACCESSOR_CLASSES: Dict[str, Type[FsDataAccessor]] = {}
+_FS_DATA_ACCESSOR_CLASSES: dict[str, type[FsDataAccessor]] = {}
 
 
-def register_fs_data_accessor_class(fs_data_accessor_class: Type[FsDataAccessor]):
+def register_fs_data_accessor_class(fs_data_accessor_class: type[FsDataAccessor]):
     """Register an abstract filesystem data accessor class.
 
     Such data accessor classes are used to dynamically
@@ -123,7 +124,7 @@ for cls in (
 
 def get_fs_data_accessor_class(
     protocol: str, data_type_alias: str, format_id: str
-) -> Type[FsDataAccessor]:
+) -> type[FsDataAccessor]:
     """Get the class for a filesystem data accessor.
 
     Args:
@@ -158,7 +159,7 @@ def get_fs_data_accessor_class(
 # FsDataStore
 
 
-def get_fs_data_store_class(protocol: str) -> Type[FsDataStore]:
+def get_fs_data_store_class(protocol: str) -> type[FsDataStore]:
     """Get the class for of a filesystem-based data store.
 
     Args:
@@ -185,7 +186,7 @@ def new_fs_data_store(
     read_only: bool = False,
     includes: Optional[Sequence[str]] = None,
     excludes: Optional[Sequence[str]] = None,
-    storage_options: Dict[str, Any] = None,
+    storage_options: dict[str, Any] = None,
 ) -> FsDataStore:
     """Create a new instance of a filesystem-based data store.
 

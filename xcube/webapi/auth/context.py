@@ -6,7 +6,8 @@ import json
 from functools import cached_property
 from itertools import filterfalse
 from string import Template
-from typing import Optional, Mapping, Dict, Any, Set, Union
+from typing import Optional, Dict, Any, Set, Union
+from collections.abc import Mapping
 
 import jwt
 import jwt.algorithms
@@ -37,7 +38,7 @@ class AuthContext(ApiContext):
         return self.auth_config is not None and self.auth_config.is_required
 
     @cached_property
-    def jwks(self) -> Dict[str, Any]:
+    def jwks(self) -> dict[str, Any]:
         response = requests.get(self.auth_config.well_known_jwks)
         return json.loads(response.content)
 
@@ -59,7 +60,7 @@ class AuthContext(ApiContext):
 
     def get_granted_scopes(
         self, request_headers: Mapping[str, str]
-    ) -> Optional[Set[str]]:
+    ) -> Optional[set[str]]:
         must_authenticate = self.must_authenticate
         id_token = self.get_id_token(request_headers, require_auth=must_authenticate)
         permissions = None
@@ -181,10 +182,10 @@ class AuthContext(ApiContext):
         templ_permissions = filter(predicate, permissions)
         id_mapping = self._get_template_dict(id_token)
         return plain_permissions.union(
-            set(
+            {
                 Template(permission).safe_substitute(id_mapping)
                 for permission in templ_permissions
-            )
+            }
         )
 
     @staticmethod
@@ -192,7 +193,7 @@ class AuthContext(ApiContext):
         return "$" in permission
 
     @staticmethod
-    def _get_template_dict(id_token: Mapping[str, Any]) -> Dict[str, str]:
+    def _get_template_dict(id_token: Mapping[str, Any]) -> dict[str, str]:
         d = {k: v for k, v in id_token.items() if isinstance(v, str)}
         if "username" not in d and "preferred_username" in d:
             d["username"] = d["preferred_username"]

@@ -2,8 +2,9 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict, List, Optional, Callable, Iterator
-from typing import Sequence
+from typing import Any, Dict, List, Optional, Callable
+from collections.abc import Iterator
+from collections.abc import Sequence
 
 import fiona
 import fsspec
@@ -16,8 +17,8 @@ from xcube.server.api import ApiError
 from xcube.server.api import Context
 from xcube.webapi.common.context import ResourcesContext
 
-PlaceGroup = Dict[str, Any]
-Feature = Dict[str, Any]
+PlaceGroup = dict[str, Any]
+Feature = dict[str, Any]
 
 ALL_PLACES = "all"
 
@@ -27,8 +28,8 @@ class PlacesContext(ResourcesContext):
 
     def __init__(self, server_ctx: Context):
         super().__init__(server_ctx)
-        self._additional_place_groups: Dict[str, List[PlaceGroup]] = dict()
-        self._place_group_cache: Dict[str, PlaceGroup] = dict()
+        self._additional_place_groups: dict[str, list[PlaceGroup]] = dict()
+        self._place_group_cache: dict[str, PlaceGroup] = dict()
 
     def on_dispose(self):
         if self._place_group_cache:
@@ -42,7 +43,7 @@ class PlacesContext(ResourcesContext):
 
     def get_cached_place_groups(
         self, predicate: Optional[Callable[[str, PlaceGroup], bool]] = None
-    ) -> List[PlaceGroup]:
+    ) -> list[PlaceGroup]:
         return [
             v
             for k, v in self._place_group_cache.items()
@@ -57,7 +58,7 @@ class PlacesContext(ResourcesContext):
 
     def get_global_place_groups(
         self, base_url: str, load_features=False
-    ) -> List[PlaceGroup]:
+    ) -> list[PlaceGroup]:
         return self.load_place_groups(
             self.config.get("PlaceGroups", []),
             base_url,
@@ -73,7 +74,7 @@ class PlacesContext(ResourcesContext):
             place_group_config, base_url, is_global=True, load_features=load_features
         )
 
-    def _get_place_group_config(self, place_group_id: str) -> Dict:
+    def _get_place_group_config(self, place_group_id: str) -> dict:
         place_group_configs = self.config.get("PlaceGroups", [])
         for place_group_config in place_group_configs:
             if place_group_config["Identifier"] == place_group_id:
@@ -82,12 +83,12 @@ class PlacesContext(ResourcesContext):
 
     def load_place_groups(
         self,
-        place_group_configs: List,
+        place_group_configs: list,
         base_url: str,
         is_global: bool = False,
         load_features: bool = False,
-        qualifiers: List[str] = list(),
-    ) -> List[PlaceGroup]:
+        qualifiers: list[str] = list(),
+    ) -> list[PlaceGroup]:
         place_groups = []
         for place_group_config in place_group_configs:
             place_group = self._load_place_group(
@@ -106,7 +107,7 @@ class PlacesContext(ResourcesContext):
                 place_groups.append(place_group)
         return place_groups
 
-    def add_place_group(self, place_group: PlaceGroup, qualifiers: List[str] = list()):
+    def add_place_group(self, place_group: PlaceGroup, qualifiers: list[str] = list()):
         for qualifier in qualifiers:
             if qualifier not in self._additional_place_groups:
                 self._additional_place_groups[qualifier] = []
@@ -114,7 +115,7 @@ class PlacesContext(ResourcesContext):
 
     def _load_place_group(
         self,
-        place_group_config: Dict[str, Any],
+        place_group_config: dict[str, Any],
         base_url: str,
         is_global: bool = False,
         load_features: bool = False,
@@ -212,7 +213,7 @@ class PlacesContext(ResourcesContext):
 
     def load_place_group_features(
         self, place_group: PlaceGroup
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         features = place_group.get("features")
         if features is not None:
             return features
@@ -255,7 +256,7 @@ class PlacesContext(ResourcesContext):
     @classmethod
     def _to_geo_interface(
         cls, feature_collection: Collection
-    ) -> Iterator[Dict[str, Any]]:
+    ) -> Iterator[dict[str, Any]]:
         source_crs = feature_collection.crs
         target_crs = fiona.crs.CRS.from_epsg(4326)
         if not source_crs == target_crs:

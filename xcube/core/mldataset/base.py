@@ -67,7 +67,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         gm = self.grid_mapping
         return get_num_levels(gm.size, gm.tile_size)
 
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: dict[str, Any]) -> xr.Dataset:
         """Compute the dataset at level *index*: If *index* is zero, return
         the base image passed to constructor, otherwise down-sample the
         dataset for the level at given *index*.
