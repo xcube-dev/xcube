@@ -7,7 +7,8 @@ import os
 import socket
 import threading
 from pathlib import Path
-from typing import Optional, Union, Mapping, Any, Tuple, Dict
+from typing import Optional, Union, Mapping, Any
+from collections.abc import Iterable
 
 import fsspec
 import tornado.ioloop
@@ -116,7 +117,7 @@ class Viewer:
         ds_id: Optional[str] = None,
         title: Optional[str] = None,
         style: Optional[str] = None,
-        color_mappings: Dict[str, Dict[str, Any]] = None,
+        color_mappings: dict[str, dict[str, Any]] = None,
     ):
         """Add a dataset to this viewer.
 
@@ -229,7 +230,7 @@ def _get_server_config(
     return server_config
 
 
-def _get_server_url_and_rev_prefix(port: int) -> Tuple[str, str]:
+def _get_server_url_and_rev_prefix(port: int) -> tuple[str, str]:
     lab_url = os.environ.get(_LAB_URL_ENV_VAR) or None
     has_proxy = lab_url is not None
 
