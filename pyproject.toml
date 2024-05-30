@@ -96,8 +96,9 @@ version = {attr = "xcube.__version__"}
 readme = {file = "README.md", content-type = "text/markdown"}
 
 [tool.setuptools.packages.find]
-include = [
-  "xcube"
+exclude = [
+  "test*",
+  "doc*"
 ]
 
 [project.optional-dependencies]
