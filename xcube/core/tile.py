@@ -5,7 +5,8 @@
 import io
 import logging
 import math
-from typing import Optional, Tuple, Dict, Any, Hashable, Union, Sequence, List
+from typing import Optional, Tuple, Dict, Any, Union, List
+from collections.abc import Hashable, Sequence
 
 import PIL
 import matplotlib.colors
@@ -35,21 +36,21 @@ DEFAULT_CMAP_NORM = "lin"
 DEFAULT_FORMAT = "png"
 DEFAULT_TILE_ENLARGEMENT = 1
 
-ValueRange = Tuple[float, float]
+ValueRange = tuple[float, float]
 
 
 def compute_tiles(
     ml_dataset: MultiLevelDataset,
     variable_names: Union[str, Sequence[str]],
-    tile_bbox: Tuple[float, float, float, float],
+    tile_bbox: tuple[float, float, float, float],
     tile_crs: Union[str, pyproj.CRS] = DEFAULT_CRS_NAME,
     tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
     level: int = 0,
-    non_spatial_labels: Optional[Dict[str, Any]] = None,
+    non_spatial_labels: Optional[dict[str, Any]] = None,
     as_dataset: bool = False,
     tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
     trace_perf: bool = False,
-) -> Optional[Union[List[np.ndarray], xr.Dataset]]:
+) -> Optional[Union[list[np.ndarray], xr.Dataset]]:
     """Compute tiles for given *variable_names* in
     given multi-resolution dataset *mr_dataset*.
 
@@ -279,10 +280,10 @@ def compute_tiles(
 
 
 def _new_tile_dataset(
-    original_vars: List[Tuple[xr.DataArray, Tuple[Hashable, ...]]],
-    tiles: List[np.ndarray],
-    xy_names: Tuple[str, str],
-    xy_coords: Tuple[np.ndarray, np.ndarray],
+    original_vars: list[tuple[xr.DataArray, tuple[Hashable, ...]]],
+    tiles: list[np.ndarray],
+    xy_names: tuple[str, str],
+    xy_coords: tuple[np.ndarray, np.ndarray],
     crs: Union[str, pyproj.CRS],
 ):
     data_vars = {}
@@ -344,7 +345,7 @@ def compute_rgba_tile(
     cmap_name: Optional[str] = DEFAULT_CMAP_NAME,
     cmap_norm: Optional[str] = DEFAULT_CMAP_NORM,
     value_ranges: Optional[Union[ValueRange, Sequence[ValueRange]]] = None,
-    non_spatial_labels: Optional[Dict[str, Any]] = None,
+    non_spatial_labels: Optional[dict[str, Any]] = None,
     format: str = DEFAULT_FORMAT,
     tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
     trace_perf: bool = False,
@@ -517,7 +518,7 @@ def compute_rgba_tile(
 
 
 def get_continuous_norm(
-    value_range: Tuple[float, float], cmap_norm: Optional[str]
+    value_range: tuple[float, float], cmap_norm: Optional[str]
 ) -> matplotlib.colors.Normalize:
     value_min, value_max = value_range
     if value_max < value_min:
@@ -534,9 +535,9 @@ def get_var_cmap_params(
     var: xr.DataArray,
     cmap_name: Optional[str],
     cmap_norm: Optional[str],
-    cmap_range: Tuple[Optional[float], Optional[float]],
-    valid_range: Optional[Tuple[float, float]],
-) -> Tuple[str, str, Tuple[float, float]]:
+    cmap_range: tuple[Optional[float], Optional[float]],
+    valid_range: Optional[tuple[float, float]],
+) -> tuple[str, str, tuple[float, float]]:
     if cmap_name is None:
         cmap_name = var.attrs.get("color_bar_name")
         if cmap_name is None:
@@ -561,7 +562,7 @@ def get_var_cmap_params(
     return cmap_name, cmap_norm, (cmap_vmin, cmap_vmax)
 
 
-def get_var_valid_range(var: xr.DataArray) -> Optional[Tuple[float, float]]:
+def get_var_valid_range(var: xr.DataArray) -> Optional[tuple[float, float]]:
     valid_min = None
     valid_max = None
     valid_range = var.attrs.get("valid_range")
@@ -624,7 +625,7 @@ class TransparentRgbaTilePool:
     INSTANCE: "TransparentRgbaTilePool"
 
     def __init__(self):
-        self._transparent_tiles: Dict[str, Union[bytes, np.ndarray]] = dict()
+        self._transparent_tiles: dict[str, Union[bytes, np.ndarray]] = dict()
 
     def get(self, tile_size: Pair[int], format: str) -> Union[bytes, np.ndarray]:
         tile_w, tile_h = tile_size
@@ -643,9 +644,9 @@ TransparentRgbaTilePool.INSTANCE = TransparentRgbaTilePool()
 def _get_non_spatial_labels(
     dataset: xr.Dataset,
     variable: xr.DataArray,
-    labels: Optional[Dict[str, Any]],
+    labels: Optional[dict[str, Any]],
     logger: logging.Logger,
-) -> Dict[Hashable, Any]:
+) -> dict[Hashable, Any]:
     labels = labels if labels is not None else {}
 
     new_labels = {}

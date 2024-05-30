@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import Sequence
+from collections.abc import Sequence
 
 import dask
 import dask.array.random

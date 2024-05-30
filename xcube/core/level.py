@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import os
-from typing import List, Callable, Sequence, Optional, Tuple
+from typing import List, Callable, Optional, Tuple
+from collections.abc import Sequence
 
 import xarray as xr
 from deprecated import deprecated
@@ -29,14 +30,14 @@ _DEPRECATED_WRITE = (
 @deprecated(version="0.10.2", reason=_DEPRECATED_WRITE)
 def compute_levels(
     dataset: xr.Dataset,
-    spatial_dims: Tuple[str, str] = None,
-    spatial_shape: Tuple[int, int] = None,
-    spatial_tile_shape: Tuple[int, int] = None,
+    spatial_dims: tuple[str, str] = None,
+    spatial_shape: tuple[int, int] = None,
+    spatial_tile_shape: tuple[int, int] = None,
     var_names: Sequence[str] = None,
     num_levels_max: int = None,
     post_process_level: PyramidLevelCallback = None,
     progress_monitor: PyramidLevelCallback = None,
-) -> List[xr.Dataset]:
+) -> list[xr.Dataset]:
     """
     Transform the given *dataset* into the levels of a multi-level
     pyramid with spatial resolution decreasing by a factor of two
@@ -142,7 +143,7 @@ def write_levels(
     link_input: bool = False,
     progress_monitor: PyramidLevelCallback = None,
     **kwargs,
-) -> List[xr.Dataset]:
+) -> list[xr.Dataset]:
     """Transform the given dataset given by a *dataset* instance
     or *input_path* string into the levels of a multi-level pyramid
     with spatial resolution decreasing by a factor of two in both
@@ -205,7 +206,7 @@ def write_levels(
 @deprecated(version="0.10.2", reason=_DEPRECATED_READ)
 def read_levels(
     dir_path: str, progress_monitor: PyramidLevelCallback = None
-) -> List[xr.Dataset]:
+) -> list[xr.Dataset]:
     """Read the of a multi-level pyramid with spatial resolution
     decreasing by a factor of two in both spatial dimensions.
 
@@ -243,7 +244,7 @@ def read_levels(
     for index in range(num_levels):
         ext, file_path = level_paths[index]
         if ext == ".link":
-            with open(file_path, "r") as fp:
+            with open(file_path) as fp:
                 link_file_path = fp.read()
             if not os.path.isabs(link_file_path):
                 parent_dir_path = os.path.abspath(os.path.dirname(dir_path) or ".")
@@ -300,7 +301,7 @@ def _tile_level_dataset(level_dataset, spatial_tile_shape):
 
 def _compute_level_shapes(
     spatial_shape, spatial_tile_shape, num_levels_max=None
-) -> List[Tuple[int, int]]:
+) -> list[tuple[int, int]]:
     height, width = spatial_shape
     tile_height, tile_width = spatial_tile_shape
     num_levels_max = num_levels_max or -1

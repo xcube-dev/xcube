@@ -12,7 +12,7 @@ from xcube.util.jsonschema import JsonStringSchema
 
 DEFAULT_ENDPOINT_URL = "https://xcube-gen.brockmann-consult.de/api/v2/"
 
-ServiceConfigLike = Union[str, Dict, "ServiceConfig"]
+ServiceConfigLike = Union[str, dict, "ServiceConfig"]
 
 
 class ServiceConfig(JsonObject):

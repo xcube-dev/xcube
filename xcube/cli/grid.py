@@ -31,7 +31,7 @@ def find_close_resolutions(
     min_level: int = _DEFAULT_MIN_LEVEL,
     int_inv_res: bool = False,
     sort_by: str = _DEFAULT_SORT_BY,
-) -> List[Tuple]:
+) -> list[tuple]:
     if target_res <= 0.0:
         raise ValueError("illegal target_res")
     if delta_res < 0.0 or delta_res >= target_res:
@@ -119,7 +119,7 @@ def find_close_resolutions(
 
 def get_levels(
     height: int, coverage: Union[int, fractions.Fraction], level_min: int = None
-) -> List[Tuple]:
+) -> list[tuple]:
     res = coverage / fractions.Fraction(height)
     height_0, level = factor_out_two(height)
     data = []
@@ -139,7 +139,7 @@ def get_levels(
 
 def get_adjusted_box(
     x1: float, y1: float, x2: float, y2: float, res: float
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     # TODO: clamp values
     adj_x1 = res * math.floor(x1 / res)
     adj_y1 = res * math.floor(y1 / res)
@@ -164,7 +164,7 @@ def _round(x: float, n: int) -> float:
     return round(n * x) / n
 
 
-def factor_out_two(x: int) -> Tuple[int, int]:
+def factor_out_two(x: int) -> tuple[int, int]:
     if x < 0:
         raise ValueError("x must not be negative")
     if x == 0:
@@ -386,7 +386,7 @@ def adjust_box(
     (Geometry WKT and GeoJSON support may be added later.)
     """
     try:
-        x1, y1, x2, y2 = [float(c) for c in geom.split(",")]
+        x1, y1, x2, y2 = (float(c) for c in geom.split(","))
     except (ValueError, TypeError) as e:
         raise click.ClickException(f"Invalid GEOM: {geom}") from e
 
@@ -440,7 +440,7 @@ def adjust_box(
 
 def _fetch_height_and_coverage_from_options(
     res_str: Optional[str], height: Optional[int], coverage_str: str
-) -> Tuple[int, fractions.Fraction]:
+) -> tuple[int, fractions.Fraction]:
     coverage = _fetch_coverage_from_option(coverage_str)
     if res_str is not None:
         if height is not None:

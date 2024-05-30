@@ -7,7 +7,8 @@ import json
 import math
 import unittest
 from collections.abc import MutableMapping
-from typing import Dict, KeysView, Iterator, Sequence, Any
+from typing import Dict, Any
+from collections.abc import KeysView, Iterator, Sequence
 
 import cftime
 import numpy as np
@@ -456,11 +457,11 @@ def new_virtual_dataset(
 
 
 class VirtualChunkStore(MutableMapping):
-    def __init__(self, entries: Dict[str, bytes] = None):
+    def __init__(self, entries: dict[str, bytes] = None):
         if entries:
-            self._entries: Dict[str, bytes] = dict(entries)
+            self._entries: dict[str, bytes] = dict(entries)
         else:
-            self._entries: Dict[str, bytes] = {
+            self._entries: dict[str, bytes] = {
                 ".zgroup": bytes(
                     json.dumps({"zarr_format": 2}, indent=2), encoding="utf-8"
                 ),
@@ -472,7 +473,7 @@ class VirtualChunkStore(MutableMapping):
         name: str,
         dims: Sequence[str],
         values: np.ndarray,
-        attrs: Dict[str, Any] = None,
+        attrs: dict[str, Any] = None,
     ):
         self._entries.update(
             self.get_array_entries_unchunked(name, dims, values, attrs=attrs)
@@ -517,8 +518,8 @@ class VirtualChunkStore(MutableMapping):
         name: str,
         dims: Sequence[str],
         values: np.ndarray,
-        attrs: Dict[str, Any] = None,
-    ) -> Dict[str, bytes]:
+        attrs: dict[str, Any] = None,
+    ) -> dict[str, bytes]:
         zarray = {
             "zarr_format": 2,
             "chunks": list(values.shape),
@@ -551,7 +552,7 @@ class VirtualChunkStore(MutableMapping):
         shape: Sequence[int],
         chunks: Sequence[int],
         value: float = None,
-    ) -> Dict[str, bytes]:
+    ) -> dict[str, bytes]:
         dtype = np.dtype("float64")
 
         zarray = {

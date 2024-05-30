@@ -18,7 +18,7 @@ class ResampleTest(CliTest):
 
 
 class ResampleDataTest(CliDataTest):
-    def outputs(self) -> List[str]:
+    def outputs(self) -> list[str]:
         return ["out.zarr", "resampled.zarr"]
 
     def test_all_defaults(self):

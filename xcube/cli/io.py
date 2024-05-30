@@ -4,7 +4,8 @@
 
 import json
 import sys
-from typing import List, Sequence, Optional, Dict, AbstractSet, Set, Any
+from typing import List, Optional, Dict, AbstractSet, Set, Any
+from collections.abc import Sequence
 
 import click
 
@@ -70,7 +71,7 @@ def writer_list():
 )
 def store_info(
     store_id: str,
-    store_params: List[str],
+    store_params: list[str],
     show_params: bool,
     show_openers: bool,
     show_writers: bool,
@@ -148,7 +149,7 @@ def store_info(
 @click.argument("store_id", metavar="STORE")
 @click.argument("data_id", metavar="DATA")
 @click.argument("store_params", metavar="PARAMS", nargs=-1)
-def store_data(store_id: str, data_id: str, store_params: List[str]):
+def store_data(store_id: str, data_id: str, store_params: list[str]):
     """Show data resource information.
 
     Show the data descriptor for data resource DATA in data store STORE.
@@ -494,7 +495,7 @@ def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_pro
 
         print(
             f'Done generating entries for store "{store_instance_id}" after '
-            + "{:.2f} seconds".format(time.perf_counter() - t0)
+            + f"{time.perf_counter() - t0:.2f} seconds"
         )
 
     # yield Terminator
@@ -502,11 +503,11 @@ def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_pro
 
 
 def _filter_dict(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     selector: str,
-    include_props: Dict[str, Set[str]] = None,
-    exclude_props: Dict[str, Set[str]] = None,
-) -> Dict[str, Any]:
+    include_props: dict[str, set[str]] = None,
+    exclude_props: dict[str, set[str]] = None,
+) -> dict[str, Any]:
     includes = (
         (include_props.get(selector) or None) if include_props is not None else None
     )
@@ -523,7 +524,7 @@ def _filter_dict(
     }
 
 
-def _parse_props(props: str) -> Dict[str, AbstractSet]:
+def _parse_props(props: str) -> dict[str, AbstractSet]:
     parsed_props = dict(store=set(), data=set(), var=set())
     for p in props.split(","):
         try:
@@ -706,7 +707,7 @@ def _dump_data_resources(data_store: "xcube.core.store.DataStore") -> int:
 
 # noinspection PyUnresolvedReferences
 def _new_data_store(
-    store_id: str, store_params: List[str]
+    store_id: str, store_params: list[str]
 ) -> "xcube.core.store.DataStore":
     from xcube.core.store import get_data_store_params_schema
     from xcube.core.store import new_data_store

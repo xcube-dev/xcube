@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import abc
-from typing import Union, Callable, Optional, Any, Awaitable, TypeVar
+from typing import Union, Callable, Optional, Any, TypeVar
+from collections.abc import Awaitable
 
 from tornado import concurrent
 

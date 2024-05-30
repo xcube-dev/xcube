@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
-from typing import Union, Iterator, Set, Dict
+from typing import Union, Set, Dict
+from collections.abc import Iterator
 
 import xarray as xr
 
@@ -48,7 +49,7 @@ class DatasetsMapping(collections.abc.Mapping):
     @staticmethod
     def _get_s3_names(
         datasets_ctx: DatasetsContext, is_multi_level: bool
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Generate user-friendly S3 names for dataset identifiers.
         If *is_multi_level* is True, S3 names will be forced to have
         ".levels" suffix, otherwise the ".zarr" suffix.
@@ -100,7 +101,7 @@ def _split_base_ext(identifier: str):
 
 
 def _replace_ext(
-    base_name: str, old_ext: str, trigger_ext: str, new_ext: str, all_ids: Set[str]
+    base_name: str, old_ext: str, trigger_ext: str, new_ext: str, all_ids: set[str]
 ) -> str:
     if old_ext == new_ext or (
         old_ext == trigger_ext and (base_name + new_ext) not in all_ids

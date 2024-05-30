@@ -4,7 +4,8 @@
 
 import inspect
 import warnings
-from typing import Tuple, Sequence, Dict, Any, Callable, Union, AbstractSet
+from typing import Tuple, Dict, Any, Callable, Union, AbstractSet
+from collections.abc import Sequence
 
 import numpy as np
 import xarray as xr
@@ -29,10 +30,10 @@ def compute_cube(
     *input_cubes: xr.Dataset,
     input_cube_schema: CubeSchema = None,
     input_var_names: Sequence[str] = None,
-    input_params: Dict[str, Any] = None,
+    input_params: dict[str, Any] = None,
     output_var_name: str = "output",
     output_var_dtype: Any = np.float64,
-    output_var_attrs: Dict[str, Any] = None,
+    output_var_attrs: dict[str, Any] = None,
     vectorize: bool = None,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
@@ -86,11 +87,11 @@ def compute_dataset(
     *input_cubes: xr.Dataset,
     input_cube_schema: CubeSchema = None,
     input_var_names: Sequence[str] = None,
-    input_params: Dict[str, Any] = None,
+    input_params: dict[str, Any] = None,
     output_var_name: str = "output",
     output_var_dims: AbstractSet[str] = None,
     output_var_dtype: Any = np.float64,
-    output_var_attrs: Dict[str, Any] = None,
+    output_var_attrs: dict[str, Any] = None,
     vectorize: bool = None,
     cube_asserted: bool = False,
 ) -> xr.Dataset:
@@ -341,7 +342,7 @@ def _gen_index_var(cube_schema: CubeSchema):
     chunks = cube_schema.chunks
 
     # noinspection PyUnusedLocal
-    def get_chunk(cube_store: ChunkStore, name: str, index: Tuple[int, ...]) -> bytes:
+    def get_chunk(cube_store: ChunkStore, name: str, index: tuple[int, ...]) -> bytes:
         data = np.zeros(cube_store.chunks, dtype=np.uint64)
         data_view = data.ravel()
         if data_view.base is not data:

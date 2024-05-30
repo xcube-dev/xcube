@@ -6,6 +6,8 @@ import os
 import unittest
 from collections.abc import Iterable
 from typing import Optional, Mapping, Any
+from typing import Optional, Any
+from collections.abc import Mapping
 
 import pytest
 

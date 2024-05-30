@@ -7,8 +7,9 @@ import os
 import socket
 import threading
 from pathlib import Path
-from typing import Optional, Union, Mapping, Any
+from typing import Optional, Union, Any, Tuple, Dict
 from collections.abc import Iterable
+from collections.abc import Mapping
 
 import fsspec
 import tornado.ioloop

@@ -31,7 +31,7 @@ def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
     return dataset
 
 
-def verify_cube(dataset: xr.Dataset) -> List[str]:
+def verify_cube(dataset: xr.Dataset) -> list[str]:
     """Verify the given *dataset* for being a valid xcube dataset.
 
     The tool verifies that *dataset*

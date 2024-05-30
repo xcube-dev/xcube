@@ -25,7 +25,7 @@ class FsStoreSubset:
 
         @classmethod
         @abstractmethod
-        def get_fs_root(cls) -> Tuple[fsspec.AbstractFileSystem, str]:
+        def get_fs_root(cls) -> tuple[fsspec.AbstractFileSystem, str]:
             pass
 
         @classmethod
@@ -151,7 +151,7 @@ class FsStoreSubset:
 
 class MemoryFsStoreSubsetTest(FsStoreSubset.CommonTest):
     @classmethod
-    def get_fs_root(cls) -> Tuple[fsspec.AbstractFileSystem, str]:
+    def get_fs_root(cls) -> tuple[fsspec.AbstractFileSystem, str]:
         fs = fsspec.get_filesystem_class("memory")()
         root = "xcube"
         fs.mkdirs(root, exist_ok=True)
@@ -166,7 +166,7 @@ class MemoryFsStoreSubsetTest(FsStoreSubset.CommonTest):
 
 class FileFsStoreSubsetTest(FsStoreSubset.CommonTest):
     @classmethod
-    def get_fs_root(cls) -> Tuple[fsspec.AbstractFileSystem, str]:
+    def get_fs_root(cls) -> tuple[fsspec.AbstractFileSystem, str]:
         return fsspec.get_filesystem_class("file")(), new_temp_dir()
 
     @classmethod
@@ -180,7 +180,7 @@ class FileFsStoreSubsetTest(FsStoreSubset.CommonTest):
 @unittest.skip("OSError: [Errno 5] Internal Server Error")
 class S3FsStoreSubsetTest(FsStoreSubset.CommonTest, S3Test):
     @classmethod
-    def get_fs_root(cls) -> Tuple[fsspec.AbstractFileSystem, str]:
+    def get_fs_root(cls) -> tuple[fsspec.AbstractFileSystem, str]:
         fs = fsspec.get_filesystem_class("s3")(**cls.get_storage_options())
         root = "xcube"
         fs.mkdirs(root, exist_ok=True)

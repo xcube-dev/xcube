@@ -26,8 +26,8 @@ class CubeGeneratorError(ValueError):
         self,
         *args,
         status_code: Optional[int] = None,
-        remote_traceback: Optional[List[str]] = None,
-        remote_output: Optional[List[str]] = None,
+        remote_traceback: Optional[list[str]] = None,
+        remote_output: Optional[list[str]] = None,
         **kwargs
     ):
         # noinspection PyArgumentList
@@ -46,14 +46,14 @@ class CubeGeneratorError(ValueError):
         return self._status_code
 
     @property
-    def remote_traceback(self) -> Optional[List[str]]:
+    def remote_traceback(self) -> Optional[list[str]]:
         """Traceback of an error occurred in a remote process.
         May be None.
         """
         return self._remote_traceback
 
     @property
-    def remote_output(self) -> Optional[List[str]]:
+    def remote_output(self) -> Optional[list[str]]:
         """Terminal output of a remote process.
         May be None.
         """

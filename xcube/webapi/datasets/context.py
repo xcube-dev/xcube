@@ -16,11 +16,10 @@ from typing import (
     Optional,
     Tuple,
     Callable,
-    Collection,
     Set,
-    Mapping,
     Union,
 )
+from collections.abc import Collection, Mapping
 
 import numpy as np
 import pandas as pd
@@ -107,29 +106,29 @@ class DatasetsContext(ResourcesContext):
         return self._places_ctx
 
     @property
-    def dataset_cache(self) -> Dict[str, Tuple[MultiLevelDataset, DatasetConfig]]:
+    def dataset_cache(self) -> dict[str, tuple[MultiLevelDataset, DatasetConfig]]:
         return self._dataset_cache
 
     @cached_property
-    def access_control(self) -> Dict[str, Any]:
+    def access_control(self) -> dict[str, Any]:
         return self.config.get("AccessControl", {})
 
     @cached_property
-    def required_scopes(self) -> List[str]:
+    def required_scopes(self) -> list[str]:
         return self.access_control.get("RequiredScopes", [])
 
     @property
     def colormap_registry(self) -> ColormapRegistry:
         return self._colormap_registry
 
-    def get_required_dataset_scopes(self, dataset_config: DatasetConfig) -> Set[str]:
+    def get_required_dataset_scopes(self, dataset_config: DatasetConfig) -> set[str]:
         return self._get_required_scopes(
             dataset_config, "read:dataset", "Dataset", dataset_config["Identifier"]
         )
 
     def get_required_variable_scopes(
         self, dataset_config: DatasetConfig, var_name: str
-    ) -> Set[str]:
+    ) -> set[str]:
         return self._get_required_scopes(
             dataset_config, "read:variable", "Variable", var_name
         )
@@ -140,7 +139,7 @@ class DatasetsContext(ResourcesContext):
         base_scope: str,
         value_name: str,
         value: str,
-    ) -> Set[str]:
+    ) -> set[str]:
         required_global_scopes = set(self.required_scopes)
         required_dataset_scopes = set(
             dataset_config.get("AccessControl", {}).get("RequiredScopes", [])
@@ -176,7 +175,7 @@ class DatasetsContext(ResourcesContext):
         ds_id: Optional[str] = None,
         title: Optional[str] = None,
         style: Optional[str] = None,
-        color_mappings: Dict[str, Dict[str, Any]] = None,
+        color_mappings: dict[str, dict[str, Any]] = None,
     ) -> str:
         """Add a dataset to the configuration"""
         assert_instance(dataset, (xr.Dataset, MultiLevelDataset), "dataset")
@@ -275,7 +274,7 @@ class DatasetsContext(ResourcesContext):
     @classmethod
     def _maybe_assign_store_instance_ids(
         cls,
-        dataset_configs: List[Dict[str, Any]],
+        dataset_configs: list[dict[str, Any]],
         data_store_pool: DataStorePool,
         base_dir: str,
     ) -> None:
@@ -340,7 +339,7 @@ class DatasetsContext(ResourcesContext):
                         config["Path"] = new_path
 
     @classmethod
-    def _get_other_store_params_than_root(cls, dataset_config: DatasetConfig) -> Dict:
+    def _get_other_store_params_than_root(cls, dataset_config: DatasetConfig) -> dict:
         file_system = FS_TYPE_TO_PROTOCOL.get(dataset_config.get("FileSystem", "file"))
         if file_system != "s3":
             return {}
@@ -359,8 +358,8 @@ class DatasetsContext(ResourcesContext):
     @classmethod
     def get_dataset_configs_from_stores(
         cls, data_store_pool: DataStorePool
-    ) -> List[DatasetConfig]:
-        all_dataset_configs: List[DatasetConfig] = []
+    ) -> list[DatasetConfig]:
+        all_dataset_configs: list[DatasetConfig] = []
         for store_instance_id in data_store_pool.store_instance_ids:
             LOG.info(f"Scanning store {store_instance_id!r}")
             data_store_config = data_store_pool.get_store_config(store_instance_id)
@@ -378,7 +377,7 @@ class DatasetsContext(ResourcesContext):
             )
             for store_dataset_id in store_dataset_ids:
                 dataset_config_base = {}
-                store_dataset_configs: List[ServerConfig] = data_store_config.user_data
+                store_dataset_configs: list[ServerConfig] = data_store_config.user_data
                 if store_dataset_configs:
                     for store_dataset_config in store_dataset_configs:
                         dataset_id_pattern = store_dataset_config.get("Path", "*")
@@ -442,7 +441,7 @@ class DatasetsContext(ResourcesContext):
             raise ApiError.NotFound(f'Dataset "{ds_id}" not found')
         return dataset_config
 
-    def get_dataset_configs(self) -> List[DatasetConfig]:
+    def get_dataset_configs(self) -> list[DatasetConfig]:
         assert self._dataset_configs is not None
         return self._dataset_configs
 
@@ -453,7 +452,7 @@ class DatasetsContext(ResourcesContext):
     @classmethod
     def _process_dataset_configs(
         cls, config: ServerConfig, base_dir: str
-    ) -> Tuple[DataStorePool, List[Dict[str, Any]]]:
+    ) -> tuple[DataStorePool, list[dict[str, Any]]]:
         data_store_configs = config.get("DataStores", [])
         dataset_configs = config.get("Datasets", [])
 
@@ -478,8 +477,8 @@ class DatasetsContext(ResourcesContext):
         return data_store_pool, dataset_configs
 
     def get_rgb_color_mapping(
-        self, ds_id: str, norm_range: Tuple[float, float] = (0.0, 1.0)
-    ) -> Tuple[List[Optional[str]], List[Tuple[float, float]]]:
+        self, ds_id: str, norm_range: tuple[float, float] = (0.0, 1.0)
+    ) -> tuple[list[Optional[str]], list[tuple[float, float]]]:
         var_names = [None, None, None]
         norm_ranges = [norm_range, norm_range, norm_range]
         color_mappings = self.get_color_mappings(ds_id)
@@ -500,7 +499,7 @@ class DatasetsContext(ResourcesContext):
 
     def get_color_mapping(
         self, ds_id: str, var_name: str
-    ) -> Tuple[str, str, Tuple[float, float]]:
+    ) -> tuple[str, str, tuple[float, float]]:
         cmap_name = None
         cmap_norm = None
         cmap_vmin, cmap_vmax = None, None
@@ -523,7 +522,7 @@ class DatasetsContext(ResourcesContext):
         valid_range = get_var_valid_range(var)
         return get_var_cmap_params(var, cmap_name, cmap_norm, cmap_range, valid_range)
 
-    def _get_cm_styles(self) -> Tuple[Dict[str, Any], ColormapRegistry]:
+    def _get_cm_styles(self) -> tuple[dict[str, Any], ColormapRegistry]:
         custom_colormaps = {}
         cm_styles = {}
         for style in self.config.get("Styles", []):
@@ -553,26 +552,26 @@ class DatasetsContext(ResourcesContext):
 
         return cm_styles, ColormapRegistry(*custom_colormaps.values())
 
-    def get_color_mappings(self, ds_id: str) -> Optional[Dict[str, Dict[str, Any]]]:
+    def get_color_mappings(self, ds_id: str) -> Optional[dict[str, dict[str, Any]]]:
         dataset_config = self.get_dataset_config(ds_id)
         style_id = dataset_config.get("Style", "default")
         return self._cm_styles.get(style_id, {})
 
-    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, ServerConfig]:
+    def _get_dataset_entry(self, ds_id: str) -> tuple[MultiLevelDataset, ServerConfig]:
         if ds_id not in self._dataset_cache:
             with self.rlock:
                 self._set_dataset_entry(self._create_dataset_entry(ds_id))
         return self._dataset_cache[ds_id]
 
     def _set_dataset_entry(
-        self, dataset_entry: Tuple[MultiLevelDataset, DatasetConfig]
+        self, dataset_entry: tuple[MultiLevelDataset, DatasetConfig]
     ):
         ml_dataset, dataset_config = dataset_entry
         self._dataset_cache[ml_dataset.ds_id] = ml_dataset, dataset_config
 
     def _create_dataset_entry(
         self, ds_id: str
-    ) -> Tuple[MultiLevelDataset, DatasetConfig]:
+    ) -> tuple[MultiLevelDataset, DatasetConfig]:
         dataset_config = self.get_dataset_config(ds_id)
         ml_dataset = self._open_ml_dataset(dataset_config)
         return ml_dataset, dataset_config
@@ -649,7 +648,7 @@ class DatasetsContext(ResourcesContext):
 
     def get_dataset_place_groups(
         self, ds_id: str, base_url: str, load_features=False
-    ) -> List[Dict]:
+    ) -> list[dict]:
         dataset_config = self.get_dataset_config(ds_id)
 
         place_group_id_prefix = f"DS-{ds_id}-"
@@ -679,7 +678,7 @@ class DatasetsContext(ResourcesContext):
 
     def get_dataset_place_group(
         self, ds_id: str, place_group_id: str, base_url: str, load_features=False
-    ) -> Dict:
+    ) -> dict:
         place_groups = self.get_dataset_place_groups(
             ds_id, base_url, load_features=False
         )
@@ -704,9 +703,9 @@ class DatasetsContext(ResourcesContext):
         ds_name: str,
         var_name: str,
         var: xr.DataArray,
-        dim_names: List[str],
-        query_params: Dict[str, str],
-    ) -> Dict[str, Any]:
+        dim_names: list[str],
+        query_params: dict[str, str],
+    ) -> dict[str, Any]:
         var_indexers = dict()
         for dim_name in dim_names:
             if dim_name not in var.coords:
