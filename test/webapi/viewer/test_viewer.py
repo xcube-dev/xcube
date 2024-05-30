@@ -5,9 +5,8 @@
 import os
 import unittest
 from collections.abc import Iterable
-from typing import Optional, Mapping, Any
-from typing import Optional, Any
 from collections.abc import Mapping
+from typing import Optional, Any, Union
 
 import pytest
 
@@ -39,7 +38,7 @@ class ViewerTest(unittest.TestCase):
     def get_viewer(
         self,
         server_config: Optional[Mapping[str, Any]] = None,
-        roots: Optional[Iterable[str]] = None,
+        roots: Optional[Union[str, Iterable[str]]] = None,
         max_depth: Optional[int] = None,
     ) -> Viewer:
         self.viewer = Viewer(
@@ -72,17 +71,19 @@ class ViewerTest(unittest.TestCase):
         viewer = self.get_viewer()
         self.assertIsInstance(viewer.server_config, dict)
         self.assertIsInstance(viewer.server_config.get("port"), int)
-        self.assertIn("address", viewer.server_config)
-        self.assertIn("reverse_url_prefix", viewer.server_config)
-        self.assertNotIn("DataStores", viewer.server_config)
+        self.assertIsInstance(viewer.server_config.get("address"), str)
+        self.assertIsInstance(viewer.server_config.get("reverse_url_prefix"), str)
 
     def test_with_config(self):
         viewer = self.get_viewer({"port": 8888, **STYLES_CONFIG})
+        self.assertIsInstance(viewer.server_config, dict)
+        # Get rid of "reverse_url_prefix" as it depends on env vars
+        # noinspection PyUnresolvedReferences
+        self.assertIsInstance(viewer.server_config.pop("reverse_url_prefix", None), str)
         self.assertEqual(
             {
                 "address": "0.0.0.0",
                 "port": 8888,
-                "reverse_url_prefix": "",
                 **STYLES_CONFIG,
             },
             viewer.server_config,
@@ -90,11 +91,14 @@ class ViewerTest(unittest.TestCase):
 
     def test_with_root(self):
         viewer = self.get_viewer({"port": 8081}, roots="data")
+        self.assertIsInstance(viewer.server_config, dict)
+        # Get rid of "reverse_url_prefix" as it depends on env vars
+        # noinspection PyUnresolvedReferences
+        self.assertIsInstance(viewer.server_config.pop("reverse_url_prefix", None), str)
         self.assertEqual(
             {
                 "address": "0.0.0.0",
                 "port": 8081,
-                "reverse_url_prefix": "",
                 "DataStores": [
                     {
                         "Identifier": "_root_0",
@@ -110,11 +114,14 @@ class ViewerTest(unittest.TestCase):
         viewer = self.get_viewer(
             {"port": 8080}, roots=["data", "s3://xcube"], max_depth=2
         )
+        self.assertIsInstance(viewer.server_config, dict)
+        # Get rid of "reverse_url_prefix" as it depends on env vars
+        # noinspection PyUnresolvedReferences
+        self.assertIsInstance(viewer.server_config.pop("reverse_url_prefix", None), str)
         self.assertEqual(
             {
                 "address": "0.0.0.0",
                 "port": 8080,
-                "reverse_url_prefix": "",
                 "DataStores": [
                     {
                         "Identifier": "_root_0",

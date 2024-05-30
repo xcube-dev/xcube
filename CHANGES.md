@@ -48,9 +48,9 @@
 
 * The class `xcube.webapi.viewer.Viewer` now accepts root paths or URLs that 
   will each be scanned for datasets. The roots are passed as keyword argument
-  `roots` that takes an iterable of type `str`. A new keyword argument `max_depth` 
-  defines the maximum subdirectory depths used to search for datasets in case
-  `roots` is given. It defaults to `2`.
+  `roots` whose value is path or URL or an iterable of paths or URLs. 
+  A new keyword argument `max_depth` defines the maximum subdirectory depths 
+  used to search for datasets in case `roots` is given. It defaults to `1`.
 
 ### Incompatible API changes
 

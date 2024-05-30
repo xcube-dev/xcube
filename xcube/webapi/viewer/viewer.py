@@ -32,7 +32,7 @@ _LAB_URL_ENV_VAR = "XCUBE_JUPYTER_LAB_URL"
 _LAB_INFO_FILE = "~/.xcube/jupyterlab/lab-info.json"
 
 
-_DEFAULT_MAX_DEPTH = 2
+_DEFAULT_MAX_DEPTH = 1
 
 
 class Viewer:
@@ -49,7 +49,7 @@ class Viewer:
     def __init__(
         self,
         server_config: Optional[Mapping[str, Any]] = None,
-        roots: Optional[Iterable[str]] = None,
+        roots: Optional[Union[str, Iterable[str]]] = None,
         max_depth: Optional[int] = None,
     ):
         self._server_config, server_url = _get_server_config(
@@ -201,7 +201,7 @@ class Viewer:
 
 def _get_server_config(
     server_config: Optional[Mapping[str, Any]] = None,
-    roots: Optional[Iterable[str]] = None,
+    roots: Optional[Union[str, Iterable[str]]] = None,
     max_depth: Optional[int] = None,
 ) -> tuple[dict[str, Any], str]:
     server_config = dict(server_config or {})
@@ -222,6 +222,7 @@ def _get_server_config(
     server_config["reverse_url_prefix"] = reverse_url_prefix
 
     if roots is not None:
+        roots = [roots] if isinstance(roots, str) else roots
         config_stores = list(server_config.get("DataStores", []))
         root_stores = _get_data_stores_from_roots(roots, max_depth)
         server_config["DataStores"] = config_stores + root_stores
