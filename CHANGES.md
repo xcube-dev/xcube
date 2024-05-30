@@ -93,7 +93,7 @@
 * Used [`pyupgrade`](https://github.com/asottile/pyupgrade) to automatically upgrade
   language syntax for Python versions >= 3.9.
 
-* Updated the `xcube` setup, migrating from `setup.py` to `pyproject.toml`.
+* Migrated the xcube project setup from `setup.py` to the modern `pyproject.toml` format.
 
 ## Changes in 1.5.1
 
