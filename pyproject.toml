@@ -3,7 +3,7 @@ requires = ["setuptools >= 61.2.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "xcube"
+name = "xcube-core"
 dynamic = ["version", "readme"]
 authors = [
   {name = "xcube Development Team"}
@@ -75,20 +75,29 @@ classifiers = [
   "Operating System :: MacOS",
 ]
 
+# entry point xcube's CLI
 [project.scripts]
 xcube = "xcube.cli.main:main"
 
+# entry point xcube's default extensions
 [project.entry-points.xcube_plugins]
 xcube = "xcube.plugin:init_plugin"
+
+[tool.setuptools.package-data]
+"xcube.webapi.meta" = [
+    "data/openapi.html",
+]
+"xcube.webapi.viewer" = [
+    "data/*", "data/**/*",
+]
 
 [tool.setuptools.dynamic]
 version = {attr = "xcube.__version__"}
 readme = {file = "README.md", content-type = "text/markdown"}
 
 [tool.setuptools.packages.find]
-exclude = [
-  "test*",
-  "doc*"
+include = [
+  "xcube"
 ]
 
 [project.optional-dependencies]
@@ -108,4 +117,3 @@ Download = "https://pypi.org/project/xcube-core/#files"
 Tracker = "https://github.com/xcube-dev/xcube/issues"
 "Release notes" = "https://github.com/xcube-dev/xcube/releases"
 Changelog = "https://github.com/xcube-dev/xcube/blob/main/CHANGES.md"
-
