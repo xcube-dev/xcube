@@ -14,7 +14,6 @@ import fsspec
 import tornado.ioloop
 import xarray as xr
 
-from xcube.util.config import merge_config
 from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.server import Server
@@ -39,9 +38,8 @@ class Viewer:
     """xcube Viewer for Jupyter Notebooks.
 
     Args:
-        args:
-        server_config: server configuration. See "xcube serve --show
-            configschema".
+        server_config: server configuration.
+            See also output of ``$ xcube serve --show configschema``.
         roots: paths or URLs that will each be scanned for datasets.
         max_depth: defines the maximum subdirectory depth used to
             search for datasets in case roots is given.
@@ -53,9 +51,11 @@ class Viewer:
         roots: Optional[Iterable[str]] = None,
         max_depth: Optional[int] = None,
     ):
-        self._server_config = _get_server_config(
+        self._server_config, server_url = _get_server_config(
             server_config=server_config, roots=roots, max_depth=max_depth
         )
+        self._server_url = server_url
+        self._viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
 
         # Got trick from
         # https://stackoverflow.com/questions/55201748/running-a-tornado-server-within-a-jupyter-notebook
@@ -66,13 +66,10 @@ class Viewer:
 
         self._server = Server(
             TornadoFramework(io_loop=self._io_loop, shared_io_loop=True),
-            config=server_config,
+            config=self._server_config,
         )
 
         self._io_loop.add_callback(self._server.start)
-
-        self._server_url = server_url
-        self._viewer_url = f"{server_url}/viewer/?serverUrl={server_url}"
 
     @property
     def server_config(self) -> Mapping[str, Any]:
@@ -170,6 +167,7 @@ class Viewer:
             height: The height of the viewer's iframe.
         """
         try:
+            # noinspection PyPackageRequirements
             from IPython.core.display import HTML
 
             return HTML(
@@ -204,7 +202,7 @@ def _get_server_config(
     server_config: Optional[Mapping[str, Any]] = None,
     roots: Optional[Iterable[str]] = None,
     max_depth: Optional[int] = None,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], str]:
     server_config = dict(server_config or {})
     max_depth = max_depth or _DEFAULT_MAX_DEPTH
 
@@ -227,7 +225,7 @@ def _get_server_config(
         root_stores = _get_data_stores_from_roots(roots, max_depth)
         server_config["DataStores"] = config_stores + root_stores
 
-    return server_config
+    return server_config, server_url
 
 
 def _get_server_url_and_rev_prefix(port: int) -> tuple[str, str]:
@@ -266,7 +264,7 @@ def _find_port(start: int = 8000, end: Optional[int] = None) -> int:
 
 
 def _get_data_stores_from_roots(
-    roots: tuple[str, ...], max_depth: int
+    roots: Iterable[str], max_depth: int
 ) -> list[dict[str, dict]]:
     extra_data_stores = []
     for index, root in enumerate(roots):
