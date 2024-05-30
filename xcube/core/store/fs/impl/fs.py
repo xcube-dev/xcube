@@ -195,3 +195,9 @@ class FtpFsAccessor(FsAccessor):
             ),
             additional_properties=True,
         )
+
+
+class HttpsFsAccessor(FsAccessor):
+    @classmethod
+    def get_protocol(cls) -> str:
+        return "https"

@@ -39,7 +39,8 @@ def _register_input_processors(ext_registry: extension.ExtensionRegistry):
 
 
 def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
-    """Register xcube's standard dataset I/O components used by various CLI and API functions."""
+    """Register xcube's standard dataset I/O components
+    used by various CLI and API functions."""
     ext_registry.add_extension(
         loader=extension.import_component("xcube.core.dsio:ZarrDatasetIO", call=True),
         point=EXTENSION_POINT_DATASET_IOS,
@@ -77,12 +78,13 @@ def _register_dataset_ios(ext_registry: extension.ExtensionRegistry):
 
 
 _FS_STORAGE_ITEMS = (
-    ("file", "local filesystem"),
-    ("s3", "AWS S3 compatible object storage"),
     ("abfs", "Azure blob compatible object storage"),
-    ("memory", "in-memory filesystem"),
+    ("file", "local filesystem"),
     ("ftp", "FTP filesystem"),
+    ("https", "HTTPS filesystem"),
+    ("memory", "in-memory filesystem"),
     ("reference", "reference filesystem"),
+    ("s3", "AWS S3 compatible object storage")
 )
 
 _FS_DATA_ACCESSOR_ITEMS = (
@@ -128,7 +130,7 @@ def _register_data_stores(ext_registry: extension.ExtensionRegistry):
         point=EXTENSION_POINT_DATA_STORES,
         loader=ref_ds_cls_loader,
         name="reference",
-        description=f"Data store that uses Kerchunk references",
+        description="Data store that uses Kerchunk references",
     )
 
 
