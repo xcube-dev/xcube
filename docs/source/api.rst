@@ -208,6 +208,9 @@ Utilities
 .. autoclass:: xcube.core.schema.CubeSchema
     :members:
 
+.. autoclass:: xcube.webapi.viewer.Viewer
+    :members:
+
 .. autofunction:: xcube.util.dask.new_cluster
 
 Plugin Development
