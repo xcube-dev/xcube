@@ -91,7 +91,9 @@
   left sidebar on the [PyPI xcube-core](https://pypi.org/project/xcube-core/) webpage.
 
 * Used [`pyupgrade`](https://github.com/asottile/pyupgrade) to automatically upgrade
-  language syntax for Python versions >= 3.9.  
+  language syntax for Python versions >= 3.9.
+
+* Migrated the xcube project setup from `setup.py` to the modern `pyproject.toml` format.
 
 ## Changes in 1.5.1
 

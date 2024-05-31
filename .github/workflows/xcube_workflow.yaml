@@ -36,7 +36,7 @@ jobs:
         run: |
           conda info
           conda list
-          python setup.py develop
+          pip install -e .
       # Run unittests
       - name: unittest-xcube
         shell: bash -l {0}
