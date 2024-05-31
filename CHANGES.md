@@ -98,7 +98,7 @@
 
 * The functions `mask_dataset_by_geometry()` and `clip_dataset_by_geometry()`
   of module `xcube.core.geom` have a new keyword argument 
-  `update_attrs: bool = True` as part of the fix for #99.
+  `update_attrs: bool = True` as part of the fix for #995.
 
 ## Changes in 1.5.1
 
