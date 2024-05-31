@@ -5,7 +5,8 @@
 import threading
 import uuid
 from abc import abstractmethod, ABCMeta
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Optional
+from collections.abc import Mapping
 
 import xarray as xr
 
@@ -39,7 +40,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         self._grid_mapping = grid_mapping
         self._num_levels = num_levels
         self._ds_id = ds_id
-        self._level_datasets: Dict[int, xr.Dataset] = {}
+        self._level_datasets: dict[int, xr.Dataset] = {}
         self._parameters = parameters or {}
         self._lock = threading.RLock()
 
@@ -116,7 +117,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: dict[str, Any]) -> xr.Dataset:
         """Retrieve, i.e. read or compute, the dataset for the
         level at given *index*.
 

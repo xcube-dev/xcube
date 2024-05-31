@@ -152,7 +152,7 @@ EXPECTED_DATASETS_COLLECTION = {
 class StacControllersTest(unittest.TestCase):
     @functools.lru_cache
     def read_json(self, filename):
-        with open(Path(__file__).parent / filename, mode="r") as fp:
+        with open(Path(__file__).parent / filename) as fp:
             content = json.load(fp)
         return content
 
@@ -230,7 +230,7 @@ class StacControllersTest(unittest.TestCase):
         expected_item = self.read_json("stac-single-item.json")
         self.assertEqual("FeatureCollection", result["type"])
         self.assertEqual(
-            {"root", "self"}, set([link["rel"] for link in result["links"]])
+            {"root", "self"}, {link["rel"] for link in result["links"]}
         )
         self.assertLess(
             datetime.datetime.now().astimezone()

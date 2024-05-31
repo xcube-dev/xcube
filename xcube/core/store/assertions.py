@@ -12,7 +12,7 @@ from .error import DataStoreError
 
 
 def assert_valid_params(
-    params: Optional[Dict[str, Any]],
+    params: Optional[dict[str, Any]],
     schema: Optional[JsonObjectSchema] = None,
     name: str = "params",
 ):
@@ -28,7 +28,7 @@ def assert_valid_params(
 
 
 def assert_valid_config(
-    config: Optional[Dict[str, Any]],
+    config: Optional[dict[str, Any]],
     schema: Optional[JsonObjectSchema] = None,
     name: str = "config",
 ):
@@ -42,25 +42,25 @@ def assert_valid_config(
     _assert_valid(config, schema, name, "configuration", _validate_config)
 
 
-def _validate_params(params: Dict[str, Any], schema: JsonObjectSchema):
+def _validate_params(params: dict[str, Any], schema: JsonObjectSchema):
     # Note, params is a dictionary of Python objects.
     # Convert them to a JSON instance
     # and perform JSON Schema validation
     schema.validate_instance(params)
 
 
-def _validate_config(config: Dict[str, Any], schema: JsonObjectSchema):
+def _validate_config(config: dict[str, Any], schema: JsonObjectSchema):
     # Note, config is already a JSON object.
     # Perform JSON Schema validation directly.
     schema.validate_instance(config)
 
 
 def _assert_valid(
-    obj: Optional[Dict[str, Any]],
+    obj: Optional[dict[str, Any]],
     schema: Optional[JsonObjectSchema],
     name: str,
     kind: str,
-    validator: Callable[[Dict[str, Any], JsonObjectSchema], Any],
+    validator: Callable[[dict[str, Any], JsonObjectSchema], Any],
 ):
     if obj is None:
         return

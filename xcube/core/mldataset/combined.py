@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Sequence, Any, Dict, Callable, Optional
+from typing import Any, Dict, Callable, Optional
+from collections.abc import Sequence
 
 import xarray as xr
 
@@ -34,7 +35,7 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
         ml_datasets: Sequence[MultiLevelDataset],
         ds_id: Optional[str] = None,
         combiner_function: Optional[Callable] = None,
-        combiner_params: Optional[Dict[str, Any]] = None,
+        combiner_params: Optional[dict[str, Any]] = None,
     ):
         if not ml_datasets or len(ml_datasets) < 2:
             raise ValueError("ml_datasets must have at least two elements")
@@ -46,7 +47,7 @@ class CombinedMultiLevelDataset(LazyMultiLevelDataset):
         return self._ml_datasets[0].num_levels
 
     def _get_dataset_lazily(
-        self, index: int, combiner_params: Dict[str, Any]
+        self, index: int, combiner_params: dict[str, Any]
     ) -> xr.Dataset:
         datasets = [ml_dataset.get_dataset(index) for ml_dataset in self._ml_datasets]
         if self._combiner_function is None:

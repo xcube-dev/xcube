@@ -126,7 +126,7 @@ def gen2(
 
     error = None
 
-    result: Dict[str, Any]
+    result: dict[str, Any]
 
     # noinspection PyBroadException
     try:

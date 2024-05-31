@@ -166,7 +166,7 @@ class FileCacheStore(CacheStore):
         try:
             os.remove(path)
             # TODO (forman): also remove empty directories up to self.cache_dir
-        except IOError:
+        except OSError:
             pass
 
     def _key_to_path(self, key):

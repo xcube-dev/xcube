@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import pathlib
-from typing import Type, Iterator
+from typing import Type
+from collections.abc import Iterator
 
 import fsspec
 from fsspec.implementations.local import LocalFileSystem
@@ -14,7 +15,7 @@ def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
     return "file" in fs.protocol or isinstance(fs, LocalFileSystem)
 
 
-def get_fs_path_class(fs: fsspec.AbstractFileSystem) -> Type[pathlib.PurePath]:
+def get_fs_path_class(fs: fsspec.AbstractFileSystem) -> type[pathlib.PurePath]:
     """Get the appropriate ``pathlib.PurePath`` class for the filesystem *fs*."""
     if is_local_fs(fs):
         # Will return PurePosixPath or a PureWindowsPath object

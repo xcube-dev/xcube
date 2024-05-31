@@ -19,7 +19,7 @@ def new_grid_mapping_from_dataset(
     dataset: xr.Dataset,
     *,
     crs: Union[str, pyproj.crs.CRS] = None,
-    tile_size: Union[int, Tuple[str, str]] = None,
+    tile_size: Union[int, tuple[str, str]] = None,
     prefer_crs: Union[str, pyproj.crs.CRS] = None,
     prefer_is_regular: bool = None,
     emit_warnings: bool = False,

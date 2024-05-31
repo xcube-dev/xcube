@@ -8,7 +8,8 @@ import math
 import pathlib
 import warnings
 from functools import cached_property
-from typing import Any, Optional, List, Union, Mapping, Dict, Sequence
+from typing import Any, Optional, List, Union, Dict
+from collections.abc import Mapping, Sequence
 
 import fsspec
 import fsspec.core
@@ -192,7 +193,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 )
         return num_levels
 
-    def _get_levels(self) -> List[int]:
+    def _get_levels(self) -> list[int]:
         levels = []
         paths = [
             self._get_path(entry["name"])
@@ -286,7 +287,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             num_levels_max = min(num_levels, ml_dataset.num_levels)
 
         with fs.open(str(data_path / ".zlevels"), mode="w") as fp:
-            levels_data: Dict[str, Any] = dict(
+            levels_data: dict[str, Any] = dict(
                 version=LEVELS_FORMAT_VERSION, num_levels=num_levels_max
             )
             if use_saved_levels is not None:

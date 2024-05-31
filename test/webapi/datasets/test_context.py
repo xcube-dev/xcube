@@ -4,7 +4,8 @@
 
 import os.path
 import unittest
-from typing import Union, Mapping, Any
+from typing import Union, Any
+from collections.abc import Mapping
 
 import pytest
 import xarray as xr

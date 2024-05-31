@@ -138,7 +138,7 @@ def serve(
     framework_name: str,
     port: int,
     address: str,
-    config_paths: List[str],
+    config_paths: list[str],
     base_dir: Optional[str],
     url_prefix: Optional[str],
     reverse_url_prefix: Optional[str],
@@ -149,7 +149,7 @@ def serve(
     open_viewer: bool,
     quiet: bool,
     verbosity: int,
-    paths: List[str],
+    paths: list[str],
 ):
     """Run the xcube Server for the given configuration and/or the given
     raster dataset paths given by PATHS.
@@ -231,7 +231,7 @@ def serve(
         config["trace_perf"] = trace_perf
 
     if paths:
-        data_stores: Dict[Path, Dict[str, Any]] = dict()
+        data_stores: dict[Path, dict[str, Any]] = dict()
         for path in paths:
             if Path(path).exists():
                 path = Path(path)
@@ -279,8 +279,8 @@ def serve(
 
 
 def _add_dir_to_data_stores(
-    data_stores: Dict[Path, Dict[str, Any]], dir_path: Path
-) -> Dict[str, Any]:
+    data_stores: dict[Path, dict[str, Any]], dir_path: Path
+) -> dict[str, Any]:
     root = dir_path.resolve().absolute()
     if root in data_stores:
         data_store = data_stores[root]
@@ -291,7 +291,7 @@ def _add_dir_to_data_stores(
     return data_store
 
 
-def _add_path_to_data_stores(data_stores: Dict[Path, Dict[str, Any]], path: Path):
+def _add_path_to_data_stores(data_stores: dict[Path, dict[str, Any]], path: Path):
     path = path.resolve().absolute()
     data_store = _add_dir_to_data_stores(data_stores, path.parent)
     if "Datasets" in data_store:

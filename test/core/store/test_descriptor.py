@@ -58,7 +58,7 @@ class NewDataDescriptorTest(unittest.TestCase):
     def assertExpectedDescriptor(
         self,
         descriptor: DataDescriptor,
-        expected_type: Type[DataDescriptor],
+        expected_type: type[DataDescriptor],
         expected_data_type_alias: str,
     ):
         self.assertIsInstance(descriptor, DatasetDescriptor)

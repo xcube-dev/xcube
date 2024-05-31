@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import math
-from typing import Union, Callable, Optional, Sequence, Tuple, Mapping, Hashable, Any
+from typing import Union, Callable, Optional, Tuple, Any
+from collections.abc import Sequence, Mapping, Hashable
 
 import numpy as np
 import xarray as xr
@@ -88,9 +89,9 @@ def affine_transform_dataset(
 def resample_dataset(
     dataset: xr.Dataset,
     matrix: AffineTransformMatrix,
-    size: Tuple[int, int],
-    tile_size: Tuple[int, int],
-    xy_dim_names: Tuple[str, str],
+    size: tuple[int, int],
+    tile_size: tuple[int, int],
+    xy_dim_names: tuple[str, str],
     var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
 ) -> xr.Dataset:
     """Resample dataset according to an affine transformation.
@@ -151,9 +152,9 @@ def resample_dataset(
 
 def resample_ndimage(
     image: NDImage,
-    scale: Union[float, Tuple[float, float]] = 1,
-    offset: Union[float, Tuple[float, float]] = None,
-    shape: Union[int, Tuple[int, int]] = None,
+    scale: Union[float, tuple[float, float]] = 1,
+    offset: Union[float, tuple[float, float]] = None,
+    shape: Union[int, tuple[int, int]] = None,
     chunks: Sequence[int] = None,
     spline_order: int = 1,
     aggregator: Optional[Aggregator] = np.nanmean,
@@ -212,10 +213,10 @@ def resample_ndimage(
 
 def _transform_array(
     image: da.Array,
-    scale: Tuple[float, ...],
-    offset: Tuple[float, ...],
-    shape: Tuple[int, ...],
-    chunks: Optional[Tuple[int, ...]],
+    scale: tuple[float, ...],
+    offset: tuple[float, ...],
+    shape: tuple[int, ...],
+    chunks: Optional[tuple[int, ...]],
     spline_order: int,
     recover_nan: bool,
 ) -> da.Array:
@@ -279,10 +280,10 @@ def _transform_array(
 
 def resize_shape(
     shape: Sequence[int],
-    scale: Union[float, Tuple[float, ...]],
+    scale: Union[float, tuple[float, ...]],
     divisor_x: int = 1,
     divisor_y: int = 1,
-) -> Tuple[int, ...]:
+) -> tuple[int, ...]:
     scale = _normalize_scale(scale, len(shape))
     height, width = shape[-2], shape[-1]
     scale_y, scale_x = scale[-2], scale[-1]
@@ -294,8 +295,8 @@ def resize_shape(
 
 
 def _make_divisible_tiles(
-    larger_shape: Tuple[int, ...], divisor_x: int, divisor_y: int
-) -> Tuple[int, ...]:
+    larger_shape: tuple[int, ...], divisor_x: int, divisor_y: int
+) -> tuple[int, ...]:
     w = min(larger_shape[-1], divisor_x * ((2048 + divisor_x - 1) // divisor_x))
     h = min(larger_shape[-2], divisor_y * ((2048 + divisor_y - 1) // divisor_y))
     return (len(larger_shape) - 2) * (1,) + (h, w)
@@ -305,17 +306,17 @@ def _normalize_image(im: NDImage) -> da.Array:
     return da.asarray(im)
 
 
-def _normalize_offset(offset: Optional[Sequence[float]], ndim: int) -> Tuple[int, ...]:
+def _normalize_offset(offset: Optional[Sequence[float]], ndim: int) -> tuple[int, ...]:
     return _normalize_pair(offset, 0.0, ndim, "offset")
 
 
-def _normalize_scale(scale: Optional[Sequence[float]], ndim: int) -> Tuple[int, ...]:
+def _normalize_scale(scale: Optional[Sequence[float]], ndim: int) -> tuple[int, ...]:
     return _normalize_pair(scale, 1.0, ndim, "scale")
 
 
 def _normalize_pair(
     pair: Optional[Sequence[float]], default: float, ndim: int, name: str
-) -> Tuple[int, ...]:
+) -> tuple[int, ...]:
     if pair is None:
         pair = [default, default]
     elif isinstance(pair, (int, float)):
@@ -325,7 +326,7 @@ def _normalize_pair(
     return (ndim - 2) * (default,) + tuple(pair)
 
 
-def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> Tuple[int, ...]:
+def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> tuple[int, ...]:
     if shape is None:
         return im.shape
     if len(shape) != 2:
@@ -334,8 +335,8 @@ def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> Tuple[int, 
 
 
 def _normalize_chunks(
-    chunks: Optional[Sequence[int]], shape: Tuple[int, ...]
-) -> Optional[Tuple[int, ...]]:
+    chunks: Optional[Sequence[int]], shape: tuple[int, ...]
+) -> Optional[tuple[int, ...]]:
     if chunks is None:
         return None
     if len(chunks) < 2 or len(chunks) > len(shape):
@@ -344,7 +345,7 @@ def _normalize_chunks(
 
 
 def _is_no_op(
-    im: NDImage, scale: Sequence[float], offset: Sequence[float], shape: Tuple[int, ...]
+    im: NDImage, scale: Sequence[float], offset: Sequence[float], shape: tuple[int, ...]
 ):
     return (
         shape == im.shape

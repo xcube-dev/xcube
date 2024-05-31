@@ -4,7 +4,8 @@
 
 import collections.abc
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable, Mapping, Sequence, Union, Tuple, Optional
+from typing import Dict, Any, Callable, Union, Tuple, Optional
+from collections.abc import Mapping, Sequence
 
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
@@ -59,7 +60,7 @@ class JsonSchema(ABC):
         self.factory = factory
         self.serializer = serializer
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = dict()
         if self.type is not None:
             if self.nullable is True and self.type != "null":
@@ -157,7 +158,7 @@ class JsonComplexSchema(JsonSchema):
         self.any_of = any_of
         self.all_of = all_of
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         if self.one_of:
             d.update(oneOf=[schema.to_dict() for schema in self.one_of])
@@ -214,7 +215,7 @@ class JsonStringSchema(JsonSimpleSchema):
         self.min_length = min_length
         self.max_length = max_length
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         if self.format is not None:
             d.update(format=self.format)
@@ -264,7 +265,7 @@ class JsonDateSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
         self.min_date = min_date
         self.max_date = max_date
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         if self.min_date is not None:
             d.update(minDate=self.min_date)
@@ -312,7 +313,7 @@ class JsonDatetimeSchema(JsonStringSchema, JsonDateAndTimeSchemaBase):
         self.min_datetime = min_datetime
         self.max_datetime = max_datetime
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         if self.min_datetime is not None:
             d.update(minDatetime=self.min_datetime)
@@ -374,7 +375,7 @@ class JsonNumberSchema(JsonSimpleSchema):
         self.exclusive_maximum = exclusive_maximum
         self.multiple_of = multiple_of
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         if self.minimum is not None:
             d.update(minimum=self.minimum)
@@ -409,7 +410,7 @@ class JsonArraySchema(JsonSchema):
         self.max_items = max_items
         self.unique_items = unique_items
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         if self.items is not None:
             if isinstance(self.items, JsonSchema):
@@ -478,7 +479,7 @@ class JsonObjectSchema(JsonSchema):
         self.required = list(required) if required else []
         self.dependencies = dict(dependencies) if dependencies else None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d = super().to_dict()
         if self.properties is not None:
             d.update(properties={k: v.to_dict() for k, v in self.properties.items()})
@@ -507,8 +508,8 @@ class JsonObjectSchema(JsonSchema):
 
     # TODO: move away. this is a special-purpose utility
     def process_kwargs_subset(
-        self, kwargs: Dict[str, Any], keywords: Sequence[str]
-    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        self, kwargs: dict[str, Any], keywords: Sequence[str]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Utility that helps to process keyword-arguments.
 
         Pops every keyword in *keywords* contained in this object schema's
@@ -649,7 +650,7 @@ class JsonObjectSchema(JsonSchema):
         return converted_mapping
 
     @classmethod
-    def inject_attrs(cls, obj: object, attrs: Dict[str, Any]):
+    def inject_attrs(cls, obj: object, attrs: dict[str, Any]):
         for k, v in (attrs or {}).items():
             setattr(obj, k, v)
 
@@ -674,15 +675,15 @@ class JsonObject(ABC):
         """Get JSON object schema."""
 
     @classmethod
-    def from_dict(cls, value: Dict[str, Any]) -> "JsonObject":
+    def from_dict(cls, value: dict[str, Any]) -> "JsonObject":
         """Create instance from JSON-serializable dictionary *value*."""
         return cls.get_schema().from_instance(value)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Create JSON-serializable dictionary representation."""
         return self.get_schema().to_instance(self)
 
-    def _inject_attrs(self, attrs: Dict[str, Any]):
+    def _inject_attrs(self, attrs: dict[str, Any]):
         assert_instance(attrs, dict, name="attrs")
         schema = self.get_schema()
         assert_true(

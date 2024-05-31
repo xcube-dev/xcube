@@ -34,7 +34,7 @@ class CoveragesControllersTest(unittest.TestCase):
         path = Path(__file__).parent / "expected.json"
         # with open(path, mode="w") as fp:
         #    json.dump(result, fp, indent=2)
-        with open(path, mode="r") as fp:
+        with open(path) as fp:
             expected_result = json.load(fp)
         self.assertEqual(expected_result, result)
 

@@ -5,7 +5,8 @@
 import os
 from abc import ABC, abstractmethod
 
-from typing import Sequence, Tuple, Iterator, Generic, TypeVar, Any
+from typing import Tuple, Generic, TypeVar, Any
+from collections.abc import Sequence, Iterator
 from typing import Type, List
 from typing import Union
 
@@ -30,14 +31,14 @@ class DataType:
     """
 
     _READTHEDOCS = os.environ.get("READTHEDOCS") == "True"
-    _REGISTERED_DATA_TYPES: List["DataType"] = []
+    _REGISTERED_DATA_TYPES: list["DataType"] = []
 
     @classmethod
     def register_data_type(cls, data_type: "DataType"):
         assert_instance(data_type, DataType, name="data_type")
         cls._REGISTERED_DATA_TYPES.append(data_type)
 
-    def __init__(self, dtype: Type, alias: Union[None, str, Sequence[str]] = None):
+    def __init__(self, dtype: type, alias: Union[None, str, Sequence[str]] = None):
         """
         Args:
             dtype: The Python data type.
@@ -69,7 +70,7 @@ class DataType:
         return hash(self.dtype) + 16 * hash(self.aliases)
 
     @property
-    def dtype(self) -> Type:
+    def dtype(self) -> type:
         """The Python data type."""
         return self._dtype
 
@@ -79,7 +80,7 @@ class DataType:
         return self._aliases[0]
 
     @property
-    def aliases(self) -> Tuple[str, ...]:
+    def aliases(self) -> tuple[str, ...]:
         """All alias names."""
         return tuple(self._aliases)
 
@@ -140,7 +141,7 @@ class DataType:
         return JsonStringSchema(min_length=1, factory=cls.normalize, serializer=str)
 
     @classmethod
-    def _normalize_dtype(cls, data_type: DataTypeLike) -> Type:
+    def _normalize_dtype(cls, data_type: DataTypeLike) -> type:
         if isinstance(data_type, DataType):
             return data_type.dtype
         if isinstance(data_type, type):
@@ -148,7 +149,7 @@ class DataType:
         return cls.normalize(data_type).dtype
 
     @staticmethod
-    def _get_fully_qualified_type_name(data_type: Type) -> str:
+    def _get_fully_qualified_type_name(data_type: type) -> str:
         return f"{data_type.__module__}.{data_type.__name__}"
 
 

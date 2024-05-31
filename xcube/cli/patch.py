@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Dict, Any, MutableMapping
+from typing import Dict, Any
+from collections.abc import MutableMapping
 
 import click
 
@@ -113,8 +114,8 @@ def load_storage_options(options_path):
 
 def patch_dataset(
     dataset_path: str,
-    storage_options: Dict[str, Any],
-    metadata: Dict[str, Any],
+    storage_options: dict[str, Any],
+    metadata: dict[str, Any],
     dry_run: bool,
 ):
     if dataset_path.endswith(".levels"):
@@ -130,8 +131,8 @@ def patch_dataset(
 
 def _patch_dataset(
     dataset_path: str,
-    storage_options: Dict[str, Any],
-    metadata: Dict[str, Any],
+    storage_options: dict[str, Any],
+    metadata: dict[str, Any],
     dry_run: bool,
 ):
     import zarr
@@ -180,13 +181,13 @@ def _patch_dataset(
 
 
 def _open_zarr_store(
-    dataset_path: str, storage_options: Dict[str, Any]
+    dataset_path: str, storage_options: dict[str, Any]
 ) -> MutableMapping[str, bytes]:
     fs, root = get_fs_and_root(dataset_path, storage_options)
     return fs.get_mapper(root=root)
 
 
-def get_fs_and_root(dataset_path: str, storage_options: Dict[str, Any]):
+def get_fs_and_root(dataset_path: str, storage_options: dict[str, Any]):
     import fsspec
 
     protocol, root = fsspec.core.split_protocol(dataset_path)

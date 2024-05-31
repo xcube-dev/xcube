@@ -8,7 +8,7 @@ import math
 import threading
 from typing import Any
 from typing import Callable
-from typing import Mapping
+from collections.abc import Mapping
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -68,13 +68,13 @@ class GridMapping(abc.ABC):
     def __init__(
         self,
         /,
-        size: Union[int, Tuple[int, int]],
-        tile_size: Optional[Union[int, Tuple[int, int]]],
-        xy_bbox: Tuple[Number, Number, Number, Number],
-        xy_res: Union[Number, Tuple[Number, Number]],
+        size: Union[int, tuple[int, int]],
+        tile_size: Optional[Union[int, tuple[int, int]]],
+        xy_bbox: tuple[Number, Number, Number, Number],
+        xy_res: Union[Number, tuple[Number, Number]],
         crs: pyproj.crs.CRS,
-        xy_var_names: Tuple[str, str],
-        xy_dim_names: Tuple[str, str],
+        xy_var_names: tuple[str, str],
+        xy_dim_names: tuple[str, str],
         is_regular: Optional[bool],
         is_lon_360: Optional[bool],
         is_j_axis_up: Optional[bool],
@@ -140,9 +140,9 @@ class GridMapping(abc.ABC):
     def derive(
         self,
         /,
-        xy_var_names: Tuple[str, str] = None,
-        xy_dim_names: Tuple[str, str] = None,
-        tile_size: Union[int, Tuple[int, int]] = None,
+        xy_var_names: tuple[str, str] = None,
+        xy_dim_names: tuple[str, str] = None,
+        tile_size: Union[int, tuple[int, int]] = None,
         is_j_axis_up: bool = None,
     ):
         """Derive a new grid mapping from this one with some properties changed.
@@ -186,8 +186,8 @@ class GridMapping(abc.ABC):
 
     def scale(
         self,
-        xy_scale: Union[Number, Tuple[Number, Number]],
-        tile_size: Union[int, Tuple[int, int]] = None,
+        xy_scale: Union[Number, tuple[Number, Number]],
+        tile_size: Union[int, tuple[int, int]] = None,
     ) -> "GridMapping":
         """Derive a scaled version of this regular grid mapping.
 
@@ -226,7 +226,7 @@ class GridMapping(abc.ABC):
         ).derive(xy_dim_names=self.xy_dim_names, xy_var_names=self.xy_var_names)
 
     @property
-    def size(self) -> Tuple[int, int]:
+    def size(self) -> tuple[int, int]:
         """Image size (width, height) in pixels."""
         return self._size
 
@@ -241,7 +241,7 @@ class GridMapping(abc.ABC):
         return self.size[1]
 
     @property
-    def tile_size(self) -> Tuple[int, int]:
+    def tile_size(self) -> tuple[int, int]:
         """Image tile size (width, height) in pixels."""
         return self._tile_size
 
@@ -296,7 +296,7 @@ class GridMapping(abc.ABC):
         return xy_coords
 
     @property
-    def xy_coords_chunks(self) -> Tuple[int, int, int]:
+    def xy_coords_chunks(self) -> tuple[int, int, int]:
         """Get the chunks for the *xy_coords* array."""
         return 2, self.tile_height, self.tile_width
 
@@ -321,21 +321,21 @@ class GridMapping(abc.ABC):
             return value
 
     @property
-    def xy_var_names(self) -> Tuple[str, str]:
+    def xy_var_names(self) -> tuple[str, str]:
         """The variable names of the x,y coordinates as
         tuple (x_var_name, y_var_name).
         """
         return self._xy_var_names
 
     @property
-    def xy_dim_names(self) -> Tuple[str, str]:
+    def xy_dim_names(self) -> tuple[str, str]:
         """The dimension names of the x,y coordinates as
         tuple (x_dim_name, y_dim_name).
         """
         return self._xy_dim_names
 
     @property
-    def xy_bbox(self) -> Tuple[float, float, float, float]:
+    def xy_bbox(self) -> tuple[float, float, float, float]:
         """The image's bounding box in CRS coordinates."""
         return self._xy_bbox
 
@@ -360,7 +360,7 @@ class GridMapping(abc.ABC):
         return self._xy_bbox[3]
 
     @property
-    def xy_res(self) -> Tuple[Number, Number]:
+    def xy_res(self) -> tuple[Number, Number]:
         """Pixel size in x and y direction."""
         return self._xy_res
 
@@ -476,7 +476,7 @@ class GridMapping(abc.ABC):
         return _from_affine(~a)
 
     @property
-    def ij_bbox(self) -> Tuple[int, int, int, int]:
+    def ij_bbox(self) -> tuple[int, int, int, int]:
         """The image's bounding box in pixel coordinates."""
         return 0, 0, self.width, self.height
 
@@ -514,10 +514,10 @@ class GridMapping(abc.ABC):
 
     def ij_bbox_from_xy_bbox(
         self,
-        xy_bbox: Tuple[float, float, float, float],
+        xy_bbox: tuple[float, float, float, float],
         xy_border: float = 0.0,
         ij_border: int = 0,
-    ) -> Tuple[int, int, int, int]:
+    ) -> tuple[int, int, int, int]:
         """Compute bounding box in i,j pixel coordinates given a
         bounding box *xy_bbox* in x,y coordinates.
 
@@ -645,8 +645,8 @@ class GridMapping(abc.ABC):
 
     def to_coords(
         self,
-        xy_var_names: Tuple[str, str] = None,
-        xy_dim_names: Tuple[str, str] = None,
+        xy_var_names: tuple[str, str] = None,
+        xy_dim_names: tuple[str, str] = None,
         exclude_bounds: bool = False,
         reuse_coords: bool = False,
     ) -> Mapping[str, xr.DataArray]:
@@ -683,8 +683,8 @@ class GridMapping(abc.ABC):
         self,
         crs: Union[str, pyproj.crs.CRS],
         *,
-        tile_size: Union[int, Tuple[int, int]] = None,
-        xy_var_names: Tuple[str, str] = None,
+        tile_size: Union[int, tuple[int, int]] = None,
+        xy_var_names: tuple[str, str] = None,
         tolerance: float = DEFAULT_TOLERANCE,
     ) -> "GridMapping":
         """Transform this grid mapping so it uses the given
@@ -714,12 +714,12 @@ class GridMapping(abc.ABC):
     @classmethod
     def regular(
         cls,
-        size: Union[int, Tuple[int, int]],
-        xy_min: Tuple[float, float],
-        xy_res: Union[float, Tuple[float, float]],
+        size: Union[int, tuple[int, int]],
+        xy_min: tuple[float, float],
+        xy_res: Union[float, tuple[float, float]],
         crs: Union[str, pyproj.crs.CRS],
         *,
-        tile_size: Union[int, Tuple[int, int]] = None,
+        tile_size: Union[int, tuple[int, int]] = None,
         is_j_axis_up: bool = False,
     ) -> "GridMapping":
         """Create a new regular grid mapping.
@@ -748,7 +748,7 @@ class GridMapping(abc.ABC):
         )
 
     def to_regular(
-        self, tile_size: Union[int, Tuple[int, int]] = None, is_j_axis_up: bool = False
+        self, tile_size: Union[int, tuple[int, int]] = None, is_j_axis_up: bool = False
     ) -> "GridMapping":
         """Transform this grid mapping into one that is regular.
 
@@ -773,7 +773,7 @@ class GridMapping(abc.ABC):
         dataset: xr.Dataset,
         *,
         crs: Union[str, pyproj.crs.CRS] = None,
-        tile_size: Union[int, Tuple[int, int]] = None,
+        tile_size: Union[int, tuple[int, int]] = None,
         prefer_is_regular: bool = True,
         prefer_crs: Union[str, pyproj.crs.CRS] = None,
         emit_warnings: bool = False,
@@ -817,7 +817,7 @@ class GridMapping(abc.ABC):
         y_coords: xr.DataArray,
         crs: Union[str, pyproj.crs.CRS],
         *,
-        tile_size: Union[int, Tuple[int, int]] = None,
+        tile_size: Union[int, tuple[int, int]] = None,
         tolerance: float = DEFAULT_TOLERANCE,
     ) -> "GridMapping":
         """Create a grid mapping from given x- and y-coordinates

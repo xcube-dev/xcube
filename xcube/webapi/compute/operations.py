@@ -20,7 +20,7 @@ from xcube.webapi.compute.op.decorator import op_param
     # The rest of the schema is inferred from the function signature.
 )
 def spatial_subset(
-    dataset: xr.Dataset, bbox: Tuple[float, float, float, float]
+    dataset: xr.Dataset, bbox: tuple[float, float, float, float]
 ) -> xr.Dataset:
     """Create a spatial subset from given dataset."""
     x1, y1, x2, y2 = bbox

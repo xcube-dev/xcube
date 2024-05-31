@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Collection, Optional, Tuple, Callable, Dict, Any, List, Mapping
+from typing import Optional, Tuple, Callable, Dict, Any, List
+from collections.abc import Collection, Mapping
 from typing import Union
 
 import cftime
@@ -16,10 +17,10 @@ from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_given
 from xcube.util.timeindex import ensure_time_index_compatible
 
-Bbox = Tuple[float, float, float, float]
+Bbox = tuple[float, float, float, float]
 TimeRange = Union[
-    Tuple[Optional[str], Optional[str]],
-    Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]],
+    tuple[Optional[str], Optional[str]],
+    tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]],
 ]
 
 
@@ -86,9 +87,9 @@ def select_variables_subset(
 
 def select_spatial_subset(
     dataset: xr.Dataset,
-    ij_bbox: Optional[Tuple[int, int, int, int]] = None,
+    ij_bbox: Optional[tuple[int, int, int, int]] = None,
     ij_border: int = 0,
-    xy_bbox: Optional[Tuple[float, float, float, float]] = None,
+    xy_bbox: Optional[tuple[float, float, float, float]] = None,
     xy_border: float = 0.0,
     grid_mapping: Optional[GridMapping] = None,
 ) -> Optional[xr.Dataset]:
@@ -217,7 +218,7 @@ _PREDICATE_SIGNATURE = (
     "predicate(" "slice_array: xr.DataArray, " "slice_info: Dict" ") -> bool"
 )
 
-Predicate = Callable[[xr.DataArray, Dict[str, Any]], bool]
+Predicate = Callable[[xr.DataArray, dict[str, Any]], bool]
 
 
 def select_label_subset(
@@ -327,7 +328,7 @@ def _is_label_valid(
     dataset: xr.Dataset, predicate_lookup: Mapping[str, Predicate], dim: str, index: int
 ) -> da.Array:
     label = dataset[dim][index] if dim in dataset else None
-    results: List[da.Array] = []
+    results: list[da.Array] = []
     for var_name, var in dataset.data_vars.items():
         if dim in var.dims:
             predicate = predicate_lookup.get(var_name)

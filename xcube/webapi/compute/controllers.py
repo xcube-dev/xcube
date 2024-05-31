@@ -23,7 +23,7 @@ def get_compute_operation(ctx: ComputeContext, op_id: str):
     return encode_op(op_id, op)
 
 
-def encode_op(op_id: str, op: Callable) -> Dict[str, Any]:
+def encode_op(op_id: str, op: Callable) -> dict[str, Any]:
     op_info = OpInfo.get_op_info(op)
     op_json = {"operationId": op_id, "parametersSchema": op_info.params_schema}
     doc = inspect.getdoc(op)

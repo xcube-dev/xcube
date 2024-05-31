@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Mapping, Optional, Sequence, Tuple, Union
+from typing import Optional, Tuple, Union
+from collections.abc import Mapping, Sequence
 import warnings
 
 import dask.array as da
@@ -27,13 +28,13 @@ def rectify_dataset(
     target_gm: GridMapping = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     is_j_axis_up: bool = None,
-    output_ij_names: Tuple[str, str] = None,
+    output_ij_names: tuple[str, str] = None,
     compute_subset: bool = True,
     uv_delta: float = 1e-3,
     interpolation: Optional[str] = None,
-    xy_var_names: Tuple[str, str] = None,
+    xy_var_names: tuple[str, str] = None,
 ) -> Optional[xr.Dataset]:
     """Reproject dataset *source_ds* using its per-pixel
     x,y coordinates or the given *source_gm*.
@@ -333,8 +334,8 @@ def _compute_ij_images_xarray_dask(
 def _compute_ij_images_xarray_dask_block(
     dtype: np.dtype,
     block_id: int,
-    block_shape: Tuple[int, int],
-    block_slices: Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]],
+    block_shape: tuple[int, int],
+    block_slices: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
     src_xy_coords: xr.DataArray,
     src_ij_bboxes: np.ndarray,
     dst_x_min: float,

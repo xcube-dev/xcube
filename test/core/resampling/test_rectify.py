@@ -733,7 +733,7 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
     def _assert_shape_and_dim(
         self, target_ds, size, chunks=None, var_names=("rad",)
-    ) -> Tuple[xr.DataArray, ...]:
+    ) -> tuple[xr.DataArray, ...]:
         w, h = size
 
         self.assertIn("lon", target_ds)

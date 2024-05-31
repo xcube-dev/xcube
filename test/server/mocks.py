@@ -4,15 +4,13 @@
 
 from typing import (
     Optional,
-    Sequence,
     Tuple,
     Dict,
     Any,
     Union,
     Callable,
-    Awaitable,
-    Mapping,
 )
+from collections.abc import Sequence, Awaitable, Mapping
 
 from tornado import concurrent
 
@@ -30,7 +28,7 @@ from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry
 
-ApiSpec = Union[Api, str, Tuple[str, Dict[str, Any]]]
+ApiSpec = Union[Api, str, tuple[str, dict[str, Any]]]
 
 ApiSpecs = Sequence[ApiSpec]
 

@@ -4,7 +4,8 @@
 
 import os.path
 import shutil
-from typing import Type, Union, Sequence
+from typing import Type, Union
+from collections.abc import Sequence
 
 import zarr
 
@@ -16,7 +17,7 @@ def optimize_dataset(
     output_path: str = None,
     in_place: bool = False,
     unchunk_coords: Union[bool, str, Sequence[str]] = False,
-    exception_type: Type[Exception] = ValueError,
+    exception_type: type[Exception] = ValueError,
 ):
     """Optimize a dataset for faster access.
 
