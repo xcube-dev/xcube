@@ -32,30 +32,35 @@ class GetTimeSeriesTest(unittest.TestCase):
         self.assert_dataset_ok(ts_ds, 100, {"A_mean", "B_mean"})
 
     def test_polygon_with_grid_mapping(self):
-        crs1 = pyproj.CRS.from_string("EPSG:4326")  # = Geographic
-        crs2 = pyproj.CRS.from_string(
-            "+proj=mill +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +R_A +datum=WGS84 +units=m +no_defs"
-        )  # = World Miller
-        t = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
-        cube = self.cube.rename(dict(lat="y", lon="x"))
-        x, _ = t.transform(cube.x, np.zeros(cube.x.size))
-        _, y = t.transform(
-            np.zeros(cube.y.size),
-            cube.y,
-        )
-        cube = cube.assign_coords(
-            x=xr.DataArray(x, dims="x"),
-            y=xr.DataArray(y, dims="y"),
-        )
-        cube = cube.assign(crs=xr.DataArray(0, attrs=crs2.to_cf()))
-        grid_mapping = GridMapping.from_dataset(cube)
+        gm = GridMapping.from_dataset(self.cube)
+        ts_ds = get_time_series(self.cube, geometry=POLYGON_GEOMETRY, grid_mapping=gm)
+        self.assert_dataset_ok(ts_ds, 100, {"A_mean", "B_mean"})
+
+    def test_polygon_with_var_subset(self):
+        ts_ds = get_time_series(self.cube, geometry=POLYGON_GEOMETRY, var_names=["B"])
+        self.assert_dataset_ok(ts_ds, 100, {"B_mean"})
+
+    def test_polygon_miller_crs(self):
+        ts_ds = get_time_series(self.miller_cube, geometry=POLYGON_GEOMETRY)
+        self.assertIsInstance(ts_ds, xr.Dataset)
+        self.assert_dataset_ok(ts_ds, 40, {"A_mean", "B_mean"})
+
+    def test_polygon_miller_with_grid_mapping(self):
+        grid_mapping = GridMapping.from_dataset(self.miller_cube)
         ts_ds = get_time_series(
-            cube, grid_mapping=grid_mapping, geometry=POLYGON_GEOMETRY
+            self.miller_cube, geometry=POLYGON_GEOMETRY, grid_mapping=grid_mapping
         )
         self.assertIsInstance(ts_ds, xr.Dataset)
-        # TODO (forman): we must actually get a valid
-        #  result here, but we don't
-        # self.assert_dataset_ok(ts_ds, 100, {'A_mean', 'B_mean'})
+        self.assert_dataset_ok(ts_ds, 40, {"A_mean", "B_mean"})
+
+    def test_polygon_miller_with_var_subset(self):
+        # This is the test that reproduced
+        # https://github.com/xcube-dev/xcube/issues/995
+        ts_ds = get_time_series(
+            self.miller_cube, geometry=POLYGON_GEOMETRY, var_names=["B"]
+        )
+        self.assertIsInstance(ts_ds, xr.Dataset)
+        self.assert_dataset_ok(ts_ds, 40, {"B_mean"})
 
     def test_polygon_deprecated_cube_asserted(self):
         ts_ds = get_time_series(
@@ -129,7 +134,7 @@ class GetTimeSeriesTest(unittest.TestCase):
         self.ts_b_mean = np.linspace(0, 1, 25)
         self.ts_b_count = np.array(25 * [100])
         self.ts_b_std = np.array(25 * [0.0])
-        self.cube = new_cube(
+        cube = new_cube(
             time_periods=25,
             variables=dict(
                 A=xr.DataArray(
@@ -140,7 +145,26 @@ class GetTimeSeriesTest(unittest.TestCase):
                 ),
             ),
         )
-        self.cube = self.cube.chunk(chunks=dict(time=1, lat=180, lon=180))
+        self.cube = cube.chunk(chunks=dict(time=1, lat=180, lon=180))
+
+        crs1 = pyproj.CRS.from_string("EPSG:4326")  # = Geographic
+        crs2 = pyproj.CRS.from_string(
+            # World Miller CRS
+            "+proj=mill +lat_0=0 +lon_0=0 +x_0=0 +y_0=0"
+            " +R_A +datum=WGS84 +units=m +no_defs"
+        )
+        t = pyproj.Transformer.from_crs(crs1, crs2, always_xy=True)
+        cube = self.cube.rename(dict(lat="y", lon="x"))
+        x, _ = t.transform(cube.x, np.zeros(cube.x.size))
+        _, y = t.transform(
+            np.zeros(cube.y.size),
+            cube.y,
+        )
+        cube = cube.assign_coords(
+            x=xr.DataArray(x, dims="x"),
+            y=xr.DataArray(y, dims="y"),
+        )
+        self.miller_cube = cube.assign(crs=xr.DataArray(0, attrs=crs2.to_cf()))
 
     def assert_dataset_ok(
         self,

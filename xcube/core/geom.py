@@ -285,8 +285,9 @@ def mask_dataset_by_geometry(
     geometry: GeometryLike,
     tile_size: Union[int, tuple[int, int]] = None,
     excluded_vars: Sequence[str] = None,
-    no_clip: bool = False,
     all_touched: bool = False,
+    no_clip: bool = False,
+    update_attrs: bool = True,
     save_geometry_mask: Union[str, bool] = False,
     save_geometry_wkt: Union[str, bool] = False,
 ) -> Optional[xr.Dataset]:
@@ -304,14 +305,17 @@ def mask_dataset_by_geometry(
             x,y-pair of integers.
         excluded_vars: Optional sequence of names of data variables that
             should not be masked (but still may be clipped).
-        no_clip: If True, the function will not clip the dataset before
-            masking, this is, the returned dataset will have the same
-            dimension size as the given *dataset*.
         all_touched: If True, all pixels intersected by geometry
             outlines will be included in the mask. If False, only pixels
             whose center is within the polygon or that are selected by
             Bresenham’s line algorithm will be included in the mask.
             The default value is set to `False`.
+        no_clip: If True, the function will not clip the dataset before
+            masking, this is, the returned dataset will have the same
+            dimension size as the given *dataset*.
+        update_attrs: If *no_clip* is ``False``, weather to update
+            (spatial) CF attributes of the returned dataset.
+            The default is ``True``.
         save_geometry_mask: If the value is a string, the effective
             geometry mask array is stored as a 2D data variable named by
             *save_geometry_mask*. If the value is True, the name
@@ -335,7 +339,10 @@ def mask_dataset_by_geometry(
 
     if not no_clip:
         dataset = _clip_dataset_by_geometry(
-            dataset, intersection_geometry, xy_var_names
+            dataset,
+            intersection_geometry,
+            xy_var_names,
+            update_attrs=update_attrs,
         )
 
     x_min, y_min, x_max, y_max = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
@@ -437,6 +444,7 @@ def _get_spatial_chunks(
 def clip_dataset_by_geometry(
     dataset: xr.Dataset,
     geometry: GeometryLike,
+    update_attrs: bool = True,
     save_geometry_wkt: Union[str, bool] = False,
 ) -> Optional[xr.Dataset]:
     """Spatially clip a dataset according to the bounding box of a
@@ -446,6 +454,8 @@ def clip_dataset_by_geometry(
         dataset: The dataset
         geometry: A geometry-like object, see
             :func:`normalize_geometry`.
+        update_attrs: Weather to update (spatial) CF attributes
+            of the returned dataset. The default is ``True``.
         save_geometry_wkt: If the value is a string, the effective
             intersection geometry is stored as a Geometry WKT string in
             the global attribute named by *save_geometry*. If the value
@@ -466,6 +476,7 @@ def clip_dataset_by_geometry(
         dataset,
         intersection_geometry,
         xy_var_names,
+        update_attrs=update_attrs,
         save_geometry_wkt=save_geometry_wkt,
     )
 
@@ -474,6 +485,7 @@ def _clip_dataset_by_geometry(
     dataset: xr.Dataset,
     intersection_geometry: shapely.geometry.base.BaseGeometry,
     xy_var_names: tuple[str, str],
+    update_attrs: bool = False,
     save_geometry_wkt: bool = False,
 ) -> Optional[xr.Dataset]:
     # TODO (forman): the following code is wrong,
@@ -506,7 +518,10 @@ def _clip_dataset_by_geometry(
         **{x_var_name: slice(x1, x2), y_var_name: slice(y1, y2)}
     )
 
-    update_dataset_spatial_attrs(dataset_subset, update_existing=True, in_place=True)
+    if update_attrs:
+        update_dataset_spatial_attrs(
+            dataset_subset, update_existing=True, in_place=True
+        )
 
     _save_geometry_wkt(dataset_subset, intersection_geometry, save_geometry_wkt)
 

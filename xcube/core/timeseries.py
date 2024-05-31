@@ -114,6 +114,7 @@ def get_time_series(
         ).transform
         geometry = shapely.ops.transform(project, geometry)
 
+    # Warning: select_variables_subset will remove also "crs" or "spatial_ref"
     dataset = select_variables_subset(cube, var_names)
     if len(dataset.data_vars) == 0:
         return None
@@ -136,7 +137,10 @@ def get_time_series(
 
     if geometry is not None:
         dataset = mask_dataset_by_geometry(
-            dataset, geometry, save_geometry_mask="__mask__"
+            dataset,
+            geometry,
+            update_attrs=False,
+            save_geometry_mask="__mask__",
         )
         if dataset is None:
             return None
