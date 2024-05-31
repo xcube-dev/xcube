@@ -335,6 +335,11 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
+    def test_clip_dataset_but_dont_update_attrs(self):
+        self.cube.attrs.clear()
+        cube = clip_dataset_by_geometry(self.cube, self.triangle, update_attrs=False)
+        self._assert_clipped_dataset_has_basic_props(cube, expect_attrs=False)
+
     def test_clip_dataset_inverse_y(self):
         lat_inv = self.cube.lat[::-1]
         cube = self.cube.assign_coords(lat=lat_inv)
@@ -348,7 +353,9 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
-    def _assert_clipped_dataset_has_basic_props(self, dataset):
+    def _assert_clipped_dataset_has_basic_props(
+        self, dataset, expect_attrs: bool = True
+    ):
         self.assertEqual({"time": 5, "lat": 4, "lon": 7}, dataset.sizes)
         self.assertIn("temp", dataset)
         self.assertIn("precip", dataset)
@@ -359,17 +366,18 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(("time", "lat", "lon"), precip.dims)
         self.assertEqual((5, 4, 7), precip.shape)
 
-        self.assertIn("geospatial_lon_min", dataset.attrs)
-        self.assertIn("geospatial_lon_max", dataset.attrs)
-        self.assertIn("geospatial_lon_units", dataset.attrs)
-        self.assertIn("geospatial_lon_resolution", dataset.attrs)
-        self.assertIn("geospatial_lat_min", dataset.attrs)
-        self.assertIn("geospatial_lat_max", dataset.attrs)
-        self.assertIn("geospatial_lat_units", dataset.attrs)
-        self.assertIn("geospatial_lat_resolution", dataset.attrs)
-        self.assertIn("time_coverage_start", dataset.attrs)
-        self.assertIn("time_coverage_end", dataset.attrs)
-        self.assertIn("date_modified", dataset.attrs)
+        assert_fn = self.assertIn if expect_attrs else self.assertNotIn
+        assert_fn("geospatial_lon_min", dataset.attrs)
+        assert_fn("geospatial_lon_max", dataset.attrs)
+        assert_fn("geospatial_lon_units", dataset.attrs)
+        assert_fn("geospatial_lon_resolution", dataset.attrs)
+        assert_fn("geospatial_lat_min", dataset.attrs)
+        assert_fn("geospatial_lat_max", dataset.attrs)
+        assert_fn("geospatial_lat_units", dataset.attrs)
+        assert_fn("geospatial_lat_resolution", dataset.attrs)
+        assert_fn("time_coverage_start", dataset.attrs)
+        assert_fn("time_coverage_end", dataset.attrs)
+        assert_fn("date_modified", dataset.attrs)
 
     def _assert_dataset_mask_is_fine(self, dataset, mask_var_name):
         self.assertIn(mask_var_name, dataset)
