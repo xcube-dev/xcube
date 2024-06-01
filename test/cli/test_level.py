@@ -21,10 +21,10 @@ class LevelTest(CliTest):
 class LevelDataTest(CliDataTest):
     TEST_OUTPUT = "test.levels"
 
-    def outputs(self) -> List[str]:
+    def outputs(self) -> list[str]:
         return [LevelDataTest.TEST_OUTPUT, "my.levels"]
 
-    def chunks(self) -> Optional[Dict[str, int]]:
+    def chunks(self) -> Optional[dict[str, int]]:
         return dict(time=1, lat=90, lon=180)
 
     def test_all_defaults(self):
@@ -64,7 +64,7 @@ class LevelDataTest(CliDataTest):
         )
 
     def _assert_result_ok(
-        self, result, level_chunks: List[Tuple], output_path: str, message_regex: str
+        self, result, level_chunks: list[tuple], output_path: str, message_regex: str
     ):
         self.assertEqual(0, result.exit_code)
         self.assertRegex(result.stderr, message_regex)

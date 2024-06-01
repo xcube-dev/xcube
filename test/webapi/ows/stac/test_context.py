@@ -4,7 +4,8 @@
 
 
 import unittest
-from typing import Optional, Union, Mapping, Any
+from typing import Optional, Union, Any
+from collections.abc import Mapping
 
 from test.webapi.helpers import get_api_ctx
 from xcube.server.api import Context

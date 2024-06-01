@@ -86,7 +86,7 @@ def chunk(
     with open_dataset(input_path=cube) as ds:
         if chunk_sizes:
             for k in chunk_sizes:
-                if k not in ds.dims:
+                if k not in ds.sizes:
                     raise click.ClickException(
                         "Invalid value for CHUNKS, "
                         f"{k!r} is not the name of any dimension: {chunks}"

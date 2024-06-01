@@ -4,7 +4,8 @@
 
 import json
 import os.path
-from typing import List, Sequence
+from typing import List
+from collections.abc import Sequence
 
 import numpy as np
 import xarray as xr
@@ -48,13 +49,13 @@ def unchunk_dataset(
     _unchunk_vars(dataset_path, var_names)
 
 
-def _unchunk_vars(dataset_path: str, var_names: List[str]):
+def _unchunk_vars(dataset_path: str, var_names: list[str]):
     for var_name in var_names:
         var_path = os.path.join(dataset_path, var_name)
 
         # Optimization: if "shape" and "chunks" are equal in ${var}/.zarray, we are done
         var_array_info_path = os.path.join(var_path, ".zarray")
-        with open(var_array_info_path, "r") as fp:
+        with open(var_array_info_path) as fp:
             var_array_info = json.load(fp)
             if var_array_info.get("shape") == var_array_info.get("chunks"):
                 continue

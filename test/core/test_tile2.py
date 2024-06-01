@@ -116,7 +116,7 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
         )
 
         # Test data variables
-        tiles: List[np.ndarray] = []
+        tiles: list[np.ndarray] = []
         for var_name in ("var_a", "var_b", "var_c"):
             self.assertIn(var_name, dataset.data_vars)
             var = dataset[var_name]
@@ -127,14 +127,14 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
 
         # Test coordinates
         dim_sizes = ("time", 1), ("y", self.tile_h), ("x", self.tile_w)
-        self.assertEqual(dict(dim_sizes), dataset.dims)
+        self.assertEqual(dict(dim_sizes), dataset.sizes)
         for var_name, expected_size in dim_sizes:
             self.assertIn(var_name, dataset.coords)
             var = dataset[var_name]
             self.assertEqual(expected_size, len(var))
 
     def assert_tiles_ok(
-        self, expected_tile_w: int, expected_tile_h: int, actual_tiles: List[np.ndarray]
+        self, expected_tile_w: int, expected_tile_h: int, actual_tiles: list[np.ndarray]
     ):
         self.assertEqual(3, len(actual_tiles))
         for i in range(3):

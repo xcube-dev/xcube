@@ -4,7 +4,8 @@
 
 import os.path
 import uuid
-from typing import Sequence, Any, Dict, Callable, Mapping, Optional, Tuple
+from typing import Any, Dict, Callable, Optional, Tuple
+from collections.abc import Sequence, Mapping
 
 import xarray as xr
 
@@ -67,7 +68,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         input_parameters: Optional[Mapping[str, Any]] = None,
         ds_id: str = "",
         exception_type: type = ValueError,
-    ) -> Tuple[str, Callable]:
+    ) -> tuple[str, Callable]:
         assert_instance(script_path, str, name="script_path")
         assert_given(script_path, name="script_path")
         assert_true(
@@ -134,14 +135,14 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     def _get_grid_mapping_lazily(self) -> GridMapping:
         return self.get_input_dataset(0).grid_mapping
 
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: dict[str, Any]) -> xr.Dataset:
         input_datasets = [
             self._input_ml_dataset_getter(ds_id).get_dataset(index)
             for ds_id in self._input_ml_dataset_ids
         ]
         try:
             with measure_time(
-                tag=f"Computed in-memory dataset" f" {self.ds_id!r} at level {index}"
+                f"Computed in-memory dataset" f" {self.ds_id!r} at level {index}"
             ):
                 computed_value = self._callable_obj(*input_datasets, **parameters)
         except Exception as e:
@@ -173,7 +174,7 @@ def augment_ml_dataset(
     from .identity import IdentityMultiLevelDataset
     from .combined import CombinedMultiLevelDataset
 
-    with measure_time(tag=f"Added augmentation from {script_path}"):
+    with measure_time(f"Added augmentation from {script_path}"):
         orig_id = ml_dataset.ds_id
         aug_id = uuid.uuid4()
         aug_inp_id = f"aug-input-{aug_id}"
@@ -202,7 +203,7 @@ def open_ml_dataset_from_python_code(
     ds_id: str = "",
     exception_type: type = ValueError,
 ) -> MultiLevelDataset:
-    with measure_time(tag=f"Opened memory dataset {script_path}"):
+    with measure_time(f"Opened memory dataset {script_path}"):
         return _open_ml_dataset_from_python_code(
             script_path,
             callable_name,

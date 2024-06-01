@@ -86,7 +86,7 @@ def new_data_writer(
 def find_data_opener_extensions(
     predicate: ExtensionPredicate = None,
     extension_registry: Optional[ExtensionRegistry] = None,
-) -> List[Extension]:
+) -> list[Extension]:
     """Get registered data opener extensions using the optional
     filter function *predicate*.
 
@@ -107,7 +107,7 @@ def find_data_opener_extensions(
 def find_data_writer_extensions(
     predicate: ExtensionPredicate = None,
     extension_registry: Optional[ExtensionRegistry] = None,
-) -> List[Extension]:
+) -> list[Extension]:
     """Get registered data writer extensions using the optional filter
     function *predicate*.
 

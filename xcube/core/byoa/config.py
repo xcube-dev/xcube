@@ -56,7 +56,7 @@ class CodeConfig(JsonObject):
         self,
         _callable: Callable = None,
         callable_ref: str = None,
-        callable_params: Dict[str, Any] = None,
+        callable_params: dict[str, Any] = None,
         inline_code: str = None,
         file_set: FileSet = None,
         install_required: bool = None,
@@ -110,7 +110,7 @@ class CodeConfig(JsonObject):
         *code: Union[str, Callable],
         callable_name: str = None,
         module_name: str = None,
-        callable_params: Dict[str, Any] = None,
+        callable_params: dict[str, Any] = None,
     ) -> "CodeConfig":
         """Create a code configuration from the given *code* which may be
         given as one or more plain text strings or callables.
@@ -145,7 +145,7 @@ class CodeConfig(JsonObject):
 
     @classmethod
     def from_callable(
-        cls, _callable: Callable, callable_params: Optional[Dict[str, Any]] = None
+        cls, _callable: Callable, callable_params: Optional[dict[str, Any]] = None
     ) -> "CodeConfig":
         """Create a code configuration from the callable *_callable*.
 
@@ -173,7 +173,7 @@ class CodeConfig(JsonObject):
         cls,
         file_set: Union[FileSet, str, Any],
         callable_ref: str,
-        callable_params: Optional[Dict[str, Any]] = None,
+        callable_params: Optional[dict[str, Any]] = None,
         install_required: Optional[bool] = None,
     ) -> "CodeConfig":
         """Create a code configuration from a file set.
@@ -210,7 +210,7 @@ class CodeConfig(JsonObject):
         gh_tag: str,
         gh_release: str,
         callable_ref: str,
-        callable_params: Optional[Dict[str, Any]] = None,
+        callable_params: Optional[dict[str, Any]] = None,
         gh_username: Optional[str] = None,
         gh_token: Optional[str] = None,
     ):
@@ -462,7 +462,7 @@ def _next_user_module_name() -> str:
 
 
 def _callable_to_module(
-    _callable: Callable, callable_params: Dict[str, Any] = None
+    _callable: Callable, callable_params: dict[str, Any] = None
 ) -> CodeConfig:
     """Create a code configuration from the callable *_callable*.
 
@@ -512,7 +512,7 @@ def _callable_to_module(
 
 
 def _inline_code_to_module(
-    inline_code: str, callable_ref: str, callable_params: Dict[str, Any] = None
+    inline_code: str, callable_ref: str, callable_params: dict[str, Any] = None
 ):
     module_name, callable_name = _normalize_callable_ref(callable_ref)
     dir_path = new_temp_dir(prefix=TEMP_FILE_PREFIX)
@@ -532,10 +532,10 @@ def _normalize_file_set(file_set: Union[FileSet, str, Any]) -> FileSet:
 
 
 def _normalize_inline_code(
-    code: Tuple[Union[str, Callable], ...],
+    code: tuple[Union[str, Callable], ...],
     callable_name: str = None,
     module_name: str = None,
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     if not callable_name:
         first_callable = next(filter(callable, code), None)
         if first_callable is not None:
@@ -552,7 +552,7 @@ def _normalize_inline_code(
     return inline_code, f"{module_name}:{callable_name}"
 
 
-def _normalize_callable_ref(callable_ref: str) -> Tuple[Optional[str], str]:
+def _normalize_callable_ref(callable_ref: str) -> tuple[Optional[str], str]:
     """Normalize a callable reference *callable_ref* of the form
     "[module_name:]callable_name" into a pair.
     """
@@ -560,7 +560,7 @@ def _normalize_callable_ref(callable_ref: str) -> Tuple[Optional[str], str]:
 
     splits = callable_ref.split(":")
     if len(splits) == 2:
-        module_name, callable_name = [s.strip() for s in splits]
+        module_name, callable_name = (s.strip() for s in splits)
     else:
         module_name, callable_name = "", ""
 

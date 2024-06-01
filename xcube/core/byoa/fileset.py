@@ -6,7 +6,8 @@ import fnmatch
 import os.path
 import re
 import zipfile
-from typing import Any, Dict, Optional, List, Collection, Iterator, Union
+from typing import Any, Dict, Optional, List, Union
+from collections.abc import Collection, Iterator
 
 import fsspec
 import fsspec.implementations.zip
@@ -42,7 +43,7 @@ class _FileSetDetails:
         self._mapper: Optional[fsspec.FSMap] = None
 
     @classmethod
-    def new(cls, path: str, storage_params: Dict[str, Any] = None) -> "_FileSetDetails":
+    def new(cls, path: str, storage_params: dict[str, Any] = None) -> "_FileSetDetails":
         try:
             fs, root = fsspec.core.url_to_fs(path, **(storage_params or {}))
         except (ImportError, OSError) as e:
@@ -128,7 +129,7 @@ class FileSet(JsonObject):
         sub_path: str = None,
         includes: Collection[str] = None,
         excludes: Collection[str] = None,
-        storage_params: Dict[str, Any] = None,
+        storage_params: dict[str, Any] = None,
     ):
         assert_instance(path, str, "path")
         assert_given(path, "path")
@@ -174,19 +175,19 @@ class FileSet(JsonObject):
         return self._sub_path
 
     @property
-    def storage_params(self) -> Optional[Dict[str, Any]]:
+    def storage_params(self) -> Optional[dict[str, Any]]:
         """Get optional parameters for the file system
         :attribute:path is referring to.
         """
         return self._storage_params
 
     @property
-    def includes(self) -> Optional[List[str]]:
+    def includes(self) -> Optional[list[str]]:
         """Wildcard patterns used to include a file."""
         return self._includes
 
     @property
-    def excludes(self) -> Optional[List[str]]:
+    def excludes(self) -> Optional[list[str]]:
         """Wildcard patterns used to exclude a file."""
         return self._excludes
 
@@ -395,7 +396,7 @@ class FileSet(JsonObject):
         return self._get_details().fs
 
 
-def _key_matches(key: str, patterns: List[re.Pattern], empty_value: bool) -> bool:
+def _key_matches(key: str, patterns: list[re.Pattern], empty_value: bool) -> bool:
     if not patterns:
         return empty_value
     for pattern in patterns:
@@ -404,7 +405,7 @@ def _key_matches(key: str, patterns: List[re.Pattern], empty_value: bool) -> boo
     return False
 
 
-def _translate_patterns(patterns: Optional[Collection[str]]) -> List[re.Pattern]:
+def _translate_patterns(patterns: Optional[Collection[str]]) -> list[re.Pattern]:
     return [
         re.compile(fnmatch.translate(np))
         for p in patterns
@@ -423,7 +424,7 @@ def _normalize_sub_path(sub_path: str) -> str:
     return sub_path or ""
 
 
-def _normalize_pattern(pattern: str) -> List[str]:
+def _normalize_pattern(pattern: str) -> list[str]:
     pattern = pattern.replace(os.path.sep, "/")
     start_sep = pattern.startswith("/")
     end_sep = pattern.endswith("/")

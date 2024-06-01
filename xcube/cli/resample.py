@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Sequence, Dict, Any
+from typing import Dict, Any
+from collections.abc import Sequence
 
 import click
 
@@ -104,9 +105,6 @@ DEFAULT_INTERPOLATION_KIND = "linear"
     "Some Pandas date offset strings are supported as well.",
 )
 @click.option(
-    "--base", "-B", type=int, help="Deprecated since xcube 1.0.4. No longer used."
-)
-@click.option(
     "--kind",
     "-K",
     type=str,
@@ -146,7 +144,6 @@ def resample(
     method,
     frequency,
     offset,
-    base,
     kind,
     tolerance,
     quiet,
@@ -155,9 +152,6 @@ def resample(
 ):
     """Resample data along the time dimension."""
     configure_cli_output(quiet=quiet, verbosity=verbosity)
-
-    if base is not None:
-        warnings.warn("Option 'base' is deprecated and no longer used.")
 
     input_path = cube
     config_files = config
@@ -212,7 +206,7 @@ def resample(
 def _resample_in_time(
     input_path: str = None,
     variables: Sequence[str] = None,
-    metadata: Dict[str, Any] = None,
+    metadata: dict[str, Any] = None,
     output_path: str = DEFAULT_OUTPUT_PATH,
     output_format: str = None,
     methods: Sequence[str] = (DEFAULT_RESAMPLING_METHOD,),

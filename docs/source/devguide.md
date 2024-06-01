@@ -358,6 +358,13 @@ you need to adjust the paths accordingly.
 Go through the same procedure for all xcube plugin packages 
 dependent on this version of xcube.
 
+### Release on PyPI
+
+The release on [PyPI](https://pypi.org/project/xcube-core/) is performed
+automatically after each GitHub release via GitHub actions following the
+workflow documented in `.github/workflows/xcube_publish_pypi.yml`. Note
+that the package name on PyPI is `xcube-core`.
+
 ### Release on Conda-Forge
 
 These instructions are based on the documentation at 

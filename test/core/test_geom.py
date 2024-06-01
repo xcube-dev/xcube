@@ -13,10 +13,8 @@ import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
 from xcube.core.geom import clip_dataset_by_geometry
-from xcube.core.geom import convert_geometry
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.geom import get_dataset_geometry
-from xcube.core.geom import is_dataset_y_axis_inverted
 from xcube.core.geom import is_lon_lat_dataset
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.geom import normalize_geometry
@@ -337,6 +335,11 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
+    def test_clip_dataset_but_dont_update_attrs(self):
+        self.cube.attrs.clear()
+        cube = clip_dataset_by_geometry(self.cube, self.triangle, update_attrs=False)
+        self._assert_clipped_dataset_has_basic_props(cube, expect_attrs=False)
+
     def test_clip_dataset_inverse_y(self):
         lat_inv = self.cube.lat[::-1]
         cube = self.cube.assign_coords(lat=lat_inv)
@@ -350,8 +353,10 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.temp.chunks)
         self.assertEqual(((1, 1, 1, 1, 1), (4,), (7,)), cube.precip.chunks)
 
-    def _assert_clipped_dataset_has_basic_props(self, dataset):
-        self.assertEqual({"time": 5, "lat": 4, "lon": 7}, dataset.dims)
+    def _assert_clipped_dataset_has_basic_props(
+        self, dataset, expect_attrs: bool = True
+    ):
+        self.assertEqual({"time": 5, "lat": 4, "lon": 7}, dataset.sizes)
         self.assertIn("temp", dataset)
         self.assertIn("precip", dataset)
         temp = dataset["temp"]
@@ -361,17 +366,18 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertEqual(("time", "lat", "lon"), precip.dims)
         self.assertEqual((5, 4, 7), precip.shape)
 
-        self.assertIn("geospatial_lon_min", dataset.attrs)
-        self.assertIn("geospatial_lon_max", dataset.attrs)
-        self.assertIn("geospatial_lon_units", dataset.attrs)
-        self.assertIn("geospatial_lon_resolution", dataset.attrs)
-        self.assertIn("geospatial_lat_min", dataset.attrs)
-        self.assertIn("geospatial_lat_max", dataset.attrs)
-        self.assertIn("geospatial_lat_units", dataset.attrs)
-        self.assertIn("geospatial_lat_resolution", dataset.attrs)
-        self.assertIn("time_coverage_start", dataset.attrs)
-        self.assertIn("time_coverage_end", dataset.attrs)
-        self.assertIn("date_modified", dataset.attrs)
+        assert_fn = self.assertIn if expect_attrs else self.assertNotIn
+        assert_fn("geospatial_lon_min", dataset.attrs)
+        assert_fn("geospatial_lon_max", dataset.attrs)
+        assert_fn("geospatial_lon_units", dataset.attrs)
+        assert_fn("geospatial_lon_resolution", dataset.attrs)
+        assert_fn("geospatial_lat_min", dataset.attrs)
+        assert_fn("geospatial_lat_max", dataset.attrs)
+        assert_fn("geospatial_lat_units", dataset.attrs)
+        assert_fn("geospatial_lat_resolution", dataset.attrs)
+        assert_fn("time_coverage_start", dataset.attrs)
+        assert_fn("time_coverage_end", dataset.attrs)
+        assert_fn("date_modified", dataset.attrs)
 
     def _assert_dataset_mask_is_fine(self, dataset, mask_var_name):
         self.assertIn(mask_var_name, dataset)
@@ -632,9 +638,6 @@ class NormalizeGeometryTest(unittest.TestCase):
             normalize_geometry([12.8, -34.4, "?"])
         self.assertEqual(_INVALID_GEOMETRY_MSG, f"{cm.exception}")
 
-    def test_deprecated(self):
-        self.assertEqual(None, convert_geometry(None))
-
 
 class HelpersTest(unittest.TestCase):
     def test_is_lon_lat_dataset(self):
@@ -649,10 +652,3 @@ class HelpersTest(unittest.TestCase):
         dataset.x.attrs.update(long_name="longitude")
         dataset.y.attrs.update(long_name="latitude")
         self.assertTrue(is_lon_lat_dataset(dataset))
-
-    def test_is_dataset_y_axis_inverted(self):
-        dataset = new_cube()
-        self.assertTrue(is_dataset_y_axis_inverted(dataset))
-
-        dataset = new_cube(inverse_y=True)
-        self.assertFalse(is_dataset_y_axis_inverted(dataset))

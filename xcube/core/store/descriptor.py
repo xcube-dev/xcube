@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Tuple, Sequence, Mapping, Optional, Dict, Any, Union, Hashable
+from typing import Tuple, Optional, Dict, Any, Union
+from collections.abc import Sequence, Mapping, Hashable
 
 import dask.array
 import geopandas as gpd
@@ -74,8 +75,8 @@ def new_data_descriptor(
 
 def _get_common_dataset_descriptor_props(
     data_id: str, dataset: Union[xr.Dataset, MultiLevelDataset]
-) -> Dict[str, Any]:
-    dims = {str(k): v for k, v in dataset.dims.items()}
+) -> dict[str, Any]:
+    dims = {str(k): v for k, v in dataset.sizes.items()}
     coords = _build_variable_descriptor_dict(dataset.coords)
     data_vars = _build_variable_descriptor_dict(dataset.data_vars)
     spatial_res = _determine_spatial_res(dataset)
@@ -119,8 +120,8 @@ class DataDescriptor(JsonObject):
         data_type: DataTypeLike,
         *,
         crs: str = None,
-        bbox: Tuple[float, float, float, float] = None,
-        time_range: Tuple[Optional[str], Optional[str]] = None,
+        bbox: tuple[float, float, float, float] = None,
+        time_range: tuple[Optional[str], Optional[str]] = None,
         time_period: str = None,
         open_params_schema: JsonObjectSchema = None,
         **additional_properties,
@@ -199,8 +200,8 @@ class DatasetDescriptor(DataDescriptor):
         *,
         data_type: DataTypeLike = DATASET_TYPE,
         crs: str = None,
-        bbox: Tuple[float, float, float, float] = None,
-        time_range: Tuple[Optional[str], Optional[str]] = None,
+        bbox: tuple[float, float, float, float] = None,
+        time_range: tuple[Optional[str], Optional[str]] = None,
         time_period: str = None,
         spatial_res: float = None,
         dims: Mapping[str, int] = None,
@@ -424,7 +425,7 @@ def _build_variable_descriptor_dict(variables) -> Mapping[str, "VariableDescript
     }
 
 
-def _determine_bbox(data: xr.Dataset) -> Optional[Tuple[float, float, float, float]]:
+def _determine_bbox(data: xr.Dataset) -> Optional[tuple[float, float, float, float]]:
     try:
         return get_dataset_bounds(data)
     except ValueError:
@@ -493,8 +494,8 @@ def _determine_time_period(data: xr.Dataset):
             return time_period.split("T")[0]
 
 
-def _attrs_to_json(attrs: Mapping[Hashable, Any]) -> Optional[Dict[str, Any]]:
-    new_attrs: Dict[str, Any] = {}
+def _attrs_to_json(attrs: Mapping[Hashable, Any]) -> Optional[dict[str, Any]]:
+    new_attrs: dict[str, Any] = {}
     for k, v in attrs.items():
         if isinstance(v, np.ndarray):
             v = v.tolist()

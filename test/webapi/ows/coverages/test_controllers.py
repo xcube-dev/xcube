@@ -34,7 +34,7 @@ class CoveragesControllersTest(unittest.TestCase):
         path = Path(__file__).parent / "expected.json"
         # with open(path, mode="w") as fp:
         #    json.dump(result, fp, indent=2)
-        with open(path, mode="r") as fp:
+        with open(path) as fp:
             expected_result = json.load(fp)
         self.assertEqual(expected_result, result)
 
@@ -104,7 +104,7 @@ class CoveragesControllersTest(unittest.TestCase):
             with open(path, "wb") as fh:
                 fh.write(content)
             ds = xr.open_dataset(path)
-            self.assertEqual({"lat": 200, "lon": 200, "time": 2, "bnds": 2}, ds.dims)
+            self.assertEqual({"lat": 200, "lon": 200, "time": 2, "bnds": 2}, ds.sizes)
             self.assertEqual({"conc_chl", "kd489", "crs"}, set(ds.data_vars))
             self.assertEqual(
                 {
@@ -145,7 +145,7 @@ class CoveragesControllersTest(unittest.TestCase):
             with open(path, "wb") as fh:
                 fh.write(content)
             ds = xr.open_dataset(path)
-            self.assertEqual({"lat": 100, "lon": 100, "time": 2, "bnds": 2}, ds.dims)
+            self.assertEqual({"lat": 100, "lon": 100, "time": 2, "bnds": 2}, ds.sizes)
             self.assertEqual({"conc_chl", "spatial_ref"}, set(ds.data_vars))
             self.assertEqual(
                 {
@@ -249,7 +249,7 @@ class CoveragesControllersTest(unittest.TestCase):
                 fh.write(content)
             with xr.open_dataset(path) as ds:
                 self.assertEqual(
-                    {"lat": 400, "lon": 400, "time": 5, "bnds": 2}, ds.dims
+                    {"lat": 400, "lon": 400, "time": 5, "bnds": 2}, ds.sizes
                 )
 
     def test_get_crs_from_dataset(self):

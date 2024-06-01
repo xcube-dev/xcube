@@ -4,7 +4,8 @@
 
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Collection, Dict, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
+from collections.abc import Collection, Mapping
 
 import numpy as np
 import xarray as xr
@@ -40,11 +41,11 @@ class ReprojectionInfo:
 
     def __init__(
         self,
-        xy_names: Tuple[str, str] = None,
-        xy_tp_names: Tuple[str, str] = None,
+        xy_names: tuple[str, str] = None,
+        xy_tp_names: tuple[str, str] = None,
         xy_crs: Any = None,
-        xy_gcp_step: Union[int, Tuple[int, int]] = None,
-        xy_tp_gcp_step: Union[int, Tuple[int, int]] = None,
+        xy_gcp_step: Union[int, tuple[int, int]] = None,
+        xy_tp_gcp_step: Union[int, tuple[int, int]] = None,
     ):
         self._xy_names = self._assert_name_pair("xy_names", xy_names)
         self._xy_tp_names = self._assert_name_pair("xy_tp_names", xy_tp_names)
@@ -54,11 +55,11 @@ class ReprojectionInfo:
 
     def derive(
         self,
-        xy_names: Tuple[str, str] = None,
-        xy_tp_names: Tuple[str, str] = None,
+        xy_names: tuple[str, str] = None,
+        xy_tp_names: tuple[str, str] = None,
         xy_crs: Any = None,
-        xy_gcp_step: Union[int, Tuple[int, int]] = None,
-        xy_tp_gcp_step: Union[int, Tuple[int, int]] = None,
+        xy_gcp_step: Union[int, tuple[int, int]] = None,
+        xy_tp_gcp_step: Union[int, tuple[int, int]] = None,
     ):
         return ReprojectionInfo(
             self.xy_names if xy_names is None else xy_names,
@@ -71,11 +72,11 @@ class ReprojectionInfo:
         )
 
     @property
-    def xy_names(self) -> Optional[Tuple[str, str]]:
+    def xy_names(self) -> Optional[tuple[str, str]]:
         return self._xy_names
 
     @property
-    def xy_tp_names(self) -> Optional[Tuple[str, str]]:
+    def xy_tp_names(self) -> Optional[tuple[str, str]]:
         return self._xy_tp_names
 
     @property
@@ -147,7 +148,7 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         return self.get_metadata_attr("description", "")
 
     @property
-    def default_parameters(self) -> Dict[str, Any]:
+    def default_parameters(self) -> dict[str, Any]:
         return {}
 
     @property
@@ -166,7 +167,7 @@ class InputProcessor(ExtensionComponent, metaclass=ABCMeta):
         return self.parameters.get("input_reader_params", {})
 
     @abstractmethod
-    def get_time_range(self, dataset: xr.Dataset) -> Optional[Tuple[float, float]]:
+    def get_time_range(self, dataset: xr.Dataset) -> Optional[tuple[float, float]]:
         """Return a tuple of two floats representing start/stop time (which may be same) in days since 1970.
 
         Args:
@@ -281,7 +282,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
     """
 
     @property
-    def default_parameters(self) -> Dict[str, Any]:
+    def default_parameters(self) -> dict[str, Any]:
         default_parameters = super().default_parameters
         default_parameters.update(xy_names=("lon", "lat"))
         return default_parameters
@@ -422,7 +423,7 @@ class DefaultInputProcessor(XYInputProcessor):
         super().__init__("default", **parameters)
 
     @property
-    def default_parameters(self) -> Dict[str, Any]:
+    def default_parameters(self) -> dict[str, Any]:
         default_parameters = super().default_parameters
         default_parameters.update(
             input_reader="netcdf4", xy_names=("lon", "lat"), xy_crs=CRS_WKT_EPSG_4326
@@ -432,13 +433,13 @@ class DefaultInputProcessor(XYInputProcessor):
     def pre_process(self, dataset: xr.Dataset) -> xr.Dataset:
         self._validate(dataset)
 
-        if "time" in dataset.dims:
+        if "time" in dataset.sizes:
             # Remove time dimension of length 1.
             dataset = dataset.squeeze("time")
 
         return _normalize_lon_360(dataset)
 
-    def get_time_range(self, dataset: xr.Dataset) -> Tuple[float, float]:
+    def get_time_range(self, dataset: xr.Dataset) -> tuple[float, float]:
         time_coverage_start, time_coverage_end = get_time_range_from_data(dataset)
         if time_coverage_start is not None:
             time_coverage_start = str(time_coverage_start)
@@ -459,7 +460,7 @@ class DefaultInputProcessor(XYInputProcessor):
     def _validate(self, dataset):
         self._check_coordinate_var(dataset, "lon", min_length=2)
         self._check_coordinate_var(dataset, "lat", min_length=2)
-        if "time" in dataset.dims:
+        if "time" in dataset.sizes:
             self._check_coordinate_var(dataset, "time", max_length=1)
             required_dims = ("time", "lat", "lon")
         else:

@@ -4,7 +4,8 @@
 
 import collections.abc
 from abc import abstractmethod, ABC
-from typing import Generic, TypeVar, Tuple, Any, Iterable, Dict, List, Sequence, Mapping
+from typing import Generic, TypeVar, Tuple, Any, Dict, List
+from collections.abc import Iterable, Sequence, Mapping
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -30,14 +31,14 @@ class Frozen(ABC):
         """
 
 
-class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
+class FrozenDict(dict[K, V], Frozen, Generic[K, V]):
     """A frozen version of a standard ``dict``."""
 
     @classmethod
     def freeze(cls, other: Mapping) -> "FrozenDict":
         return FrozenDict({key: freeze_value(value) for key, value in other.items()})
 
-    def defrost(self) -> Dict[K, V]:
+    def defrost(self) -> dict[K, V]:
         return {key: defrost_value(value) for key, value in self.items()}
 
     ###########################################################
@@ -49,7 +50,7 @@ class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
     def pop(self, *args, **kwargs) -> V:
         raise TypeError(_DICT_IS_READONLY)
 
-    def popitem(self) -> Tuple[K, V]:
+    def popitem(self) -> tuple[K, V]:
         raise TypeError(_DICT_IS_READONLY)
 
     def update(self, *args, **kwargs) -> None:
@@ -68,14 +69,14 @@ class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
         raise TypeError(_DICT_IS_READONLY)
 
 
-class FrozenList(List[V], Frozen, Generic[V]):
+class FrozenList(list[V], Frozen, Generic[V]):
     """A frozen version of a standard ``list``."""
 
     @classmethod
     def freeze(cls, other: Sequence[V]) -> "FrozenList":
         return FrozenList(freeze_value(item) for item in other)
 
-    def defrost(self) -> List[V]:
+    def defrost(self) -> list[V]:
         return [defrost_value(item) for item in self]
 
     ###########################################################

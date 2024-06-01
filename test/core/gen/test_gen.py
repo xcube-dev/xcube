@@ -4,7 +4,8 @@
 
 import os
 import unittest
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 import xarray as xr
@@ -731,11 +732,11 @@ class DefaultProcessTest(unittest.TestCase):
         self,
         cube: xr.Dataset,
         expected_time_dim: int,
-        expected_extra_attrs: Dict[str, Any],
+        expected_extra_attrs: dict[str, Any],
         expected_output_vars: Sequence[str] = ("analysed_sst",),
     ):
         self.assertEqual(
-            {"lat": 180, "lon": 320, "bnds": 2, "time": expected_time_dim}, cube.dims
+            {"lat": 180, "lon": 320, "bnds": 2, "time": expected_time_dim}, cube.sizes
         )
         self.assertEqual(
             {"lon", "lat", "time", "lon_bnds", "lat_bnds", "time_bnds"},
@@ -813,7 +814,7 @@ def gen_cube_wrapper(
     input_processor_name=None,
     processed_variables=None,
     output_variables=(("analysed_sst", None),),
-) -> Tuple[bool, Optional[str]]:
+) -> tuple[bool, Optional[str]]:
     output = None
 
     def output_monitor(msg):

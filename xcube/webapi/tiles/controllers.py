@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Mapping, Dict
+from typing import Optional, Dict
+from collections.abc import Mapping
 
 from xcube.constants import LOG
 from xcube.core.tile import DEFAULT_CRS_NAME
@@ -43,11 +44,11 @@ def _compute_ml_dataset_tile(
     x: str,
     y: str,
     z: str,
-    args: Dict[str, str],
+    args: dict[str, str],
     trace_perf: bool,
 ):
     try:
-        x, y, z = [int(c) for c in (x, y, z)]
+        x, y, z = (int(c) for c in (x, y, z))
     except ValueError:
         raise ApiError.BadRequest("x, y, z must be integers")
 

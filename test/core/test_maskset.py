@@ -118,7 +118,7 @@ class MaskSetTest(unittest.TestCase):
         self,
         mask_set: MaskSet,
         mask_name: str,
-        expected_chunks: Tuple[Tuple[int, ...], ...] = None,
+        expected_chunks: tuple[tuple[int, ...], ...] = None,
     ):
         mask = getattr(mask_set, mask_name)
 

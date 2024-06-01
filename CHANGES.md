@@ -47,14 +47,60 @@
   `Tuple[matplotlib.colors.Colormap, Colormap]` instead of
   `Tuple[str, matplotlib.colors.Colormap]`.
 
+* Removed API deprecated since many releases:
+  - Removed keyword argument `base` from function 
+    `xcube.core.resampling.temporal.resample_in_time()`.
+  - Removed option `base` from CLI command `xcube resample`.
+  - Removed keyword argument `assert_cube` from 
+    `xcube.core.timeseries.get_time_series()`.
+  - Removed property `xcube.core.xarray.DatasetAccessor.levels`.
+  - Removed function `xcube.core.tile.parse_non_spatial_labels()`.
+  - Removed keyword argument `tag` from context manager 
+    `xcube.util.perf.measure_time()`.
+  - Removed function `xcube.core.geom.convert_geometry()`.
+  - Removed function `xcube.core.geom.is_dataset_y_axis_inverted()`.
+  - Removed function `xcube.util.assertions.assert_condition()`.
+  - Removed function `xcube.util.cmaps.get_cmaps()`.
+  - Removed function `xcube.util.cmaps.get_cmap()`.
+  - Removed function `xcube.util.cmaps.ensure_cmaps_loaded()`.
+  - Removed endpoint `/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}`
+    from xcube server.
+
+### Fixes
+
+* Fixed an issue with xcube server `/timeseries` endpoint that returned
+  status 500 if a given dataset used a CRS other geographic and the 
+  geometry was not a point. (#995) 
+
+* Fixed broken table of contents links in dataset convention document.
+
 ### Other changes
 
 * Make tests compatible with PyTest 8.2.0. (#973)
 
-* Fix broken table of contents links in dataset convention document.
+* Addressed all warnings from xarray indicating that `Dataset.dims` will
+  be replaced by `Dataset.sizes`. (#981)
 
-* NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow (#946)
+* NUMBA_DISABLE_JIT set to `0` to enable `numba.jit` in github workflow. (#946)
 
+* Added GitHub workflow to perform an automatic xcube release on PyPI after a GitHub
+  release. To install xcube via the `pip` tool use `pip install xcube-core`,  
+  since the name "xcube" is already taken on PyPI by another software. (#982)
+
+* Added project URLs and classifiers to `setup.py`, which will be shown in the
+  left sidebar on the [PyPI xcube-core](https://pypi.org/project/xcube-core/) webpage.
+
+* Refactored xcube workflow to build docker images only on release and deleted the 
+  update xcube tag job.
+
+* Used [`pyupgrade`](https://github.com/asottile/pyupgrade) to automatically upgrade
+  language syntax for Python versions >= 3.9.
+
+* Migrated the xcube project setup from `setup.py` to the modern `pyproject.toml` format.
+
+* The functions `mask_dataset_by_geometry()` and `clip_dataset_by_geometry()`
+  of module `xcube.core.geom` have a new keyword argument 
+  `update_attrs: bool = True` as part of the fix for #995.
 
 ## Changes in 1.5.1
 

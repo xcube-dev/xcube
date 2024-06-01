@@ -3,15 +3,16 @@
 # https://opensource.org/licenses/MIT.
 
 import os
-from typing import Set, Mapping, Tuple, Union
+from typing import Set, Tuple, Union
+from collections.abc import Mapping
 
 import xarray as xr
 
 
 def open_sentinel3_product(
     path: str,
-    var_names: Set[str] = None,
-    chunks: Mapping[str, Union[int, Tuple[int, ...]]] = None,
+    var_names: set[str] = None,
+    chunks: Mapping[str, Union[int, tuple[int, ...]]] = None,
 ) -> xr.Dataset:
     """Open a Sentinel-3 product from given path.
 
@@ -28,9 +29,9 @@ def open_sentinel3_product(
     y_name = "latitude"
     data_vars = {}
     geo_vars_file_name = "geo_coordinates.nc"
-    file_names = set(
+    file_names = {
         file_name for file_name in os.listdir(path) if file_name.endswith(".nc")
-    )
+    }
     if geo_vars_file_name not in file_names:
         raise ValueError(f"missing file {geo_vars_file_name!r} in {path}")
     file_names.remove(geo_vars_file_name)

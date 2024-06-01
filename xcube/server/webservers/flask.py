@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import concurrent.futures
-from typing import Sequence, Union, Callable, Optional, Any, Awaitable, Tuple
+from typing import Union, Callable, Optional, Any, Tuple
+from collections.abc import Sequence, Awaitable
 
 from xcube.server.api import ApiRoute
 from xcube.server.api import ApiStaticRoute

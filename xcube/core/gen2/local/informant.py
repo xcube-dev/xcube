@@ -6,7 +6,8 @@ import datetime
 import numbers
 import traceback
 import warnings
-from typing import Optional, Sequence, Any, Tuple
+from typing import Optional, Any, Tuple
+from collections.abc import Sequence
 
 import pandas as pd
 import pyproj
@@ -147,7 +148,7 @@ class CubeInformant:
 
     def _compute_effective_cube_config(
         self,
-    ) -> Tuple[CubeConfig, pyproj.crs.CRS, Sequence[pd.Timestamp]]:
+    ) -> tuple[CubeConfig, pyproj.crs.CRS, Sequence[pd.Timestamp]]:
         """Compute the effective cube configuration.
 
         This method reflects the behaviour of the LocalCubeGenerator
@@ -264,7 +265,7 @@ def _idiv(x: int, y: int) -> int:
 
 def _parse_time_range(
     time_range: Any,
-) -> Tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]:
+) -> tuple[Optional[pd.Timestamp], Optional[pd.Timestamp]]:
     try:
         start_date, end_date = time_range
     except (TypeError, ValueError):

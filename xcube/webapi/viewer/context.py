@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 from functools import cached_property
-from typing import Mapping, Optional
+from typing import Optional
+from collections.abc import Mapping
 
 import fsspec
 

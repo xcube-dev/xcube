@@ -5,7 +5,8 @@ import fnmatch
 import functools
 import io
 import json
-from typing import Dict, Tuple, List, Set, Optional, Any, Callable, Mapping
+from typing import Dict, Tuple, List, Set, Optional, Any, Callable
+from collections.abc import Mapping
 
 import matplotlib.colorbar
 import matplotlib.colors
@@ -56,10 +57,10 @@ def find_dataset_places(
 def get_datasets(
     ctx: DatasetsContext,
     details: bool = False,
-    point: Optional[Tuple[float, float]] = None,
+    point: Optional[tuple[float, float]] = None,
     base_url: Optional[str] = None,
-    granted_scopes: Optional[Set[str]] = None,
-) -> Dict:
+    granted_scopes: Optional[set[str]] = None,
+) -> dict:
     can_authenticate = ctx.can_authenticate
     # If True, we can shorten scope checking
     if granted_scopes is None:
@@ -140,8 +141,8 @@ def get_dataset(
     ctx: DatasetsContext,
     ds_id: str,
     base_url: Optional[str] = None,
-    granted_scopes: Optional[Set[str]] = None,
-) -> Dict:
+    granted_scopes: Optional[set[str]] = None,
+) -> dict:
     can_authenticate = ctx.can_authenticate
     # If True, we can shorten scope checking
     if granted_scopes is None:
@@ -244,6 +245,7 @@ def get_dataset(
         )
 
         tile_url = _get_dataset_tile_url2(ctx, ds_id, var_name, base_url)
+        # Note that tileUrl is no longer used since xcube viewer v0.13
         variable_dict["tileUrl"] = tile_url
         LOG.debug("Tile URL for variable %s: %s", var_name, tile_url)
 
@@ -286,6 +288,7 @@ def get_dataset(
         rgb_schema = {
             "varNames": rgb_var_names,
             "normRanges": rgb_norm_ranges,
+            # Note that tileUrl is no longer used since xcube viewer v0.13
             "tileUrl": rgb_tile_url,
             "tileLevelMin": tiling_scheme.min_level,
             "tileLevelMax": tiling_scheme.max_level,
@@ -319,8 +322,8 @@ def get_dataset(
 
 
 def filter_variable_names(
-    var_names: List[str], var_name_patterns: List[str]
-) -> List[str]:
+    var_names: list[str], var_name_patterns: list[str]
+) -> list[str]:
     filtered_var_names = []
     filtered_var_names_set = set()
     for var_name_pattern in var_name_patterns:
@@ -336,7 +339,7 @@ def filter_variable_names(
 
 
 def get_bbox_geometry(
-    dataset_bounds: Tuple[float, float, float, float],
+    dataset_bounds: tuple[float, float, float, float],
     transformer: pyproj.Transformer,
     n: int = 6,
 ):
@@ -411,8 +414,8 @@ def get_time_chunk_size(
 def _allow_dataset(
     ctx: DatasetsContext,
     dataset_config: DatasetConfig,
-    granted_scopes: Optional[Set[str]],
-    function: Callable[[Set, Optional[Set], bool], Any],
+    granted_scopes: Optional[set[str]],
+    function: Callable[[set, Optional[set], bool], Any],
 ) -> Any:
     required_scopes = ctx.get_required_dataset_scopes(dataset_config)
     # noinspection PyArgumentList
@@ -425,7 +428,7 @@ def _allow_variable(
     ctx: DatasetsContext,
     dataset_config: DatasetConfig,
     var_name: str,
-    granted_scopes: Optional[Set[str]],
+    granted_scopes: Optional[set[str]],
 ) -> bool:
     required_scopes = ctx.get_required_variable_scopes(dataset_config, var_name)
     # noinspection PyArgumentList
@@ -440,7 +443,7 @@ def _is_substitute(dataset_config: DatasetConfig) -> bool:
 
 def get_dataset_place_groups(
     ctx: DatasetsContext, ds_id: str, base_url: str
-) -> List[GeoJsonFeatureCollection]:
+) -> list[GeoJsonFeatureCollection]:
     # Do not load or return features, just place group (metadata).
     place_groups = ctx.get_dataset_place_groups(ds_id, base_url, load_features=False)
     return _filter_place_groups(place_groups, del_features=True)
@@ -456,7 +459,7 @@ def get_dataset_place_group(
     return _filter_place_group(place_group, del_features=False)
 
 
-def get_dataset_coordinates(ctx: DatasetsContext, ds_id: str, dim_name: str) -> Dict:
+def get_dataset_coordinates(ctx: DatasetsContext, ds_id: str, dim_name: str) -> dict:
     ds, var = ctx.get_dataset_and_coord_variable(ds_id, dim_name)
     if np.issubdtype(var.dtype, np.floating):
         values = list(map(float, var.values))
@@ -516,7 +519,7 @@ def get_color_bars(ctx: DatasetsContext, mime_type: str) -> str:
     raise ApiError.BadRequest(f"Format {mime_type!r} not supported for colormaps")
 
 
-def _is_point_in_dataset_bbox(point: Tuple[float, float], dataset_dict: Dict):
+def _is_point_in_dataset_bbox(point: tuple[float, float], dataset_dict: dict):
     if "bbox" not in dataset_dict:
         return False
     x, y = point
@@ -530,7 +533,7 @@ def _is_point_in_dataset_bbox(point: Tuple[float, float], dataset_dict: Dict):
         return x_min <= x <= 180.0 or -180.0 <= x <= x_max
 
 
-def _filter_place_group(place_group: Dict, del_features: bool = False) -> Dict:
+def _filter_place_group(place_group: dict, del_features: bool = False) -> dict:
     place_group = dict(place_group)
     del place_group["sourcePaths"]
     del place_group["sourceEncoding"]
@@ -539,7 +542,7 @@ def _filter_place_group(place_group: Dict, del_features: bool = False) -> Dict:
     return place_group
 
 
-def _filter_place_groups(place_groups, del_features: bool = False) -> List[Dict]:
+def _filter_place_groups(place_groups, del_features: bool = False) -> list[dict]:
     if del_features:
 
         def __filter_place_group(place_group):

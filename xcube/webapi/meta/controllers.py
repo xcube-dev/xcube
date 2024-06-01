@@ -10,7 +10,7 @@ from xcube.version import version
 from .context import MetaContext
 
 
-def get_service_info(ctx: MetaContext) -> Dict[str, Any]:
+def get_service_info(ctx: MetaContext) -> dict[str, Any]:
     api_infos = []
     for other_api in ctx.apis:
         api_info = {

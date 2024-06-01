@@ -11,22 +11,20 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Iterable,
     List,
-    Mapping,
     Optional,
-    Sequence,
     Tuple,
     Union,
 )
+from collections.abc import Iterable, Mapping, Sequence
 
 import dask.array as da
 import dask.array.core as dac
 import distributed
 import numpy as np
 
-IntTuple = Tuple[int, ...]
-SliceTuple = Tuple[slice, ...]
+IntTuple = tuple[int, ...]
+SliceTuple = tuple[slice, ...]
 IntIterable = Iterable[int]
 IntTupleIterable = Iterable[IntTuple]
 SliceTupleIterable = Iterable[SliceTuple]
@@ -133,7 +131,7 @@ def compute_array_from_func(
 
 def get_block_iterators(
     chunk_sizes: IntTupleIterable,
-) -> Tuple[IntTupleIterable, IntTupleIterable, SliceTupleIterable]:
+) -> tuple[IntTupleIterable, IntTupleIterable, SliceTupleIterable]:
     chunk_sizes = tuple(chunk_sizes)
     chunk_slices_tuples = get_chunk_slice_tuples(chunk_sizes)
     chunk_ranges = get_chunk_ranges(chunk_sizes)
@@ -181,7 +179,7 @@ def new_cluster(
     name: Optional[str] = None,
     software: Optional[str] = None,
     n_workers: int = 4,
-    resource_tags: Optional[Dict[str, str]] = None,
+    resource_tags: Optional[dict[str, str]] = None,
     account: str = None,
     region: str = "eu-central-1",
     **kwargs,
@@ -282,7 +280,7 @@ def new_cluster(
     raise NotImplementedError(f"Unknown provider {provider!r}")
 
 
-def _collate_cluster_resource_tags(extra_tags: Dict[str, str]) -> Dict[str, str]:
+def _collate_cluster_resource_tags(extra_tags: dict[str, str]) -> dict[str, str]:
     fallback_tags = {
         "cost-center": "unknown",
         "environment": "dev",
@@ -320,7 +318,7 @@ class _NestedList:
     @classmethod
     def _new_data(
         cls, shape: Sequence[int], ndim: int, fill_value: Any, dim: int
-    ) -> Union[List[List], List[Any]]:
+    ) -> Union[list[list], list[Any]]:
         return [
             (
                 cls._new_data(shape, ndim, fill_value, dim + 1)
@@ -331,11 +329,11 @@ class _NestedList:
         ]
 
     @property
-    def shape(self) -> Tuple[int, ...]:
+    def shape(self) -> tuple[int, ...]:
         return self._shape
 
     @property
-    def data(self) -> Union[List[List], List[Any]]:
+    def data(self) -> Union[list[list], list[Any]]:
         return self._data
 
     def __len__(self) -> int:

@@ -68,7 +68,7 @@ class RemoteCubeGenerator(CubeGenerator):
         return f"{self._service_config.endpoint_url}{op_path}"
 
     @property
-    def auth_headers(self) -> Dict:
+    def auth_headers(self) -> dict:
         access_token = self.access_token
         if access_token is not None:
             return {
@@ -190,9 +190,9 @@ class RemoteCubeGenerator(CubeGenerator):
         return data_id if data_id else default
 
     def _get_cube_generator_result(
-        self, response: requests.Response, request_data: Dict[str, Any] = None
-    ) -> Tuple[
-        str, Optional[CubeGeneratorResult], Optional[List[CubeGeneratorProgress]]
+        self, response: requests.Response, request_data: dict[str, Any] = None
+    ) -> tuple[
+        str, Optional[CubeGeneratorResult], Optional[list[CubeGeneratorProgress]]
     ]:
         state = self._get_cube_generator_state(response, request_data)
         result = None
@@ -215,7 +215,7 @@ class RemoteCubeGenerator(CubeGenerator):
         return state.job_id, result, state.progress
 
     def _get_cube_generator_state(
-        self, response: requests.Response, request_data: Dict[str, Any] = None
+        self, response: requests.Response, request_data: dict[str, Any] = None
     ) -> CubeGeneratorState:
         return self._parse_response(
             response, CubeGeneratorState, request_data=request_data
@@ -224,8 +224,8 @@ class RemoteCubeGenerator(CubeGenerator):
     def _parse_response(
         self,
         response: requests.Response,
-        response_type: Type[R],
-        request_data: Dict[str, Any] = None,
+        response_type: type[R],
+        request_data: dict[str, Any] = None,
     ) -> R:
         # noinspection PyBroadException
         try:

@@ -3,8 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import threading
-from typing import Dict, List, Mapping, Any, Union, Sequence, Optional
-from deprecated import deprecated
+from typing import Dict, List, Any, Union, Optional
+from collections.abc import Mapping, Sequence
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -290,7 +290,7 @@ class DatasetAccessor:
         )
 
     def chunk(
-        self, chunk_sizes: Dict[str, int] = None, format_name: str = None
+        self, chunk_sizes: dict[str, int] = None, format_name: str = None
     ) -> xr.Dataset:
         """Chunk this dataset and update encodings for given format.
 
@@ -330,7 +330,7 @@ class DatasetAccessor:
             self._dataset, var_names=var_names, show_var_encoding=show_var_encoding
         )
 
-    def verify(self) -> List[str]:
+    def verify(self) -> list[str]:
         """Verify that this dataset is a valid xcube dataset.
 
         Returns a list of issues, which is empty if this dataset is a valid xcube dataset.
@@ -351,41 +351,6 @@ class DatasetAccessor:
             *dataset*, if *var_names* is None.
         """
         return select_variables_subset(self._dataset, var_names)
-
-    @deprecated(
-        version="0.13.0",
-        reason="multi-level datasets should be represented by"
-        " class xcube.core.mldataset.MultiLevelDataset",
-    )
-    def levels(self, **kwargs) -> List[xr.Dataset]:
-        """Transform this dataset into the levels of a multi-level pyramid with spatial resolution
-        decreasing by a factor of two in both spatial dimensions.
-
-        It is assumed that the spatial dimensions of each variable are the inner-most, that is, the last two elements
-        of a variable's shape provide the spatial dimension sizes.
-
-        Args:
-            spatial_dims: If given, only variables are considered whose
-                last to dimension elements match the given
-                *spatial_dims*.
-            spatial_shape: If given, only variables are considered whose
-                last to shape elements match the given *spatial_shape*.
-            spatial_tile_shape: If given, chunking will match the
-                provided *spatial_tile_shape*.
-            var_names: Variables to consider. If None, all variables
-                with at least two dimensions are considered.
-            max_num_levels: If given, the maximum number of pyramid
-                levels.
-            post_process_level: If given, the function will be called
-                for each level and must return a dataset.
-            progress_monitor: If given, the function will be called for
-                each level.
-
-        Returns:
-            A list of dataset instances representing the multi-level
-            pyramid.
-        """
-        return compute_levels(self._dataset, **kwargs)
 
     @property
     def schema(self) -> CubeSchema:

@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Dict, Union, Tuple, Any, Optional, Mapping, Sequence, Hashable
+from typing import Dict, Union, Tuple, Any, Optional
+from collections.abc import Mapping, Sequence, Hashable
 
 import dask.array as da
 import numpy as np
@@ -427,7 +428,7 @@ def _normalize_series(
     col_names: Sequence[str],
     force_dataset: bool = False,
     param_name: str = "points",
-) -> Tuple[PointsLike, int]:
+) -> tuple[PointsLike, int]:
     if not isinstance(points, (xr.Dataset, pd.DataFrame)):
         new_points = {}
         for col_name in col_names:
@@ -470,7 +471,7 @@ def _normalize_series(
     return points, num_points
 
 
-def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[Hashable, Any]:
+def _get_coord_bounds_var_names(dataset: xr.Dataset) -> dict[Hashable, Any]:
     bnds_var_names = {}
     for var_name in dataset.coords:
         var = dataset[var_name]
@@ -482,7 +483,7 @@ def _get_coord_bounds_var_names(dataset: xr.Dataset) -> Dict[Hashable, Any]:
     return bnds_var_names
 
 
-def _get_cube_data_var_dims(cube: xr.Dataset) -> Tuple[Hashable, ...]:
+def _get_cube_data_var_dims(cube: xr.Dataset) -> tuple[Hashable, ...]:
     for var in cube.data_vars.values():
         return var.dims
     raise ValueError("cube dataset is empty")

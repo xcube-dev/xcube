@@ -46,9 +46,9 @@ class FsDataStoreAndAccessorsPluginTest(unittest.TestCase):
     def test_find_data_store_extensions(self):
         extensions = find_data_store_extensions()
         self.assertTrue(len(extensions) >= len(expected_fs_store_ids))
-        self.assertEqual({"xcube.core.store"}, set(ext.point for ext in extensions))
+        self.assertEqual({"xcube.core.store"}, {ext.point for ext in extensions})
         self.assertTrue(
-            expected_fs_store_ids.issubset(set(ext.name for ext in extensions))
+            expected_fs_store_ids.issubset({ext.name for ext in extensions})
         )
         for ext in extensions:
             if ext.name not in expected_fs_store_ids:
@@ -70,10 +70,10 @@ class FsDataStoreAndAccessorsPluginTest(unittest.TestCase):
         extensions = find_data_opener_extensions()
         self.assertTrue(len(extensions) >= len(expected_fs_data_accessor_ids))
         self.assertEqual(
-            {"xcube.core.store.opener"}, set(ext.point for ext in extensions)
+            {"xcube.core.store.opener"}, {ext.point for ext in extensions}
         )
         self.assertTrue(
-            expected_fs_data_accessor_ids.issubset(set(ext.name for ext in extensions))
+            expected_fs_data_accessor_ids.issubset({ext.name for ext in extensions})
         )
         for ext in extensions:
             if ext.name not in expected_fs_data_accessor_ids:
@@ -89,10 +89,10 @@ class FsDataStoreAndAccessorsPluginTest(unittest.TestCase):
         extensions = find_data_writer_extensions()
         self.assertTrue(len(extensions) >= len(expected_fs_data_accessor_ids))
         self.assertEqual(
-            {"xcube.core.store.writer"}, set(ext.point for ext in extensions)
+            {"xcube.core.store.writer"}, {ext.point for ext in extensions}
         )
         self.assertTrue(
-            expected_fs_data_accessor_ids.issubset(set(ext.name for ext in extensions))
+            expected_fs_data_accessor_ids.issubset({ext.name for ext in extensions})
         )
         for ext in extensions:
             if ext.name not in expected_fs_data_accessor_ids:

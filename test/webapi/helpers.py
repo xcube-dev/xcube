@@ -4,7 +4,8 @@
 
 import collections.abc
 import os
-from typing import Any, Mapping
+from typing import Any
+from collections.abc import Mapping
 from typing import Optional, Type, TypeVar
 from typing import Union
 
@@ -74,7 +75,7 @@ def get_server(
 
 def get_api_ctx(
     api_name: str,
-    api_ctx_cls: Type[T],
+    api_ctx_cls: type[T],
     server_config: Optional[Union[str, Mapping[str, Any]]] = None,
     framework: Optional[Framework] = None,
     extension_registry: Optional[ExtensionRegistry] = None,

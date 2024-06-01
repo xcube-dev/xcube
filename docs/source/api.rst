@@ -203,7 +203,7 @@ Utilities
 .. autoclass:: xcube.core.gridmapping.GridMapping
     :members:
 
-.. autofunction:: xcube.core.geom.convert_geometry
+.. autofunction:: xcube.core.geom.normalize_geometry
 
 .. autoclass:: xcube.core.schema.CubeSchema
     :members:

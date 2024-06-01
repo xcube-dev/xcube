@@ -8,8 +8,8 @@ from xcube.util.assertions import assert_true
 
 T = TypeVar("T")
 
-ItemType = Union[Type[T], Tuple[Type[T], ...]]
-Pair = Tuple[T, T]
+ItemType = Union[type[T], tuple[type[T], ...]]
+Pair = tuple[T, T]
 ScalarOrPair = Union[T, Pair]
 
 

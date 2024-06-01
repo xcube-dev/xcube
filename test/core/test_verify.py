@@ -62,7 +62,7 @@ class AssertAndVerifyCubeTest(unittest.TestCase):
 
     def test_assert_cube_illegal_data_var(self):
         cube = new_cube(variables=dict(precipitation=0.5))
-        shape = cube.dims["lat"], cube.dims["lon"]
+        shape = cube.sizes["lat"], cube.sizes["lon"]
         cube["chl"] = xr.DataArray(
             np.random.rand(*shape),
             dims=("lat", "lon"),

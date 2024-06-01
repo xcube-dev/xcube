@@ -13,7 +13,8 @@ this compatibility before attempting an indexing operation. See
 https://github.com/dcs4cop/xcube/issues/605 for more background information.
 """
 
-from typing import Dict, Any, Union, Hashable
+from typing import Dict, Any, Union
+from collections.abc import Hashable
 
 import numpy as np
 import pandas as pd
@@ -26,9 +27,9 @@ logger = logging.getLogger("xcube")
 
 def ensure_time_label_compatible(
     var: Union[xr.DataArray, xr.Dataset],
-    labels: Dict[Hashable, Any],
+    labels: dict[Hashable, Any],
     time_name: Hashable = "time",
-) -> Dict[Hashable, Any]:
+) -> dict[Hashable, Any]:
     """Ensure that *labels[time_name]* is compatible with *var*
 
     This function returns either the passed-in *labels* object, or a copy of

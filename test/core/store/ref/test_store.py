@@ -56,7 +56,7 @@ def create_ref_paths():
     return [cube_ref_path] + reference_file_paths
 
 
-def delete_ref_paths(ref_paths: List[str]):
+def delete_ref_paths(ref_paths: list[str]):
     fs = fsspec.filesystem("file")
     for ref_path in ref_paths:
         fs.delete(ref_path)
@@ -64,7 +64,7 @@ def delete_ref_paths(ref_paths: List[str]):
 
 # noinspection PyPep8Naming,PyUnresolvedReferences
 class KerchunkMixin:
-    ref_paths: List[str] = []
+    ref_paths: list[str] = []
 
     @classmethod
     def setUpClass(cls):
