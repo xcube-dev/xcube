@@ -12,13 +12,7 @@ from xcube.util.perf import measure_time_cm
 from .context import StatisticsContext
 
 
-NAN_RESULT = {
-    "count": 0,
-    "minimum": "nan",
-    "maximum": "nan",
-    "mean": "nan",
-    "deviation": "nan",
-}
+NAN_RESULT = {"count": 0}
 
 
 def compute_statistics(
@@ -52,7 +46,9 @@ def _compute_statistics(
     except (TypeError, ValueError) as e:
         raise ApiError.BadRequest("Invalid GeoJSON geometry encountered") from e
 
-    dataset = dataset.sel(time=time)
+    dataset = dataset.sel(
+        time=np.array(time, dtype=dataset.time.dtype), method="nearest"
+    )
 
     x_name, y_name = grid_mapping.xy_dim_names
     if isinstance(geometry, shapely.geometry.Point):
@@ -81,7 +77,7 @@ def _compute_statistics(
 
     minimum = float(var.min())
     maximum = float(var.max())
-    h_values, h_bins = np.histogram(var, 100, range=(minimum, maximum), density=True)
+    h_values, h_edges = np.histogram(var, 100, range=(minimum, maximum), density=True)
 
     return {
         "count": count,
@@ -91,6 +87,6 @@ def _compute_statistics(
         "deviation": float(var.std()),
         "histogram": {
             "values": [float(v) for v in h_values],
-            "bins": [float(v) for v in h_bins],
+            "edges": [float(v) for v in h_edges],
         },
     }

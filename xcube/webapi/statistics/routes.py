@@ -22,6 +22,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             self.ctx,
             datasetId,
             varName,
+            self.request.json,
             {k: v[0] for k, v in self.request.query.items()},
         )
         await self.response.finish({"result": result})
