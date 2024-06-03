@@ -104,6 +104,10 @@
 
 * Decreased number of warnings in the xcube workflow step unittest-xcube.
 
+* Added new data store `"https"` that uses
+  [fsspec.implementations.http.HTTPFileSystem)](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.http.HTTPFileSystem),
+  so that the upcoming xcube STAC data store will be able to access files from URLs.
+
 ## Changes in 1.5.1
 
 * Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
