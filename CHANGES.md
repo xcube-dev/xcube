@@ -90,7 +90,7 @@
 * Added project URLs and classifiers to `setup.py`, which will be shown in the
   left sidebar on the [PyPI xcube-core](https://pypi.org/project/xcube-core/) webpage.
 
-* Refactored xcube workflow to build docker images only on release and deleted the 
+* Refactored xcube workflow to build docker images only on release and deleted the
   update xcube tag job.
 
 * Used [`pyupgrade`](https://github.com/asottile/pyupgrade) to automatically upgrade
@@ -99,8 +99,10 @@
 * Migrated the xcube project setup from `setup.py` to the modern `pyproject.toml` format.
 
 * The functions `mask_dataset_by_geometry()` and `clip_dataset_by_geometry()`
-  of module `xcube.core.geom` have a new keyword argument 
+  of module `xcube.core.geom` have a new keyword argument
   `update_attrs: bool = True` as part of the fix for #995.
+
+* Decreased number of warnings in the xcube workflow step unittest-xcube.
 
 ## Changes in 1.5.1
 

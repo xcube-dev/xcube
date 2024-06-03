@@ -50,8 +50,10 @@ class RegularGridMapping(GridMapping):
         x_coords_1d = self.x_coords
         y_coords_1d = self.y_coords
         y_coords_2d, x_coords_2d = xr.broadcast(y_coords_1d, x_coords_1d)
-        xy_coords = xr.concat([x_coords_2d, y_coords_2d], dim="coord").chunk(
-            (2, self.tile_height, self.tile_width)
+        xy_coords = xr.concat([x_coords_2d, y_coords_2d], dim="coord")
+        chunk_sizes = (2, self.tile_height, self.tile_width)
+        xy_coords = xy_coords.chunk(
+            {dim: size for (dim, size) in zip(xy_coords.dims, chunk_sizes)}
         )
         xy_coords.name = "xy_coords"
         return xy_coords

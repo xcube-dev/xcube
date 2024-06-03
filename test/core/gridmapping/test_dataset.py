@@ -102,7 +102,7 @@ class DatasetGridMappingTest(unittest.TestCase):
             "S3-OLCI-L2A.zarr.zip",
         )
 
-        dataset = xr.open_zarr(olci_l2_path)
+        dataset = xr.open_zarr(olci_l2_path, consolidated=False)
         gm = GridMapping.from_dataset(dataset)
         self.assertEqual((1189, 1890), gm.size)
         self.assertEqual((512, 512), gm.tile_size)
