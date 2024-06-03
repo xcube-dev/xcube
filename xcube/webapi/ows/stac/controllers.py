@@ -4,7 +4,8 @@
 
 
 import datetime
-from typing import Hashable, Any, Optional, Dict, List, Mapping, Union
+from typing import Any, Optional, Dict, List, Union
+from collections.abc import Hashable, Mapping
 import itertools
 
 import numpy as np
@@ -785,7 +786,7 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
 
     tiles_query = ""
     if first_var_extra_dims:
-        tiles_query = "?" + "&".join(["%s=<%s>" % (d, d) for d in first_var_extra_dims])
+        tiles_query = "?" + "&".join([f"{d}=<{d}>" for d in first_var_extra_dims])
 
     # TODO: Prefer original storage location.
     #       The "s3" operation is default.
@@ -864,14 +865,14 @@ def _get_time_properties(dataset):
 
 def _get_xc_variables(
     variables: Mapping[Hashable, xr.DataArray]
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Create the value of the "xcube:coords" or
     "xcube:data_vars" property for the given *dataset*.
     """
     return [_get_xc_variable(var_name, var) for var_name, var in variables.items()]
 
 
-def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
+def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> dict[str, Any]:
     """Create an entry of the value of the "xcube:coords" or
     "xcube:data_vars" property for the given *dataset*.
     """
@@ -888,7 +889,7 @@ def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> Dict[str, Any]:
 
 def get_datacube_dimensions(
     dataset: xr.Dataset, grid_mapping: GridMapping
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create the value of the "datacube:dimensions" property
     for the given *dataset*.
 
@@ -921,7 +922,7 @@ def get_datacube_dimensions(
 
 def _get_dc_spatial_dimension(
     var: xr.DataArray, axis: str, grid_mapping: GridMapping
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a spatial dimension of the "datacube:dimensions" property
     for the given *var* and *axis*.
     """
@@ -938,7 +939,7 @@ def _get_dc_spatial_dimension(
     return asset
 
 
-def _get_dc_temporal_dimension(var: xr.DataArray) -> Dict[str, Any]:
+def _get_dc_temporal_dimension(var: xr.DataArray) -> dict[str, Any]:
     """Create a temporal dimension of the "datacube:dimensions" property
     for the given time *var*.
     """
@@ -949,7 +950,7 @@ def _get_dc_temporal_dimension(var: xr.DataArray) -> Dict[str, Any]:
 
 def _get_dc_additional_dimension(
     var: xr.DataArray, type_: str = "unknown"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create an additional dimension of the "datacube:dimensions" property
     for the given *var* and *type*.
     """
@@ -972,7 +973,7 @@ def _get_dc_dimension(
     type_: str,
     axis: Optional[str] = None,
     drop_unit: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Create a generic dimension of the "datacube:dimensions" property
     for the given *var*, *type*, and optional *axis*.
     """
@@ -998,7 +999,7 @@ def _get_dc_variables(dataset: xr.Dataset, dc_dimensions):
 def __get_dc_variables(
     variables: Mapping[Hashable, xr.DataArray],
     type: str,
-    dc_dimensions: Dict[str, Any],
+    dc_dimensions: dict[str, Any],
 ):
     """Create a partial value of the "datacube:variables" property
     for the given *variables* and *type*.
@@ -1010,7 +1011,7 @@ def __get_dc_variables(
     }
 
 
-def _get_dc_variable(var: xr.DataArray, type: str) -> Dict[str, Any]:
+def _get_dc_variable(var: xr.DataArray, type: str) -> dict[str, Any]:
     """Create a generic variable of the "datacube:variables" property
     for the given *var*, *type*, and optional *axis*.
     """
@@ -1034,7 +1035,7 @@ def _set_dc_unit(asset, var):
         asset.update(unit=unit)
 
 
-def _get_str_attr(attrs: Dict[str, Any], keys: List[str]) -> Optional[str]:
+def _get_str_attr(attrs: dict[str, Any], keys: list[str]) -> Optional[str]:
     for k in keys:
         v = attrs.get(k)
         if isinstance(v, str) and v:
@@ -1069,7 +1070,7 @@ def _get_collection_metadata(config: ServerConfig):
 
 
 def _utc_now():
-    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.datetime.now(datetime.UTC).replace(microsecond=0).isoformat() + "Z"
 
 
 class CollectionNotFoundException(Exception):

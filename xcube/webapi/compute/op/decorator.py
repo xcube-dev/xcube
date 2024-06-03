@@ -46,7 +46,7 @@ def operation(
 
 def op_param(
     name: str,
-    json_type: Optional[Union[str, List[str]]] = None,
+    json_type: Optional[Union[str, list[str]]] = None,
     py_type: Optional[PyType] = None,
     title: Optional[str] = None,
     description: Optional[str] = None,

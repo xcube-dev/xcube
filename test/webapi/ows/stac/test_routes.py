@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Mapping
+from typing import Any
+from collections.abc import Mapping
 
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
 from ...helpers import RoutesTestCase, get_res_test_dir

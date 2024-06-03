@@ -4,7 +4,8 @@
 
 import collections.abc
 import warnings
-from typing import Iterator, List
+from typing import List
+from collections.abc import Iterator
 
 import zarr.storage
 
@@ -64,7 +65,7 @@ class CachedZarrStore(zarr.storage.Store):
             assert hasattr(self, "_" + op)
             setattr(self, op, getattr(self, "_" + op))
 
-    def _listdir(self, path: str = "") -> List[str]:
+    def _listdir(self, path: str = "") -> list[str]:
         # noinspection PyUnresolvedReferences
         return self._store.listdir(path=path)
 

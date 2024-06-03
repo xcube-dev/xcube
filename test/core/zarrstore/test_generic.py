@@ -924,7 +924,7 @@ class CommonZarrStoreTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.dtype = np.dtype(np.int16)
-        self.store: Dict[str, Any] = {
+        self.store: dict[str, Any] = {
             ".zgroup": dict_to_bytes(
                 {
                     "zarr_format": 2,

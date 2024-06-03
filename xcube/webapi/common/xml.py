@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import abc
-from typing import Optional, Dict, Union, Sequence, List
+from typing import Optional, Dict, Union, List
+from collections.abc import Sequence
 
 from xcube.util.assertions import assert_given, assert_false
 
@@ -47,7 +48,7 @@ class Element(Node):
     def __init__(
         self,
         tag: str,
-        attrs: Optional[Dict[str, str]] = None,
+        attrs: Optional[dict[str, str]] = None,
         text: Optional[Union[str, Sequence[str]]] = None,
         elements: Optional[Sequence["Element"]] = None,
     ):
@@ -69,7 +70,7 @@ class Element(Node):
         self._to_xml(indent, 0, lines)
         return "\n".join(lines)
 
-    def _to_xml(self, indent: int, level: int, lines: List[str]):
+    def _to_xml(self, indent: int, level: int, lines: list[str]):
         tab = indent * " "
         tabs = level * tab
         line = f"{tabs}<{self._tag}"

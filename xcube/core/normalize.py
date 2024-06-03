@@ -4,7 +4,8 @@
 
 import warnings
 from datetime import datetime
-from typing import Optional, Sequence, Union, Tuple
+from typing import Optional, Union, Tuple
+from collections.abc import Sequence
 
 import cftime
 import numpy as np
@@ -146,7 +147,7 @@ def decode_cube(
     force_copy: bool = False,
     force_non_empty: bool = False,
     force_geographic: bool = False,
-) -> Tuple[xr.Dataset, GridMapping, xr.Dataset]:
+) -> tuple[xr.Dataset, GridMapping, xr.Dataset]:
     """Decode a *dataset* into a cube variable subset, a grid mapping, and
     the non-cube variables of *dataset*.
 
@@ -769,10 +770,10 @@ def get_geo_spatial_attrs_from_var(
         return None
 
     var = ds[var_name]
-    res_name = "geospatial_{}_resolution".format(var_name)
-    min_name = "geospatial_{}_min".format(var_name)
-    max_name = "geospatial_{}_max".format(var_name)
-    units_name = "geospatial_{}_units".format(var_name)
+    res_name = f"geospatial_{var_name}_resolution"
+    min_name = f"geospatial_{var_name}_min"
+    max_name = f"geospatial_{var_name}_max"
+    units_name = f"geospatial_{var_name}_units"
 
     if "bounds" in var.attrs:
         # According to CF Conventions the corresponding 'bounds' coordinate variable name

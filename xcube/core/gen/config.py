@@ -1,7 +1,7 @@
 # Copyright (c) 2018-2024 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
-from typing import Sequence
+from collections.abc import Sequence
 
 from xcube.util.config import flatten_dict, load_configs, to_name_dict_pairs
 

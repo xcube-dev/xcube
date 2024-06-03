@@ -24,7 +24,9 @@ nan = np.nan
 
 class ColormapProviderMock(ColormapProvider):
     def get_cmap(self, cm_name: str, num_colors: Optional[int] = None):
-        cmap = matplotlib.cm.get_cmap(cm_name, lut=num_colors)
+        cmap = matplotlib.colormaps[cm_name]
+        if num_colors is not None:
+            cmap = cmap.resampled(lutsize=num_colors)
         return cmap, Colormap(cm_name, cmap=cmap)
 
 
@@ -116,7 +118,7 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
         )
 
         # Test data variables
-        tiles: List[np.ndarray] = []
+        tiles: list[np.ndarray] = []
         for var_name in ("var_a", "var_b", "var_c"):
             self.assertIn(var_name, dataset.data_vars)
             var = dataset[var_name]
@@ -134,7 +136,7 @@ class ComputeTilesTest(Tile2Test, unittest.TestCase):
             self.assertEqual(expected_size, len(var))
 
     def assert_tiles_ok(
-        self, expected_tile_w: int, expected_tile_h: int, actual_tiles: List[np.ndarray]
+        self, expected_tile_w: int, expected_tile_h: int, actual_tiles: list[np.ndarray]
     ):
         self.assertEqual(3, len(actual_tiles))
         for i in range(3):

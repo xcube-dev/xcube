@@ -5,7 +5,8 @@
 import time
 from collections.abc import MutableMapping
 from types import MethodType
-from typing import TypeVar, Iterator, List, Callable, Any, Tuple
+from typing import TypeVar, List, Callable, Any, Tuple
+from collections.abc import Iterator
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -17,7 +18,7 @@ class DiagnosticStore(MutableMapping):
     def __init__(
         self,
         delegate: MutableMapping,
-        observer: Callable[[int, float, str, List[Tuple[str, Any]]], None] = None,
+        observer: Callable[[int, float, str, list[tuple[str, Any]]], None] = None,
     ):
         self._delegate = delegate
         self._observer = observer or logging_observer()
@@ -26,10 +27,10 @@ class DiagnosticStore(MutableMapping):
         self._add_optional_method("rmdir", ["path"])
         self._add_optional_method("rename", ["from_path", "to_path"])
 
-    def _add_optional_method(self, method_name: str, arg_names: List[str]):
+    def _add_optional_method(self, method_name: str, arg_names: list[str]):
         if hasattr(self._delegate, method_name):
 
-            def method(_self, *args) -> List[str]:
+            def method(_self, *args) -> list[str]:
                 return _self.call_and_notify(
                     method_name, *[(arg_names[i], args[i]) for i in range(len(args))]
                 )

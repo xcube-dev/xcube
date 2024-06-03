@@ -33,7 +33,7 @@ class OpInfo:
     """Information about a compute operation"""
 
     def __init__(
-        self, params_schema: Dict[str, Any], param_py_types: Dict[str, PyType]
+        self, params_schema: dict[str, Any], param_py_types: dict[str, PyType]
     ):
         """Create information about a compute operation
 
@@ -163,7 +163,7 @@ class OpInfo:
             return all(map(OpInfo._is_valid_parameter_type, args))
 
     @property
-    def effective_param_py_types(self) -> Dict[str, PyType]:
+    def effective_param_py_types(self) -> dict[str, PyType]:
         """Return effective Python types for the operation’s parameters
 
         For any parameter which has a Python type annotation, that type will
@@ -192,13 +192,13 @@ class OpInfo:
         return py_types
 
     @property
-    def param_schemas(self) -> Dict[str, Any]:
+    def param_schemas(self) -> dict[str, Any]:
         """Returns:
         a mapping of parameter names to their JSON schemas
         """
         return self.params_schema.get("properties", {})
 
-    def set_param_schemas(self, schemas: Dict[str, Any]):
+    def set_param_schemas(self, schemas: dict[str, Any]):
         """Set JSON schemas for operation parameters
 
         Args:
@@ -206,7 +206,7 @@ class OpInfo:
         """
         self.params_schema["properties"] = schemas
 
-    def update_params_schema(self, schema: Dict[str, Any]):
+    def update_params_schema(self, schema: dict[str, Any]):
         """Update the JSON schema for the whole parameters dictionary
 
         Update the existing parameter dictionary schema with the supplied
@@ -220,7 +220,7 @@ class OpInfo:
         """
         self.params_schema.update(schema)
 
-    def update_param_schema(self, param_name: str, schema: Dict[str, Any]):
+    def update_param_schema(self, param_name: str, schema: dict[str, Any]):
         """Update the JSON Schema for a single parameter
 
         Args:

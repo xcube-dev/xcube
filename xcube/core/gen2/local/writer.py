@@ -19,7 +19,7 @@ class CubeWriter:
         self._output_config = output_config
         self._store_pool = store_pool
 
-    def write_cube(self, cube: xr.Dataset, gm: GridMapping) -> Tuple[str, xr.Dataset]:
+    def write_cube(self, cube: xr.Dataset, gm: GridMapping) -> tuple[str, xr.Dataset]:
         output_config = self._output_config
         dataset = encode_cube(cube, grid_mapping=gm)
         with observe_dask_progress("writing cube", 100):

@@ -13,14 +13,12 @@ from typing import (
     Tuple,
     Dict,
     Type,
-    Sequence,
     Generic,
     TypeVar,
     Union,
     Callable,
-    Awaitable,
-    Mapping,
 )
+from collections.abc import Sequence, Awaitable, Mapping
 
 from .asyncexec import AsyncExecution
 from ..util.assertions import assert_instance
@@ -43,8 +41,8 @@ JSON = Union[
     int,
     float,
     str,
-    List["JSON"],
-    Dict[str, "JSON"],
+    list["JSON"],
+    dict[str, "JSON"],
 ]
 
 ServerConfigObject = FrozenDict[str, Any]
@@ -153,8 +151,8 @@ class Api(Generic[ServerContextT]):
         self._description = description
         self._required_apis = tuple(required_apis or ())
         self._optional_apis = tuple(optional_apis or ())
-        self._routes: List[ApiRoute] = list(routes or [])
-        self._static_routes: List[ApiStaticRoute] = list(static_routes or [])
+        self._routes: list[ApiRoute] = list(routes or [])
+        self._static_routes: list[ApiStaticRoute] = list(static_routes or [])
         self._config_schema = config_schema
         self._create_ctx = create_ctx or ApiContext
         self._on_start = on_start or self._handle_event
@@ -178,12 +176,12 @@ class Api(Generic[ServerContextT]):
         )
 
     @property
-    def required_apis(self) -> Tuple[str]:
+    def required_apis(self) -> tuple[str]:
         """The names of other required APIs."""
         return self._required_apis
 
     @property
-    def optional_apis(self) -> Tuple[str]:
+    def optional_apis(self) -> tuple[str]:
         """The names of other optional APIs."""
         return self._optional_apis
 
@@ -233,7 +231,7 @@ class Api(Generic[ServerContextT]):
             ApiHandler
         """
 
-        def decorator_func(handler_cls: Type[ApiHandler]):
+        def decorator_func(handler_cls: type[ApiHandler]):
             self._routes.append(ApiRoute(self.name, path, handler_cls, handler_kwargs))
             return handler_cls
 
@@ -244,9 +242,9 @@ class Api(Generic[ServerContextT]):
         operation_id: Optional[str] = None,
         summary: Optional[str] = None,
         description: Optional[str] = None,
-        parameters: Optional[List[Dict[str, Any]]] = None,
-        request_body: Optional[Dict[str, Any]] = None,
-        responses: Optional[Dict[str, Dict]] = None,
+        parameters: Optional[list[dict[str, Any]]] = None,
+        request_body: Optional[dict[str, Any]] = None,
+        responses: Optional[dict[str, dict]] = None,
         tags: Optional[str] = None,
         **kwargs,
     ):
@@ -283,7 +281,7 @@ class Api(Generic[ServerContextT]):
         }
         openapi = {k: v for k, v in openapi.items() if v is not None}
 
-        def decorator_func(target: Union[Type[ApiHandler], Callable]):
+        def decorator_func(target: Union[type[ApiHandler], Callable]):
             if (
                 inspect.isfunction(target)
                 and hasattr(target, "__name__")
@@ -302,12 +300,12 @@ class Api(Generic[ServerContextT]):
         return decorator_func
 
     @property
-    def static_routes(self) -> Tuple["ApiStaticRoute"]:
+    def static_routes(self) -> tuple["ApiStaticRoute"]:
         """The static routes provided by this API."""
         return tuple(self._static_routes)
 
     @property
-    def routes(self) -> Tuple["ApiRoute"]:
+    def routes(self) -> tuple["ApiRoute"]:
         """The routes provided by this API."""
         return tuple(self._routes)
 
@@ -382,11 +380,11 @@ class Context(AsyncExecution, ABC):
 
     @property
     @abstractmethod
-    def apis(self) -> Tuple[Api]:
+    def apis(self) -> tuple[Api]:
         """The APIs used by the server."""
 
     @abstractmethod
-    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> dict[str, Any]:
         """The OpenAPI JSON document for the server."""
 
     @property
@@ -396,7 +394,7 @@ class Context(AsyncExecution, ABC):
 
     @abstractmethod
     def get_api_ctx(
-        self, api_name: str, cls: Optional[Type[ApiContextT]] = None
+        self, api_name: str, cls: Optional[type[ApiContextT]] = None
     ) -> Optional[ApiContextT]:
         """Get the API context for *api_name*.
         Can be used to access context objects of other APIs.
@@ -471,11 +469,11 @@ class ApiContext(Context):
         return self._server_ctx
 
     @property
-    def apis(self) -> Tuple[Api]:
+    def apis(self) -> tuple[Api]:
         """Return the server context's ``apis`` property."""
         return self.server_ctx.apis
 
-    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> dict[str, Any]:
         """Return the server context's ``apis`` property."""
         return self.server_ctx.get_open_api_doc(include_all=include_all)
 
@@ -485,7 +483,7 @@ class ApiContext(Context):
         return self.server_ctx.config
 
     def get_api_ctx(
-        self, api_name: str, cls: Optional[Type[ApiContextT]] = None
+        self, api_name: str, cls: Optional[type[ApiContextT]] = None
     ) -> Optional[ApiContextT]:
         """Calls the server context's ``get_api_ctx()`` method."""
         return self.server_ctx.get_api_ctx(api_name, cls=cls)
@@ -579,7 +577,7 @@ class ApiRequest:
     def get_query_arg(
         self,
         name: str,
-        type: Optional[Type[ArgT]] = None,
+        type: Optional[type[ArgT]] = None,
         default: Optional[ArgT] = None,
     ) -> Optional[ArgT]:
         """Get the value of query argument given by *name*. To force
@@ -605,7 +603,7 @@ class ApiRequest:
     # noinspection PyShadowingBuiltins
     @abstractmethod
     def get_query_args(
-        self, name: str, type: Optional[Type[ArgT]] = None
+        self, name: str, type: Optional[type[ArgT]] = None
     ) -> Sequence[ArgT]:
         """Get the values of query argument given by *name*.
         If *type* is given, a sequence of that type will be returned.
@@ -740,8 +738,8 @@ class ApiRoute:
         self,
         api_name: str,
         path: str,
-        handler_cls: Type[ApiHandler],
-        handler_kwargs: Optional[Dict[str, Any]] = None,
+        handler_cls: type[ApiHandler],
+        handler_kwargs: Optional[dict[str, Any]] = None,
     ):
         assert_instance(api_name, str, name="api_name")
         assert_instance(path, str, name="path")
@@ -818,7 +816,7 @@ class ApiStaticRoute:
         dir_path: str,
         default_filename: Optional[str] = None,
         api_name: Optional[str] = None,
-        openapi_metadata: Optional[Dict[str, Any]] = None,
+        openapi_metadata: Optional[dict[str, Any]] = None,
     ):
         assert_instance(path, str, name="path")
         assert_instance(dir_path, str, name="dir_path")
@@ -848,18 +846,18 @@ class ApiError(Exception):
     def __init__(self, status_code: int, message: Optional[str] = None):
         super().__init__(status_code, message)
 
-    BadRequest: Type["_DerivedApiError"]
-    Unauthorized: Type["_DerivedApiError"]
-    Forbidden: Type["_DerivedApiError"]
-    NotFound: Type["_DerivedApiError"]
-    MethodNotAllowed: Type["_DerivedApiError"]
-    Conflict: Type["_DerivedApiError"]
-    Gone: Type["_DerivedApiError"]
-    ContentTooLarge: Type["_DerivedApiError"]
-    InternalServerError: Type["_DerivedApiError"]
-    NotImplemented: Type["_DerivedApiError"]
-    InvalidServerConfig: Type["_DerivedApiError"]
-    UnsupportedMediaType: Type["_DerivedApiError"]
+    BadRequest: type["_DerivedApiError"]
+    Unauthorized: type["_DerivedApiError"]
+    Forbidden: type["_DerivedApiError"]
+    NotFound: type["_DerivedApiError"]
+    MethodNotAllowed: type["_DerivedApiError"]
+    Conflict: type["_DerivedApiError"]
+    Gone: type["_DerivedApiError"]
+    ContentTooLarge: type["_DerivedApiError"]
+    InternalServerError: type["_DerivedApiError"]
+    NotImplemented: type["_DerivedApiError"]
+    InvalidServerConfig: type["_DerivedApiError"]
+    UnsupportedMediaType: type["_DerivedApiError"]
 
     @property
     def status_code(self) -> int:

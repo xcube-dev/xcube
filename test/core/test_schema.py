@@ -218,8 +218,8 @@ class GetDatasetChunksTest(unittest.TestCase):
     def test_only_coords_dataset(self):
         dataset = xr.Dataset(
             coords=dict(
-                x=xr.DataArray(np.linspace(0, 1, 100), dims="x").chunk(10),
-                y=xr.DataArray(np.linspace(0, 1, 100), dims="y").chunk(20),
+                x=xr.DataArray(np.linspace(0, 1, 100), dims="x").chunk(dict(x=10)),
+                y=xr.DataArray(np.linspace(0, 1, 100), dims="y").chunk(dict(y=20)),
             )
         )
         self.assertEqual({}, get_dataset_chunks(dataset))
@@ -229,14 +229,14 @@ class GetDatasetChunksTest(unittest.TestCase):
             data_vars=dict(
                 a=xr.DataArray(
                     np.linspace(0, 1, 100 * 100).reshape((100, 100)), dims=("y", "x")
-                ).chunk((30, 10)),
+                ).chunk(dict(y=30, x=10)),
                 b=xr.DataArray(
                     np.linspace(0, 1, 100 * 100).reshape((100, 100)), dims=("y", "x")
-                ).chunk((25, 15)),
+                ).chunk(dict(y=25, x=15)),
                 c=xr.DataArray(
                     np.linspace(0, 1, 100 * 100).reshape((1, 100, 100)),
                     dims=("time", "y", "x"),
-                ).chunk((1, 25, 10)),
+                ).chunk((dict(time=1, y=25, x=10))),
                 d=xr.DataArray(  # d is not chunked!
                     np.linspace(0, 1, 100 * 100).reshape((1, 100, 100)),
                     dims=("time", "y", "x"),

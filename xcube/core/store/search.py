@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import abstractmethod, ABC
-from typing import Iterator
+from collections.abc import Iterator
 
 from xcube.util.jsonschema import JsonObjectSchema
 from .assertions import assert_valid_params

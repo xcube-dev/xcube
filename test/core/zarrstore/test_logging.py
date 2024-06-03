@@ -12,7 +12,7 @@ from xcube.core.zarrstore import LoggingZarrStore
 
 class LoggingZarrStoreTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.zattrs_value = bytes()
+        self.zattrs_value = b''
         self.original_store = MemoryStore()
         self.original_store.update({"chl/.zattrs": self.zattrs_value})
 
@@ -34,7 +34,7 @@ class LoggingZarrStoreTest(unittest.TestCase):
     def test_write(self):
         logging_store = LoggingZarrStore(self.original_store)
 
-        zarray_value = bytes()
+        zarray_value = b''
         logging_store["chl/.zarray"] = zarray_value
         self.assertEqual(
             {"chl/.zattrs", "chl/.zarray"}, set(self.original_store.keys())

@@ -222,7 +222,7 @@ class CubeGenerator(ABC):
 
     @classmethod
     def _new_cube_generator_error_result(
-        cls, result_type: Type[R], e: CubeGeneratorError
+        cls, result_type: type[R], e: CubeGeneratorError
     ) -> R:
         tb = e.remote_traceback
         if tb is None and e.__traceback__ is not None:

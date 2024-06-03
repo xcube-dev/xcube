@@ -23,7 +23,7 @@ _TIME_ATTRS_DATA = (
 
 def update_dataset_attrs(
     dataset: xr.Dataset,
-    global_attrs: Dict[str, Any] = None,
+    global_attrs: dict[str, Any] = None,
     update_existing: bool = False,
     in_place: bool = False,
 ) -> xr.Dataset:
@@ -219,7 +219,7 @@ def update_dataset_var_attrs(
 
 def update_dataset_chunk_encoding(
     dataset: xr.Dataset,
-    chunk_sizes: Dict[str, int] = None,
+    chunk_sizes: dict[str, int] = None,
     format_name: str = None,
     in_place: bool = False,
     data_vars_only: bool = False,

@@ -50,20 +50,22 @@ class RegularGridMapping(GridMapping):
         x_coords_1d = self.x_coords
         y_coords_1d = self.y_coords
         y_coords_2d, x_coords_2d = xr.broadcast(y_coords_1d, x_coords_1d)
-        xy_coords = xr.concat([x_coords_2d, y_coords_2d], dim="coord").chunk(
-            (2, self.tile_height, self.tile_width)
+        xy_coords = xr.concat([x_coords_2d, y_coords_2d], dim="coord")
+        chunk_sizes = (2, self.tile_height, self.tile_width)
+        xy_coords = xy_coords.chunk(
+            {dim: size for (dim, size) in zip(xy_coords.dims, chunk_sizes)}
         )
         xy_coords.name = "xy_coords"
         return xy_coords
 
 
 def new_regular_grid_mapping(
-    size: Union[int, Tuple[int, int]],
-    xy_min: Tuple[float, float],
-    xy_res: Union[float, Tuple[float, float]],
+    size: Union[int, tuple[int, int]],
+    xy_min: tuple[float, float],
+    xy_res: Union[float, tuple[float, float]],
     crs: Union[str, pyproj.crs.CRS],
     *,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     is_j_axis_up: bool = False
 ) -> GridMapping:
     width, height = _normalize_int_pair(size, name="size")
@@ -105,7 +107,7 @@ def new_regular_grid_mapping(
 def to_regular_grid_mapping(
     grid_mapping: GridMapping,
     *,
-    tile_size: Union[int, Tuple[int, int]] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
     is_j_axis_up: bool = False
 ) -> GridMapping:
     if grid_mapping.is_regular:

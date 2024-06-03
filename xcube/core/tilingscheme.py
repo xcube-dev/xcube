@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import math
-from typing import Optional, Tuple, Sequence, List, Union
+from typing import Optional, Tuple, List, Union
+from collections.abc import Sequence
 
 import numpy as np
 import pyproj
@@ -62,7 +63,7 @@ class TilingScheme:
 
     def __init__(
         self,
-        num_level_zero_tiles: Tuple[int, int],
+        num_level_zero_tiles: tuple[int, int],
         crs_name: str,
         map_height: float,
         tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
@@ -122,7 +123,7 @@ class TilingScheme:
         return self._map_height
 
     @property
-    def map_extent(self) -> Tuple[float, float, float, float]:
+    def map_extent(self) -> tuple[float, float, float, float]:
         """The extent of the map in units
         of the map's spatial coordinate reference system.
         """
@@ -131,7 +132,7 @@ class TilingScheme:
         return -map_width_05, -map_height_05, map_width_05, map_height_05
 
     @property
-    def map_origin(self) -> Tuple[float, float]:
+    def map_origin(self) -> tuple[float, float]:
         """The origin of the map (upper, left pixel of the upper left tile)
         in units of the map's spatial coordinate reference system.
         """
@@ -222,7 +223,7 @@ class TilingScheme:
         min_level: Optional[int] = None,
         max_level: Optional[int] = None,
         unit_name: Optional[str] = None,
-    ) -> List[float]:
+    ) -> list[float]:
         """Get spatial resolutions for this tiling scheme.
 
         Args:
@@ -251,7 +252,7 @@ class TilingScheme:
 
     def get_levels_for_resolutions(
         self, resolutions: Sequence[float], unit_name: str
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Get the minimum and maximum level indices into this tiling scheme
         for the given spatial *resolutions*.
 
@@ -334,7 +335,7 @@ class TilingScheme:
 
     def get_tile_extent(
         self, tile_x: int, tile_y: int, tile_z: int
-    ) -> Optional[Tuple[float, float, float, float]]:
+    ) -> Optional[tuple[float, float, float, float]]:
         """Get the extent in units of the CRS for the given tile coordinates.
 
         Args:
@@ -417,8 +418,8 @@ def get_unit_factor(unit_name_from: str, unit_name_to: str) -> float:
 
 
 def subdivide_size(
-    size: Tuple[int, int], tile_size: Tuple[int, int]
-) -> List[Tuple[int, int]]:
+    size: tuple[int, int], tile_size: tuple[int, int]
+) -> list[tuple[int, int]]:
     x_size, y_size = size
     tile_size_x, tile_size_y = tile_size
     sizes = [(x_size, y_size)]
@@ -431,7 +432,7 @@ def subdivide_size(
     return sizes
 
 
-def get_num_levels(size: Tuple[int, int], tile_size: Tuple[int, int]) -> int:
+def get_num_levels(size: tuple[int, int], tile_size: tuple[int, int]) -> int:
     return len(subdivide_size(size, tile_size))
 
 

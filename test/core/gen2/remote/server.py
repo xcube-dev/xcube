@@ -30,15 +30,15 @@ from xcube.core.gen2.request import CubeGeneratorRequest
 from xcube.util.temp import new_temp_dir
 from xcube.util.temp import new_temp_file
 
-Job = Tuple[
+Job = tuple[
     subprocess.Popen,  # process
     str,  # result_path
     str,  # start_time
-    Dict[str, Any],  # updated state object
+    dict[str, Any],  # updated state object
 ]
 
 STORES_CONFIG_PATH: str = ""
-JOBS: Dict[str, Job] = {}
+JOBS: dict[str, Job] = {}
 
 app = flask.Flask("test.core.gen2.remote.server")
 
@@ -147,12 +147,12 @@ def _get_generate_cube_result(
     process: Optional[subprocess.Popen],
     result_path: Optional[str],
     job_id: Optional[str],
-) -> Tuple[Dict[str, Any], int]:
+) -> tuple[dict[str, Any], int]:
     global JOBS
 
     if process is not None:
         job_id = str(process.pid)
-        start_time = datetime.datetime.utcnow().isoformat()
+        start_time = datetime.datetime.now(datetime.UTC).isoformat()
         state = {}
         JOBS[job_id] = process, result_path, start_time, state
     elif job_id in JOBS:
@@ -203,7 +203,7 @@ def _get_generate_cube_result(
 
 
 def _get_set_status_code(
-    result_json: Dict[str, Any], success_code: int = 200, failure_code: int = 400
+    result_json: dict[str, Any], success_code: int = 200, failure_code: int = 400
 ) -> int:
     status_code = result_json.get("status_code")
     if status_code is None:

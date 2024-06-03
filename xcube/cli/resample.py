@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Sequence, Dict, Any
+from typing import Dict, Any
+from collections.abc import Sequence
 
 import click
 
@@ -205,7 +206,7 @@ def resample(
 def _resample_in_time(
     input_path: str = None,
     variables: Sequence[str] = None,
-    metadata: Dict[str, Any] = None,
+    metadata: dict[str, Any] = None,
     output_path: str = DEFAULT_OUTPUT_PATH,
     output_format: str = None,
     methods: Sequence[str] = (DEFAULT_RESAMPLING_METHOD,),

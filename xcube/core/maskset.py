@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Dict, Any, Iterable
+from typing import Dict, Any
+from collections.abc import Iterable
 
 import dask.array as da
 import numpy as np
@@ -76,7 +77,7 @@ class MaskSet:
         )
 
     @classmethod
-    def get_mask_sets(cls, dataset: xr.Dataset) -> Dict[str, "MaskSet"]:
+    def get_mask_sets(cls, dataset: xr.Dataset) -> dict[str, "MaskSet"]:
         """For each "flag" variable in given *dataset*, turn it into a ``MaskSet``,
         store it in a dictionary.
 
@@ -110,9 +111,9 @@ class MaskSet:
         return "\n".join(lines)
 
     def __str__(self):
-        return "%s(%s)" % (
+        return "{}({})".format(
             self._flag_var.name,
-            ", ".join(["%s=%s" % (n, v) for n, v in self._flags.items()]),
+            ", ".join([f"{n}={v}" for n, v in self._flags.items()]),
         )
 
     def __dir__(self) -> Iterable[str]:

@@ -32,9 +32,9 @@ class ComputeCubeTest(unittest.TestCase):
         calls = []
 
         def my_cube_func(
-            input_params: Dict[str, Any] = None,
-            dim_coords: Dict[str, np.ndarray] = None,
-            dim_ranges: Dict[str, Tuple[int, int]] = None,
+            input_params: dict[str, Any] = None,
+            dim_coords: dict[str, np.ndarray] = None,
+            dim_ranges: dict[str, tuple[int, int]] = None,
         ) -> CubeFuncOutput:
             nonlocal calls
             calls.append((input_params, dim_coords, dim_ranges))
@@ -72,9 +72,9 @@ class ComputeCubeTest(unittest.TestCase):
         def my_cube_func(
             analysed_sst: np.ndarray,
             analysis_error: np.ndarray,
-            input_params: Dict[str, Any] = None,
-            dim_coords: Dict[str, np.ndarray] = None,
-            dim_ranges: Dict[str, Tuple[int, int]] = None,
+            input_params: dict[str, Any] = None,
+            dim_coords: dict[str, np.ndarray] = None,
+            dim_ranges: dict[str, tuple[int, int]] = None,
         ) -> CubeFuncOutput:
             nonlocal calls
             calls.append(

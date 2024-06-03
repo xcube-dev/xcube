@@ -11,13 +11,11 @@ from typing import (
     Any,
     Union,
     Callable,
-    Sequence,
-    Awaitable,
     Tuple,
     Type,
     List,
-    Mapping,
 )
+from collections.abc import Sequence, Awaitable, Mapping
 
 import jsonschema.exceptions
 
@@ -105,7 +103,7 @@ class Server(AsyncExecution):
         return self._framework
 
     @property
-    def apis(self) -> Tuple[Api]:
+    def apis(self) -> tuple[Api]:
         """The APIs supported by this server."""
         return self._apis
 
@@ -197,7 +195,7 @@ class Server(AsyncExecution):
         cls,
         config: collections.abc.Mapping,
         extension_registry: Optional[ExtensionRegistry] = None,
-    ) -> Tuple[Api]:
+    ) -> tuple[Api]:
         # Collect all registered API extensions
         extension_registry = extension_registry or get_extension_registry()
         api_extensions = extension_registry.find_extensions(EXTENSION_POINT_SERVER_APIS)
@@ -209,7 +207,7 @@ class Server(AsyncExecution):
 
         # Collect effective APIs
         api_names = set(incl_api_names).difference(set(excl_api_names))
-        apis: List[Api] = [
+        apis: list[Api] = [
             ext.component for ext in api_extensions if ext.name in api_names
         ]
 
@@ -246,7 +244,7 @@ class Server(AsyncExecution):
     @classmethod
     def _collect_static_routes(
         cls, config: collections.abc.Mapping
-    ) -> List[ApiStaticRoute]:
+    ) -> list[ApiStaticRoute]:
         static_routes = config.get("static_routes", [])
         api_static_routes = []
         for static_route in static_routes:
@@ -263,14 +261,14 @@ class Server(AsyncExecution):
         return api_static_routes
 
     @classmethod
-    def _collect_api_static_routes(cls, apis: Sequence[Api]) -> List[ApiStaticRoute]:
+    def _collect_api_static_routes(cls, apis: Sequence[Api]) -> list[ApiStaticRoute]:
         static_routes = []
         for api in apis:
             static_routes.extend(api.static_routes)
         return static_routes
 
     @classmethod
-    def _collect_api_routes(cls, apis: Sequence[Api]) -> List[ApiRoute]:
+    def _collect_api_routes(cls, apis: Sequence[Api]) -> list[ApiRoute]:
         handlers = []
         for api in apis:
             handlers.extend(api.routes)
@@ -316,7 +314,7 @@ class Server(AsyncExecution):
                 if r not in config_schema.required:
                     config_schema.required.append(r)
 
-    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> dict[str, Any]:
         """Get the OpenAPI JSON document for this server."""
         error_schema = {
             "type": "object",
@@ -448,17 +446,17 @@ class ServerContext(Context):
     def __init__(self, server: Server, config: collections.abc.Mapping):
         self._server = server
         self._config = FrozenDict.freeze(config)
-        self._api_contexts: Dict[str, Context] = dict()
+        self._api_contexts: dict[str, Context] = dict()
 
     @property
     def server(self) -> Server:
         return self._server
 
     @property
-    def apis(self) -> Tuple[Api]:
+    def apis(self) -> tuple[Api]:
         return self._server.apis
 
-    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> dict[str, Any]:
         return self._server.get_open_api_doc(include_all=include_all)
 
     @property
@@ -466,7 +464,7 @@ class ServerContext(Context):
         return self._config
 
     def get_api_ctx(
-        self, api_name: str, cls: Optional[Type[ApiContextT]] = None
+        self, api_name: str, cls: Optional[type[ApiContextT]] = None
     ) -> Optional[ApiContextT]:
         api_ctx = self._api_contexts.get(api_name)
         if cls is not None:

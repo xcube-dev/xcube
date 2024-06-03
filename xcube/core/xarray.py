@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import threading
-from typing import Dict, List, Mapping, Any, Union, Sequence, Optional
+from typing import Dict, List, Any, Union, Optional
+from collections.abc import Mapping, Sequence
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -289,7 +290,7 @@ class DatasetAccessor:
         )
 
     def chunk(
-        self, chunk_sizes: Dict[str, int] = None, format_name: str = None
+        self, chunk_sizes: dict[str, int] = None, format_name: str = None
     ) -> xr.Dataset:
         """Chunk this dataset and update encodings for given format.
 
@@ -329,7 +330,7 @@ class DatasetAccessor:
             self._dataset, var_names=var_names, show_var_encoding=show_var_encoding
         )
 
-    def verify(self) -> List[str]:
+    def verify(self) -> list[str]:
         """Verify that this dataset is a valid xcube dataset.
 
         Returns a list of issues, which is empty if this dataset is a valid xcube dataset.

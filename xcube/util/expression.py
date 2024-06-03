@@ -9,7 +9,7 @@ from typing import Dict, Any
 
 def compute_array_expr(
     expr: str,
-    namespace: Dict[str, Any] = None,
+    namespace: dict[str, Any] = None,
     errors: str = "raise",
     result_name: str = None,
 ):
@@ -43,7 +43,7 @@ def compute_array_expr(
 
 def compute_expr(
     expr: str,
-    namespace: Dict[str, Any] = None,
+    namespace: dict[str, Any] = None,
     errors: str = "raise",
     result_name: str = None,
 ):
@@ -151,9 +151,9 @@ class _ExprTranspiler:
             return self._transpile(node.value)
         if isinstance(node, ast.Name):
             return self.transform_name(node)
-        if isinstance(node, ast.NameConstant):
+        if isinstance(node, ast.Constant):
             return self.transform_name_constant(node)
-        if isinstance(node, ast.Num):
+        if isinstance(node, ast.Constant):
             return self.transform_num(node)
         if isinstance(node, ast.Attribute):
             pat = self.transform_attribute(node.value, node.attr, node.ctx)
@@ -205,19 +205,19 @@ class _ExprTranspiler:
     def transform_name(self, name: ast.Name):
         return name.id
 
-    def transform_name_constant(self, node: ast.NameConstant):
+    def transform_name_constant(self, node: ast.Constant):
         return repr(node.value)
 
-    def transform_num(self, node: ast.Num):
+    def transform_num(self, node: ast.Constant):
         return str(node.n)
 
     def transform_call(self, func: ast.Name, args):
         args = ", ".join(["{x%d}" % i for i in range(len(args))])
-        return "%s(%s)" % (self.transform_function_name(func), args)
+        return f"{self.transform_function_name(func)}({args})"
 
     def transform_function_name(self, func: ast.Name):
         if isinstance(func, ast.Attribute):
-            return "%s.%s" % (func.value.id, func.attr)
+            return f"{func.value.id}.{func.attr}"
         else:
             if func.id in ("where",):
                 return "xr.%s" % func.id
@@ -246,9 +246,9 @@ class _ExprTranspiler:
                 x = "({x})"
 
         if name in self._KEYWORDS:
-            return "%s %s" % (name, x)
+            return f"{name} {x}"
         else:
-            return "%s%s" % (name, x)
+            return f"{name}{x}"
 
     def transform_bin_op(self, op, left, right):
         name, precedence, assoc = _ExprTranspiler.get_op_info(op)
@@ -257,7 +257,7 @@ class _ExprTranspiler:
         y = "{y}"
 
         if name == "**":
-            return "np.power(%s, %s)" % (x, y)
+            return f"np.power({x}, {y})"
 
         left_op = getattr(left, "op", None)
         right_op = getattr(right, "op", None)
@@ -280,7 +280,7 @@ class _ExprTranspiler:
             ):
                 y = "({y})"
 
-        return "%s %s %s" % (x, name, y)
+        return f"{x} {name} {y}"
 
     # noinspection PyUnusedLocal
     def transform_if_exp(self, test, body, orelse):
@@ -366,7 +366,7 @@ class _ExprTranspiler:
             ):
                 y = "(%s)" % y
 
-        return "%s %s %s" % (x, name, y)
+        return f"{x} {name} {y}"
 
     def _is_nan(self, node):
         return isinstance(node, ast.Name) and node.id == "NaN"

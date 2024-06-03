@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import threading
-from typing import Any, Dict, List, Optional, Mapping, Iterator, Union, Tuple
+from typing import Any, Dict, List, Optional, Union, Tuple
+from collections.abc import Mapping, Iterator
 
 import fsspec
 
@@ -64,11 +65,11 @@ class ResourcesContext(ApiContext):
         return self._auth_ctx.must_authenticate
 
     @property
-    def access_control(self) -> Dict[str, Any]:
+    def access_control(self) -> dict[str, Any]:
         return self.config.get("AccessControl", {})
 
     @property
-    def required_scopes(self) -> List[str]:
+    def required_scopes(self) -> list[str]:
         return self.access_control.get("RequiredScopes", [])
 
     def get_service_url(self, base_url: Optional[str], *path: str):
@@ -146,7 +147,7 @@ class ResourcesContext(ApiContext):
             else:
                 yield token
 
-    def new_eval_env(self) -> Dict[str, Any]:
+    def new_eval_env(self) -> dict[str, Any]:
         return dict(
             ctx=self,
             base_dir=self.base_dir,
@@ -156,7 +157,7 @@ class ResourcesContext(ApiContext):
         )
 
     @classmethod
-    def _tokenize_value(cls, value: str) -> Iterator[Union[str, Tuple[str]]]:
+    def _tokenize_value(cls, value: str) -> Iterator[Union[str, tuple[str]]]:
         """Tokenize a string value. Tokens are either strings or 1-tuples
         that contain a string-expression to be evaluated. String-expressions
         are any strings between non-quoted "${" and "}".

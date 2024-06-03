@@ -10,14 +10,13 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Iterable,
     List,
     Optional,
     Set,
     Tuple,
     Union,
-    Mapping,
 )
+from collections.abc import Iterable, Mapping
 
 import botocore.exceptions
 import pandas as pd
@@ -170,7 +169,7 @@ class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
         return self.get_metadata_attr("ext", "")
 
     @property
-    def modes(self) -> Set[str]:
+    def modes(self) -> set[str]:
         """A set describing the modes of this dataset I/O.
         Must be one or more of "r" (read), "w" (write), and "a" (append).
         """
@@ -210,7 +209,7 @@ class DatasetIO(ExtensionComponent, metaclass=ABCMeta):
         """ "Replace *dataset* at *index* in existing *output_path* using format-specific write parameters *kwargs*."""
         raise NotImplementedError()
 
-    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+    def update(self, output_path: str, global_attrs: dict[str, Any] = None, **kwargs):
         """ "Update *dataset* at *output_path* using format-specific open parameters *kwargs*."""
         raise NotImplementedError()
 
@@ -267,7 +266,7 @@ def guess_dataset_format(path: str) -> Optional[str]:
 
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
-def guess_dataset_ios(path: str) -> List[Tuple[DatasetIO, float]]:
+def guess_dataset_ios(path: str) -> list[tuple[DatasetIO, float]]:
     """Guess suitable DatasetIO objects for a file system path or URL given by *path*.
     Returns a list of (DatasetIO, fitness) tuples, sorted by descending fitness values.
     Fitness values are in the interval (0, 1].
@@ -306,7 +305,7 @@ def _get_ext(path: str) -> Optional[str]:
 
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
-def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> List[DatasetIO]:
+def query_dataset_io(filter_fn: Callable[[DatasetIO], bool] = None) -> list[DatasetIO]:
     dataset_ios = get_extension_registry().find_components(EXTENSION_POINT_DATASET_IOS)
     if filter_fn is None:
         return dataset_ios
@@ -322,12 +321,12 @@ class MemDatasetIO(DatasetIO):
         datasets: The initial datasets as a path to dataset mapping.
     """
 
-    def __init__(self, datasets: Dict[str, xr.Dataset] = None):
+    def __init__(self, datasets: dict[str, xr.Dataset] = None):
         super().__init__(FORMAT_NAME_MEM)
         self._datasets = datasets or {}
 
     @property
-    def datasets(self) -> Dict[str, xr.Dataset]:
+    def datasets(self) -> dict[str, xr.Dataset]:
         return self._datasets
 
     def fitness(self, path: str, path_type: str = None) -> float:
@@ -359,7 +358,7 @@ class MemDatasetIO(DatasetIO):
         else:
             self._datasets[path] = dataset.copy()
 
-    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+    def update(self, output_path: str, global_attrs: dict[str, Any] = None, **kwargs):
         if global_attrs:
             ds = self._datasets[output_path]
             ds.attrs.update(global_attrs)
@@ -408,7 +407,7 @@ class Netcdf4DatasetIO(DatasetIO):
         old_ds.close()
         rimraf(temp_path)
 
-    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+    def update(self, output_path: str, global_attrs: dict[str, Any] = None, **kwargs):
         if global_attrs:
             import netCDF4
 
@@ -456,8 +455,8 @@ class ZarrDatasetIO(DatasetIO):
     def read(
         self,
         path: str,
-        s3_kwargs: Dict[str, Any] = None,
-        s3_client_kwargs: Dict[str, Any] = None,
+        s3_kwargs: dict[str, Any] = None,
+        s3_client_kwargs: dict[str, Any] = None,
         max_cache_size: int = None,
         **kwargs,
     ) -> xr.Dataset:
@@ -501,11 +500,11 @@ class ZarrDatasetIO(DatasetIO):
         self,
         dataset: xr.Dataset,
         output_path: str,
-        compressor: Dict[str, Any] = None,
-        chunksizes: Dict[str, int] = None,
-        packing: Dict[str, Dict[str, Any]] = None,
-        s3_kwargs: Dict[str, Any] = None,
-        s3_client_kwargs: Dict[str, Any] = None,
+        compressor: dict[str, Any] = None,
+        chunksizes: dict[str, int] = None,
+        packing: dict[str, dict[str, Any]] = None,
+        s3_kwargs: dict[str, Any] = None,
+        s3_client_kwargs: dict[str, Any] = None,
         **kwargs,
     ):
         path_or_store, _ = get_path_or_s3_store(
@@ -531,7 +530,7 @@ class ZarrDatasetIO(DatasetIO):
             encoding = {}
             for var_name in dataset.data_vars:
                 var = dataset[var_name]
-                chunks: List[int] = []
+                chunks: list[int] = []
                 for i in range(len(var.dims)):
                     dim_name = var.dims[i]
                     if dim_name in chunksizes:
@@ -573,7 +572,7 @@ class ZarrDatasetIO(DatasetIO):
     def replace(self, dataset: xr.Dataset, index: int, output_path: str, **kwargs):
         replace_time_slice(output_path, index, dataset)
 
-    def update(self, output_path: str, global_attrs: Dict[str, Any] = None, **kwargs):
+    def update(self, output_path: str, global_attrs: dict[str, Any] = None, **kwargs):
         if global_attrs:
             import zarr
 
@@ -633,7 +632,7 @@ def get_path_or_s3_store(
     s3_kwargs: Mapping[str, Any] = None,
     s3_client_kwargs: Mapping[str, Any] = None,
     mode: str = "r",
-) -> Tuple[Union[str, Dict], bool]:
+) -> tuple[Union[str, dict], bool]:
     """If *path_or_url* is an object storage URL, return a object storage
     Zarr store (mapping object) using *s3_client_kwargs* and *mode* and
     a flag indicating whether the Zarr datasets is consolidated.
@@ -674,7 +673,7 @@ def parse_s3_fs_and_root(
     s3_kwargs: Mapping[str, Any] = None,
     s3_client_kwargs: Mapping[str, Any] = None,
     mode: str = "r",
-) -> Tuple[s3fs.S3FileSystem, str]:
+) -> tuple[s3fs.S3FileSystem, str]:
     """Parses *s3_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
     new tuple (*obs_fs*, *root_path*). For example::
 
@@ -754,7 +753,7 @@ def parse_s3_url_and_kwargs(
     s3_url: str,
     s3_kwargs: Mapping[str, Any] = None,
     s3_client_kwargs: Mapping[str, Any] = None,
-) -> Tuple[str, Dict[str, Any], Dict[str, Any]]:
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
     """Parses *obs_url*, *s3_kwargs*, *s3_client_kwargs* and returns a
     new tuple (*root*, *s3_kwargs*, *s3_client_kwargs*) with updated kwargs whose elements
     can be passed to the s3fs.S3FileSystem and s3fs.S3Map constructors as follows:::
@@ -796,7 +795,7 @@ def parse_s3_url_and_kwargs(
 
 
 @deprecated(_DEPRECATION_REASON, version=_DEPRECATION_VERSION)
-def split_s3_url(path: str) -> Tuple[Optional[str], str]:
+def split_s3_url(path: str) -> tuple[Optional[str], str]:
     """If *path* is a URL, return tuple (endpoint_url, root), otherwise (None, *path*)"""
     url = urllib3.util.parse_url(path)
     if all((url.scheme, url.host, url.path)) and url.scheme != "s3":

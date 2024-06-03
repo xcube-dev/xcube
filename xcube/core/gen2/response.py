@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import abstractmethod
-from typing import Dict, Any, Optional, List, Sequence, TypeVar, Generic, Type
+from typing import Dict, Any, Optional, List, TypeVar, Generic, Type
+from collections.abc import Sequence
 
 from xcube.core.store import DatasetDescriptor
 from xcube.util.assertions import assert_in
@@ -28,7 +29,7 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
         message: Optional[str] = None,
         output: Optional[Sequence[str]] = None,
         traceback: Optional[Sequence[str]] = None,
-        versions: Optional[Dict[str, str]] = None,
+        versions: Optional[dict[str, str]] = None,
     ):
         assert_instance(status, str, name="status")
         assert_in(status, STATUS_IDS, name="status")
@@ -49,7 +50,7 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
         message: Optional[str] = None,
         output: Optional[Sequence[str]] = None,
         traceback: Optional[Sequence[str]] = None,
-        versions: Optional[Dict[str, str]] = None,
+        versions: Optional[dict[str, str]] = None,
     ) -> R:
         return self.__class__(
             status or self.status,
@@ -67,7 +68,7 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
         """Get the JSON schema of the result object"""
 
     @classmethod
-    def from_dict(cls, value: Dict) -> R:
+    def from_dict(cls, value: dict) -> R:
         return cls.get_schema().from_instance(value)
 
     @classmethod
@@ -89,8 +90,8 @@ class GenericCubeGeneratorResult(Generic[R], JsonObject):
 
 
 def make_cube_generator_result_class(
-    result_type: Type[R],
-) -> Type[GenericCubeGeneratorResult[R]]:
+    result_type: type[R],
+) -> type[GenericCubeGeneratorResult[R]]:
     class SpecificCubeGeneratorResult(GenericCubeGeneratorResult[R]):
         @classmethod
         def get_result_schema(cls) -> JsonObjectSchema:
@@ -122,7 +123,7 @@ class CubeInfo(JsonObject):
     def __init__(
         self,
         dataset_descriptor: DatasetDescriptor,
-        size_estimation: Dict[str, Any],
+        size_estimation: dict[str, Any],
         **kwargs,
     ):
         self.dataset_descriptor: DatasetDescriptor = dataset_descriptor

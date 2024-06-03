@@ -4,7 +4,8 @@
 
 import warnings
 from collections.abc import MutableMapping
-from typing import Optional, Dict, Any, Hashable, Union, Set, List, Tuple
+from typing import Optional, Dict, Any, Union, Set, List, Tuple
+from collections.abc import Hashable
 
 import numpy as np
 import pyproj
@@ -38,7 +39,7 @@ class GridMappingProxy:
         crs: Optional[pyproj.crs.CRS] = None,
         name: Optional[str] = None,
         coords: Optional[GridCoords] = None,
-        tile_size: Optional[Tuple[int, int]] = None,
+        tile_size: Optional[tuple[int, int]] = None,
     ):
         self.crs = crs
         self.name = name
@@ -53,7 +54,7 @@ def get_dataset_grid_mapping_proxies(
     missing_rotated_latitude_longitude_crs: pyproj.crs.CRS = None,
     missing_projected_crs: pyproj.crs.CRS = None,
     emit_warnings: bool = False,
-) -> Dict[Union[Hashable, None], GridMappingProxy]:
+) -> dict[Union[Hashable, None], GridMappingProxy]:
     """Find grid mappings encoded as described in the CF conventions
     [Horizontal Coordinate Reference Systems, Grid Mappings, and Projections]
     (http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#grid-mappings-and-projections).
@@ -68,7 +69,7 @@ def get_dataset_grid_mapping_proxies(
     Returns:
 
     """
-    grid_mapping_proxies: Dict[Union[Hashable, None], GridMappingProxy] = dict()
+    grid_mapping_proxies: dict[Union[Hashable, None], GridMappingProxy] = dict()
 
     # Find any grid mapping variables by CF 'grid_mapping' attribute
     #
@@ -207,7 +208,7 @@ def get_dataset_grid_mapping_proxies(
     return complete_grid_mappings
 
 
-def _parse_crs_from_attrs(attrs: Dict[Hashable, Any]) -> Optional[GridMappingProxy]:
+def _parse_crs_from_attrs(attrs: dict[Hashable, Any]) -> Optional[GridMappingProxy]:
     # noinspection PyBroadException
     try:
         crs = pyproj.crs.CRS.from_cf(attrs)
@@ -220,7 +221,7 @@ def _complement_grid_mapping_coords(
     coords: GridCoords,
     grid_mapping_name: Optional[str],
     missing_crs: Optional[pyproj.crs.CRS],
-    grid_mappings: Dict[Optional[str], GridMappingProxy],
+    grid_mappings: dict[Optional[str], GridMappingProxy],
 ):
     if coords.x is not None or coords.y is not None:
         grid_mapping = next(
@@ -246,7 +247,7 @@ def _complement_grid_mapping_coords(
                 grid_mapping.coords.y = coords.y
 
 
-def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
+def _find_potential_coord_vars(dataset: xr.Dataset) -> list[Hashable]:
     """Find potential coordinate variables.
 
     We need this function as we can not rely on xarray.Dataset.coords,
@@ -292,7 +293,7 @@ def _find_potential_coord_vars(dataset: xr.Dataset) -> List[Hashable]:
 
 
 def _is_potential_coord_var(
-    dataset: xr.Dataset, bounds_var_names: Set[str], var_name: Hashable
+    dataset: xr.Dataset, bounds_var_names: set[str], var_name: Hashable
 ) -> bool:
     if var_name in dataset:
         var = dataset[var_name]
@@ -302,7 +303,7 @@ def _is_potential_coord_var(
 
 def _find_dataset_tile_size(
     dataset: xr.Dataset, x_dim_name: Hashable, y_dim_name: Hashable
-) -> Optional[Tuple[int, int]]:
+) -> Optional[tuple[int, int]]:
     """Find the most likely tile size in *dataset*"""
     dataset_chunks = get_dataset_chunks(dataset)
     tile_width = dataset_chunks.get(x_dim_name)
@@ -316,7 +317,7 @@ def add_spatial_ref(
     dataset_store: zarr.convenience.StoreLike,
     crs: pyproj.CRS,
     crs_var_name: Optional[str] = "spatial_ref",
-    xy_dim_names: Optional[Tuple[str, str]] = None,
+    xy_dim_names: Optional[tuple[str, str]] = None,
 ):
     """Helper function that allows adding a spatial reference to an
     existing Zarr dataset.

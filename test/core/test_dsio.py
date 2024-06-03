@@ -99,7 +99,7 @@ class MyDatasetIO(DatasetIO):
         return "test"
 
     @property
-    def modes(self) -> Set[str]:
+    def modes(self) -> set[str]:
         return set()
 
     def fitness(self, input_path: str, path_type: str = None) -> float:

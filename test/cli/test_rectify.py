@@ -10,7 +10,7 @@ from xcube.core.verify import assert_cube
 
 
 class RectifyTest(CliDataTest):
-    def outputs(self) -> List[str]:
+    def outputs(self) -> list[str]:
         return ["out.zarr"]
 
     def test_rectify_without_vars(self):

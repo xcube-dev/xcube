@@ -7,7 +7,8 @@ import json
 import math
 import unittest
 from collections.abc import MutableMapping
-from typing import Dict, KeysView, Iterator, Sequence, Any
+from typing import Dict, Any
+from collections.abc import KeysView, Iterator, Sequence
 
 import cftime
 import numpy as np
@@ -316,7 +317,7 @@ class SelectLabelSubsetTest(unittest.TestCase):
         result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIs(ds, result)
         self.assertEqual({"a", "b", "time"}, set(result.variables.keys()))
-        self.assertEqual({"time": 3, "y": 4, "x": 8}, result.dims)
+        self.assertEqual({"time": 3, "y": 4, "x": 8}, result.sizes)
 
     def test_select_by_slice_info(self):
         self._test_select_by_slice_info(use_dask=False)
@@ -337,7 +338,7 @@ class SelectLabelSubsetTest(unittest.TestCase):
 
         result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIsInstance(result, xr.Dataset)
-        self.assertEqual({"time": 1, "y": 4, "x": 8}, result.dims)
+        self.assertEqual({"time": 1, "y": 4, "x": 8}, result.sizes)
         self.assertEqual([2022], list(result.time))
 
         # noinspection PyUnusedLocal
@@ -346,7 +347,7 @@ class SelectLabelSubsetTest(unittest.TestCase):
 
         result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIsInstance(result, xr.Dataset)
-        self.assertEqual({"time": 2, "y": 4, "x": 8}, result.dims)
+        self.assertEqual({"time": 2, "y": 4, "x": 8}, result.sizes)
         self.assertEqual([2020, 2022], list(result.time))
 
     def test_select_by_slice_array(self):
@@ -378,7 +379,7 @@ class SelectLabelSubsetTest(unittest.TestCase):
 
         result = select_label_subset(ds, "time", predicate, use_dask=use_dask)
         self.assertIsInstance(result, xr.Dataset)
-        self.assertEqual({"time": 2, "y": 4, "x": 8}, result.dims)
+        self.assertEqual({"time": 2, "y": 4, "x": 8}, result.sizes)
         self.assertEqual([2020, 2022], list(result.time))
 
         # noinspection PyUnusedLocal
@@ -393,7 +394,7 @@ class SelectLabelSubsetTest(unittest.TestCase):
             ds, "time", dict(a=predicate_a, b=predicate_b), use_dask=use_dask
         )
         self.assertIsInstance(result, xr.Dataset)
-        self.assertEqual({"time": 2, "y": 4, "x": 8}, result.dims)
+        self.assertEqual({"time": 2, "y": 4, "x": 8}, result.sizes)
         self.assertEqual([2020, 2022], list(result.time))
 
     # noinspection PyMethodMayBeStatic
@@ -452,15 +453,15 @@ def new_virtual_dataset(
         [time_chunk or time_size, lat_chunk or lat_size, lon_chunk or lon_size],
     )
 
-    return xr.open_zarr(chunk_store)
+    return xr.open_zarr(chunk_store, consolidated=False)
 
 
 class VirtualChunkStore(MutableMapping):
-    def __init__(self, entries: Dict[str, bytes] = None):
+    def __init__(self, entries: dict[str, bytes] = None):
         if entries:
-            self._entries: Dict[str, bytes] = dict(entries)
+            self._entries: dict[str, bytes] = dict(entries)
         else:
-            self._entries: Dict[str, bytes] = {
+            self._entries: dict[str, bytes] = {
                 ".zgroup": bytes(
                     json.dumps({"zarr_format": 2}, indent=2), encoding="utf-8"
                 ),
@@ -472,7 +473,7 @@ class VirtualChunkStore(MutableMapping):
         name: str,
         dims: Sequence[str],
         values: np.ndarray,
-        attrs: Dict[str, Any] = None,
+        attrs: dict[str, Any] = None,
     ):
         self._entries.update(
             self.get_array_entries_unchunked(name, dims, values, attrs=attrs)
@@ -517,8 +518,8 @@ class VirtualChunkStore(MutableMapping):
         name: str,
         dims: Sequence[str],
         values: np.ndarray,
-        attrs: Dict[str, Any] = None,
-    ) -> Dict[str, bytes]:
+        attrs: dict[str, Any] = None,
+    ) -> dict[str, bytes]:
         zarray = {
             "zarr_format": 2,
             "chunks": list(values.shape),
@@ -551,7 +552,7 @@ class VirtualChunkStore(MutableMapping):
         shape: Sequence[int],
         chunks: Sequence[int],
         value: float = None,
-    ) -> Dict[str, bytes]:
+    ) -> dict[str, bytes]:
         dtype = np.dtype("float64")
 
         zarray = {
