@@ -16,6 +16,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
         summary="Get statistics for a given dataset variable.",
     )
     async def post(self, datasetId: str, varName: str):
+        params = {k: v[0] for k, v in self.request.query.items()}
         result = await self.ctx.run_in_executor(
             None,
             compute_statistics,
@@ -23,6 +24,6 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             datasetId,
             varName,
             self.request.json,
-            {k: v[0] for k, v in self.request.query.items()},
+            params,
         )
         await self.response.finish({"result": result})

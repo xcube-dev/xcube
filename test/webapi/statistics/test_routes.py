@@ -6,6 +6,18 @@ from ..helpers import RoutesTestCase
 
 
 class StatisticsRoutesTest(RoutesTestCase):
-    def test_fetch_statistics(self):
-        response = self.fetch("/statistics/demo/conc_chl", method="POST")
+    def test_fetch_statistics_ok(self):
+        response = self.fetch(
+            "/statistics/demo/conc_chl?time=2017-01-16+10:09:21",
+            method="POST",
+            body='{"type": "Point", "coordinates": [1.768, 51.465]}',
+        )
         self.assertResponseOK(response)
+
+    def test_fetch_statistics_missing_time(self):
+        response = self.fetch(
+            "/statistics/demo/conc_chl",
+            method="POST",
+            body='{"type": "Point", "coordinates": [1.768, 51.465]}',
+        )
+        self.assertBadRequestResponse(response, "Missing query parameter 'time'")

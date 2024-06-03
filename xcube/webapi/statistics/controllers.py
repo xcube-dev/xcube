@@ -23,18 +23,21 @@ def compute_statistics(
     params: Mapping[str, str],
 ):
     params = dict(params)
-    time = params.pop("time")
+    try:
+        time_label = params.pop("time")
+    except KeyError:
+        raise ApiError.BadRequest("Missing query parameter 'time'")
     trace_perf = params.pop("debug", "1" if ctx.datasets_ctx.trace_perf else "0") == "1"
     measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
     with measure_time("Computing statistics"):
-        return _compute_statistics(ctx, ds_id, var_name, time, geo_json)
+        return _compute_statistics(ctx, ds_id, var_name, time_label, geo_json)
 
 
 def _compute_statistics(
     ctx: StatisticsContext,
     ds_id: str,
     var_name: str,
-    time: str,
+    time_label: str,
     geo_json: dict[str, Any],
 ):
     ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
@@ -42,13 +45,16 @@ def _compute_statistics(
     grid_mapping = ml_dataset.grid_mapping
 
     try:
+        time = np.array(time_label, dtype=dataset.time.dtype)
+    except (TypeError, ValueError) as e:
+        raise ApiError.BadRequest("Invalid 'time'") from e
+
+    try:
         geometry = shapely.geometry.shape(geo_json)
     except (TypeError, ValueError) as e:
         raise ApiError.BadRequest("Invalid GeoJSON geometry encountered") from e
 
-    dataset = dataset.sel(
-        time=np.array(time, dtype=dataset.time.dtype), method="nearest"
-    )
+    dataset = dataset.sel(time=time, method="nearest")
 
     x_name, y_name = grid_mapping.xy_dim_names
     if isinstance(geometry, shapely.geometry.Point):
