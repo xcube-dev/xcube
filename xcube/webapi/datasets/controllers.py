@@ -132,7 +132,7 @@ def get_datasets(
         dataset_dicts = list(filter(is_point_in_dataset_bbox, dataset_dicts))
 
     if not dataset_dicts:
-        LOG.warn(f"No datasets provided for current user.")
+        LOG.warning("No datasets provided for current user.")
 
     return dict(datasets=dataset_dicts)
 

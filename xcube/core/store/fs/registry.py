@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Type, Dict, Optional, Any
+from typing import Optional, Any
 from collections.abc import Sequence
 
 import fsspec
@@ -15,6 +15,7 @@ from .impl.dataset import DatasetZarrFsDataAccessor
 from .impl.fs import AzureFsAccessor
 from .impl.fs import FileFsAccessor
 from .impl.fs import FtpFsAccessor
+from .impl.fs import HttpsFsAccessor
 from .impl.fs import MemoryFsAccessor
 from .impl.fs import S3FsAccessor
 from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
@@ -47,6 +48,7 @@ for cls in (
     AzureFsAccessor,
     FileFsAccessor,
     FtpFsAccessor,
+    HttpsFsAccessor,
     MemoryFsAccessor,
     S3FsAccessor,
 ):

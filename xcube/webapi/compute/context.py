@@ -291,7 +291,7 @@ def set_job_status(job: Job, status: str, error: Optional[BaseException] = None)
     LOG.info(f"Job #{job_id} {status}.", exc_info=error)
     # Note, we could/should warn/raise on invalid state transitions
     job["state"]["status"] = status
-    job["state"][f"{status}Time"] = datetime.datetime.utcnow().isoformat()
+    job["state"][f"{status}Time"] = datetime.datetime.now(datetime.UTC).isoformat()
     if error is not None:
         job["state"]["error"] = {
             "message": str(error),

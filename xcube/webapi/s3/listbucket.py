@@ -12,7 +12,9 @@ from collections.abc import Mapping
 from xcube.util.assertions import assert_instance
 
 _CONTENT_LENGTH_DUMMY = -1
-_LAST_MODIFIED_DUMMY = str(datetime.datetime.utcfromtimestamp(time.time()))
+_LAST_MODIFIED_DUMMY = str(
+    datetime.datetime.fromtimestamp(time.time(), datetime.UTC)
+)
 
 
 def list_s3_bucket_v2(

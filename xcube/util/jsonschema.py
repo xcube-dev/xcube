@@ -114,7 +114,7 @@ class JsonSchema(ABC):
             instance=instance,
             schema=self.to_dict(),
             cls=custom_validator,
-            format_checker=jsonschema.draft7_format_checker,
+            format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER,
         )
 
     def to_instance(self, value: Any) -> Any:
@@ -242,7 +242,7 @@ class JsonDateAndTimeSchemaBase:
             jsonschema.validate(
                 value,
                 dict(type="string", format=format),
-                format_checker=jsonschema.draft7_format_checker,
+                format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER,
             )
             return True
         except jsonschema.ValidationError:

@@ -59,7 +59,13 @@ class Coords1DGridMapping(CoordsGridMapping):
 
     def _new_xy_coords(self) -> xr.DataArray:
         y, x = xr.broadcast(self._y_coords, self._x_coords)
-        return xr.concat([x, y], dim="coord").chunk(self.xy_coords_chunks)
+        tmp = xr.concat([x, y], dim="coord")
+        return tmp.chunk(
+            {
+                dim: size for (dim, size) in
+                zip(tmp.dims, self.xy_coords_chunks)
+            }
+        )
 
 
 class Coords2DGridMapping(CoordsGridMapping):
@@ -68,8 +74,12 @@ class Coords2DGridMapping(CoordsGridMapping):
     """
 
     def _new_xy_coords(self) -> xr.DataArray:
-        return xr.concat([self._x_coords, self._y_coords], dim="coord").chunk(
-            self.xy_coords_chunks
+        tmp = xr.concat([self._x_coords, self._y_coords], dim="coord")
+        return tmp.chunk(
+            {
+                dim: size for (dim, size) in
+                zip(tmp.dims, self.xy_coords_chunks)
+            }
         )
 
 
@@ -237,8 +247,14 @@ def new_grid_mapping_from_coords(
 
         if tile_size is not None:
             tile_width, tile_height = tile_size
-            x_coords = x_coords.chunk((tile_height, tile_width))
-            y_coords = y_coords.chunk((tile_height, tile_width))
+            x_coords = x_coords.chunk({
+                    x_coords.dims[0]: tile_height,
+                    x_coords.dims[1]: tile_height,
+            })
+            y_coords = y_coords.chunk({
+                    y_coords.dims[0]: tile_height,
+                    y_coords.dims[1]: tile_height,
+            })
 
         # Guess j axis direction
         is_j_axis_up = np.all(y_coords[0, :] < y_coords[-1, :]) or None

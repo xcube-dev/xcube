@@ -1070,7 +1070,7 @@ def _get_collection_metadata(config: ServerConfig):
 
 
 def _utc_now():
-    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.datetime.now(datetime.UTC).replace(microsecond=0).isoformat() + "Z"
 
 
 class CollectionNotFoundException(Exception):

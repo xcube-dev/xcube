@@ -321,7 +321,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         open_params_schema = self._get_open_data_params_schema(opener, data_id)
         assert_valid_params(open_params, name="open_params", schema=open_params_schema)
         fs_path = self._convert_data_id_into_fs_path(data_id)
-        return opener.open_data(fs_path, fs=self.fs, root=self.root, **open_params)
+        return opener.open_data(fs_path, fs=self.fs, **open_params)
 
     def get_data_writer_ids(self, data_type: str = None) -> tuple[str, ...]:
         data_type = DataType.normalize(data_type)

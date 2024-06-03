@@ -6,7 +6,7 @@ from typing import Any, Dict, Union, Optional
 
 import shapely.geometry
 import shapely.wkt
-from shapely.errors import WKTReadingError
+from shapely.lib import ShapelyError
 
 from xcube.constants import LOG
 from xcube.core.geom import get_box_split_bounds_geometry
@@ -36,7 +36,7 @@ def find_places(
                 query_geometry = get_box_split_bounds_geometry(
                     *[float(s) for s in query_geometry.split(",")]
                 )
-            except (TypeError, ValueError) as e:
+            except (TypeError, ValueError):
                 query_geometry = shapely.wkt.loads(query_geometry)
         elif isinstance(query_geometry, dict):
             if query_geometry["type"] == "FeatureCollection":
@@ -53,7 +53,7 @@ def find_places(
                 shapely.geometry.base.BaseGeometry,
                 name="query_geometry",
             )
-    except (WKTReadingError, TypeError, IndexError, ValueError, KeyError) as e:
+    except (ShapelyError, TypeError, IndexError, ValueError, KeyError) as e:
         raise ApiError.BadRequest(
             "Received invalid geometry bbox, geometry WKT, or GeoJSON object"
         ) from e
