@@ -21,3 +21,11 @@ class StatisticsRoutesTest(RoutesTestCase):
             body='{"type": "Point", "coordinates": [1.768, 51.465]}',
         )
         self.assertBadRequestResponse(response, "Missing query parameter 'time'")
+
+    def test_fetch_statistics_invalid_geometry(self):
+        response = self.fetch(
+            "/statistics/demo/conc_chl?time=2017-01-16+10:09:21",
+            method="POST",
+            body="[1.768, 51.465]",
+        )
+        self.assertBadRequestResponse(response, "Invalid GeoJSON geometry encountered")

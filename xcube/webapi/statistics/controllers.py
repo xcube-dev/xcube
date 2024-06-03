@@ -51,7 +51,7 @@ def _compute_statistics(
 
     try:
         geometry = shapely.geometry.shape(geo_json)
-    except (TypeError, ValueError) as e:
+    except (TypeError, ValueError, AttributeError) as e:
         raise ApiError.BadRequest("Invalid GeoJSON geometry encountered") from e
 
     dataset = dataset.sel(time=time, method="nearest")
