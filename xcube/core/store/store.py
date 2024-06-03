@@ -117,6 +117,23 @@ def find_data_store_extensions(
     )
 
 
+def list_data_store_ids(detail: bool = False) -> Union[list[str], dict[str, Any]]:
+    """List the identifiers of installed xcube data stores.
+
+    Args:
+        detail: Whether to return a dictionary with data store metadata or just
+            a list of data store identifiers.
+
+    Returns:
+        If *detail* is ``True`` a dictionary that maps data store identifiers
+        to data store metadata. Otherwise, a list of data store identifiers.
+    """
+    if detail:
+        return {e.name: e.metadata for e in find_data_store_extensions()}
+    else:
+        return [e.name for e in find_data_store_extensions()]
+
+
 #######################################################
 # Classes
 #######################################################
