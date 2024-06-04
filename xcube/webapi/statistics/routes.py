@@ -13,7 +13,26 @@ from .controllers import compute_statistics
 class StatisticsHandler(ApiHandler[StatisticsContext]):
     @api.operation(
         operation_id="getStatistics",
-        summary="Get statistics for a given dataset variable.",
+        summary=(
+            "Get statistics of a dataset variable for given time stamp and geometry."
+        ),
+        description=(
+            "The geometry is passed in the request body in"
+            " form of a valid GeoJSON geometry object."
+            " The operation returns the count, minimum, maximum, mean,"
+            " and standard deviation of a data variable. If a 2-D geometry"
+            " is passed, a histogram is returned as well."
+        ),
+        parameters=[
+            {
+                "name": "time",
+                "in": "query",
+                "description": (
+                    'Required timestamp using format "YYYY-MM-DD hh:mm:ss"'
+                ),
+                "schema": {"type": "string", "format": "datetime"},
+            }
+        ],
     )
     async def post(self, datasetId: str, varName: str):
         params = {k: v[0] for k, v in self.request.query.items()}

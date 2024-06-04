@@ -33,10 +33,98 @@ class StatisticsControllerTest(unittest.TestCase):
         self.assertEqual(
             {
                 "count": 1,
-                "deviation": 0.0,
+                "minimum": expected_value,
                 "maximum": expected_value,
                 "mean": expected_value,
-                "minimum": expected_value,
+                "deviation": 0.0,
             },
             result,
         )
+        self.assertAlmostEqual(44.5496, result.get("mean"), places=4)
+        self.assertNotIn("histogram", result)
+
+    def test_compute_statistics_for_oor_point(self):
+        lon = -100  # --> out-of-range!
+        lat = 51.465
+        time = "2017-01-16 10:09:21"
+
+        ctx = get_statistics_ctx()
+        dataset = ctx.datasets_ctx.get_dataset("demo")
+
+        result = compute_statistics(
+            ctx,
+            "demo",
+            "conc_tsm",
+            {"type": "Point", "coordinates": [lon, lat]},
+            {"time": time},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual({"count": 0}, result)
+
+    def test_compute_statistics_for_polygon(self):
+        lon = 1.768
+        lat = 51.465
+        delta = 0.05
+        time = "2017-01-16 10:09:21"
+
+        ctx = get_statistics_ctx()
+
+        result = compute_statistics(
+            ctx,
+            "demo",
+            "conc_tsm",
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [lon, lat],
+                        [lon + delta, lat],
+                        [lon + delta, lat + delta],
+                        [lon, lat + delta],
+                        [lon, lat],
+                    ]
+                ],
+            },
+            {"time": time},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual(380, result.get("count"))
+        self.assertAlmostEqual(11.6694, result.get("minimum"), places=4)
+        self.assertAlmostEqual(105.8394, result.get("maximum"), places=4)
+        self.assertAlmostEqual(22.9632, result.get("mean"), places=4)
+        self.assertAlmostEqual(10.0869, result.get("deviation"), places=4)
+        histogram = result.get("histogram")
+        self.assertIsInstance(histogram, dict)
+        self.assertIsInstance(histogram.get("values"), list)
+        self.assertIsInstance(histogram.get("edges"), list)
+        self.assertEqual(100, len(histogram.get("values")))
+        self.assertEqual(101, len(histogram.get("edges")))
+
+    def test_compute_statistics_for_oor_polygon(self):
+        lon = -100  # --> out-of-range!
+        lat = 51.465
+        delta = 0.05
+        time = "2017-01-16 10:09:21"
+
+        ctx = get_statistics_ctx()
+
+        result = compute_statistics(
+            ctx,
+            "demo",
+            "conc_tsm",
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [lon, lat],
+                        [lon + delta, lat],
+                        [lon + delta, lat + delta],
+                        [lon, lat + delta],
+                        [lon, lat],
+                    ]
+                ],
+            },
+            {"time": time},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual({"count": 0}, result)

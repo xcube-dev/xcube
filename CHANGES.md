@@ -2,6 +2,12 @@
 
 ### Enhancements
 
+* Added new statistics API to xcube server. The service computes basic
+  statistical values and a histogram for given data variable, time stamp,
+  and a GeoJSON geometry. Its endpoint is: 
+  `/statistics/{datasetId}/{varName}?time={time}`. Geometry is passed as
+  request body in form of a GeoJSON geometry object.
+
 * xcube server's tile API can now handle user-defined colormaps from xcube 
   viewer. Custom color bars are still passed using query parameter `cmap` to 
   endpoint `/tiles/{datasetId}/{varName}/{z}/{y}/{x}`,

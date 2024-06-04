@@ -13,6 +13,7 @@ from .context import StatisticsContext
 
 
 NAN_RESULT = {"count": 0}
+DEFAULT_BIN_COUNT = 100
 
 
 def compute_statistics(
@@ -30,7 +31,9 @@ def compute_statistics(
     trace_perf = params.pop("debug", "1" if ctx.datasets_ctx.trace_perf else "0") == "1"
     measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
     with measure_time("Computing statistics"):
-        return _compute_statistics(ctx, ds_id, var_name, time_label, geo_json)
+        return _compute_statistics(
+            ctx, ds_id, var_name, time_label, geo_json, DEFAULT_BIN_COUNT
+        )
 
 
 def _compute_statistics(
@@ -39,6 +42,7 @@ def _compute_statistics(
     var_name: str,
     time_label: str,
     geo_json: dict[str, Any],
+    bin_count: int,
 ):
     ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
     dataset = ml_dataset.get_dataset(0)
@@ -63,12 +67,14 @@ def _compute_statistics(
             return NAN_RESULT
         indexers = {x_name: geometry.x, y_name: geometry.y}
         dataset = dataset.sel(**indexers, method="Nearest")
-        value = float(dataset[var_name].values)
+        value = dataset[var_name].values
+        if np.isnan(value):
+            return NAN_RESULT
         return {
             "count": 1,
-            "minimum": value,
-            "maximum": value,
-            "mean": value,
+            "minimum": float(value),
+            "maximum": float(value),
+            "mean": float(value),
             "deviation": 0.0,
         }
 
@@ -81,9 +87,12 @@ def _compute_statistics(
     if count == 0:
         return NAN_RESULT
 
+    # note, casting to float forces intended computation
     minimum = float(var.min())
     maximum = float(var.max())
-    h_values, h_edges = np.histogram(var, 100, range=(minimum, maximum), density=True)
+    h_values, h_edges = np.histogram(
+        var, bin_count, range=(minimum, maximum), density=True
+    )
 
     return {
         "count": count,
