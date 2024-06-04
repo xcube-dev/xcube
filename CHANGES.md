@@ -41,6 +41,12 @@
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)
 
+* The class `xcube.webapi.viewer.Viewer` now accepts root paths or URLs that 
+  will each be scanned for datasets. The roots are passed as keyword argument
+  `roots` whose value is a path or URL or an iterable of paths or URLs. 
+  A new keyword argument `max_depth` defines the maximum subdirectory depths 
+  used to search for datasets in case `roots` is given. It defaults to `1`.
+
 ### Incompatible API changes
 
 * The `get_cmap()` method of `util.cmaps.ColormapProvider` now returns a 
