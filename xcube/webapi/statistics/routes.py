@@ -28,8 +28,9 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
                 "name": "time",
                 "in": "query",
                 "description": (
-                    'Required timestamp using format "YYYY-MM-DD hh:mm:ss"'
+                    'Timestamp using format "YYYY-MM-DD hh:mm:ss"'
                 ),
+                "required": True,
                 "schema": {"type": "string", "format": "datetime"},
             }
         ],
