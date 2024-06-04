@@ -49,7 +49,6 @@ class StatisticsControllerTest(unittest.TestCase):
         time = "2017-01-16 10:09:21"
 
         ctx = get_statistics_ctx()
-        dataset = ctx.datasets_ctx.get_dataset("demo")
 
         result = compute_statistics(
             ctx,
