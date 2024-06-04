@@ -143,15 +143,15 @@ class TracingCacheStore(CacheStore):
         raise ValueError()
 
     def store_value(self, key, value):
-        self.trace += "store(%s, %s);" % (key, value)
+        self.trace += f"store({key}, {value});"
         return "S/" + value, 100 * len(value)
 
     def restore_value(self, key, stored_value):
-        self.trace += "restore(%s, %s);" % (key, stored_value)
+        self.trace += f"restore({key}, {stored_value});"
         return stored_value[2:]
 
     def discard_value(self, key, stored_value):
-        self.trace += "discard(%s, %s);" % (key, stored_value)
+        self.trace += f"discard({key}, {stored_value});"
 
 
 class CacheTest(unittest.TestCase):

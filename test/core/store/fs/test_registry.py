@@ -325,13 +325,13 @@ class FsDataStoresTestMixin(ABC):
         data_store: FsDataStore,
         filename_ext: str,
         requested_dtype_alias: Optional[str],
-        expected_dtype_aliases: Set[str],
-        expected_return_type: Union[Type[xr.Dataset], Type[MultiLevelDataset]],
+        expected_dtype_aliases: set[str],
+        expected_return_type: Union[type[xr.Dataset], type[MultiLevelDataset]],
         expected_descriptor_type: Optional[
-            Union[Type[DatasetDescriptor], Type[MultiLevelDatasetDescriptor]]
+            Union[type[DatasetDescriptor], type[MultiLevelDatasetDescriptor]]
         ] = None,
-        write_params: Optional[Dict[str, Any]] = None,
-        open_params: Optional[Dict[str, Any]] = None,
+        write_params: Optional[dict[str, Any]] = None,
+        open_params: Optional[dict[str, Any]] = None,
         assert_data_ok: Optional[Callable[[Any], Any]] = None,
     ):
         """Call all DataStore operations to ensure data of type

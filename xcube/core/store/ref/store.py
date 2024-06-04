@@ -4,7 +4,8 @@
 
 import os
 import warnings
-from typing import Iterator, Any, Tuple, Container, Union, Dict, List
+from typing import Any, Tuple, Union, Dict, List
+from collections.abc import Iterator, Container
 
 import fsspec
 import xarray as xr
@@ -53,7 +54,7 @@ class ReferenceDataStore(DataStore):
 
     def __init__(
         self,
-        refs: List[str],
+        refs: list[str],
         **ref_kwargs,
     ):
         self._refs = dict(self._normalize_ref(ref) for ref in refs)
@@ -64,15 +65,15 @@ class ReferenceDataStore(DataStore):
         return REF_STORE_SCHEMA
 
     @classmethod
-    def get_data_types(cls) -> Tuple[str, ...]:
+    def get_data_types(cls) -> tuple[str, ...]:
         return ("dataset",)
 
-    def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
+    def get_data_types_for_data(self, data_id: str) -> tuple[str, ...]:
         return self.get_data_types()
 
     def get_data_ids(
         self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
-    ) -> Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+    ) -> Union[Iterator[str], Iterator[tuple[str, dict[str, Any]]]]:
         return iter(self._refs.keys())
 
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
@@ -90,7 +91,7 @@ class ReferenceDataStore(DataStore):
 
     def get_data_opener_ids(
         self, data_id: str = None, data_type: DataTypeLike = None
-    ) -> Tuple[str, ...]:
+    ) -> tuple[str, ...]:
         return ("dataset:zarr:reference",)
 
     def get_open_data_params_schema(
@@ -131,8 +132,8 @@ class ReferenceDataStore(DataStore):
 
     @classmethod
     def _normalize_ref(
-        cls, ref: Union[str, Dict[str, Any]]
-    ) -> Tuple[str, Dict[str, Any]]:
+        cls, ref: Union[str, dict[str, Any]]
+    ) -> tuple[str, dict[str, Any]]:
         if isinstance(ref, str):
             ref_path = ref
             data_id = cls._ref_path_to_data_id(ref_path)

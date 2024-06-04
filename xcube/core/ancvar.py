@@ -17,7 +17,7 @@ def find_ancillary_var_names(
     var_name: str,
     same_shape: bool = False,
     same_dims: bool = False,
-) -> Dict[str, Set[str]]:
+) -> dict[str, set[str]]:
     variable = dataset.data_vars.get(var_name)
 
     results = {}

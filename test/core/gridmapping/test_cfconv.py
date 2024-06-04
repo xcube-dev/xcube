@@ -231,7 +231,7 @@ class XarrayDecodeCfTest(unittest.TestCase):
         self.assertVarNames({"noise", "crs", "lon", "lat"}, set(), decode_cf=False)
 
     def assertVarNames(
-        self, exp_data_vars: Set[str], exp_coords: Set[str], decode_cf: bool
+        self, exp_data_vars: set[str], exp_coords: set[str], decode_cf: bool
     ):
         ds1 = xr.open_zarr("noise.zarr", decode_cf=decode_cf)
         self.assertEqual(exp_coords, set(ds1.coords))

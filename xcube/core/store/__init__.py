@@ -32,6 +32,7 @@ from .search import DefaultSearchMixin
 from .store import DataStore
 from .store import MutableDataStore
 from .store import find_data_store_extensions
+from .store import list_data_store_ids
 from .store import get_data_store_class
 from .store import get_data_store_params_schema
 from .store import new_data_store

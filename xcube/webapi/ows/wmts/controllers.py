@@ -4,7 +4,8 @@
 
 import urllib.parse
 import warnings
-from typing import Dict, List, Tuple, Any, Mapping
+from typing import Dict, List, Tuple, Any
+from collections.abc import Mapping
 
 import numpy as np
 import pyproj
@@ -172,8 +173,8 @@ def get_dim_elements(
     ds_name: str,
     ds: xr.Dataset,
     var: xr.DataArray,
-    dim_element_cache: Dict[str, Element],
-) -> List[Element]:
+    dim_element_cache: dict[str, Element],
+) -> list[Element]:
     dim_elements = []
     for dim_name in var.dims[0:-2]:
         if dim_name not in ds.coords:
@@ -262,10 +263,10 @@ def get_var_layer_and_theme_element(
     ds_name: str,
     var_name: str,
     var: xr.DataArray,
-    var_geo_bbox: Tuple[float, float, float, float],
+    var_geo_bbox: tuple[float, float, float, float],
     var_tile_url_templ_pattern: str,
     tms_id: str,
-) -> Tuple[Element, Element]:
+) -> tuple[Element, Element]:
     var_id = f"{ds_name}.{var_name}"
     var_title = (
         ds_name + "/" + var.attrs.get("title", var.attrs.get("long_name", var_name))
@@ -379,7 +380,7 @@ def _get_tile_matrix_set_element(
     tms_title: str,
     crs_urn: str,
     wkss_urn: str,
-    bbox: Tuple[float, float, float, float],
+    bbox: tuple[float, float, float, float],
     meters_per_pixel: float,
     min_level: int,
     max_level: int,
@@ -668,7 +669,7 @@ def get_service_metadata_url_element(
 
 # TODO: move get_crs84_bbox() into GridMapping so we can adjust
 #   global dataset attributes with result
-def get_crs84_bbox(grid_mapping: GridMapping) -> Tuple[float, float, float, float]:
+def get_crs84_bbox(grid_mapping: GridMapping) -> tuple[float, float, float, float]:
     if grid_mapping.crs.is_geographic:
         return grid_mapping.xy_bbox
     t = pyproj.Transformer.from_crs(grid_mapping.crs, CRS_CRS84, always_xy=True)

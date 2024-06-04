@@ -55,13 +55,13 @@ def encode_grid_mapping(
         if (var.ndim >= 2 and var.dims[-1] == x_dim_name and var.dims[-2] == y_dim_name)
     ]
 
-    old_gm_names = set(
+    old_gm_names = {
         old_gm_name
         for old_gm_name in (
             var.attrs.get("grid_mapping") for var_name, var in spatial_vars
         )
         if old_gm_name and old_gm_name in ds_copy
-    )
+    }
     if old_gm_names:
         force = True if force is None else force
         gm_name = gm_name or next(iter(old_gm_names))

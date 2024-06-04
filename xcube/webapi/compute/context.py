@@ -30,13 +30,13 @@ LocalExecutor = concurrent.futures.ThreadPoolExecutor
 # TODO: we should create a module 'job' and define better job classes.
 #   Here we use dicts for time being.
 
-Job = Dict[str, Any]
-Jobs = Dict[int, Job]
+Job = dict[str, Any]
+Jobs = dict[int, Job]
 
-JobRequest = Dict[str, Any]
+JobRequest = dict[str, Any]
 
 JobFuture = concurrent.futures.Future
-JobFutures = Dict[int, JobFuture]
+JobFutures = dict[int, JobFuture]
 
 JOB_INIT = "init"
 JOB_SCHEDULED = "scheduled"
@@ -215,7 +215,7 @@ class ComputeContext(ResourcesContext):
 
         return job
 
-    def get_effective_parameters(self, op: Callable, parameters: Dict[str, Any]):
+    def get_effective_parameters(self, op: Callable, parameters: dict[str, Any]):
         """Replace dataset names with datasets in operation parameters.
 
         This method takes a parameter dictionary for the invocation or an
@@ -291,7 +291,7 @@ def set_job_status(job: Job, status: str, error: Optional[BaseException] = None)
     LOG.info(f"Job #{job_id} {status}.", exc_info=error)
     # Note, we could/should warn/raise on invalid state transitions
     job["state"]["status"] = status
-    job["state"][f"{status}Time"] = datetime.datetime.utcnow().isoformat()
+    job["state"][f"{status}Time"] = datetime.datetime.now(datetime.UTC).isoformat()
     if error is not None:
         job["state"]["error"] = {
             "message": str(error),
@@ -300,7 +300,7 @@ def set_job_status(job: Job, status: str, error: Optional[BaseException] = None)
         }
 
 
-def set_job_result(job: Job, result: Dict[str, Any]):
+def set_job_result(job: Job, result: dict[str, Any]):
     """Set the result of a compute job.
 
     Args:

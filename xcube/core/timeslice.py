@@ -20,7 +20,7 @@ def find_time_slice(
     store: Union[str, MutableMapping],
     time_stamp: Union[np.datetime64, np.ndarray],
     time_eps: np.timedelta64 = DEFAULT_TIME_EPS,
-) -> Tuple[int, str]:
+) -> tuple[int, str]:
     """Find time index and update mode for *time_stamp* in
     Zarr dataset given by *store*.
 
@@ -62,7 +62,7 @@ def find_time_slice(
 def append_time_slice(
     store: Union[str, MutableMapping],
     time_slice: xr.Dataset,
-    chunk_sizes: Dict[str, int] = None,
+    chunk_sizes: dict[str, int] = None,
 ):
     """Append time slice to existing zarr dataset.
 
@@ -95,7 +95,7 @@ def insert_time_slice(
     store: Union[str, MutableMapping],
     insert_index: int,
     time_slice: xr.Dataset,
-    chunk_sizes: Dict[str, int] = None,
+    chunk_sizes: dict[str, int] = None,
 ):
     """Insert time slice into existing zarr dataset.
 
@@ -114,7 +114,7 @@ def replace_time_slice(
     store: Union[str, MutableMapping],
     insert_index: int,
     time_slice: xr.Dataset,
-    chunk_sizes: Dict[str, int] = None,
+    chunk_sizes: dict[str, int] = None,
 ):
     """Replace time slice in existing zarr dataset.
 
@@ -134,7 +134,7 @@ def update_time_slice(
     insert_index: int,
     time_slice: xr.Dataset,
     mode: str,
-    chunk_sizes: Dict[str, int] = None,
+    chunk_sizes: dict[str, int] = None,
 ):
     """Update existing zarr dataset by new time slice.
 

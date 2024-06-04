@@ -40,8 +40,8 @@ def transform_grid_mapping(
     grid_mapping: GridMapping,
     crs: Union[str, pyproj.crs.CRS],
     *,
-    tile_size: Union[int, Tuple[int, int]] = None,
-    xy_var_names: Tuple[str, str] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
+    xy_var_names: tuple[str, str] = None,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
     target_crs = _normalize_crs(crs)

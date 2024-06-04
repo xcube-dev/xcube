@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Optional, Dict, Sequence
+from typing import Any, Optional, Dict
+from collections.abc import Sequence
 
 from xcube.util.undefined import UNDEFINED
 
@@ -51,7 +52,7 @@ class GeoJSON:
         return False
 
     @classmethod
-    def get_geometry_collection_geometries(cls, obj: Any) -> Optional[Sequence[Dict]]:
+    def get_geometry_collection_geometries(cls, obj: Any) -> Optional[Sequence[dict]]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.GEOMETRY_COLLECTION_TYPE:
             geometries = cls._get_sequence(obj, "geometries")
@@ -64,7 +65,7 @@ class GeoJSON:
         return None
 
     @classmethod
-    def get_feature_collection_features(cls, obj: Any) -> Optional[Sequence[Dict]]:
+    def get_feature_collection_features(cls, obj: Any) -> Optional[Sequence[dict]]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.FEATURE_COLLECTION_TYPE:
             features = cls._get_sequence(obj, "features")
@@ -77,7 +78,7 @@ class GeoJSON:
         return None
 
     @classmethod
-    def get_feature_geometry(cls, obj: Any) -> Optional[Dict]:
+    def get_feature_geometry(cls, obj: Any) -> Optional[dict]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.FEATURE_TYPE:
             if "geometry" not in obj:

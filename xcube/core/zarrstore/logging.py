@@ -5,7 +5,8 @@
 
 import collections.abc
 from logging import Logger
-from typing import Iterator, Iterable, KeysView, Optional
+from typing import Optional
+from collections.abc import Iterator, Iterable, KeysView
 
 import zarr.storage
 

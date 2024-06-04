@@ -4,7 +4,8 @@
 
 import os.path
 import uuid
-from typing import Sequence, Any, Dict, Callable, Mapping, Optional, Tuple
+from typing import Any, Dict, Callable, Optional, Tuple
+from collections.abc import Sequence, Mapping
 
 import xarray as xr
 
@@ -67,7 +68,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         input_parameters: Optional[Mapping[str, Any]] = None,
         ds_id: str = "",
         exception_type: type = ValueError,
-    ) -> Tuple[str, Callable]:
+    ) -> tuple[str, Callable]:
         assert_instance(script_path, str, name="script_path")
         assert_given(script_path, name="script_path")
         assert_true(
@@ -134,7 +135,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     def _get_grid_mapping_lazily(self) -> GridMapping:
         return self.get_input_dataset(0).grid_mapping
 
-    def _get_dataset_lazily(self, index: int, parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: dict[str, Any]) -> xr.Dataset:
         input_datasets = [
             self._input_ml_dataset_getter(ds_id).get_dataset(index)
             for ds_id in self._input_ml_dataset_ids

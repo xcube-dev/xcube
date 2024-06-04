@@ -16,7 +16,7 @@ TEST_GEOJSON = os.path.join(os.path.dirname(__file__), "out.geojson")
 
 
 class GenptsCliTest(CliDataTest):
-    def outputs(self) -> List[str]:
+    def outputs(self) -> list[str]:
         return [TEST_CSV, TEST_GEOJSON]
 
     def test_help_option(self):

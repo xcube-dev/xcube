@@ -6,7 +6,8 @@ import json
 import os
 import types
 import unittest
-from typing import Mapping, Any
+from typing import Any
+from collections.abc import Mapping
 
 import requests
 

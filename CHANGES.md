@@ -1,11 +1,12 @@
 ## Changes in 1.6.0 (in development)
 
-### Other changes
-
-*  Refactored xcube workflow to build docker images only on release and deleted the 
-  update xcube tag job.
-
 ### Enhancements
+
+* Added new statistics API to xcube server. The service computes basic
+  statistical values and a histogram for given data variable, time stamp,
+  and a GeoJSON geometry. Its endpoint is: 
+  `/statistics/{datasetId}/{varName}?time={time}`. Geometry is passed as
+  request body in form of a GeoJSON geometry object.
 
 * xcube server's tile API can now handle user-defined colormaps from xcube 
   viewer. Custom color bars are still passed using query parameter `cmap` to 
@@ -46,6 +47,12 @@
 * xcube server can now read SNAP color palette definition files (`*.cpd`) with
   alpha values. (#932)
 
+* The class `xcube.webapi.viewer.Viewer` now accepts root paths or URLs that 
+  will each be scanned for datasets. The roots are passed as keyword argument
+  `roots` whose value is a path or URL or an iterable of paths or URLs. 
+  A new keyword argument `max_depth` defines the maximum subdirectory depths 
+  used to search for datasets in case `roots` is given. It defaults to `1`.
+
 ### Incompatible API changes
 
 * The `get_cmap()` method of `util.cmaps.ColormapProvider` now returns a 
@@ -71,12 +78,17 @@
   - Removed endpoint `/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}`
     from xcube server.
 
+### Fixes
+
+* Fixed an issue with xcube server `/timeseries` endpoint that returned
+  status 500 if a given dataset used a CRS other geographic and the 
+  geometry was not a point. (#995) 
+
+* Fixed broken table of contents links in dataset convention document.
 
 ### Other changes
 
 * Make tests compatible with PyTest 8.2.0. (#973)
-
-* Fix broken table of contents links in dataset convention document.
 
 * Addressed all warnings from xarray indicating that `Dataset.dims` will
   be replaced by `Dataset.sizes`. (#981)
@@ -89,6 +101,24 @@
 
 * Added project URLs and classifiers to `setup.py`, which will be shown in the
   left sidebar on the [PyPI xcube-core](https://pypi.org/project/xcube-core/) webpage.
+
+* Refactored xcube workflow to build docker images only on release and deleted the
+  update xcube tag job.
+
+* Used [`pyupgrade`](https://github.com/asottile/pyupgrade) to automatically upgrade
+  language syntax for Python versions >= 3.9.
+
+* Migrated the xcube project setup from `setup.py` to the modern `pyproject.toml` format.
+
+* The functions `mask_dataset_by_geometry()` and `clip_dataset_by_geometry()`
+  of module `xcube.core.geom` have a new keyword argument
+  `update_attrs: bool = True` as part of the fix for #995.
+
+* Decreased number of warnings in the xcube workflow step unittest-xcube.
+
+* Added new data store `"https"` that uses
+  [fsspec.implementations.http.HTTPFileSystem)](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.http.HTTPFileSystem),
+  so that the upcoming xcube STAC data store will be able to access files from URLs.
 
 ## Changes in 1.5.1
 

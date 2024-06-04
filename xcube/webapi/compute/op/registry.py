@@ -11,10 +11,10 @@ from .info import OpInfo
 
 class OpRegistry:
     def __init__(self):
-        self._ops: Dict[str, Callable] = {}
+        self._ops: dict[str, Callable] = {}
 
     @property
-    def ops(self) -> Dict[str, Callable]:
+    def ops(self) -> dict[str, Callable]:
         return self._ops.copy()
 
     def get_op(self, op_id: str) -> Optional[Callable]:

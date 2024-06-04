@@ -42,8 +42,8 @@ class CubeUserCodeExecutor(CubeTransformer):
     @classmethod
     def _get_callable_from_class(
         cls,
-        process_class: Type[Any],
-        process_params: Dict[str, Any],
+        process_class: type[Any],
+        process_params: dict[str, Any],
     ) -> Callable:
         process_object = process_class()
         process_params_schema = None

@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from xcube.core.store import DATASET_TYPE
 from xcube.core.store import DataStoreError

@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import itertools
-from typing import Dict, Tuple, Iterable, Iterator
+from typing import Dict, Tuple
+from collections.abc import Iterable, Iterator
 
 import numpy as np
 import xarray as xr
@@ -13,7 +14,7 @@ from xcube.core.update import update_dataset_chunk_encoding
 
 def chunk_dataset(
     dataset: xr.Dataset,
-    chunk_sizes: Dict[str, int] = None,
+    chunk_sizes: dict[str, int] = None,
     format_name: str = None,
     data_vars_only: bool = False,
 ) -> xr.Dataset:
@@ -47,7 +48,7 @@ def chunk_dataset(
 
 def get_empty_dataset_chunks(
     dataset: xr.Dataset,
-) -> Iterator[Tuple[str, Iterator[Tuple[int, ...]]]]:
+) -> Iterator[tuple[str, Iterator[tuple[int, ...]]]]:
     """Identify empty dataset chunks and return their indices.
 
     Args:
@@ -63,7 +64,7 @@ def get_empty_dataset_chunks(
     )
 
 
-def get_empty_var_chunks(var: xr.DataArray) -> Iterator[Tuple[int, ...]]:
+def get_empty_var_chunks(var: xr.DataArray) -> Iterator[tuple[int, ...]]:
     """Identify empty variable chunks and return their indices.
 
     Args:
@@ -84,7 +85,7 @@ def get_empty_var_chunks(var: xr.DataArray) -> Iterator[Tuple[int, ...]]:
             yield chunk_index
 
 
-def compute_chunk_slices(chunks: Tuple[Tuple[int, ...], ...]) -> Iterable:
+def compute_chunk_slices(chunks: tuple[tuple[int, ...], ...]) -> Iterable:
     chunk_indices = []
     for c in chunks:
         chunk_indices.append(tuple(i for i in range(len(c))))

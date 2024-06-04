@@ -96,7 +96,7 @@ class GridToolsTest(unittest.TestCase):
 
 class GridCliTest(unittest.TestCase):
     @classmethod
-    def invoke_cli(cls, args: List[str]):
+    def invoke_cli(cls, args: list[str]):
         runner = click.testing.CliRunner()
         return runner.invoke(cli, args)
 

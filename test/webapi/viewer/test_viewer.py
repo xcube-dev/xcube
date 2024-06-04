@@ -4,7 +4,9 @@
 
 import os
 import unittest
-from typing import Optional, Mapping, Any
+from collections.abc import Iterable
+from collections.abc import Mapping
+from typing import Optional, Any, Union
 
 import pytest
 
@@ -33,8 +35,15 @@ class ViewerTest(unittest.TestCase):
         if self.viewer is not None:
             self.viewer.stop_server()
 
-    def get_viewer(self, server_config: Optional[Mapping[str, Any]] = None) -> Viewer:
-        self.viewer = Viewer(server_config=server_config)
+    def get_viewer(
+        self,
+        server_config: Optional[Mapping[str, Any]] = None,
+        roots: Optional[Union[str, Iterable[str]]] = None,
+        max_depth: Optional[int] = None,
+    ) -> Viewer:
+        self.viewer = Viewer(
+            server_config=server_config, roots=roots, max_depth=max_depth
+        )
         return self.viewer
 
     def test_start_and_stop_server(self):
@@ -61,18 +70,73 @@ class ViewerTest(unittest.TestCase):
     def test_no_config(self):
         viewer = self.get_viewer()
         self.assertIsInstance(viewer.server_config, dict)
-        self.assertIn("port", viewer.server_config)
-        self.assertIn("address", viewer.server_config)
-        self.assertIn("reverse_url_prefix", viewer.server_config)
+        self.assertIsInstance(viewer.server_config.get("port"), int)
+        self.assertIsInstance(viewer.server_config.get("address"), str)
+        self.assertIsInstance(viewer.server_config.get("reverse_url_prefix"), str)
 
     def test_with_config(self):
-        viewer = self.get_viewer(STYLES_CONFIG)
+        viewer = self.get_viewer({"port": 8888, **STYLES_CONFIG})
         self.assertIsInstance(viewer.server_config, dict)
-        self.assertIn("port", viewer.server_config)
-        self.assertIn("address", viewer.server_config)
-        self.assertIn("reverse_url_prefix", viewer.server_config)
-        self.assertIn("Styles", viewer.server_config)
-        self.assertEqual(STYLES_CONFIG["Styles"], viewer.server_config["Styles"])
+        # Get rid of "reverse_url_prefix" as it depends on env vars
+        # noinspection PyUnresolvedReferences
+        self.assertIsInstance(viewer.server_config.pop("reverse_url_prefix", None), str)
+        self.assertEqual(
+            {
+                "address": "0.0.0.0",
+                "port": 8888,
+                **STYLES_CONFIG,
+            },
+            viewer.server_config,
+        )
+
+    def test_with_root(self):
+        viewer = self.get_viewer({"port": 8081}, roots="data")
+        self.assertIsInstance(viewer.server_config, dict)
+        # Get rid of "reverse_url_prefix" as it depends on env vars
+        # noinspection PyUnresolvedReferences
+        self.assertIsInstance(viewer.server_config.pop("reverse_url_prefix", None), str)
+        self.assertEqual(
+            {
+                "address": "0.0.0.0",
+                "port": 8081,
+                "DataStores": [
+                    {
+                        "Identifier": "_root_0",
+                        "StoreId": "file",
+                        "StoreParams": {"max_depth": 1, "root": "data"},
+                    }
+                ],
+            },
+            viewer.server_config,
+        )
+
+    def test_with_roots(self):
+        viewer = self.get_viewer(
+            {"port": 8080}, roots=["data", "s3://xcube"], max_depth=2
+        )
+        self.assertIsInstance(viewer.server_config, dict)
+        # Get rid of "reverse_url_prefix" as it depends on env vars
+        # noinspection PyUnresolvedReferences
+        self.assertIsInstance(viewer.server_config.pop("reverse_url_prefix", None), str)
+        self.assertEqual(
+            {
+                "address": "0.0.0.0",
+                "port": 8080,
+                "DataStores": [
+                    {
+                        "Identifier": "_root_0",
+                        "StoreId": "file",
+                        "StoreParams": {"max_depth": 2, "root": "data"},
+                    },
+                    {
+                        "Identifier": "_root_1",
+                        "StoreId": "s3",
+                        "StoreParams": {"max_depth": 2, "root": "xcube"},
+                    },
+                ],
+            },
+            viewer.server_config,
+        )
 
     def test_urls(self):
         viewer = self.get_viewer()

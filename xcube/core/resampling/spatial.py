@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Union, Callable, Mapping, Hashable, Any, Optional
+from typing import Union, Callable, Any, Optional
+from collections.abc import Mapping, Hashable
 
 import numpy as np
 import xarray as xr
@@ -97,6 +98,9 @@ def resample_in_space(
             Defaults to ``True``.
         gm_name: Name for the grid mapping variable.
             Defaults to "crs". Used only if *encode_cf* is ``True``.
+        rectify_kwargs: Keyword arguments passed func:`rectify_dataset`
+            should a rectification be required.
+
 
     Returns: The spatially resampled dataset, or None if the requested
         output area does not intersect with *dataset*.
@@ -148,7 +152,7 @@ def resample_in_space(
                 target_gm=target_gm,
                 encode_cf=encode_cf,
                 gm_name=gm_name,
-                **(rectify_kwargs or {})
+                **(rectify_kwargs or {}),
             )
 
         # Source has higher resolution than target.
@@ -187,7 +191,7 @@ def resample_in_space(
             target_gm=target_gm,
             encode_cf=encode_cf,
             gm_name=gm_name,
-            **(rectify_kwargs or {})
+            **(rectify_kwargs or {}),
         )
 
     # If CRSes are not both geographic and their CRSes are different

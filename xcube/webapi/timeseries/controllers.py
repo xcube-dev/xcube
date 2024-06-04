@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 
-from typing import Dict, List, Optional, Union, Sequence, Any, Set, Tuple
+from typing import Dict, List, Optional, Union, Any, Set, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
@@ -19,10 +20,10 @@ from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time
 from .context import TimeSeriesContext
 
-TimeSeriesValue = Dict[str, Union[str, bool, int, float, None]]
-TimeSeries = List[TimeSeriesValue]
-TimeSeriesCollection = List[TimeSeries]
-GeoJsonObj = Dict[str, Any]
+TimeSeriesValue = dict[str, Union[str, bool, int, float, None]]
+TimeSeries = list[TimeSeriesValue]
+TimeSeriesCollection = list[TimeSeries]
+GeoJsonObj = dict[str, Any]
 GeoJsonFeature = GeoJsonObj
 GeoJsonGeometry = GeoJsonObj
 
@@ -123,8 +124,8 @@ def get_time_series(
 def _get_time_series_for_geometries(
     dataset: xr.Dataset,
     var_name: str,
-    geometries: List[shapely.geometry.base.BaseGeometry],
-    agg_methods: Set[str],
+    geometries: list[shapely.geometry.base.BaseGeometry],
+    agg_methods: set[str],
     grid_mapping: Optional[GridMapping] = None,
     start_date: Optional[np.datetime64] = None,
     end_date: Optional[np.datetime64] = None,
@@ -152,7 +153,7 @@ def _get_time_series_for_geometry(
     dataset: xr.Dataset,
     var_name: str,
     geometry: shapely.geometry.base.BaseGeometry,
-    agg_methods: Set[str],
+    agg_methods: set[str],
     grid_mapping: Optional[GridMapping] = None,
     start_date: Optional[np.datetime64] = None,
     end_date: Optional[np.datetime64] = None,
@@ -194,7 +195,7 @@ def _get_time_series_for_point(
     dataset: xr.Dataset,
     var_name: str,
     point: shapely.geometry.Point,
-    agg_methods: Set[str],
+    agg_methods: set[str],
     grid_mapping: Optional[GridMapping] = None,
     start_date: Optional[np.datetime64] = None,
     end_date: Optional[np.datetime64] = None,
@@ -246,7 +247,7 @@ def _get_time_series_for_point(
 
 
 def collect_timeseries_result(
-    time_series_ds: xr.Dataset, key_to_var_names: Dict[str, str], max_valids: int = None
+    time_series_ds: xr.Dataset, key_to_var_names: dict[str, str], max_valids: int = None
 ) -> TimeSeries:
     _check_max_valids(max_valids)
 
@@ -314,8 +315,8 @@ def collect_timeseries_result(
 
 
 def _to_shapely_geometries(
-    geo_json_geometries: List[GeoJsonGeometry],
-) -> List[shapely.geometry.base.BaseGeometry]:
+    geo_json_geometries: list[GeoJsonGeometry],
+) -> list[shapely.geometry.base.BaseGeometry]:
     geometries = []
     for geo_json_geometry in geo_json_geometries:
         try:
@@ -326,7 +327,7 @@ def _to_shapely_geometries(
     return geometries
 
 
-def _to_geo_json_geometries(geo_json: GeoJsonObj) -> Tuple[List[GeoJsonGeometry], bool]:
+def _to_geo_json_geometries(geo_json: GeoJsonObj) -> tuple[list[GeoJsonGeometry], bool]:
     is_collection = False
     if GeoJSON.is_feature(geo_json):
         geometry = _get_feature_geometry(geo_json)

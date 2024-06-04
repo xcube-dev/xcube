@@ -6,12 +6,15 @@ import collections.abc
 import datetime
 import hashlib
 import time
-from typing import Dict, Any, List, Mapping, Optional
+from typing import Dict, Any, List, Optional
+from collections.abc import Mapping
 
 from xcube.util.assertions import assert_instance
 
 _CONTENT_LENGTH_DUMMY = -1
-_LAST_MODIFIED_DUMMY = str(datetime.datetime.utcfromtimestamp(time.time()))
+_LAST_MODIFIED_DUMMY = str(
+    datetime.datetime.fromtimestamp(time.time(), datetime.UTC)
+)
 
 
 def list_s3_bucket_v2(
@@ -24,7 +27,7 @@ def list_s3_bucket_v2(
     continuation_token: Optional[str] = None,
     storage_class: Optional[str] = None,
     last_modified: Optional[str] = None,
-) -> Dict:
+) -> dict:
     """Implements AWS GET Bucket (List Objects) Version 2
     (https://docs.aws.amazon.com/AmazonS3/latest/API/v2-RESTBucketGET.html)
     for the local filesystem.
@@ -131,7 +134,7 @@ def list_s3_bucket_v2(
         )
         contents_list.append(item)
 
-    list_bucket_result: Dict[str, Any] = dict(
+    list_bucket_result: dict[str, Any] = dict(
         Name=name,
         Prefix=prefix,
         StartAfter=start_after,
@@ -160,7 +163,7 @@ def list_s3_bucket_v1(
     marker: str = None,
     storage_class: str = None,
     last_modified: str = None,
-) -> Dict:
+) -> dict:
     """Implements AWS GET Bucket (List Objects) Version 1
     (https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGET.html)
     for the local filesystem.
@@ -249,7 +252,7 @@ def list_s3_bucket_v1(
         )
         contents_list.append(item)
 
-    list_bucket_result: Dict[str, Any] = dict(
+    list_bucket_result: dict[str, Any] = dict(
         Name=name,
         Prefix=prefix,
         Marker=marker,
@@ -277,7 +280,7 @@ def list_bucket_result_to_xml(list_bucket_result):
 
 
 def dict_to_xml(
-    root_element_name: str, content_dict: Dict, root_element_attrs: Dict = None
+    root_element_name: str, content_dict: dict, root_element_attrs: dict = None
 ) -> str:
     lines = []
     _value_to_xml(
@@ -287,10 +290,10 @@ def dict_to_xml(
 
 
 def _value_to_xml(
-    lines: List[str],
+    lines: list[str],
     element_name: str,
     element_value: Any,
-    element_attrs: Dict = None,
+    element_attrs: dict = None,
     indent: int = 0,
 ):
     attrs = ""

@@ -3,7 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import abstractmethod, ABC
-from typing import Iterator, Tuple, Any, Optional, List, Type, Dict, Union, Container
+from typing import Tuple, Any, Optional, List, Type, Dict, Union
+from collections.abc import Iterator, Container
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util.extension import Extension
@@ -55,7 +56,7 @@ def new_data_store(
 
 def get_data_store_class(
     data_store_id: str, extension_registry: Optional[ExtensionRegistry] = None
-) -> Union[Type["DataStore"], Type["MutableDataStore"]]:
+) -> Union[type["DataStore"], type["MutableDataStore"]]:
     """Get the class for the data store identified by *data_store_id*.
 
     Args:
@@ -98,7 +99,7 @@ def get_data_store_params_schema(
 def find_data_store_extensions(
     predicate: ExtensionPredicate = None,
     extension_registry: Optional[ExtensionRegistry] = None,
-) -> List[Extension]:
+) -> list[Extension]:
     """Find data store extensions using the optional filter
     function *predicate*.
 
@@ -114,6 +115,23 @@ def find_data_store_extensions(
     return extension_registry.find_extensions(
         EXTENSION_POINT_DATA_STORES, predicate=predicate
     )
+
+
+def list_data_store_ids(detail: bool = False) -> Union[list[str], dict[str, Any]]:
+    """List the identifiers of installed xcube data stores.
+
+    Args:
+        detail: Whether to return a dictionary with data store metadata or just
+            a list of data store identifiers.
+
+    Returns:
+        If *detail* is ``True`` a dictionary that maps data store identifiers
+        to data store metadata. Otherwise, a list of data store identifiers.
+    """
+    if detail:
+        return {e.name: e.metadata for e in find_data_store_extensions()}
+    else:
+        return [e.name for e in find_data_store_extensions()]
 
 
 #######################################################
@@ -151,7 +169,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
 
     @classmethod
     @abstractmethod
-    def get_data_types(cls) -> Tuple[str, ...]:
+    def get_data_types(cls) -> tuple[str, ...]:
         """Get alias names for all data types supported by this store.
         The first entry in the tuple represents this store's
         default data type.
@@ -161,7 +179,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     @abstractmethod
-    def get_data_types_for_data(self, data_id: str) -> Tuple[str, ...]:
+    def get_data_types_for_data(self, data_id: str) -> tuple[str, ...]:
         """Get alias names for of data types that are supported
         by this store for the given *data_id*.
 
@@ -179,7 +197,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
     @abstractmethod
     def get_data_ids(
         self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
-    ) -> Union[Iterator[str], Iterator[Tuple[str, Dict[str, Any]]]]:
+    ) -> Union[Iterator[str], Iterator[tuple[str, dict[str, Any]]]]:
         """Get an iterator over the data resource identifiers for the
         given type *data_type*. If *data_type* is omitted, all data
         resource identifiers are returned.
@@ -234,7 +252,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
 
     def list_data_ids(
         self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
-    ) -> Union[List[str], List[Tuple[str, Dict[str, Any]]]]:
+    ) -> Union[list[str], list[tuple[str, dict[str, Any]]]]:
         """Convenience version of `get_data_ids()` that returns a list rather
         than an iterator.
 
@@ -300,7 +318,7 @@ class DataStore(DataOpener, DataSearcher, ABC):
     @abstractmethod
     def get_data_opener_ids(
         self, data_id: str = None, data_type: DataTypeLike = None
-    ) -> Tuple[str, ...]:
+    ) -> tuple[str, ...]:
         """Get identifiers of data openers that can be used to open data
         resources from this store.
 
@@ -445,7 +463,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
     """
 
     @abstractmethod
-    def get_data_writer_ids(self, data_type: DataTypeLike = None) -> Tuple[str, ...]:
+    def get_data_writer_ids(self, data_type: DataTypeLike = None) -> tuple[str, ...]:
         """Get identifiers of data writers that can be used to write data
         resources to this store.
 

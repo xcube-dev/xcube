@@ -6,7 +6,8 @@ import threading
 import time
 import traceback
 from abc import ABC
-from typing import Sequence, Optional, Any, Tuple, Type, List
+from typing import Optional, Any, Tuple, Type, List
+from collections.abc import Sequence
 
 import dask.callbacks
 import dask.diagnostics
@@ -54,15 +55,15 @@ class ProgressState:
         return self._super_work * work / self._total_work
 
     @property
-    def exc_info(self) -> Optional[Tuple[Type, BaseException, Any]]:
+    def exc_info(self) -> Optional[tuple[type, BaseException, Any]]:
         return self._exc_info
 
     @exc_info.setter
-    def exc_info(self, exc_info: Tuple[Type, BaseException, Any]):
+    def exc_info(self, exc_info: tuple[type, BaseException, Any]):
         self._exc_info = exc_info
 
     @property
-    def exc_info_text(self) -> Optional[Tuple[str, str, List[str]]]:
+    def exc_info_text(self) -> Optional[tuple[str, str, list[str]]]:
         if not self.exc_info:
             return None
         exc_type, exc_value, exc_traceback = self.exc_info

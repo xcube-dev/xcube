@@ -53,7 +53,7 @@ build_script:
   - micromamba create --name xc --file $APPVEYOR_BUILD_FOLDER/environment.yml
   - micromamba activate xc
   - cd $APPVEYOR_BUILD_FOLDER
-  - python setup.py install
+  - pip install --no-deps .
 
   # Make sure pytest is installed
   - micromamba install --yes --name xc --channel conda-forge pytest attrs

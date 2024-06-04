@@ -5,7 +5,8 @@
 
 import math
 import unittest
-from typing import Optional, List, Mapping
+from typing import Optional, List
+from collections.abc import Mapping
 
 import fsspec
 import fsspec.core
@@ -85,10 +86,10 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         tile_size: Optional[int],
         use_saved_levels: bool,
         base_dataset_path: Optional[str],
-        expected_files: List[str],
+        expected_files: list[str],
         expected_num_levels: int,
         expected_agg_methods: Optional[Mapping[str, AggMethod]],
-        expected_tile_size: List[int],
+        expected_tile_size: list[int],
     ):
         fs = self.fs
         FsMultiLevelDataset.write_dataset(
@@ -105,7 +106,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         )
         self.assertTrue(fs.isdir(path))
         self.assertEqual(
-            set([f"/{path}/{f}" for f in expected_files]),
+            {f"/{path}/{f}" for f in expected_files},
             set(fs.listdir(path, detail=False)),
         )
 

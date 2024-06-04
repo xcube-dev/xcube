@@ -7,8 +7,8 @@ from typing import Any, Union, List, Dict
 
 import numpy as np
 
-JsonArray = List["JsonValue"]
-JsonObject = Dict[str, "JsonValue"]
+JsonArray = list["JsonValue"]
+JsonObject = dict[str, "JsonValue"]
 JsonValue = Union[None, bool, int, float, str, JsonArray, JsonObject]
 
 

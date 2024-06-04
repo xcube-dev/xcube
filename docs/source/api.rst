@@ -14,6 +14,8 @@ Functions
 
 .. autofunction:: xcube.core.store.find_data_store_extensions
 
+.. autofunction:: xcube.core.store.list_data_store_ids
+
 .. autofunction:: xcube.core.store.get_data_store_class
 
 .. autofunction:: xcube.core.store.get_data_store_params_schema
@@ -206,6 +208,9 @@ Utilities
 .. autofunction:: xcube.core.geom.normalize_geometry
 
 .. autoclass:: xcube.core.schema.CubeSchema
+    :members:
+
+.. autoclass:: xcube.webapi.viewer.Viewer
     :members:
 
 .. autofunction:: xcube.util.dask.new_cluster
