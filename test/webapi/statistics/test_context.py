@@ -18,7 +18,7 @@ def get_statistics_ctx(
     return get_api_ctx("statistics", StatisticsContext, server_config)
 
 
-class TilesContextTest(unittest.TestCase):
+class StatisticsContextTest(unittest.TestCase):
     def test_ctx_ok(self):
         ctx = get_statistics_ctx()
         self.assertIsInstance(ctx, StatisticsContext)
