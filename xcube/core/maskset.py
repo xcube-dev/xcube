@@ -110,6 +110,12 @@ class MaskSet:
 
         return "\n".join(lines)
 
+    def keys(self) -> Iterable[str]:
+        return self._flag_names
+
+    def __len__(self):
+        return len(self._flag_names)
+
     def __str__(self):
         return "{}({})".format(
             self._flag_var.name,
@@ -218,7 +224,10 @@ def _convert_flag_var_attribute_value(attr_value, attr_name):
 
         raise ValueError(err_msg)
 
-    if not (hasattr(attr_value, "dtype") and hasattr(attr_value, "shape")):
-        raise TypeError(f"attribute {attr_name!r} must be an integer array")
+    if hasattr(attr_value, "dtype") and hasattr(attr_value, "shape"):
+        return attr_value
 
-    return attr_value
+    if isinstance(attr_value, (list, tuple)):
+        return np.array(attr_value)
+
+    raise TypeError(f"attribute {attr_name!r} must be an integer array")
