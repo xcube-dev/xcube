@@ -13,6 +13,7 @@ from test.sampledata import (
     create_highroc_dataset,
     create_c2rcc_flag_var,
     create_cmems_sst_flag_var,
+    create_cci_lccs_class_var,
 )
 from xcube.core.maskset import MaskSet
 
@@ -22,6 +23,8 @@ class MaskSetTest(unittest.TestCase):
         flag_var = create_cmems_sst_flag_var().chunk(dict(lon=2, lat=2))
         mask_set = MaskSet(flag_var)
 
+        self.assertEqual(4, len(mask_set))
+        self.assertEqual(["sea", "land", "lake", "ice"], list(mask_set.keys()))
         self.assertEqual(
             "mask(sea=(1, None), land=(2, None), lake=(4, None), ice=(8, None))",
             str(mask_set),
@@ -71,6 +74,8 @@ class MaskSetTest(unittest.TestCase):
         flag_var = create_c2rcc_flag_var().chunk(dict(x=2, y=2))
         mask_set = MaskSet(flag_var)
 
+        self.assertEqual(4, len(mask_set))
+        self.assertEqual(["F1", "F2", "F3", "F4"], list(mask_set.keys()))
         self.assertEqual(
             "c2rcc_flags(F1=(1, None), F2=(2, None), F3=(4, None), F4=(8, None))",
             str(mask_set),
@@ -222,6 +227,15 @@ class MaskSetTest(unittest.TestCase):
         html = mask_set._repr_html_()
         self.assertTrue(html.startswith("<html>"))
         self.assertTrue(html.endswith("</html>"))
+
+    def test_mask_set_with_flag_values_as_list(self):
+        flag_var = create_cci_lccs_class_var(flag_values_as_list=False)
+        mask_set = MaskSet(flag_var)
+        self.assertEqual(38, len(mask_set))
+
+        flag_var = create_cci_lccs_class_var(flag_values_as_list=True)
+        mask_set = MaskSet(flag_var)
+        self.assertEqual(38, len(mask_set))
 
     def test_mask_set_with_missing_values_and_masks_attrs(self):
         flag_var = create_c2rcc_flag_var().chunk(dict(x=2, y=2))

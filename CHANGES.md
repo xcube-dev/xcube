@@ -53,6 +53,11 @@
   A new keyword argument `max_depth` defines the maximum subdirectory depths 
   used to search for datasets in case `roots` is given. It defaults to `1`.
 
+* The class `MaskSet()` of module `xcube.core.maskset` now correctly recognises
+  the variable attributes `flag_values`, `flag_masks`, `flag_meanings` when
+  their values are lists (ESA CCI LC data encodes them as JSON arrays).
+
+
 ### Incompatible API changes
 
 * The `get_cmap()` method of `util.cmaps.ColormapProvider` now returns a 
