@@ -68,8 +68,8 @@ def resample_in_space(
     * ``recover_nan`` (bool) - whether a special algorithm
         shall be used that is able to recover values that would
         otherwise yield NaN during resampling.
-        Default is True for floating point variables,
-        and False for integer and bool variables.
+        Default is False for all variable types since this
+        may require considerable CPU resources on top.
 
     Note that *var_configs* is only used if the resampling involves
     an affine transformation. This is true if the CRS of
@@ -135,6 +135,8 @@ def resample_in_space(
                 var_configs=var_configs,
                 encode_cf=encode_cf,
                 gm_name=gm_name,
+                # forman: added to force same coordinates (v1.6, 2024-06-05)
+                reuse_coords=True,
             )
 
         # If the source is not regular, we need to rectify it,

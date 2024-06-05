@@ -127,7 +127,8 @@ def resample_dataset(
             else:
                 spline_order = 1
                 aggregator = np.nanmean
-                recover_nan = True
+                # forman: changed default from True to False (v1.6, 2024-06-05)
+                recover_nan = False
             var_data = resample_ndimage(
                 var.data,
                 scale=(j_scale, i_scale),
@@ -260,7 +261,7 @@ def _transform_array(
             # Yes, then
             # 1. replace NaN by zero
             filled_im = da.where(mask, 0.0, image)
-            # 2. transform the zeo-filled image
+            # 2. transform the zero-filled image
             scaled_im = ndinterp.affine_transform(
                 filled_im, matrix, **at_kwargs, cval=0.0
             )
