@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 from collections.abc import Mapping, Sequence
 import warnings
 
