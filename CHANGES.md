@@ -53,9 +53,19 @@
   A new keyword argument `max_depth` defines the maximum subdirectory depths 
   used to search for datasets in case `roots` is given. It defaults to `1`.
 
+* The behaviour of function `resample_in_space()` of module 
+  `xcube.core.resampling` changed in this version. (#1001)
+  1. If the resampling boils down to a plain affine transformation,
+     the returned target dataset will now have the _same_ spatial coordinates
+     as the provided target grid mapping passed by `target_gm`.
+  2. In the case of up-sampling, we no longer recover `NaN` values by default
+     as it may require considerable CPU overhead.
+     To enforce the old behaviour, provide the `var_configs` keyword-argument
+     and set `recover_nan` to `True` for desired variables.
+
 * The class `MaskSet()` of module `xcube.core.maskset` now correctly recognises
   the variable attributes `flag_values`, `flag_masks`, `flag_meanings` when
-  their values are lists (ESA CCI LC data encodes them as JSON arrays).
+  their values are lists (ESA CCI LC data encodes them as JSON arrays). (#1002)
 
 
 ### Incompatible API changes
