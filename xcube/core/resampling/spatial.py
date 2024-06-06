@@ -25,24 +25,32 @@ _SCALE_LIMIT = 0.95
 
 
 def resample_in_space(
-    dataset: xr.Dataset,
-    source_gm: GridMapping = None,
-    target_gm: GridMapping = None,
-    var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+    source_ds: xr.Dataset,
+    *,
+    target_ds: Optional[xr.Dataset] = None,
+    source_gm: Optional[GridMapping] = None,
+    target_gm: Optional[GridMapping] = None,
+    var_configs: Optional[Mapping[Hashable, Mapping[str, Any]]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
     rectify_kwargs: Optional[dict] = None,
 ):
     """
-    Resample a dataset in the spatial dimensions.
+    Resample a dataset *source_ds* in the spatial dimensions.
 
     If the source grid mapping *source_gm* is not given,
     it is derived from *dataset*:
-    ``source_gm = GridMapping.from_dataset(dataset)``.
+    ``source_gm = GridMapping.from_dataset(source_ds)``.
 
     If the target grid mapping *target_gm* is not given,
-    it is derived from *source_gm*:
-    ``target_gm = source_gm.to_regular()``.
+    it is derived from *source_gm* as
+    ``target_gm = source_gm.to_regular()``,
+    or if target dataset *target_ds* is given as
+    ``target_gm = GridMapping.from_dataset(target_ds)``.
+
+    New in 1.6: If *target_ds* is given, its coordinate
+    variables are copied by reference into the returned
+    dataset.
 
     If *source_gm* is almost equal to *target_gm*, this
     function is a no-op and *dataset* is returned unchanged.
@@ -56,14 +64,15 @@ def resample_in_space(
     dictionaries which can have the following properties:
 
     * ``spline_order`` (int) - The order of spline polynomials
-        used for interpolating. It is used for upsampling only.
+        used for interpolating. It is used for up-sampling only.
         Possible values are 0 to 5.
         Default is 1 (bi-linear) for floating point variables,
         and 0 (= nearest neighbor) for integer and bool variables.
     * ``aggregator`` (str) - An optional aggregating
-        function. It is used for downsampling only.
-        Examples are numpy.nanmean, numpy.nanmin, numpy.nanmax.
-        Default is numpy.nanmean for floating point variables,
+        function. It is used for down-sampling only.
+        Examples are ``numpy.nanmean``, ``numpy.nanmin``,
+        ``numpy.nanmax``.
+        Default is ``numpy.nanmean`` for floating point variables,
         and None (= nearest neighbor) for integer and bool variables.
     * ``recover_nan`` (bool) - whether a special algorithm
         shall be used that is able to recover values that would
@@ -81,14 +90,18 @@ def resample_in_space(
        and the result is returned directly.
     2. *source_gm* is not regular and has a lower resolution
        than *target_cm*.
-       In this case *dataset* is downsampled first using an affine
+       In this case *dataset* is down-sampled first using an affine
        transformation. Then the result is rectified.
 
     In all other cases, no affine transformation is applied and
     the resampling is a direct rectification.
 
     Args:
-        dataset: The source dataset.
+        source_ds: The source dataset.
+        target_ds: An optional dataset that provides the
+            target grid mapping, if *target_gm* is not provided.
+            The coordinate variables of *target_dataset* are copied
+            by reference into the returned dataset.
         source_gm: The source grid mapping.
         target_gm: The target grid mapping. Must be regular.
         var_configs: Optional resampling configurations
@@ -106,16 +119,23 @@ def resample_in_space(
         output area does not intersect with *dataset*.
     """
     if source_gm is None:
-        # No source grid mapping given, so do derive it from dataset
-        source_gm = GridMapping.from_dataset(dataset)
+        # No source grid mapping given, so do derive it from dataset.
+        source_gm = GridMapping.from_dataset(source_ds)
 
     if target_gm is None:
-        # No target grid mapping given, so do derive it from source
-        target_gm = source_gm.to_regular()
+        # No target grid mapping given, so do derive it
+        # from target dataset or source grid mapping.
+        if target_ds is not None:
+            target_gm = GridMapping.from_dataset(target_ds)
+        else:
+            target_gm = source_gm.to_regular()
 
     if source_gm.is_close(target_gm):
-        # If source and target grid mappings are almost equal
-        return dataset
+        # If source and target grid mappings are almost equal.
+        # NOTE: Actually we should only return input here if
+        # encode_cf == False and gm_name is None and target_ds is None.
+        # Otherwise, create a copy and apply encoding and coords copy.
+        return source_ds
 
     # target_gm must be regular
     GridMapping.assert_regular(target_gm, name="target_gm")
@@ -129,14 +149,13 @@ def resample_in_space(
             # If also the source is regular, then resampling reduces
             # to an affine transformation.
             return affine_transform_dataset(
-                dataset,
+                source_ds,
                 source_gm=source_gm,
+                target_ds=target_ds,
                 target_gm=target_gm,
                 var_configs=var_configs,
                 encode_cf=encode_cf,
                 gm_name=gm_name,
-                # forman: added to force same coordinates (v1.6, 2024-06-05)
-                reuse_coords=True,
             )
 
         # If the source is not regular, we need to rectify it,
@@ -149,8 +168,9 @@ def resample_in_space(
             # Source pixel size >= target pixel size.
             # We can rectify.
             return rectify_dataset(
-                dataset,
+                source_ds,
                 source_gm=source_gm,
+                target_ds=target_ds,
                 target_gm=target_gm,
                 encode_cf=encode_cf,
                 gm_name=gm_name,
@@ -163,7 +183,7 @@ def resample_in_space(
             # If source is regular
             downscaled_gm = source_gm.scale((x_scale, y_scale))
             downscaled_dataset = resample_dataset(
-                dataset,
+                source_ds,
                 ((x_scale, 1, 0), (1, y_scale, 0)),
                 size=downscaled_gm.size,
                 tile_size=source_gm.tile_size,
@@ -175,7 +195,7 @@ def resample_in_space(
                 source_gm.xy_res, source_gm.size, (x_scale, y_scale)
             )
             downscaled_dataset = resample_dataset(
-                dataset,
+                source_ds,
                 ((x_scale, 1, 0), (1, y_scale, 0)),
                 size=downscaled_size,
                 tile_size=source_gm.tile_size,
@@ -190,6 +210,7 @@ def resample_in_space(
         return rectify_dataset(
             downscaled_dataset,
             source_gm=downscaled_gm,
+            target_ds=target_ds,
             target_gm=target_gm,
             encode_cf=encode_cf,
             gm_name=gm_name,
@@ -201,8 +222,9 @@ def resample_in_space(
     transformed_source_gm = source_gm.transform(target_gm.crs)
     transformed_x, transformed_y = transformed_source_gm.xy_coords
     return resample_in_space(
-        dataset.assign(transformed_x=transformed_x, transformed_y=transformed_y),
+        source_ds.assign(transformed_x=transformed_x, transformed_y=transformed_y),
         source_gm=transformed_source_gm,
+        target_ds=target_ds,
         target_gm=target_gm,
         gm_name=gm_name,
     )

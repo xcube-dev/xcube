@@ -14,7 +14,7 @@ import xarray as xr
 from xcube.core.gridmapping import GridMapping
 from xcube.core.select import select_spatial_subset
 from xcube.util.dask import compute_array_from_func
-from .cf import maybe_encode_grid_mapping
+from .cf import complete_resampled_dataset
 
 
 _INTERPOLATIONS = {"nearest": 0, "triangular": 1, "bilinear": 2}
@@ -23,18 +23,19 @@ _INTERPOLATIONS = {"nearest": 0, "triangular": 1, "bilinear": 2}
 def rectify_dataset(
     source_ds: xr.Dataset,
     *,
-    var_names: Union[str, Sequence[str]] = None,
-    source_gm: GridMapping = None,
-    target_gm: GridMapping = None,
+    target_ds: Optional[xr.Dataset] = None,
+    source_gm: Optional[GridMapping] = None,
+    target_gm: Optional[GridMapping] = None,
+    var_names: Optional[Union[str, Sequence[str]]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
-    tile_size: Union[int, tuple[int, int]] = None,
-    is_j_axis_up: bool = None,
-    output_ij_names: tuple[str, str] = None,
+    tile_size: Optional[Union[int, tuple[int, int]]] = None,
+    is_j_axis_up: Optional[bool] = None,
+    output_ij_names: Optional[tuple[str, str]] = None,
     compute_subset: bool = True,
     uv_delta: float = 1e-3,
     interpolation: Optional[str] = None,
-    xy_var_names: tuple[str, str] = None,
+    xy_var_names: Optional[tuple[str, str]] = None,
 ) -> Optional[xr.Dataset]:
     """Reproject dataset *source_ds* using its per-pixel
     x,y coordinates or the given *source_gm*.
@@ -54,20 +55,28 @@ def rectify_dataset(
     2. Two-dimensional ``x_var(y_dim, x_dim)``
        and ``y_var(y_dim, x_dim)`` (coordinate) variables.
 
-    If *target_gm* is given and it defines a tile size
-    or *tile_size* is given, and the number of tiles is
+    If *target_gm* is given and it defines a tile size,
+    or *tile_size* is given and the number of tiles is
     greater than one in the output's x- or y-direction, then the
     returned dataset will be composed of lazy, chunked dask
     arrays. Otherwise, the returned dataset will be composed
     of ordinary numpy arrays.
 
+    New in 1.6: If *target_ds* is given, its coordinate
+    variables are copied by reference into the returned
+    dataset.
+
     Args:
-        source_ds: Source dataset grid mapping.
-        var_names: Optional variable name or sequence of variable names.
+        source_ds: Source dataset.
+        target_ds: An optional dataset that provides the
+            target grid mapping if *target_gm* is not provided.
+            The coordinate variables of *target_dataset* are copied
+            by reference into the returned dataset.
         source_gm: Source dataset grid mapping.
         target_gm: Optional target geometry. If not given, output
             geometry will be computed to spatially fit *dataset* and to
             retain its spatial resolution.
+        var_names: Optional variable name or sequence of variable names.
         encode_cf: Whether to encode the target grid mapping into the
             resampled dataset in a CF-compliant way. Defaults to
             ``True``.
@@ -80,8 +89,9 @@ def rectify_dataset(
             store the computed source pixel coordinates in the returned
             output.
         compute_subset: Whether to compute a spatial subset from
-            *dataset* using *output_geom*. If set, the function may
-            return ``None`` in case there is no overlap.
+            *source_ds* using the boundary of the target grid mapping.
+            If set, the function may return ``None`` in case there is no
+            overlap.
         uv_delta: A normalized value that is used to determine whether
             x,y coordinates in the output are contained in the triangles
             defined by the input x,y coordinates. The higher this value,
@@ -97,7 +107,7 @@ def rectify_dataset(
             no replacement.
 
     Returns:
-        a reprojected dataset, or None if the requested output does not
+        A reprojected dataset, or None if the requested output does not
         intersect with *dataset*.
     """
     if xy_var_names:
@@ -111,6 +121,9 @@ def rectify_dataset(
         source_gm = GridMapping.from_dataset(source_ds)
 
     src_attrs = dict(source_ds.attrs)
+
+    if target_gm is None and target_ds is not None:
+        target_gm = GridMapping.from_dataset(target_ds)
 
     if target_gm is None:
         target_gm = source_gm.to_regular(tile_size=tile_size)
@@ -183,11 +196,12 @@ def rectify_dataset(
             dst_src_ij_array[1], dims=dst_dims, coords=dst_ij_coords
         )
 
-    return maybe_encode_grid_mapping(
+    return complete_resampled_dataset(
         encode_cf,
         xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs),
         target_gm,
         gm_name,
+        target_ds,
     )
 
 
