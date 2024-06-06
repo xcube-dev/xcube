@@ -110,7 +110,7 @@ def affine_transform_dataset(
         resampled_dataset.assign_coords(new_coords),
         target_gm,
         gm_name,
-        target_ds,
+        target_ds.coords if target_ds else None,
     )
 
 

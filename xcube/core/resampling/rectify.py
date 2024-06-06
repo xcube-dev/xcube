@@ -201,7 +201,7 @@ def rectify_dataset(
         xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs),
         target_gm,
         gm_name,
-        target_ds,
+        target_ds.coords if target_ds else None,
     )
 
 

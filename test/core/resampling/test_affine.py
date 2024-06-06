@@ -46,7 +46,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
     def test_subset(self):
         target_gm = GridMapping.regular((3, 3), (50.0, 10.0), res, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -66,7 +66,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
 
         target_gm = GridMapping.regular((3, 3), (50.1, 10.1), res, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -86,7 +86,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
 
         target_gm = GridMapping.regular((3, 3), (50.05, 10.05), res, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -102,13 +102,15 @@ class AffineTransformDatasetTest(unittest.TestCase):
         expected = np.array([[1.25, 1.5, 0.75], [1.0, 1.25, 1.5], [1.75, 1.0, 1.25]])
 
         target_gm = GridMapping.regular((3, 3), (50.05, 10.05), res, CRS_WGS84)
-        target_ds = affine_transform_dataset(source_ds, source_gm, target_gm)
+        target_ds = affine_transform_dataset(
+            source_ds, source_gm=source_gm, target_gm=target_gm
+        )
         self.assertEqual((3, 3), target_ds.refl.shape)
         np.testing.assert_almost_equal(target_ds.refl.values, expected)
 
         target_gm = GridMapping.regular((3, 3), (50.05, 10.05), res, CRS_CRS84)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertEqual((3, 3), target_ds.refl.shape)
         np.testing.assert_almost_equal(target_ds.refl.values, expected)
@@ -122,12 +124,14 @@ class AffineTransformDatasetTest(unittest.TestCase):
             ' must be equal, was "WGS 84" and'
             ' "ETRS89-extended / LAEA Europe"',
         ):
-            affine_transform_dataset(source_ds, source_gm, target_gm)
+            affine_transform_dataset(
+                source_ds, source_gm=source_gm, target_gm=target_gm
+            )
 
     def test_downscale_x2(self):
         target_gm = GridMapping.regular((8, 6), (50, 10), 2 * res, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -152,7 +156,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
     def test_downscale_x2_and_shift(self):
         target_gm = GridMapping.regular((8, 6), (49.8, 9.8), 2 * res, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -177,7 +181,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
     def test_upscale_x2(self):
         target_gm = GridMapping.regular((8, 6), (50, 10), res / 2, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -202,7 +206,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
     def test_upscale_x2_and_shift(self):
         target_gm = GridMapping.regular((8, 6), (49.9, 9.95), res / 2, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -227,7 +231,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
     def test_shift(self):
         target_gm = GridMapping.regular((8, 6), (50.2, 10.1), res, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
@@ -251,7 +255,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
 
         target_gm = GridMapping.regular((8, 6), (49.8, 9.9), res, source_gm.crs)
         target_ds = affine_transform_dataset(
-            source_ds, source_gm, target_gm, gm_name="crs"
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
         )
         self.assertIsInstance(target_ds, xr.Dataset)
         self.assertEqual(
