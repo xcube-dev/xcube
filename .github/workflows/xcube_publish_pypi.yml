@@ -8,9 +8,7 @@
 
 name: publish to PyPI
 
-on:
-  release:
-    types: [published]
+on: push
 
 jobs:
   deploy:
@@ -29,8 +27,10 @@ jobs:
         pip install build
     - name: Build package
       run: |
+        LINE_NB=$(grep -n 'name = "xcube" # PYPI RENAME THIS LINE' pyproject.toml | cut -f1 -d:)
+        sed -i ""$LINE_NB"s/.*/name = 'xcube-core'/" pyproject.toml 
         python -m build
-    - name: Publish to TestPyPI
+    - name: Publish to PyPI
       run: |
         pip install twine
-        python -m twine upload --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} dist/*
+        python -m twine upload --repository testpypi --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} dist/*
