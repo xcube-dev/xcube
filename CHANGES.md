@@ -135,7 +135,7 @@
   [fsspec.implementations.http.HTTPFileSystem)](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.http.HTTPFileSystem),
   so that the upcoming xcube STAC data store will be able to access files from URLs.
 
-* Change package name from "xcube-core" to "xcube" in the `pyproject.toml` file. The workflow
+* Changed package name from "xcube-core" to "xcube" in the `pyproject.toml` file. The workflow
   `.github/workflows/xcube_publish_pypi.yml` changes the line in the `pyproject.toml`, where
   the package name is defined to `name = "xcube-core"`. This allows to release xcube under
   the package name xcube-core on PyPI. #1010
