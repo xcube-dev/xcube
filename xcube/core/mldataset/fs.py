@@ -50,6 +50,12 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             fs, path = fsspec.core.url_to_fs(path, **(fs_kwargs or {}))
         assert_instance(fs, fsspec.AbstractFileSystem, name="fs")
         assert_instance(path, str, name="data_id")
+        # TODO: Setting ds_id=path is likely the root cause for
+        #   https://github.com/xcube-dev/xcube/issues/1007.
+        #   Then, the actual fix is to replace slashes by dashes or underscores.
+        #   But this requires deeper investigation and more test cases.
+        #   A quick fix has been applied in `xcube.webapi.viewer.Viewer.add_dataset()`
+        #   implementation. forman, 2024-06-07
         super().__init__(ds_id=path)
         self._path = path
         self._fs = fs

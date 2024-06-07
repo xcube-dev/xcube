@@ -183,6 +183,13 @@ class DatasetsContext(ResourcesContext):
             ml_dataset = BaseMultiLevelDataset(dataset, ds_id=ds_id)
         else:
             ml_dataset = dataset
+            if not ds_id:
+                _ds_id = ml_dataset.ds_id
+                # TODO: Fixes https://github.com/xcube-dev/xcube/issues/1007, but
+                #   this does not solve the likely root cause
+                #   in xcube.core.mldataset.fs.FsMultiLevelDataset, see ctor.
+                if "/" in _ds_id:
+                    ds_id = _ds_id.replace("/", "-")
             if ds_id:
                 ml_dataset = IdentityMultiLevelDataset(dataset, ds_id=ds_id)
             dataset = ml_dataset.base_dataset

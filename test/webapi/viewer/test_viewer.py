@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from typing import Optional, Any, Union
 
 import pytest
+from xcube.core.mldataset import BaseMultiLevelDataset
 
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
@@ -209,6 +210,21 @@ class ViewerTest(unittest.TestCase):
         self.viewer.remove_dataset(ds_id_2)
         with pytest.raises(ApiError.NotFound):
             self.viewer.datasets_ctx.get_dataset_config(ds_id_2)
+
+    # Verifies https://github.com/xcube-dev/xcube/issues/1007
+    def test_add_dataset_with_slash_path(self):
+        viewer = self.get_viewer(STYLES_CONFIG)
+
+        ml_ds = BaseMultiLevelDataset(
+            new_cube(variables={"analysed_sst": 280.0}),
+            ds_id="mybucket/mysst.levels",
+        )
+        ds_id = viewer.add_dataset(ml_ds, title="My SST")
+
+        self.assertEqual("mybucket-mysst.levels", ds_id)
+
+        ds_config = self.viewer.datasets_ctx.get_dataset_config(ds_id)
+        self.assertEqual({"Identifier": ds_id, "Title": "My SST"}, ds_config)
 
     def test_add_dataset_with_style(self):
         viewer = self.get_viewer(STYLES_CONFIG)

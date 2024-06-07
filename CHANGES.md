@@ -64,9 +64,21 @@
      To enforce the old behaviour, provide the `var_configs` keyword-argument
      and set `recover_nan` to `True` for desired variables.
 
+### Fixes
+
+* When using the `xcube.webapi.viewer.Viewer` class in Jupyter notebooks
+  multi-level datasets opened from S3 or from deeper subdirectories into
+  the local filesystem are now fully supported. (#1007)
+
 * The class `MaskSet()` of module `xcube.core.maskset` now correctly recognises
   the variable attributes `flag_values`, `flag_masks`, `flag_meanings` when
   their values are lists (ESA CCI LC data encodes them as JSON arrays). (#1002)
+
+* Fixed an issue with xcube server `/timeseries` endpoint that returned
+  status 500 if a given dataset used a CRS other geographic and the 
+  geometry was not a point. (#995) 
+
+* Fixed broken table of contents links in dataset convention document.
 
 
 ### Incompatible API changes
@@ -100,14 +112,6 @@
   - Removed function `xcube.util.cmaps.ensure_cmaps_loaded()`.
   - Removed endpoint `/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}`
     from xcube server.
-
-### Fixes
-
-* Fixed an issue with xcube server `/timeseries` endpoint that returned
-  status 500 if a given dataset used a CRS other geographic and the 
-  geometry was not a point. (#995) 
-
-* Fixed broken table of contents links in dataset convention document.
 
 ### Other changes
 
