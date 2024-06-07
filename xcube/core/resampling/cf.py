@@ -87,16 +87,16 @@ def complete_resampled_dataset(
     ds: xr.Dataset,
     gm: GridMapping,
     gm_name: Optional[str],
-    coords: Optional[Mapping[Hashable, xr.DataArray]],
+    ref_coords: Optional[Mapping[Hashable, xr.DataArray]],
 ) -> xr.Dataset:
     """Internal helper."""
     if encode_cf:
         ds = encode_grid_mapping(
             ds, gm, gm_name=gm_name, force=True if gm_name else None
         )
-    if coords:
+    if ref_coords:
         compatible_coords = {
-            k: v for k, v in coords.items() if is_var_compatible(v, ds)
+            k: v for k, v in ref_coords.items() if is_var_compatible(v, ds)
         }
         ds = ds.assign_coords(compatible_coords)
     return ds

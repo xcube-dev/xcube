@@ -82,6 +82,45 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
             ),
         )
 
+    def test_rectify_2x2_to_7x7_with_ref_ds(self):
+
+        source_ds = self.new_2x2_dataset_with_irregular_coords()
+        # Add offset to "rad" so its values do not lie on a plane
+        source_ds["rad"] = source_ds.rad + xr.DataArray(
+            np.array([[0.0, 0.0], [0.0, 1.0]]), dims=("y", "x")
+        )
+
+        target_gm = GridMapping.regular(
+            size=(7, 7), xy_min=(-0.5, 49.5), xy_res=1.0, crs=CRS_WGS84
+        )
+
+        target_ds = rectify_dataset(source_ds, target_gm=target_gm)
+        # target_ds is tested in test_rectify_2x2_to_default() above,
+        # so we know it is valid.
+        # We now do the same but use target_ds as reference dataset:
+        ref_ds = target_ds
+        target_ds = rectify_dataset(source_ds, ref_ds=ref_ds)
+
+        lon, lat, rad = self._assert_shape_and_dim(target_ds, (7, 7))
+        # Coordinates must now be SAME, not almost equal.
+        np.testing.assert_equal(lon.values, ref_ds.lon.values)
+        np.testing.assert_equal(lat.values, ref_ds.lat.values)
+        np.testing.assert_almost_equal(
+            rad.values,
+            np.array(
+                [
+                    [nan, 1.0, nan, nan, nan, nan, nan],
+                    [nan, 1.0, 1.0, nan, nan, nan, nan],
+                    [nan, 1.0, 1.0, 1.0, 2.0, nan, nan],
+                    [nan, 3.0, 3.0, 1.0, 2.0, 2.0, 2.0],
+                    [3.0, 3.0, 3.0, 5.0, 2.0, nan, nan],
+                    [nan, 3.0, 5.0, 5.0, nan, nan, nan],
+                    [nan, nan, 5.0, nan, nan, nan, nan],
+                ],
+                dtype=rad.dtype,
+            ),
+        )
+
     def test_rectify_2x2_to_7x7_triangular_interpol(self):
         source_ds = self.new_2x2_dataset_with_irregular_coords()
         # Add offset to "rad" so its values do not lie on a plane

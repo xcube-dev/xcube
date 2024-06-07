@@ -22,10 +22,10 @@ _INTERPOLATIONS = {"nearest": 0, "triangular": 1, "bilinear": 2}
 
 def rectify_dataset(
     source_ds: xr.Dataset,
-    *,
-    target_ds: Optional[xr.Dataset] = None,
+    /,
     source_gm: Optional[GridMapping] = None,
     target_gm: Optional[GridMapping] = None,
+    ref_ds: Optional[xr.Dataset] = None,
     var_names: Optional[Union[str, Sequence[str]]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
@@ -68,14 +68,14 @@ def rectify_dataset(
 
     Args:
         source_ds: Source dataset.
-        target_ds: An optional dataset that provides the
-            target grid mapping if *target_gm* is not provided.
-            The coordinate variables of *target_dataset* are copied
-            by reference into the returned dataset.
         source_gm: Source dataset grid mapping.
         target_gm: Optional target geometry. If not given, output
             geometry will be computed to spatially fit *dataset* and to
             retain its spatial resolution.
+        ref_ds: An optional dataset that provides the
+            target grid mapping if *target_gm* is not provided.
+            If *ref_ds* is given, its coordinate variables are copied
+            by reference into the returned dataset.
         var_names: Optional variable name or sequence of variable names.
         encode_cf: Whether to encode the target grid mapping into the
             resampled dataset in a CF-compliant way. Defaults to
@@ -122,8 +122,8 @@ def rectify_dataset(
 
     src_attrs = dict(source_ds.attrs)
 
-    if target_gm is None and target_ds is not None:
-        target_gm = GridMapping.from_dataset(target_ds)
+    if target_gm is None and ref_ds is not None:
+        target_gm = GridMapping.from_dataset(ref_ds)
 
     if target_gm is None:
         target_gm = source_gm.to_regular(tile_size=tile_size)
@@ -201,7 +201,7 @@ def rectify_dataset(
         xr.Dataset(dst_vars, coords=dst_ds_coords, attrs=src_attrs),
         target_gm,
         gm_name,
-        target_ds.coords if target_ds else None,
+        ref_ds.coords if ref_ds else None,
     )
 
 
