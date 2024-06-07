@@ -55,9 +55,10 @@
 
 * The behaviour of function `resample_in_space()` of module 
   `xcube.core.resampling` changed in this version. (#1001)
-  1. If the resampling boils down to a plain affine transformation,
-     the returned target dataset will now have the _same_ spatial coordinates
-     as the provided target grid mapping passed by `target_gm`.
+  1. A new keyword argument `ref_ds` can now be used to provide 
+     a reference dataset for the reprojection. It can be passed instead 
+     of `target_rm`. If `ref_ds` is given, it also forces the returned target 
+     dataset to have the _same_ spatial coordinates as `ref_ds`.
   2. In the case of up-sampling, we no longer recover `NaN` values by default
      as it may require considerable CPU overhead.
      To enforce the old behaviour, provide the `var_configs` keyword-argument
@@ -72,11 +73,31 @@
   `flag_values` CF-attribute and optionally a `flag_colors` attribute. (#1011)
 
 
+### Fixes
+
+* When using the `xcube.webapi.viewer.Viewer` class in Jupyter notebooks
+  multi-level datasets opened from S3 or from deeper subdirectories into
+  the local filesystem are now fully supported. (#1007)
+
+* Fixed an issue with xcube server `/timeseries` endpoint that returned
+  status 500 if a given dataset used a CRS other geographic and the 
+  geometry was not a point. (#995) 
+
+* Fixed broken table of contents links in dataset convention document.
+
+
 ### Incompatible API changes
 
 * The `get_cmap()` method of `util.cmaps.ColormapProvider` now returns a 
   `Tuple[matplotlib.colors.Colormap, Colormap]` instead of
   `Tuple[str, matplotlib.colors.Colormap]`.
+
+* The signatures of functions `resample_in_space()`, `rectify_dataset()`, and
+  `affine_transform_dataset()` of module `xcube.core.resampling` changed:
+   - Source dataset must be provided as 1st positional argument.
+   - Introduced keyword argument `ref_ds` that can be provided instead of
+     `target_gm`. If given, it forces the returned dataset to have the same
+     coordinates as `ref_ds`.
 
 * Removed API deprecated since many releases:
   - Removed keyword argument `base` from function 
@@ -96,14 +117,6 @@
   - Removed function `xcube.util.cmaps.ensure_cmaps_loaded()`.
   - Removed endpoint `/datasets/{datasetId}/vars/{varName}/tiles2/{z}/{y}/{x}`
     from xcube server.
-
-### Fixes
-
-* Fixed an issue with xcube server `/timeseries` endpoint that returned
-  status 500 if a given dataset used a CRS other geographic and the 
-  geometry was not a point. (#995) 
-
-* Fixed broken table of contents links in dataset convention document.
 
 ### Other changes
 
@@ -139,6 +152,10 @@
   [fsspec.implementations.http.HTTPFileSystem)](https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.http.HTTPFileSystem),
   so that the upcoming xcube STAC data store will be able to access files from URLs.
 
+* The workflow `.github/workflows/xcube_publish_pypi.yml` changes the line in the `pyproject.toml`, where
+  the package name is defined to `name = "xcube-core"`. This allows to release xcube under
+  the package name "xcube-core" on PyPI where the name "xcube" is already taken. #1010 
+  
 ## Changes in 1.5.1
 
 * Embedded [xcube-viewer 1.1.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.1.1).
