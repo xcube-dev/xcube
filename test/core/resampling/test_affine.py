@@ -97,7 +97,13 @@ class AffineTransformDatasetTest(unittest.TestCase):
         self.assertEqual((3, 3), target_ds.refl.shape)
         np.testing.assert_almost_equal(
             target_ds.refl.values,
-            np.array([[1.25, 1.5, 0.75], [1.0, 1.25, 1.5], [1.75, 1.0, 1.25]]),
+            np.array(
+                [
+                    [1.25, 1.5, 0.75],
+                    [1.0, 1.25, 1.5],
+                    [1.75, 1.0, 1.25],
+                ]
+            ),
         )
 
     def test_subset_with_ref_ds(self):
@@ -130,7 +136,7 @@ class AffineTransformDatasetTest(unittest.TestCase):
         np.testing.assert_equal(target_ds.lon.values, ref_ds.lon.values)
         np.testing.assert_equal(target_ds.lat.values, ref_ds.lat.values)
 
-    def test_subset_with_target_ds(self):
+    def test_subset_with_source_gm(self):
         target_gm = GridMapping.regular((3, 3), (50.0, 10.0), res, source_gm.crs)
         target_ds = affine_transform_dataset(
             source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
