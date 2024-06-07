@@ -3,7 +3,7 @@ requires = ["setuptools >= 61.2.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "xcube-core"
+name = "xcube" # PYPI RENAME THIS LINE (do not remove this comment, see #1010) 
 dynamic = ["version", "readme"]
 authors = [
   {name = "xcube Development Team"}
