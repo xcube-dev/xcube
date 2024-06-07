@@ -64,15 +64,20 @@
      To enforce the old behaviour, provide the `var_configs` keyword-argument
      and set `recover_nan` to `True` for desired variables.
 
+* The class `MaskSet()` of module `xcube.core.maskset` now correctly recognises
+  the variable attributes `flag_values`, `flag_masks`, `flag_meanings` when
+  their values are lists (ESA CCI LC data encodes them as JSON arrays). (#1002)
+
+* The class `MaskSet()` now provides a method `get_cmap()` which creates
+  a suitable matplotlib color map for variables that define the
+  `flag_values` CF-attribute and optionally a `flag_colors` attribute. (#1011)
+
+
 ### Fixes
 
 * When using the `xcube.webapi.viewer.Viewer` class in Jupyter notebooks
   multi-level datasets opened from S3 or from deeper subdirectories into
   the local filesystem are now fully supported. (#1007)
-
-* The class `MaskSet()` of module `xcube.core.maskset` now correctly recognises
-  the variable attributes `flag_values`, `flag_masks`, `flag_meanings` when
-  their values are lists (ESA CCI LC data encodes them as JSON arrays). (#1002)
 
 * Fixed an issue with xcube server `/timeseries` endpoint that returned
   status 500 if a given dataset used a CRS other geographic and the 
