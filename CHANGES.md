@@ -55,9 +55,10 @@
 
 * The behaviour of function `resample_in_space()` of module 
   `xcube.core.resampling` changed in this version. (#1001)
-  1. If the resampling boils down to a plain affine transformation,
-     the returned target dataset will now have the _same_ spatial coordinates
-     as the provided target grid mapping passed by `target_gm`.
+  1. A new keyword argument `ref_ds` can now be used to provide 
+     a reference dataset for the reprojection. It can be passed instead 
+     of `target_rm`. If `ref_ds` is given, it also forces the returned target 
+     dataset to have the _same_ spatial coordinates as `ref_ds`.
   2. In the case of up-sampling, we no longer recover `NaN` values by default
      as it may require considerable CPU overhead.
      To enforce the old behaviour, provide the `var_configs` keyword-argument
