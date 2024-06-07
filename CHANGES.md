@@ -67,6 +67,10 @@
   the variable attributes `flag_values`, `flag_masks`, `flag_meanings` when
   their values are lists (ESA CCI LC data encodes them as JSON arrays). (#1002)
 
+* The class `MaskSet()` now provides a method `get_cmap()` which creates
+  a suitable matplotlib color map for variables that define the
+  `flag_values` CF-attribute and optionally a `flag_colors` attribute. (#1011)
+
 
 ### Incompatible API changes
 
