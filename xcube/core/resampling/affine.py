@@ -22,10 +22,10 @@ Aggregator = Callable[[NDImage], NDImage]
 
 def affine_transform_dataset(
     source_ds: xr.Dataset,
-    *,
-    target_ds: Optional[xr.Dataset] = None,
+    /,
     source_gm: Optional[GridMapping] = None,
     target_gm: Optional[GridMapping] = None,
+    ref_ds: Optional[xr.Dataset] = None,
     var_configs: Optional[Mapping[Hashable, Mapping[str, Any]]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
@@ -43,16 +43,16 @@ def affine_transform_dataset(
 
     Args:
         source_ds: The source dataset
-        target_ds: An optional dataset that provides the
-            target grid mapping, if *target_gm* is not provided.
-            The coordinate variables of *target_dataset* are copied
-            by reference into the returned dataset.
         source_gm: Optional source grid mapping of *dataset*.
             If not provided, computed from *source_ds*.
             Must be regular and must have same CRS as *target_gm*.
         target_gm: Optional target grid mapping. If not provided,
             computed from *target_ds* or source grid mapping.
             Must be regular and must have same CRS as source grid mapping.
+        ref_ds: An optional dataset that provides the
+            target grid mapping if *target_gm* is not provided.
+            If *ref_ds* is given, its coordinate variables are copied
+            by reference into the returned dataset.
         var_configs: Optional resampling configurations for individual
             variables.
         encode_cf: Whether to encode the target grid mapping into the
@@ -72,9 +72,9 @@ def affine_transform_dataset(
 
     if target_gm is None:
         # No target grid mapping given, so do derive it
-        # from target dataset or source grid mapping
-        if target_ds is not None:
-            target_gm = GridMapping.from_dataset(target_ds)
+        # from reference dataset or source grid mapping
+        if ref_ds is not None:
+            target_gm = GridMapping.from_dataset(ref_ds)
         else:
             target_gm = source_gm.to_regular()
 
@@ -110,7 +110,7 @@ def affine_transform_dataset(
         resampled_dataset.assign_coords(new_coords),
         target_gm,
         gm_name,
-        target_ds.coords if target_ds else None,
+        ref_ds.coords if ref_ds else None,
     )
 
 

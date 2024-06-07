@@ -74,6 +74,13 @@
   `Tuple[matplotlib.colors.Colormap, Colormap]` instead of
   `Tuple[str, matplotlib.colors.Colormap]`.
 
+* The signatures of functions `resample_in_space()`, `rectify_dataset()`, and
+  `affine_transform_dataset()` of module `xcube.core.resampling` changed:
+   - Source dataset must be provided as 1st positional argument.
+   - Introduced keyword argument `ref_ds` that can be provided instead of
+     `target_gm`. If given, it forces the returned dataset to have the same
+     coordinates as `ref_ds`.
+
 * Removed API deprecated since many releases:
   - Removed keyword argument `base` from function 
     `xcube.core.resampling.temporal.resample_in_time()`.

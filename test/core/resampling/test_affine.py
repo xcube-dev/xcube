@@ -9,7 +9,9 @@ import pyproj
 import pytest
 import xarray as xr
 
-from xcube.core.gridmapping import GridMapping, CRS_CRS84, CRS_WGS84
+from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping import CRS_CRS84
+from xcube.core.gridmapping import CRS_WGS84
 from xcube.core.resampling import affine_transform_dataset
 
 nan = np.nan
@@ -44,6 +46,91 @@ source_gm = GridMapping.from_dataset(source_ds)
 
 class AffineTransformDatasetTest(unittest.TestCase):
     def test_subset(self):
+        target_gm = GridMapping.regular((3, 3), (50.0, 10.0), res, source_gm.crs)
+        target_ds = affine_transform_dataset(
+            source_ds, source_gm, target_gm, gm_name="crs"
+        )
+        self.assertIsInstance(target_ds, xr.Dataset)
+        self.assertEqual(
+            set(source_ds.variables).union(["crs"]), set(target_ds.variables)
+        )
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(
+            target_ds.refl.values,
+            np.array(
+                [
+                    [1, 0, 2],
+                    [0, 3, 0],
+                    [4, 0, 1],
+                ]
+            ),
+        )
+
+        target_gm = GridMapping.regular((3, 3), (50.1, 10.1), res, source_gm.crs)
+        target_ds = affine_transform_dataset(
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
+        )
+        self.assertIsInstance(target_ds, xr.Dataset)
+        self.assertEqual(
+            set(source_ds.variables).union(["crs"]), set(target_ds.variables)
+        )
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(
+            target_ds.refl.values,
+            np.array(
+                [
+                    [4, 0, 1],
+                    [0, 2, 0],
+                    [3, 0, 4],
+                ]
+            ),
+        )
+
+        target_gm = GridMapping.regular((3, 3), (50.05, 10.05), res, source_gm.crs)
+        target_ds = affine_transform_dataset(
+            source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"
+        )
+        self.assertIsInstance(target_ds, xr.Dataset)
+        self.assertEqual(
+            set(source_ds.variables).union(["crs"]), set(target_ds.variables)
+        )
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(
+            target_ds.refl.values,
+            np.array([[1.25, 1.5, 0.75], [1.0, 1.25, 1.5], [1.75, 1.0, 1.25]]),
+        )
+
+    def test_subset_with_ref_ds(self):
+        target_gm = GridMapping.regular((3, 3), (50.0, 10.0), res, source_gm.crs)
+        target_ds = affine_transform_dataset(
+            source_ds, source_gm, target_gm, gm_name="crs"
+        )
+        # target_ds is tested in test_subset() above, so we know it is valid.
+        # We now do the same but use target_ds as reference dataset:
+        ref_ds = target_ds
+        target_ds = affine_transform_dataset(
+            source_ds, source_gm, ref_ds=ref_ds, gm_name="crs"
+        )
+        self.assertIsInstance(target_ds, xr.Dataset)
+        self.assertEqual(
+            set(source_ds.variables).union(["crs"]), set(target_ds.variables)
+        )
+        self.assertEqual((3, 3), target_ds.refl.shape)
+        np.testing.assert_almost_equal(
+            target_ds.refl.values,
+            np.array(
+                [
+                    [1, 0, 2],
+                    [0, 3, 0],
+                    [4, 0, 1],
+                ]
+            ),
+        )
+        # Now assert we have identical coords
+        np.testing.assert_equal(target_ds.lon.values, ref_ds.lon.values)
+        np.testing.assert_equal(target_ds.lat.values, ref_ds.lat.values)
+
+    def test_subset_with_target_ds(self):
         target_gm = GridMapping.regular((3, 3), (50.0, 10.0), res, source_gm.crs)
         target_ds = affine_transform_dataset(
             source_ds, source_gm=source_gm, target_gm=target_gm, gm_name="crs"

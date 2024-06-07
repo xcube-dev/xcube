@@ -26,10 +26,10 @@ _SCALE_LIMIT = 0.95
 
 def resample_in_space(
     source_ds: xr.Dataset,
-    *,
-    target_ds: Optional[xr.Dataset] = None,
+    /,
     source_gm: Optional[GridMapping] = None,
     target_gm: Optional[GridMapping] = None,
+    ref_ds: Optional[xr.Dataset] = None,
     var_configs: Optional[Mapping[Hashable, Mapping[str, Any]]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
@@ -45,10 +45,10 @@ def resample_in_space(
     If the target grid mapping *target_gm* is not given,
     it is derived from *source_gm* as
     ``target_gm = source_gm.to_regular()``,
-    or if target dataset *target_ds* is given as
-    ``target_gm = GridMapping.from_dataset(target_ds)``.
+    or if target dataset *ref_ds* is given as
+    ``target_gm = GridMapping.from_dataset(ref_ds)``.
 
-    New in 1.6: If *target_ds* is given, its coordinate
+    New in 1.6: If *ref_ds* is given, its coordinate
     variables are copied by reference into the returned
     dataset.
 
@@ -98,12 +98,12 @@ def resample_in_space(
 
     Args:
         source_ds: The source dataset.
-        target_ds: An optional dataset that provides the
-            target grid mapping, if *target_gm* is not provided.
-            The coordinate variables of *target_dataset* are copied
-            by reference into the returned dataset.
         source_gm: The source grid mapping.
         target_gm: The target grid mapping. Must be regular.
+        ref_ds: An optional dataset that provides the
+            target grid mapping if *target_gm* is not provided.
+            If *ref_ds* is given, its coordinate variables are copied
+            by reference into the returned dataset.
         var_configs: Optional resampling configurations
             for individual variables.
         encode_cf: Whether to encode the target grid mapping
@@ -125,8 +125,8 @@ def resample_in_space(
     if target_gm is None:
         # No target grid mapping given, so do derive it
         # from target dataset or source grid mapping.
-        if target_ds is not None:
-            target_gm = GridMapping.from_dataset(target_ds)
+        if ref_ds is not None:
+            target_gm = GridMapping.from_dataset(ref_ds)
         else:
             target_gm = source_gm.to_regular()
 
@@ -151,7 +151,7 @@ def resample_in_space(
             return affine_transform_dataset(
                 source_ds,
                 source_gm=source_gm,
-                target_ds=target_ds,
+                ref_ds=ref_ds,
                 target_gm=target_gm,
                 var_configs=var_configs,
                 encode_cf=encode_cf,
@@ -170,7 +170,7 @@ def resample_in_space(
             return rectify_dataset(
                 source_ds,
                 source_gm=source_gm,
-                target_ds=target_ds,
+                ref_ds=ref_ds,
                 target_gm=target_gm,
                 encode_cf=encode_cf,
                 gm_name=gm_name,
@@ -210,7 +210,7 @@ def resample_in_space(
         return rectify_dataset(
             downscaled_dataset,
             source_gm=downscaled_gm,
-            target_ds=target_ds,
+            ref_ds=ref_ds,
             target_gm=target_gm,
             encode_cf=encode_cf,
             gm_name=gm_name,
@@ -224,7 +224,7 @@ def resample_in_space(
     return resample_in_space(
         source_ds.assign(transformed_x=transformed_x, transformed_y=transformed_y),
         source_gm=transformed_source_gm,
-        target_ds=target_ds,
+        ref_ds=ref_ds,
         target_gm=target_gm,
         gm_name=gm_name,
     )
