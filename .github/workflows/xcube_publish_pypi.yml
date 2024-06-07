@@ -8,7 +8,9 @@
 
 name: publish to PyPI
 
-on: push
+on:
+  release:
+    types: [published]
 
 jobs:
   deploy:
@@ -33,4 +35,4 @@ jobs:
     - name: Publish to PyPI
       run: |
         pip install twine
-        python -m twine upload --repository testpypi --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} dist/*
+        python -m twine upload --username __token__ --password ${{ secrets.PYPI_API_TOKEN }} dist/*
