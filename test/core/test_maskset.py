@@ -242,24 +242,29 @@ class MaskSetTest(unittest.TestCase):
         flag_var = create_cci_lccs_class_var(flag_values_as_list=True)
         mask_set = MaskSet(flag_var)
         self.assertEqual(38, len(mask_set))
-        cmap: matplotlib.colors.Colormap = mask_set.get_cmap()
+        cmap, vmin, vmax = mask_set.get_cmap()
         self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertEqual(vmin, 0)
+        self.assertEqual(vmax, 220)
 
     def test_mask_set_cmap_with_flag_values_and_no_flag_colors(self):
         flag_var = create_cci_lccs_class_var(flag_values_as_list=True)
         del flag_var.attrs["flag_colors"]
         mask_set = MaskSet(flag_var)
         self.assertEqual(38, len(mask_set))
-        cmap: matplotlib.colors.Colormap = mask_set.get_cmap()
+        cmap, vmin, vmax = mask_set.get_cmap()
         self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertEqual(vmin, 0)
+        self.assertEqual(vmax, 220)
 
     def test_mask_set_cmap_with_no_flag_values_and_no_flag_colors(self):
         flag_var = create_c2rcc_flag_var()
         mask_set = MaskSet(flag_var)
-        self.assertEqual(4, len(mask_set))
-        cmap: matplotlib.colors.Colormap = mask_set.get_cmap()
+        cmap, vmin, vmax = mask_set.get_cmap()
         # Uses default "viridis"
         self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsNone(vmin)
+        self.assertIsNone(vmax)
 
     def test_mask_set_with_missing_values_and_masks_attrs(self):
         flag_var = create_c2rcc_flag_var().chunk(dict(x=2, y=2))
