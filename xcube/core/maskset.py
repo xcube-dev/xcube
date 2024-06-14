@@ -191,12 +191,15 @@ class MaskSet:
         self._masks[flag_name] = mask_var
         return mask_var
 
-    def get_cmap(self, default: str = "viridis") -> matplotlib.colors.Colormap:
+    def get_cmap(
+        self, default: str = "viridis", num_colors=256
+    ) -> matplotlib.colors.Colormap:
         """Get a suitable color mapping for use with matplotlib.
 
         Args:
             default: Default color map name in case a color mapping
                 cannot be created, e.g., ``flag_values`` are not defined.
+            num_colors: The number of RGB quantization levels.
 
         Returns:
             An suitable instance of ```matplotlib.colors.Colormap```
@@ -208,7 +211,9 @@ class MaskSet:
             # (alpha=0) colors for gaps between the integer values.
             # Currently, gap color is taken from the first value before the gap.
             if self._flag_colors is not None and len(self._flag_colors) == num_values:
-                colors = [(v, c) for v, c in zip(flag_values, self._flag_colors)]
+                valmin = flag_values
+                flag_values_norm = (flag_values - valmin) / (flag_values.max() - valmin)
+                colors = [(v, c) for v, c in zip(flag_values_norm, self._flag_colors)]
             else:
                 # Use random colors so they are all different.
                 colors = [
@@ -216,7 +221,7 @@ class MaskSet:
                     for v in flag_values
                 ]
             return matplotlib.colors.LinearSegmentedColormap.from_list(
-                str(self._flag_var.name), colors
+                str(self._flag_var.name), colors, N=num_colors
             )
         return matplotlib.colormaps.get_cmap(default)
 
