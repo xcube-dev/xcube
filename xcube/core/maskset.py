@@ -193,7 +193,7 @@ class MaskSet:
 
     def get_cmap(
         self, default: str = "viridis", num_colors=256
-    ) -> matplotlib.colors.Colormap:
+    ) -> tuple[matplotlib.colors.Colormap, float, float]:
         """Get a suitable color mapping for use with matplotlib.
 
         Args:
@@ -203,27 +203,34 @@ class MaskSet:
 
         Returns:
             An suitable instance of ```matplotlib.colors.Colormap```
+            and its corresponding minimal and maximal value needed to
+            be passed to the plotting method.
         """
         if self._flag_values is not None:
             flag_values = self._flag_values
+            vmin = flag_values.min()
+            vmax = flag_values.max()
             num_values = len(flag_values)
+            flag_values_norm = (flag_values - vmin) / (vmax - vmin)
             # Note, here is room for improvement if we insert transparent
             # (alpha=0) colors for gaps between the integer values.
             # Currently, gap color is taken from the first value before the gap.
             if self._flag_colors is not None and len(self._flag_colors) == num_values:
-                valmin = flag_values
-                flag_values_norm = (flag_values - valmin) / (flag_values.max() - valmin)
                 colors = [(v, c) for v, c in zip(flag_values_norm, self._flag_colors)]
             else:
                 # Use random colors so they are all different.
                 colors = [
                     (v, (random.random(), random.random(), random.random()))
-                    for v in flag_values
+                    for v in flag_values_norm
                 ]
-            return matplotlib.colors.LinearSegmentedColormap.from_list(
-                str(self._flag_var.name), colors, N=num_colors
+            return (
+                matplotlib.colors.LinearSegmentedColormap.from_list(
+                    str(self._flag_var.name), colors, N=num_colors
+                ),
+                vmin,
+                vmax,
             )
-        return matplotlib.colormaps.get_cmap(default)
+        return (matplotlib.colormaps.get_cmap(default), None, None)
 
 
 _MASK_DTYPES = (
