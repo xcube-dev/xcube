@@ -25,7 +25,11 @@ class ResampleInSpaceTest(unittest.TestCase):
         )
 
         target_ds = resample_in_space(
-            source_ds, source_gm, target_gm, encode_cf=True, gm_name="crs"
+            source_ds,
+            source_gm=source_gm,
+            target_gm=target_gm,
+            encode_cf=True,
+            gm_name="crs",
         )
 
         self.assertIn("crs", target_ds)

@@ -1,7 +1,7 @@
 # Copyright (c) 2018-2024 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
-
+from collections.abc import Hashable, Mapping
 from typing import Optional
 
 import xarray as xr
@@ -82,12 +82,29 @@ def encode_grid_mapping(
     return ds_copy
 
 
-def maybe_encode_grid_mapping(
-    encode_cf: bool, ds: xr.Dataset, gm: GridMapping, gm_name: Optional[str]
+def complete_resampled_dataset(
+    encode_cf: bool,
+    ds: xr.Dataset,
+    gm: GridMapping,
+    gm_name: Optional[str],
+    ref_coords: Optional[Mapping[Hashable, xr.DataArray]],
 ) -> xr.Dataset:
     """Internal helper."""
     if encode_cf:
-        return encode_grid_mapping(
+        ds = encode_grid_mapping(
             ds, gm, gm_name=gm_name, force=True if gm_name else None
         )
+    if ref_coords:
+        compatible_coords = {
+            k: v for k, v in ref_coords.items() if is_var_compatible(v, ds)
+        }
+        ds = ds.assign_coords(compatible_coords)
     return ds
+
+
+def is_var_compatible(var: xr.DataArray, ds: xr.Dataset):
+    """Internal helper."""
+    for d in var.dims:
+        if d in ds.sizes and var.sizes[d] != ds.sizes[d]:
+            return False
+    return True

@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import math
-from typing import Union, Callable, Optional, Tuple, Any
+from typing import Union, Callable, Optional, Any
 from collections.abc import Sequence, Mapping, Hashable
 
 import numpy as np
@@ -14,17 +14,19 @@ from dask_image import ndinterp
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.helpers import AffineTransformMatrix
 from xcube.util.assertions import assert_true
-from .cf import maybe_encode_grid_mapping
+from .cf import complete_resampled_dataset
 
 NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
 
 
 def affine_transform_dataset(
-    dataset: xr.Dataset,
-    source_gm: GridMapping,
-    target_gm: GridMapping,
-    var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+    source_ds: xr.Dataset,
+    /,
+    source_gm: Optional[GridMapping] = None,
+    target_gm: Optional[GridMapping] = None,
+    ref_ds: Optional[xr.Dataset] = None,
+    var_configs: Optional[Mapping[Hashable, Mapping[str, Any]]] = None,
     encode_cf: bool = True,
     gm_name: Optional[str] = None,
     reuse_coords: bool = False,
@@ -35,12 +37,22 @@ def affine_transform_dataset(
     *source_gm* and the CRS of *target_gm* are both geographic or equal.
     Otherwise, a ``ValueError`` will be raised.
 
+    New in 1.6: If *target_ds* is given, its coordinate
+    variables are copied by reference into the returned
+    dataset.
+
     Args:
-        dataset: The source dataset
-        source_gm: Source grid mapping of *dataset*. Must be regular.
-            Must have same CRS as *target_gm*.
-        target_gm: Target grid mapping. Must be regular. Must have same
-            CRS as *source_gm*.
+        source_ds: The source dataset
+        source_gm: Optional source grid mapping of *dataset*.
+            If not provided, computed from *source_ds*.
+            Must be regular and must have same CRS as *target_gm*.
+        target_gm: Optional target grid mapping. If not provided,
+            computed from *target_ds* or source grid mapping.
+            Must be regular and must have same CRS as source grid mapping.
+        ref_ds: An optional dataset that provides the
+            target grid mapping if *target_gm* is not provided.
+            If *ref_ds* is given, its coordinate variables are copied
+            by reference into the returned dataset.
         var_configs: Optional resampling configurations for individual
             variables.
         encode_cf: Whether to encode the target grid mapping into the
@@ -54,6 +66,18 @@ def affine_transform_dataset(
     Returns:
         The resampled target dataset.
     """
+    if source_gm is None:
+        # No source grid mapping given, so do derive it from dataset
+        source_gm = GridMapping.from_dataset(source_ds)
+
+    if target_gm is None:
+        # No target grid mapping given, so do derive it
+        # from reference dataset or source grid mapping
+        if ref_ds is not None:
+            target_gm = GridMapping.from_dataset(ref_ds)
+        else:
+            target_gm = source_gm.to_regular()
+
     # Are source and target both geographic grid mappings?
     both_geographic = source_gm.crs.is_geographic and target_gm.crs.is_geographic
     if not (both_geographic or source_gm.crs == target_gm.crs):
@@ -65,7 +89,7 @@ def affine_transform_dataset(
     GridMapping.assert_regular(source_gm, name="source_gm")
     GridMapping.assert_regular(target_gm, name="target_gm")
     resampled_dataset = resample_dataset(
-        dataset=dataset,
+        dataset=source_ds,
         matrix=target_gm.ij_transform_to(source_gm),
         size=target_gm.size,
         tile_size=target_gm.tile_size,
@@ -73,7 +97,7 @@ def affine_transform_dataset(
         var_configs=var_configs,
     )
     has_bounds = any(
-        dataset[var_name].attrs.get("bounds") for var_name in source_gm.xy_var_names
+        source_ds[var_name].attrs.get("bounds") for var_name in source_gm.xy_var_names
     )
     new_coords = target_gm.to_coords(
         xy_var_names=source_gm.xy_var_names,
@@ -81,8 +105,12 @@ def affine_transform_dataset(
         exclude_bounds=not has_bounds,
         reuse_coords=reuse_coords,
     )
-    return maybe_encode_grid_mapping(
-        encode_cf, resampled_dataset.assign_coords(new_coords), target_gm, gm_name
+    return complete_resampled_dataset(
+        encode_cf,
+        resampled_dataset.assign_coords(new_coords),
+        target_gm,
+        gm_name,
+        ref_ds.coords if ref_ds else None,
     )
 
 
@@ -127,7 +155,8 @@ def resample_dataset(
             else:
                 spline_order = 1
                 aggregator = np.nanmean
-                recover_nan = True
+                # forman: changed default from True to False (v1.6, 2024-06-05)
+                recover_nan = False
             var_data = resample_ndimage(
                 var.data,
                 scale=(j_scale, i_scale),
@@ -260,7 +289,7 @@ def _transform_array(
             # Yes, then
             # 1. replace NaN by zero
             filled_im = da.where(mask, 0.0, image)
-            # 2. transform the zeo-filled image
+            # 2. transform the zero-filled image
             scaled_im = ndinterp.affine_transform(
                 filled_im, matrix, **at_kwargs, cval=0.0
             )
@@ -306,17 +335,19 @@ def _normalize_image(im: NDImage) -> da.Array:
     return da.asarray(im)
 
 
-def _normalize_offset(offset: Optional[Sequence[float]], ndim: int) -> tuple[int, ...]:
+def _normalize_offset(
+    offset: Optional[Sequence[float]], ndim: int
+) -> tuple[float, ...]:
     return _normalize_pair(offset, 0.0, ndim, "offset")
 
 
-def _normalize_scale(scale: Optional[Sequence[float]], ndim: int) -> tuple[int, ...]:
+def _normalize_scale(scale: Optional[Sequence[float]], ndim: int) -> tuple[float, ...]:
     return _normalize_pair(scale, 1.0, ndim, "scale")
 
 
 def _normalize_pair(
     pair: Optional[Sequence[float]], default: float, ndim: int, name: str
-) -> tuple[int, ...]:
+) -> tuple[float, ...]:
     if pair is None:
         pair = [default, default]
     elif isinstance(pair, (int, float)):
