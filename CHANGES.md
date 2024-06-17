@@ -70,7 +70,9 @@
 
 * The class `MaskSet()` now provides a method `get_cmap()` which creates
   a suitable matplotlib color map for variables that define the
-  `flag_values` CF-attribute and optionally a `flag_colors` attribute. (#1011)
+  `flag_values` CF-attribute and optionally a `flag_colors` attribute.
+  It returns the colormap and the minimal and maximal value of the colormap,
+  the latter two needed in the plotting routine. (#1011, #1014)
 
 
 ### Fixes
