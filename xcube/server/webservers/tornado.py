@@ -131,6 +131,15 @@ class TornadoFramework(Framework):
                 )
             )
 
+            if api_route.slash:
+                handlers.append(
+                    (
+                        url_prefix + self.path_to_pattern(api_route.path) + "/",
+                        TornadoRequestHandler,
+                        {"api_route": api_route},
+                    )
+                )
+
             LOG.log(
                 LOG_LEVEL_DETAIL,
                 f"Added route"

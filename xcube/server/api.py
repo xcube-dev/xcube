@@ -216,13 +216,15 @@ class Api(Generic[ServerContextT]):
 
         return decorator_func
 
-    def route(self, path: str, **handler_kwargs):
+    def route(self, path: str, slash: bool = False, **handler_kwargs):
         """Decorator that adds a route to this API.
 
         The decorator target must be a class derived from ApiHandler.
 
         Args:
             path: The route path.
+            slash: If true, a second route will also be created at the
+                same path with a slash suffixed
             **handler_kwargs: Optional keyword arguments passed to
                 ApiHandler constructor.
 
@@ -232,7 +234,9 @@ class Api(Generic[ServerContextT]):
         """
 
         def decorator_func(handler_cls: type[ApiHandler]):
-            self._routes.append(ApiRoute(self.name, path, handler_cls, handler_kwargs))
+            self._routes.append(ApiRoute(
+                self.name, path, handler_cls, handler_kwargs, slash
+            ))
             return handler_cls
 
         return decorator_func
@@ -732,6 +736,8 @@ class ApiRoute:
             ``ApiHandler``.
         handler_kwargs: Optional keyword arguments passed to the
             *handler_cls* when it is instantiated.
+        slash: If true, a second route will also be created at the
+            same path with a slash suffixed
     """
 
     def __init__(
@@ -740,6 +746,7 @@ class ApiRoute:
         path: str,
         handler_cls: type[ApiHandler],
         handler_kwargs: Optional[dict[str, Any]] = None,
+        slash: bool = False
     ):
         assert_instance(api_name, str, name="api_name")
         assert_instance(path, str, name="path")
@@ -755,6 +762,7 @@ class ApiRoute:
         self.path = path
         self.handler_cls = handler_cls
         self.handler_kwargs = dict(handler_kwargs or {})
+        self.slash = slash
 
     def __eq__(self, other) -> bool:
         if isinstance(other, ApiRoute):
