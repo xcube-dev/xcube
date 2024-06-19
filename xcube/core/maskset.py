@@ -4,7 +4,7 @@
 
 import random
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, Optional
 
 import dask.array as da
 import matplotlib.colors
@@ -15,6 +15,9 @@ import xarray as xr
 # TODO: this would be useful to have in xarray:
 #       >>> ds = xr.open_dataset("my/path/to/cf/netcdf.nc", decode_flags=True)
 #       >>> ds.flag_mask_sets['quality_flags']
+
+
+_UINT16_MAX = 65535
 
 
 class MaskSet:
@@ -196,28 +199,53 @@ class MaskSet:
 
         Args:
             default: Default color map name in case a color mapping
-                cannot be created, e.g., ``flag_values`` are not defined.
+                cannot be created, e.g., ``flag_values`` are not defined or
+                if the flag values are not in the range (0, 2**15 - 1).
 
         Returns:
             An suitable instance of ```matplotlib.colors.Colormap```
         """
         if self._flag_values is not None:
+            flag_var = self._flag_var
+            cmap_name = str(flag_var.name) if flag_var.name else "from_maskset"
+
             flag_values = self._flag_values
-            num_values = len(flag_values)
-            # Note, here is room for improvement if we insert transparent
-            # (alpha=0) colors for gaps between the integer values.
-            # Currently, gap color is taken from the first value before the gap.
-            if self._flag_colors is not None and len(self._flag_colors) == num_values:
-                colors = [(v, c) for v, c in zip(flag_values, self._flag_colors)]
-            else:
-                # Use random colors so they are all different.
-                colors = [
-                    (v, (random.random(), random.random(), random.random()))
-                    for v in flag_values
-                ]
-            return matplotlib.colors.LinearSegmentedColormap.from_list(
-                str(self._flag_var.name), colors
-            )
+            num_flag_values = len(flag_values)
+            flag_value_min = flag_values.min()
+            flag_value_max = flag_values.max()
+
+            if flag_value_min >= 0 and flag_value_max < _UINT16_MAX:
+                # We use transparency for indicating no-data for indices that
+                # are not flag values.
+                colors = [(0, 0, 0, 0)] * (flag_value_max + 1)
+
+                flag_colors = self._flag_colors
+                # Setup color list that directly maps a flag value into a color.
+                if flag_colors is not None:
+                    if len(flag_colors) != num_flag_values:
+                        # Handle special case where no-data value is included in
+                        # fill_values (e.g., ESA CCI Land Cover) in the hope that
+                        # flag_colors and flag_values will now match:
+                        flag_values = _sanitize_flag_values(flag_var, flag_values)
+                        num_flag_values = len(flag_values)
+                        if len(flag_colors) != num_flag_values:
+                            return matplotlib.colormaps.get_cmap(default)
+
+                    # Use given flag colors
+                    for i, c in zip(map(int, flag_values), flag_colors):
+                        colors[i] = c
+                else:
+                    # Use random colors so they are all different
+                    for i in map(int, flag_values):
+                        colors[i] = (
+                            random.random(),
+                            random.random(),
+                            random.random(),
+                        )
+                return matplotlib.colors.ListedColormap(
+                    colors,
+                    name=cmap_name,
+                )
         return matplotlib.colormaps.get_cmap(default)
 
 
@@ -229,7 +257,7 @@ _MASK_DTYPES = (
 )
 
 
-def _convert_flag_var_attribute_value(attr_value, attr_name):
+def _convert_flag_var_attribute_value(attr_value, attr_name) -> np.ndarray:
     if isinstance(attr_value, str):
         err_msg = f'Invalid bit expression in value for {attr_name}: "{attr_value}"'
         masks = []
@@ -274,3 +302,31 @@ def _convert_flag_var_attribute_value(attr_value, attr_name):
         return np.array(attr_value)
 
     raise TypeError(f"attribute {attr_name!r} must be an integer array")
+
+
+def _sanitize_flag_values(
+    flag_var: xr.DataArray,
+    flag_values: np.ndarray,
+) -> Optional[np.ndarray]:
+
+    fill_value = None
+    for d in (flag_var.encoding, flag_var.attrs):
+        fill_value = (
+            d.get("fill_value", d.get("_FillValue"))
+            if fill_value is None
+            else fill_value
+        )
+    if fill_value is not None:
+        if np.isnan(fill_value):
+            flag_values = flag_values[np.logical_not(np.isnan(flag_values))]
+        else:
+            flag_values = flag_values[flag_values != fill_value]
+
+    valid_min = flag_var.attrs.get("valid_min")
+    valid_max = flag_var.attrs.get("valid_max")
+    if valid_min is not None:
+        flag_values = flag_values[flag_values >= valid_min]
+    if valid_max is not None:
+        flag_values = flag_values[flag_values <= valid_max]
+
+    return flag_values
