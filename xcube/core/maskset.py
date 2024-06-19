@@ -210,7 +210,6 @@ class MaskSet:
             cmap_name = str(flag_var.name) if flag_var.name else "from_maskset"
 
             flag_values = self._flag_values
-            num_flag_values = len(flag_values)
             flag_value_min = flag_values.min()
             flag_value_max = flag_values.max()
 
@@ -222,13 +221,12 @@ class MaskSet:
                 flag_colors = self._flag_colors
                 # Setup color list that directly maps a flag value into a color.
                 if flag_colors is not None:
-                    if len(flag_colors) != num_flag_values:
+                    if len(flag_colors) != len(flag_values):
                         # Handle special case where no-data value is included in
                         # fill_values (e.g., ESA CCI Land Cover) in the hope that
-                        # flag_colors and flag_values will now match:
+                        # flag_colors and flag_values will then match:
                         flag_values = _sanitize_flag_values(flag_var, flag_values)
-                        num_flag_values = len(flag_values)
-                        if len(flag_colors) != num_flag_values:
+                        if len(flag_colors) != len(flag_values):
                             return matplotlib.colormaps.get_cmap(default)
 
                     # Use given flag colors
