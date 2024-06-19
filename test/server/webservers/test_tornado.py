@@ -47,8 +47,24 @@ class TornadoFrameworkTest(unittest.TestCase):
     def test_config_schema(self):
         self.assertIsInstance(self.framework.config_schema, JsonObjectSchema)
 
-    # def test_add_routes(self):
-    #     self.framework.add_routes([ApiRoute()])
+    def test_add_routes(self):
+        class Handler(ApiHandler):
+            pass
+
+        self.framework.add_routes(
+            [
+                route0 := ApiRoute("foo", "foo/bar", Handler),
+                route1 := ApiRoute("foo", "foo/baz", Handler, slash=True),
+            ],
+            "/",
+        )
+        self.assertEqual(
+            [
+                ("/foo/bar", TornadoRequestHandler, {"api_route": route0}),
+                ("/foo/baz/?", TornadoRequestHandler, {"api_route": route1}),
+            ],
+            self.application.handlers,
+        )
 
     def test_start_and_update_and_stop(self):
         server = mock_server(framework=self.framework, config={})
@@ -135,20 +151,20 @@ class TornadoFrameworkTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             p2p("/datasets/{dataset id}")
         self.assertEqual(
-            '"{name}" in path must be a valid identifier,' ' but got "dataset id"',
+            '"{name}" in path must be a valid identifier, but got "dataset id"',
             f"{cm.exception}",
         )
 
         with self.assertRaises(ValueError) as cm:
             p2p("/datasets/{dataset_id")
         self.assertEqual(
-            'missing closing "}"' ' in "/datasets/{dataset_id"', f"{cm.exception}"
+            'missing closing "}" in "/datasets/{dataset_id"', f"{cm.exception}",
         )
 
         with self.assertRaises(ValueError) as cm:
             p2p("/datasets/dataset_id}/bbox")
         self.assertEqual(
-            'missing opening "{"' ' in "/datasets/dataset_id}/bbox"', f"{cm.exception}"
+            'missing opening "{" in "/datasets/dataset_id}/bbox"', f"{cm.exception}",
         )
 
         with self.assertRaises(ValueError) as cm:
@@ -215,7 +231,7 @@ class TornadoApiRequestTest(unittest.TestCase):
         with self.assertRaises(ApiError.BadRequest) as cm:
             request.get_query_args("details", type=int)
         self.assertEqual(
-            "HTTP status 400:" " Query parameter 'details'" " must have type 'int'.",
+            "HTTP status 400: Query parameter 'details' must have type 'int'.",
             f"{cm.exception}",
         )
 

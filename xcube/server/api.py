@@ -771,6 +771,7 @@ class ApiRoute:
                 and self.path == other.path
                 and self.handler_cls == other.handler_cls
                 and self.handler_kwargs == other.handler_kwargs
+                and self.slash == other.slash
             )
         return False
 
@@ -779,6 +780,7 @@ class ApiRoute:
             hash(self.api_name)
             + 2 * hash(self.path)
             + 4 * hash(self.handler_cls)
+            + 8 * hash(self.slash)
             + 16
             * hash(
                 tuple(sorted(tuple(self.handler_kwargs.items()), key=lambda p: p[0]))

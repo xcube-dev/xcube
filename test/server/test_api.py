@@ -66,7 +66,7 @@ class ApiTest(unittest.TestCase):
     def test_route_decorator(self):
         api = Api("datasets")
 
-        @api.route("/datasets")
+        @api.route("/datasets", slash=True)
         class DatasetsHandler(ApiHandler):
             # noinspection PyMethodMayBeStatic
             def get(self):
@@ -80,7 +80,7 @@ class ApiTest(unittest.TestCase):
 
         self.assertEqual(
             (
-                ApiRoute("datasets", "/datasets", DatasetsHandler),
+                ApiRoute("datasets", "/datasets", DatasetsHandler, slash=True),
                 ApiRoute("datasets", "/datasets/{dataset_id}", DatasetHandler),
             ),
             api.routes,
@@ -173,6 +173,20 @@ class ApiRouteTest(unittest.TestCase):
             ")",
             f"{api_route!r}",
         )
+
+    def test_slash(self):
+        class DatasetHandler(ApiHandler):
+            # noinspection PyMethodMayBeStatic
+            def get(self):
+                return {}
+
+        self.assertFalse(
+            ApiRoute("datasets", "/datasets", DatasetHandler).slash
+        )
+        self.assertTrue(
+            ApiRoute("datasets", "/datasets", DatasetHandler, slash=True).slash
+        )
+
 
 
 class ApiContextTest(unittest.TestCase):
