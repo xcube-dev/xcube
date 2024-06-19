@@ -75,7 +75,7 @@ EXPECTED_CONFORMANCE = {
 
 EXPECTED_ENDPOINTS = functools.reduce(
     lambda endpoint_list, ep: endpoint_list
-    + [{"methods": ep[0], "path": ep[1] + suffix} for suffix in ("/", "")],
+    + [{"methods": ep[0], "path": ep[1]}],
     [
         (["get"], "/collections/{collectionId}/coverage"),
         (["get"], "/collections/{collectionId}/coverage/domainset"),
