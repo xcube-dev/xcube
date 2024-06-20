@@ -25,8 +25,7 @@ from .config import (
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX)
-@api.route(PATH_PREFIX + "/")
+@api.route(PATH_PREFIX, slash=True)
 class CatalogRootHandler(ApiHandler[StacContext]):
     @api.operation(
         operation_id="getCatalogRoot", summary="Get the STAC catalog's root."
@@ -37,8 +36,7 @@ class CatalogRootHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/conformance")
-@api.route(PATH_PREFIX + "/conformance/")
+@api.route(PATH_PREFIX + "/conformance", slash=True)
 class CatalogConformanceHandler(ApiHandler[StacContext]):
     @api.operation(
         operation_id="getCatalogConformance",
@@ -50,8 +48,7 @@ class CatalogConformanceHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/collections")
-@api.route(PATH_PREFIX + "/collections/")
+@api.route(PATH_PREFIX + "/collections", slash=True)
 class CatalogCollectionsHandler(ApiHandler[StacContext]):
     @api.operation(
         operation_id="getCatalogCollections",
@@ -63,8 +60,7 @@ class CatalogCollectionsHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/collections/{collectionId}")
-@api.route(PATH_PREFIX + "/collections/{collectionId}/")
+@api.route(PATH_PREFIX + "/collections/{collectionId}", slash=True)
 class CatalogCollectionHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(
@@ -76,8 +72,7 @@ class CatalogCollectionHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/collections/{collectionId}/items")
-@api.route(PATH_PREFIX + "/collections/{collectionId}/items/")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/items", slash=True)
 class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(
@@ -105,8 +100,7 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/collections/{collectionId}/items/{featureId}")
-@api.route(PATH_PREFIX + "/collections/{collectionId}/items/{featureId}/")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/items/{featureId}", slash=True)
 class CatalogCollectionItemHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(
@@ -124,8 +118,7 @@ class CatalogCollectionItemHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/search")
-@api.route(PATH_PREFIX + "/search/")
+@api.route(PATH_PREFIX + "/search", slash=True)
 class CatalogSearchHandler(ApiHandler[StacContext]):
     @api.operation(
         operation_id="searchCatalogByKeywords",
@@ -147,8 +140,7 @@ class CatalogSearchHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/collections/{collectionId}/queryables")
-@api.route(PATH_PREFIX + "/collections/{collectionId}/queryables/")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/queryables", slash=True)
 class QueryablesHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(
@@ -165,8 +157,7 @@ class QueryablesHandler(ApiHandler[StacContext]):
 
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
-@api.route(PATH_PREFIX + "/collections/{collectionId}/schema")
-@api.route(PATH_PREFIX + "/collections/{collectionId}/schema/")
+@api.route(PATH_PREFIX + "/collections/{collectionId}/schema", slash=True)
 class SchemaHandler(ApiHandler[StacContext]):
     # noinspection PyPep8Naming
     @api.operation(
