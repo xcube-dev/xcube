@@ -18,7 +18,7 @@ from xcube.core.geom import normalize_geometry
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.gridmapping import GridMapping
-from xcube.core.select import select_variables_subset
+from xcube.util.expression import compute_array_expr
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.util.assertions import assert_instance
 from xcube.constants import CRS_CRS84
@@ -114,8 +114,21 @@ def get_time_series(
         ).transform
         geometry = shapely.ops.transform(project, geometry)
 
-    # Warning: select_variables_subset will remove also "crs" or "spatial_ref"
-    dataset = select_variables_subset(cube, var_names)
+    data_vars: dict[str, xr.DataArray] = {}
+    for var_name_or_expr in var_names:
+        if "=" in var_name_or_expr:
+            # var_name_or_expr is an expression
+            var_name, var_expr = map(lambda s: s.strip(), var_name_or_expr.split("="))
+            # noinspection PyTypeChecker
+            variable = compute_array_expr(var_expr, dict(cube), result_name=var_name)
+        else:
+            # var_name_or_expr is just a name
+            var_name = var_name_or_expr
+            variable = cube[var_name]
+        if isinstance(variable, xr.DataArray) and "time" in variable.dims:
+            data_vars[var_name] = variable
+
+    dataset = xr.Dataset(data_vars)
     if len(dataset.data_vars) == 0:
         return None
 
