@@ -38,6 +38,9 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
 from xcube.core.tile import get_var_cmap_params
 from xcube.core.tile import get_var_valid_range
+from xcube.core.tile import DEFAULT_CMAP_NAME
+from xcube.core.tile import DEFAULT_CMAP_NORM
+from xcube.core.tile import DEFAULT_VALUE_RANGE
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
 from xcube.server.config import is_absolute_path
@@ -523,6 +526,11 @@ class DatasetsContext(ResourcesContext):
         if cmap_name and cmap_norm and None not in cmap_range:
             # noinspection PyTypeChecker
             return cmap_name, cmap_norm, cmap_range
+
+        if "=" in var_name:
+            # var_name is an expression, the result is unknown yet, so we
+            # must return default values here.
+            return DEFAULT_CMAP_NAME, DEFAULT_CMAP_NORM, DEFAULT_VALUE_RANGE
 
         ds = self.get_dataset(ds_id, expected_var_names=[var_name])
         var = ds[var_name]

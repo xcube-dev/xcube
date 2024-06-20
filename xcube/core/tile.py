@@ -5,7 +5,7 @@
 import io
 import logging
 import math
-from typing import Optional, Tuple, Dict, Any, Union, List
+from typing import Any, Optional, Union
 from collections.abc import Hashable, Sequence
 
 import PIL
@@ -30,6 +30,7 @@ from .mldataset import MultiLevelDataset
 from .tilingscheme import DEFAULT_CRS_NAME
 from .tilingscheme import DEFAULT_TILE_SIZE
 from .tilingscheme import TilingScheme
+from ..util.expression import compute_array_expr
 
 DEFAULT_VALUE_RANGE = (0.0, 1.0)
 DEFAULT_CMAP_NORM = "lin"
@@ -587,12 +588,26 @@ def get_var_valid_range(var: xr.DataArray) -> Optional[tuple[float, float]]:
 
 
 def _get_variable(ds_name, dataset, variable_name, non_spatial_labels, logger):
-    if variable_name not in dataset:
-        raise TileNotFoundException(
-            f"Variable {variable_name!r}" f" not found in dataset {ds_name!r}",
-            logger=logger,
-        )
-    variable = dataset[variable_name]
+
+    if "=" in variable_name:
+        var_name, var_expression = map(lambda s: s.strip(), variable_name.split("="))
+        variable = compute_array_expr(var_expression, dict(dataset), result_name=var_name)
+        if not isinstance(variable, xr.DataArray):
+            raise TileNotFoundException(
+                f"Variable expression {var_expression!r} evaluated"
+                f" in the context of dataset {ds_name!r}"
+                f" must yield a xarray.DataArray, but got {type(variable)}",
+                logger=logger,
+            )
+        variable.name = var_name
+    else:
+        if variable_name not in dataset:
+            raise TileNotFoundException(
+                f"Variable {variable_name!r} not found in dataset {ds_name!r}",
+                logger=logger,
+            )
+        variable = dataset[variable_name]
+
     non_spatial_labels = _get_non_spatial_labels(
         dataset, variable, non_spatial_labels, logger
     )
