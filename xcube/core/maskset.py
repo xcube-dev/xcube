@@ -200,7 +200,7 @@ class MaskSet:
         Args:
             default: Default color map name in case a color mapping
                 cannot be created, e.g., ``flag_values`` are not defined or
-                if the flag values are not in the range (0, 2**15 - 1).
+                if the flag values are not in the range [0, 2**16 - 1).
 
         Returns:
             An suitable instance of ```matplotlib.colors.Colormap```
