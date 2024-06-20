@@ -72,6 +72,9 @@
   a suitable matplotlib color map for variables that define the
   `flag_values` CF-attribute and optionally a `flag_colors` attribute. (#1011)
 
+* The `Api.route` decorator and `ApiRoute` constructor in
+  `xcube.server.api` now have a `slash` argument which lets a route support an
+  optional trailing slash.
 
 ### Fixes
 
@@ -85,6 +88,8 @@
 
 * Fixed broken table of contents links in dataset convention document.
 
+* Web API endpoints with an optional trailing slash are no longer listed
+  twice in the automatically generated OpenAPI documentation (#965)
 
 ### Incompatible API changes
 

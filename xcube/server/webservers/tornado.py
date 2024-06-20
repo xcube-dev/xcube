@@ -122,21 +122,20 @@ class TornadoFramework(Framework):
 
     def add_routes(self, api_routes: Sequence[ApiRoute], url_prefix: str):
         handlers = []
-        for api_route in api_routes:
-            handlers.append(
-                (
-                    url_prefix + self.path_to_pattern(api_route.path),
-                    TornadoRequestHandler,
-                    {"api_route": api_route},
-                )
-            )
 
+        for api_route in api_routes:
+            handlers.append((
+                url_prefix + self.path_to_pattern(api_route.path)
+                + ("/?" if api_route.slash else ""),
+                TornadoRequestHandler,
+                {"api_route": api_route},
+            ))
             LOG.log(
                 LOG_LEVEL_DETAIL,
-                f"Added route"
-                f" {api_route.path!r}"
+                f"Added route {api_route.path!r}"
                 f" from API {api_route.api_name!r}",
             )
+
         if handlers:
             self.application.add_handlers(".*$", handlers)
 
