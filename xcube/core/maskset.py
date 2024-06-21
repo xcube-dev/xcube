@@ -4,7 +4,7 @@
 
 import random
 from collections.abc import Iterable
-from typing import Any, Optional
+from typing import Any, Union
 
 import dask.array as da
 import matplotlib.colors
@@ -194,7 +194,9 @@ class MaskSet:
         self._masks[flag_name] = mask_var
         return mask_var
 
-    def get_cmap(self, default: str = "viridis") -> matplotlib.colors.Colormap:
+    def get_cmap(
+        self, default: str = "viridis"
+    ) -> tuple[matplotlib.colors.Colormap, Union[matplotlib.colors.BoundaryNorm, None]]:
         """Get a suitable color mapping for use with matplotlib.
 
         Args:
@@ -203,7 +205,8 @@ class MaskSet:
                 if the flag values are not in the range [0, 2**16 - 1).
 
         Returns:
-            An suitable instance of ```matplotlib.colors.Colormap```
+            An suitable instance of ```matplotlib.colors.Colormap``` and
+            the corresponding ```matplotlib.colors.BoundaryNorm``` if applicable
         """
         if self._flag_values is not None:
             flag_var = self._flag_var
@@ -214,37 +217,42 @@ class MaskSet:
             flag_value_max = flag_values.max()
 
             if flag_value_min >= 0 and flag_value_max < _UINT16_MAX:
-                # We use transparency for indicating no-data for indices that
-                # are not flag values.
-                colors = [(0, 0, 0, 0)] * (flag_value_max + 1)
-
                 flag_colors = self._flag_colors
+                levels = np.append(flag_values - 0.5, flag_values[-1] + 0.5)
                 # Setup color list that directly maps a flag value into a color.
                 if flag_colors is not None:
+                    colors = [(0, 0, 0, 0)] * len(flag_values)
                     if len(flag_colors) != len(flag_values):
                         # Handle special case where no-data value is included in
                         # fill_values (e.g., ESA CCI Land Cover) in the hope that
                         # flag_colors and flag_values will then match:
-                        flag_values = _sanitize_flag_values(flag_var, flag_values)
+                        flag_values, index_tracker = _sanitize_flag_values(
+                            flag_var, flag_values
+                        )
                         if len(flag_colors) != len(flag_values):
-                            return matplotlib.colormaps.get_cmap(default)
+                            return matplotlib.colormaps.get_cmap(default), None
 
-                    # Use given flag colors
-                    for i, c in zip(map(int, flag_values), flag_colors):
-                        colors[i] = c
+                        # Use given flag colors
+                        for i, c in zip(index_tracker, flag_colors):
+                            colors[i] = c
+                    else:
+                        # Use given flag colors
+                        for i, c in enumerate(flag_colors):
+                            colors[i] = c
+
                 else:
                     # Use random colors so they are all different
-                    for i in map(int, flag_values):
+                    colors = [(0, 0, 0, 0)] * (len(flag_values))
+                    for i in range(len(flag_values)):
                         colors[i] = (
                             random.random(),
                             random.random(),
                             random.random(),
                         )
-                return matplotlib.colors.ListedColormap(
-                    colors,
-                    name=cmap_name,
-                )
-        return matplotlib.colormaps.get_cmap(default)
+                cmap = matplotlib.colors.ListedColormap(colors, name=cmap_name)
+                norm = matplotlib.colors.BoundaryNorm(levels, len(colors))
+                return cmap, norm
+        return matplotlib.colormaps.get_cmap(default), None
 
 
 _MASK_DTYPES = (
@@ -305,8 +313,9 @@ def _convert_flag_var_attribute_value(attr_value, attr_name) -> np.ndarray:
 def _sanitize_flag_values(
     flag_var: xr.DataArray,
     flag_values: np.ndarray,
-) -> Optional[np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
 
+    index_tracker = np.arange(len(flag_values))
     fill_value = None
     for d in (flag_var.encoding, flag_var.attrs):
         fill_value = (
@@ -316,15 +325,23 @@ def _sanitize_flag_values(
         )
     if fill_value is not None:
         if np.isnan(fill_value):
-            flag_values = flag_values[np.logical_not(np.isnan(flag_values))]
+            mask = np.logical_not(np.isnan(flag_values))
+            index_tracker = index_tracker[mask]
+            flag_values = flag_values[mask]
         else:
-            flag_values = flag_values[flag_values != fill_value]
+            mask = flag_values != fill_value
+            index_tracker = index_tracker[mask]
+            flag_values = flag_values[mask]
 
     valid_min = flag_var.attrs.get("valid_min")
     valid_max = flag_var.attrs.get("valid_max")
     if valid_min is not None:
-        flag_values = flag_values[flag_values >= valid_min]
+        mask = flag_values >= valid_min
+        index_tracker = index_tracker[mask]
+        flag_values = flag_values[mask]
     if valid_max is not None:
-        flag_values = flag_values[flag_values <= valid_max]
+        mask = flag_values <= valid_max
+        index_tracker = index_tracker[mask]
+        flag_values = flag_values[mask]
 
-    return flag_values
+    return flag_values, index_tracker

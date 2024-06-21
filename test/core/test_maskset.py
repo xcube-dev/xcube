@@ -256,8 +256,9 @@ class MaskSetTest(unittest.TestCase):
         flag_var = create_c2rcc_flag_var()
         mask_set = MaskSet(flag_var)
         self.assertEqual(4, len(mask_set))
-        cmap: matplotlib.colors.Colormap = mask_set.get_cmap()
+        cmap, norm = mask_set.get_cmap()
         # Uses default "viridis"
+        self.assertIsNone(norm)
         self.assertIsInstance(cmap, matplotlib.colors.Colormap)
         self.assertEqual("viridis", cmap.name)
 
@@ -265,15 +266,16 @@ class MaskSetTest(unittest.TestCase):
         flag_var = xr.DataArray(
             [[1, 2], [2, 3]],
             dims=("y", "x"),
-            attrs=dict(flag_values="1, 2, 3", flag_meanings="A B C"),
+            attrs=dict(flag_values="0, 1, 2, 3", flag_meanings="no_data A B C"),
         )
         mask_set = MaskSet(flag_var)
         self.assertEqual(3, len(mask_set))
         # noinspection PyTypeChecker
-        cmap: matplotlib.colors.ListedColormap = mask_set.get_cmap()
+        cmap, norm = mask_set.get_cmap()
         self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(norm, matplotlib.colors.BoundaryNorm)
         self.assertEqual("from_maskset", cmap.name)
-        colors = cmap(np.array([0, 1, 2, 3]))
+        colors = cmap(np.array([1, 2, 3]))
         self.assertEqual(4, len(colors))
         np.testing.assert_equal(np.array([0, 0, 0, 0]), colors[0])
         np.testing.assert_equal(np.array([0, 1, 1, 1]), colors[:, 3])
@@ -292,8 +294,9 @@ class MaskSetTest(unittest.TestCase):
         mask_set = MaskSet(flag_var)
         self.assertEqual(3, len(mask_set))
         # noinspection PyTypeChecker
-        cmap: matplotlib.colors.ListedColormap = mask_set.get_cmap()
+        cmap, norm = mask_set.get_cmap()
         self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(norm, matplotlib.colors.BoundaryNorm)
         self.assertEqual("quality_flags", cmap.name)
         colors = cmap(np.array([0, 1, 2, 3]))
         np.testing.assert_equal(
@@ -313,12 +316,12 @@ class MaskSetTest(unittest.TestCase):
         mask_set = MaskSet(flag_var)
         self.assertEqual(38, len(mask_set))
         # noinspection PyTypeChecker
-        cmap: matplotlib.colors.ListedColormap = mask_set.get_cmap()
+        cmap, norm = mask_set.get_cmap()
         self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(cmap, matplotlib.colors.BoundaryNorm)
         self.assertEqual("lccs_class", cmap.name)
         self.assertEqual(221, cmap.N)
         colors = cmap(np.array([0, 10, 130, 110, 202, 61, 5]))
-        # print(repr(colors))
         np.testing.assert_almost_equal(
             np.array(
                 [
@@ -379,13 +382,19 @@ class SanitizeFlagValuesTest(unittest.TestCase):
 
         var = self.new_flag_var()
         var.attrs["valid_min"] = 2
-        self.assertEqual([2, 3], list(_sanitize_flag_values(var, flag_values)))
+        flag_values, index_tracker = list(_sanitize_flag_values(var, flag_values))
+        self.assertEqual([2, 3], flag_values)
+        self.assertEqual([1, 2], index_tracker)
 
         var = self.new_flag_var()
         var.attrs["valid_max"] = 2
-        self.assertEqual([1, 2], list(_sanitize_flag_values(var, flag_values)))
+        flag_values, index_tracker = list(_sanitize_flag_values(var, flag_values))
+        self.assertEqual([1, 2], flag_values)
+        self.assertEqual([0, 1], index_tracker)
 
         var = self.new_flag_var()
         var.attrs["valid_min"] = 2
         var.attrs["valid_max"] = 2
-        self.assertEqual([2], list(_sanitize_flag_values(var, flag_values)))
+        flag_values, index_tracker = list(_sanitize_flag_values(var, flag_values))
+        self.assertEqual([2], flag_values)
+        self.assertEqual([1], index_tracker)
