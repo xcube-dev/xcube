@@ -133,7 +133,9 @@ class MaskSet:
     def __str__(self):
         return "{}({})".format(
             self._flag_var.name,
-            ", ".join([f"{n}={v}" for n, v in self._flags.items()]),
+            ", ".join([f"{n}=({v[0]}, {v[1]})" for n, v in self._flags.items()]),
+            # We explicitly unpack the tuple to get the __str__ of the elements,
+            # rather than the __repr__. See https://peps.python.org/pep-3140/
         )
 
     def __dir__(self) -> Iterable[str]:
