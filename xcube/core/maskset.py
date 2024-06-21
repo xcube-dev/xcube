@@ -218,7 +218,7 @@ class MaskSet:
 
             if flag_value_min >= 0 and flag_value_max < _UINT16_MAX:
                 flag_colors = self._flag_colors
-                levels = np.append(flag_values - 0.5, flag_values[-1] + 0.5)
+                levels = np.append(flag_values, flag_values[-1] + 1)
                 # Setup color list that directly maps a flag value into a color.
                 if flag_colors is not None:
                     colors = [(0, 0, 0, 0)] * len(flag_values)
@@ -255,7 +255,6 @@ class MaskSet:
                 norm = matplotlib.colors.BoundaryNorm(levels, len(colors))
                 return cmap, norm
         return matplotlib.colormaps.get_cmap(default), None
-
 
 _MASK_DTYPES = (
     (2**8, np.uint8),
