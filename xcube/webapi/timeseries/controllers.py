@@ -189,9 +189,15 @@ def _get_time_series_for_geometry(
     if time_series_ds is None:
         return []
 
-    var_names = {agg_method: f"{var_name}_{agg_method}" for agg_method in agg_methods}
+    if "=" in var_name:
+        var_name = var_name.split("=")[0].strip()
+    key_to_var_names = {
+        agg_method: f"{var_name}_{agg_method}" for agg_method in agg_methods
+    }
 
-    return collect_timeseries_result(time_series_ds, var_names, max_valids=max_valids)
+    return collect_timeseries_result(
+        time_series_ds, key_to_var_names, max_valids=max_valids
+    )
 
 
 def _get_time_series_for_point(
