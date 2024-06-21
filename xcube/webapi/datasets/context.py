@@ -9,16 +9,7 @@ import os
 import os.path
 import warnings
 from functools import cached_property
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Callable,
-    Set,
-    Union,
-)
+from typing import Any, Optional, Callable, Union
 from collections.abc import Collection, Mapping
 
 import numpy as np
@@ -27,7 +18,8 @@ import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
-from xcube.core.mldataset import BaseMultiLevelDataset, IdentityMultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset
+from xcube.core.mldataset import IdentityMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.mldataset import augment_ml_dataset
 from xcube.core.mldataset import open_ml_dataset_from_python_code
@@ -49,6 +41,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_custom_colormap
+from xcube.util.expression import split_var_assignment
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.places import PlacesContext
 
@@ -510,6 +503,12 @@ class DatasetsContext(ResourcesContext):
     def get_color_mapping(
         self, ds_id: str, var_name: str
     ) -> tuple[str, str, tuple[float, float]]:
+
+        if split_var_assignment(var_name)[1]:
+            # var_name is an assignment expression, the result is unknown yet,
+            # so we must return default values here.
+            return DEFAULT_CMAP_NAME, DEFAULT_CMAP_NORM, DEFAULT_VALUE_RANGE
+
         cmap_name = None
         cmap_norm = None
         cmap_vmin, cmap_vmax = None, None
@@ -526,11 +525,6 @@ class DatasetsContext(ResourcesContext):
         if cmap_name and cmap_norm and None not in cmap_range:
             # noinspection PyTypeChecker
             return cmap_name, cmap_norm, cmap_range
-
-        if "=" in var_name:
-            # var_name is an expression, the result is unknown yet, so we
-            # must return default values here.
-            return DEFAULT_CMAP_NAME, DEFAULT_CMAP_NORM, DEFAULT_VALUE_RANGE
 
         ds = self.get_dataset(ds_id, expected_var_names=[var_name])
         var = ds[var_name]

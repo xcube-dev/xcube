@@ -15,6 +15,7 @@ from xcube.core import timeseries
 from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.gridmapping import GridMapping
 from xcube.server.api import ApiError
+from xcube.util.expression import split_var_assignment
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time
 from .context import TimeSeriesContext
@@ -189,8 +190,7 @@ def _get_time_series_for_geometry(
     if time_series_ds is None:
         return []
 
-    if "=" in var_name:
-        var_name = var_name.split("=")[0].strip()
+    var_name, _ = split_var_assignment(var_name)
     key_to_var_names = {
         agg_method: f"{var_name}_{agg_method}" for agg_method in agg_methods
     }
@@ -202,7 +202,7 @@ def _get_time_series_for_geometry(
 
 def _get_time_series_for_point(
     dataset: xr.Dataset,
-    var_name: str,
+    var_name_or_assign: str,
     point: shapely.geometry.Point,
     agg_methods: set[str],
     grid_mapping: Optional[GridMapping] = None,
@@ -223,14 +223,11 @@ def _get_time_series_for_point(
             "Aggregation methods must include one of" ' "mean", "median", "min", "max"'
         )
 
-    var_names = [var_name]
+    var_names = [var_name_or_assign]
+    var_name, var_expr = split_var_assignment(var_name_or_assign)
+    key_to_var_names = {var_key: var_name}
 
-    is_var_expr = "=" in var_name
-    if is_var_expr:
-        key_to_var_names = {var_key: var_name.split("=")[0].strip()}
-    elif not incl_ancillary_vars:
-        key_to_var_names = {var_key: var_name}
-    else:
+    if incl_ancillary_vars and not var_expr:
         roles_to_anc_var_name_sets = find_ancillary_var_names(
             dataset, var_name, same_shape=True, same_dims=True
         )
@@ -240,8 +237,6 @@ def _get_time_series_for_point(
                 roles_to_anc_var_names[role] = roles_to_anc_var_name_sets.pop()
 
         var_names += list(set(roles_to_anc_var_names.values()))
-
-        key_to_var_names = {var_key: var_name}
         for role, anc_var_name in roles_to_anc_var_names.items():
             key_to_var_names[role] = anc_var_name
 

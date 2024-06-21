@@ -19,6 +19,8 @@ from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.util.expression import compute_array_expr
+from xcube.util.expression import new_dataset_namespace
+from xcube.util.expression import split_var_assignment
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.util.assertions import assert_instance
 from xcube.constants import CRS_CRS84
@@ -46,7 +48,7 @@ AGG_METHODS = {
 
 
 def get_time_series(
-    cube: xr.Dataset,
+    dataset: xr.Dataset,
     grid_mapping: Optional[GridMapping] = None,
     geometry: Optional[GeometryLike] = None,
     var_names: Optional[Sequence[str]] = None,
@@ -80,7 +82,7 @@ def get_time_series(
     the function returns ``None``.
 
     Args:
-        cube: The xcube dataset
+        dataset: The dataset
         grid_mapping: Grid mapping of *cube*.
         geometry: Optional geometry
         var_names: Optional sequence of names of variables to be
@@ -101,11 +103,11 @@ def get_time_series(
             "cube_asserted has been deprecated" " and will be removed soon.",
             DeprecationWarning,
         )
-    assert_instance(cube, xr.Dataset)
+    assert_instance(dataset, xr.Dataset)
     if grid_mapping is not None:
         assert_instance(grid_mapping, GridMapping)
     else:
-        grid_mapping = GridMapping.from_dataset(cube)
+        grid_mapping = GridMapping.from_dataset(dataset)
 
     geometry = normalize_geometry(geometry)
     if geometry is not None and not grid_mapping.crs.is_geographic:
@@ -115,16 +117,15 @@ def get_time_series(
         geometry = shapely.ops.transform(project, geometry)
 
     data_vars: dict[str, xr.DataArray] = {}
-    for var_name_or_expr in var_names:
-        if "=" in var_name_or_expr:
-            # var_name_or_expr is an expression
-            var_name, var_expr = map(lambda s: s.strip(), var_name_or_expr.split("="))
-            # noinspection PyTypeChecker
-            variable = compute_array_expr(var_expr, dict(cube), result_name=var_name)
+    for var_name_or_assign in var_names:
+        var_name, var_expr = split_var_assignment(var_name_or_assign)
+        if var_expr:
+            namespace = new_dataset_namespace(dataset)
+            variable = compute_array_expr(var_expr, namespace, result_name=var_name)
         else:
-            # var_name_or_expr is just a name
-            var_name = var_name_or_expr
-            variable = cube[var_name]
+            var_name = var_name_or_assign
+            variable = dataset[var_name]
+
         if isinstance(variable, xr.DataArray) and "time" in variable.dims:
             data_vars[var_name] = variable
 

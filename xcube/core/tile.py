@@ -18,6 +18,9 @@ from xcube.constants import LOG
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
+from xcube.util.expression import compute_array_expr
+from xcube.util.expression import new_dataset_namespace
+from xcube.util.expression import split_var_assignment
 from xcube.util.cmaps import ColormapProvider
 from xcube.util.cmaps import DEFAULT_CMAP_NAME
 from xcube.util.perf import measure_time_cm
@@ -30,7 +33,6 @@ from .mldataset import MultiLevelDataset
 from .tilingscheme import DEFAULT_CRS_NAME
 from .tilingscheme import DEFAULT_TILE_SIZE
 from .tilingscheme import TilingScheme
-from ..util.expression import compute_array_expr
 
 DEFAULT_VALUE_RANGE = (0.0, 1.0)
 DEFAULT_CMAP_NORM = "lin"
@@ -587,26 +589,32 @@ def get_var_valid_range(var: xr.DataArray) -> Optional[tuple[float, float]]:
     return valid_range
 
 
-def _get_variable(ds_name, dataset, variable_name, non_spatial_labels, logger):
-
-    if "=" in variable_name:
-        var_name, var_expression = map(lambda s: s.strip(), variable_name.split("="))
-        variable = compute_array_expr(var_expression, dict(dataset), result_name=var_name)
+def _get_variable(
+    ds_name: str,
+    dataset: xr.Dataset,
+    var_name_or_assign: str,
+    non_spatial_labels: dict[str, Any],
+    logger: logging.Logger,
+):
+    var_name, var_expr = split_var_assignment(var_name_or_assign)
+    if var_expr:
+        namespace = new_dataset_namespace(dataset)
+        variable = compute_array_expr(var_expr, namespace, result_name=var_name)
         if not isinstance(variable, xr.DataArray):
             raise TileNotFoundException(
-                f"Variable expression {var_expression!r} evaluated"
+                f"Variable expression {var_expr!r} evaluated"
                 f" in the context of dataset {ds_name!r}"
                 f" must yield a xarray.DataArray, but got {type(variable)}",
                 logger=logger,
             )
         variable.name = var_name
     else:
-        if variable_name not in dataset:
+        if var_name not in dataset:
             raise TileNotFoundException(
-                f"Variable {variable_name!r} not found in dataset {ds_name!r}",
+                f"Variable {var_name!r} not found in dataset {ds_name!r}",
                 logger=logger,
             )
-        variable = dataset[variable_name]
+        variable = dataset[var_name]
 
     non_spatial_labels = _get_non_spatial_labels(
         dataset, variable, non_spatial_labels, logger
