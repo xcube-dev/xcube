@@ -205,7 +205,7 @@ class MaskSet:
                 if the flag values are not in the range [0, 2**16 - 1).
 
         Returns:
-            An suitable instance of ``matplotlib.colors.Colormap`` and
+            A suitable instance of ``matplotlib.colors.Colormap`` and
             the corresponding ``matplotlib.colors.BoundaryNorm`` if applicable
         """
         if self._flag_values is not None:
