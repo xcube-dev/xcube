@@ -250,6 +250,8 @@ class MaskSet:
                             random.random(),
                         )
                 cmap = matplotlib.colors.ListedColormap(colors, name=cmap_name)
+                cmap.set_over((0, 0, 0, 0))
+                cmap.set_under((0, 0, 0, 0))
                 norm = matplotlib.colors.BoundaryNorm(levels, len(colors))
                 return cmap, norm
         return matplotlib.colormaps.get_cmap(default), None
