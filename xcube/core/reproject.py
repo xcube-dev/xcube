@@ -394,8 +394,8 @@ def _ensure_valid_region(
         x1, y1, x2, y2 = region
     else:
         # Determine region from full-res lon/lat 2D variables
-        x1, x2 = x_var.min(), x_var.max()
-        y1, y2 = y_var.min(), y_var.max()
+        x1, x2 = x_var.min().item(), x_var.max().item()
+        y1, y2 = y_var.min().item(), y_var.max().item()
         extra_space = extra * max(x2 - x1, y2 - y1)
         # Add extra space in units of the source coordinates
         x1, x2 = x1 - extra_space, x2 + extra_space
