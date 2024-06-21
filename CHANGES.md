@@ -91,6 +91,8 @@
 * Web API endpoints with an optional trailing slash are no longer listed
   twice in the automatically generated OpenAPI documentation (#965)
 
+* Several minor updates to make xcube compatible with NumPy 2.0.0 (#1024)
+
 ### Incompatible API changes
 
 * The `get_cmap()` method of `util.cmaps.ColormapProvider` now returns a 
