@@ -160,6 +160,8 @@
 * The workflow `.github/workflows/xcube_publish_pypi.yml` changes the line in the `pyproject.toml`, where
   the package name is defined to `name = "xcube-core"`. This allows to release xcube under
   the package name "xcube-core" on PyPI where the name "xcube" is already taken. #1010 
+
+* Updated the 'How do I ...' page in the xcube documentation.
   
 ## Changes in 1.5.1
 

@@ -1,20 +1,47 @@
 # How do I ...
 
-## Data Access
+## access data
 
-| How do I ...                        | Use API                                                                        |
-|-------------------------------------|--------------------------------------------------------------------------------|
-| get a data store instance           | [new_data_store(store_id, ...)](api.html#xcube.core.store.new_data_store)      |
-| get data store for local filesystem | [new_data_store("file", ...)](api.html#xcube.core.store.new_data_store)        |
-| get data store for S3 filesystem    | [new_data_store("s3", ...)](api.html#xcube.core.store.new_data_store)          |
-| list the datasets in a data store   | [store.list_data_ids()](api.html#xcube.core.store.DataStore.list_data_ids)     |
-| open a dataset from a data store    | [store.open_data(data_id, ...)](api.html#xcube.core.store.DataStore.open_data) |
+| How do I ...                                 | Use API                                                                                                    | Comments                                                                                                                                                                                                  |
+|----------------------------------------------|------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| get a data store instance                    | [new_data_store(store_id, **data_store_params)](api.html#xcube.core.store.new_data_store)                  | Supported `store_id` can be found in the section [Available data store](dataaccess.html#available-data-stores);<br>`data_store_params` can be extracted for a specific `store_id`, shown in the next row. |
+| get the data store parameters                | [get_data_store_params_schema(store_id)](api.html#xcube.core.store.DataStore.get_data_store_params_schema) |                                                                                                                                                                                                           |
+| list available data stores                   | [list_data_store_ids()](api.html#xcube.core.store.list_data_store_ids)                                     | This function lists all data stores available in the environment;<br>note that xcube data store plugins will be automatically recognized when installed.                                                  |
+| get a data store for local filesystem        | [new_data_store("file", **data_store_params)](api.html#xcube.core.store.new_data_store)                    | Documentation can be found [here](dataaccess.html#filesystem-based-data-stores).                                                                                                                          |
+| get a data store for S3 filesystem           | [new_data_store("s3", **data_store_params)](api.html#xcube.core.store.new_data_store)                      | Documentation can be found [here](dataaccess.html#filesystem-based-data-stores).                                                                                                                          |
+| list the datasets in a data store            | [store.list_data_ids()](api.html#xcube.core.store.DataStore.list_data_ids)                                 |                                                                                                                                                                                                           |
+| open a dataset from a data store             | [store.open_data(data_id, **open_params)](api.html#xcube.core.store.DataStore.open_data)                   | `open_params` can be extracted from the store, shown in the next row.                                                                                                                                     |
+| get the parameters for <br>opening a dataset | [store.get_open_data_params_schema()](api.html#xcube.core.store.DataStore.get_open_data_params_schema)     |                                                                                                                                                                                                           |
 
-## Resampling
+## get a data store xcube plug-in
 
-| How do I ...                                | Use API                                                                 |
-|---------------------------------------------|-------------------------------------------------------------------------|
-| spatially resample a datacube               | [resample_in_space()](api.html#xcube.core.resampling.resample_in_space) |
-| temporarily resample a datacube             | [resample_in_time()](api.html#xcube.core.resampling.resample_in_time)   |
-| rectify a dataset in satellite projection   | [rectify_dataset()](api.html#xcube.core.resampling.rectify_dataset)     |
+| How do I ...                                                                                             | Use API                                                                                        | Comments                                                                              |
+|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| get a data store for Sentinel Hub                                                                        | [new_data_store("sentinelhub", **data_store_params)](api.html#xcube.core.store.new_data_store) | Documentation can be found [here](dataaccess.html#sentinel-hub-api).                  |
+| get a data store for ESA Climate Data Centre                                                             | [new_data_store("cciodp", **data_store_params)](api.html#xcube.core.store.new_data_store)      | Documentation can be found [here](dataaccess.html#esa-climate-data-centre-cciodp).    |
+| get a data store for ESA Climate Data Centre (Zarr format)                                               | [new_data_store("ccizarr", **data_store_params)](api.html#xcube.core.store.new_data_store)     | Documentation can be found [here](dataaccess.html#esa-climate-data-centre-ccizarr).   |
+| get a data store for ESA SMOS                                                                            | [new_data_store("smos", **data_store_params)](api.html#xcube.core.store.new_data_store)        | Documentation can be found [here](dataaccess.html#esa-smos).                          |
+| get a data store for Copernicus Climate Data Store                                                       | [new_data_store("cds", **data_store_params)](api.html#xcube.core.store.new_data_store)         | Documentation can be found [here](dataaccess.html#copernicus-climate-data-store-cds). |
+| get a data store for Copernicus Marine Service                                                           | [new_data_store("cmems", **data_store_params)](api.html#xcube.core.store.new_data_store)       | Documentation can be found [here](dataaccess.html#copernicus-marine-service-cmems).   |
+| get a data store for data organized by <br>a SpatioTemporal Asset Catalog (STAC) (**under development**) | [new_data_store("stac", **data_store_params)](api.html#xcube.core.store.new_data_store)        |                                                                                       |
+
+
+## process data
+
+| How do I ...                                    | Use API                                                                                          | Comments                                                                                     |
+|-------------------------------------------------|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| spatially resample a datacube                   | [resample_in_space(ds, ref_ds=ref_ds, ...)](api.html#xcube.core.resampling.resample_in_space)    | The datacube `ds` will be resampled to the crs and spatial resolution of `ref_ds`.           |
+| temporarily resample a datacube                 | [resample_in_time(ds, frequency, method, ...)](api.html#xcube.core.resampling.resample_in_time)  |                                                                                              |
+| rectify a dataset in satellite projection       | [rectify_dataset(ds, ref_ds=ref_ds, ...)](api.html#xcube.core.resampling.rectify_dataset)        | The datacube `ds` in satellite projection will be rectified to the grid mapping of `ref_ds`. |
+| spatially subset a dataset for a given geometry | [clip_dataset_by_geometry(ds, geometry, ...)](api.html#xcube.core.geom.clip_dataset_by_geometry) | The datacube `ds` is subset to the bounding box of `geometry`.                               |
+| spatially mask a dataset for a given geometry   | [mask_dataset_by_geometry(ds, geometry, ...)](api.html#xcube.core.geom.mask_dataset_by_geometry) | Values outside the mask are set to NaN.                                                      |
+
+## publish and visualize xcube datasets
+
+| How do I ...                          | Use CLI/API                                                                                                                                                                                          | Comments                                                                                                                      |
+|---------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| run the xcube server from the CLI     | [xcube serve --verbose -c config.yml](examples/xcube_serve.html#running-the-server)                                                                                                                  | Detailed documentation on `xcube serve` can be found [here](cli/xcube_serve.html) and [here](webapi.html#web-api-and-server). |
+| open the xcube viewer web-application | [xcube serve --open-viewer](examples/xcube_serve.html#id1)                                                                                                                                           | Detailed documentation on xcube Viewer can be found [here](viewer.html).                                                      |
+| start the xcube viewer via Python API | [viewer = Viewer()](api.html#xcube.webapi.viewer.Viewer)<br/>[viewer.add_dataset(ds)](api.html#xcube.webapi.viewer.Viewer.add_dataset)<br/>[viewer.show()](api.html#xcube.webapi.viewer.Viewer.show) | Detailed documentation on xcube Viewer can be found [here](viewer.html).                                                      |
+
 
