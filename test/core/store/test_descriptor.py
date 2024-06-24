@@ -373,7 +373,7 @@ class VariableDescriptorTest(unittest.TestCase):
             "rj",
             ["dfjhrt", "sg"],
             chunks=(3, 2),
-            attrs={"ssd": 4, "zjgrhgu": "dgfrf", "fill_value": np.NaN},
+            attrs={"ssd": 4, "zjgrhgu": "dgfrf", "fill_value": np.nan},
         )
         expected = {
             "name": "xf",
