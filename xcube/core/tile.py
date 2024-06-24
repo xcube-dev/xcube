@@ -5,6 +5,7 @@
 import io
 import logging
 import math
+import warnings
 from typing import Any, Optional, Union
 from collections.abc import Hashable, Sequence
 
@@ -44,7 +45,7 @@ ValueRange = tuple[float, float]
 
 def compute_tiles(
     ml_dataset: MultiLevelDataset,
-    variable_names: Union[str, Sequence[str]],
+    var_names: Union[str, Sequence[str]],
     tile_bbox: tuple[float, float, float, float],
     tile_crs: Union[str, pyproj.CRS] = DEFAULT_CRS_NAME,
     tile_size: ScalarOrPair[int] = DEFAULT_TILE_SIZE,
@@ -53,8 +54,10 @@ def compute_tiles(
     as_dataset: bool = False,
     tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
     trace_perf: bool = False,
+    # Deprecated
+    variable_names: Optional[Union[str, Sequence[str]]] = None,
 ) -> Optional[Union[list[np.ndarray], xr.Dataset]]:
-    """Compute tiles for given *variable_names* in
+    """Compute tiles for given *var_names* in
     given multi-resolution dataset *mr_dataset*.
 
     The algorithm is as follows:
@@ -78,8 +81,9 @@ def compute_tiles(
 
     Args:
         ml_dataset: Multi-level dataset
-        variable_names: Single variable name
-            or a sequence of three names.
+        var_names: A variable name,
+            or a variable assignment expression ("<var_name> = <var_expr>"),
+            or a sequence of three names or assignment expressions.
         tile_bbox: Tile bounding box
         tile_crs: Spatial tile coordinate reference system.
             Must be a geographical CRS, such as "EPSG:4326", or
@@ -99,14 +103,23 @@ def compute_tiles(
             tiles at high zoom levels. Defaults to 1.
         trace_perf: If set, detailed performance
             metrics are logged using the level of the "xcube" logger.
+        variable_names: Deprecated. Same as *var_names.
+
     Returns:
         A list of numpy.ndarray instances according to variables
-        given by *variable_names*. Returns None, if the resulting
+        given by *var_names*. Returns None, if the resulting
         spatial subset would be too small.
+
     Raises: TileNotFoundException
     """
-    if isinstance(variable_names, str):
-        variable_names = (variable_names,)
+    if variable_names:
+        warnings.warn(
+            "variable_names is deprecated, use var_names instead",
+            category=DeprecationWarning,
+        )
+        var_names = variable_names
+    if isinstance(var_names, str):
+        var_names = (var_names,)
 
     tile_size = normalize_scalar_or_pair(tile_size)
     tile_width, tile_height = tile_size
@@ -122,9 +135,9 @@ def compute_tiles(
     with measure_time("Preparing 2D subset"):
         variables = [
             _get_variable(
-                ml_dataset.ds_id, dataset, variable_name, non_spatial_labels, logger
+                ml_dataset.ds_id, dataset, var_name, non_spatial_labels, logger
             )
-            for variable_name in variable_names
+            for var_name in var_names
         ]
 
     variable_0 = variables[0]

@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Union, Optional, AbstractSet, Set
+from typing import AbstractSet, Optional, Union
 from collections.abc import Sequence
 
 import numpy as np
@@ -116,20 +116,22 @@ def get_time_series(
         ).transform
         geometry = shapely.ops.transform(project, geometry)
 
-    data_vars: dict[str, xr.DataArray] = {}
-    for var_name_or_assign in var_names:
-        var_name, var_expr = split_var_assignment(var_name_or_assign)
-        if var_expr:
-            namespace = new_dataset_namespace(dataset)
-            variable = compute_array_expr(var_expr, namespace, result_name=var_name)
-        else:
-            var_name = var_name_or_assign
-            variable = dataset[var_name]
+    if var_names is not None:
+        data_vars: dict[str, xr.DataArray] = {}
+        for var_name_or_assign in var_names:
+            var_name, var_expr = split_var_assignment(var_name_or_assign)
+            if var_expr:
+                namespace = new_dataset_namespace(dataset)
+                variable = compute_array_expr(var_expr, namespace, result_name=var_name)
+            else:
+                var_name = var_name_or_assign
+                variable = dataset[var_name]
 
-        if isinstance(variable, xr.DataArray) and "time" in variable.dims:
-            data_vars[var_name] = variable
+            if isinstance(variable, xr.DataArray) and "time" in variable.dims:
+                data_vars[var_name] = variable
 
-    dataset = xr.Dataset(data_vars)
+        dataset = xr.Dataset(data_vars)
+
     if len(dataset.data_vars) == 0:
         return None
 
