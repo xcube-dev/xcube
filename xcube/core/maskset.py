@@ -4,7 +4,7 @@
 
 import random
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, Union
 
 import dask.array as da
 import matplotlib.colors
@@ -15,6 +15,9 @@ import xarray as xr
 # TODO: this would be useful to have in xarray:
 #       >>> ds = xr.open_dataset("my/path/to/cf/netcdf.nc", decode_flags=True)
 #       >>> ds.flag_mask_sets['quality_flags']
+
+
+_UINT16_MAX = 65535
 
 
 class MaskSet:
@@ -193,35 +196,67 @@ class MaskSet:
         self._masks[flag_name] = mask_var
         return mask_var
 
-    def get_cmap(self, default: str = "viridis") -> matplotlib.colors.Colormap:
+    def get_cmap(
+        self, default: str = "viridis"
+    ) -> tuple[matplotlib.colors.Colormap, Union[matplotlib.colors.BoundaryNorm, None]]:
         """Get a suitable color mapping for use with matplotlib.
 
         Args:
             default: Default color map name in case a color mapping
-                cannot be created, e.g., ``flag_values`` are not defined.
+                cannot be created, e.g., ``flag_values`` are not defined or
+                if the flag values are not in the range [0, 2**16 - 1).
 
         Returns:
-            An suitable instance of ```matplotlib.colors.Colormap```
+            A suitable instance of ``matplotlib.colors.Colormap`` and
+            the corresponding ``matplotlib.colors.BoundaryNorm`` if applicable
         """
         if self._flag_values is not None:
-            flag_values = self._flag_values
-            num_values = len(flag_values)
-            # Note, here is room for improvement if we insert transparent
-            # (alpha=0) colors for gaps between the integer values.
-            # Currently, gap color is taken from the first value before the gap.
-            if self._flag_colors is not None and len(self._flag_colors) == num_values:
-                colors = [(v, c) for v, c in zip(flag_values, self._flag_colors)]
-            else:
-                # Use random colors so they are all different.
-                colors = [
-                    (v, (random.random(), random.random(), random.random()))
-                    for v in flag_values
-                ]
-            return matplotlib.colors.LinearSegmentedColormap.from_list(
-                str(self._flag_var.name), colors
-            )
-        return matplotlib.colormaps.get_cmap(default)
+            flag_var = self._flag_var
+            cmap_name = str(flag_var.name) if flag_var.name else "from_maskset"
 
+            flag_values = self._flag_values
+            flag_value_min = flag_values.min()
+            flag_value_max = flag_values.max()
+
+            if flag_value_min >= 0 and flag_value_max < _UINT16_MAX:
+                flag_colors = self._flag_colors
+                levels = np.append(flag_values, flag_values[-1] + 1)
+                # Setup color list that directly maps a flag value into a color.
+                if flag_colors is not None:
+                    colors = [(0, 0, 0, 0)] * len(flag_values)
+                    if len(flag_colors) != len(flag_values):
+                        # Handle special case where no-data value is included in
+                        # fill_values (e.g., ESA CCI Land Cover) in the hope that
+                        # flag_colors and flag_values will then match:
+                        flag_values, index_tracker = _sanitize_flag_values(
+                            flag_var, flag_values
+                        )
+                        if len(flag_colors) != len(flag_values):
+                            return matplotlib.colormaps.get_cmap(default), None
+
+                        # Use given flag colors
+                        for i, c in zip(index_tracker, flag_colors):
+                            colors[i] = c
+                    else:
+                        # Use given flag colors
+                        for i, c in enumerate(flag_colors):
+                            colors[i] = c
+
+                else:
+                    # Use random colors so they are all different
+                    colors = [(0, 0, 0, 0)] * (len(flag_values))
+                    for i in range(len(flag_values)):
+                        colors[i] = (
+                            random.random(),
+                            random.random(),
+                            random.random(),
+                        )
+                cmap = matplotlib.colors.ListedColormap(colors, name=cmap_name)
+                cmap.set_over((0, 0, 0, 0))
+                cmap.set_under((0, 0, 0, 0))
+                norm = matplotlib.colors.BoundaryNorm(levels, len(colors))
+                return cmap, norm
+        return matplotlib.colormaps.get_cmap(default), None
 
 _MASK_DTYPES = (
     (2**8, np.uint8),
@@ -231,7 +266,7 @@ _MASK_DTYPES = (
 )
 
 
-def _convert_flag_var_attribute_value(attr_value, attr_name):
+def _convert_flag_var_attribute_value(attr_value, attr_name) -> np.ndarray:
     if isinstance(attr_value, str):
         err_msg = f'Invalid bit expression in value for {attr_name}: "{attr_value}"'
         masks = []
@@ -276,3 +311,40 @@ def _convert_flag_var_attribute_value(attr_value, attr_name):
         return np.array(attr_value)
 
     raise TypeError(f"attribute {attr_name!r} must be an integer array")
+
+
+def _sanitize_flag_values(
+    flag_var: xr.DataArray,
+    flag_values: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+
+    index_tracker = np.arange(len(flag_values))
+    fill_value = None
+    for d in (flag_var.encoding, flag_var.attrs):
+        fill_value = (
+            d.get("fill_value", d.get("_FillValue"))
+            if fill_value is None
+            else fill_value
+        )
+    if fill_value is not None:
+        if np.isnan(fill_value):
+            mask = np.logical_not(np.isnan(flag_values))
+            index_tracker = index_tracker[mask]
+            flag_values = flag_values[mask]
+        else:
+            mask = flag_values != fill_value
+            index_tracker = index_tracker[mask]
+            flag_values = flag_values[mask]
+
+    valid_min = flag_var.attrs.get("valid_min")
+    valid_max = flag_var.attrs.get("valid_max")
+    if valid_min is not None:
+        mask = flag_values >= valid_min
+        index_tracker = index_tracker[mask]
+        flag_values = flag_values[mask]
+    if valid_max is not None:
+        mask = flag_values <= valid_max
+        index_tracker = index_tracker[mask]
+        flag_values = flag_values[mask]
+
+    return flag_values, index_tracker
