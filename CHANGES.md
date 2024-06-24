@@ -1,3 +1,12 @@
+## Changes in 1.7.0 (in development)
+
+* xcube server can now deal with "user-defined" variables. Endpoints
+  that accept a `{varName}` path parameter in their URL path can now be 
+  called with assignment expressions of the form `<var_name>=<var_expr>` 
+  where `<var_name>` is the name user defined variable and `<var_expr>` 
+  is an arbitrary band-math expression, 
+  see https://github.com/xcube-dev/xcube-viewer/issues/371.
+
 ## Changes in 1.6.0
 
 ### Enhancements

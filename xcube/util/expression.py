@@ -4,7 +4,9 @@
 
 import ast
 import warnings
-from typing import Dict, Any
+from typing import Any, Optional
+
+import xarray as xr
 
 
 def compute_array_expr(
@@ -370,3 +372,49 @@ class _ExprTranspiler:
 
     def _is_nan(self, node):
         return isinstance(node, ast.Name) and node.id == "NaN"
+
+
+def new_dataset_namespace(
+    dataset: xr.Dataset, use_mask_sets: bool = False
+) -> dict[str, Any]:
+    """Create a new namespace for array expression evaluation
+    in the context of a *dataset*.
+
+    Args:
+        dataset: A dataset whose variables will be added to the namespace.
+        use_mask_sets: Whether to convert flag variables into ``MaskSet`` objects.
+            This allows using associated ``flag_meanings`` as attribute names.
+    """
+    import numpy as np
+    import math
+
+    # Initialize namespace with some constants and modules
+    namespace = dict(
+        NaN=np.nan, PI=math.pi, np=np, xr=xr, **dataset.coords, **dataset.data_vars
+    )
+    if use_mask_sets:
+        from xcube.core.maskset import MaskSet
+
+        for var_name, var in dataset.data_vars.items():
+            if MaskSet.is_flag_var(var):
+                namespace[var_name] = MaskSet(var)
+    return namespace
+
+
+def split_var_assignment(var_name_or_assign: str) -> tuple[str, Optional[str]]:
+    """Split *var_name_or_assign* into a variable name and expression part.
+
+    Args:
+        var_name_or_assign: A variable name or an expression
+
+    Return:
+        A pair (var_name, var_expr) if *var_name_or_assign* is an assignment
+        expression, otherwise (var_name, None).
+    """
+    if "=" in var_name_or_assign:
+        var_name, var_expr = map(
+            lambda s: s.strip(), var_name_or_assign.split("=", maxsplit=1)
+        )
+        return var_name, var_expr
+    else:
+        return var_name_or_assign, None
