@@ -1,4 +1,13 @@
-## Changes in 1.6.0 (in development)
+## Changes in 1.7.0 (in development)
+
+* xcube server can now deal with "user-defined" variables. Endpoints
+  that accept a `{varName}` path parameter in their URL path can now be 
+  called with assignment expressions of the form `<var_name>=<var_expr>` 
+  where `<var_name>` is the name user defined variable and `<var_expr>` 
+  is an arbitrary band-math expression, 
+  see https://github.com/xcube-dev/xcube-viewer/issues/371.
+
+## Changes in 1.6.0
 
 ### Enhancements
 
@@ -91,6 +100,8 @@
 * Web API endpoints with an optional trailing slash are no longer listed
   twice in the automatically generated OpenAPI documentation (#965)
 
+* Several minor updates to make xcube compatible with NumPy 2.0.0 (#1024)
+
 ### Incompatible API changes
 
 * The `get_cmap()` method of `util.cmaps.ColormapProvider` now returns a 
@@ -160,6 +171,8 @@
 * The workflow `.github/workflows/xcube_publish_pypi.yml` changes the line in the `pyproject.toml`, where
   the package name is defined to `name = "xcube-core"`. This allows to release xcube under
   the package name "xcube-core" on PyPI where the name "xcube" is already taken. #1010 
+
+* Updated the 'How do I ...' page in the xcube documentation.
   
 ## Changes in 1.5.1
 
