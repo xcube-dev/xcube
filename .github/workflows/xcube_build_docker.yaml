@@ -1,7 +1,9 @@
 name: xcube docker build
 
 on:
-  workflow_dispatch:
+  push:
+  release:
+    types: [published]
 
 env:
   APP_NAME: xcube
@@ -23,7 +25,7 @@ jobs:
 
       # checkout the repo with the release tag from previous step
       - name: git-checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: ${{ steps.latest_release.outputs.release_tag }}
 
