@@ -1,3 +1,10 @@
+## Changes in 1.6.1.dev1 (in development)
+
+* Migrated the `.github/workflows/xcube_build_docker.yaml` and the corresponding 
+  `Dockerfile` from `setup.py` to `pyproject.toml`. Additionally, updated the relevant 
+  documentation in `doc/source` to reflect this change from `setup.py` to
+  `pyproject.toml.` (related to #992) 
+
 ## Changes in 1.6.0
 
 ### Enhancements
