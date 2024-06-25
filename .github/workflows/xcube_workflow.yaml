@@ -51,7 +51,7 @@ jobs:
     name: build-docker-image
     # Only run if unittests succeed
     needs: unittest
-    if: ${{ github.event_name == 'release' }}
+    #if: ${{ github.event_name == 'release' }}
     steps:
       - name: git-checkout
         uses: actions/checkout@v4

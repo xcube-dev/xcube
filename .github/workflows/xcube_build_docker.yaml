@@ -1,9 +1,7 @@
 name: xcube docker build
 
 on:
-  push:
-  release:
-    types: [published]
+  workflow_dispatch:
 
 env:
   APP_NAME: xcube
