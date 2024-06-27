@@ -357,13 +357,17 @@ class HelpersTest(unittest.TestCase):
         )
 
         ns = new_dataset_namespace(ds)
-        self.assertEqual({"A", "B", "C", "PI", "NaN", "np", "xr"}, set(ns.keys()))
+        self.assertEqual(
+            {"A", "B", "C", "e", "inf", "pi", "nan", "np", "xr"}, set(ns.keys())
+        )
         self.assertIsInstance(ns["A"], xr.DataArray)
         self.assertIsInstance(ns["B"], xr.DataArray)
         self.assertIsInstance(ns["C"], xr.DataArray)
 
         ns = new_dataset_namespace(ds, use_mask_sets=True)
-        self.assertEqual({"A", "B", "C", "PI", "NaN", "np", "xr"}, set(ns.keys()))
+        self.assertEqual(
+            {"A", "B", "C", "e", "inf", "pi", "nan", "np", "xr"}, set(ns.keys())
+        )
         self.assertIsInstance(ns["A"], xr.DataArray)
         self.assertIsInstance(ns["B"], xr.DataArray)
         self.assertIsInstance(ns["C"], MaskSet)

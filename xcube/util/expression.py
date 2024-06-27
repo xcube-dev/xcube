@@ -110,7 +110,9 @@ class _ExprTranspiler:
     }
 
     _OP_INFOS = {
+        # https://docs.python.org/3.12/reference/expressions.html#conditional-expressions
         ast.IfExp: ("if", 10, "L"),
+        # https://docs.python.org/3.12/reference/expressions.html#boolean-operations
         ast.Eq: ("==", 100, "R"),
         ast.NotEq: ("!=", 100, "R"),
         ast.Lt: ("<", 100, "R"),
@@ -121,18 +123,31 @@ class _ExprTranspiler:
         ast.IsNot: ("is not", 100, "R"),
         ast.In: ("in", 100, "R"),
         ast.NotIn: ("not in", 100, "R"),
+        # https://docs.python.org/3.12/reference/expressions.html#comparisons
         ast.Or: ("or", 300, "L"),
         ast.And: ("and", 400, "L"),
         ast.Not: ("not", 500, None),
-        ast.UAdd: ("+", 600, None),
-        ast.USub: ("-", 600, None),
+        # https://docs.python.org/3.12/reference/expressions.html#shifting-operations
+        ast.BitOr: ("|", 600, None),
+        ast.BitXor: ("^", 610, None),
+        ast.BitAnd: ("&", 620, None),
+        # https://docs.python.org/3.12/reference/expressions.html#shifting-operations
+        ast.LShift: ("<<", 700, "L"),
+        ast.RShift: (">>", 700, "L"),
+        # https://docs.python.org/3.12/reference/expressions.html#binary-arithmetic-operations
         ast.Add: ("+", 600, "E"),
         ast.Sub: ("-", 600, "L"),
         ast.Mult: ("*", 700, "E"),
         ast.Div: ("/", 700, "L"),
         ast.FloorDiv: ("//", 700, "L"),
-        ast.Mod: ("%", 800, "L"),
-        ast.Pow: ("**", 900, "L"),
+        ast.Mod: ("%", 700, "L"),
+        ast.MatMult: ("@", 700, "L"),
+        # https://docs.python.org/3.12/reference/expressions.html#the-power-operator
+        ast.Pow: ("**", 800, "L"),
+        # https://docs.python.org/3.12/reference/expressions.html#unary-arithmetic-and-bitwise-operations
+        ast.UAdd: ("+", 900, None),
+        ast.USub: ("-", 900, None),
+        ast.Invert: ("~", 900, None),
     }
 
     @classmethod
@@ -386,11 +401,17 @@ def new_dataset_namespace(
             This allows using associated ``flag_meanings`` as attribute names.
     """
     import numpy as np
-    import math
 
     # Initialize namespace with some constants and modules
     namespace = dict(
-        NaN=np.nan, PI=math.pi, np=np, xr=xr, **dataset.coords, **dataset.data_vars
+        nan=np.nan,
+        e=np.e,
+        inf=np.inf,
+        pi=np.pi,
+        np=np,
+        xr=xr,
+        **dataset.coords,
+        **dataset.data_vars,
     )
     if use_mask_sets:
         from xcube.core.maskset import MaskSet
