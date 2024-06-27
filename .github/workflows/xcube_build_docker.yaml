@@ -23,7 +23,7 @@ jobs:
 
       # checkout the repo with the release tag from previous step
       - name: git-checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: ${{ steps.latest_release.outputs.release_tag }}
 
@@ -36,7 +36,7 @@ jobs:
 
       # Build and push docker release to quay.io
       - name: push-docker-image-with-release-tag
-        uses: mr-smithers-excellent/docker-build-push@v5
+        uses: mr-smithers-excellent/docker-build-push@v6
         with:
           image: ${{ env.ORG_NAME }}/${{ env.APP_NAME }}
           tags: ${{ steps.latest_release.outputs.release_tag }}

@@ -78,11 +78,8 @@ pip install --no-deps --editable .
 
 The second command installs xcube in ‘editable mode’, meaning that it will
 be run directly from the repository, and changes to the code in the repository
-will take immediate effect without reinstallation. (As an alternative to
-pip, the command `python setup.py develop` can be used, but this is
-[no longer recommended](https://docs.python.org/3/install/#introduction).
-Among other things, `pip` has the advantage of allowing easy deinstallation of
-installed packages.)
+will take immediate effect without reinstallation. Note that `pip` offers the
+advantage of easily uninstalling the respective package.
 
 To update the install to the latest repository version and update the
 environment to reflect to any changes in `environment.yml`:
