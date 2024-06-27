@@ -1,3 +1,10 @@
+# This workflow is designed to skip all unit tests and is intended for situations where
+# the actual release has already been completed, but the Docker image build and push
+# step was skipped for some reason or encountered errors.When manually triggered, this
+# workflow fetches the latest GitHub release tag and pushes the Docker image to
+# quay.io with that tag.
+
+
 name: xcube docker build
 
 on:
