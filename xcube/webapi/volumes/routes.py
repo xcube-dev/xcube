@@ -10,11 +10,15 @@ import sys
 import numpy as np
 import pandas as pd
 import pyproj
+import xarray as xr
 
 from xcube.core.gridmapping import CRS_CRS84
 from xcube.core.select import select_subset
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
+from xcube.util.expression import compute_array_expr
+from xcube.util.expression import new_dataset_namespace
+from xcube.util.expression import split_var_assignment
 from .api import api
 from .config import DEFAULT_MAX_VOXEL_COUNT
 from .context import VolumesContext
@@ -104,16 +108,25 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
             (x1, x2), (y1, y2) = transformer.transform((x1, x2), (y1, y2))
             bbox = x1, y1, x2, y2
 
-        dataset = self.ctx.datasets_ctx.get_dataset(
-            datasetId, expected_var_names=[varName]
-        )
+        var_name, var_expr = split_var_assignment(varName)
+        if var_expr:
+            dataset = self.ctx.datasets_ctx.get_dataset(datasetId).copy()
+            namespace = new_dataset_namespace(dataset)
+            dataset[var_name] = compute_array_expr(
+                var_expr, namespace, result_name=var_name
+            )
+        else:
+            dataset = self.ctx.datasets_ctx.get_dataset(
+                datasetId, expected_var_names=[var_name]
+            )
+
         var = select_subset(
             dataset,
-            var_names=[varName],
+            var_names=[var_name],
             time_range=time_range,
             bbox=bbox,
             grid_mapping=ml_dataset.grid_mapping,
-        )[varName]
+        )[var_name]
 
         if var.ndim != 3:
             raise ApiError.BadRequest(f"Variable must be 3-D, got {var.ndim}-D")
