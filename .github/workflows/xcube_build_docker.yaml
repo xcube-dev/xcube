@@ -18,7 +18,7 @@ jobs:
       - name: Get latest release
         id: latest_release
         run: |
-            LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/dcs4cop/xcube/releases/latest" | jq -r .tag_name)
+            LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/xcube-dev/xcube/releases/latest" | jq -r .tag_name)
             echo "::set-output name=release_tag::$LATEST_RELEASE"
 
       # checkout the repo with the release tag from previous step
