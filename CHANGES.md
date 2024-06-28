@@ -26,6 +26,9 @@
 * The `xcube.core.store.DataDescriptor` class now supports specifying time ranges
   using both `datetime.date` and `datetime.datetime` objects. Previously,
   only `datetime.date` objects were supported.
+* The xcube server STAC publication has been adjusted so that the data store
+  parameters and data ID, which are needed to open the data, 
+  are now included with the asset (#1020).
 
 ## Changes in 1.6.0
 
