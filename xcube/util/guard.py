@@ -2,46 +2,45 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-PRIMITIVE_TYPES = (type(None), bool, int, float, complex, str)
+from collections.abc import Sequence
+from typing import Optional
+
+import inspect
+
+_GUARD_ATTRS = {"_obj", "_attrs", "get"}
 
 
 class Guard:
-    def __init__(
-        self, obj: object, attrs: set[str], types: list[tuple[type, set[str]]]
-    ):
+    def __init__(self, obj):
         self._obj = obj
-        self._is_primitive = isinstance(obj, PRIMITIVE_TYPES)
-        self._type_name = obj.__class__.__name__
-        self._attrs = attrs
-        self._types = types
 
-    def __getattr__(self, attr_name: str):
-        if not self._is_primitive and (attr_name not in self._attrs):
-            return AttributeError(f"")
-        value = getattr(self._obj, attr_name)
-        return self._verify_value(value)
+    def get(self):
+        return self._obj
 
-    def __call__(self, *args, **kwargs):
-        # noinspection PyCallingNonCallable
-        value = self._obj(*args, **kwargs)
-        return self._verify_value(value)
 
-    def __next__(self):
-        # noinspection PyTypeChecker
-        value = next(self._obj)
-        return self._verify_value(value)
+def new_type_guard(type_: type, attrs: Optional[Sequence[str]] = None) -> type:
 
-    def _verify_value(self, value):
-        if isinstance(value, Guard):
-            return value
+    class _Guard(Guard):
+        _attrs = set(attrs) if attrs is not None else set()
 
-        if isinstance(value, PRIMITIVE_TYPES):
-            return value
+        def __getattribute__(self, name: str):
+            if name in _GUARD_ATTRS:
+                return super().__getattribute__(name)
+            if name not in _Guard._attrs:
+                raise AttributeError(
+                    f"attribute {name!r} of {self._obj.__class__.__name__!r}"
+                    " object is protected"
+                )
+            return getattr(self._obj, name)
 
-        for t, attrs in self._types:
-            if isinstance(value, t):
-                return Guard(value, attrs, self._types)
+    _Guard.__name__ = f"{type_.__name__}Guard"
 
-        raise ValueError(
-            f"encountered illegal value of type {value.__class__.__name__!r}"
-        )
+    for t in inspect.getmro(type_):
+        print(f"Type {t!r}:")
+
+        for k, v in t.__dict__.items():
+            if k.startswith("__") and k.endswith("__"):
+                # dunder
+                print(f"  {k!r} --> {type(v)}")
+
+    return _Guard
