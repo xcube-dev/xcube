@@ -29,6 +29,13 @@ def find_free_port():
 
 
 class ServerTestCase(unittest.TestCase, ABC):
+    """Base test class for unit tests of server framework
+
+    This class is in the main xcube codebase rather than among the unit
+    tests because xcube server is a framework module and API extension
+    developers should be able to make use of the testing module.
+    """
+
     def setUp(self) -> None:
         self.port = find_free_port()
         config = self.get_config()

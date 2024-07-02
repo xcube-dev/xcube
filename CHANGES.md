@@ -1,11 +1,20 @@
 ## Changes in 1.7.0 (in development)
 
+### Enhancements
+
 * xcube server can now deal with "user-defined" variables. Endpoints
   that accept a `{varName}` path parameter in their URL path can now be 
   called with assignment expressions of the form `<var_name>=<var_expr>` 
   where `<var_name>` is the name user defined variable and `<var_expr>` 
   is an arbitrary band-math expression, 
   see https://github.com/xcube-dev/xcube-viewer/issues/371.
+
+### Fixes
+
+* Migrated the `.github/workflows/xcube_build_docker.yaml` and the corresponding 
+  `Dockerfile` from `setup.py` to `pyproject.toml`. Additionally, updated the relevant 
+  documentation in `doc/source` to reflect this change from `setup.py` to
+  `pyproject.toml.` (related to #992) 
 
 ## Changes in 1.6.0
 
