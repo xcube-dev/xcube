@@ -18,9 +18,8 @@ from xcube.core.geom import normalize_geometry
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.gridmapping import GridMapping
-from xcube.util.expression import compute_array_expr
-from xcube.util.expression import new_dataset_namespace
-from xcube.util.expression import split_var_assignment
+from xcube.core.varexpr import VarExprContext
+from xcube.core.varexpr import split_var_assignment
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.util.assertions import assert_instance
 from xcube.constants import CRS_CRS84
@@ -121,8 +120,7 @@ def get_time_series(
         for var_name_or_assign in var_names:
             var_name, var_expr = split_var_assignment(var_name_or_assign)
             if var_expr:
-                namespace = new_dataset_namespace(dataset)
-                variable = compute_array_expr(var_expr, namespace, result_name=var_name)
+                variable = VarExprContext(dataset).evaluate(var_expr)
             else:
                 var_name = var_name_or_assign
                 variable = dataset[var_name]

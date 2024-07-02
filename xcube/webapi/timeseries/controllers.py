@@ -14,8 +14,8 @@ from xcube.constants import LOG
 from xcube.core import timeseries
 from xcube.core.ancvar import find_ancillary_var_names
 from xcube.core.gridmapping import GridMapping
+from xcube.core.varexpr import split_var_assignment
 from xcube.server.api import ApiError
-from xcube.util.expression import split_var_assignment
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time
 from .context import TimeSeriesContext

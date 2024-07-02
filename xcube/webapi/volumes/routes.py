@@ -10,15 +10,13 @@ import sys
 import numpy as np
 import pandas as pd
 import pyproj
-import xarray as xr
 
 from xcube.core.gridmapping import CRS_CRS84
 from xcube.core.select import select_subset
+from xcube.core.varexpr import VarExprContext
+from xcube.core.varexpr import split_var_assignment
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
-from xcube.util.expression import compute_array_expr
-from xcube.util.expression import new_dataset_namespace
-from xcube.util.expression import split_var_assignment
 from .api import api
 from .config import DEFAULT_MAX_VOXEL_COUNT
 from .context import VolumesContext
@@ -111,10 +109,7 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
         var_name, var_expr = split_var_assignment(varName)
         if var_expr:
             dataset = self.ctx.datasets_ctx.get_dataset(datasetId).copy()
-            namespace = new_dataset_namespace(dataset)
-            dataset[var_name] = compute_array_expr(
-                var_expr, namespace, result_name=var_name
-            )
+            dataset[var_name] = VarExprContext(dataset).evaluate(var_expr)
         else:
             dataset = self.ctx.datasets_ctx.get_dataset(
                 datasetId, expected_var_names=[var_name]

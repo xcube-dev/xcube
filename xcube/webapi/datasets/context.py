@@ -33,6 +33,7 @@ from xcube.core.tile import get_var_valid_range
 from xcube.core.tile import DEFAULT_CMAP_NAME
 from xcube.core.tile import DEFAULT_CMAP_NORM
 from xcube.core.tile import DEFAULT_VALUE_RANGE
+from xcube.core.varexpr import split_var_assignment
 from xcube.server.api import Context, ApiError
 from xcube.server.api import ServerConfig
 from xcube.server.config import is_absolute_path
@@ -41,7 +42,6 @@ from xcube.util.assertions import assert_instance
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_custom_colormap
-from xcube.util.expression import split_var_assignment
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.places import PlacesContext
 

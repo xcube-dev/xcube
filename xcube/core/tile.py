@@ -16,12 +16,11 @@ import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
+from xcube.core.varexpr import VarExprContext
+from xcube.core.varexpr import split_var_assignment
 from xcube.util.assertions import assert_in
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
-from xcube.util.expression import compute_array_expr
-from xcube.util.expression import new_dataset_namespace
-from xcube.util.expression import split_var_assignment
 from xcube.util.cmaps import ColormapProvider
 from xcube.util.cmaps import DEFAULT_CMAP_NAME
 from xcube.util.perf import measure_time_cm
@@ -611,8 +610,7 @@ def _get_variable(
 ):
     var_name, var_expr = split_var_assignment(var_name_or_assign)
     if var_expr:
-        namespace = new_dataset_namespace(dataset)
-        variable = compute_array_expr(var_expr, namespace, result_name=var_name)
+        variable = VarExprContext(dataset).evaluate(var_expr)
         if not isinstance(variable, xr.DataArray):
             raise TileNotFoundException(
                 f"Variable expression {var_expr!r} evaluated"

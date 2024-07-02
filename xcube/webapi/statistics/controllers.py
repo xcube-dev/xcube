@@ -8,10 +8,9 @@ import shapely
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
+from xcube.core.varexpr import VarExprContext
+from xcube.core.varexpr import split_var_assignment
 from xcube.server.api import ApiError
-from xcube.util.expression import compute_array_expr
-from xcube.util.expression import new_dataset_namespace
-from xcube.util.expression import split_var_assignment
 from xcube.util.perf import measure_time_cm
 from .context import StatisticsContext
 
@@ -115,8 +114,7 @@ def _compute_statistics(
 def _get_dataset_variable(var_name_or_assign: str, dataset: xr.Dataset) -> xr.DataArray:
     var_name, var_expr = split_var_assignment(var_name_or_assign)
     if var_expr:
-        namespace = new_dataset_namespace(dataset)
-        variable = compute_array_expr(var_expr, namespace, result_name=var_name)
+        variable = VarExprContext(dataset).evaluate(var_expr)
         variable.name = var_name
     else:
         var_name = var_name_or_assign

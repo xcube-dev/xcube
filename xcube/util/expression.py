@@ -4,11 +4,7 @@
 
 import ast
 import warnings
-from typing import Any, Optional, Callable
-
-import xarray as xr
-
-from xcube.util.assertions import assert_instance
+from typing import Dict, Any
 
 
 def compute_array_expr(
@@ -112,9 +108,7 @@ class _ExprTranspiler:
     }
 
     _OP_INFOS = {
-        # https://docs.python.org/3.12/reference/expressions.html#conditional-expressions
         ast.IfExp: ("if", 10, "L"),
-        # https://docs.python.org/3.12/reference/expressions.html#boolean-operations
         ast.Eq: ("==", 100, "R"),
         ast.NotEq: ("!=", 100, "R"),
         ast.Lt: ("<", 100, "R"),
@@ -125,31 +119,18 @@ class _ExprTranspiler:
         ast.IsNot: ("is not", 100, "R"),
         ast.In: ("in", 100, "R"),
         ast.NotIn: ("not in", 100, "R"),
-        # https://docs.python.org/3.12/reference/expressions.html#comparisons
         ast.Or: ("or", 300, "L"),
         ast.And: ("and", 400, "L"),
         ast.Not: ("not", 500, None),
-        # https://docs.python.org/3.12/reference/expressions.html#shifting-operations
-        ast.BitOr: ("|", 600, None),
-        ast.BitXor: ("^", 610, None),
-        ast.BitAnd: ("&", 620, None),
-        # https://docs.python.org/3.12/reference/expressions.html#shifting-operations
-        ast.LShift: ("<<", 700, "L"),
-        ast.RShift: (">>", 700, "L"),
-        # https://docs.python.org/3.12/reference/expressions.html#binary-arithmetic-operations
+        ast.UAdd: ("+", 600, None),
+        ast.USub: ("-", 600, None),
         ast.Add: ("+", 600, "E"),
         ast.Sub: ("-", 600, "L"),
         ast.Mult: ("*", 700, "E"),
         ast.Div: ("/", 700, "L"),
         ast.FloorDiv: ("//", 700, "L"),
-        ast.Mod: ("%", 700, "L"),
-        ast.MatMult: ("@", 700, "L"),
-        # https://docs.python.org/3.12/reference/expressions.html#the-power-operator
-        ast.Pow: ("**", 800, "L"),
-        # https://docs.python.org/3.12/reference/expressions.html#unary-arithmetic-and-bitwise-operations
-        ast.UAdd: ("+", 900, None),
-        ast.USub: ("-", 900, None),
-        ast.Invert: ("~", 900, None),
+        ast.Mod: ("%", 800, "L"),
+        ast.Pow: ("**", 900, "L"),
     }
 
     @classmethod
@@ -389,150 +370,3 @@ class _ExprTranspiler:
 
     def _is_nan(self, node):
         return isinstance(node, ast.Name) and node.id == "NaN"
-
-
-def new_dataset_namespace(
-    dataset: xr.Dataset, use_mask_sets: bool = False
-) -> dict[str, Any]:
-    """Create a new namespace for array expression evaluation
-    in the context of a *dataset*.
-
-    Args:
-        dataset: A dataset whose variables will be added to the namespace.
-        use_mask_sets: Whether to convert flag variables into ``MaskSet`` objects.
-            This allows using associated ``flag_meanings`` as attribute names.
-    """
-    import numpy as np
-
-    # Initialize namespace with some constants and modules
-    namespace = dict(
-        nan=np.nan,
-        e=np.e,
-        inf=np.inf,
-        pi=np.pi,
-        np=np,
-        xr=xr,
-        **dataset.coords,
-        **dataset.data_vars,
-    )
-    if use_mask_sets:
-        from xcube.core.maskset import MaskSet
-
-        for var_name, var in dataset.data_vars.items():
-            if MaskSet.is_flag_var(var):
-                namespace[var_name] = MaskSet(var)
-    return namespace
-
-
-def split_var_assignment(var_name_or_assign: str) -> tuple[str, Optional[str]]:
-    """Split *var_name_or_assign* into a variable name and expression part.
-
-    Args:
-        var_name_or_assign: A variable name or an expression
-
-    Return:
-        A pair (var_name, var_expr) if *var_name_or_assign* is an assignment
-        expression, otherwise (var_name, None).
-    """
-    if "=" in var_name_or_assign:
-        var_name, var_expr = map(
-            lambda s: s.strip(), var_name_or_assign.split("=", maxsplit=1)
-        )
-        return var_name, var_expr
-    else:
-        return var_name_or_assign, None
-
-
-class SafeVariable:
-    def __init__(self, v: xr.DataArray):
-        assert_instance(v, xr.DataArray, name="v")
-        self.__v = v
-
-    def __pos__(self):
-        return self.__wrap(+self.__v)
-
-    def __neg__(self):
-        return self.__wrap(-self.__v)
-
-    def __invert__(self):
-        return self.__wrap(~self.__v)
-
-    def __add__(self, other):
-        return self.__wrap(self.__v + self.__unwrap(other))
-
-    def __radd__(self, other):
-        return self.__wrap(self.__unwrap(other) + self.__v)
-
-    def __sub__(self, other):
-        return self.__wrap(self.__v - self.__unwrap(other))
-
-    def __rsub__(self, other):
-        return self.__wrap(self.__unwrap(other) - self.__v)
-
-    def __mul__(self, other):
-        return self.__wrap(self.__v * self.__unwrap(other))
-
-    def __rmul__(self, other):
-        return self.__wrap(self.__unwrap(other) * self.__v)
-
-    def __truediv__(self, other):
-        return self.__wrap(self.__v / self.__unwrap(other))
-
-    def __rtruediv__(self, other):
-        return self.__wrap(self.__unwrap(other) / self.__v)
-
-    def __pow__(self, power):
-        return self.__wrap(self.__v ** self.__unwrap(power))
-
-    def __rpow__(self, other):
-        return self.__wrap(self.__unwrap(other) ** self.__v)
-
-    def __eq__(self, other):
-        return self.__wrap(self.__v == self.__unwrap(other))
-
-    def __ne__(self, other):
-        return self.__wrap(self.__v != self.__unwrap(other))
-
-    def __le__(self, other):
-        return self.__wrap(self.__v <= self.__unwrap(other))
-
-    def __lt__(self, other):
-        return self.__wrap(self.__v < self.__unwrap(other))
-
-    def __ge__(self, other):
-        return self.__wrap(self.__v >= self.__unwrap(other))
-
-    def __gt__(self, other):
-        return self.__wrap(self.__v > self.__unwrap(other))
-
-    @staticmethod
-    def __unwrap(v):
-        return v.__v if isinstance(v, SafeVariable) else v
-
-    @staticmethod
-    def __wrap(v):
-        return SafeVariable(v) if isinstance(v, xr.DataArray) else v
-
-    @staticmethod
-    def _wrap_fn(fn: Callable) -> Callable:
-        def wrapped_fn(*args, **kwargs):
-            return SafeVariable.__wrap(
-                fn(
-                    *(SafeVariable.__unwrap(arg) for arg in args),
-                    **{kw: SafeVariable.__unwrap(arg) for kw, arg in kwargs.items()},
-                )
-            )
-
-        return wrapped_fn
-
-    @staticmethod
-    def get_safe_numpy_funcs() -> dict[str, Callable]:
-        import numpy
-
-        return {
-            k: SafeVariable._wrap_fn(v)
-            for k, v in numpy.__dict__.items()
-            if isinstance(v, numpy.ufunc)
-            and isinstance(k, str)
-            and not k.startswith("_")
-        }
