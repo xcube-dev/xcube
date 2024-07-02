@@ -4,13 +4,13 @@
 
 import unittest
 from collections import namedtuple
+from typing import Any
 
 import numpy as np
 import numpy.testing as npt
 import xarray as xr
 
 from xcube.core.maskset import MaskSet
-from xcube.core.new import new_cube
 from xcube.util.expression import compute_array_expr
 from xcube.util.expression import compute_expr
 from xcube.util.expression import new_dataset_namespace
@@ -341,9 +341,7 @@ class TranspileExprTest(unittest.TestCase):
 
 
 class HelpersTest(unittest.TestCase):
-
     def test_new_dataset_namespace(self):
-
         ds = xr.Dataset(
             dict(
                 A=xr.DataArray([[0, 1], [2, 3]], dims=("y", "x")),
@@ -376,3 +374,62 @@ class HelpersTest(unittest.TestCase):
         self.assertEqual(("A", None), split_var_assignment("A"))
         self.assertEqual(("A", "B"), split_var_assignment("A=B"))
         self.assertEqual(("A", "B + C"), split_var_assignment(" A = B + C "))
+
+
+from xcube.util.expression import SafeVariable
+
+
+class SafeVariableTest(unittest.TestCase):
+    def test_ops(self):
+        v1 = xr.DataArray([1, 2, 3], dims="x")
+        v2 = xr.DataArray([2, 3, 4], dims="x")
+        sv1 = SafeVariable(v1)
+        sv2 = SafeVariable(v2)
+
+        self.assert_v(+sv1, [1, 2, 3])
+        self.assert_v(-sv1, [-1, -2, -3])
+        self.assert_v(~sv1, [-2, -3, -4])
+
+        self.assert_v(sv1 + sv2, [3, 5, 7])
+        self.assert_v(sv1 + 3, [4, 5, 6])
+        self.assert_v(1 + sv2, [3, 4, 5])
+
+        self.assert_v(sv1 - sv2, [-1, -1, -1])
+        self.assert_v(sv1 - 1, [0, 1, 2])
+        self.assert_v(5 - sv2, [3, 2, 1])
+
+        self.assert_v(sv1 * sv2, [2, 6, 12])
+        self.assert_v(sv1 * 2, [2, 4, 6])
+        self.assert_v(3 * sv2, [6, 9, 12])
+
+        self.assert_v(sv1 / sv2, [0.5, 2 / 3, 0.75])
+        self.assert_v(sv1 / 2, [0.5, 1.0, 1.5])
+        self.assert_v(3 / sv2, [1.5, 1.0, 0.75])
+
+        self.assert_v(sv1**sv2, [1, 8, 81])
+        self.assert_v(sv1**3, [1, 8, 27])
+        self.assert_v(2**sv2, [4, 8, 16])
+
+        self.assert_v(sv1 == sv2, [False, False, False])
+        self.assert_v(sv1 == 1, [True, False, False])
+
+        self.assert_v(sv1 != sv2, [True, True, True])
+        self.assert_v(sv1 != 1, [False, True, True])
+
+        self.assert_v(sv1 <= sv2, [True, True, True])
+        self.assert_v(sv1 <= 1, [True, False, False])
+
+        self.assert_v(sv1 < sv2, [True, True, True])
+        self.assert_v(sv1 < 1, [False, False, False])
+
+        self.assert_v(sv1 >= sv2, [False, False, False])
+        self.assert_v(sv1 >= 1, [True, True, True])
+
+        self.assert_v(sv1 > sv2, [False, False, False])
+        self.assert_v(sv1 > 1, [False, True, True])
+
+    def assert_v(self, sv: Any, expected_result: list):
+        self.assertIsInstance(sv, SafeVariable)
+        v = sv.__dict__["_SafeVariable__v"]
+        self.assertIsInstance(v, xr.DataArray)
+        self.assertEqual(expected_result, list(v.values))

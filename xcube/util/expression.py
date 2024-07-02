@@ -4,9 +4,11 @@
 
 import ast
 import warnings
-from typing import Any, Optional
+from typing import Any, Optional, Callable
 
 import xarray as xr
+
+from xcube.util.assertions import assert_instance
 
 
 def compute_array_expr(
@@ -439,3 +441,98 @@ def split_var_assignment(var_name_or_assign: str) -> tuple[str, Optional[str]]:
         return var_name, var_expr
     else:
         return var_name_or_assign, None
+
+
+class SafeVariable:
+    def __init__(self, v: xr.DataArray):
+        assert_instance(v, xr.DataArray, name="v")
+        self.__v = v
+
+    def __pos__(self):
+        return self.__wrap(+self.__v)
+
+    def __neg__(self):
+        return self.__wrap(-self.__v)
+
+    def __invert__(self):
+        return self.__wrap(~self.__v)
+
+    def __add__(self, other):
+        return self.__wrap(self.__v + self.__unwrap(other))
+
+    def __radd__(self, other):
+        return self.__wrap(self.__unwrap(other) + self.__v)
+
+    def __sub__(self, other):
+        return self.__wrap(self.__v - self.__unwrap(other))
+
+    def __rsub__(self, other):
+        return self.__wrap(self.__unwrap(other) - self.__v)
+
+    def __mul__(self, other):
+        return self.__wrap(self.__v * self.__unwrap(other))
+
+    def __rmul__(self, other):
+        return self.__wrap(self.__unwrap(other) * self.__v)
+
+    def __truediv__(self, other):
+        return self.__wrap(self.__v / self.__unwrap(other))
+
+    def __rtruediv__(self, other):
+        return self.__wrap(self.__unwrap(other) / self.__v)
+
+    def __pow__(self, power):
+        return self.__wrap(self.__v ** self.__unwrap(power))
+
+    def __rpow__(self, other):
+        return self.__wrap(self.__unwrap(other) ** self.__v)
+
+    def __eq__(self, other):
+        return self.__wrap(self.__v == self.__unwrap(other))
+
+    def __ne__(self, other):
+        return self.__wrap(self.__v != self.__unwrap(other))
+
+    def __le__(self, other):
+        return self.__wrap(self.__v <= self.__unwrap(other))
+
+    def __lt__(self, other):
+        return self.__wrap(self.__v < self.__unwrap(other))
+
+    def __ge__(self, other):
+        return self.__wrap(self.__v >= self.__unwrap(other))
+
+    def __gt__(self, other):
+        return self.__wrap(self.__v > self.__unwrap(other))
+
+    @staticmethod
+    def __unwrap(v):
+        return v.__v if isinstance(v, SafeVariable) else v
+
+    @staticmethod
+    def __wrap(v):
+        return SafeVariable(v) if isinstance(v, xr.DataArray) else v
+
+    @staticmethod
+    def _wrap_fn(fn: Callable) -> Callable:
+        def wrapped_fn(*args, **kwargs):
+            return SafeVariable.__wrap(
+                fn(
+                    *(SafeVariable.__unwrap(arg) for arg in args),
+                    **{kw: SafeVariable.__unwrap(arg) for kw, arg in kwargs.items()},
+                )
+            )
+
+        return wrapped_fn
+
+    @staticmethod
+    def get_safe_numpy_funcs() -> dict[str, Callable]:
+        import numpy
+
+        return {
+            k: SafeVariable._wrap_fn(v)
+            for k, v in numpy.__dict__.items()
+            if isinstance(v, numpy.ufunc)
+            and isinstance(k, str)
+            and not k.startswith("_")
+        }
