@@ -104,11 +104,11 @@ class VarExprContextTest(unittest.TestCase):
         ctx = VarExprContext(dataset)
         # This is intentional disintegration
         ev = ExprVar(xr.DataArray(var_a_data, dims=("y", "x")))
-        ev.__dict__["_ExprVar__v"] = True
+        ev.__dict__["_ExprVar__da"] = True
         ctx._namespace["my_ev"] = ev
         with pytest.raises(
             RuntimeError,
-            match=("internal error: 'DataArray' object expected, but got type 'bool'"),
+            match="internal error: 'DataArray' object expected, but got type 'bool'",
         ):
             ctx.evaluate("my_ev")
 
@@ -129,86 +129,98 @@ class ExprVarTest(unittest.TestCase):
 
         # Binary operations - comparisons
 
-        self.assert_v(ev1 == ev2, [False, False, False])
-        self.assert_v(ev1 == 1, [True, False, False])
+        self.assert_ev(ev1 == ev2, [False, False, False])
+        self.assert_ev(ev1 == 1, [True, False, False])
 
-        self.assert_v(ev1 != ev2, [True, True, True])
-        self.assert_v(ev1 != 1, [False, True, True])
+        self.assert_ev(ev1 != ev2, [True, True, True])
+        self.assert_ev(ev1 != 1, [False, True, True])
 
-        self.assert_v(ev1 <= ev2, [True, True, True])
-        self.assert_v(ev1 <= 1, [True, False, False])
+        self.assert_ev(ev1 <= ev2, [True, True, True])
+        self.assert_ev(ev1 <= 1, [True, False, False])
 
-        self.assert_v(ev1 < ev2, [True, True, True])
-        self.assert_v(ev1 < 1, [False, False, False])
+        self.assert_ev(ev1 < ev2, [True, True, True])
+        self.assert_ev(ev1 < 1, [False, False, False])
 
-        self.assert_v(ev1 >= ev2, [False, False, False])
-        self.assert_v(ev1 >= 1, [True, True, True])
+        self.assert_ev(ev1 >= ev2, [False, False, False])
+        self.assert_ev(ev1 >= 1, [True, True, True])
 
-        self.assert_v(ev1 > ev2, [False, False, False])
-        self.assert_v(ev1 > 1, [False, True, True])
+        self.assert_ev(ev1 > ev2, [False, False, False])
+        self.assert_ev(ev1 > 1, [False, True, True])
 
         # Binary operations - emulating numeric type
 
-        self.assert_v(ev1 + ev2, [3, 5, 7])
-        self.assert_v(ev1 + 3, [4, 5, 6])
-        self.assert_v(1 + ev2, [3, 4, 5])
+        self.assert_ev(ev1 + ev2, [3, 5, 7])
+        self.assert_ev(ev1 + 3, [4, 5, 6])
+        self.assert_ev(1 + ev2, [3, 4, 5])
 
-        self.assert_v(ev1 - ev2, [-1, -1, -1])
-        self.assert_v(ev1 - 1, [0, 1, 2])
-        self.assert_v(5 - ev2, [3, 2, 1])
+        self.assert_ev(ev1 - ev2, [-1, -1, -1])
+        self.assert_ev(ev1 - 1, [0, 1, 2])
+        self.assert_ev(5 - ev2, [3, 2, 1])
 
-        self.assert_v(ev1 * ev2, [2, 6, 12])
-        self.assert_v(ev1 * 2, [2, 4, 6])
-        self.assert_v(3 * ev2, [6, 9, 12])
+        self.assert_ev(ev1 * ev2, [2, 6, 12])
+        self.assert_ev(ev1 * 2, [2, 4, 6])
+        self.assert_ev(3 * ev2, [6, 9, 12])
 
-        self.assert_v(ev2 / ev1, [2.0, 1.5, 4 / 3])
-        self.assert_v(ev1 / 2, [0.5, 1.0, 1.5])
-        self.assert_v(3 / ev2, [1.5, 1.0, 0.75])
+        self.assert_ev(ev2 / ev1, [2.0, 1.5, 4 / 3])
+        self.assert_ev(ev1 / 2, [0.5, 1.0, 1.5])
+        self.assert_ev(3 / ev2, [1.5, 1.0, 0.75])
 
-        self.assert_v(ev2 // ev1, [2, 1, 1])
-        self.assert_v(ev1 // 2, [0, 1, 1])
-        self.assert_v(3 // ev2, [1, 1, 0])
+        self.assert_ev(ev2 // ev1, [2, 1, 1])
+        self.assert_ev(ev1 // 2, [0, 1, 1])
+        self.assert_ev(3 // ev2, [1, 1, 0])
 
-        self.assert_v(ev2 % ev1, [0, 1, 1])
-        self.assert_v(ev1 % 2, [1, 0, 1])
-        self.assert_v(3 % ev2, [1, 0, 3])
+        self.assert_ev(ev2 % ev1, [0, 1, 1])
+        self.assert_ev(ev1 % 2, [1, 0, 1])
+        self.assert_ev(3 % ev2, [1, 0, 3])
 
-        self.assert_v(ev1**ev2, [1, 8, 81])
-        self.assert_v(ev1**3, [1, 8, 27])
-        self.assert_v(2**ev2, [4, 8, 16])
+        self.assert_ev(ev1**ev2, [1, 8, 81])
+        self.assert_ev(ev1**3, [1, 8, 27])
+        self.assert_ev(2**ev2, [4, 8, 16])
 
-        self.assert_v(ev1 << ev2, [4, 16, 48])
-        self.assert_v(ev1 << 1, [2, 4, 6])
+        self.assert_ev(ev1 << ev2, [4, 16, 48])
+        self.assert_ev(ev1 << 1, [2, 4, 6])
 
-        self.assert_v(ev1 >> ev2, [0, 0, 0])
-        self.assert_v(ev1 >> 1, [0, 1, 1])
+        self.assert_ev(ev1 >> ev2, [0, 0, 0])
+        self.assert_ev(ev1 >> 1, [0, 1, 1])
 
-        self.assert_v(ev1 & ev2, [0, 2, 0])
-        self.assert_v(ev1 & 3, [1, 2, 3])
-        self.assert_v(2 & ev2, [2, 2, 0])
+        self.assert_ev(ev1 & ev2, [0, 2, 0])
+        self.assert_ev(ev1 & 3, [1, 2, 3])
+        self.assert_ev(2 & ev2, [2, 2, 0])
 
-        self.assert_v(ev1 ^ ev2, [3, 1, 7])
-        self.assert_v(ev1 ^ 3, [2, 1, 0])
-        self.assert_v(2 ^ ev2, [0, 1, 6])
+        self.assert_ev(ev1 ^ ev2, [3, 1, 7])
+        self.assert_ev(ev1 ^ 3, [2, 1, 0])
+        self.assert_ev(2 ^ ev2, [0, 1, 6])
 
-        self.assert_v(ev1 | ev2, [3, 3, 7])
-        self.assert_v(ev1 | 3, [3, 3, 3])
-        self.assert_v(2 | ev2, [2, 3, 6])
+        self.assert_ev(ev1 | ev2, [3, 3, 7])
+        self.assert_ev(ev1 | 3, [3, 3, 3])
+        self.assert_ev(2 | ev2, [2, 3, 6])
 
         # Unary operations
 
-        self.assert_v(+ev1, [1, 2, 3])
-        self.assert_v(-ev1, [-1, -2, -3])
-        self.assert_v(~ev1, [-2, -3, -4])
+        self.assert_ev(+ev1, [1, 2, 3])
+        self.assert_ev(-ev1, [-1, -2, -3])
+        self.assert_ev(~ev1, [-2, -3, -4])
 
-    def assert_v(self, sv: Any, expected_result: list):
-        self.assertIsInstance(sv, ExprVar)
-        v = sv.__dict__["_ExprVar__v"]
-        self.assertIsInstance(v, xr.DataArray)
-        self.assertEqual(expected_result, list(v.values))
+    def assert_ev(self, ev: Any, expected_result: list):
+        self.assertIsInstance(ev, ExprVar)
+        da = ev.__dict__["_ExprVar__da"]
+        self.assertIsInstance(da, xr.DataArray)
+        self.assertEqual(expected_result, list(da.values))
 
     # noinspection PyMethodMayBeStatic
-    def test_unsupported_ops(self):
+    def test_that_data_array_is_not_easily_accessible(self):
+        da = xr.DataArray([1, 2, 3], dims="x")
+        ev = ExprVar(da)
+
+        with pytest.raises(
+            AttributeError,
+            match="'ExprVar' object has no attribute '_ExprVarTest__da'",
+        ):
+            # noinspection PyUnusedLocal
+            result = ev.__da
+
+    # noinspection PyMethodMayBeStatic
+    def test_that_some_ops_unsupported(self):
         ev = ExprVar(xr.DataArray([1, 2, 3], dims="x"))
 
         with pytest.raises(
