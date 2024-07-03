@@ -7,6 +7,7 @@ import unittest
 from test.mixins import AlmostEqualDeepMixin
 from test.webapi.helpers import get_api_ctx
 from xcube.webapi.meta.context import MetaContext
+from xcube.webapi.meta.controllers import get_expressions_namespace
 from xcube.webapi.meta.controllers import get_service_info
 
 
@@ -32,4 +33,21 @@ class MetaControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
                 "versions",
             },
             set(result.keys()),
+        )
+
+    def test_get_expressions_namespace(self):
+        ctx = get_meta_ctx()
+        result = get_expressions_namespace()
+        self.assertIsInstance(result, dict)
+        self.assertIn("namespace", result)
+        self.assertIsInstance(result["namespace"], dict)
+        self.assertEqual(
+            {
+                "arrayFunctions",
+                "arrayOperators",
+                "builtinFunctions",
+                "builtinOperators",
+                "constants",
+            },
+            set(result["namespace"].keys()),
         )
