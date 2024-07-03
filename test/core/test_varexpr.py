@@ -114,16 +114,23 @@ class VarExprContextTest(unittest.TestCase):
 
         with pytest.raises(
             VarExprError,
-            match="name '__import__' is not defined",
-        ):
-            ctx.evaluate("__import__('evilmodule')")
-
-        with pytest.raises(
-            VarExprError,
             match="name 'input' is not defined",
         ):
             ctx.evaluate("input()")
 
+        with pytest.raises(
+            VarExprError,
+            match="name '__module__' is not defined",
+        ):
+            ctx.evaluate("__module__")
+
+        with pytest.raises(
+            VarExprError,
+            match="name '__import__' is not defined",
+        ):
+            ctx.evaluate("__import__('evilmodule')")
+
+    # noinspection PyMethodMayBeStatic
     def test_invalid_expression_cases(self):
         ctx = VarExprContext(dataset)
 
@@ -173,12 +180,12 @@ class VarExprContextTest(unittest.TestCase):
 
 class ExprVarTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
-    def test_ctor_raises(self):
+    def test_that_ctor_raises(self):
         with pytest.raises(TypeError):
             # noinspection PyTypeChecker
             ExprVar(137)
 
-    def test_supported_ops(self):
+    def test_that_all_xarray_ops_are_supported(self):
         da1 = xr.DataArray([1, 2, 3], dims="x")
         da2 = xr.DataArray([2, 3, 4], dims="x")
         ev1 = ExprVar(da1)
@@ -258,6 +265,10 @@ class ExprVarTest(unittest.TestCase):
         self.assert_ev(-ev1, [-1, -2, -3])
         self.assert_ev(~ev1, [-2, -3, -4])
 
+        # Unary abs()
+        self.assert_ev(abs(ev1), [1, 2, 3])
+        self.assert_ev(abs(-ev1), [1, 2, 3])
+
     def assert_ev(self, ev: Any, expected_result: list):
         self.assertIsInstance(ev, ExprVar)
         da = ev.__dict__["_ExprVar__da"]
@@ -277,7 +288,7 @@ class ExprVarTest(unittest.TestCase):
             result = ev.__da
 
     # noinspection PyMethodMayBeStatic
-    def test_that_some_ops_unsupported(self):
+    def test_that_some_ops_are_unsupported(self):
         ev = ExprVar(xr.DataArray([1, 2, 3], dims="x"))
 
         with pytest.raises(

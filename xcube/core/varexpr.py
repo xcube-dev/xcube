@@ -133,6 +133,9 @@ class ExprVar:
     def __invert__(self):
         return self.__wrap(~self.__da)
 
+    def __abs__(self):
+        return self.__wrap(abs(self.__da))
+
     ################################################
     # Internal helpers
 
@@ -156,19 +159,19 @@ class ExprVar:
 
         return wrapped_fn
 
+    @staticmethod
+    def _get_safe_xarray_funcs() -> dict[str, Callable]:
+        # noinspection PyProtectedMember
+        return dict(where=ExprVar._wrap_fn(xr.where))
 
-def _get_safe_xarray_funcs() -> dict[str, Callable]:
-    # noinspection PyProtectedMember
-    return dict(where=ExprVar._wrap_fn(xr.where))
-
-
-def _get_safe_numpy_funcs() -> dict[str, Callable]:
-    # noinspection PyProtectedMember
-    return {
-        k: ExprVar._wrap_fn(v)
-        for k, v in np.__dict__.items()
-        if isinstance(v, np.ufunc) and isinstance(k, str) and not k.startswith("_")
-    }
+    @staticmethod
+    def _get_safe_numpy_funcs() -> dict[str, Callable]:
+        # noinspection PyProtectedMember
+        return {
+            k: ExprVar._wrap_fn(v)
+            for k, v in np.__dict__.items()
+            if isinstance(v, np.ufunc) and isinstance(k, str) and not k.startswith("_")
+        }
 
 
 # noinspection PyProtectedMember
@@ -177,9 +180,17 @@ _LOCALS = dict(
     e=np.e,
     inf=np.inf,
     pi=np.pi,
-    **_get_safe_xarray_funcs(),
-    **_get_safe_numpy_funcs(),
+    **ExprVar._get_safe_xarray_funcs(),
+    **ExprVar._get_safe_numpy_funcs(),
 )
+
+# noinspection PyProtectedMember
+del ExprVar._get_safe_xarray_funcs
+# noinspection PyProtectedMember
+del ExprVar._get_safe_numpy_funcs
+# noinspection PyProtectedMember
+del ExprVar._wrap_fn
+
 
 _ALLOWED_BUILTINS = {
     # basic math
@@ -237,7 +248,9 @@ class VarExprContext:
         * the dataset's coordinate variables;
         * the numpy constants `e`, `pi`, `nan`, `inf`;
         * all numpy ufuncs (https://numpy.org/doc/stable/reference/ufuncs.html);
-        * the `where` function (https://docs.xarray.dev/en/stable/generated/xarray.where.html).
+        * the `where` function (https://docs.xarray.dev/en/stable/generated/xarray.where.html);
+        * the Python built-in functions `min`, `max`, `round`, `floor`, `ceil`,
+          `bool`, `int`, `float`, `complex`, `str`, `tuple`, `set`, `list`, `dict`.
 
         In general, all Python numerical and logical operators such as
         `not`, `and`, `or` are supported.
