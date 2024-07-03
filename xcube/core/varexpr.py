@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import builtins
 from typing import Callable, Optional
 
 import numpy as np
@@ -18,7 +19,7 @@ class ExprVar:
     """
 
     def __init__(self, da: xr.DataArray):
-        assert_instance(da, xr.DataArray, name="v")
+        assert_instance(da, xr.DataArray, name="da")
         # Note that the double underscore protects access by "name mangling"
         self.__da = da
 
@@ -171,7 +172,7 @@ def _get_safe_numpy_funcs() -> dict[str, Callable]:
 
 
 # noinspection PyProtectedMember
-_BASE_NAMESPACE = dict(
+_LOCALS = dict(
     nan=np.nan,
     e=np.e,
     inf=np.inf,
@@ -179,6 +180,32 @@ _BASE_NAMESPACE = dict(
     **_get_safe_xarray_funcs(),
     **_get_safe_numpy_funcs(),
 )
+
+_ALLOWED_BUILTINS = {
+    # basic math
+    "min",
+    "max",
+    "round",
+    "floor",
+    "ceil",
+    # primitives
+    "bool",
+    "complex",
+    "int",
+    "float",
+    "str",
+    # collections
+    "tuple",
+    "list",
+    "dict",
+    "set",
+}
+
+_GLOBALS = {
+    "__builtins__": {
+        k: v for k, v in builtins.__dict__.items() if k in _ALLOWED_BUILTINS
+    }
+}
 
 
 class VarExprError(ValueError):
@@ -195,7 +222,7 @@ class VarExprContext:
     """
 
     def __init__(self, dataset: xr.Dataset):
-        namespace = dict(_BASE_NAMESPACE)
+        namespace = dict(_LOCALS)
         namespace.update({str(k): ExprVar(v) for k, v in dataset.data_vars.items()})
         namespace.update({str(k): ExprVar(v) for k, v in dataset.coords.items()})
         self._namespace = namespace
@@ -228,7 +255,7 @@ class VarExprContext:
             A newly computed variable of type `xarray.DataArray`.
         """
         try:
-            result = eval(var_expr, self._namespace, None)
+            result = eval(var_expr, _GLOBALS, self._namespace)
         except BaseException as e:
             # Do not report the name 'ExprVar'
             raise VarExprError(f"{e}".replace("ExprVar", "DataArray")) from e
