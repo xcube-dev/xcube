@@ -10,6 +10,7 @@ from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
 from .api import api
 from .context import MetaContext
+from .controllers import get_expressions_namespace
 from .controllers import get_service_info
 from ...constants import LOG
 
@@ -52,6 +53,16 @@ class OpenApiJsonHandler(ApiHandler):
             self.ctx.get_open_api_doc(include_all=include_all),
             content_type="application/vnd.oai.openapi+json;version=3.0",
         )
+
+
+@api.route("/expressions/namespace")
+class ExpressionsNamespaceHandler(ApiHandler[MetaContext]):
+    @api.operation(
+        operation_id="getNamespaceForExpressions",
+        summary="Gets the namespace for expressions that define user variables",
+    )
+    def get(self):
+        self.response.finish(get_expressions_namespace())
 
 
 @api.route("/maintenance/fail")

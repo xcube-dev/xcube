@@ -238,6 +238,53 @@ class VarExprContext:
         namespace.update({str(k): ExprVar(v) for k, v in dataset.coords.items()})
         self._namespace = namespace
 
+    @classmethod
+    def get_constants(cls):
+        """Get constants."""
+        return sorted(
+            [k for k, v in _LOCALS.items() if isinstance(v, (bool, int, float, str))]
+        )
+
+    @classmethod
+    def get_array_functions(cls):
+        """Get array functions."""
+        return sorted([k for k, v in _LOCALS.items() if callable(v)])
+
+    @classmethod
+    def get_builtin_functions(cls):
+        """Get built-in functions that cannot be used with arrays."""
+        return sorted(_ALLOWED_BUILTINS)
+
+    @classmethod
+    def get_array_operators(cls):
+        """Get array operators."""
+        return [
+            "+",
+            "-",
+            "*",
+            "/",
+            "//",
+            "%",
+            "**",
+            "<<",
+            ">>",
+            "&",
+            "^",
+            "|",
+            "~",
+            "==",
+            "!=",
+            "<",
+            "<=",
+            ">",
+            ">=",
+        ]
+
+    @classmethod
+    def get_builtin_operators(cls):
+        """Get built-in operators that cannot be used with arrays."""
+        return ["and", "or", "not", "in", "not in", "is", "is not"]
+
     def evaluate(self, var_expr: str) -> xr.DataArray:
         """Evaluate given Python expression *var_expr* in the context of an
         `xarray.Dataset` object.
