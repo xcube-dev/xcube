@@ -17,4 +17,13 @@ class ExpressionsRoutesTest(RoutesTestCase):
 
     def test_fetch_expressions_evaluate_fail(self):
         response = self.fetch("/expressions/evaluate/demo/bibo*conc_chl")
-        self.assertBadRequestResponse(response, expected_message="hahaha!")
+        self.assertBadRequestResponse(response)
+
+        error = response.json()
+        self.assertIsInstance(error, dict)
+        self.assertIn("error", error)
+        self.assertIn("exception", error["error"])
+        self.assertIn(
+            "xcube.core.varexpr.VarExprError: name 'bibo' is not defined\n",
+            error["error"]["exception"],
+        )
