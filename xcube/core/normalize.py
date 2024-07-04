@@ -932,7 +932,7 @@ def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
                 ds = ds.copy()
                 copy_created = True
             ds[var_name] = var.transpose(*dim_names)
-            if var.encoding and "chunksize" in ds[var_name].data:
+            if var.encoding and hasattr(ds[var_name].data, 'chunksize'):
                 ds[var_name].encoding["chunks"] = ds[var_name].data.chunksize
 
     return ds
