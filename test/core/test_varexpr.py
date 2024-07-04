@@ -93,17 +93,33 @@ class VarExprContextTest(unittest.TestCase):
     def test_that_harmless_builtins_are_callable(self):
         ctx = VarExprContext(dataset)
 
-        result = ctx.evaluate("min(A, B)")
+        result = ctx.evaluate("abs(B)")
         self.assertIsInstance(result, xr.DataArray)
 
-        result = ctx.evaluate("max(A, B)")
+        result = ctx.evaluate("floor(B)")
         self.assertIsInstance(result, xr.DataArray)
 
         result = ctx.evaluate("ceil(B)")
         self.assertIsInstance(result, xr.DataArray)
 
     # noinspection PyMethodMayBeStatic
-    def test_that_evil_builtins_not_callable(self):
+    def test_that_confusing_builtins_are_not_callable(self):
+        ctx = VarExprContext(dataset)
+
+        with pytest.raises(
+            VarExprError,
+            match="name 'min' is not defined",
+        ):
+            ctx.evaluate("min(A, B)")
+
+        with pytest.raises(
+            VarExprError,
+            match="name 'max' is not defined",
+        ):
+            ctx.evaluate("max(A, B)")
+
+    # noinspection PyMethodMayBeStatic
+    def test_that_dangerous_builtins_are_not_callable(self):
         ctx = VarExprContext(dataset)
 
         with pytest.raises(

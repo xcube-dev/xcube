@@ -194,8 +194,9 @@ del ExprVar._wrap_fn
 
 _ALLOWED_BUILTINS = {
     # basic math
-    "min",
-    "max",
+    # Note that min/max are excluded because they they don't
+    # operate element-wise on arrays and cause confusion
+    # with numpy ufuncs minimum/maximum
     "round",
     "floor",
     "ceil",
