@@ -105,7 +105,7 @@ class GetTimeSeriesTest(unittest.TestCase):
         ts_ds = get_time_series(
             self.cube,
             geometry=POLYGON_GEOMETRY,
-            var_names=["C=max(A,B)"],
+            var_names=["C=maximum(A,B)"],
             agg_methods=["mean", "std"],
         )
         self.assert_dataset_ok(ts_ds, 100, {"C_mean", "C_std"})

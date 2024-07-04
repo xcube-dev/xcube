@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 from xcube.util.versions import get_xcube_versions
 from xcube.version import version

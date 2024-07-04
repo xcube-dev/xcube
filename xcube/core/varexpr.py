@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import builtins
 from typing import Callable, Optional
 
 import numpy as np
@@ -18,7 +19,7 @@ class ExprVar:
     """
 
     def __init__(self, da: xr.DataArray):
-        assert_instance(da, xr.DataArray, name="v")
+        assert_instance(da, xr.DataArray, name="da")
         # Note that the double underscore protects access by "name mangling"
         self.__da = da
 
@@ -132,6 +133,9 @@ class ExprVar:
     def __invert__(self):
         return self.__wrap(~self.__da)
 
+    def __abs__(self):
+        return self.__wrap(abs(self.__da))
+
     ################################################
     # Internal helpers
 
@@ -155,30 +159,65 @@ class ExprVar:
 
         return wrapped_fn
 
+    @staticmethod
+    def _get_safe_xarray_funcs() -> dict[str, Callable]:
+        # noinspection PyProtectedMember
+        return dict(where=ExprVar._wrap_fn(xr.where))
 
-def _get_safe_xarray_funcs() -> dict[str, Callable]:
-    # noinspection PyProtectedMember
-    return dict(where=ExprVar._wrap_fn(xr.where))
-
-
-def _get_safe_numpy_funcs() -> dict[str, Callable]:
-    # noinspection PyProtectedMember
-    return {
-        k: ExprVar._wrap_fn(v)
-        for k, v in np.__dict__.items()
-        if isinstance(v, np.ufunc) and isinstance(k, str) and not k.startswith("_")
-    }
+    @staticmethod
+    def _get_safe_numpy_funcs() -> dict[str, Callable]:
+        # noinspection PyProtectedMember
+        return {
+            k: ExprVar._wrap_fn(v)
+            for k, v in np.__dict__.items()
+            if isinstance(v, np.ufunc) and isinstance(k, str) and not k.startswith("_")
+        }
 
 
 # noinspection PyProtectedMember
-_BASE_NAMESPACE = dict(
+_LOCALS = dict(
     nan=np.nan,
     e=np.e,
     inf=np.inf,
     pi=np.pi,
-    **_get_safe_xarray_funcs(),
-    **_get_safe_numpy_funcs(),
+    **ExprVar._get_safe_xarray_funcs(),
+    **ExprVar._get_safe_numpy_funcs(),
 )
+
+# noinspection PyProtectedMember
+del ExprVar._get_safe_xarray_funcs
+# noinspection PyProtectedMember
+del ExprVar._get_safe_numpy_funcs
+# noinspection PyProtectedMember
+del ExprVar._wrap_fn
+
+
+_ALLOWED_BUILTINS = {
+    # basic math
+    # Note that min/max are excluded because they they don't
+    # operate element-wise on arrays and cause confusion
+    # with numpy ufuncs minimum/maximum
+    "round",
+    "floor",
+    "ceil",
+    # primitives
+    "bool",
+    "complex",
+    "int",
+    "float",
+    "str",
+    # collections
+    "tuple",
+    "list",
+    "dict",
+    "set",
+}
+
+_GLOBALS = {
+    "__builtins__": {
+        k: v for k, v in builtins.__dict__.items() if k in _ALLOWED_BUILTINS
+    }
+}
 
 
 class VarExprError(ValueError):
@@ -195,10 +234,57 @@ class VarExprContext:
     """
 
     def __init__(self, dataset: xr.Dataset):
-        namespace = dict(_BASE_NAMESPACE)
+        namespace = dict(_LOCALS)
         namespace.update({str(k): ExprVar(v) for k, v in dataset.data_vars.items()})
         namespace.update({str(k): ExprVar(v) for k, v in dataset.coords.items()})
         self._namespace = namespace
+
+    @classmethod
+    def get_constants(cls):
+        """Get constants."""
+        return sorted(
+            [k for k, v in _LOCALS.items() if isinstance(v, (bool, int, float, str))]
+        )
+
+    @classmethod
+    def get_array_functions(cls):
+        """Get array functions."""
+        return sorted([k for k, v in _LOCALS.items() if callable(v)])
+
+    @classmethod
+    def get_builtin_functions(cls):
+        """Get built-in functions that cannot be used with arrays."""
+        return sorted(_ALLOWED_BUILTINS)
+
+    @classmethod
+    def get_array_operators(cls):
+        """Get array operators."""
+        return [
+            "+",
+            "-",
+            "*",
+            "/",
+            "//",
+            "%",
+            "**",
+            "<<",
+            ">>",
+            "&",
+            "^",
+            "|",
+            "~",
+            "==",
+            "!=",
+            "<",
+            "<=",
+            ">",
+            ">=",
+        ]
+
+    @classmethod
+    def get_builtin_operators(cls):
+        """Get built-in operators that cannot be used with arrays."""
+        return ["and", "or", "not", "in", "not in", "is", "is not"]
 
     def evaluate(self, var_expr: str) -> xr.DataArray:
         """Evaluate given Python expression *var_expr* in the context of an
@@ -210,7 +296,9 @@ class VarExprContext:
         * the dataset's coordinate variables;
         * the numpy constants `e`, `pi`, `nan`, `inf`;
         * all numpy ufuncs (https://numpy.org/doc/stable/reference/ufuncs.html);
-        * the `where` function (https://docs.xarray.dev/en/stable/generated/xarray.where.html).
+        * the `where` function (https://docs.xarray.dev/en/stable/generated/xarray.where.html);
+        * the Python built-in functions `min`, `max`, `round`, `floor`, `ceil`,
+          `bool`, `int`, `float`, `complex`, `str`, `tuple`, `set`, `list`, `dict`.
 
         In general, all Python numerical and logical operators such as
         `not`, `and`, `or` are supported.
@@ -228,7 +316,7 @@ class VarExprContext:
             A newly computed variable of type `xarray.DataArray`.
         """
         try:
-            result = eval(var_expr, self._namespace, None)
+            result = eval(var_expr, _GLOBALS, self._namespace)
         except BaseException as e:
             # Do not report the name 'ExprVar'
             raise VarExprError(f"{e}".replace("ExprVar", "DataArray")) from e

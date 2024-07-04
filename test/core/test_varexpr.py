@@ -32,10 +32,8 @@ dataset = xr.Dataset(
 
 class VarExprContextTest(unittest.TestCase):
     def test_namespace(self):
-
         ctx = VarExprContext(dataset)
         ns = ctx._namespace
-        print(list(ns.keys()))
 
         self.assertIsInstance(ns.get("nan"), float)
         self.assertIsInstance(ns.get("inf"), float)
@@ -46,15 +44,28 @@ class VarExprContextTest(unittest.TestCase):
         self.assertIsInstance(ns.get("B"), ExprVar)
         self.assertIsInstance(ns.get("C"), ExprVar)
 
+        self.assertTrue(callable(ns.get("where")))
         self.assertTrue(callable(ns.get("hypot")))
+        self.assertTrue(callable(ns.get("sin")))
+        self.assertTrue(callable(ns.get("cos")))
+        self.assertTrue(callable(ns.get("tan")))
+        self.assertTrue(callable(ns.get("sqrt")))
+        self.assertTrue(callable(ns.get("fmin")))
+        self.assertTrue(callable(ns.get("fmax")))
+        self.assertTrue(callable(ns.get("minimum")))
+        self.assertTrue(callable(ns.get("maximum")))
+        self.assertNotIn("min", ns)
+        self.assertNotIn("max", ns)
 
     def test_evaluate(self):
         ctx = VarExprContext(dataset)
 
+        # Arithmetic
         result = ctx.evaluate("A + B")
         self.assertIsInstance(result, xr.DataArray)
         np.testing.assert_equal(result.values, var_a_data + var_b_data)
 
+        # Asserting that one numpy ufunc works should be ok
         result = ctx.evaluate("hypot(A, B)")
         self.assertIsInstance(result, xr.DataArray)
         np.testing.assert_equal(
@@ -62,6 +73,7 @@ class VarExprContextTest(unittest.TestCase):
             np.hypot(var_a_data, var_b_data),
         )
 
+        # Comparison and bitwise ops
         result = ctx.evaluate("(A <= 2) & (B >= 3)")
         self.assertIsInstance(result, xr.DataArray)
         np.testing.assert_equal(result.values, (var_a_data <= 2) & (var_b_data >= 3))
@@ -78,14 +90,83 @@ class VarExprContextTest(unittest.TestCase):
             ctx.evaluate(expr)
 
     # noinspection PyMethodMayBeStatic
-    def test_invalid_expressions(self):
+    def test_that_harmless_builtins_are_callable(self):
+        ctx = VarExprContext(dataset)
+
+        result = ctx.evaluate("abs(B)")
+        self.assertIsInstance(result, xr.DataArray)
+
+        result = ctx.evaluate("floor(B)")
+        self.assertIsInstance(result, xr.DataArray)
+
+        result = ctx.evaluate("ceil(B)")
+        self.assertIsInstance(result, xr.DataArray)
+
+    # noinspection PyMethodMayBeStatic
+    def test_that_confusing_builtins_are_not_callable(self):
         ctx = VarExprContext(dataset)
 
         with pytest.raises(
             VarExprError,
-            match="'DataArray' object has no attribute 'dims'",
+            match="name 'min' is not defined",
         ):
-            ctx.evaluate("A.dims")
+            ctx.evaluate("min(A, B)")
+
+        with pytest.raises(
+            VarExprError,
+            match="name 'max' is not defined",
+        ):
+            ctx.evaluate("max(A, B)")
+
+    # noinspection PyMethodMayBeStatic
+    def test_that_dangerous_builtins_are_not_callable(self):
+        ctx = VarExprContext(dataset)
+
+        with pytest.raises(
+            VarExprError,
+            match="name 'open' is not defined",
+        ):
+            ctx.evaluate("open('mycode.py', 'w')")
+
+        with pytest.raises(
+            VarExprError,
+            match="name 'input' is not defined",
+        ):
+            ctx.evaluate("input()")
+
+        with pytest.raises(
+            VarExprError,
+            match="name '__module__' is not defined",
+        ):
+            ctx.evaluate("__module__")
+
+        with pytest.raises(
+            VarExprError,
+            match="name '__import__' is not defined",
+        ):
+            ctx.evaluate("__import__('evilmodule')")
+
+    # noinspection PyMethodMayBeStatic
+    def test_invalid_expression_cases(self):
+        ctx = VarExprContext(dataset)
+
+        with pytest.raises(
+            VarExprError,
+            match="name 'my_secret_var' is not defined",
+        ):
+            ctx.evaluate("my_secret_var")
+
+        with pytest.raises(
+            VarExprError,
+            match="'DataArray' object has no attribute 'values'",
+        ):
+            ctx.evaluate("A.values")
+
+        with pytest.raises(
+            VarExprError,
+            match="'DataArray' object is not subscriptable",
+        ):
+            ctx.evaluate("A[0, 0]")
 
         with pytest.raises(
             VarExprError,
@@ -114,14 +195,13 @@ class VarExprContextTest(unittest.TestCase):
 
 
 class ExprVarTest(unittest.TestCase):
-
     # noinspection PyMethodMayBeStatic
-    def test_ctor_raises(self):
+    def test_that_ctor_raises(self):
         with pytest.raises(TypeError):
             # noinspection PyTypeChecker
             ExprVar(137)
 
-    def test_supported_ops(self):
+    def test_that_all_xarray_ops_are_supported(self):
         da1 = xr.DataArray([1, 2, 3], dims="x")
         da2 = xr.DataArray([2, 3, 4], dims="x")
         ev1 = ExprVar(da1)
@@ -201,6 +281,10 @@ class ExprVarTest(unittest.TestCase):
         self.assert_ev(-ev1, [-1, -2, -3])
         self.assert_ev(~ev1, [-2, -3, -4])
 
+        # Unary abs()
+        self.assert_ev(abs(ev1), [1, 2, 3])
+        self.assert_ev(abs(-ev1), [1, 2, 3])
+
     def assert_ev(self, ev: Any, expected_result: list):
         self.assertIsInstance(ev, ExprVar)
         da = ev.__dict__["_ExprVar__da"]
@@ -216,11 +300,11 @@ class ExprVarTest(unittest.TestCase):
             AttributeError,
             match="'ExprVar' object has no attribute '_ExprVarTest__da'",
         ):
-            # noinspection PyUnusedLocal
+            # noinspection PyUnusedLocal,PyUnresolvedReferences
             result = ev.__da
 
     # noinspection PyMethodMayBeStatic
-    def test_that_some_ops_unsupported(self):
+    def test_that_some_ops_are_unsupported(self):
         ev = ExprVar(xr.DataArray([1, 2, 3], dims="x"))
 
         with pytest.raises(

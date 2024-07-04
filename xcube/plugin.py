@@ -84,7 +84,7 @@ _FS_STORAGE_ITEMS = (
     ("https", "HTTPS filesystem"),
     ("memory", "in-memory filesystem"),
     ("reference", "reference filesystem"),
-    ("s3", "AWS S3 compatible object storage")
+    ("s3", "AWS S3 compatible object storage"),
 )
 
 _FS_DATA_ACCESSOR_ITEMS = (
@@ -214,6 +214,7 @@ def _register_server_apis(ext_registry: extension.ExtensionRegistry):
         "timeseries",
         "statistics",
         "volumes",
+        "expressions",
         "ows.coverages",
         "ows.stac",
         "ows.wmts",
