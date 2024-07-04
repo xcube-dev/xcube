@@ -806,9 +806,7 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
                     "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
                 },
             },
-            "xcube:open_kwargs": {
-                "data_id": f"{dataset_id}.zarr",
-            },
+            "xcube:open_kwargs": {"data_id": f"{dataset_id}.zarr"},
             "xcube:analytic": {
                 v["name"]: {
                     "title": f"{v['name']} data access",
