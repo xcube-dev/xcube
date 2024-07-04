@@ -18,10 +18,6 @@ class MetaRoutesTest(RoutesTestCase):
         response = self.fetch("/openapi.html")
         self.assertResponseOK(response)
 
-    def test_fetch_expressions_namespace(self):
-        response = self.fetch("/expressions/namespace")
-        self.assertResponseOK(response)
-
     def test_fetch_maintenance_fail(self):
         response = self.fetch("/maintenance/fail")
         self.assertResponse(

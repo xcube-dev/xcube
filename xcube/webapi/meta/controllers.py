@@ -5,7 +5,6 @@
 import os
 from typing import Any
 
-from xcube.core.varexpr import VarExprContext
 from xcube.util.versions import get_xcube_versions
 from xcube.version import version
 from .context import MetaContext
@@ -33,16 +32,4 @@ def get_service_info(ctx: MetaContext) -> dict[str, Any]:
         currentTime=ctx.current_time,
         updateTime=ctx.update_time,
         pid=os.getpid(),
-    )
-
-
-def get_expressions_namespace():
-    return dict(
-        namespace=dict(
-            constants=VarExprContext.get_constants(),
-            arrayFunctions=VarExprContext.get_array_functions(),
-            builtinFunctions=VarExprContext.get_builtin_functions(),
-            arrayOperators=VarExprContext.get_array_operators(),
-            builtinOperators=VarExprContext.get_builtin_operators(),
-        )
     )
