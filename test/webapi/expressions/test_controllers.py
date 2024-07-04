@@ -29,9 +29,9 @@ class ExpressionsControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
         self.assertEqual(
             {
                 "arrayFunctions",
+                "otherFunctions",
                 "arrayOperators",
-                "builtinFunctions",
-                "builtinOperators",
+                "otherOperators",
                 "constants",
             },
             set(result["namespace"].keys()),

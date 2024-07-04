@@ -31,31 +31,50 @@ dataset = xr.Dataset(
 
 
 class VarExprContextTest(unittest.TestCase):
-    def test_namespace(self):
+    def test_locals(self):
         ctx = VarExprContext(dataset)
-        ns = ctx._namespace
+        # noinspection PyShadowingBuiltins
+        locals = ctx.locals()
+        self.assertIsInstance(locals.get("A"), ExprVar)
+        self.assertIsInstance(locals.get("B"), ExprVar)
+        self.assertIsInstance(locals.get("C"), ExprVar)
 
-        self.assertIsInstance(ns.get("nan"), float)
-        self.assertIsInstance(ns.get("inf"), float)
-        self.assertIsInstance(ns.get("e"), float)
-        self.assertIsInstance(ns.get("pi"), float)
+    def test_globals(self):
+        # noinspection PyShadowingBuiltins
+        globals = VarExprContext.globals()
 
-        self.assertIsInstance(ns.get("A"), ExprVar)
-        self.assertIsInstance(ns.get("B"), ExprVar)
-        self.assertIsInstance(ns.get("C"), ExprVar)
+        self.assertIsInstance(globals.get("nan"), float)
+        self.assertIsInstance(globals.get("inf"), float)
+        self.assertIsInstance(globals.get("e"), float)
+        self.assertIsInstance(globals.get("pi"), float)
 
-        self.assertTrue(callable(ns.get("where")))
-        self.assertTrue(callable(ns.get("hypot")))
-        self.assertTrue(callable(ns.get("sin")))
-        self.assertTrue(callable(ns.get("cos")))
-        self.assertTrue(callable(ns.get("tan")))
-        self.assertTrue(callable(ns.get("sqrt")))
-        self.assertTrue(callable(ns.get("fmin")))
-        self.assertTrue(callable(ns.get("fmax")))
-        self.assertTrue(callable(ns.get("minimum")))
-        self.assertTrue(callable(ns.get("maximum")))
-        self.assertNotIn("min", ns)
-        self.assertNotIn("max", ns)
+        self.assertTrue(callable(globals.get("where")))
+        self.assertTrue(callable(globals.get("hypot")))
+        self.assertTrue(callable(globals.get("sin")))
+        self.assertTrue(callable(globals.get("cos")))
+        self.assertTrue(callable(globals.get("tan")))
+        self.assertTrue(callable(globals.get("sqrt")))
+        self.assertTrue(callable(globals.get("fmin")))
+        self.assertTrue(callable(globals.get("fmax")))
+        self.assertTrue(callable(globals.get("minimum")))
+        self.assertTrue(callable(globals.get("maximum")))
+
+        self.assertNotIn("min", globals)
+        self.assertNotIn("max", globals)
+        self.assertNotIn("open", globals)
+
+    def test_capabilities(self):
+        c_list = VarExprContext.get_constants()
+        self.assertIsInstance(c_list, list)
+        print(c_list)
+
+        fn_list = VarExprContext.get_other_functions()
+        self.assertIsInstance(fn_list, list)
+        print(fn_list)
+
+        fn_list = VarExprContext.get_array_functions()
+        self.assertIsInstance(fn_list, list)
+        print(fn_list)
 
     def test_evaluate(self):
         ctx = VarExprContext(dataset)
@@ -186,7 +205,7 @@ class VarExprContextTest(unittest.TestCase):
         # This is intentional disintegration
         ev = ExprVar(xr.DataArray(var_a_data, dims=("y", "x")))
         ev.__dict__["_ExprVar__da"] = True
-        ctx._namespace["my_ev"] = ev
+        ctx._locals["my_ev"] = ev
         with pytest.raises(
             RuntimeError,
             match="internal error: 'DataArray' object expected, but got type 'bool'",

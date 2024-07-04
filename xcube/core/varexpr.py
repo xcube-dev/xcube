@@ -2,13 +2,38 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import builtins
-from typing import Callable, Optional
+import inspect
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import xarray as xr
 
 from xcube.util.assertions import assert_instance
+
+
+def _get_constants() -> dict[str, Any]:
+    return {
+        "nan": np.nan,
+        "e": np.e,
+        "inf": np.inf,
+        "pi": np.pi,
+    }
+
+
+def _get_numpy_ufuncs() -> dict[str, np.ufunc]:
+    """Get numpy universal functions (considered safe)"""
+    # noinspection PyProtectedMember
+    return {
+        k: v
+        for k, v in np.__dict__.items()
+        if isinstance(v, np.ufunc) and isinstance(k, str) and not k.startswith("_")
+    }
+
+
+def _get_xarray_funcs() -> dict[str, Callable]:
+    """Get safe xarray functions"""
+    # noinspection PyProtectedMember
+    return {"where": xr.where}
 
 
 class ExprVar:
@@ -159,65 +184,17 @@ class ExprVar:
 
         return wrapped_fn
 
-    @staticmethod
-    def _get_safe_xarray_funcs() -> dict[str, Callable]:
-        # noinspection PyProtectedMember
-        return dict(where=ExprVar._wrap_fn(xr.where))
-
-    @staticmethod
-    def _get_safe_numpy_funcs() -> dict[str, Callable]:
-        # noinspection PyProtectedMember
-        return {
-            k: ExprVar._wrap_fn(v)
-            for k, v in np.__dict__.items()
-            if isinstance(v, np.ufunc) and isinstance(k, str) and not k.startswith("_")
-        }
-
 
 # noinspection PyProtectedMember
-_LOCALS = dict(
-    nan=np.nan,
-    e=np.e,
-    inf=np.inf,
-    pi=np.pi,
-    **ExprVar._get_safe_xarray_funcs(),
-    **ExprVar._get_safe_numpy_funcs(),
-)
+_GLOBALS = {
+    **_get_constants(),
+    **{k: ExprVar._wrap_fn(fn) for k, fn in _get_numpy_ufuncs().items()},
+    **{k: ExprVar._wrap_fn(fn) for k, fn in _get_xarray_funcs().items()},
+    "__builtins__": {},
+}
 
-# noinspection PyProtectedMember
-del ExprVar._get_safe_xarray_funcs
-# noinspection PyProtectedMember
-del ExprVar._get_safe_numpy_funcs
 # noinspection PyProtectedMember
 del ExprVar._wrap_fn
-
-
-_ALLOWED_BUILTINS = {
-    # basic math
-    # Note that min/max are excluded because they they don't
-    # operate element-wise on arrays and cause confusion
-    # with numpy ufuncs minimum/maximum
-    "round",
-    "floor",
-    "ceil",
-    # primitives
-    "bool",
-    "complex",
-    "int",
-    "float",
-    "str",
-    # collections
-    "tuple",
-    "list",
-    "dict",
-    "set",
-}
-
-_GLOBALS = {
-    "__builtins__": {
-        k: v for k, v in builtins.__dict__.items() if k in _ALLOWED_BUILTINS
-    }
-}
 
 
 class VarExprError(ValueError):
@@ -234,57 +211,92 @@ class VarExprContext:
     """
 
     def __init__(self, dataset: xr.Dataset):
-        namespace = dict(_LOCALS)
-        namespace.update({str(k): ExprVar(v) for k, v in dataset.data_vars.items()})
-        namespace.update({str(k): ExprVar(v) for k, v in dataset.coords.items()})
-        self._namespace = namespace
+        self._locals = dict({str(k): ExprVar(v) for k, v in dataset.data_vars.items()})
+
+    def locals(self) -> dict[str, Any]:
+        return dict(self._locals)
 
     @classmethod
-    def get_constants(cls):
-        """Get constants."""
+    def globals(cls) -> dict[str, Any]:
+        return dict(_GLOBALS)
+
+    @classmethod
+    def _format_callable(cls, name: str, fn: Union[np.ufunc, Callable]):
+        if name == "where":
+            return "where(C,X,Y)"
+        if isinstance(fn, np.ufunc):
+            num_args = fn.nargs - 1
+        else:
+            signature = inspect.signature(fn)
+            num_args = len(signature.parameters.values())
+        if num_args == 0:
+            return f"{name}()"
+        elif num_args == 1:
+            return f"{name}(X)"
+        elif num_args == 2:
+            return f"{name}(X,Y)"
+        elif num_args == 3:
+            return f"{name}(X,Y,Z)"
+        else:
+            return f"{name}({','.join(map(lambda i: f'X{i + 1}', range(num_args)))})"
+
+    @classmethod
+    def get_array_functions(cls) -> list[str]:
+        """Get array functions."""
         return sorted(
-            [k for k, v in _LOCALS.items() if isinstance(v, (bool, int, float, str))]
+            cls._format_callable(name, fn)
+            for name, fn in dict(**_get_xarray_funcs(), **_get_numpy_ufuncs()).items()
         )
 
     @classmethod
-    def get_array_functions(cls):
-        """Get array functions."""
-        return sorted([k for k, v in _LOCALS.items() if callable(v)])
+    def get_other_functions(cls) -> list[str]:
+        """Get other functions that cannot be used with arrays."""
+        return []
 
     @classmethod
-    def get_builtin_functions(cls):
-        """Get built-in functions that cannot be used with arrays."""
-        return sorted(_ALLOWED_BUILTINS)
-
-    @classmethod
-    def get_array_operators(cls):
+    def get_array_operators(cls) -> list[str]:
         """Get array operators."""
         return [
-            "+",
-            "-",
-            "*",
-            "/",
-            "//",
-            "%",
-            "**",
-            "<<",
-            ">>",
-            "&",
-            "^",
-            "|",
-            "~",
-            "==",
-            "!=",
-            "<",
-            "<=",
-            ">",
-            ">=",
+            "+X",
+            "-X",
+            "~X",
+            "X + Y",
+            "X - Y",
+            "X * Y",
+            "X / Y",
+            "X // Y",
+            "X % Y",
+            "X ** Y",
+            "X << Y",
+            "X >> Y",
+            "X & Y",
+            "X ^ Y",
+            "X | Y",
+            "X == Y",
+            "X != Y",
+            "X < Y",
+            "X <= Y",
+            "X > Y",
+            "X >= Y",
         ]
 
     @classmethod
-    def get_builtin_operators(cls):
-        """Get built-in operators that cannot be used with arrays."""
-        return ["and", "or", "not", "in", "not in", "is", "is not"]
+    def get_other_operators(cls) -> list[str]:
+        """Get other operators that cannot be used with arrays."""
+        return [
+            "X and Y",
+            "X or Y",
+            "not X",
+            "X in Y",
+            "X not in Y",
+            "X is Y",
+            "X is not Y",
+        ]
+
+    @classmethod
+    def get_constants(cls) -> list[str]:
+        """Get constants."""
+        return sorted(_get_constants().keys())
 
     def evaluate(self, var_expr: str) -> xr.DataArray:
         """Evaluate given Python expression *var_expr* in the context of an
@@ -316,7 +328,7 @@ class VarExprContext:
             A newly computed variable of type `xarray.DataArray`.
         """
         try:
-            result = eval(var_expr, _GLOBALS, self._namespace)
+            result = eval(var_expr, _GLOBALS, self._locals)
         except BaseException as e:
             # Do not report the name 'ExprVar'
             raise VarExprError(f"{e}".replace("ExprVar", "DataArray")) from e

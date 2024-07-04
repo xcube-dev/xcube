@@ -13,9 +13,9 @@ def get_expressions_capabilities(ctx: ExpressionsContext):
         namespace=dict(
             constants=VarExprContext.get_constants(),
             arrayFunctions=VarExprContext.get_array_functions(),
-            builtinFunctions=VarExprContext.get_builtin_functions(),
+            otherFunctions=VarExprContext.get_other_functions(),
             arrayOperators=VarExprContext.get_array_operators(),
-            builtinOperators=VarExprContext.get_builtin_operators(),
+            otherOperators=VarExprContext.get_other_operators(),
         )
     )
 
