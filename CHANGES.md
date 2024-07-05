@@ -15,6 +15,8 @@
   `Dockerfile` from `setup.py` to `pyproject.toml`. Additionally, updated the relevant 
   documentation in `doc/source` to reflect this change from `setup.py` to
   `pyproject.toml.` (related to #992) 
+* Normalisation with `xcube.core.normalize.normalize_dataset` fails when chunk encoding 
+  must be updated (#1033)
 
 ## Changes in 1.6.0
 

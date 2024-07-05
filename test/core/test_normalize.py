@@ -9,9 +9,9 @@ Test for the normalization operation
 from datetime import datetime
 from unittest import TestCase
 
+import dask.array as da
 import numpy as np
 import pandas as pd
-import pyproj
 import xarray as xr
 from jdcal import gcal2jd
 from numpy.testing import assert_array_almost_equal
@@ -1076,11 +1076,11 @@ class NormalizeDimOrderTest(TestCase):
             dict(
                 ampl=(
                     ["lat", "lon", "period"],
-                    np.ones(shape=(lat_size, lon_size, period_size)),
+                    da.from_array(np.ones(shape=(lat_size, lon_size, period_size))),
                 ),
                 phase=(
                     ["lat", "lon", "period"],
-                    np.zeros(shape=(lat_size, lon_size, period_size)),
+                    da.from_array(np.zeros(shape=(lat_size, lon_size, period_size))),
                 ),
             ),
             coords=dict(
@@ -1096,6 +1096,8 @@ class NormalizeDimOrderTest(TestCase):
                 ),
             ),
         )
+        dataset.ampl.encoding = {"dtype": "float32"}
+        dataset.phase.encoding = {"dtype": "float32"}
 
         dataset.coords["time"].encoding.update(
             units="days since 1950-01-01", dtype=np.dtype(np.float32)
