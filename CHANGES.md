@@ -28,7 +28,9 @@
   only `datetime.date` objects were supported.
 * The xcube server STAC publication has been adjusted so that the data store
   parameters and data ID, which are needed to open the data, 
-  are now included with the asset (#1020).
+  are now included with the asset; furthermore, a second assert called
+  `analytic_multires` will be published referring to the multi-resolution data format
+  levels (#1020).
 
 ## Changes in 1.6.0
 
