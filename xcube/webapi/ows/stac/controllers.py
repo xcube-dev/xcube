@@ -790,14 +790,13 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
 
     # TODO: Prefer original storage location.
     #       The "s3" operation is default.
-    default_storage_url = f"{base_url}/s3/datasets"
 
     return {
         "analytic": {
             "title": f"{dataset_id} data access",
             "roles": ["data"],
             "type": "application/zarr",
-            "href": f"{default_storage_url}/{dataset_id}.zarr",
+            "href": f"{base_url}/s3/datasets/{dataset_id}.zarr",
             "xcube:store_kwargs": {
                 "data_store_id": "s3",
                 "root": "datasets",
@@ -812,7 +811,31 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
                     "title": f"{v['name']} data access",
                     "roles": ["data"],
                     "type": "application/zarr",
-                    "href": f"{default_storage_url}/" f"{dataset_id}.zarr/{v['name']}",
+                    "href": f"{base_url}/s3/datasets/{dataset_id}.zarr/{v['name']}",
+                }
+                for v in xcube_data_vars
+            },
+        },
+        "analytic_multires": {
+            "title": f"{dataset_id} multi-resolution data access",
+            "roles": ["data"],
+            "type": "application/zarr",
+            "href": f"{base_url}/s3/pyramids/{dataset_id}.levels",
+            "xcube:store_kwargs": {
+                "data_store_id": "s3",
+                "root": "pyramids",
+                "storage_options": {
+                    "anon": True,
+                    "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
+                },
+            },
+            "xcube:open_kwargs": {"data_id": f"{dataset_id}.levels"},
+            "xcube:analytic_multires": {
+                v["name"]: {
+                    "title": f"{v['name']} data access",
+                    "roles": ["data"],
+                    "type": "application/zarr",
+                    "href": f"{base_url}/s3/pyramids/{dataset_id}.levels/0.zarr/{v['name']}",
                 }
                 for v in xcube_data_vars
             },

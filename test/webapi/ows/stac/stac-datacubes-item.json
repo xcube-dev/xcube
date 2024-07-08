@@ -1066,6 +1066,109 @@
         }
       }
     },
+    "analytic_multires": {
+      "title": "demo-1w multi-resolution data access",
+      "roles": [
+        "data"
+      ],
+      "type": "application/zarr",
+      "href": "http://localhost:8080/s3/pyramids/demo-1w.levels",
+      "xcube:store_kwargs": {
+        "data_store_id": "s3",
+        "root": "pyramids",
+        "storage_options": {
+          "anon": true,
+          "client_kwargs": {
+            "endpoint_url": "http://localhost:8080/s3"
+          }
+        }
+      },
+      "xcube:open_kwargs": {
+        "data_id": "demo-1w.levels"
+      },
+      "xcube:analytic_multires": {
+        "c2rcc_flags": {
+          "title": "c2rcc_flags data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/c2rcc_flags"
+        },
+        "conc_chl": {
+          "title": "conc_chl data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/conc_chl"
+        },
+        "conc_tsm": {
+          "title": "conc_tsm data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/conc_tsm"
+        },
+        "kd489": {
+          "title": "kd489 data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/kd489"
+        },
+        "quality_flags": {
+          "title": "quality_flags data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/quality_flags"
+        },
+        "c2rcc_flags_stdev": {
+          "title": "c2rcc_flags_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/c2rcc_flags_stdev"
+        },
+        "conc_chl_stdev": {
+          "title": "conc_chl_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/conc_chl_stdev"
+        },
+        "conc_tsm_stdev": {
+          "title": "conc_tsm_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/conc_tsm_stdev"
+        },
+        "kd489_stdev": {
+          "title": "kd489_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/kd489_stdev"
+        },
+        "quality_flags_stdev": {
+          "title": "quality_flags_stdev data access",
+          "roles": [
+            "data"
+          ],
+          "type": "application/zarr",
+          "href": "http://localhost:8080/s3/pyramids/demo-1w.levels/0.zarr/quality_flags_stdev"
+        }
+      }
+    },
     "visual": {
       "title": "demo-1w visualisation",
       "roles": [
