@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import ast
 import inspect
 from typing import Any, Callable, Optional, Union
 
@@ -327,8 +328,13 @@ class VarExprContext:
         Returns:
             A newly computed variable of type `xarray.DataArray`.
         """
+        import ast
+
         try:
-            result = eval(var_expr, _GLOBALS, self._locals)
+            expr_node = ast.parse(var_expr, mode="eval")
+            expr_node = VarExprValidator().visit(expr_node)
+            expr_code = compile(expr_node, "<expression>", "eval")
+            result = eval(expr_code, _GLOBALS, self._locals)
         except BaseException as e:
             # Do not report the name 'ExprVar'
             raise VarExprError(f"{e}".replace("ExprVar", "DataArray")) from e
@@ -368,3 +374,8 @@ def split_var_assignment(var_name_or_assign: str) -> tuple[str, Optional[str]]:
         return var_name, var_expr
     else:
         return var_name_or_assign, None
+
+
+class VarExprValidator(ast.NodeTransformer):
+    def visit_Lambda(self, node):
+        raise VarExprError("lambda expressions are not supported")

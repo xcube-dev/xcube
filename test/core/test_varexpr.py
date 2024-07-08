@@ -29,6 +29,29 @@ dataset = xr.Dataset(
     )
 )
 
+# https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
+# Tested with Python 3.12: it works, Python interpreter will crash
+# for eval(BOMB).
+BOMB = """
+(lambda fc=(
+    lambda n: [
+        c for c in
+            ().__class__.__bases__[0].__subclasses__()
+            if c.__name__ == n
+        ][0]
+    ):
+    fc("function")(
+        fc("code")(
+            # 2.7:          0,0,0,0,"BOOM",(),(),(),"","",0,""
+            # 3.5-3.7:      0,0,0,0,0,b"BOOM",(),(),(),"","",0,b""
+            # 3.8-3.10:     0,0,0,0,0,0,b"BOOM",(),(),(),"","",0,b""
+            # 3.11:         
+            0,0,0,0,0,0,b"BOOM",(),(),(),"","","",0,b"",b"",(),()
+        ),{}
+    )()
+)()
+"""
+
 
 class VarExprContextTest(unittest.TestCase):
     def test_locals(self):
@@ -66,15 +89,21 @@ class VarExprContextTest(unittest.TestCase):
     def test_capabilities(self):
         c_list = VarExprContext.get_constants()
         self.assertIsInstance(c_list, list)
-        print(c_list)
-
-        fn_list = VarExprContext.get_other_functions()
-        self.assertIsInstance(fn_list, list)
-        print(fn_list)
+        # print(c_list)
 
         fn_list = VarExprContext.get_array_functions()
         self.assertIsInstance(fn_list, list)
-        print(fn_list)
+        # print(fn_list)
+        fn_list = VarExprContext.get_other_functions()
+        self.assertIsInstance(fn_list, list)
+        # print(fn_list)
+
+        fn_list = VarExprContext.get_array_operators()
+        self.assertIsInstance(fn_list, list)
+        # print(fn_list)
+        fn_list = VarExprContext.get_other_operators()
+        self.assertIsInstance(fn_list, list)
+        # print(fn_list)
 
     def test_evaluate(self):
         ctx = VarExprContext(dataset)
@@ -164,6 +193,15 @@ class VarExprContextTest(unittest.TestCase):
             match="name '__import__' is not defined",
         ):
             ctx.evaluate("__import__('evilmodule')")
+
+    # noinspection PyMethodMayBeStatic
+    def test_that_lambda_is_not_supported(self):
+        ctx = VarExprContext(dataset)
+        with pytest.raises(
+            VarExprError,
+            match="lambda expressions are not supported",
+        ):
+            ctx.evaluate(BOMB)
 
     # noinspection PyMethodMayBeStatic
     def test_invalid_expression_cases(self):
