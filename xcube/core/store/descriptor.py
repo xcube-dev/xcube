@@ -109,7 +109,7 @@ class DataDescriptor(JsonObject):
             or WKT string
         bbox: A bounding box of the data
         time_range: Start and end time delimiting this data's temporal
-            extent
+            extent;
         time_period: The data's periodicity if it is evenly temporally
             resolved.
         open_params_schema: A JSON schema describing the parameters that
