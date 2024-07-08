@@ -23,6 +23,8 @@ from xcube.util.assertions import assert_not_none
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonDateSchema
+from xcube.util.jsonschema import JsonDatetimeSchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObject
@@ -155,7 +157,12 @@ class DataDescriptor(JsonObject):
                         JsonNumberSchema(),
                     ]
                 ),
-                time_range=JsonDateSchema.new_range(nullable=True),
+                time_range=JsonComplexSchema(
+                    any_of=[
+                        JsonDateSchema.new_range(nullable=True),
+                        JsonDatetimeSchema.new_range(nullable=True),
+                    ]
+                ),
                 time_period=JsonStringSchema(min_length=1),
                 open_params_schema=JsonObjectSchema(additional_properties=True),
             ),
