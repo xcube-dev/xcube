@@ -4,6 +4,8 @@
 
 import ast
 import inspect
+from abc import abstractmethod
+from collections.abc import Mapping
 from typing import Any, Callable, Optional, Union
 
 import numpy as np
@@ -377,5 +379,108 @@ def split_var_assignment(var_name_or_assign: str) -> tuple[str, Optional[str]]:
 
 
 class VarExprValidator(ast.NodeTransformer):
+    def visit_Lambda(self, node):
+        raise VarExprError("lambda expressions are not supported")
+
+
+Names = Mapping[str, Any]
+UnaryFunction = Callable[[Any], Any]
+BinaryFunction = Callable[[Any, Any], Any]
+
+_UNARY_OPS = {"UAdd": lambda x: +x, "USub": lambda x: -x}
+_BINARY_OPS = {"Add": lambda x, y: x + y, "Sub": lambda x, y: x - y}
+
+
+class VarExpr:
+    """Represents a node of a variable expression."""
+
+    @abstractmethod
+    def evaluate(self, names: Names) -> Any:
+        """Evaluate the expression."""
+
+
+class Constant(VarExpr):
+    # noinspection PyShadowingBuiltins
+    def __init__(self, value: Any):
+        self.value = value
+
+    def evaluate(self, names: Names) -> Any:
+        return self.value
+
+
+class Name(VarExpr):
+    # noinspection PyShadowingBuiltins
+    def __init__(self, id: str):
+        self.id = id
+
+    def evaluate(self, names: Names) -> Any:
+        try:
+            return names[self.id]
+        except KeyError:
+            raise VarExprError(f"name {self.id!r} is not defined")
+
+
+class Call(VarExpr):
+    def __init__(
+        self, func: VarExpr, args: list[VarExpr], keywords: Mapping[str, VarExpr]
+    ):
+        self.func = func
+        self.args = args
+        self.keywords = keywords
+
+    def evaluate(self, names: Names) -> Any:
+        return self.func.evaluate(names)(
+            *(arg.evaluate(names) for arg in self.args),
+            **{value: arg.evaluate(names) for value, arg in self.keywords.items()},
+        )
+
+
+class UnaryOp(VarExpr):
+    def __init__(self, op: UnaryFunction, operand: VarExpr):
+        self.op = op
+        self.operand = operand
+
+    def evaluate(self, names: Names) -> Any:
+        return self.op(self.operand.evaluate(names))
+
+
+class BinOp(VarExpr):
+    def __init__(self, left: VarExpr, op: BinaryFunction, right: VarExpr):
+        self.left = left
+        self.op = op
+        self.right = right
+
+    def evaluate(self, names: Names) -> Any:
+        return self.op(self.left.evaluate(names), self.right.evaluate(names))
+
+
+class VarExprFactory(ast.NodeVisitor):
+
+    def visit(self, node: ast.expr) -> VarExpr:
+        return super().visit(node)
+
+    def visit_Constant(self, node: ast.Constant):
+        return Constant(node.value)
+
+    def visit_Name(self, node: ast.Name):
+        return Name(node.id)
+
+    def visit_Call(self, node: ast.Call):
+        return Call(
+            self.visit(node.func),
+            [self.visit(arg) for arg in node.args],
+            {keyword.arg: self.visit(keyword.value) for keyword in node.keywords},
+        )
+
+    def visit_UnaryOp(self, node: ast.UnaryOp):
+        return UnaryOp(_UNARY_OPS[node.op.__class__.__name__], self.visit(node.operand))
+
+    def visit_BinOp(self, node: ast.BinOp):
+        return BinOp(
+            self.visit(node.left),
+            _BINARY_OPS[node.op.__class__.__name__],
+            self.visit(node.right),
+        )
+
     def visit_Lambda(self, node):
         raise VarExprError("lambda expressions are not supported")
