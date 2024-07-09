@@ -104,7 +104,7 @@ class CubeUserCodeExecutorTest(unittest.TestCase):
             "\n"
             "Failed validating 'minimum'"
             " in schema['properties']['value']:\n"
-            "    {'minimum': 1, 'type': 'integer'}\n"
+            "    {'type': 'integer', 'minimum': 1}\n"
             "\n"
             "On instance['value']:\n"
             "    0",
