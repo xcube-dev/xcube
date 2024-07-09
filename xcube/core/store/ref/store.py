@@ -101,7 +101,11 @@ class ReferenceDataStore(DataStore):
         return JsonObjectSchema()
 
     def open_data(
-        self, data_id: str, opener_id: str = None, **open_params
+        self,
+        data_id: str,
+        opener_id: str = None,
+        data_type: DataTypeLike = None,
+        **open_params,
     ) -> xr.Dataset:
         if open_params:
             warnings.warn(

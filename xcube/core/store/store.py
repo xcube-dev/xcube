@@ -424,12 +424,15 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     @abstractmethod
-    def open_data(self, data_id: str, opener_id: str = None, **open_params) -> Any:
+    def open_data(
+        self,
+        data_id: str,
+        opener_id: str = None,
+        data_type: DataTypeLike = None,
+        **open_params,
+    ) -> Any:
         """Open the data given by the data resource identifier *data_id*
         using the supplied *open_params*.
-
-        The data type of the return value depends on the data opener
-        used to open the data resource.
 
         If *opener_id* is given, the identified data opener will be used
         to open the data resource and *open_params* must comply with the
@@ -437,12 +440,22 @@ class DataStore(DataOpener, DataSearcher, ABC):
         implementations may not support using different openers or just
         support a single one.
 
+        If *data_type* is given, the return value will be presented in
+        that data type. The most common usage will be to use the type alias
+        'mldataset' and 'dataset' for multi-resolution data pyramids and
+        xarray.Datasets respectively. Note that *opener_id* also carries the
+        *data_tpe* at its first position and will overwrite the *date_type*
+        argument.
+
         Raises if *data_id* does not exist in this store.
 
         Args:
             data_id: The data identifier that is known to exist in this
                 data store.
             opener_id: An optional data opener identifier.
+            data_type: An optional data type that is known to be
+                supported by this data store. May be given as type alias
+                name, as a type, or as a :class:`DataType` instance.
             **open_params: Opener-specific parameters.
 
         Returns:
