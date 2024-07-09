@@ -13,17 +13,17 @@ def get_expressions_capabilities(ctx: ExpressionsContext):
         namespace=dict(
             constants=VarExprContext.get_constants(),
             arrayFunctions=VarExprContext.get_array_functions(),
-            builtinFunctions=VarExprContext.get_builtin_functions(),
+            otherFunctions=VarExprContext.get_other_functions(),
             arrayOperators=VarExprContext.get_array_operators(),
-            builtinOperators=VarExprContext.get_builtin_operators(),
+            otherOperators=VarExprContext.get_other_operators(),
         )
     )
 
 
-def evaluate_expression(ctx: ExpressionsContext, ds_id: str, var_expr: str):
+def validate_expression(ctx: ExpressionsContext, ds_id: str, var_expr: str):
     dataset = ctx.datasets_ctx.get_dataset(ds_id)
     indexers = {
-        str(dim_name): slice(0, min(3, dim_size))
+        str(dim_name): slice(0, min(2, dim_size))
         for dim_name, dim_size in dataset.sizes.items()
         if dim_size > 0
         and dim_name in dataset.coords
@@ -33,5 +33,8 @@ def evaluate_expression(ctx: ExpressionsContext, ds_id: str, var_expr: str):
     try:
         result = var_expr_ctx.evaluate(var_expr)
     except VarExprError as e:
-        raise ApiError.BadRequest()
-    return dict(result=result.mean().values.item())
+        raise ApiError.BadRequest(f"{e}")
+    try:
+        return dict(result=result.mean().values.item())
+    except BaseException as e:
+        raise ApiError.BadRequest(f"{e}")
