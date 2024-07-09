@@ -440,12 +440,11 @@ class DataStore(DataOpener, DataSearcher, ABC):
         implementations may not support using different openers or just
         support a single one.
 
-        If *data_type* is given, the return value will be presented in
-        that data type. The most common usage will be to use the type alias
-        'mldataset' and 'dataset' for multi-resolution data pyramids and
-        xarray.Datasets respectively. Note that *opener_id* also carries the
-        *data_tpe* at its first position and will overwrite the *date_type*
-        argument.
+        If *data_type* is provided, the return value will be in the specified
+        data type. If no data opener exists for the given *data_type* and format
+        extracted from the *data_id*, the default data type alias 'dataset' will
+        be used. Note that *opener_id* includes the *data_type* at its first
+        position and will override the *date_type* argument.
 
         Raises if *data_id* does not exist in this store.
 

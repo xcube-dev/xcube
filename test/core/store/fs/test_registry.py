@@ -178,11 +178,11 @@ class FsDataStoresTestMixin(ABC):
         self._assert_dataset_supported(
             data_store,
             filename_ext=".zarr",
-            requested_dtype_alias=None,
+            requested_dtype_alias="mldataset",
             expected_dtype_aliases={"dataset"},
             expected_return_type=xr.Dataset,
             expected_descriptor_type=DatasetDescriptor,
-            opener_id="dataset:zarr:memory",
+            opener_id=f"dataset:zarr:{data_store.protocol}",
             assert_data_ok=self._assert_zarr_store_direct_ok,
         )
 
@@ -399,7 +399,8 @@ class FsDataStoresTestMixin(ABC):
             open_params: Optional open parameters
             assert_data_ok: Optional function to assert read data is ok
             assert_warnings: Optional boolean if test may check for warnings
-            warning_msg: Optional warning message to be checked
+            warning_msg: Optional warning message to be checked if
+                assert_warnings is True
         """
 
         data_id = f"{DATA_PATH}/ds{filename_ext}"
