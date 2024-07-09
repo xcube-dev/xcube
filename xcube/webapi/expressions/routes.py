@@ -7,7 +7,7 @@ from ..datasets.routes import PATH_PARAM_DATASET_ID
 from .api import api
 from .context import ExpressionsContext
 from .controllers import get_expressions_capabilities
-from .controllers import evaluate_expression
+from .controllers import validate_expression
 
 PATH_PARAM_VAR_EXPR = {
     "name": "varExpr",
@@ -30,12 +30,12 @@ class ExpressionsNamespaceHandler(ApiHandler[ExpressionsContext]):
 
 
 # noinspection PyPep8Naming
-@api.route("/expressions/evaluate/{datasetId}/{varExpr}")
+@api.route("/expressions/validate/{datasetId}/{varExpr}")
 class ExpressionsNamespaceHandler(ApiHandler[ExpressionsContext]):
     @api.operation(
-        operation_id="evaluateExpression",
-        summary="Evaluate the given variable expression to check its validity",
+        operation_id="validateExpression",
+        summary="Validate the given variable expression",
         parameters=[PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_EXPR],
     )
     def get(self, datasetId: str, varExpr: str):
-        self.response.finish(evaluate_expression(self.ctx, datasetId, varExpr))
+        self.response.finish(validate_expression(self.ctx, datasetId, varExpr))

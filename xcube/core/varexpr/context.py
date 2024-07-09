@@ -17,6 +17,7 @@ from .names import (
     get_numpy_ufuncs,
     get_constants,
 )
+from .varexpr import evaluate
 
 
 class VarExprContext:
@@ -146,13 +147,8 @@ class VarExprContext:
         Returns:
             A newly computed variable of type `xarray.DataArray`.
         """
-        import ast
-
         try:
-            expr_node = ast.parse(var_expr, mode="eval")
-            expr_node = VarExprValidator().visit(expr_node)
-            expr_code = compile(expr_node, "<expression>", "eval")
-            result = eval(expr_code, GLOBALS, self._locals)
+            result = evaluate(var_expr, dict(**GLOBALS, **self._locals))
         except BaseException as e:
             # Do not report the name 'ExprVar'
             raise VarExprError(f"{e}".replace("ExprVar", "DataArray")) from e

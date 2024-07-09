@@ -5,7 +5,7 @@
 import ast
 from abc import abstractmethod
 from collections.abc import Mapping
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from xcube.core.varexpr.error import VarExprError
 
@@ -18,6 +18,7 @@ _UNARY_OPS: Mapping[str, UnaryFunction] = {
     "UAdd": lambda x: +x,
     "USub": lambda x: -x,
     "Invert": lambda x: ~x,
+    "Not": lambda x: not x,
 }
 _BINARY_OPS: Mapping[str, BinaryFunction] = {
     "Add": lambda x, y: x + y,
@@ -88,6 +89,59 @@ class Name(VarExpr):
             raise VarExprError(f"name {self.id!r} is not defined")
 
 
+class Attribute(VarExpr):
+    # noinspection PyShadowingBuiltins
+    def __init__(self, value: VarExpr, attr: str):
+        self.value = value
+        self.attr = attr
+
+    def evaluate(self, names: Names) -> Any:
+        if self.attr.startswith("_"):
+            raise VarExprError(f"illegal use of protected attribute {self.attr!r}")
+        value = self.value.evaluate(names)
+        try:
+            return getattr(value, self.attr)
+        except AttributeError as e:
+            raise VarExprError(f"{e}")
+
+
+# noinspection PyShadowingBuiltins
+class Subscript(VarExpr):
+    def __init__(
+        self,
+        value: VarExpr,
+        slice: VarExpr,
+    ):
+        self.value = value
+        self.slice = slice
+
+    def evaluate(self, names: Names) -> Any:
+        value = self.value.evaluate(names)
+        slice = self.slice.evaluate(names)
+        try:
+            return value[slice]
+        except IndexError as e:
+            raise VarExprError(f"{e}")
+
+
+class Slice(VarExpr):
+    def __init__(
+        self,
+        lower: Optional[VarExpr],
+        upper: Optional[VarExpr],
+        step: Optional[VarExpr],
+    ):
+        self.lower = lower
+        self.upper = upper
+        self.step = step
+
+    def evaluate(self, names: Names) -> slice:
+        lower = None if self.lower is None else self.lower.evaluate(names)
+        upper = None if self.upper is None else self.upper.evaluate(names)
+        step = None if self.step is None else self.step.evaluate(names)
+        return slice(lower, upper, step)
+
+
 class Call(VarExpr):
     def __init__(
         self, func: VarExpr, args: list[VarExpr], keywords: Mapping[str, VarExpr]
@@ -131,13 +185,14 @@ class Compare(VarExpr):
         self.comparators = comparators
 
     def evaluate(self, names: Names) -> bool:
-        left = self.left.evaluate(names)
+        result = left = self.left.evaluate(names)
         for op, comparator in zip(self.ops, self.comparators):
             right = comparator.evaluate(names)
-            if not op(left, right):
-                return False
+            result = op(left, right)
+            if not result:
+                break
             left = right
-        return True
+        return result
 
 
 class BoolOp(VarExpr):
@@ -177,6 +232,15 @@ class IfExp(VarExpr):
         )
 
 
+class Tuple(VarExpr):
+    # noinspection SpellCheckingInspection
+    def __init__(self, elts: list[VarExpr]):
+        self.elts = elts
+
+    def evaluate(self, names: Names) -> tuple:
+        return tuple(elt.evaluate(names) for elt in self.elts)
+
+
 class VarExprFactory(ast.NodeVisitor):
     def visit(self, node: ast.expr) -> VarExpr:
         return super().visit(node)
@@ -195,6 +259,19 @@ class VarExprFactory(ast.NodeVisitor):
 
     def visit_Name(self, node: ast.Name):
         return Name(node.id)
+
+    def visit_Attribute(self, node: ast.Attribute):
+        return Attribute(self.visit(node.value), node.attr)
+
+    def visit_Subscript(self, node: ast.Subscript):
+        return Subscript(self.visit(node.value), self.visit(node.slice))
+
+    def visit_Slice(self, node: ast.Slice):
+        return Slice(
+            None if node.lower is None else self.visit(node.lower),
+            None if node.upper is None else self.visit(node.upper),
+            None if node.step is None else self.visit(node.step),
+        )
 
     def visit_Call(self, node: ast.Call):
         return Call(
@@ -227,3 +304,6 @@ class VarExprFactory(ast.NodeVisitor):
         return IfExp(
             self.visit(node.test), self.visit(node.body), self.visit(node.orelse)
         )
+
+    def visit_Tuple(self, node: ast.Tuple):
+        return Tuple([self.visit(elt) for elt in node.elts])

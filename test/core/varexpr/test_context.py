@@ -197,7 +197,7 @@ class VarExprContextTest(unittest.TestCase):
         ctx = VarExprContext(dataset)
         with pytest.raises(
             VarExprError,
-            match="lambda expressions are not supported",
+            match="unsupported expression node of type 'Lambda'",
         ):
             ctx.evaluate(BOMB)
 

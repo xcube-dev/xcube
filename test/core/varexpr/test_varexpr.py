@@ -7,7 +7,8 @@ import unittest
 
 import pytest
 
-from xcube.core.varexpr import evaluate, VarExprError
+from xcube.core.varexpr import VarExprError
+from xcube.core.varexpr import evaluate
 
 
 class VarExprEvaluateTest(unittest.TestCase):
@@ -20,10 +21,50 @@ class VarExprEvaluateTest(unittest.TestCase):
         self.assertEqual(0.25, evaluate("0.25", names))
         self.assertEqual("TEST", evaluate("'TEST'", names))
 
-    def test_variable(self):
+    def test_name(self):
         names = {"A": 137, "B": 0.5}
         self.assertEqual(137, evaluate("A", names))
         self.assertEqual(0.5, evaluate("B", names))
+
+    def test_attribute(self):
+        class A:
+            pass
+
+        a = A()
+        a.x = 13
+        a._x = 14
+
+        names = {"A": a}
+
+        self.assertEqual(13, evaluate("A.x", names))
+
+        with pytest.raises(VarExprError, match="'A' object has no attribute 'y'"):
+            evaluate("A.y", names)
+
+        with pytest.raises(
+            VarExprError, match="illegal use of protected attribute '_x'"
+        ):
+            evaluate("A._x", names)
+
+        with pytest.raises(
+            VarExprError, match="illegal use of protected attribute '__class__'"
+        ):
+            evaluate("A.__class__", names)
+
+    def test_subscript(self):
+        names = {"A": [10, 11, 12]}
+        self.assertEqual(10, evaluate("A[0]", names))
+        self.assertEqual(11, evaluate("A[1]", names))
+        self.assertEqual(12, evaluate("A[2]", names))
+        self.assertEqual(12, evaluate("A[-1]", names))
+
+    def test_slice(self):
+        names = {"A": [10, 11, 12, 13, 14]}
+        self.assertEqual(names["A"], evaluate("A[:]", names))
+        self.assertEqual([11, 12], evaluate("A[1:3]", names))
+        self.assertEqual([10, 12, 14], evaluate("A[0:6:2]", names))
+        self.assertEqual([12, 13, 14], evaluate("A[2:]", names))
+        self.assertEqual([10, 11], evaluate("A[:2]", names))
 
     def test_call(self):
         names = {"sin": math.sin, "sqrt": math.sqrt}
@@ -39,10 +80,15 @@ class VarExprEvaluateTest(unittest.TestCase):
         self.assertEqual(13, evaluate("poly(2, a0=3, a1=1, a2=2)", names))
 
     def test_unary(self):
-        names = {"A": 255}
+        names = {"A": 255, "B": False}
         self.assertEqual(255, evaluate("+A", names))
+        self.assertEqual(0, evaluate("+B", names))
         self.assertEqual(-255, evaluate("-A", names))
+        self.assertEqual(0, evaluate("-B", names))
         self.assertEqual(-256, evaluate("~A", names))
+        self.assertEqual(-1, evaluate("~B", names))
+        self.assertEqual(False, evaluate("not A", names))
+        self.assertEqual(True, evaluate("not B", names))
 
     def test_binary(self):
         names = {"A": 15, "B": 7}
@@ -89,8 +135,9 @@ class VarExprEvaluateTest(unittest.TestCase):
         self.assertEqual(False, evaluate("A is not A", names))
         self.assertEqual(True, evaluate("A is not B", names))
 
-    def test_and(self):
+    def test_bool_op(self):
         names = {"A": 15, "B": 7, "C": 0, "D": False}
+
         self.assertEqual(7, evaluate("A and B", names))
         self.assertEqual(0, evaluate("A and B and C", names))
         self.assertEqual(0, evaluate("A and B and C and D", names))
@@ -98,8 +145,6 @@ class VarExprEvaluateTest(unittest.TestCase):
         self.assertEqual(0, evaluate("C and B and A", names))
         self.assertEqual(15, evaluate("B and A", names))
 
-    def test_or(self):
-        names = {"A": 15, "B": 7, "C": 0, "D": False}
         self.assertEqual(15, evaluate("A or B", names))
         self.assertEqual(15, evaluate("A or B or C", names))
         self.assertEqual(15, evaluate("A or B or C or D", names))
