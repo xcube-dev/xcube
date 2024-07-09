@@ -312,12 +312,9 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return self._get_open_data_params_schema(opener, data_id)
 
     def open_data(
-        self,
-        data_id: str,
-        opener_id: str = None,
-        data_type: DataTypeLike = None,
-        **open_params,
+        self, data_id: str, opener_id: str = None, **open_params
     ) -> xr.Dataset:
+        data_type = open_params.pop("data_type", None)
         opener = self._find_opener(
             opener_id=opener_id, data_id=data_id, data_type=data_type
         )

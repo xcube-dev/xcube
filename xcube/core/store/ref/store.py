@@ -4,7 +4,7 @@
 
 import os
 import warnings
-from typing import Any, Tuple, Union, Dict, List
+from typing import Any, Union
 from collections.abc import Iterator, Container
 
 import fsspec
@@ -12,7 +12,7 @@ import xarray as xr
 
 from xcube.util.jsonschema import JsonObjectSchema
 
-from ..datatype import DataTypeLike
+from ..datatype import DataType, DataTypeLike
 from ..descriptor import DataDescriptor, DatasetDescriptor
 from ..descriptor import new_data_descriptor
 from ..store import DataStore
@@ -101,12 +101,13 @@ class ReferenceDataStore(DataStore):
         return JsonObjectSchema()
 
     def open_data(
-        self,
-        data_id: str,
-        opener_id: str = None,
-        data_type: DataTypeLike = None,
-        **open_params,
+        self, data_id: str, opener_id: str = None, **open_params
     ) -> xr.Dataset:
+        data_type = open_params.pop("data_type", None)
+        if DataType.normalize(data_type).alias == "mldataset":
+            warnings.warn(
+                "ReferenceDataStore can only represent the data resource as xr.Dataset."
+            )
         if open_params:
             warnings.warn(
                 f"open_params are not supported yet,"

@@ -17,9 +17,12 @@
   `pyproject.toml.` (related to #992) 
 * Normalisation with `xcube.core.normalize.normalize_dataset` fails when chunk encoding 
   must be updated (#1033)
-* Added `data_type` to `open_data` method in the `DataStore` class, which determines
-  the return value of the data set. Note that `opener_id` includes the `data_type`
-  at its first position and will override the `date_type` argument. (#1030)
+* The `open_data` method of xcube's default `xcube.core.store.DataStore` implementations
+  now supports a keyword argument `data_type`, which determines the
+  data type of the return value. Note that `opener_id` includes the `data_type`
+  at its first position and will override the `date_type` argument.
+  To preserve backward compatibility, the keyword argument `data_type`
+  has not yet been added to the `open_data()` method arguments. (#1030)
 
 ## Changes in 1.6.0
 

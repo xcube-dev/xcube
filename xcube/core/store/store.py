@@ -428,7 +428,6 @@ class DataStore(DataOpener, DataSearcher, ABC):
         self,
         data_id: str,
         opener_id: str = None,
-        data_type: DataTypeLike = None,
         **open_params,
     ) -> Any:
         """Open the data given by the data resource identifier *data_id*
@@ -440,6 +439,8 @@ class DataStore(DataOpener, DataSearcher, ABC):
         implementations may not support using different openers or just
         support a single one.
 
+        Implementations are advised to support an additional optional keyword
+        argument `data_type: DataTypeLike = None`.
         If *data_type* is provided, the return value will be in the specified
         data type. If no data opener exists for the given *data_type* and format
         extracted from the *data_id*, the default data type alias 'dataset' will
@@ -452,10 +453,8 @@ class DataStore(DataOpener, DataSearcher, ABC):
             data_id: The data identifier that is known to exist in this
                 data store.
             opener_id: An optional data opener identifier.
-            data_type: An optional data type that is known to be
-                supported by this data store. May be given as type alias
-                name, as a type, or as a :class:`DataType` instance.
-            **open_params: Opener-specific parameters.
+            **open_params: Opener-specific parameters. Note that
+                `data_type: DataTypeLike = None` may be assigned here.
 
         Returns:
             An in-memory representation of the data resources identified

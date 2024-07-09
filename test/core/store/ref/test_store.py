@@ -7,7 +7,7 @@ import json
 import unittest
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List
+import warnings
 
 import fsspec
 import pytest
@@ -148,6 +148,20 @@ class ReferenceDataStoreTestBase(KerchunkMixin, ABC):
     def test_open_data(self):
         store = self.get_store()
         sst_cube = store.open_data("sst-cube")
+        self.assert_sst_cube_ok(sst_cube)
+        sst_cube = store.open_data("sst-cube", data_type="dataset")
+        self.assert_sst_cube_ok(sst_cube)
+        with warnings.catch_warnings(record=True) as w:
+            sst_cube = store.open_data("sst-cube", data_type="mldataset")
+            self.assertEqual(1, len(w))
+            self.assertEqual(w[0].category, UserWarning)
+            self.assertEqual(
+                (
+                    "ReferenceDataStore can only represent "
+                    "the data resource as xr.Dataset."
+                ),
+                w[0].message.args[0],
+            )
         self.assert_sst_cube_ok(sst_cube)
 
     def test_get_search_params_schema(self):
