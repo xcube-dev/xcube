@@ -159,7 +159,41 @@ class DataDescriptorTest(unittest.TestCase):
                 "data_type": "dataset",
                 "bbox": [10.0, 20.0, 30.0, 40.0],
                 "spatial_res": 20.0,
-                "time_range": ["2017-06-05", "2017-06-27"],
+                "time_range": ("2017-06-05", "2017-06-27"),
+                "time_period": "daily",
+                "open_params_schema": {
+                    "type": "object",
+                    "properties": {"consolidated": {"type": "boolean"}},
+                    "additionalProperties": False,
+                },
+            },
+            descriptor_dict,
+        )
+
+    def test_datetime_to_dict(self):
+        descriptor = DatasetDescriptor(
+            data_id="xyz",
+            crs="EPSG:9346",
+            bbox=(10.0, 20.0, 30.0, 40.0),
+            spatial_res=20.0,
+            time_range=("2017-06-05T12:22:45Z", "2017-06-27T18:22:45Z"),
+            time_period="daily",
+            open_params_schema=JsonObjectSchema(
+                properties=dict(
+                    consolidated=JsonBooleanSchema(),
+                ),
+                additional_properties=False,
+            ),
+        )
+        descriptor_dict = descriptor.to_dict()
+        self.assertEqual(
+            {
+                "data_id": "xyz",
+                "crs": "EPSG:9346",
+                "data_type": "dataset",
+                "bbox": [10.0, 20.0, 30.0, 40.0],
+                "spatial_res": 20.0,
+                "time_range": ("2017-06-05T12:22:45Z", "2017-06-27T18:22:45Z"),
                 "time_period": "daily",
                 "open_params_schema": {
                     "type": "object",
@@ -310,7 +344,7 @@ class DatasetDescriptorTest(unittest.TestCase):
                 crs="EPSG:9346",
                 bbox=[10.0, 20.0, 30.0, 40.0],
                 spatial_res=20.0,
-                time_range=["2017-06-05", "2017-06-27"],
+                time_range=("2017-06-05", "2017-06-27"),
                 time_period="daily",
                 coords=dict(
                     rtdt=dict(

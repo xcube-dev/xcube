@@ -23,6 +23,9 @@
   at its first position and will override the `date_type` argument.
   To preserve backward compatibility, the keyword argument `data_type`
   has not yet been added to the `open_data()` method arguments. (#1030)
+* The `xcube.core.store.DataDescriptor` class now supports specifying time ranges
+  using both `datetime.date` and `datetime.datetime` objects. Previously,
+  only `datetime.date` objects were supported.
 
 ## Changes in 1.6.0
 
