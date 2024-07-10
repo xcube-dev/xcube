@@ -11,9 +11,6 @@ from threading import RLock
 from typing import (
     Optional,
     Any,
-    Tuple,
-    List,
-    Dict,
     Union,
     Callable,
 )
@@ -317,7 +314,10 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     def open_data(
         self, data_id: str, opener_id: str = None, **open_params
     ) -> xr.Dataset:
-        opener = self._find_opener(opener_id=opener_id, data_id=data_id)
+        data_type = open_params.pop("data_type", None)
+        opener = self._find_opener(
+            opener_id=opener_id, data_id=data_id, data_type=data_type
+        )
         open_params_schema = self._get_open_data_params_schema(opener, data_id)
         assert_valid_params(open_params, name="open_params", schema=open_params_schema)
         fs_path = self._convert_data_id_into_fs_path(data_id)
@@ -447,10 +447,16 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return extensions[0].name
 
     def _find_opener(
-        self, opener_id: str = None, data_id: str = None, require: bool = True
+        self,
+        opener_id: str = None,
+        data_id: str = None,
+        data_type: DataTypeLike = None,
+        require: bool = True,
     ) -> Optional[DataOpener]:
         if not opener_id:
-            opener_id = self._find_opener_id(data_id=data_id, require=require)
+            opener_id = self._find_opener_id(
+                data_id=data_id, data_type=data_type, require=require
+            )
             if opener_id is None:
                 return None
         return new_data_opener(opener_id)
@@ -530,9 +536,14 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         if data_type != ANY_TYPE:
             assert_in(data_type, self.get_data_types(), name="data_type")
 
-    def _find_opener_id(self, data_id: str = None, require=True) -> Optional[str]:
+    def _find_opener_id(
+        self, data_id: str = None, data_type: DataTypeLike = None, require=True
+    ) -> Optional[str]:
         return self._find_accessor_id(
-            find_data_opener_extensions, data_id=data_id, require=require
+            find_data_opener_extensions,
+            data_id=data_id,
+            data_type=data_type,
+            require=require,
         )
 
     def _find_writer_id(self, data_id: str = None, require=True) -> Optional[str]:
@@ -541,10 +552,17 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         )
 
     def _find_accessor_id(
-        self, find_data_accessor_extensions: Callable, data_id: str = None, require=True
+        self,
+        find_data_accessor_extensions: Callable,
+        data_id: str = None,
+        data_type: DataTypeLike = None,
+        require=True,
     ) -> Optional[str]:
         extensions = self._find_accessor_extensions(
-            find_data_accessor_extensions, data_id=data_id, require=require
+            find_data_accessor_extensions,
+            data_id=data_id,
+            data_type=data_type,
+            require=require,
         )
         return extensions[0].name if extensions else None
 
@@ -559,30 +577,51 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         )
 
     def _find_accessor_extensions(
-        self, find_data_accessor_extensions: Callable, data_id: str = None, require=True
+        self,
+        find_data_accessor_extensions: Callable,
+        data_id: str = None,
+        data_type: DataTypeLike = None,
+        require=True,
     ) -> list[Extension]:
         if data_id:
-            accessor_id_parts = self._guess_accessor_id_parts(data_id, require=require)
+            accessor_id_parts = self._guess_accessor_id_parts(
+                data_id, data_type=data_type, require=require
+            )
             if not accessor_id_parts:
                 return []
             data_type_alias = accessor_id_parts[0]
             format_id = accessor_id_parts[1]
             storage_id = accessor_id_parts[2]
         else:
-            data_type_alias = _DEFAULT_DATA_TYPE
+            if data_type:
+                data_type_alias = DataType.normalize(data_type).alias
+            else:
+                data_type_alias = _DEFAULT_DATA_TYPE
             format_id = _DEFAULT_FORMAT_ID
             storage_id = self.protocol
-        predicate = get_data_accessor_predicate(
-            data_type=data_type_alias, format_id=format_id, storage_id=storage_id
-        )
-        extensions = find_data_accessor_extensions(predicate)
+
+        def _get_extension(type_alias: str) -> list[Extension]:
+            predicate = get_data_accessor_predicate(
+                data_type=type_alias, format_id=format_id, storage_id=storage_id
+            )
+            return find_data_accessor_extensions(predicate)
+
+        extensions = _get_extension(data_type_alias)
         if not extensions:
-            if require:
-                msg = "No data accessor found"
-                if data_id:
-                    msg += f" for data resource {data_id!r}"
-                raise DataStoreError(msg)
-            return []
+            extensions = _get_extension(_DEFAULT_DATA_TYPE)
+            if not extensions:
+                if require:
+                    msg = "No data accessor found"
+                    if data_id:
+                        msg += f" for data resource {data_id!r}"
+                    raise DataStoreError(msg)
+                return []
+            else:
+                warnings.warn(
+                    f"No data opener found for format {format_id!r} and data type "
+                    f"{data_type!r}. Data type is changed to the default data type "
+                    f"{_DEFAULT_DATA_TYPE!r}."
+                )
         return extensions
 
     def _guess_data_type_for_data_id(
@@ -595,13 +634,16 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return DataType.normalize(data_type_alias)
 
     def _guess_accessor_id_parts(
-        self, data_id: str, require=True
+        self, data_id: str, data_type: DataTypeLike = None, require=True
     ) -> Optional[tuple[str, str, str]]:
         assert_given(data_id, "data_id")
         ext = self._get_filename_ext(data_id)
-        data_type_aliases = None
+        if data_type:
+            data_type_aliases = DataType.normalize(data_type).aliases
+        else:
+            data_type_aliases = None
         format_id = _FILENAME_EXT_TO_FORMAT.get(ext.lower())
-        if format_id is not None:
+        if format_id is not None and data_type_aliases is None:
             data_type_aliases = _FORMAT_TO_DATA_TYPE_ALIASES.get(format_id)
         if data_type_aliases is None or format_id is None:
             if require:
