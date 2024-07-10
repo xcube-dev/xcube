@@ -44,6 +44,7 @@ dependencies:
   - zarr >=2.11
   # Testing
   - flake8 >=3.7
+  - kerchunk
   - moto >=4
   - pytest >=4.4
   - pytest-cov >=2.6
