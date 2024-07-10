@@ -797,15 +797,15 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
             "roles": ["data"],
             "type": "application/zarr",
             "href": f"{base_url}/s3/datasets/{dataset_id}.zarr",
-            "xcube:store_kwargs": {
-                "data_store_id": "s3",
+            "xcube:data_store_id": "s3",
+            "xcube:data_store_params": {
                 "root": "datasets",
                 "storage_options": {
                     "anon": True,
                     "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
                 },
             },
-            "xcube:open_kwargs": {"data_id": f"{dataset_id}.zarr"},
+            "xcube:open_data_params": {"data_id": f"{dataset_id}.zarr"},
             "xcube:analytic": {
                 v["name"]: {
                     "title": f"{v['name']} data access",
@@ -821,15 +821,15 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
             "roles": ["data"],
             "type": "application/zarr",
             "href": f"{base_url}/s3/pyramids/{dataset_id}.levels",
-            "xcube:store_kwargs": {
-                "data_store_id": "s3",
+            "xcube:data_store_id": "s3",
+            "xcube:data_store_params": {
                 "root": "pyramids",
                 "storage_options": {
                     "anon": True,
                     "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
                 },
             },
-            "xcube:open_kwargs": {"data_id": f"{dataset_id}.levels"},
+            "xcube:open_data_params": {"data_id": f"{dataset_id}.levels"},
             "xcube:analytic_multires": {
                 v["name"]: {
                     "title": f"{v['name']} data access",

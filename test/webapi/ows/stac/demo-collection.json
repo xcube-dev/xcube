@@ -7,8 +7,8 @@
       ],
       "type": "application/zarr",
       "href": "http://localhost:8080/s3/datasets/demo.zarr",
-      "xcube:store_kwargs": {
-        "data_store_id": "s3",
+      "xcube:data_store_id": "s3",
+      "xcube:data_store_params": {
         "root": "datasets",
         "storage_options": {
           "anon": true,
@@ -17,7 +17,7 @@
           }
         }
       },
-      "xcube:open_kwargs": {
+      "xcube:open_data_params": {
         "data_id": "demo.zarr"
       },
       "xcube:analytic": {
@@ -70,8 +70,8 @@
       ],
       "type": "application/zarr",
       "href": "http://localhost:8080/s3/pyramids/demo.levels",
-      "xcube:store_kwargs": {
-        "data_store_id": "s3",
+      "xcube:data_store_id": "s3",
+      "xcube:data_store_params": {
         "root": "pyramids",
         "storage_options": {
           "anon": true,
@@ -80,7 +80,7 @@
           }
         }
       },
-      "xcube:open_kwargs": {
+      "xcube:open_data_params": {
         "data_id": "demo.levels"
       },
       "xcube:analytic_multires": {
