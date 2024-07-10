@@ -26,6 +26,11 @@
 * The `xcube.core.store.DataDescriptor` class now supports specifying time ranges
   using both `datetime.date` and `datetime.datetime` objects. Previously,
   only `datetime.date` objects were supported.
+* The xcube server STAC API has been adjusted so that the data store
+  parameters and data ID, which are needed to open the data referred to by a STAC item, 
+  are now included with the item's `analytic` asset. 
+  Furthermore, a second assert called `analytic_multires` will be published
+  referring to the multi-resolution data format levels (#1020).
 
 ## Changes in 1.6.0
 

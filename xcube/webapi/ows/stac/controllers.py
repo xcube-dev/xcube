@@ -4,7 +4,7 @@
 
 
 import datetime
-from typing import Any, Optional, Dict, List, Union
+from typing import Any, Optional, Union
 from collections.abc import Hashable, Mapping
 import itertools
 
@@ -18,7 +18,7 @@ from xcube.core.gridmapping import CRS_CRS84, GridMapping
 from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
 from xcube.util.jsonencoder import to_json_value
-from xcube.util.jsonschema import JsonObjectSchema, JsonSchema
+from xcube.util.jsonschema import JsonObjectSchema
 from .config import DEFAULT_CATALOG_DESCRIPTION, DEFAULT_FEATURE_ID
 from .config import DEFAULT_CATALOG_ID
 from .config import DEFAULT_CATALOG_TITLE
@@ -790,20 +790,52 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
 
     # TODO: Prefer original storage location.
     #       The "s3" operation is default.
-    default_storage_url = f"{base_url}/s3/datasets"
 
     return {
         "analytic": {
             "title": f"{dataset_id} data access",
             "roles": ["data"],
             "type": "application/zarr",
-            "href": f"{default_storage_url}/{dataset_id}.zarr",
+            "href": f"{base_url}/s3/datasets/{dataset_id}.zarr",
+            "xcube:data_store_id": "s3",
+            "xcube:data_store_params": {
+                "root": "datasets",
+                "storage_options": {
+                    "anon": True,
+                    "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
+                },
+            },
+            "xcube:open_data_params": {"data_id": f"{dataset_id}.zarr"},
             "xcube:analytic": {
                 v["name"]: {
                     "title": f"{v['name']} data access",
                     "roles": ["data"],
                     "type": "application/zarr",
-                    "href": f"{default_storage_url}/" f"{dataset_id}.zarr/{v['name']}",
+                    "href": f"{base_url}/s3/datasets/{dataset_id}.zarr/{v['name']}",
+                }
+                for v in xcube_data_vars
+            },
+        },
+        "analytic_multires": {
+            "title": f"{dataset_id} multi-resolution data access",
+            "roles": ["data"],
+            "type": "application/zarr",
+            "href": f"{base_url}/s3/pyramids/{dataset_id}.levels",
+            "xcube:data_store_id": "s3",
+            "xcube:data_store_params": {
+                "root": "pyramids",
+                "storage_options": {
+                    "anon": True,
+                    "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
+                },
+            },
+            "xcube:open_data_params": {"data_id": f"{dataset_id}.levels"},
+            "xcube:analytic_multires": {
+                v["name"]: {
+                    "title": f"{v['name']} data access",
+                    "roles": ["data"],
+                    "type": "application/zarr",
+                    "href": f"{base_url}/s3/pyramids/{dataset_id}.levels/0.zarr/{v['name']}",
                 }
                 for v in xcube_data_vars
             },
