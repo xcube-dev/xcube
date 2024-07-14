@@ -456,20 +456,27 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
                 colors: list[str] = []
                 n = len(cm_items)
                 for i, (value, color) in enumerate(cm_items):
-                    index = int(value)
+                    key = int(value)
+                    bounds.append(key)
                     colors.append(color)
-                    bounds.append(index)
-                    if i == n - 1 or index + 1 != int(cm_items[i + 1][0]):
-                        # insert transparent region
-                        bounds.append(index + 1)
+                    if i == n - 1:
+                        # the last key's next boundary is key+1
+                        bounds.append(key + 1)
+                    elif key + 1 != int(cm_items[i + 1][0]):
+                        # insert transparent region from key+1 to next key
+                        bounds.append(key + 1)
                         colors.append("#00000000")
             else:  # cm_type == "bound"
                 bounds: list[Union[int, float]] = list(map(lambda c: c[0], cm_items))
                 colors: list[str] = list(map(lambda c: c[1], cm_items[:-1]))
+            assert len(bounds) >= 2
+            assert len(bounds) == len(colors) + 1
+            cmap = matplotlib.colors.ListedColormap(colors)
+            cmap.set_extremes(bad=(0, 0, 0, 0), under=(0, 0, 0, 0), over=(0, 0, 0, 0))
             return cm_name, Colormap(
                 cm_base_name,
                 cat_name=CUSTOM_CATEGORY.name,
-                cmap=matplotlib.colors.ListedColormap(colors),
+                cmap=cmap,
                 bounds=bounds,
             )
         else:
