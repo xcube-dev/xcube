@@ -152,6 +152,39 @@ class FsDataStoresTestMixin(ABC):
             expected_descriptor_type=DatasetDescriptor,
             assert_data_ok=self._assert_zarr_store_direct_ok,
         )
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext=".zarr",
+            requested_dtype_alias="dataset",
+            expected_dtype_aliases={"dataset"},
+            expected_return_type=xr.Dataset,
+            expected_descriptor_type=DatasetDescriptor,
+            assert_data_ok=self._assert_zarr_store_direct_ok,
+        )
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext=".zarr",
+            requested_dtype_alias="mldataset",
+            expected_dtype_aliases={"dataset"},
+            expected_return_type=xr.Dataset,
+            expected_descriptor_type=DatasetDescriptor,
+            assert_data_ok=self._assert_zarr_store_direct_ok,
+            assert_warnings=True,
+            warning_msg=(
+                "No data opener found for format 'zarr' and data type 'mldataset'. "
+                "Data type is changed to the default data type 'dataset'."
+            ),
+        )
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext=".zarr",
+            requested_dtype_alias="mldataset",
+            expected_dtype_aliases={"dataset"},
+            expected_return_type=xr.Dataset,
+            expected_descriptor_type=DatasetDescriptor,
+            opener_id=f"dataset:zarr:{data_store.protocol}",
+            assert_data_ok=self._assert_zarr_store_direct_ok,
+        )
 
     def test_dataset_netcdf(self):
         data_store = self.create_data_store()
@@ -163,6 +196,20 @@ class FsDataStoresTestMixin(ABC):
             expected_return_type=xr.Dataset,
             expected_descriptor_type=DatasetDescriptor,
             assert_data_ok=self._assert_zarr_store_generic_ok,
+        )
+        self._assert_dataset_supported(
+            data_store,
+            filename_ext=".nc",
+            requested_dtype_alias="mldataset",
+            expected_dtype_aliases={"dataset"},
+            expected_return_type=xr.Dataset,
+            expected_descriptor_type=DatasetDescriptor,
+            assert_data_ok=self._assert_zarr_store_generic_ok,
+            assert_warnings=True,
+            warning_msg=(
+                "No data opener found for format 'netcdf' and data type 'mldataset'. "
+                "Data type is changed to the default data type 'dataset'."
+            ),
         )
 
     def test_dataset_levels(self):
@@ -330,9 +377,12 @@ class FsDataStoresTestMixin(ABC):
         expected_descriptor_type: Optional[
             Union[type[DatasetDescriptor], type[MultiLevelDatasetDescriptor]]
         ] = None,
+        opener_id: str = None,
         write_params: Optional[dict[str, Any]] = None,
         open_params: Optional[dict[str, Any]] = None,
         assert_data_ok: Optional[Callable[[Any], Any]] = None,
+        assert_warnings: bool = False,
+        warning_msg: str = None,
     ):
         """Call all DataStore operations to ensure data of type
         xr.Dataset//MultiLevelDataset is supported by *data_store*.
@@ -344,9 +394,13 @@ class FsDataStoresTestMixin(ABC):
             expected_data_type_alias: The expected data type alias.
             expected_return_type: The expected data type.
             expected_descriptor_type: The expected data descriptor type.
+            opener_id: Optional opener identifier
             write_params: Optional write parameters
             open_params: Optional open parameters
             assert_data_ok: Optional function to assert read data is ok
+            assert_warnings: Optional boolean if test may check for warnings
+            warning_msg: Optional warning message to be checked if
+                assert_warnings is True
         """
 
         data_id = f"{DATA_PATH}/ds{filename_ext}"
@@ -388,13 +442,27 @@ class FsDataStoresTestMixin(ABC):
             self.assertIsInstance(data_descriptors[0], DataDescriptor)
             self.assertIsInstance(data_descriptors[0], expected_descriptor_type)
 
-        if requested_dtype_alias:
-            # noinspection PyProtectedMember
-            _, format_name, protocol = data_store._guess_accessor_id_parts(data_id)
-            opener_id = f"{requested_dtype_alias}:{format_name}:{protocol}"
+        if assert_warnings:
+            with warnings.catch_warnings(record=True) as w:
+                data = data_store.open_data(
+                    data_id,
+                    opener_id=opener_id,
+                    data_type=requested_dtype_alias,
+                    **open_params,
+                )
+            # if "s3" data store is tested, warnings from other
+            # libraries like botocore occur
+            if data_store.protocol is not "s3":
+                self.assertEqual(1, len(w))
+            self.assertEqual(w[0].category, UserWarning)
+            self.assertEqual(warning_msg, w[0].message.args[0])
         else:
-            opener_id = None
-        data = data_store.open_data(data_id, opener_id=opener_id, **open_params)
+            data = data_store.open_data(
+                data_id,
+                opener_id=opener_id,
+                data_type=requested_dtype_alias,
+                **open_params,
+            )
         self.assertIsInstance(data, expected_return_type)
         if assert_data_ok is not None:
             assert_data_ok(data)

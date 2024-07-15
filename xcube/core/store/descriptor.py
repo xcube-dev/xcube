@@ -23,6 +23,8 @@ from xcube.util.assertions import assert_not_none
 from xcube.util.ipython import register_json_formatter
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonDateSchema
+from xcube.util.jsonschema import JsonDatetimeSchema
+from xcube.util.jsonschema import JsonComplexSchema
 from xcube.util.jsonschema import JsonIntegerSchema
 from xcube.util.jsonschema import JsonNumberSchema
 from xcube.util.jsonschema import JsonObject
@@ -107,7 +109,7 @@ class DataDescriptor(JsonObject):
             or WKT string
         bbox: A bounding box of the data
         time_range: Start and end time delimiting this data's temporal
-            extent
+            extent;
         time_period: The data's periodicity if it is evenly temporally
             resolved.
         open_params_schema: A JSON schema describing the parameters that
@@ -155,7 +157,12 @@ class DataDescriptor(JsonObject):
                         JsonNumberSchema(),
                     ]
                 ),
-                time_range=JsonDateSchema.new_range(nullable=True),
+                time_range=JsonComplexSchema(
+                    any_of=[
+                        JsonDateSchema.new_range(nullable=True),
+                        JsonDatetimeSchema.new_range(nullable=True),
+                    ]
+                ),
                 time_period=JsonStringSchema(min_length=1),
                 open_params_schema=JsonObjectSchema(additional_properties=True),
             ),

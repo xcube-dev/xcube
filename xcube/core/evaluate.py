@@ -36,11 +36,11 @@ def evaluate_dataset(
     2. The attribute ``valid_pixel_expression`` masks out
        invalid variable values.
 
-    In both cases the attribuite value must be a string that forms
+    In both cases the attribute value must be a string that forms
     a valid Python expression that can reference any other preceding
     variables by name.
     The expression can also reference any flags defined by another
-    variable according the their CF attributes ``flag_meaning``
+    variable according to their CF attributes ``flag_meaning``
     and ``flag_values``.
 
     Invalid variable values may be masked out using the value the
@@ -54,7 +54,7 @@ def evaluate_dataset(
     Args:
         dataset: A dataset.
         processed_variables: Optional list of variable name-attributes
-            pairs that will processed in the given order.
+            pairs that will be processed in the given order.
         errors: How to deal with errors while evaluating expressions.
             May be be one of "raise", "warn", or "ignore".
 

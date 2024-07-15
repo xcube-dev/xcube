@@ -48,7 +48,7 @@ RUN micromamba install -y -n base -f /tmp/environment.yml \
 
 # Copy files for xcube source install
 COPY --chown=$MAMBA_USER:$MAMBA_USER ./xcube /tmp/xcube
-COPY --chown=$MAMBA_USER:$MAMBA_USER ./setup.py /tmp/setup.py
+COPY --chown=$MAMBA_USER:$MAMBA_USER ./pyproject.toml /tmp/pyproject.toml
 COPY --chown=$MAMBA_USER:$MAMBA_USER ./README.md /tmp/README.md
 
 # Switch into /tmp to install xcube.
@@ -58,7 +58,7 @@ WORKDIR /tmp
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 
 # Install xcube from source.
-RUN python setup.py install
+RUN pip install --no-deps .
 
 # Install our known xcube plugins.
 COPY --chown=$MAMBA_USER:$MAMBA_USER docker/install-xcube-plugin.sh ./

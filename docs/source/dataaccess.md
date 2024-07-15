@@ -459,6 +459,13 @@ in the package's `plugin` module (hence `{package}.plugin.init_plugin()`).
 Alternatively, the package can have any name, but then it must register 
 a [setuptools entry point] in the slot "xcube_plugins". In this case the 
 function `init_plugin()` can also be placed anywhere in your code.
+
+If you use `pyproject.toml`:
+```
+[project.entry-points.xcube_plugins]
+{your_name} = "{your_name}.plugin:init_plugin"
+```
+
 If you use `setup.cfg`:
 
 ```
@@ -467,7 +474,7 @@ xcube_plugins =
     {your_name} = {your_package}.plugin:init_plugin
 ```
 
-If you are (still) using `setup.py`:
+If you use `setup.py`:
 
 ```python
 from setuptools import setup

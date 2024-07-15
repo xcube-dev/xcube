@@ -1,4 +1,38 @@
-## Changes in 1.6.0 (in development)
+## Changes in 1.7.0 (in development)
+
+### Enhancements
+
+* xcube server can now deal with "user-defined" variables. Endpoints
+  that accept a `{varName}` path parameter in their URL path can now be 
+  called with assignment expressions of the form `<var_name>=<var_expr>` 
+  where `<var_name>` is the name user defined variable and `<var_expr>` 
+  is an arbitrary band-math expression, 
+  see https://github.com/xcube-dev/xcube-viewer/issues/371.
+
+### Fixes
+
+* Migrated the `.github/workflows/xcube_build_docker.yaml` and the corresponding 
+  `Dockerfile` from `setup.py` to `pyproject.toml`. Additionally, updated the relevant 
+  documentation in `doc/source` to reflect this change from `setup.py` to
+  `pyproject.toml.` (related to #992) 
+* Normalisation with `xcube.core.normalize.normalize_dataset` fails when chunk encoding 
+  must be updated (#1033)
+* The `open_data` method of xcube's default `xcube.core.store.DataStore` implementations
+  now supports a keyword argument `data_type`, which determines the
+  data type of the return value. Note that `opener_id` includes the `data_type`
+  at its first position and will override the `date_type` argument.
+  To preserve backward compatibility, the keyword argument `data_type`
+  has not yet been added to the `open_data()` method arguments. (#1030)
+* The `xcube.core.store.DataDescriptor` class now supports specifying time ranges
+  using both `datetime.date` and `datetime.datetime` objects. Previously,
+  only `datetime.date` objects were supported.
+* The xcube server STAC API has been adjusted so that the data store
+  parameters and data ID, which are needed to open the data referred to by a STAC item, 
+  are now included with the item's `analytic` asset. 
+  Furthermore, a second assert called `analytic_multires` will be published
+  referring to the multi-resolution data format levels (#1020).
+
+## Changes in 1.6.0
 
 ### Enhancements
 
@@ -72,6 +106,9 @@
   a suitable matplotlib color map for variables that define the
   `flag_values` CF-attribute and optionally a `flag_colors` attribute. (#1011)
 
+* The `Api.route` decorator and `ApiRoute` constructor in
+  `xcube.server.api` now have a `slash` argument which lets a route support an
+  optional trailing slash.
 
 ### Fixes
 
@@ -85,6 +122,10 @@
 
 * Fixed broken table of contents links in dataset convention document.
 
+* Web API endpoints with an optional trailing slash are no longer listed
+  twice in the automatically generated OpenAPI documentation (#965)
+
+* Several minor updates to make xcube compatible with NumPy 2.0.0 (#1024)
 
 ### Incompatible API changes
 
@@ -155,6 +196,8 @@
 * The workflow `.github/workflows/xcube_publish_pypi.yml` changes the line in the `pyproject.toml`, where
   the package name is defined to `name = "xcube-core"`. This allows to release xcube under
   the package name "xcube-core" on PyPI where the name "xcube" is already taken. #1010 
+
+* Updated the 'How do I ...' page in the xcube documentation.
   
 ## Changes in 1.5.1
 

@@ -307,6 +307,8 @@ def create_cci_lccs_class_var(flag_values_as_list=False):
             "ancillary_variables": (
                 "processed_flag current_pixel_state observation_count change_count"
             ),
+            # Note, number of colors in flag_colors is 37,
+            # but values in flag_values is 38!
             "flag_colors": (
                 "#ffff64 #ffff64 #ffff00 #aaf0f0 #dcf064 #c8c864 #006400"
                 " #00a000 #00a000 #aac800 #003c00 #003c00 #005000 #285000"
