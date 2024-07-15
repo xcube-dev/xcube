@@ -58,6 +58,8 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
             self.assertIsInstance(dataset, dict)
             self.assertIsInstance(dataset.get("id"), str)
             self.assertIsInstance(dataset.get("title"), str)
+            self.assertIsInstance(dataset.get("groupTitle"), str)
+            self.assertIsInstance(dataset.get("tags"), (tuple, list))
             self.assertIsInstance(dataset.get("attributions"), (tuple, list))
             self.assertIsInstance(dataset.get("variables"), (tuple, list))
             self.assertIsInstance(dataset.get("dimensions"), (tuple, list))
