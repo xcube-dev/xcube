@@ -29,7 +29,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("bone", colormap.cm_name)
         self.assertEqual("Sequential (2)", colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertIsNone(colormap.values)
 
     def test_get_cmap_invalid(self):
         cmap, colormap = self.registry.get_cmap("BONE")
@@ -37,7 +37,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual(DEFAULT_CMAP_NAME, colormap.cm_name)
         self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertIsNone(colormap.values)
 
     def test_get_cmap_alpha(self):
         cmap, colormap = self.registry.get_cmap("bone_alpha")
@@ -45,7 +45,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("Sequential (2)", colormap.cat_name)
         self.assertEqual("bone", colormap.cm_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertIsNone(colormap.values)
 
     def test_get_cmap_reversed(self):
         cmap, colormap = self.registry.get_cmap("plasma_r")
@@ -53,7 +53,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("plasma", colormap.cm_name)
         self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertIsNone(colormap.values)
 
     def test_get_cmap_reversed_alpha(self):
         cmap, colormap = self.registry.get_cmap("plasma_r_alpha")
@@ -62,7 +62,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("plasma", colormap.cm_name)
         self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertIsNone(colormap.values)
 
     def test_get_cmap_from_code_type_node_norm(self):
         # User-defined color bars, #975
@@ -79,7 +79,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783472", colormap.cm_name)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertEqual((0.0, 0.6, 1.0), colormap.values)
 
     def test_get_cmap_from_code_type_node_not_norm(self):
         # User-defined color bars, #975
@@ -96,9 +96,9 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783482", colormap.cm_name)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertEqual((-1.2, 0.0, 1.2), colormap.values)
 
-    def test_get_cmap_from_code_type_index(self):
+    def test_get_cmap_from_code_type_key(self):
         # User-defined color bars, #975
         cmap, colormap = self.registry.get_cmap(
             '{"name": "ucb783473",'
@@ -113,7 +113,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783473", colormap.cm_name)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
-        self.assertEqual([1, 2, 3, 5, 6], colormap.bounds)
+        self.assertEqual([1, 2, 3, 5, 6], colormap.values)
 
     def test_get_cmap_from_code_type_bound(self):
         # User-defined color bars, #975
@@ -125,12 +125,12 @@ class ColormapRegistryTest(TestCase):
             '[1.0, "#ffffffff"]'
             '], "type": "bound"}'
         )
-        self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
+        self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783474", colormap.cm_name)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
-        self.assertEqual([0.0, 0.6, 1.0], colormap.bounds)
+        self.assertEqual((0.0, 0.6, 1.0), colormap.values)
 
     def test_get_cmap_from_code_reversed_alpha(self):
         # User-defined color bars, #975
@@ -147,7 +147,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783475", colormap.cm_name)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertEqual((0.0, 0.5, 1.0), colormap.values)
 
     def test_get_cmap_from_code_invalid(self):
         # User-defined color bars, #975
@@ -158,7 +158,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("Reds", colormap.cm_name)
         self.assertEqual("Sequential", colormap.cat_name)
-        self.assertIsNone(colormap.bounds)
+        self.assertIsNone(colormap.values)
 
     def test_get_cmap_num_colors(self):
         cmap, colormap = self.registry.get_cmap("plasma", num_colors=32)
@@ -302,6 +302,7 @@ class ColormapTest(TestCase):
     def test_names(self):
         self.assertEqual("Diverging", self.colormap.cat_name)
         self.assertEqual("coolwarm", self.colormap.cm_name)
+        self.assertEqual("node", self.colormap.cm_type)
 
     def test_cmap(self):
         cmap = self.colormap.cmap
