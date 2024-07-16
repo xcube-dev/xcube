@@ -114,7 +114,7 @@ The parts of the demo configuration file are explained in detail further down.
 
 Some hints before, which are not addressed in the server demo configuration file.
 To increase imaging performance, xcube datasets can be converted to multi-resolution pyramids using the
-:doc:`xcube_level` tool. In the configuration, the format must be set to ``'levels'``.
+:doc:`xcube_level` tool. In the configuration, the path should use the ``.levels`` extension.
 Leveled xcube datasets are configured this way:
 
 .. code-block:: yaml

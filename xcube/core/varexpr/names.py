@@ -36,11 +36,10 @@ def get_xarray_funcs() -> dict[str, Callable]:
 
 
 # noinspection PyProtectedMember
-GLOBALS = {
+_GLOBAL_NAMES = {
     **get_constants(),
     **{k: ExprVar._wrap_fn(fn) for k, fn in get_numpy_ufuncs().items()},
     **{k: ExprVar._wrap_fn(fn) for k, fn in get_xarray_funcs().items()},
-    "__builtins__": {},
 }
 
 # noinspection PyProtectedMember

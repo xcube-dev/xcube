@@ -9,6 +9,11 @@
   is an arbitrary band-math expression, 
   see https://github.com/xcube-dev/xcube-viewer/issues/371.
 
+* xcube server now allows for assigning a `GroupTitle` and a list of `Tags`
+  to a configured dataset. This feature has been added in order to support
+  grouping and filtering of datasets in UIs, see
+  
+
 ### Fixes
 
 * Migrated the `.github/workflows/xcube_build_docker.yaml` and the corresponding 

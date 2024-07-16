@@ -59,6 +59,8 @@ ACCESS_CONTROL_SCHEMA = JsonObjectSchema(
 
 COMMON_DATASET_PROPERTIES = dict(
     Title=STRING_SCHEMA,
+    GroupTitle=STRING_SCHEMA,
+    Tags=JsonArraySchema(items=STRING_SCHEMA),
     Variables=VARIABLES_SCHEMA,
     TimeSeriesDataset=IDENTIFIER_SCHEMA,
     BoundingBox=GEO_BOUNDING_BOX_SCHEMA,

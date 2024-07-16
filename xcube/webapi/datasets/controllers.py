@@ -89,15 +89,14 @@ def get_datasets(
 
         dataset_dict = dict(id=ds_id)
 
-        dataset_dict["title"] = ds_id
-        if "Title" in dataset_config:
-            ds_title = dataset_config["Title"]
-            if ds_title and isinstance(ds_title, str):
-                dataset_dict["title"] = ds_title
+        _update_dataset_title_properties(dataset_config, dataset_dict)
+        if not details and "title" not in dataset_dict:
+            # "title" property should always be set
+            dataset_dict["title"] = ds_id
 
         ds_bbox = dataset_config.get("BoundingBox")
         if ds_bbox is not None:
-            # Note, it has already been validated that ds_bbox is valid
+            # Note, dataset_config is validated
             dataset_dict["bbox"] = ds_bbox
 
         LOG.info(f"Collected dataset {ds_id}")
@@ -172,10 +171,14 @@ def get_dataset(
 
     x_name, y_name = ml_ds.grid_mapping.xy_dim_names
 
-    ds_title = dataset_config.get(
-        "Title", ds.attrs.get("title", ds.attrs.get("name", ds_id))
-    )
-    dataset_dict = dict(id=ds_id, title=ds_title)
+    dataset_dict = dict(id=ds_id)
+
+    _update_dataset_title_properties(dataset_config, dataset_dict)
+    if "title" not in dataset_dict:
+        title = ds.attrs.get("title", ds.attrs.get("name"))
+        if not isinstance(title, str) or not title:
+            title = ds_id
+        dataset_dict["title"] = title
 
     crs = ml_ds.grid_mapping.crs
     transformer = pyproj.Transformer.from_crs(crs, CRS_CRS84, always_xy=True)
@@ -319,6 +322,16 @@ def get_dataset(
         )
 
     return dataset_dict
+
+
+def _update_dataset_title_properties(
+    dataset_config: Mapping[str, Any], dataset_dict: dict[str, Any]
+):
+    for dc_key in ("Title", "GroupTitle", "Tags"):
+        dd_key = dc_key[0].lower() + dc_key[1:]
+        if dc_key in dataset_config:
+            # Note, dataset_config is validated
+            dataset_dict[dd_key] = dataset_config[dc_key]
 
 
 def filter_variable_names(

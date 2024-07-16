@@ -12,7 +12,6 @@ from xcube.core.varexpr.error import VarExprError
 Names = Mapping[str, Any]
 UnaryFunction = Callable[[Any], Any]
 BinaryFunction = Callable[[Any, Any], Any]
-ComparisonFunction = Callable[[Any, Any], bool]
 
 _UNARY_OPS: Mapping[str, UnaryFunction] = {
     "UAdd": lambda x: +x,
@@ -20,6 +19,7 @@ _UNARY_OPS: Mapping[str, UnaryFunction] = {
     "Invert": lambda x: ~x,
     "Not": lambda x: not x,
 }
+
 _BINARY_OPS: Mapping[str, BinaryFunction] = {
     "Add": lambda x, y: x + y,
     "Sub": lambda x, y: x - y,
@@ -35,7 +35,7 @@ _BINARY_OPS: Mapping[str, BinaryFunction] = {
     "BitOr": lambda x, y: x | y,
 }
 
-_COMPARISON_OPS: Mapping[str, ComparisonFunction] = {
+_COMPARISON_OPS: Mapping[str, BinaryFunction] = {
     "Eq": lambda x, y: x == y,
     "NotEq": lambda x, y: x != y,
     "Lt": lambda x, y: x < y,

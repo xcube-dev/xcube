@@ -2,7 +2,6 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import ast
 import inspect
 from typing import Any, Callable, Union
 
@@ -12,7 +11,7 @@ import xarray as xr
 from .error import VarExprError
 from .exprvar import ExprVar
 from .names import (
-    GLOBALS,
+    _GLOBAL_NAMES,
     get_xarray_funcs,
     get_numpy_ufuncs,
     get_constants,
@@ -30,41 +29,25 @@ class VarExprContext:
     """
 
     def __init__(self, dataset: xr.Dataset):
-        self._locals = dict({str(k): ExprVar(v) for k, v in dataset.data_vars.items()})
+        self._array_variables = dict(
+            {str(k): ExprVar(v) for k, v in dataset.data_vars.items()}
+        )
+        self._names = dict(_GLOBAL_NAMES)
+        self._names.update(self._array_variables)
 
-    def locals(self) -> dict[str, Any]:
-        return dict(self._locals)
+    def names(self) -> dict[str, Any]:
+        return dict(self._names)
 
-    @classmethod
-    def globals(cls) -> dict[str, Any]:
-        return dict(GLOBALS)
-
-    @classmethod
-    def _format_callable(cls, name: str, fn: Union[np.ufunc, Callable]):
-        if name == "where":
-            return "where(C,X,Y)"
-        if isinstance(fn, np.ufunc):
-            num_args = fn.nargs - 1
-        else:
-            signature = inspect.signature(fn)
-            num_args = len(signature.parameters.values())
-        if num_args == 0:
-            return f"{name}()"
-        elif num_args == 1:
-            return f"{name}(X)"
-        elif num_args == 2:
-            return f"{name}(X,Y)"
-        elif num_args == 3:
-            return f"{name}(X,Y,Z)"
-        else:
-            return f"{name}({','.join(map(lambda i: f'X{i + 1}', range(num_args)))})"
+    def get_array_variables(self) -> list[str]:
+        """Get array functions."""
+        return sorted(self._array_variables.keys())
 
     @classmethod
     def get_array_functions(cls) -> list[str]:
         """Get array functions."""
         # noinspection PyTypeChecker
         return sorted(
-            cls._format_callable(name, fn)
+            _format_callable(name, fn)
             for name, fn in dict(**get_xarray_funcs(), **get_numpy_ufuncs()).items()
         )
 
@@ -148,7 +131,7 @@ class VarExprContext:
             A newly computed variable of type `xarray.DataArray`.
         """
         try:
-            result = evaluate(var_expr, dict(**GLOBALS, **self._locals))
+            result = evaluate(var_expr, self._names)
         except BaseException as e:
             # Do not report the name 'ExprVar'
             raise VarExprError(f"{e}".replace("ExprVar", "DataArray")) from e
@@ -171,6 +154,21 @@ class VarExprContext:
         return result
 
 
-class VarExprValidator(ast.NodeTransformer):
-    def visit_Lambda(self, node):
-        raise VarExprError("lambda expressions are not supported")
+def _format_callable(name: str, fn: Union[np.ufunc, Callable]):
+    if name == "where":
+        return "where(C,X,Y)"
+    if isinstance(fn, np.ufunc):
+        num_args = fn.nargs - 1
+    else:
+        signature = inspect.signature(fn)
+        num_args = len(signature.parameters.values())
+    if num_args == 0:
+        return f"{name}()"
+    elif num_args == 1:
+        return f"{name}(X)"
+    elif num_args == 2:
+        return f"{name}(X,Y)"
+    elif num_args == 3:
+        return f"{name}(X,Y,Z)"
+    else:
+        return f"{name}({','.join(map(lambda i: f'X{i + 1}', range(num_args)))})"
