@@ -36,6 +36,10 @@
   are now included with the item's `analytic` asset. 
   Furthermore, a second assert called `analytic_multires` will be published
   referring to the multi-resolution data format levels (#1020).
+* The xcube server STAC API now publishes all fields available via the
+  `/datasets` endpoint. This includes colormap information for each asset such as
+  colorBarName, colorBarNorm,  colorBarMin, colorBarMax, tileLevelMin, tileLevelMax.
+  (#935, #940) 
 
 ## Changes in 1.6.0
 
