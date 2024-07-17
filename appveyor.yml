@@ -40,13 +40,13 @@ build_script:
   - ls
 
   # Set up micromamba
-  - ./micromamba shell init -s bash ~/micromamba
+  - ./micromamba shell init -s bash ~/mamba
   - source ~/.bashrc
   - source ~/.profile
   - hash -r
-  - mkdir -p ~/micromamba/pkgs/
-  - export MAMBA_ROOT_PREFIX=~/micromamba
-  - export MAMBA_EXE=$(pwd)/micromamba
+  - mkdir -p ~/mamba/pkgs/
+  - export MAMBA_ROOT_PREFIX=~/mamba
+  - export MAMBA_EXE=$(pwd)/mamba
   - . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
 
   # Create environment from build folder environment.yml and install xcube
