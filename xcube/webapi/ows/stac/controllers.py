@@ -465,7 +465,7 @@ def _get_datasets_collection(
         "keywords": [],
         "providers": [],
         "extent": {
-            "spatial": {"bbox": _get_bboxs(ds_ctx)},
+            "spatial": {"bbox": _get_bboxes(ds_ctx)},
             "temporal": {"interval": _get_temp_intervals(ds_ctx)},
         },
         "summaries": {},
@@ -503,14 +503,14 @@ def _get_datasets_collection(
     }
 
 
-def _get_bboxs(ds_ctx: DatasetsContext):
+def _get_bboxes(ds_ctx: DatasetsContext):
     configs = ds_ctx.get_dataset_configs()
-    bboxs = {}
+    bboxes = {}
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
         bbox = GridBbox(ds_ctx.get_ml_dataset(dataset_id).grid_mapping)
-        bboxs[dataset_id] = bbox.as_bbox()
-    return bboxs
+        bboxes[dataset_id] = bbox.as_bbox()
+    return bboxes
 
 
 def _get_temp_intervals(ds_ctx: DatasetsContext):
