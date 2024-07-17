@@ -40,7 +40,7 @@ build_script:
   - ls
 
   # Set up micromamba
-  - ./micromamba shell init -s bash ~/micromamba
+  - ./micromamba shell init -s bash -r ~/micromamba
   - source ~/.bashrc
   - source ~/.profile
   - hash -r
