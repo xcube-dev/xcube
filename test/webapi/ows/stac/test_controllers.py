@@ -74,8 +74,7 @@ EXPECTED_CONFORMANCE = {
 }
 
 EXPECTED_ENDPOINTS = functools.reduce(
-    lambda endpoint_list, ep: endpoint_list
-    + [{"methods": ep[0], "path": ep[1]}],
+    lambda endpoint_list, ep: endpoint_list + [{"methods": ep[0], "path": ep[1]}],
     [
         (["get"], "/collections/{collectionId}/coverage"),
         (["get"], "/collections/{collectionId}/coverage/domainset"),
@@ -98,8 +97,15 @@ EXPECTED_ENDPOINTS = functools.reduce(
 EXPECTED_DATASETS_COLLECTION = {
     "description": DEFAULT_COLLECTION_DESCRIPTION,
     "extent": {
-        "spatial": {"bbox": [[-180.0, -90.0, 180.0, 90.0]]},
-        "temporal": {"interval": [["2000-01-01T00:00:00Z", None]]},
+        "spatial": {
+            "bbox": {"demo": [0.0, 50.0, 5.0, 52.5], "demo-1w": [0.0, 50.0, 5.0, 52.5]}
+        },
+        "temporal": {
+            "interval": {
+                "demo": ["2017-01-16T10:09:21Z", "2017-01-30T10:46:33Z"],
+                "demo-1w": ["2017-01-22T00:00:00Z", "2017-02-05T00:00:00Z"],
+            }
+        },
     },
     "id": DEFAULT_COLLECTION_ID,
     "keywords": [],
@@ -229,9 +235,7 @@ class StacControllersTest(unittest.TestCase):
         )
         expected_item = self.read_json("stac-single-item.json")
         self.assertEqual("FeatureCollection", result["type"])
-        self.assertEqual(
-            {"root", "self"}, {link["rel"] for link in result["links"]}
-        )
+        self.assertEqual({"root", "self"}, {link["rel"] for link in result["links"]})
         self.assertLess(
             datetime.datetime.now().astimezone()
             - datetime.datetime.fromisoformat(result["timeStamp"]),

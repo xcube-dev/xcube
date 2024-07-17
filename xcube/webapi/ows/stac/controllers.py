@@ -15,6 +15,7 @@ import xarray as xr
 
 import xcube
 from xcube.core.gridmapping import CRS_CRS84, GridMapping
+from xcube.core.tilingscheme import TilingScheme
 from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
 from xcube.util.jsonencoder import to_json_value
@@ -464,10 +465,8 @@ def _get_datasets_collection(
         "keywords": [],
         "providers": [],
         "extent": {
-            # TODO Replace these placeholder spatial / temporal extents
-            # with extents calculated from the datasets.
-            "spatial": {"bbox": [[-180.0, -90.0, 180.0, 90.0]]},
-            "temporal": {"interval": [["2000-01-01T00:00:00Z", None]]},
+            "spatial": {"bbox": _get_bboxs(ds_ctx)},
+            "temporal": {"interval": _get_temp_intervals(ds_ctx)},
         },
         "summaries": {},
         "links": [
@@ -502,6 +501,37 @@ def _get_datasets_collection(
             )
         ],
     }
+
+
+def _get_bboxs(ds_ctx: DatasetsContext):
+    configs = ds_ctx.get_dataset_configs()
+    bboxs = {}
+    for dataset_config in configs:
+        dataset_id = dataset_config["Identifier"]
+        bbox = GridBbox(ds_ctx.get_ml_dataset(dataset_id).grid_mapping)
+        bboxs[dataset_id] = bbox.as_bbox()
+    return bboxs
+
+
+def _get_temp_intervals(ds_ctx: DatasetsContext):
+    configs = ds_ctx.get_dataset_configs()
+    temp_intervals = {}
+    for dataset_config in configs:
+        dataset_id = dataset_config["Identifier"]
+        ml_dataset = ds_ctx.get_ml_dataset(dataset_id)
+        dataset = ml_dataset.base_dataset
+        time_properties = _get_time_properties(dataset)
+        if "start_datetime" and "end_datetime" in time_properties:
+            temp_intervals[dataset_id] = [
+                time_properties["start_datetime"],
+                time_properties["end_datetime"],
+            ]
+        else:
+            temp_intervals[dataset_id] = [
+                time_properties["datetime"],
+                time_properties["datetime"],
+            ]
+    return temp_intervals
 
 
 def _get_single_dataset_collection(
@@ -749,6 +779,7 @@ def _get_dataset_feature(
 def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     grid_mapping = ml_dataset.grid_mapping
+    tiling_scheme = ml_dataset.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
     dataset = ml_dataset.base_dataset
 
     cube_dimensions = get_datacube_dimensions(dataset, grid_mapping)
@@ -757,8 +788,10 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
         "cube:dimensions": cube_dimensions,
         "cube:variables": _get_dc_variables(dataset, cube_dimensions),
         "xcube:dims": to_json_value(dataset.sizes),
-        "xcube:data_vars": _get_xc_variables(dataset.data_vars),
-        "xcube:coords": _get_xc_variables(dataset.coords),
+        "xcube:data_vars": _get_xc_data_vars(
+            ctx, dataset_id, dataset.data_vars, tiling_scheme
+        ),
+        "xcube:coords": _get_xc_coords(dataset.coords),
         "xcube:attrs": to_json_value(dataset.attrs),
         **(_get_time_properties(dataset)),
     }
@@ -767,8 +800,7 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
 def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
-    xcube_data_vars = _get_xc_variables(dataset.data_vars)
-    first_var_name = next(iter(xcube_data_vars))["name"]
+    first_var_name = list(dataset.keys())[0]
     first_var = dataset[first_var_name]
     first_var_extra_dims = first_var.dims[0:-2]
 
@@ -788,9 +820,6 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
     if first_var_extra_dims:
         tiles_query = "?" + "&".join([f"{d}=<{d}>" for d in first_var_extra_dims])
 
-    # TODO: Prefer original storage location.
-    #       The "s3" operation is default.
-
     return {
         "analytic": {
             "title": f"{dataset_id} data access",
@@ -807,13 +836,13 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
             },
             "xcube:open_data_params": {"data_id": f"{dataset_id}.zarr"},
             "xcube:analytic": {
-                v["name"]: {
-                    "title": f"{v['name']} data access",
+                key: {
+                    "title": f"{key} data access",
                     "roles": ["data"],
                     "type": "application/zarr",
-                    "href": f"{base_url}/s3/datasets/{dataset_id}.zarr/{v['name']}",
+                    "href": f"{base_url}/s3/datasets/{dataset_id}.zarr/{key}",
                 }
-                for v in xcube_data_vars
+                for key in list(dataset.keys())
             },
         },
         "analytic_multires": {
@@ -831,13 +860,13 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
             },
             "xcube:open_data_params": {"data_id": f"{dataset_id}.levels"},
             "xcube:analytic_multires": {
-                v["name"]: {
-                    "title": f"{v['name']} data access",
+                key: {
+                    "title": f"{key} data access",
                     "roles": ["data"],
                     "type": "application/zarr",
-                    "href": f"{base_url}/s3/pyramids/{dataset_id}.levels/0.zarr/{v['name']}",
+                    "href": f"{base_url}/s3/pyramids/{dataset_id}.levels/0.zarr/{key}",
                 }
-                for v in xcube_data_vars
+                for key in list(dataset.keys())
             },
         },
         "visual": {
@@ -850,17 +879,17 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
                 + tiles_query
             ),
             "xcube:visual": {
-                v["name"]: {
-                    "title": f"{v['name']} visualisation",
+                key: {
+                    "title": f"{key} visualisation",
                     "roles": ["visual"],
                     "type": "image/png",
                     "href": (
-                        f"{base_url}/tiles/{dataset_id}/{v['name']}"
+                        f"{base_url}/tiles/{dataset_id}/{key}"
                         + "/{z}/{y}/{x}"
                         + tiles_query
                     ),
                 }
-                for v in xcube_data_vars
+                for key in list(dataset.keys())
             },
         },
         "thumbnail": {
@@ -895,18 +924,59 @@ def _get_time_properties(dataset):
     return time_properties
 
 
-def _get_xc_variables(
-    variables: Mapping[Hashable, xr.DataArray]
+def _get_xc_data_vars(
+    ctx: DatasetsContext,
+    dataset_id: str,
+    variables: Mapping[Hashable, xr.DataArray],
+    tiling_scheme: TilingScheme,
 ) -> list[dict[str, Any]]:
-    """Create the value of the "xcube:coords" or
-    "xcube:data_vars" property for the given *dataset*.
+    """Create the value of the "xcube:data_vars" property for the given *dataset*."""
+    return [
+        _get_xc_data_var(ctx, dataset_id, var_name, var, tiling_scheme)
+        for var_name, var in variables.items()
+    ]
+
+
+def _get_xc_data_var(
+    ctx: DatasetsContext,
+    dataset_id: str,
+    var_name: Hashable,
+    var: xr.DataArray,
+    tiling_scheme: TilingScheme,
+) -> dict[str, Any]:
+    """Create an entry of the value of the "xcube:data_vars" property
+    for the given *dataset*.
     """
-    return [_get_xc_variable(var_name, var) for var_name, var in variables.items()]
+    cmap_name, cmap_norm, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(
+        dataset_id, var_name
+    )
+    entry = {
+        "name": str(var_name),
+        "dtype": str(var.dtype),
+        "dims": to_json_value(var.dims),
+        "chunks": to_json_value(var.chunks) if var.chunks else None,
+        "shape": to_json_value(var.shape),
+        "attrs": to_json_value(var.attrs),
+        "tileLevelMin": tiling_scheme.min_level,
+        "tileLevelMax": tiling_scheme.max_level,
+        "colorBarName": cmap_name,
+        "colorBarNorm": cmap_norm,
+        "colorBarMin": cmap_vmin,
+        "colorBarMax": cmap_vmax,
+    }
+    if hasattr(var.data, "_repr_html_"):
+        entry["htmlRepr"] = var.data._repr_html_()
+    return entry
 
 
-def _get_xc_variable(var_name: Hashable, var: xr.DataArray) -> dict[str, Any]:
-    """Create an entry of the value of the "xcube:coords" or
-    "xcube:data_vars" property for the given *dataset*.
+def _get_xc_coords(variables: Mapping[Hashable, xr.DataArray]) -> list[dict[str, Any]]:
+    """Create the value of the "xcube:coords" property for the given *dataset*."""
+    return [_get_xc_coord(var_name, var) for var_name, var in variables.items()]
+
+
+def _get_xc_coord(var_name: Hashable, var: xr.DataArray) -> dict[str, Any]:
+    """Create an entry of the value of the "xcube:coords" property
+    for the given *dataset*.
     """
     return {
         "name": str(var_name),
