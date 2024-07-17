@@ -36,6 +36,10 @@
   are now included with the item's `analytic` asset. 
   Furthermore, a second assert called `analytic_multires` will be published
   referring to the multi-resolution data format levels (#1020).
+* Improved the way color mapping works in xcube server to support simplified
+  color bar management in xcube viewer,
+  see https://github.com/xcube-dev/xcube-viewer/issues/390. (#1043)
+  
 
 ## Changes in 1.6.0
 
