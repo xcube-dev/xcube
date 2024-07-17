@@ -296,7 +296,7 @@
   "providers": [],
   "stac_version": "1.0.0",
   "summaries": {},
-  "title": "demo",
+  "title": "xcube-server Demonstration L2C Cube",
   "type": "Collection",
   "storageCRS": "http://www.opengis.net/def/crs/EPSG/0/4326",
   "crs": [
@@ -917,5 +917,13 @@
   },
   "datetime": null,
   "start_datetime": "2017-01-16T10:09:21Z",
-  "end_datetime": "2017-01-30T10:46:33Z"
+  "end_datetime": "2017-01-30T10:46:33Z",
+  "groupTitle": "Demo",
+  "tags": [
+    "demo",
+    "zarr"
+  ],
+  "attributions": [
+    "\u00a9 by EU H2020 CyanoAlert project"
+  ]
 }

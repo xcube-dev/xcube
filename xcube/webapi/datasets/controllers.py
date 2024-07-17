@@ -317,9 +317,8 @@ def get_dataset(
 
     place_groups = ctx.get_dataset_place_groups(ds_id, base_url)
     if place_groups:
-        dataset_dict["placeGroups"] = _filter_place_groups(
-            place_groups, del_features=True
-        )
+        groups = _filter_place_groups(place_groups, del_features=True)
+        dataset_dict["placeGroups"] = groups
 
     return dataset_dict
 

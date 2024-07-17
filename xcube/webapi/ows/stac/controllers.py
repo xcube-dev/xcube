@@ -652,7 +652,7 @@ def _get_single_dataset_collection(
         "storageCRS": storage_crs,
         "crs": available_crss,
     }
-    result.update(_get_cube_properties(ds_ctx, dataset_id))
+    result.update(_get_cube_properties(ds_ctx, dataset_id, base_url))
     return result
 
 
@@ -754,7 +754,7 @@ def _get_dataset_feature(
         "id": feature_id,
         "bbox": bbox.as_bbox(),
         "geometry": bbox.as_geometry(),
-        "properties": _get_cube_properties(ctx, dataset_id),
+        "properties": _get_cube_properties(ctx, dataset_id, base_url),
         "collection": collection_id,
         "links": [
             _root_link(base_url),
@@ -776,15 +776,16 @@ def _get_dataset_feature(
     }
 
 
-def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
+def _get_cube_properties(ctx: DatasetsContext, dataset_id: str, base_url: str):
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     grid_mapping = ml_dataset.grid_mapping
     tiling_scheme = ml_dataset.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
     dataset = ml_dataset.base_dataset
+    dataset_config = ctx.get_dataset_config(dataset_id)
 
     cube_dimensions = get_datacube_dimensions(dataset, grid_mapping)
 
-    return {
+    properties = {
         "cube:dimensions": cube_dimensions,
         "cube:variables": _get_dc_variables(dataset, cube_dimensions),
         "xcube:dims": to_json_value(dataset.sizes),
@@ -795,6 +796,40 @@ def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
         "xcube:attrs": to_json_value(dataset.attrs),
         **(_get_time_properties(dataset)),
     }
+
+    if "Title" in dataset_config:
+        properties["title"] = dataset_config["Title"]
+
+    if "GroupTitle" in dataset_config:
+        properties["groupTitle"] = dataset_config["GroupTitle"]
+
+    if "Tags" in dataset_config:
+        properties["tags"] = dataset_config["Tags"]
+
+    dataset_attributions = dataset_config.get(
+        "Attribution", ctx.config.get("DatasetAttribution")
+    )
+    if dataset_attributions is not None:
+        if isinstance(dataset_attributions, str):
+            dataset_attributions = [dataset_attributions]
+        properties["attributions"] = dataset_attributions
+
+    place_groups = ctx.get_dataset_place_groups(dataset_id, base_url)
+    if place_groups:
+        properties["placeGroups"] = [
+            _filter_place_group(group, del_features=True) for group in place_groups
+        ]
+
+    return properties
+
+
+def _filter_place_group(place_group: dict, del_features: bool = False) -> dict:
+    place_group = dict(place_group)
+    del place_group["sourcePaths"]
+    del place_group["sourceEncoding"]
+    if del_features:
+        del place_group["features"]
+    return place_group
 
 
 def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):

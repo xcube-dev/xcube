@@ -1009,7 +1009,17 @@
     },
     "datetime": null,
     "start_datetime": "2017-01-22T00:00:00Z",
-    "end_datetime": "2017-02-05T00:00:00Z"
+    "end_datetime": "2017-02-05T00:00:00Z",
+    "title": "xcube-server Demonstration L3 Cube",
+    "groupTitle": "Demo",
+    "tags": [
+      "demo",
+      "zarr",
+      "computed"
+    ],
+    "attributions": [
+      "\u00a9 by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+    ]
   },
   "collection": "demo-1w",
   "links": [
