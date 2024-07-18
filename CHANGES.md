@@ -13,6 +13,10 @@
   to a configured dataset. This feature has been added in order to support
   grouping and filtering of datasets in UIs, see
   
+* The xcube server STAC API now publishes all fields available via the
+  `/datasets` endpoint. This includes colormap information for each asset such as
+  colorBarName, colorBarNorm,  colorBarMin, colorBarMax, tileLevelMin, tileLevelMax.
+  (#935, #940) 
 
 ### Fixes
 
@@ -38,8 +42,7 @@
   referring to the multi-resolution data format levels (#1020).
 * Improved the way color mapping works in xcube server to support simplified
   color bar management in xcube viewer,
-  see https://github.com/xcube-dev/xcube-viewer/issues/390. (#1043)
-  
+  see https://github.com/xcube-dev/xcube-viewer/issues/390. (#1043)  
 
 ## Changes in 1.6.0
 
