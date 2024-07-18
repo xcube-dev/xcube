@@ -43,6 +43,13 @@
 * Improved the way color mapping works in xcube server to support simplified
   color bar management in xcube viewer,
   see https://github.com/xcube-dev/xcube-viewer/issues/390. (#1043)  
+* The xcube server's dataset configuration extraction methodology has been updated.
+  When the data resource ID is provided in the Path field, xcube will attempt to
+  access the dataset using the given ID. If wildcard patterns are used, the server
+  will crawl through the data store to find matching data IDs. This process may
+  result in a long setup time if the data store contains numerous data IDs.
+  A UserWarning will be issued for the "stac" data store.
+
 
 ## Changes in 1.6.0
 

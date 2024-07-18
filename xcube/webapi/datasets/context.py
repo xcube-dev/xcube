@@ -50,6 +50,7 @@ COMPUTE_VARIABLES = "compute_variables"
 
 # We use tilde, because it is not a reserved URI characters
 STORE_DS_ID_SEPARATOR = "~"
+DATA_STORE_IDS_WARNING = ["stac"]
 FS_TYPE_TO_PROTOCOL = {
     "local": "file",
     "obs": "s3",
@@ -380,12 +381,19 @@ class DatasetsContext(ResourcesContext):
                 for store_dataset_config in store_dataset_configs:
                     dataset_id_pattern = store_dataset_config.get("Path", "*")
                     if _is_wildard(dataset_id_pattern):
+                        if store_instance_id in DATA_STORE_IDS_WARNING:
+                            warnings.warn(
+                                f"The data store with ID '{store_instance_id}' has "
+                                "many data IDs. Using wildcard patterns to select "
+                                "datasets may cause a long setup time of the server."
+                            )
                         data_store = data_store_pool.get_store(store_instance_id)
                         store_dataset_ids = itertools.chain(
                             data_store.get_data_ids(data_type=DATASET_TYPE),
                             data_store.get_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE),
                         )
                         for store_dataset_id in store_dataset_ids:
+                            print(store_dataset_id)
                             if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
                                 all_dataset_configs.append(
                                     _get_dataset_config(
@@ -871,7 +879,7 @@ def _get_dataset_config(
     elif "Identifier" not in dataset_config:
         dataset_config["Path"] = store_dataset_id
         dataset_config["Identifier"] = (
-            f"{store_instance_id}{STORE_DS_ID_SEPARATOR}" f"{store_dataset_id}"
+            f"{store_instance_id}{STORE_DS_ID_SEPARATOR}{store_dataset_id}"
         )
     return dataset_config
 
