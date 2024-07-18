@@ -374,41 +374,38 @@ class DatasetsContext(ResourcesContext):
             #     data_type=(DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE)
             # )
             #
-            store_dataset_ids = itertools.chain(
-                data_store.get_data_ids(data_type=DATASET_TYPE),
-                data_store.get_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE),
-            )
-            for store_dataset_id in store_dataset_ids:
-                dataset_config_base = {}
+            wildcard = True
+            if wildcard:
+                store_dataset_ids = itertools.chain(
+                    data_store.get_data_ids(data_type=DATASET_TYPE),
+                    data_store.get_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE),
+                )
+                for store_dataset_id in store_dataset_ids:
+                    store_dataset_configs: list[ServerConfig] = (
+                        data_store_config.user_data
+                    )
+                    if store_dataset_configs:
+                        for store_dataset_config in store_dataset_configs:
+                            dataset_id_pattern = store_dataset_config.get("Path", "*")
+                            if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
+                                all_dataset_configs.append(
+                                    cls.get_dataset_config(
+                                        store_dataset_id,
+                                        store_instance_id,
+                                        store_dataset_config,
+                                    )
+                                )
+                                break
+            else:
                 store_dataset_configs: list[ServerConfig] = data_store_config.user_data
-                if store_dataset_configs:
-                    for store_dataset_config in store_dataset_configs:
-                        dataset_id_pattern = store_dataset_config.get("Path", "*")
-                        if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
-                            dataset_config_base = store_dataset_config
-                            break
-                        else:
-                            dataset_config_base = None
-                if dataset_config_base is not None:
-                    LOG.debug(f"Selected dataset {store_dataset_id!r}")
-                    dataset_config = dict(
-                        StoreInstanceId=store_instance_id, **dataset_config_base
-                    )
-                    if dataset_config.get("Identifier") is not None:
-                        if dataset_config["Path"] == store_dataset_id:
-                            # we will use the preconfigured identifier
-                            all_dataset_configs.append(dataset_config)
-                            continue
-                        raise ApiError.InvalidServerConfig(
-                            "User-defined identifiers can only be assigned"
-                            " to datasets with non-wildcard paths."
+                for store_dataset_config in store_dataset_configs:
+                    all_dataset_configs.append(
+                        cls.get_dataset_config(
+                            store_dataset_config["Path"],
+                            store_instance_id,
+                            store_dataset_config,
                         )
-                    dataset_config["Path"] = store_dataset_id
-                    dataset_config["Identifier"] = (
-                        f"{store_instance_id}{STORE_DS_ID_SEPARATOR}"
-                        f"{store_dataset_id}"
                     )
-                    all_dataset_configs.append(dataset_config)
 
         # # Just for testing:
         # debug_file = 'all_dataset_configs.json'
@@ -417,6 +414,26 @@ class DatasetsContext(ResourcesContext):
         #     LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
+
+    def get_dataset_config(
+        self, store_dataset_id: str, store_instance_id: str, dataset_config_base: dict
+    ) -> dict:
+        LOG.debug(f"Selected dataset {store_dataset_id!r}")
+        dataset_config = dict(StoreInstanceId=store_instance_id, **dataset_config_base)
+        if (
+            "Identifier" in dataset_config
+            and dataset_config["Path"] != store_dataset_id
+        ):
+            raise ApiError.InvalidServerConfig(
+                "User-defined identifiers can only be assigned"
+                " to datasets with non-wildcard paths."
+            )
+        elif "Identifier" not in dataset_config:
+            dataset_config["Path"] = store_dataset_id
+            dataset_config["Identifier"] = (
+                f"{store_instance_id}{STORE_DS_ID_SEPARATOR}" f"{store_dataset_id}"
+            )
+        return dataset_config
 
     def new_dataset_metadata(
         self, store_instance_id: str, dataset_id: str
