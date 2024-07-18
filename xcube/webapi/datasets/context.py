@@ -396,7 +396,7 @@ class DatasetsContext(ResourcesContext):
                             print(store_dataset_id)
                             if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
                                 all_dataset_configs.append(
-                                    _get_dataset_config(
+                                    _get_selected_dataset_config(
                                         store_dataset_id,
                                         store_instance_id,
                                         store_dataset_config,
@@ -404,7 +404,7 @@ class DatasetsContext(ResourcesContext):
                                 )
                     else:
                         all_dataset_configs.append(
-                            _get_dataset_config(
+                            _get_selected_dataset_config(
                                 store_dataset_config["Path"],
                                 store_instance_id,
                                 store_dataset_config,
@@ -866,7 +866,7 @@ def _get_common_prefixes(p):
         )
 
 
-def _get_dataset_config(
+def _get_selected_dataset_config(
     store_dataset_id: str, store_instance_id: str, dataset_config_base: dict
 ) -> dict:
     LOG.debug(f"Selected dataset {store_dataset_id!r}")
