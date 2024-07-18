@@ -366,7 +366,7 @@ class DatasetsContext(ResourcesContext):
         for store_instance_id in data_store_pool.store_instance_ids:
             LOG.info(f"Scanning store {store_instance_id!r}")
             data_store_config = data_store_pool.get_store_config(store_instance_id)
-            data_store = data_store_pool.get_store(store_instance_id)
+
             # Note by forman: This iterator chaining is inefficient.
             # Preferably, we should offer
             #
@@ -374,38 +374,34 @@ class DatasetsContext(ResourcesContext):
             #     data_type=(DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE)
             # )
             #
-            wildcard = True
-            if wildcard:
-                store_dataset_ids = itertools.chain(
-                    data_store.get_data_ids(data_type=DATASET_TYPE),
-                    data_store.get_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE),
-                )
-                for store_dataset_id in store_dataset_ids:
-                    store_dataset_configs: list[ServerConfig] = (
-                        data_store_config.user_data
-                    )
-                    if store_dataset_configs:
-                        for store_dataset_config in store_dataset_configs:
-                            dataset_id_pattern = store_dataset_config.get("Path", "*")
+
+            store_dataset_configs: list[ServerConfig] = data_store_config.user_data
+            if store_dataset_configs:
+                for store_dataset_config in store_dataset_configs:
+                    dataset_id_pattern = store_dataset_config.get("Path", "*")
+                    if _is_wildard(dataset_id_pattern):
+                        data_store = data_store_pool.get_store(store_instance_id)
+                        store_dataset_ids = itertools.chain(
+                            data_store.get_data_ids(data_type=DATASET_TYPE),
+                            data_store.get_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE),
+                        )
+                        for store_dataset_id in store_dataset_ids:
                             if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
                                 all_dataset_configs.append(
-                                    cls.get_dataset_config(
+                                    _get_dataset_config(
                                         store_dataset_id,
                                         store_instance_id,
                                         store_dataset_config,
                                     )
                                 )
-                                break
-            else:
-                store_dataset_configs: list[ServerConfig] = data_store_config.user_data
-                for store_dataset_config in store_dataset_configs:
-                    all_dataset_configs.append(
-                        cls.get_dataset_config(
-                            store_dataset_config["Path"],
-                            store_instance_id,
-                            store_dataset_config,
+                    else:
+                        all_dataset_configs.append(
+                            _get_dataset_config(
+                                store_dataset_config["Path"],
+                                store_instance_id,
+                                store_dataset_config,
+                            )
                         )
-                    )
 
         # # Just for testing:
         # debug_file = 'all_dataset_configs.json'
@@ -414,26 +410,6 @@ class DatasetsContext(ResourcesContext):
         #     LOG.debug(f'Wrote file {debug_file!r}')
 
         return all_dataset_configs
-
-    def get_dataset_config(
-        self, store_dataset_id: str, store_instance_id: str, dataset_config_base: dict
-    ) -> dict:
-        LOG.debug(f"Selected dataset {store_dataset_id!r}")
-        dataset_config = dict(StoreInstanceId=store_instance_id, **dataset_config_base)
-        if (
-            "Identifier" in dataset_config
-            and dataset_config["Path"] != store_dataset_id
-        ):
-            raise ApiError.InvalidServerConfig(
-                "User-defined identifiers can only be assigned"
-                " to datasets with non-wildcard paths."
-            )
-        elif "Identifier" not in dataset_config:
-            dataset_config["Path"] = store_dataset_id
-            dataset_config["Identifier"] = (
-                f"{store_instance_id}{STORE_DS_ID_SEPARATOR}" f"{store_dataset_id}"
-            )
-        return dataset_config
 
     def new_dataset_metadata(
         self, store_instance_id: str, dataset_id: str
@@ -882,6 +858,24 @@ def _get_common_prefixes(p):
         )
 
 
+def _get_dataset_config(
+    store_dataset_id: str, store_instance_id: str, dataset_config_base: dict
+) -> dict:
+    LOG.debug(f"Selected dataset {store_dataset_id!r}")
+    dataset_config = dict(StoreInstanceId=store_instance_id, **dataset_config_base)
+    if "Identifier" in dataset_config and dataset_config["Path"] != store_dataset_id:
+        raise ApiError.InvalidServerConfig(
+            "User-defined identifiers can only be assigned"
+            " to datasets with non-wildcard paths."
+        )
+    elif "Identifier" not in dataset_config:
+        dataset_config["Path"] = store_dataset_id
+        dataset_config["Identifier"] = (
+            f"{store_instance_id}{STORE_DS_ID_SEPARATOR}" f"{store_dataset_id}"
+        )
+    return dataset_config
+
+
 def _lastindex(prefix, symbol):
     try:
         return prefix.rindex(symbol)
@@ -892,3 +886,7 @@ def _lastindex(prefix, symbol):
 _MULTI_LEVEL_DATASET_OPENERS = {
     "memory": _open_ml_dataset_from_python_code,
 }
+
+
+def _is_wildard(string: str) -> bool:
+    return "?" in string or "*" in string
