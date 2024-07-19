@@ -66,7 +66,7 @@ _responses = {
 }
 
 _viewer_module = "xcube.webapi.viewer"
-_data_dir = "data"
+_data_dir = "dist"
 _default_filename = "index.html"
 
 
