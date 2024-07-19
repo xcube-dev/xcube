@@ -7,8 +7,9 @@ import io
 import json
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Dict, Tuple, List, Optional, Any, Union
+from typing import Optional, Any, Union
 
 import fsspec
 import matplotlib
@@ -213,17 +214,22 @@ _CM_NAME_TO_TEMPLATE_CATEGORY = {
 
 
 class Colormap:
+    """Internal class (non-API) that represents a color mapping."""
+
     def __init__(
         self,
         cm_name: str,
+        *,
+        cm_type: Optional[str] = None,
         cat_name: Optional[str] = None,
         cmap: Optional[matplotlib.colors.Colormap] = None,
         cmap_reversed: Optional[matplotlib.colors.Colormap] = None,
         cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
         norm: Optional[matplotlib.colors.Normalize] = None,
-        bounds: Optional[list[Union[int, float]]] = None,
+        values: Optional[Sequence[Union[int, float]]] = None,
     ):
         self._cm_name = cm_name
+        self._cm_type = cm_type or "node"
         self._cat_name = cat_name
         self._cmap = cmap
         self._cmap_reversed = cmap_reversed
@@ -231,36 +237,48 @@ class Colormap:
         self._cmap_reversed_alpha = None
         self._cmap_png_base64: Optional[str] = None
         self._norm = norm
-        self._bounds = bounds
+        self._colors = values
 
     @property
     def cm_name(self) -> str:
+        """The colormap's name."""
         return self._cm_name
 
     @property
+    def cm_type(self) -> str:
+        """The colormap type, always one of "node", "bound", "key"."""
+        return self._cm_type
+
+    @property
     def cat_name(self) -> Optional[str]:
+        """The colormap's category name."""
         return self._cat_name
 
     @cached_property
     def cmap(self) -> matplotlib.colors.Colormap:
+        """The matplotlib colormap."""
         if self._cmap is None:
             self._cmap = matplotlib.colormaps[self.cm_name]
         return self._cmap
 
     @cached_property
     def cmap_alpha(self) -> matplotlib.colors.Colormap:
+        """The matplotlib colormap with alpha-blending of smaller values."""
         if self._cmap_alpha is None:
             _, self._cmap_alpha = get_alpha_cmap(self.cm_name, self.cmap)
         return self._cmap_alpha
 
     @cached_property
     def cmap_reversed(self) -> matplotlib.colors.Colormap:
+        """The reversed matplotlib colormap."""
+        """Whether to reverse the color map."""
         if self._cmap_reversed is None:
             _, self._cmap_reversed = get_reverse_cmap(self.cm_name, self.cmap)
         return self._cmap_reversed
 
     @cached_property
     def cmap_reversed_alpha(self) -> matplotlib.colors.Colormap:
+        """The reversed matplotlib colormap with alpha-blending of smaller values."""
         if self._cmap_reversed_alpha is None:
             cm_name, cmap_reversed = get_reverse_cmap(self.cm_name, self.cmap)
             _, self._cmap_reversed_alpha = get_alpha_cmap(cm_name, cmap_reversed)
@@ -268,17 +286,20 @@ class Colormap:
 
     @cached_property
     def cmap_png_base64(self) -> str:
+        """The base64 encoding of the colormap's PNG image."""
         if self._cmap_png_base64 is None:
             self._cmap_png_base64 = get_cmap_png_base64(self.cmap)
         return self._cmap_png_base64
 
     @property
     def norm(self) -> Optional[matplotlib.colors.Normalize]:
+        """The matplotlib norm, if any."""
         return self._norm
 
     @property
-    def bounds(self) -> Optional[list[Union[int, float]]]:
-        return self._bounds
+    def values(self) -> Optional[Sequence[Union[int, float]]]:
+        """The list of values that are mapped to colors."""
+        return self._colors
 
 
 class ColormapProvider(ABC):
@@ -444,48 +465,58 @@ class ColormapRegistry(ColormapProvider):
 def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
     # Note, if we get performance issues here, we should
     # cache cm_code -> colormap
+    values: Optional[list[Union[int, float]]] = None
     try:
         user_color_map: dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
         cm_items = user_color_map["colors"]
         cm_type = user_color_map.get("type", "node")
         cm_base_name, _, _ = parse_cm_name(cm_name)
-        if cm_type == "key" or cm_type == "bound":
-            if cm_type == "key":
-                bounds: list[int] = []
-                colors: list[str] = []
-                n = len(cm_items)
-                for i, (value, color) in enumerate(cm_items):
-                    index = int(value)
-                    colors.append(color)
-                    bounds.append(index)
-                    if i == n - 1 or index + 1 != int(cm_items[i + 1][0]):
-                        # insert transparent region
-                        bounds.append(index + 1)
-                        colors.append("#00000000")
-            else:  # cm_type == "bound"
-                bounds: list[Union[int, float]] = list(map(lambda c: c[0], cm_items))
-                colors: list[str] = list(map(lambda c: c[1], cm_items[:-1]))
-            return cm_name, Colormap(
-                cm_base_name,
-                cat_name=CUSTOM_CATEGORY.name,
-                cmap=matplotlib.colors.ListedColormap(colors),
-                bounds=bounds,
-            )
-        else:
+        n = len(cm_items)
+        if cm_type == "key":
+            values: list[int] = []
+            colors: list[Union[str, tuple[float, ...]]] = []
+            bad = 0, 0, 0, 0
+            for i, (value, color) in enumerate(cm_items):
+                key = int(value)
+                values.append(key)
+                colors.append(color)
+                if i == n - 1:
+                    # the last key's next boundary is key+1
+                    values.append(key + 1)
+                elif key + 1 != int(cm_items[i + 1][0]):
+                    # insert transparent region from key+1 to next key
+                    values.append(key + 1)
+                    colors.append(bad)
+            cmap = matplotlib.colors.ListedColormap(colors, name=cm_base_name)
+            cmap.set_extremes(bad=bad, under=bad, over=bad)
+            print(">>>>>>>>>>>> categorical cmap", cmap)
+        else:  # cm_type == "bound" or cm_type == "node"
+            values, colors = zip(*cm_items)
             vmin = cm_items[0][0]
             vmax = cm_items[-1][0]
             if vmin != 0 or vmax != 1:
-                values, colors = zip(*cm_items)
+                # Normalize values of cm_items between 0 and 1
                 norm_values = (np.array(values) - vmin) / (vmax - vmin)
                 cm_items = list(zip(norm_values, colors))
-            return cm_name, Colormap(
-                cm_base_name,
-                cat_name=CUSTOM_CATEGORY.name,
-                cmap=matplotlib.colors.LinearSegmentedColormap.from_list(
-                    cm_base_name, cm_items
-                ),
+            if cm_type == "bound":
+                # Turn cm_items into discrete step function
+                stepwise_cm_items = []
+                for i, (value, color) in enumerate(cm_items[0:-1]):
+                    next_value = cm_items[i + 1][0]
+                    stepwise_cm_items.append((value, color))
+                    stepwise_cm_items.append((next_value, color))
+                cm_items = stepwise_cm_items
+            cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
+                cm_base_name, cm_items
             )
+        return cm_name, Colormap(
+            cm_base_name,
+            cm_type=cm_type,
+            cat_name=CUSTOM_CATEGORY.name,
+            cmap=cmap,
+            values=values,
+        )
     except (SyntaxError, KeyError, ValueError, TypeError):
         # If we arrive here, the submitted user-specific cm_code is wrong
         # We do not log or emit a warning here because this would
