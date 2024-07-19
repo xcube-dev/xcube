@@ -112,6 +112,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783473", colormap.cm_name)
+        self.assertEqual("key", colormap.cm_type)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
         self.assertEqual([1, 2, 3, 5, 6], colormap.values)
 
@@ -129,6 +130,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783474", colormap.cm_name)
+        self.assertEqual("bound", colormap.cm_type)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
         self.assertEqual((0.0, 0.6, 1.0), colormap.values)
 
@@ -146,6 +148,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783475", colormap.cm_name)
+        self.assertEqual("node", colormap.cm_type)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
         self.assertEqual((0.0, 0.5, 1.0), colormap.values)
 
@@ -157,6 +160,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("Reds", colormap.cm_name)
+        self.assertEqual("node", colormap.cm_type)
         self.assertEqual("Sequential", colormap.cat_name)
         self.assertIsNone(colormap.values)
 
