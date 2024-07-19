@@ -475,7 +475,8 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
         n = len(cm_items)
         if cm_type == "key":
             values: list[int] = []
-            colors: list[str] = []
+            colors: list[Union[str, tuple[float, ...]]] = []
+            bad = 0, 0, 0, 0
             for i, (value, color) in enumerate(cm_items):
                 key = int(value)
                 values.append(key)
@@ -486,8 +487,10 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
                 elif key + 1 != int(cm_items[i + 1][0]):
                     # insert transparent region from key+1 to next key
                     values.append(key + 1)
-                    colors.append("#00000000")
+                    colors.append(bad)
             cmap = matplotlib.colors.ListedColormap(colors, name=cm_base_name)
+            cmap.set_extremes(bad=bad, under=bad, over=bad)
+            print(">>>>>>>>>>>> categorical cmap", cmap)
         else:  # cm_type == "bound" or cm_type == "node"
             values, colors = zip(*cm_items)
             vmin = cm_items[0][0]
@@ -509,7 +512,7 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
             )
         return cm_name, Colormap(
             cm_base_name,
-            cm_type="node",
+            cm_type=cm_type,
             cat_name=CUSTOM_CATEGORY.name,
             cmap=cmap,
             values=values,
