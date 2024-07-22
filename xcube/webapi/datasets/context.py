@@ -393,7 +393,6 @@ class DatasetsContext(ResourcesContext):
                             data_store.get_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE),
                         )
                         for store_dataset_id in store_dataset_ids:
-                            print(store_dataset_id)
                             if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
                                 all_dataset_configs.append(
                                     _get_selected_dataset_config(
