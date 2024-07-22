@@ -502,7 +502,7 @@ def compute_rgba_tile(
 
         with measure_time("Encoding tile as RGBA image"):
             var_tile, value_range = var_tiles[0], value_ranges[0]
-            if colormap.cm_type == "key":
+            if colormap.cm_type == "categorical":
                 assert isinstance(colormap.values, list)
                 norm = matplotlib.colors.BoundaryNorm(
                     colormap.values, ncolors=cmap.N, clip=False

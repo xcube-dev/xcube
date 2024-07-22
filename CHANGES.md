@@ -51,6 +51,11 @@
   A UserWarning will be issued for the "stac" data store.
 
 
+### Other changes
+
+* Renamed internal color mapping types from `"node"`, `"bound"`, `"key"` 
+  into `"continuous"`, `"stepwise"`, `"categorical"`.
+
 ## Changes in 1.6.0
 
 ### Enhancements

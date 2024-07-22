@@ -18,7 +18,7 @@ import numpy as np
 from PIL import Image
 
 from xcube.constants import LOG
-from xcube.util.assertions import assert_instance, assert_given
+from xcube.util.assertions import assert_instance, assert_given, assert_in
 
 try:
     # noinspection PyPackageRequirements
@@ -228,8 +228,12 @@ class Colormap:
         norm: Optional[matplotlib.colors.Normalize] = None,
         values: Optional[Sequence[Union[int, float]]] = None,
     ):
+        assert_instance(cm_name, str)
+        if cm_type is None:
+            cm_type = "continuous"
+        assert_in(cm_type, ("continuous", "stepwise", "categorical"))
         self._cm_name = cm_name
-        self._cm_type = cm_type or "node"
+        self._cm_type = cm_type or "continuous"
         self._cat_name = cat_name
         self._cmap = cmap
         self._cmap_reversed = cmap_reversed
@@ -246,7 +250,7 @@ class Colormap:
 
     @property
     def cm_type(self) -> str:
-        """The colormap type, always one of "node", "bound", "key"."""
+        """The colormap type, always one of "continuous", "stepwise", "categorical"."""
         return self._cm_type
 
     @property
@@ -464,16 +468,15 @@ class ColormapRegistry(ColormapProvider):
 
 def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
     # Note, if we get performance issues here, we should
-    # cache cm_code -> colormap
-    values: Optional[list[Union[int, float]]] = None
+    # cache cm_code -> colormap. Currently, parsing takes less than 50 micros
     try:
         user_color_map: dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
         cm_items = user_color_map["colors"]
-        cm_type = user_color_map.get("type", "node")
+        cm_type = user_color_map.get("type", "continuous")
         cm_base_name, _, _ = parse_cm_name(cm_name)
         n = len(cm_items)
-        if cm_type == "key":
+        if cm_type == "categorical":
             values: list[int] = []
             colors: list[Union[str, tuple[float, ...]]] = []
             bad = 0, 0, 0, 0
@@ -490,8 +493,7 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
                     colors.append(bad)
             cmap = matplotlib.colors.ListedColormap(colors, name=cm_base_name)
             cmap.set_extremes(bad=bad, under=bad, over=bad)
-            print(">>>>>>>>>>>> categorical cmap", cmap)
-        else:  # cm_type == "bound" or cm_type == "node"
+        else:  # cm_type == "continuous" or cm_type == "stepwise"
             values, colors = zip(*cm_items)
             vmin = cm_items[0][0]
             vmax = cm_items[-1][0]
@@ -499,7 +501,7 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
                 # Normalize values of cm_items between 0 and 1
                 norm_values = (np.array(values) - vmin) / (vmax - vmin)
                 cm_items = list(zip(norm_values, colors))
-            if cm_type == "bound":
+            if cm_type == "stepwise":
                 # Turn cm_items into discrete step function
                 stepwise_cm_items = []
                 for i, (value, color) in enumerate(cm_items[0:-1]):
