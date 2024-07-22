@@ -55,7 +55,10 @@ class CatalogCollectionsHandler(ApiHandler[StacContext]):
         summary="Get the STAC catalog's collections.",
     )
     async def get(self):
-        result = get_collections(self.ctx, self.request.reverse_base_url)
+        granted_scopes = self.ctx.auth_ctx.get_granted_scopes(self.request.headers)
+        result = get_collections(
+            self.ctx, self.request.reverse_base_url, granted_scopes=granted_scopes
+        )
         return await self.response.finish(result)
 
 
@@ -67,7 +70,13 @@ class CatalogCollectionHandler(ApiHandler[StacContext]):
         operation_id="getCatalogCollection", summary="Get a STAC catalog collection."
     )
     async def get(self, collectionId: str):
-        result = get_collection(self.ctx, self.request.reverse_base_url, collectionId)
+        granted_scopes = self.ctx.auth_ctx.get_granted_scopes(self.request.headers)
+        result = get_collection(
+            self.ctx,
+            self.request.reverse_base_url,
+            collectionId,
+            granted_scopes=granted_scopes,
+        )
         return await self.response.finish(result)
 
 
@@ -80,10 +89,12 @@ class CatalogCollectionItemsHandler(ApiHandler[StacContext]):
         summary="Get the items of a STAC catalog collection.",
     )
     async def get(self, collectionId: str):
+        granted_scopes = self.ctx.auth_ctx.get_granted_scopes(self.request.headers)
         get_items_args = dict(
             ctx=self.ctx.datasets_ctx,
             base_url=self.request.reverse_base_url,
             collection_id=collectionId,
+            granted_scopes=granted_scopes,
         )
         if collectionId == DEFAULT_COLLECTION_ID:
             if "limit" in self.request.query:
@@ -108,11 +119,13 @@ class CatalogCollectionItemHandler(ApiHandler[StacContext]):
         summary="Get an item of a STAC catalog collection.",
     )
     async def get(self, collectionId: str, featureId: str):
+        granted_scopes = self.ctx.auth_ctx.get_granted_scopes(self.request.headers)
         result = get_collection_item(
             self.ctx.datasets_ctx,
             self.request.reverse_base_url,
             collectionId,
             featureId,
+            granted_scopes=granted_scopes,
         )
         return await self.response.finish(result, content_type="application/geo+json")
 

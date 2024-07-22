@@ -9,7 +9,7 @@ from .context import StacContext
 api = Api(
     "ows.stac",
     description="xcube OGC STAC API",
-    required_apis=["datasets"],
+    required_apis=["auth", "datasets"],
     create_ctx=StacContext,
     config_schema=CONFIG_SCHEMA,
 )

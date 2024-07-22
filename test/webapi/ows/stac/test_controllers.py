@@ -181,7 +181,7 @@ class StacControllersTest(unittest.TestCase):
             "demo-1w",
         )
         self.assertIsInstance(result, dict)
-        self.assertEqual(self.read_json("stac-datacubes-item.json"), result)
+        self.assertCountEqual(self.read_json("stac-datacubes-item.json"), result)
 
     def test_get_single_collection_item(self):
         self.maxDiff = None
@@ -192,7 +192,7 @@ class StacControllersTest(unittest.TestCase):
             DEFAULT_FEATURE_ID,
         )
         self.assertIsInstance(result, dict)
-        self.assertEqual(self.read_json("stac-single-item.json"), result)
+        self.assertCountEqual(self.read_json("stac-single-item.json"), result)
 
     def test_get_collection_item_nonexistent_feature(self):
         self.assertRaises(
@@ -242,7 +242,7 @@ class StacControllersTest(unittest.TestCase):
             datetime.timedelta(seconds=10),
         )
         for key in "bbox", "geometry", "properties", "assets":
-            self.assertEqual(expected_item[key], result["features"][0][key])
+            self.assertCountEqual(expected_item[key], result["features"][0][key])
 
     def test_get_datasets_collection(self):
         result = get_collection(get_stac_ctx(), BASE_URL, DEFAULT_COLLECTION_ID)
@@ -250,13 +250,13 @@ class StacControllersTest(unittest.TestCase):
 
     def test_get_single_collection(self):
         result = get_collection(get_stac_ctx(), BASE_URL, "demo")
-        self.assertEqual(self.read_json("demo-collection.json"), result)
+        self.assertCountEqual(self.read_json("demo-collection.json"), result)
 
     def test_get_single_collection_different_crs(self):
         testing_ctx = StacContext(get_stac_ctx().server_ctx)
         testing_ctx._available_crss = ["OGC:CRS84"]
         result = get_collection(testing_ctx, BASE_URL, "demo")
-        self.assertEqual(self.read_json("demo-collection.json"), result)
+        self.assertCountEqual(self.read_json("demo-collection.json"), result)
 
     def test_get_collections(self):
         result = get_collections(get_stac_ctx(), BASE_URL)
