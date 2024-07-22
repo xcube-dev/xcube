@@ -417,6 +417,8 @@
     }
   },
   "xcube:dataset": {
+    "id": "demo",
+    "title": "xcube-server Demonstration L2C Cube",
     "groupTitle": "Demo",
     "tags": [
       "demo",
@@ -785,18 +787,6 @@
       }
     ],
     "dimensions": [
-      {
-        "name": "time",
-        "size": 5,
-        "dtype": "datetime64[ns]",
-        "coordinates": [
-          "2017-01-16T10:09:21Z",
-          "2017-01-25T09:35:51Z",
-          "2017-01-26T10:50:17Z",
-          "2017-01-28T09:58:11Z",
-          "2017-01-30T10:46:34Z"
-        ]
-      },
       {
         "name": "lat",
         "size": 1000,
@@ -1802,6 +1792,18 @@
           50.00625,
           50.00375,
           50.00125
+        ]
+      },
+      {
+        "name": "time",
+        "size": 5,
+        "dtype": "datetime64[ns]",
+        "coordinates": [
+          "2017-01-16T10:09:21Z",
+          "2017-01-25T09:35:51Z",
+          "2017-01-26T10:50:17Z",
+          "2017-01-28T09:58:11Z",
+          "2017-01-30T10:46:34Z"
         ]
       },
       {

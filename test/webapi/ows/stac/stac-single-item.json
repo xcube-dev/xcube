@@ -256,12 +256,111 @@
       }
     },
     "xcube:dataset": {
+      "id": "demo-1w",
+      "title": "xcube-server Demonstration L3 Cube",
       "groupTitle": "Demo",
       "tags": [
         "demo",
         "zarr",
         "computed"
       ],
+      "bbox": [
+        0.0,
+        50.0,
+        5.0,
+        52.5
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0.0,
+              50.0
+            ],
+            [
+              0.0,
+              50.5
+            ],
+            [
+              0.0,
+              51.0
+            ],
+            [
+              0.0,
+              51.5
+            ],
+            [
+              0.0,
+              52.0
+            ],
+            [
+              0.0,
+              52.5
+            ],
+            [
+              1.0,
+              52.5
+            ],
+            [
+              2.0,
+              52.5
+            ],
+            [
+              3.0,
+              52.5
+            ],
+            [
+              4.0,
+              52.5
+            ],
+            [
+              5.0,
+              52.5
+            ],
+            [
+              5.0,
+              52.0
+            ],
+            [
+              5.0,
+              51.5
+            ],
+            [
+              5.0,
+              51.0
+            ],
+            [
+              5.0,
+              50.5
+            ],
+            [
+              5.0,
+              50.0
+            ],
+            [
+              4.0,
+              50.0
+            ],
+            [
+              3.0,
+              50.0
+            ],
+            [
+              2.0,
+              50.0
+            ],
+            [
+              1.0,
+              50.0
+            ],
+            [
+              0.0,
+              50.0
+            ]
+          ]
+        ]
+      },
       "spatialRef": "EPSG:4326",
       "variables": [
         {
@@ -790,16 +889,6 @@
         }
       ],
       "dimensions": [
-        {
-          "name": "time",
-          "size": 3,
-          "dtype": "datetime64[ns]",
-          "coordinates": [
-            "2017-01-22T00:00:00Z",
-            "2017-01-29T00:00:00Z",
-            "2017-02-05T00:00:00Z"
-          ]
-        },
         {
           "name": "lat",
           "size": 1000,
@@ -1805,6 +1894,16 @@
             50.00625,
             50.00375,
             50.00125
+          ]
+        },
+        {
+          "name": "time",
+          "size": 3,
+          "dtype": "datetime64[ns]",
+          "coordinates": [
+            "2017-01-22T00:00:00Z",
+            "2017-01-29T00:00:00Z",
+            "2017-02-05T00:00:00Z"
           ]
         },
         {
@@ -3819,7 +3918,7 @@
         "Conventions": "CF-1.7"
       },
       "attributions": [
-        "\u00a9 by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+        "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
       ]
     },
     "datetime": null,

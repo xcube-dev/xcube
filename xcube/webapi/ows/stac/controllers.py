@@ -621,7 +621,7 @@ def _get_single_dataset_collection(
             },
             "temporal": {"interval": [time_interval], "grid": get_time_grid(dataset)},
         },
-        "id": dataset_dict.pop("id"),
+        "id": dataset_dict.get("id"),
         "keywords": [],
         "license": "proprietary",
         "links": [
@@ -805,9 +805,9 @@ def _get_dataset_feature(
         "stac_version": STAC_VERSION,
         "stac_extensions": STAC_EXTENSIONS,
         "type": "Feature",
-        "id": dataset_dict.pop("id"),
-        "bbox": dataset_dict.pop("bbox"),
-        "geometry": dataset_dict.pop("geometry"),
+        "id": dataset_dict.get("id"),
+        "bbox": dataset_dict.get("bbox"),
+        "geometry": dataset_dict.get("geometry"),
         "properties": _get_cube_properties(ctx, dataset_id, dataset_dict),
         "collection": collection_id,
         "links": [
@@ -840,7 +840,7 @@ def _get_cube_properties(
     dataset = ml_dataset.base_dataset
 
     properties = dict()
-    properties["title"] = dataset_dict.pop("title", dataset_id)
+    properties["title"] = dataset_dict.get("title", dataset_id)
     cube_dimensions = get_datacube_dimensions(dataset, grid_mapping)
     properties["cube:dimensions"] = cube_dimensions
     properties["cube:variables"] = _get_dc_variables(dataset, cube_dimensions)
