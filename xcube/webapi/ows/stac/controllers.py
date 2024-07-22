@@ -850,15 +850,6 @@ def _get_cube_properties(
     return properties
 
 
-def _filter_place_group(place_group: dict, del_features: bool = False) -> dict:
-    place_group = dict(place_group)
-    del place_group["sourcePaths"]
-    del place_group["sourceEncoding"]
-    if del_features:
-        del place_group["features"]
-    return place_group
-
-
 def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
