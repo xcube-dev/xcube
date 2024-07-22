@@ -106,13 +106,13 @@ class ColormapRegistryTest(TestCase):
             '[1, "#00000000"], '
             '[2, "#ff0000aa"], '
             '[5, "#ffffffff"]'
-            '], "type": "key"}'
+            '], "type": "categorical"}'
         )
         self.assertIsInstance(cmap, matplotlib.colors.ListedColormap)
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783473", colormap.cm_name)
-        self.assertEqual("key", colormap.cm_type)
+        self.assertEqual("categorical", colormap.cm_type)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
         self.assertEqual([1, 2, 3, 5, 6], colormap.values)
 
@@ -124,13 +124,13 @@ class ColormapRegistryTest(TestCase):
             '[0.0, "#00000000"], '
             '[0.6, "#ff0000aa"], '
             '[1.0, "#ffffffff"]'
-            '], "type": "bound"}'
+            '], "type": "stepwise"}'
         )
         self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783474", colormap.cm_name)
-        self.assertEqual("bound", colormap.cm_type)
+        self.assertEqual("stepwise", colormap.cm_type)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
         self.assertEqual((0.0, 0.6, 1.0), colormap.values)
 
@@ -148,7 +148,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(cmap(np.linspace(0, 1, 10)), np.ndarray)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("ucb783475", colormap.cm_name)
-        self.assertEqual("node", colormap.cm_type)
+        self.assertEqual("continuous", colormap.cm_type)
         self.assertEqual(CUSTOM_CATEGORY.name, colormap.cat_name)
         self.assertEqual((0.0, 0.5, 1.0), colormap.values)
 
@@ -160,7 +160,7 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(cmap, matplotlib.colors.LinearSegmentedColormap)
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("Reds", colormap.cm_name)
-        self.assertEqual("node", colormap.cm_type)
+        self.assertEqual("continuous", colormap.cm_type)
         self.assertEqual("Sequential", colormap.cat_name)
         self.assertIsNone(colormap.values)
 
@@ -306,7 +306,7 @@ class ColormapTest(TestCase):
     def test_names(self):
         self.assertEqual("Diverging", self.colormap.cat_name)
         self.assertEqual("coolwarm", self.colormap.cm_name)
-        self.assertEqual("node", self.colormap.cm_type)
+        self.assertEqual("continuous", self.colormap.cm_type)
 
     def test_cmap(self):
         cmap = self.colormap.cmap
