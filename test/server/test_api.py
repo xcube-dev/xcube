@@ -5,6 +5,8 @@
 import unittest
 from typing import Optional
 
+import pytest
+
 from xcube.server.api import Api
 from xcube.server.api import ApiContext
 from xcube.server.api import ApiHandler
@@ -13,6 +15,7 @@ from xcube.server.api import Context
 from xcube.server.api import ApiError
 from xcube.server.server import ServerContext
 from xcube.util.frozen import FrozenDict
+from xcube.util.undefined import UNDEFINED
 from .mocks import MockApiRequest
 from .mocks import MockApiResponse
 from .mocks import MockFramework
@@ -180,13 +183,10 @@ class ApiRouteTest(unittest.TestCase):
             def get(self):
                 return {}
 
-        self.assertFalse(
-            ApiRoute("datasets", "/datasets", DatasetHandler).slash
-        )
+        self.assertFalse(ApiRoute("datasets", "/datasets", DatasetHandler).slash)
         self.assertTrue(
             ApiRoute("datasets", "/datasets", DatasetHandler, slash=True).slash
         )
-
 
 
 class ApiContextTest(unittest.TestCase):
@@ -299,6 +299,17 @@ class ApiRequestTest(unittest.TestCase):
         request = MockApiRequest(query_args=dict(details=["1"]))
         self.assertEqual(True, request.get_query_arg("details", default=False))
         self.assertEqual("CRS84", request.get_query_arg("crs", default="CRS84"))
+
+    def test_query_arg_with_undefined_default(self):
+        request = MockApiRequest(query_args=dict(details=["1"]))
+        self.assertEqual(
+            True, request.get_query_arg("details", type=bool, default=UNDEFINED)
+        )
+        with pytest.raises(
+            ApiError.BadRequest,
+            match="HTTP status 400: Missing required query parameter 'crs'",
+        ):
+            request.get_query_arg("crs", default=UNDEFINED)
 
 
 class ApiErrorTest(unittest.TestCase):

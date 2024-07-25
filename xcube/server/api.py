@@ -25,6 +25,7 @@ from ..util.assertions import assert_instance
 from ..util.assertions import assert_true
 from ..util.frozen import FrozenDict
 from ..util.jsonschema import JsonObjectSchema
+from ..util.undefined import UNDEFINED
 
 _SERVER_CONTEXT_ATTR_NAME = "__xcube_server_context"
 _HTTP_METHODS = {"head", "get", "post", "put", "delete", "options"}
@@ -234,9 +235,9 @@ class Api(Generic[ServerContextT]):
         """
 
         def decorator_func(handler_cls: type[ApiHandler]):
-            self._routes.append(ApiRoute(
-                self.name, path, handler_cls, handler_kwargs, slash
-            ))
+            self._routes.append(
+                ApiRoute(self.name, path, handler_cls, handler_kwargs, slash)
+            )
             return handler_cls
 
         return decorator_func
@@ -589,6 +590,10 @@ class ApiRequest:
         argument. If *type* is not given, but *default* is, then *type*
         will be inferred from *default*.
 
+        New in 1.7: If *default* equals ``xcube.util.undefined.UNDEFINED``
+        and the query argument is not given, and ``ApiError.BadRequest``
+        is raised.
+
         Args:
             name: The name of the argument
             type: The requested data type. Must be a callable type, e.g.
@@ -598,11 +603,15 @@ class ApiRequest:
         Returns:
             The value of the query argument.
         """
-        if type is None and default is not None:
+        if type is None and default is not None and default != UNDEFINED:
             type = builtin_type(default)
             type = type if callable(type) else None
         values = self.get_query_args(name, type=type)
-        return values[0] if values else default
+        if not values:
+            if default == UNDEFINED:
+                raise ApiError.BadRequest(f"Missing required query parameter {name!r}")
+            return default
+        return values[0]
 
     # noinspection PyShadowingBuiltins
     @abstractmethod
@@ -746,7 +755,7 @@ class ApiRoute:
         path: str,
         handler_cls: type[ApiHandler],
         handler_kwargs: Optional[dict[str, Any]] = None,
-        slash: bool = False
+        slash: bool = False,
     ):
         assert_instance(api_name, str, name="api_name")
         assert_instance(path, str, name="path")
