@@ -15,7 +15,6 @@ import xarray as xr
 
 import xcube
 from xcube.core.gridmapping import CRS_CRS84, GridMapping
-from xcube.core.tilingscheme import TilingScheme
 from xcube.server.api import ApiError
 from xcube.server.api import ServerConfig
 from xcube.util.jsonencoder import to_json_value
@@ -29,6 +28,7 @@ from .config import DEFAULT_COLLECTION_TITLE
 from .config import PATH_PREFIX
 from .context import StacContext
 from ..coverages.controllers import get_crs_from_dataset
+from ...datasets.controllers import get_dataset
 from ...datasets.context import DatasetsContext
 
 _REL_DOMAINSET = "http://www.opengis.net/def/rel/ogc/1.0/coverage-domainset"
@@ -174,7 +174,11 @@ def get_conformance() -> dict[str, list[str]]:
     return {"conformsTo": _CONFORMANCE}
 
 
-def get_collections(ctx: StacContext, base_url: str) -> dict[str, Any]:
+def get_collections(
+    ctx: StacContext,
+    base_url: str,
+    granted_scopes: Optional[set[str]] = None,
+) -> dict[str, Any]:
     """Get all the collections available in the given context
 
     These include a union collection representing all the datasets,
@@ -183,6 +187,8 @@ def get_collections(ctx: StacContext, base_url: str) -> dict[str, Any]:
     Args:
         ctx: a datasets context
         base_url: the base URL of the current server
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
 
     Returns:
         a STAC dictionary listing the available collections
@@ -190,7 +196,9 @@ def get_collections(ctx: StacContext, base_url: str) -> dict[str, Any]:
     return {
         "collections": [_get_datasets_collection(ctx, base_url)]
         + [
-            _get_single_dataset_collection(ctx, base_url, c["Identifier"])
+            _get_single_dataset_collection(
+                ctx, base_url, c["Identifier"], granted_scopes=granted_scopes
+            )
             for c in ctx.datasets_ctx.get_dataset_configs()
         ],
         "links": [
@@ -205,13 +213,20 @@ def get_collections(ctx: StacContext, base_url: str) -> dict[str, Any]:
     }
 
 
-def get_collection(ctx: StacContext, base_url: str, collection_id: str) -> dict:
+def get_collection(
+    ctx: StacContext,
+    base_url: str,
+    collection_id: str,
+    granted_scopes: Optional[set[str]] = None,
+) -> dict:
     """Return a STAC representation of a collection
 
     Args:
         ctx: a datasets context
         base_url: the base URL of the current server
         collection_id: the ID of the collection to describe
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
 
     Returns:
         a STAC object representing the collection, if found
@@ -220,7 +235,9 @@ def get_collection(ctx: StacContext, base_url: str, collection_id: str) -> dict:
     all_datasets_collection_id, _, _ = _get_collection_metadata(ctx.config)
     collection_ids = [c["Identifier"] for c in ds_ctx.get_dataset_configs()]
     if collection_id in collection_ids:
-        return _get_single_dataset_collection(ctx, base_url, collection_id, full=True)
+        return _get_single_dataset_collection(
+            ctx, base_url, collection_id, granted_scopes=granted_scopes
+        )
     elif collection_id == all_datasets_collection_id:
         return _get_datasets_collection(ctx, base_url, full=True)
     else:
@@ -228,7 +245,10 @@ def get_collection(ctx: StacContext, base_url: str, collection_id: str) -> dict:
 
 
 def get_single_collection_items(
-    ctx: DatasetsContext, base_url: str, collection_id: str
+    ctx: DatasetsContext,
+    base_url: str,
+    collection_id: str,
+    granted_scopes: Optional[set[str]] = None,
 ) -> dict:
     """Get the singleton item list for a single-dataset collection
 
@@ -236,6 +256,8 @@ def get_single_collection_items(
         ctx: a datasets context
         base_url: the base URL of the current server
         collection_id: the ID of a single-dataset collection
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
 
     Returns:
         a FeatureCollection dictionary with a singleton feature list
@@ -248,6 +270,7 @@ def get_single_collection_items(
         collection_id,
         DEFAULT_FEATURE_ID,
         full=False,
+        granted_scopes=granted_scopes,
     )
     self_href = f"{base_url}{PATH_PREFIX}/collections/{collection_id}/items"
     return {
@@ -267,6 +290,7 @@ def get_datasets_collection_items(
     collection_id: str,
     limit: int = 100,
     cursor: int = 0,
+    granted_scopes: Optional[set[str]] = None,
 ) -> dict:
     """Get the items in the unified datasets collection
 
@@ -276,6 +300,8 @@ def get_datasets_collection_items(
         collection_id: the ID of the unified datasets collection
         limit: the maximum number of items to return
         cursor: the index of the first item to return
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
 
     Returns:
         A STAC dictionary of the items in the unified datasets
@@ -288,7 +314,13 @@ def get_datasets_collection_items(
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
         feature = _get_dataset_feature(
-            ctx, base_url, dataset_id, collection_id, dataset_id, full=False
+            ctx,
+            base_url,
+            dataset_id,
+            collection_id,
+            dataset_id,
+            full=False,
+            granted_scopes=granted_scopes,
         )
         features.append(feature)
     self_href = f"{base_url}{PATH_PREFIX}/collections/{collection_id}/items"
@@ -325,7 +357,11 @@ def get_datasets_collection_items(
 
 
 def get_collection_item(
-    ctx: DatasetsContext, base_url: str, collection_id: str, feature_id: str
+    ctx: DatasetsContext,
+    base_url: str,
+    collection_id: str,
+    feature_id: str,
+    granted_scopes: Optional[set[str]] = None,
 ) -> dict:
     """Get a specified item from a specified collection
 
@@ -342,6 +378,8 @@ def get_collection_item(
         feature_id: the ID of a single dataset within the unified
             collection or of the default feature within a single-dataset
             collection
+        granted_scopes: The set of granted scopes. If user is not
+            authenticated, its value is None.
 
     Returns:
         a STAC object representing the specified item, if found
@@ -354,7 +392,13 @@ def get_collection_item(
     if collection_id == DEFAULT_COLLECTION_ID:
         if feature_id in dataset_ids:
             return _get_dataset_feature(
-                ctx, base_url, feature_id, collection_id, feature_id, full=True
+                ctx,
+                base_url,
+                feature_id,
+                collection_id,
+                feature_id,
+                full=True,
+                granted_scopes=granted_scopes,
             )
         else:
             raise feature_not_found
@@ -367,6 +411,7 @@ def get_collection_item(
                 collection_id,
                 feature_id,
                 full=True,
+                granted_scopes=granted_scopes,
             )
         else:
             raise feature_not_found
@@ -535,12 +580,18 @@ def _get_temp_intervals(ds_ctx: DatasetsContext):
 
 
 def _get_single_dataset_collection(
-    ctx: StacContext, base_url: str, dataset_id: str, full: bool = False
+    ctx: StacContext,
+    base_url: str,
+    dataset_id: str,
+    granted_scopes: Optional[set[str]] = None,
 ) -> dict:
     ds_ctx = ctx.datasets_ctx
+    dataset_dict = get_dataset(
+        ds_ctx, dataset_id, base_url=base_url, granted_scopes=granted_scopes
+    )
+
     ml_dataset = ds_ctx.get_ml_dataset(dataset_id)
     dataset = ml_dataset.base_dataset
-    grid_bbox = GridBbox(ml_dataset.grid_mapping)
     time_properties = _get_time_properties(dataset)
     if {"start_datetime", "end_datetime"}.issubset(time_properties):
         time_interval = [
@@ -562,7 +613,7 @@ def _get_single_dataset_collection(
         "description": dataset_id,
         "extent": {
             "spatial": {
-                "bbox": grid_bbox.as_bbox(),
+                "bbox": dataset_dict["bbox"],
                 "grid": [
                     {"cellsCount": gm.size[0], "resolution": gm.xy_res[0]},
                     {"cellsCount": gm.size[1], "resolution": gm.xy_res[1]},
@@ -570,7 +621,7 @@ def _get_single_dataset_collection(
             },
             "temporal": {"interval": [time_interval], "grid": get_time_grid(dataset)},
         },
-        "id": dataset_id,
+        "id": dataset_dict.get("id"),
         "keywords": [],
         "license": "proprietary",
         "links": [
@@ -652,7 +703,7 @@ def _get_single_dataset_collection(
         "storageCRS": storage_crs,
         "crs": available_crss,
     }
-    result.update(_get_cube_properties(ds_ctx, dataset_id))
+    result.update(_get_cube_properties(ds_ctx, dataset_id, dataset_dict))
     return result
 
 
@@ -744,17 +795,20 @@ def _get_dataset_feature(
     collection_id: str,
     feature_id: str,
     full: bool = False,
+    granted_scopes: Optional[set[str]] = None,
 ) -> dict:
-    bbox = GridBbox(ctx.get_ml_dataset(dataset_id).grid_mapping)
+    dataset_dict = get_dataset(
+        ctx, dataset_id, base_url=base_url, granted_scopes=granted_scopes
+    )
 
     return {
         "stac_version": STAC_VERSION,
         "stac_extensions": STAC_EXTENSIONS,
         "type": "Feature",
-        "id": feature_id,
-        "bbox": bbox.as_bbox(),
-        "geometry": bbox.as_geometry(),
-        "properties": _get_cube_properties(ctx, dataset_id),
+        "id": dataset_dict.get("id"),
+        "bbox": dataset_dict.get("bbox"),
+        "geometry": dataset_dict.get("geometry"),
+        "properties": _get_cube_properties(ctx, dataset_id, dataset_dict),
         "collection": collection_id,
         "links": [
             _root_link(base_url),
@@ -776,25 +830,24 @@ def _get_dataset_feature(
     }
 
 
-def _get_cube_properties(ctx: DatasetsContext, dataset_id: str):
+def _get_cube_properties(
+    ctx: DatasetsContext,
+    dataset_id: str,
+    dataset_dict: dict,
+):
     ml_dataset = ctx.get_ml_dataset(dataset_id)
     grid_mapping = ml_dataset.grid_mapping
-    tiling_scheme = ml_dataset.derive_tiling_scheme(TilingScheme.GEOGRAPHIC)
     dataset = ml_dataset.base_dataset
 
+    properties = dict()
+    properties["title"] = dataset_dict.get("title", dataset_id)
     cube_dimensions = get_datacube_dimensions(dataset, grid_mapping)
+    properties["cube:dimensions"] = cube_dimensions
+    properties["cube:variables"] = _get_dc_variables(dataset, cube_dimensions)
+    properties["xcube:dataset"] = dataset_dict
+    properties.update(_get_time_properties(dataset))
 
-    return {
-        "cube:dimensions": cube_dimensions,
-        "cube:variables": _get_dc_variables(dataset, cube_dimensions),
-        "xcube:dims": to_json_value(dataset.sizes),
-        "xcube:data_vars": _get_xc_data_vars(
-            ctx, dataset_id, dataset.data_vars, tiling_scheme
-        ),
-        "xcube:coords": _get_xc_coords(dataset.coords),
-        "xcube:attrs": to_json_value(dataset.attrs),
-        **(_get_time_properties(dataset)),
-    }
+    return properties
 
 
 def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
@@ -922,71 +975,6 @@ def _get_time_properties(dataset):
             "datetime": "2000-01-01T00:00:00Z"
         }
     return time_properties
-
-
-def _get_xc_data_vars(
-    ctx: DatasetsContext,
-    dataset_id: str,
-    variables: Mapping[Hashable, xr.DataArray],
-    tiling_scheme: TilingScheme,
-) -> list[dict[str, Any]]:
-    """Create the value of the "xcube:data_vars" property for the given *dataset*."""
-    return [
-        _get_xc_data_var(ctx, dataset_id, var_name, var, tiling_scheme)
-        for var_name, var in variables.items()
-    ]
-
-
-def _get_xc_data_var(
-    ctx: DatasetsContext,
-    dataset_id: str,
-    var_name: Hashable,
-    var: xr.DataArray,
-    tiling_scheme: TilingScheme,
-) -> dict[str, Any]:
-    """Create an entry of the value of the "xcube:data_vars" property
-    for the given *dataset*.
-    """
-    cmap_name, cmap_norm, (cmap_vmin, cmap_vmax) = ctx.get_color_mapping(
-        dataset_id, var_name
-    )
-    entry = {
-        "name": str(var_name),
-        "dtype": str(var.dtype),
-        "dims": to_json_value(var.dims),
-        "chunks": to_json_value(var.chunks) if var.chunks else None,
-        "shape": to_json_value(var.shape),
-        "attrs": to_json_value(var.attrs),
-        "tileLevelMin": tiling_scheme.min_level,
-        "tileLevelMax": tiling_scheme.max_level,
-        "colorBarName": cmap_name,
-        "colorBarNorm": cmap_norm,
-        "colorBarMin": cmap_vmin,
-        "colorBarMax": cmap_vmax,
-    }
-    if hasattr(var.data, "_repr_html_"):
-        entry["htmlRepr"] = var.data._repr_html_()
-    return entry
-
-
-def _get_xc_coords(variables: Mapping[Hashable, xr.DataArray]) -> list[dict[str, Any]]:
-    """Create the value of the "xcube:coords" property for the given *dataset*."""
-    return [_get_xc_coord(var_name, var) for var_name, var in variables.items()]
-
-
-def _get_xc_coord(var_name: Hashable, var: xr.DataArray) -> dict[str, Any]:
-    """Create an entry of the value of the "xcube:coords" property
-    for the given *dataset*.
-    """
-    return {
-        "name": str(var_name),
-        "dtype": str(var.dtype),
-        "dims": to_json_value(var.dims),
-        "chunks": to_json_value(var.chunks) if var.chunks else None,
-        "shape": to_json_value(var.shape),
-        "attrs": to_json_value(var.attrs),
-        # "encoding": to_json_value(var.encoding),
-    }
 
 
 def get_datacube_dimensions(
