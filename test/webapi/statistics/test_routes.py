@@ -20,7 +20,9 @@ class StatisticsRoutesTest(RoutesTestCase):
             method="POST",
             body='{"type": "Point", "coordinates": [1.768, 51.465]}',
         )
-        self.assertBadRequestResponse(response, "Missing query parameter 'time'")
+        self.assertBadRequestResponse(
+            response, "Missing required query parameter 'time'"
+        )
 
     def test_fetch_statistics_invalid_geometry(self):
         response = self.fetch(
