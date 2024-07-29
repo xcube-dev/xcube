@@ -9,10 +9,16 @@
   is an arbitrary band-math expression, 
   see https://github.com/xcube-dev/xcube-viewer/issues/371.
 
-* xcube server now allows for assigning a `GroupTitle` and a list of `Tags`
-  to a configured dataset. This feature has been added in order to support
-  grouping and filtering of datasets in UIs, see
+* xcube server now allows for configuring new dataset properties 
+  `GroupTitle` and `Tags` . This feature has been added in order to support
+  grouping and filtering of datasets in UIs, 
+  see https://github.com/xcube-dev/xcube-viewer/issues/385.
   
+* Added server endpoint `GET /statistics/{varName}` with query parameters 
+  `lon`, `lat`, `time` which is used to extract single point data. 
+  This feature has been added in order to support
+  https://github.com/xcube-dev/xcube-viewer/issues/404.
+
 * The xcube server STAC API now publishes all fields available via the
   `/datasets` endpoint. This includes colormap information for each asset such as
   colorBarName, colorBarNorm,  colorBarMin, colorBarMax, tileLevelMin, tileLevelMax.
