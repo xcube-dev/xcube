@@ -591,8 +591,8 @@ class ApiRequest:
         will be inferred from *default*.
 
         New in 1.7: If *default* equals ``xcube.util.undefined.UNDEFINED``
-        and the query argument is not given, and ``ApiError.BadRequest``
-        is raised.
+        and the query arguments are not given, ``ApiError.BadRequest``
+        will be raised.
 
         Args:
             name: The name of the argument
