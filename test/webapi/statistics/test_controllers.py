@@ -27,7 +27,7 @@ class StatisticsControllerTest(unittest.TestCase):
             "demo",
             "conc_tsm",
             {"type": "Point", "coordinates": [lon, lat]},
-            {"time": time},
+            time,
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(
@@ -40,8 +40,20 @@ class StatisticsControllerTest(unittest.TestCase):
             },
             result,
         )
-        self.assertAlmostEqual(44.5496, result.get("mean"), places=4)
-        self.assertNotIn("histogram", result)
+
+        # Compact point mode
+        result = compute_statistics(
+            ctx,
+            "demo",
+            "conc_tsm",
+            (lon, lat),
+            time,
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual(
+            {"value": expected_value},
+            result,
+        )
 
     def test_compute_statistics_for_oor_point(self):
         lon = -100  # --> out-of-range!
@@ -55,10 +67,21 @@ class StatisticsControllerTest(unittest.TestCase):
             "demo",
             "conc_tsm",
             {"type": "Point", "coordinates": [lon, lat]},
-            {"time": time},
+            time,
         )
         self.assertIsInstance(result, dict)
         self.assertEqual({"count": 0}, result)
+
+        # Compact point mode
+        result = compute_statistics(
+            ctx,
+            "demo",
+            "conc_tsm",
+            (lon, lat),
+            time,
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual({}, result)
 
     def test_compute_statistics_for_polygon(self):
         lon = 1.768
@@ -84,7 +107,7 @@ class StatisticsControllerTest(unittest.TestCase):
                     ]
                 ],
             },
-            {"time": time},
+            time,
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(380, result.get("count"))
@@ -123,7 +146,7 @@ class StatisticsControllerTest(unittest.TestCase):
                     ]
                 ],
             },
-            {"time": time},
+            time,
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(380, result.get("count"))
@@ -162,7 +185,7 @@ class StatisticsControllerTest(unittest.TestCase):
                     ]
                 ],
             },
-            {"time": time},
+            time,
         )
         self.assertIsInstance(result, dict)
         self.assertEqual({"count": 0}, result)
