@@ -97,15 +97,8 @@ EXPECTED_ENDPOINTS = functools.reduce(
 EXPECTED_DATASETS_COLLECTION = {
     "description": DEFAULT_COLLECTION_DESCRIPTION,
     "extent": {
-        "spatial": {
-            "bbox": {"demo": [0.0, 50.0, 5.0, 52.5], "demo-1w": [0.0, 50.0, 5.0, 52.5]}
-        },
-        "temporal": {
-            "interval": {
-                "demo": ["2017-01-16T10:09:21Z", "2017-01-30T10:46:33Z"],
-                "demo-1w": ["2017-01-22T00:00:00Z", "2017-02-05T00:00:00Z"],
-            }
-        },
+        "spatial": {"bbox": [[0.0, 50.0, 5.0, 52.5]]},
+        "temporal": {"interval": [["2017-01-16T10:09:21Z", "2017-02-05T00:00:00Z"]]},
     },
     "id": DEFAULT_COLLECTION_ID,
     "keywords": [],
