@@ -550,33 +550,46 @@ def _get_datasets_collection(
 
 def _get_bboxes(ds_ctx: DatasetsContext):
     configs = ds_ctx.get_dataset_configs()
-    bboxes = {}
+    bboxes = []
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
         bbox = GridBbox(ds_ctx.get_ml_dataset(dataset_id).grid_mapping)
-        bboxes[dataset_id] = bbox.as_bbox()
-    return bboxes
+        bboxes.append(bbox.as_bbox())
+    bboxes = np.array(bboxes)
+    bbox = [
+        bboxes[:, 0].min(),
+        bboxes[:, 1].min(),
+        bboxes[:, 2].max(),
+        bboxes[:, 3].max(),
+    ]
+    return [bbox]
 
 
 def _get_temp_intervals(ds_ctx: DatasetsContext):
     configs = ds_ctx.get_dataset_configs()
-    temp_intervals = {}
+    temp_extent = None
     for dataset_config in configs:
         dataset_id = dataset_config["Identifier"]
         ml_dataset = ds_ctx.get_ml_dataset(dataset_id)
         dataset = ml_dataset.base_dataset
         time_properties = _get_time_properties(dataset)
         if "start_datetime" and "end_datetime" in time_properties:
-            temp_intervals[dataset_id] = [
+            temp_interval = [
                 time_properties["start_datetime"],
                 time_properties["end_datetime"],
             ]
         else:
-            temp_intervals[dataset_id] = [
+            temp_interval = [
                 time_properties["datetime"],
                 time_properties["datetime"],
             ]
-    return temp_intervals
+        if temp_extent is None:
+            temp_extent = temp_interval
+        elif temp_extent[0] > temp_interval[0]:
+            temp_extent[0] = temp_interval[0]
+        elif temp_extent[1] < temp_interval[1]:
+            temp_extent[1] = temp_interval[1]
+    return [temp_extent]
 
 
 def _get_single_dataset_collection(
@@ -613,13 +626,13 @@ def _get_single_dataset_collection(
         "description": dataset_id,
         "extent": {
             "spatial": {
-                "bbox": dataset_dict["bbox"],
+                "bbox": [dataset_dict["bbox"]],
                 "grid": [
                     {"cellsCount": gm.size[0], "resolution": gm.xy_res[0]},
                     {"cellsCount": gm.size[1], "resolution": gm.xy_res[1]},
                 ],
             },
-            "temporal": {"interval": [time_interval], "grid": get_time_grid(dataset)},
+            "temporal": {"interval": [[time_interval]], "grid": get_time_grid(dataset)},
         },
         "id": dataset_dict.get("id"),
         "keywords": [],

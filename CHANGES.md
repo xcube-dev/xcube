@@ -55,7 +55,9 @@
   will crawl through the data store to find matching data IDs. This process may
   result in a long setup time if the data store contains numerous data IDs.
   A UserWarning will be issued for the "stac" data store.
-
+* Corrected extent object of a STAC collection issued by xcube server, following the
+  [collection STAC specifications](https://github.com/radiantearth/stac-spec/blob/master/collection-spec/collection-spec.md#extent-object)
+  (#1053)
 
 ### Other changes
 
