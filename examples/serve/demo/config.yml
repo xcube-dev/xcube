@@ -161,8 +161,7 @@ Styles:
   - Identifier: default
     ColorMappings:
       conc_chl:
-        ColorBar: plasma
-        ValueRange: [0., 24.]
+        CustomColorBar: my_cmap
       conc_tsm:
         ColorFile: cc_tsm.cpd
       kd489:
@@ -178,6 +177,21 @@ Styles:
         Blue:
           Variable: kd489
           ValueRange: [0., 6.]
+
+CostumColorMaps:
+  - Identifier: my_cmap
+    Type: continuous # or categorical, stepwise
+    Colors:
+    - Value: 0
+      Color: red
+      Label: low
+    - Value: 12
+      Color: #0000FF
+      Label: medium
+    - Value: 24
+      Color: 0,0,255
+      Label: high
+
   - Identifier: tif_style
     ColorMappings:
       band_1:

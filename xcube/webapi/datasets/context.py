@@ -42,6 +42,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.cache import parse_mem_size
 from xcube.util.cmaps import ColormapRegistry
 from xcube.util.cmaps import load_custom_colormap
+from xcube.util.cmaps import create_colormap_from_config
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.places import PlacesContext
 
@@ -538,18 +539,30 @@ class DatasetsContext(ResourcesContext):
             style_id = style["Identifier"]
             color_mappings = dict()
             for var_name, color_mapping in style["ColorMappings"].items():
-                if "ColorFile" not in color_mapping:
-                    color_mappings[var_name] = dict(color_mapping)
-                    continue
-                custom_cmap_path = self.get_config_path(
-                    color_mapping, "ColorMappings", path_entry_name="ColorFile"
-                )
-                custom_colormap = custom_colormaps.get(custom_cmap_path)
-                if custom_colormap is None:
-                    custom_colormap = load_custom_colormap(custom_cmap_path)
+                if "ColorFile" in color_mapping:
+                    custom_cmap_path = self.get_config_path(
+                        color_mapping, "ColorMappings", path_entry_name="ColorFile"
+                    )
+                    custom_colormap = custom_colormaps.get(custom_cmap_path)
+                    if custom_colormap is None:
+                        custom_colormap = load_custom_colormap(custom_cmap_path)
+                        if custom_colormap is not None:
+                            custom_colormaps[custom_cmap_path] = custom_colormap
                     if custom_colormap is not None:
-                        custom_colormaps[custom_cmap_path] = custom_colormap
-                if custom_colormap is not None:
+                        color_mappings[var_name] = {
+                            "ColorBar": custom_colormap.cm_name,
+                            "ValueRange": (
+                                custom_colormap.norm.vmin,
+                                custom_colormap.norm.vmax,
+                            ),
+                        }
+                elif "CustomColorBar" in color_mapping:
+                    ctx_cmaps = self.config["CustomColorMaps"]
+                    for ctx_cmap in ctx_cmaps:
+                        if ctx_cmap["Identifier"] == color_mapping["CustomColorBar"]:
+                            break
+                    custom_colormap = create_colormap_from_config(ctx_cmap)
+                    custom_colormaps[custom_colormap.cm_name] = custom_colormap
                     color_mappings[var_name] = {
                         "ColorBar": custom_colormap.cm_name,
                         "ValueRange": (
@@ -557,6 +570,9 @@ class DatasetsContext(ResourcesContext):
                             custom_colormap.norm.vmax,
                         ),
                     }
+                else:
+                    color_mappings[var_name] = dict(color_mapping)
+
             cm_styles[style_id] = color_mappings
 
         return cm_styles, ColormapRegistry(*custom_colormaps.values())

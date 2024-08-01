@@ -61,6 +61,7 @@ DataStores:
           # time_period: 1D
           # tile_size: [512, 512]
           # max_cache_size: 16777216
+
 Styles:
   - Identifier: S2L2A
     ColorMappings:
@@ -104,8 +105,7 @@ Styles:
         ColorBar: "bone"
         ValueRange: [0., 0.25]
       SCL:
-        ColorBar: "bone"
-        ValueRange: [ 0, 255 ]
+        CustomColorBar: S2_L2_SCL
       rgb:
         Red:
           Variable: B04
@@ -116,6 +116,23 @@ Styles:
         Blue:
           Variable: B08
           ValueRange: [0., 0.25]
+
+CustomColorMaps:
+  - Identifier: S2_L2_SCL
+    Type: categorical
+    Colors:
+    - [ 0, red,     no data]
+    - [ 1, yellow,  defective]
+    - [ 2, black,   dark area pixels]
+    - [ 3, gray,    cloud shadows]
+    - [ 4, green,   vegetation]
+    - [ 5, tan,     bare soils]
+    - [ 6, blue,    water]
+    - [ 7, "#aaaabb", clouds low prob ]
+    - [ 8, "#bbbbcc", clouds medium prob]
+    - [ 9, "#ccccdd", clouds high prob]
+    - [10, "#ddddee", cirrus]
+    - [11, "#ffffff", snow or ice]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"

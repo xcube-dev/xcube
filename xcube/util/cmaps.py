@@ -613,6 +613,27 @@ def get_cmap_png_base64(cmap: matplotlib.colors.Colormap) -> str:
     return cbar_png_bytes
 
 
+def create_colormap_from_config(cmap_config: dict) -> Colormap:
+    registry = ColormapRegistry()
+    colors = []
+    labels = []
+    for color in cmap_config["Colors"]:
+        if isinstance(color, list):
+            colors.append(color[:2])
+            if len(color) == 3:
+                labels.append(labels)
+        else:
+            colors.append([color["Value"], color["Color"]])
+            if "Label" in color:
+                labels.append(color["Label"])
+
+    config_parse = dict(
+        name=cmap_config["Identifier"], type=cmap_config["Type"], colors=colors
+    )
+    cmap, _ = registry.get_cmap(json.dumps(config_parse))
+    return cmap
+
+
 def load_custom_colormap(custom_colormap_path: str) -> Optional[Colormap]:
     try:
         # Currently, we only support SNAP *.cpd files
