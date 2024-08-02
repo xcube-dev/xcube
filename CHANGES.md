@@ -58,9 +58,9 @@
 * Corrected extent object of a STAC collection issued by xcube server, following the
   [collection STAC specifications](https://github.com/radiantearth/stac-spec/blob/master/collection-spec/collection-spec.md#extent-object)
   (#1053)
-* When opening a GeoTIFF file, the default return value is changed from
-  `MultiLevelDataset` to `xr.Dataset`, if no `data_type` is assigned
-  in the `open_params`. (#1054) 
+* When opening a GeoTIFF file using a file system data store, the default return value 
+  is changed from `MultiLevelDataset` to `xr.Dataset`, if no `data_type` is assigned
+  in the `open_params` of the `store.open_data()` method. (#1054) 
 
 ### Other changes
 
