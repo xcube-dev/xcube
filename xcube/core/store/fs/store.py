@@ -80,7 +80,7 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
     "zarr": (DATASET_TYPE.alias,),
     "netcdf": (DATASET_TYPE.alias,),
     "levels": (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
-    "geotiff": (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
+    "geotiff": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias),
     "geojson": (GEO_DATA_FRAME_TYPE.alias,),
     "shapefile": (GEO_DATA_FRAME_TYPE.alias,),
 }

@@ -45,6 +45,19 @@ class ListDataStoreTest(unittest.TestCase):
         )
 
 
+class TestBaseFsDataStore(unittest.TestCase):
+
+    def test_get_data_opener_ids(self):
+        store = new_data_store("file")
+        self.assertEqual(
+            ("dataset:geotiff:file",), store.get_data_opener_ids(data_id="test.geotiff")
+        )
+        self.assertEqual(
+            ("mldataset:geotiff:file",),
+            store.get_data_opener_ids(data_id="test.geotiff", data_type="mldataset"),
+        )
+
+
 def test_fsspec_instantiation_error():
     error_string = "deliberate instantiation error for testing"
     register_implementation(
