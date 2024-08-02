@@ -566,8 +566,8 @@ class DatasetsContext(ResourcesContext):
                     color_mappings[var_name] = {
                         "ColorBar": custom_colormap.cm_name,
                         "ValueRange": (
-                            custom_colormap.norm.vmin,
-                            custom_colormap.norm.vmax,
+                            np.min(custom_colormap.values),
+                            np.max(custom_colormap.values),
                         ),
                     }
                 else:

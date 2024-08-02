@@ -627,10 +627,14 @@ def create_colormap_from_config(cmap_config: dict) -> Colormap:
             if "Label" in color:
                 labels.append(color["Label"])
 
+    for i, [_, color] in enumerate(colors):
+        if isinstance(color, list):
+            if any([val > 1 for val in color]):
+                colors[i][1] = list(np.array(color) / 255)
     config_parse = dict(
         name=cmap_config["Identifier"], type=cmap_config["Type"], colors=colors
     )
-    cmap, _ = registry.get_cmap(json.dumps(config_parse))
+    _, cmap = registry.get_cmap(json.dumps(config_parse))
     return cmap
 
 

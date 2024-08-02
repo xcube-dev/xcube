@@ -117,22 +117,6 @@ Styles:
           Variable: B08
           ValueRange: [0., 0.25]
 
-CustomColorMaps:
-  - Identifier: S2_L2_SCL
-    Type: categorical
-    Colors:
-    - [ 0, red,     no data]
-    - [ 1, yellow,  defective]
-    - [ 2, black,   dark area pixels]
-    - [ 3, gray,    cloud shadows]
-    - [ 4, green,   vegetation]
-    - [ 5, tan,     bare soils]
-    - [ 6, blue,    water]
-    - [ 7, "#aaaabb", clouds low prob ]
-    - [ 8, "#bbbbcc", clouds medium prob]
-    - [ 9, "#ccccdd", clouds high prob]
-    - [10, "#ddddee", cirrus]
-    - [11, "#ffffff", snow or ice]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"

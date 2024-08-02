@@ -134,16 +134,6 @@ COLOR_MAPPING_BY_PATH_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
-COLOR_MAPPING_BY_PATH_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        ColorFile=STRING_SCHEMA,
-    ),
-    required=[
-        "ColorFile",
-    ],
-    additional_properties=False,
-)
-
 COLOR_MAPPING_BY_CUSTOM_CONFIG = JsonObjectSchema(
     properties=dict(
         CustomColorBar=STRING_SCHEMA,
@@ -203,13 +193,15 @@ STYLE_SCHEMA = JsonObjectSchema(
 COLOR_SCHEMA = JsonComplexSchema(
     one_of=[
         STRING_SCHEMA,
-        JsonArraySchema(items=JsonNumberSchema, min_items=3, max_items=4),
+        JsonArraySchema(
+            items=JsonNumberSchema(minimum=0, maximum=255), min_items=3, max_items=4
+        ),
     ]
 )
 
 CUSTOM_COLOR_ENTRY_SCHEMA = JsonObjectSchema(
     properties=dict(
-        Value=JsonNumberSchema,
+        Value=JsonNumberSchema(),
         Color=COLOR_SCHEMA,
         Label=STRING_SCHEMA,
     ),
@@ -219,8 +211,8 @@ CUSTOM_COLOR_ENTRY_SCHEMA = JsonObjectSchema(
 
 CUSTOM_COLOR_LIST_SCHEMA = JsonComplexSchema(
     one_of=[
-        JsonArraySchema([JsonNumberSchema, COLOR_SCHEMA]),
-        JsonArraySchema([JsonNumberSchema, COLOR_SCHEMA, STRING_SCHEMA]),
+        JsonArraySchema([JsonNumberSchema(), COLOR_SCHEMA]),
+        JsonArraySchema([JsonNumberSchema(), COLOR_SCHEMA, STRING_SCHEMA]),
     ]
 )
 
@@ -231,7 +223,7 @@ CUSTOM_COLORS_SCHEMA = JsonComplexSchema(
     ]
 )
 
-COSTUM_COLORMAP_SCHEMA = JsonObjectSchema(
+CUSTOM_COLORMAP_SCHEMA = JsonObjectSchema(
     properties=dict(
         Identifier=STRING_SCHEMA,
         Type=STRING_SCHEMA,
@@ -253,7 +245,7 @@ CONFIG_SCHEMA = JsonObjectSchema(
         Datasets=JsonArraySchema(items=DATASET_CONFIG_SCHEMA),
         DataStores=JsonArraySchema(items=DATA_STORE_SCHEMA),
         Styles=JsonArraySchema(items=STYLE_SCHEMA),
-        CostumColorMaps=JsonArraySchema(items=COSTUM_COLORMAP_SCHEMA),
+        CustomColorMaps=JsonArraySchema(items=CUSTOM_COLORMAP_SCHEMA),
         ServiceProvider=SERVICE_PROVIDER_SCHEMA,
     )
 )

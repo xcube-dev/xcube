@@ -162,6 +162,8 @@ Styles:
     ColorMappings:
       conc_chl:
         CustomColorBar: my_cmap
+      chl_category:
+        CustomColorBar: cmap_bloom_risk
       conc_tsm:
         ColorFile: cc_tsm.cpd
       kd489:
@@ -177,21 +179,6 @@ Styles:
         Blue:
           Variable: kd489
           ValueRange: [0., 6.]
-
-CostumColorMaps:
-  - Identifier: my_cmap
-    Type: continuous # or categorical, stepwise
-    Colors:
-    - Value: 0
-      Color: red
-      Label: low
-    - Value: 12
-      Color: #0000FF
-      Label: medium
-    - Value: 24
-      Color: 0,0,255
-      Label: high
-
   - Identifier: tif_style
     ColorMappings:
       band_1:
@@ -213,6 +200,30 @@ CostumColorMaps:
         Blue:
           Variable: band_3
           ValueRange: [ 0., 255. ]
+
+CustomColorMaps:
+  - Identifier: my_cmap
+    Type: continuous # or categorical, stepwise
+    Colors:
+    - Value: 0.
+      Color: red
+      Label: low
+    - Value: 12.
+      Color: "#0000FF"
+      Label: medium
+    - Value: 18.
+      Color: [0, 255, 0]
+      Label: mediumhigh
+    - Value: 24.
+      Color: [0, 1, 0, 0.3]
+      Label: high
+  - Identifier: cmap_bloom_risk
+    Type: categorical
+    Colors:
+    - [ 0, red]
+    - [ 1, yellow]
+    - [ 2, black]
+    - [ 3, green]
 
 ServiceProvider:
   ProviderName: Brockmann Consult GmbH
