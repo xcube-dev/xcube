@@ -211,8 +211,14 @@ CUSTOM_COLOR_ENTRY_SCHEMA = JsonObjectSchema(
 
 CUSTOM_COLOR_LIST_SCHEMA = JsonComplexSchema(
     one_of=[
-        JsonArraySchema([JsonNumberSchema(), COLOR_SCHEMA]),
-        JsonArraySchema([JsonNumberSchema(), COLOR_SCHEMA, STRING_SCHEMA]),
+        JsonArraySchema(
+            items=[JsonNumberSchema(), COLOR_SCHEMA], min_items=2, max_items=2
+        ),
+        JsonArraySchema(
+            items=[JsonNumberSchema(), COLOR_SCHEMA, STRING_SCHEMA],
+            min_items=3,
+            max_items=3,
+        ),
     ]
 )
 
@@ -227,7 +233,7 @@ CUSTOM_COLORMAP_SCHEMA = JsonObjectSchema(
     properties=dict(
         Identifier=STRING_SCHEMA,
         Type=STRING_SCHEMA,
-        Colors=JsonArraySchema(items=CUSTOM_COLORS_SCHEMA),
+        Colors=JsonArraySchema(items=CUSTOM_COLORS_SCHEMA, min_items=1),
     ),
     required=["Identifier", "Type", "Colors"],
     additional_properties=False,

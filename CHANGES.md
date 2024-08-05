@@ -24,6 +24,9 @@
   colorBarName, colorBarNorm,  colorBarMin, colorBarMax, tileLevelMin, tileLevelMax.
   (#935, #940) 
 
+* xcube serve now allows to configure custom color maps via the configuration file.
+  It supports continuous, stepwise and categorical colormaps. (#1055)
+
 ### Fixes
 
 * Migrated the `.github/workflows/xcube_build_docker.yaml` and the corresponding 
