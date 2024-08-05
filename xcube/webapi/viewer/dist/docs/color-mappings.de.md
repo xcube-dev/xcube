@@ -14,13 +14,14 @@ Hexadezimale Werte können auch mit einem Alpha-Wert geschrieben werden, wie `#F
 
 Die Interpretation des `<value>` hängt vom ausgewählten Farbzuordnungstyp ab
 
-* Typ **Node**: Die Farbkodierung ist ein linearer Verlauf zwischen den Farben 
-  mit relativen Abständen, die durch `<value>` angegeben werden, welche 
-  die Kontrollwerte oder _Knoten_ darstellen.
-* Typ **Bound**: Angrenzende Werte bilden Wertgrenzen (bounds), die der `<color>` 
-  zugeordnet sind, die mit dem ersten `<value>` der Grenze verbunden ist. Der 
-  letzte Farbwert wird daher ignoriert.
-* Typ **Key**: Die Werte sind ganze Zahlen, die direkt die zugehörige Farbe 
-  identifizieren. Sollte für Daten des Typs Integer verwendet werden. Zusammen 
-  mit einer kategorischen Normalisierung **CAT** ermöglicht dieser Farbzuordnungstyp 
-  auch eine kategorische Kartenlegende. 
+* **Kontinuierlich:** Kontinuierliche Farbzuordnung, bei der jeder 
+  `<value>` eine Stützstelle eines Farbverlaufs darstellt.
+* **Schrittweise:** Schrittweise Farbzuordnung, bei der die Werte 
+  Bereichsgrenzen darstellen, die einer einzelnen Farbe zugeordnet werden.
+  Eine `<color>` wird dem ersten `<value>` eines Grenzbereiches zugeordnet. 
+  Der letzte Farbwert wird ignoriert.
+* **Kategorisch:** Werte stellen eindeutige Kategorien oder Indizes dar, 
+  die einer Farbe zugeordnet sind. Der Inhalt des Datensatzes sowie der 
+  `<value>` muss dem Typ Integer entsprechen. Wenn eine Kategorie keinen 
+  `<value>` in der Farbzuordnung hat, wird diese transparent dargestellt. 
+  Geeignet für kategorische Datensätze. 

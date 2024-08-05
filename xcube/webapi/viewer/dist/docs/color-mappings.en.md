@@ -16,13 +16,14 @@ such as `#FFA500CD`.
 The interpretation of the `<value>` depends on the selected color mapping 
 type:
 
-* Type **Node**: The color mapping is a linear gradient between the colors 
-  with relative distances given by `<value>`, which provide the control 
-  values or _nodes_.
-* Type **Bound**: Adjacent values form value _bounds_ which map to the 
-  `<color>` associated with the first `<value>` of the boundary.
-  The last color value is therefore ignored.
-* Type **Key**: The values are integer keys that directly identify 
-  the associated color. Should be used for data of type integer.
-  Together with a categorical normalisation **CAT**, 
-  this color mapping type will also allow for a categorical map legend. 
+* **Continuous:** Continuous color assignment, where each `<value>` 
+  represents a support point of a color gradient.
+* **Stepwise:** Stepwise color mapping where values within the range of two
+  subsequent `<value>`s are mapped to the same color. A `<color>` gets associated with the 
+  first `<value>` of each boundary range, while the last color gets ignored.
+* **Categorical:** Values represent unique categories or indexes that are 
+  mapped to a color. The data and the `<value>` must be of type integer. 
+  If a category does not have a `<value>` in the color mapping, it will be 
+  displayed as transparent. Suitable for categorical datasets.
+
+
