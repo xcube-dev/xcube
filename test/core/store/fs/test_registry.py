@@ -415,8 +415,7 @@ class FsDataStoresTestMixin(ABC):
         )
 
         with pytest.raises(
-            DataStoreError,
-            match=f'Data resource "{data_id}"' f" does not exist in store",
+            DataStoreError, match=f'Data resource "{data_id}" does not exist in store'
         ):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))
