@@ -672,9 +672,16 @@ CustomColorMaps [optional]
 In this section, the user can customize colormaps. Xcube server supports three types
 of colormaps, namely
 
-* Continuous
-* Stepwise
-* Categorical
+* Continuous: Continuous color assignment, where each <value> represents a support
+  point of a color gradient.
+* Stepwise: Stepwise color mapping where values within the range of two subsequent
+  <value>s are mapped to the same color. A <color> gets associated with the first
+  <value> of each boundary range, while the last color gets ignored.
+* Categorical: Values represent unique categories or indexes that are mapped to a color.
+  The data and the <value> must be of type integer. If a category does not have a
+  <value> in the color mapping, it will be displayed as transparent. Suitable for
+  categorical datasets.
+
 
 which can be configured as shown below:
 

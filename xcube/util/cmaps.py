@@ -230,7 +230,7 @@ class Colormap:
         cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
         norm: Optional[matplotlib.colors.Normalize] = None,
         values: Optional[Sequence[Union[int, float]]] = None,
-        cm_code: Optional[str] = None,
+        cm_code: Optional[dict[str, Any]] = None,
     ):
         assert_instance(cm_name, str)
         if cm_type is None:
@@ -536,7 +536,7 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
             cat_name=CUSTOM_CATEGORY.name,
             cmap=cmap,
             values=values,
-            cm_code=cm_code,
+            cm_code=user_color_map,
         )
     except (SyntaxError, KeyError, ValueError, TypeError):
         # If we arrive here, the submitted user-specific cm_code is wrong
