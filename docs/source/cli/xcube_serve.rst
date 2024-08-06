@@ -661,7 +661,7 @@ Colormaps may be user-defined within the configuration file. One example is show
           conc_chl:
             CustomColorBar: my_cmap
 
-The colormap `my_cmap` can then be configured in  is described in section
+The colormap `my_cmap` can then be configured in section
 `customcolormaps`_.
 
 
@@ -669,8 +669,8 @@ The colormap `my_cmap` can then be configured in  is described in section
 
 CustomColorMaps [optional]
 -----------------
-Colormaps can be customized by the user in the section CustomColorMaps. Xcube server
-supports three types of colormaps, namely
+In this section, the user can customize colormaps. Xcube server supports three types
+of colormaps, namely
 
 * Continuous
 * Stepwise
