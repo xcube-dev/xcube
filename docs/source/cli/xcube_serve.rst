@@ -650,6 +650,88 @@ Both, reversed and alpha blending is possible as well and can be configured by n
             ColorBar: plasma_r_alpha
             ValueRange: [0., 24.]
 
+Colormaps may be user-defined within the configuration file. One example is shown below.
+
+
+.. code-block:: yaml
+
+    Styles:
+      - Identifier: default
+        ColorMappings:
+          conc_chl:
+            CustomColorBar: my_cmap
+
+The colormap `my_cmap` can then be configured in  is described in section
+`customcolormaps`_.
+
+
+.. _customcolormaps:
+
+CustomColorMaps [optional]
+-----------------
+Colormaps can be customized by the user in the section CustomColorMaps. Xcube server
+supports three types of colormaps, namely
+
+* Continuous
+* Stepwise
+* Categorical
+
+which can be configured as shown below:
+
+.. code-block:: yaml
+
+    CustomColorMaps:
+      - Identifier: my_cmap
+        Type: categorical     # or continuous, stepwise
+        Colors:
+        - ColorEntry
+        - ...
+
+where the *ColorEntry* may have one of the following forms (in TypeScript notation):
+
+.. code-block:: javascript
+
+    type ColorEntry = ColorEntryObj | ColorEntryTuple;
+
+    interface ColorEntryObj {
+      Value: number;
+      Color: Color;
+      Label?: string;
+    }
+
+    type ColorEntryTuple = [number, Color] | [number, Color: label];
+
+    type Color = ColorName | ColorHex | ColorTuple;
+    type ColorName = <A CSS color name>;
+    type ColorHex = <A CSS color in hexdecimal form>;
+    type ColorTuple = [number, number, number] | [number, number, number, number]
+
+For example *CustomColorMaps* can look like this:
+
+.. code-block:: yaml
+    CustomColorMaps:
+      - Identifier: my_cmap
+        Type: continuous # or categorical, stepwise
+        Colors:
+          - Value: 0
+            Color: red
+            Label: low
+          - Value: 12
+            Color: "#0000FF"
+            Label: medium
+          - Value: 18
+            Color: [0, 255, 0]
+            Label: mediumhigh
+          - Value: 24
+            Color: [0, 1, 0, 0.3]
+            Label: high
+      - Identifier: cmap_bloom_risk
+        Type: categorical
+        Colors:
+          - [ 0, [0, 1, 0., 0.5], low_risk]
+          - [ 1, orange, medium_risk]
+          - [ 2, [1, 0, 0], high_risk]
+
 .. _example:
 
 Example

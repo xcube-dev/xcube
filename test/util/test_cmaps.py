@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import json
 import os
 from unittest import TestCase
 
@@ -11,6 +12,7 @@ import numpy as np
 from xcube.util.cmaps import Colormap, CUSTOM_CATEGORY
 from xcube.util.cmaps import ColormapCategory
 from xcube.util.cmaps import ColormapRegistry
+from xcube.util.cmaps import create_colormap_from_config
 from xcube.util.cmaps import DEFAULT_CMAP_NAME
 from xcube.util.cmaps import parse_cm_name
 from xcube.util.cmaps import parse_cm_code
@@ -374,3 +376,61 @@ class ColormapParseTest(TestCase):
         cm_name, cmap = parse_cm_code("{}")
         self.assertEqual("Reds", cm_name)
         self.assertEqual(None, cmap)
+
+
+class ColormapConfigTest(TestCase):
+    # User-defined color bars via xcube server config file, #1055
+    def test_create_colormap_from_config_color_entry_object(self):
+        cmap_config = dict(
+            Identifier="my_cmap",
+            Type="continuous",
+            Colors=[
+                dict(Value=0, Color="red", Label="low"),
+                dict(Value=12, Color="#0000FF", Label="medium"),
+                dict(Value=24, Color=[0, 1, 0, 0.3], Label="high"),
+            ],
+        )
+        cmap, config_parse = create_colormap_from_config(cmap_config)
+        self.assertIsInstance(cmap, Colormap)
+        self.assertIsInstance(cmap.cmap, matplotlib.colors.LinearSegmentedColormap)
+        self.assertEqual("continuous", cmap.cm_type)
+        self.assertCountEqual([0, 12, 24], cmap.values)
+        colors = cmap.cmap(np.array([0, 0.5, 1]))
+        self.assertEqual([1.0, 0.0, 0.0, 1.0], list(colors[0]))
+        self.assertEqual([0.0, 1.0, 0.0, 0.3], list(colors[2]))
+        self.assertEqual(
+            {
+                "name": "my_cmap",
+                "type": "continuous",
+                "colors": [[0.0, "red"], [12.0, "#0000FF"], [24.0, [0, 1, 0, 0.3]]],
+            },
+            config_parse,
+        )
+
+    def test_create_colormap_from_config_color_entry_tuple(self):
+        cmap_config = dict(
+            Identifier="my_cmap",
+            Type="categorical",
+            Colors=[
+                [0, "red", "low"],
+                [1, "#0000FF", "medium"],
+                [2, [0, 1, 0], "high"],
+            ],
+        )
+        cmap, config_parse = create_colormap_from_config(cmap_config)
+        self.assertIsInstance(cmap, Colormap)
+        self.assertIsInstance(cmap.cmap, matplotlib.colors.ListedColormap)
+        self.assertEqual("categorical", cmap.cm_type)
+        self.assertCountEqual([0, 1, 2, 3], cmap.values)
+        colors = cmap.cmap(np.array([0, 1, 2]))
+        self.assertEqual([1.0, 0.0, 0.0, 1.0], list(colors[0]))
+        self.assertEqual([0.0, 0.0, 1.0, 1.0], list(colors[1]))
+        self.assertEqual([0.0, 1.0, 0.0, 1.0], list(colors[2]))
+        self.assertEqual(
+            {
+                "name": "my_cmap",
+                "type": "categorical",
+                "colors": [[0.0, "red"], [1.0, "#0000FF"], [2.0, [0, 1, 0]]],
+            },
+            config_parse,
+        )

@@ -187,7 +187,10 @@ OCEAN_CATEGORY = ColormapCategory(
 
 CUSTOM_CATEGORY = ColormapCategory(
     "Custom",
-    "Custom colormaps, e.g. loaded from SNAP *.cpd files.",
+    (
+        "Custom colormaps, e.g. loaded from SNAP *.cpd files or defined via the "
+        "xcube server config file."
+    ),
 )
 
 TEMPLATE_CATEGORIES: dict[str, ColormapCategory] = {
@@ -227,6 +230,7 @@ class Colormap:
         cmap_alpha: Optional[matplotlib.colors.Colormap] = None,
         norm: Optional[matplotlib.colors.Normalize] = None,
         values: Optional[Sequence[Union[int, float]]] = None,
+        cm_code: Optional[str] = None,
     ):
         assert_instance(cm_name, str)
         if cm_type is None:
@@ -242,6 +246,7 @@ class Colormap:
         self._cmap_png_base64: Optional[str] = None
         self._norm = norm
         self._colors = values
+        self._cm_code = cm_code
 
     @property
     def cm_name(self) -> str:
@@ -257,6 +262,11 @@ class Colormap:
     def cat_name(self) -> Optional[str]:
         """The colormap's category name."""
         return self._cat_name
+
+    @property
+    def cm_code(self) -> Optional[str]:
+        """The colormap's code for generation of custom color maps."""
+        return self._cm_code
 
     @cached_property
     def cmap(self) -> matplotlib.colors.Colormap:
@@ -402,6 +412,17 @@ class ColormapRegistry(ColormapProvider):
         return cmap, colormap
 
     def to_json(self) -> list:
+
+        def get_cmap_info(cm_name):
+            if self._colormaps[cm_name].cm_code is not None:
+                return [
+                    cm_name,
+                    self._colormaps[cm_name].cmap_png_base64,
+                    self._colormaps[cm_name].cm_code,
+                ]
+            else:
+                return [cm_name, self._colormaps[cm_name].cmap_png_base64]
+
         result = []
         # Loop through TEMPLATE_CATEGORIES to preserve category order
         for cat_name in TEMPLATE_CATEGORIES.keys():
@@ -411,10 +432,7 @@ class ColormapRegistry(ColormapProvider):
                     [
                         category.name,
                         category.desc,
-                        [
-                            [cm_name, self._colormaps[cm_name].cmap_png_base64]
-                            for cm_name in category.cm_names
-                        ],
+                        [get_cmap_info(cm_name) for cm_name in category.cm_names],
                     ]
                 )
         return result
@@ -518,6 +536,7 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
             cat_name=CUSTOM_CATEGORY.name,
             cmap=cmap,
             values=values,
+            cm_code=cm_code,
         )
     except (SyntaxError, KeyError, ValueError, TypeError):
         # If we arrive here, the submitted user-specific cm_code is wrong
@@ -636,7 +655,7 @@ def create_colormap_from_config(cmap_config: dict) -> Colormap:
         name=cmap_config["Identifier"], type=cmap_config["Type"], colors=colors
     )
     _, cmap = registry.get_cmap(json.dumps(config_parse))
-    return cmap
+    return cmap, config_parse
 
 
 def load_custom_colormap(custom_colormap_path: str) -> Optional[Colormap]:

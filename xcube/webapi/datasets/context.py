@@ -561,7 +561,9 @@ class DatasetsContext(ResourcesContext):
                     for ctx_cmap in ctx_cmaps:
                         if ctx_cmap["Identifier"] == color_mapping["CustomColorBar"]:
                             break
-                    custom_colormap = create_colormap_from_config(ctx_cmap)
+                    custom_colormap, config_parse = create_colormap_from_config(
+                        ctx_cmap
+                    )
                     custom_colormaps[custom_colormap.cm_name] = custom_colormap
                     color_mappings[var_name] = {
                         "ColorBar": custom_colormap.cm_name,

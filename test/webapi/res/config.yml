@@ -49,14 +49,35 @@ Styles:
   - Identifier: default
     ColorMappings:
       conc_chl:
-        ColorBar: plasma
-        ValueRange: [0., 24.]
+        CustomColorBar: my_cmap
       conc_tsm:
-        ColorBar: PuBuGn
-        ValueRange: [0., 100.]
+        CustomColorBar: cmap_cat
       kd489:
         ColorBar: jet
         ValueRange: [0., 6.]
+
+CustomColorMaps:
+  - Identifier: my_cmap
+    Type: continuous # or categorical, stepwise
+    Colors:
+      - Value: 0
+        Color: red
+        Label: low
+      - Value: 12
+        Color: "#0000FF"
+        Label: medium
+      - Value: 18
+        Color: [0, 255, 0]
+        Label: mediumhigh
+      - Value: 24
+        Color: [0, 1, 0, 0.3]
+        Label: high
+  - Identifier: cmap_cat
+    Type: categorical
+    Colors:
+      - [ 0, [0, 1, 0., 0.5]]
+      - [ 1, orange]
+      - [ 2, [1, 0, 0]]
 
 Viewer:
   Configuration:
