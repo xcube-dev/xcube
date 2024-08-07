@@ -24,7 +24,7 @@
   colorBarName, colorBarNorm,  colorBarMin, colorBarMax, tileLevelMin, tileLevelMax.
   (#935, #940) 
 
-* xcube serve now allows to configure custom color maps via the configuration file.
+* xcube server now allows for configuring custom color maps via the configuration file.
   It supports continuous, stepwise and categorical colormaps, which may be 
   configured as shown in the [section CustomColorMaps of the xcube serve documentation](docs/source/cli/xcube_serve.rst/`customcolormaps`)
   (#1055)
