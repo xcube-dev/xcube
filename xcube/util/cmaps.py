@@ -495,11 +495,11 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
         cm_base_name, _, _ = parse_cm_name(cm_name)
         n = len(cm_items)
         if cm_type == "categorical":
-            values: list[float] = []
+            values: list[int] = []
             colors: list[Union[str, tuple[float, ...]]] = []
             bad = 0, 0, 0, 0
             for i, (value, color) in enumerate(cm_items):
-                key = float(value)
+                key = int(value)
                 values.append(key)
                 colors.append(color)
                 if i == n - 1:
@@ -646,8 +646,7 @@ def create_colormap_from_config(cmap_config: dict) -> Colormap:
             if "Label" in color:
                 labels.append(color["Label"])
 
-    for i, [value, color] in enumerate(colors):
-        colors[i][0] = float(value)
+    for i, [_, color] in enumerate(colors):
         if isinstance(color, list):
             if any([val > 1 for val in color]):
                 colors[i][1] = list(np.array(color) / 255)
