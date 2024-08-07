@@ -157,8 +157,8 @@ class DatasetsContextTest(unittest.TestCase):
         color_mapping = ctx.get_color_mappings("demo-1w")
         self.assertEqual(
             {
-                "conc_chl": {"ColorBar": "plasma", "ValueRange": [0.0, 24.0]},
-                "conc_tsm": {"ColorBar": "PuBuGn", "ValueRange": [0.0, 100.0]},
+                "conc_chl": {"ColorBar": "my_cmap", "ValueRange": (0.0, 24.0)},
+                "conc_tsm": {"ColorBar": "cmap_cat", "ValueRange": (0.0, 3.0)},
                 "kd489": {"ColorBar": "jet", "ValueRange": [0.0, 6.0]},
             },
             color_mapping,
@@ -167,9 +167,9 @@ class DatasetsContextTest(unittest.TestCase):
     def test_get_color_mapping(self):
         ctx = get_datasets_ctx()
         cm = ctx.get_color_mapping("demo", "conc_chl")
-        self.assertEqual(("plasma", "lin", (0.0, 24.0)), cm)
+        self.assertEqual(("my_cmap", "lin", (0.0, 24.0)), cm)
         cm = ctx.get_color_mapping("demo", "conc_tsm")
-        self.assertEqual(("PuBuGn", "lin", (0.0, 100.0)), cm)
+        self.assertEqual(("cmap_cat", "lin", (0.0, 3.0)), cm)
         cm = ctx.get_color_mapping("demo", "kd489")
         self.assertEqual(("jet", "lin", (0.0, 6.0)), cm)
         with self.assertRaises(ApiError.NotFound):

@@ -134,10 +134,21 @@ COLOR_MAPPING_BY_PATH_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
+COLOR_MAPPING_BY_CUSTOM_CONFIG = JsonObjectSchema(
+    properties=dict(
+        CustomColorBar=STRING_SCHEMA,
+    ),
+    required=[
+        "CustomColorBar",
+    ],
+    additional_properties=False,
+)
+
 COLOR_MAPPING_SCHEMA = JsonComplexSchema(
     one_of=[
         COLOR_MAPPING_EXPLICIT_SCHEMA,
         COLOR_MAPPING_BY_PATH_SCHEMA,
+        COLOR_MAPPING_BY_CUSTOM_CONFIG,
     ]
 )
 
@@ -179,6 +190,55 @@ STYLE_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
+COLOR_SCHEMA = JsonComplexSchema(
+    one_of=[
+        STRING_SCHEMA,
+        JsonArraySchema(
+            items=JsonNumberSchema(minimum=0, maximum=255), min_items=3, max_items=4
+        ),
+    ]
+)
+
+CUSTOM_COLOR_ENTRY_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Value=JsonNumberSchema(),
+        Color=COLOR_SCHEMA,
+        Label=STRING_SCHEMA,
+    ),
+    required=["Value", "Color"],
+    additional_properties=False,
+)
+
+CUSTOM_COLOR_LIST_SCHEMA = JsonComplexSchema(
+    one_of=[
+        JsonArraySchema(
+            items=[JsonNumberSchema(), COLOR_SCHEMA], min_items=2, max_items=2
+        ),
+        JsonArraySchema(
+            items=[JsonNumberSchema(), COLOR_SCHEMA, STRING_SCHEMA],
+            min_items=3,
+            max_items=3,
+        ),
+    ]
+)
+
+CUSTOM_COLORS_SCHEMA = JsonComplexSchema(
+    one_of=[
+        CUSTOM_COLOR_ENTRY_SCHEMA,
+        CUSTOM_COLOR_LIST_SCHEMA,
+    ]
+)
+
+CUSTOM_COLORMAP_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Identifier=STRING_SCHEMA,
+        Type=STRING_SCHEMA,
+        Colors=JsonArraySchema(items=CUSTOM_COLORS_SCHEMA, min_items=1),
+    ),
+    required=["Identifier", "Type", "Colors"],
+    additional_properties=False,
+)
+
 SERVICE_PROVIDER_SCHEMA = JsonObjectSchema(
     additional_properties=True,
 )
@@ -191,6 +251,7 @@ CONFIG_SCHEMA = JsonObjectSchema(
         Datasets=JsonArraySchema(items=DATASET_CONFIG_SCHEMA),
         DataStores=JsonArraySchema(items=DATA_STORE_SCHEMA),
         Styles=JsonArraySchema(items=STYLE_SCHEMA),
+        CustomColorMaps=JsonArraySchema(items=CUSTOM_COLORMAP_SCHEMA),
         ServiceProvider=SERVICE_PROVIDER_SCHEMA,
     )
 )

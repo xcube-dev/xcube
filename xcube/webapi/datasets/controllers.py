@@ -515,7 +515,10 @@ def get_color_bars(ctx: DatasetsContext, mime_type: str) -> str:
             html_body += "    <p>%s</p>\n" % cmap_desc
             html_body += '    <table style=border: 0">\n'
             for cmap_bar in cmap_bars:
-                cmap_name, cmap_data = cmap_bar
+                if len(cmap_bar) == 3:
+                    cmap_name, cmap_data, cm_code = cmap_bar
+                else:
+                    cmap_name, cmap_data = cmap_bar
                 cmap_image = (
                     f'<img src="data:image/png;base64,{cmap_data}"'
                     f' width="100%%"'
