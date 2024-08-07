@@ -592,26 +592,42 @@ class DatasetsContext(ResourcesContext):
             data_store_pool = self.get_data_store_pool()
             data_store = data_store_pool.get_store(store_instance_id)
             data_id = dataset_config.get("Path")
-            open_params = dataset_config.get("StoreOpenParams") or {}
-            # Inject chunk_cache_capacity into open parameters
+            open_params = dict(dataset_config.get("StoreOpenParams") or {})
+            open_params_schema = data_store.get_open_data_params_schema(data_id=data_id)
+
+            # Inject cache_size=chunk_cache_capacity, if given and possible
             chunk_cache_capacity = self.get_dataset_chunk_cache_capacity(dataset_config)
             if (
                 chunk_cache_capacity
-                and (data_id.endswith(".zarr") or data_id.endswith(".levels"))
                 and "cache_size" not in open_params
+                and "cache_size" in open_params_schema.properties
             ):
                 open_params["cache_size"] = chunk_cache_capacity
+
+            # Inject data_type="mldataset", if possible
+            if (
+                "data_type" not in open_params
+                and "data_type" in open_params_schema.properties
+                and "mldataset" in data_store.get_data_types()
+            ):
+                open_params["data_type"] = "mldataset"
+
             with self.measure_time(
                 tag=f"Opened dataset {ds_id!r}"
                 f" from data store"
                 f" {store_instance_id!r}"
             ):
                 dataset = data_store.open_data(data_id, **open_params)
+
             if isinstance(dataset, MultiLevelDataset):
+                # Expected, nominal case.
                 ml_dataset: MultiLevelDataset = dataset
             else:
+                # Fallback. Usually results in poor tile computation performance.
                 ml_dataset = BaseMultiLevelDataset(dataset)
+
             ml_dataset.ds_id = ds_id
+
         else:
             fs_type = dataset_config.get("FileSystem")
             if fs_type != "memory":
@@ -620,10 +636,12 @@ class DatasetsContext(ResourcesContext):
                     f" in dataset configuration"
                     f" {ds_id!r}"
                 )
+
             with self.measure_time(
                 tag=f"Opened dataset {ds_id!r}" f" from {fs_type!r}"
             ):
                 ml_dataset = _open_ml_dataset_from_python_code(self, dataset_config)
+
         augmentation = dataset_config.get("Augmentation")
         if augmentation:
             script_path = self.get_config_path(

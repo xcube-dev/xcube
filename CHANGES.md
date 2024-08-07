@@ -35,9 +35,10 @@
 * The `open_data` method of xcube's default `xcube.core.store.DataStore` implementations
   now supports a keyword argument `data_type`, which determines the
   data type of the return value. Note that `opener_id` includes the `data_type`
-  at its first position and will override the `date_type` argument.
+  at its first position and will override the `data_type` argument.
   To preserve backward compatibility, the keyword argument `data_type`
-  has not yet been added to the `open_data()` method arguments. (#1030)
+  has not yet been literally specified as `open_data()` method argument,
+  but may be passed as part of `**open_params`. (#1030)
 * The `xcube.core.store.DataDescriptor` class now supports specifying time ranges
   using both `datetime.date` and `datetime.datetime` objects. Previously,
   only `datetime.date` objects were supported.
@@ -60,7 +61,9 @@
   (#1053)
 * When opening a GeoTIFF file using a file system data store, the default return value 
   is changed from `MultiLevelDataset` to `xr.Dataset`, if no `data_type` is assigned
-  in the `open_params` of the `store.open_data()` method. (#1054) 
+  in the `open_params` of the `store.open_data()` method. (#1054)
+  xcube server has been adapted to always open `MultiLevelDataset`s from
+  a specified data store, if that data type is supported.
 
 ### Other changes
 

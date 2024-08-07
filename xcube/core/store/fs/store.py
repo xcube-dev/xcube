@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import copy
 import fnmatch
 import os.path
 import pathlib
@@ -84,6 +85,21 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
     "geojson": (GEO_DATA_FRAME_TYPE.alias,),
     "shapefile": (GEO_DATA_FRAME_TYPE.alias,),
 }
+
+_DATA_TYPES = tuple(
+    {
+        data_type
+        for types_tuple in _FORMAT_TO_DATA_TYPE_ALIASES.values()
+        for data_type in types_tuple
+    }
+)
+
+_COMMON_OPEN_DATA_PARAMS_SCHEMA_PROPERTIES = dict(
+    data_type=JsonStringSchema(
+        enum=list(_DATA_TYPES),
+        title="Optional data type",
+    )
+)
 
 _DataId = str
 _DataIdTuple = tuple[_DataId, dict[str, Any]]
@@ -232,13 +248,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @classmethod
     def get_data_types(cls) -> tuple[str, ...]:
-        return tuple(
-            {
-                data_type
-                for types_tuple in _FORMAT_TO_DATA_TYPE_ALIASES.values()
-                for data_type in types_tuple
-            }
-        )
+        return _DATA_TYPES
 
     def get_data_types_for_data(self, data_id: str) -> tuple[str, ...]:
         self._assert_valid_data_id(data_id)
@@ -309,7 +319,14 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         self, data_id: str = None, opener_id: str = None
     ) -> JsonObjectSchema:
         opener = self._find_opener(opener_id=opener_id, data_id=data_id)
-        return self._get_open_data_params_schema(opener, data_id)
+        schema = self._get_open_data_params_schema(opener, data_id)
+        if opener_id is None:
+            # If the schema for a specific opener was requested, we
+            # return the opener's schema. Otherwise, we enhance schema
+            # for parameters, such as "data_type".
+            schema = copy.deepcopy(schema)
+            schema.properties |= _COMMON_OPEN_DATA_PARAMS_SCHEMA_PROPERTIES
+        return schema
 
     def open_data(
         self, data_id: str, opener_id: str = None, **open_params
@@ -648,7 +665,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         if data_type_aliases is None or format_id is None:
             if require:
                 raise DataStoreError(
-                    f"Cannot determine data type for " f" data resource {data_id!r}"
+                    f"Cannot determine data type for data resource {data_id!r}"
                 )
             return None
         return data_type_aliases[0], format_id, self.protocol
