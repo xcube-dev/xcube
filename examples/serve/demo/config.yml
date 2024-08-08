@@ -161,9 +161,10 @@ Styles:
   - Identifier: default
     ColorMappings:
       conc_chl:
-        CustomColorBar: my_cmap
+        ColorBar: my_cmap
+        ValueRange: [0., 20.] # this value range overwrites the range defined in CustomColorMaps
       chl_category:
-        CustomColorBar: cmap_bloom_risk
+        ColorBar: cmap_bloom_risk
       conc_tsm:
         ColorFile: cc_tsm.cpd
       kd489:
@@ -220,9 +221,24 @@ CustomColorMaps:
   - Identifier: cmap_bloom_risk
     Type: categorical
     Colors:
-      - [ 0, [0, 1, 0., 0.5], low_risk]
-      - [ 1, orange, medium_risk]
-      - [ 2, [1, 0, 0], high_risk]
+      - [ 0, [0, 1, 0., 0.5]]
+      - [ 1, orange]
+      - [ 2, [1, 0, 0]]
+  - Identifier: s2_l2_scl
+    Type: categorical
+    Colors:
+      - [ 0, red,     no data]
+      - [ 1, yellow,  defective]
+      - [ 2, black,   dark area pixels]
+      - [ 3, gray,    cloud shadows]
+      - [ 4, green,   vegetation]
+      - [ 5, tan,     bare soils]
+      - [ 6, blue,    water]
+      - [ 7, "#aaaabb", clouds low prob ]
+      - [ 8, "#bbbbcc", clouds medium prob]
+      - [ 9, "#ccccdd", clouds high prob]
+      - [10, "#ddddee", cirrus]
+      - [11, "#ffffff", snow or ice]
 
 ServiceProvider:
   ProviderName: Brockmann Consult GmbH
