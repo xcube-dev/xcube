@@ -49,9 +49,11 @@ Styles:
   - Identifier: default
     ColorMappings:
       conc_chl:
-        CustomColorBar: my_cmap
+        ColorBar: my_cmap
+        ValueRange: [0., 20.]
       conc_tsm:
-        CustomColorBar: cmap_cat
+        ColorBar: cmap_bloom_risk
+        ValueRange: [0., 1.]
       kd489:
         ColorBar: jet
         ValueRange: [0., 6.]
@@ -72,12 +74,28 @@ CustomColorMaps:
       - Value: 24
         Color: [0, 1, 0, 0.3]
         Label: high
-  - Identifier: cmap_cat
+  - Identifier: cmap_bloom_risk
     Type: categorical
     Colors:
       - [ 0, [0, 1, 0., 0.5]]
       - [ 1, orange]
       - [ 2, [1, 0, 0]]
+  - Identifier: s2_l2_scl
+    Type: categorical
+    Colors:
+      - [ 0, red,     no data]
+      - [ 1, yellow,  defective]
+      - [ 2, black,   dark area pixels]
+      - [ 3, gray,    cloud shadows]
+      - [ 4, green,   vegetation]
+      - [ 5, tan,     bare soils]
+      - [ 6, blue,    water]
+      - [ 7, "#aaaabb", clouds low prob ]
+      - [ 8, "#bbbbcc", clouds medium prob]
+      - [ 9, "#ccccdd", clouds high prob]
+      - [10, "#ddddee", cirrus]
+      - [11, "#ffffff", snow or ice]
+      - [11, "#ffffff", snow or ice]
 
 Viewer:
   Configuration:

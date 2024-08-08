@@ -120,7 +120,7 @@ DATA_STORE_SCHEMA = JsonObjectSchema(
 
 COLOR_MAPPING_EXPLICIT_SCHEMA = JsonObjectSchema(
     properties=dict(ColorBar=STRING_SCHEMA, ValueRange=VALUE_RANGE_SCHEMA),
-    required=[],
+    required=["ColorBar"],
     additional_properties=False,
 )
 
@@ -134,21 +134,11 @@ COLOR_MAPPING_BY_PATH_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
-COLOR_MAPPING_BY_CUSTOM_CONFIG = JsonObjectSchema(
-    properties=dict(
-        CustomColorBar=STRING_SCHEMA,
-    ),
-    required=[
-        "CustomColorBar",
-    ],
-    additional_properties=False,
-)
 
 COLOR_MAPPING_SCHEMA = JsonComplexSchema(
     one_of=[
         COLOR_MAPPING_EXPLICIT_SCHEMA,
         COLOR_MAPPING_BY_PATH_SCHEMA,
-        COLOR_MAPPING_BY_CUSTOM_CONFIG,
     ]
 )
 

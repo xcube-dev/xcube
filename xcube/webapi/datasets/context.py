@@ -535,6 +535,12 @@ class DatasetsContext(ResourcesContext):
     def _get_cm_styles(self) -> tuple[dict[str, Any], ColormapRegistry]:
         custom_colormaps = {}
         cm_styles = {}
+
+        # go through CustomColorMaps
+        for ctx_cmap in self.config.get("CustomColorMaps", []):
+            custom_colormap, config_parse = create_colormap_from_config(ctx_cmap)
+            custom_colormaps[custom_colormap.cm_name] = custom_colormap
+        # go through Styles
         for style in self.config.get("Styles", []):
             style_id = style["Identifier"]
             color_mappings = dict()
@@ -556,23 +562,32 @@ class DatasetsContext(ResourcesContext):
                                 custom_colormap.norm.vmax,
                             ),
                         }
-                elif "CustomColorBar" in color_mapping:
-                    ctx_cmaps = self.config["CustomColorMaps"]
-                    for ctx_cmap in ctx_cmaps:
-                        if ctx_cmap["Identifier"] == color_mapping["CustomColorBar"]:
-                            break
-                    custom_colormap, config_parse = create_colormap_from_config(
-                        ctx_cmap
-                    )
-                    custom_colormaps[custom_colormap.cm_name] = custom_colormap
-                    color_mappings[var_name] = {
-                        "ColorBar": custom_colormap.cm_name,
-                        "ValueRange": (
-                            min(custom_colormap.values),
-                            max(custom_colormap.values),
-                        ),
-                    }
                 else:
+                    if color_mapping.get("ColorBar") in custom_colormaps:
+                        cmap = custom_colormaps[color_mapping["ColorBar"]]
+                        if (
+                            cmap.cm_type == "categorical"
+                            and "ValueRange" in color_mapping
+                        ):
+                            LOG.warning(
+                                f"Custom color map {color_mapping['ColorBar']!r} is "
+                                "categorical. ValueRange is ignored."
+                            )
+                            color_mapping = dict(
+                                ColorBar=color_mapping["ColorBar"],
+                                ValueRange=[
+                                    min(cmap.values),
+                                    max(cmap.values),
+                                ],
+                            )
+                        if "ValueRange" not in color_mapping:
+                            color_mapping = dict(
+                                ColorBar=color_mapping["ColorBar"],
+                                ValueRange=[
+                                    min(cmap.values),
+                                    max(cmap.values),
+                                ],
+                            )
                     color_mappings[var_name] = dict(color_mapping)
 
             cm_styles[style_id] = color_mappings

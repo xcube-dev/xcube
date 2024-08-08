@@ -650,20 +650,12 @@ Both, reversed and alpha blending is possible as well and can be configured by n
             ColorBar: plasma_r_alpha
             ValueRange: [0., 24.]
 
-Colormaps may be user-defined within the configuration file. One example is shown below.
-
-
-.. code-block:: yaml
-
-    Styles:
-      - Identifier: default
-        ColorMappings:
-          conc_chl:
-            CustomColorBar: my_cmap
-
-The colormap `my_cmap` can then be configured in section
-`customcolormaps`_.
-
+Colormaps may be user-defined within the configuration file, which can be configured
+in section `customcolormaps`_. The colormap can be selected by setting
+`ColorBar: my_cmap`, where `my_cmap` is the identifier of the custom defined color map.
+If the `ValueRange` is given, it overwrites the value range defined in
+`CustomColorMaps` if the color map type is continuous or stepwise, and it is ignored
+if the color map type is categorical, where a warning is raised.
 
 .. _customcolormaps:
 
@@ -738,6 +730,10 @@ For example *CustomColorMaps* can look like this:
           - [ 0, [0, 1, 0., 0.5], low_risk]
           - [ 1, orange, medium_risk]
           - [ 2, [1, 0, 0], high_risk]
+
+All colormaps defined in the `CustomColorMaps` section will be available in the xcube
+Viewer, even if they haven't been selected in the Styles section for a specific data
+variable.
 
 .. _example:
 
