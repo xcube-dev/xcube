@@ -491,6 +491,7 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
         user_color_map: dict[str, Any] = json.loads(cm_code)
         cm_name = user_color_map["name"]
         cm_items = user_color_map["colors"]
+        cm_items = [item[:2] for item in cm_items]
         cm_type = user_color_map.get("type", "continuous")
         cm_base_name, _, _ = parse_cm_name(cm_name)
         n = len(cm_items)
@@ -635,22 +636,17 @@ def get_cmap_png_base64(cmap: matplotlib.colors.Colormap) -> str:
 def create_colormap_from_config(cmap_config: dict) -> Colormap:
     registry = ColormapRegistry()
     colors = []
-    labels = []
     for color in cmap_config["Colors"]:
         if isinstance(color, list):
-            colors.append(color[:2])
-            if len(color) == 3:
-                labels.append(color[2])
-            else:
-                labels.append("")
+            colors.append(color)
         else:
-            colors.append([color["Value"], color["Color"]])
             if "Label" in color:
-                labels.append(color["Label"])
+                colors.append([color["Value"], color["Color"], color["Label"]])
             else:
-                labels.append("")
+                colors.append([color["Value"], color["Color"]])
 
-    for i, [_, color] in enumerate(colors):
+    for i, item in enumerate(colors):
+        color = item[1]
         if isinstance(color, list):
             if any([val > 1 for val in color]):
                 colors[i][1] = list(np.array(color) / 255)
@@ -658,7 +654,6 @@ def create_colormap_from_config(cmap_config: dict) -> Colormap:
         name=cmap_config["Identifier"],
         type=cmap_config["Type"],
         colors=colors,
-        labels=labels,
     )
     _, cmap = registry.get_cmap(json.dumps(config_parse))
     return cmap, config_parse

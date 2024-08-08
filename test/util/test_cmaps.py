@@ -402,8 +402,11 @@ class ColormapConfigTest(TestCase):
             {
                 "name": "my_cmap",
                 "type": "continuous",
-                "colors": [[0.0, "red"], [12.0, "#0000FF"], [24.0, [0, 1, 0, 0.3]]],
-                "labels": ["low", "medium", "high"],
+                "colors": [
+                    [0.0, "red", "low"],
+                    [12.0, "#0000FF", "medium"],
+                    [24.0, [0, 1, 0, 0.3], "high"],
+                ],
             },
             config_parse,
         )
@@ -431,8 +434,11 @@ class ColormapConfigTest(TestCase):
             {
                 "name": "my_cmap",
                 "type": "categorical",
-                "colors": [[0.0, "red"], [1.0, "#0000FF"], [2.0, [0, 1, 0]]],
-                "labels": ["low", "", "high"],
+                "colors": [
+                    [0.0, "red", "low"],
+                    [1.0, "#0000FF"],
+                    [2.0, [0, 1, 0], "high"],
+                ],
             },
             config_parse,
         )
