@@ -221,17 +221,17 @@ CustomColorMaps:
   - Identifier: cmap_bloom_risk
     Type: categorical
     Colors:
-      - [ 0, [0, 1, 0., 0.5]]
+      - [ 0, [0, 255, 0., 0.5]]
       - [ 1, orange]
       - [ 2, [1, 0, 0]]
   - Identifier: s2_l2_scl
     Type: categorical
     Colors:
-      - [ 0, red,     no data]
+      - [ 0, [255, 0, 0], no data]
       - [ 1, yellow,  defective]
       - [ 2, black,   dark area pixels]
       - [ 3, gray,    cloud shadows]
-      - [ 4, green,   vegetation]
+      - [ 4, [0, 1, 0],   vegetation]
       - [ 5, tan,     bare soils]
       - [ 6, blue,    water]
       - [ 7, "#aaaabb", clouds low prob ]
