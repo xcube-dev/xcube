@@ -638,7 +638,7 @@ def create_colormap_from_config(cmap_config: dict) -> Colormap:
     colors = []
     for color in cmap_config["Colors"]:
         if isinstance(color, list):
-            colors.append(color)
+            colors.append([c for c in color])
         else:
             if "Label" in color:
                 colors.append([color["Value"], color["Color"], color["Label"]])
@@ -646,10 +646,11 @@ def create_colormap_from_config(cmap_config: dict) -> Colormap:
                 colors.append([color["Value"], color["Color"]])
 
     for i, item in enumerate(colors):
-        color = item[1]
-        if isinstance(color, list):
-            if any([val > 1 for val in color]):
-                colors[i][1] = list(np.array(color) / 255)
+        if isinstance(item[1], list):
+            color = [c for c in item[1]]
+            if any([val > 1 for val in color[:3]]):
+                color[:3] = np.array(color[:3]) / 255
+            colors[i][1] = matplotlib.colors.rgb2hex(color, keep_alpha=True)
     config_parse = dict(
         name=cmap_config["Identifier"],
         type=cmap_config["Type"],

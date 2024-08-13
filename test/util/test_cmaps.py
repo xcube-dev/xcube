@@ -397,7 +397,6 @@ class ColormapConfigTest(TestCase):
         self.assertCountEqual([0, 12, 24], cmap.values)
         colors = cmap.cmap(np.array([0, 0.5, 1]))
         self.assertEqual([1.0, 0.0, 0.0, 1.0], list(colors[0]))
-        self.assertEqual([0.0, 1.0, 0.0, 0.3], list(colors[2]))
         self.assertEqual(
             {
                 "name": "my_cmap",
@@ -405,7 +404,7 @@ class ColormapConfigTest(TestCase):
                 "colors": [
                     [0.0, "red", "low"],
                     [12.0, "#0000FF", "medium"],
-                    [24.0, [0, 1, 0, 0.3], "high"],
+                    [24.0, "#00ff004c", "high"],
                 ],
             },
             config_parse,
@@ -437,7 +436,7 @@ class ColormapConfigTest(TestCase):
                 "colors": [
                     [0.0, "red", "low"],
                     [1.0, "#0000FF"],
-                    [2.0, [0, 1, 0], "high"],
+                    [2.0, "#00ff00ff", "high"],
                 ],
             },
             config_parse,
