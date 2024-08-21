@@ -168,7 +168,6 @@ Styles:
       conc_tsm:
         ColorFile: cc_tsm.cpd
       kd489:
-        ColorBar: jet
         ValueRange: [0., 6.]
       rgb:
         Red:
