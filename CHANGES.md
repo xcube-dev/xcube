@@ -2,6 +2,8 @@
 
 ### Enhancements
 
+* Bundled [xcube-viewer 1.3.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.3.0).
+
 * xcube server can now deal with "user-defined" variables. Endpoints
   that accept a `{varName}` path parameter in their URL path can now be 
   called with assignment expressions of the form `<var_name>=<var_expr>` 
