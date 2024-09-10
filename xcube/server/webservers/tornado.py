@@ -15,6 +15,7 @@ import tornado.escape
 import tornado.httputil
 import tornado.ioloop
 import tornado.web
+from opentelemetry.instrumentation.tornado import TornadoInstrumentor
 
 from xcube.constants import LOG
 from xcube.constants import LOG_LEVEL_DETAIL
@@ -39,6 +40,7 @@ from xcube.util.jsonschema import JsonStringSchema
 from xcube.version import version
 
 SERVER_CTX_ATTR_NAME = "__xcube_server_ctx"
+TornadoInstrumentor().instrument()
 
 
 class TornadoFramework(Framework):
@@ -124,16 +126,18 @@ class TornadoFramework(Framework):
         handlers = []
 
         for api_route in api_routes:
-            handlers.append((
-                url_prefix + self.path_to_pattern(api_route.path)
-                + ("/?" if api_route.slash else ""),
-                TornadoRequestHandler,
-                {"api_route": api_route},
-            ))
+            handlers.append(
+                (
+                    url_prefix
+                    + self.path_to_pattern(api_route.path)
+                    + ("/?" if api_route.slash else ""),
+                    TornadoRequestHandler,
+                    {"api_route": api_route},
+                )
+            )
             LOG.log(
                 LOG_LEVEL_DETAIL,
-                f"Added route {api_route.path!r}"
-                f" from API {api_route.api_name!r}",
+                f"Added route {api_route.path!r}" f" from API {api_route.api_name!r}",
             )
 
         if handlers:

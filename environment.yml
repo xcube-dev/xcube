@@ -42,6 +42,11 @@ dependencies:
   - urllib3 >=1.26
   - xarray >=2022.6, <=2024.6
   - zarr >=2.11
+  # Observability
+  - opentelemetry-api
+  - opentelemetry-sdk
+  - opentelemetry-instrumentation-tornado
+  - opentelemetry-exporter-otlp-proto-grpc
   # Testing
   - flake8 >=3.7
   - kerchunk

@@ -5,6 +5,8 @@
 from typing import Optional, Dict
 from collections.abc import Mapping
 
+from opentelemetry.context import attach, detach
+
 from xcube.constants import LOG
 from xcube.core.tile import DEFAULT_CRS_NAME
 from xcube.core.tile import DEFAULT_FORMAT
@@ -15,6 +17,7 @@ from xcube.core.tilingscheme import DEFAULT_TILE_SIZE
 from xcube.server.api import ApiError
 from xcube.util.perf import measure_time_cm
 from .context import TilesContext
+from ..common.telemetry import tracer, set_attributes
 
 
 def compute_ml_dataset_tile(
@@ -26,16 +29,25 @@ def compute_ml_dataset_tile(
     y: str,
     z: str,
     params: Mapping[str, str],
+    current_context,
 ):
-    params = dict(params)
-    trace_perf = params.pop("debug", "1" if ctx.datasets_ctx.trace_perf else "0") == "1"
-    measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
-    with measure_time("Computing RGBA tile"):
-        return _compute_ml_dataset_tile(
-            ctx, ds_id, var_name, crs_name, x, y, z, params, trace_perf
-        )
+    token = attach(current_context)
+    try:
+        with tracer.start_as_current_span("tiles.compute_ml_dataset_tile"):
+            params = dict(params)
+            trace_perf = (
+                params.pop("debug", "1" if ctx.datasets_ctx.trace_perf else "0") == "1"
+            )
+            measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
+            with measure_time("Computing RGBA tile"):
+                return _compute_ml_dataset_tile(
+                    ctx, ds_id, var_name, crs_name, x, y, z, params, trace_perf
+                )
+    finally:
+        detach(token)
 
 
+@tracer.start_as_current_span("tiles._compute_ml_dataset_tile.test")
 def _compute_ml_dataset_tile(
     ctx: TilesContext,
     ds_id: str,
@@ -47,6 +59,7 @@ def _compute_ml_dataset_tile(
     args: dict[str, str],
     trace_perf: bool,
 ):
+    set_attributes({"x": x}, {"y": y}, {"z": z})
     try:
         x, y, z = (int(c) for c in (x, y, z))
     except ValueError:
