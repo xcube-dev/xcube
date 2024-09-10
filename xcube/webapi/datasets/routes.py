@@ -15,7 +15,6 @@ from .controllers import get_dataset_coordinates
 from .controllers import get_dataset_place_group
 from .controllers import get_datasets
 from .controllers import get_legend
-from ..common.telemetry import tracer
 from ..places import PATH_PARAM_PLACE_GROUP_ID
 
 PATH_PARAM_DATASET_ID = {
@@ -265,7 +264,6 @@ class StylesColorBarsHandler(ApiHandler):
         summary="Get available color bars.",
         tags=["styles"],
     )
-    @tracer.start_as_current_span("colorbars.test")
     def get(self):
         response = get_color_bars(self.ctx, "application/json")
         self.response.finish(response)

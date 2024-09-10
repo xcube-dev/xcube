@@ -5,7 +5,8 @@
 from typing import Optional, Dict
 from collections.abc import Mapping
 
-from opentelemetry.context import attach, detach
+from opentelemetry.context import attach
+from opentelemetry.context import detach
 
 from xcube.constants import LOG
 from xcube.core.tile import DEFAULT_CRS_NAME

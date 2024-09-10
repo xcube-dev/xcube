@@ -6,7 +6,6 @@ from xcube.server.api import ApiHandler
 from .api import api
 from .context import TilesContext
 from .controllers import compute_ml_dataset_tile
-from ..common.telemetry import tracer, set_attributes
 from ..datasets import PATH_PARAM_DATASET_ID
 from ..datasets import PATH_PARAM_VAR_NAME
 from ..datasets import QUERY_PARAM_CMAP
@@ -90,10 +89,8 @@ class TilesHandler(ApiHandler[TilesContext]):
         summary="Get the image tile for a variable and given tile grid coordinates.",
         parameters=TILE_PARAMETERS,
     )
-    @tracer.start_as_current_span("tiles.get.test")
     async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):
         current_context = context.get_current()
-        set_attributes({"datasetId": datasetId})
         tile = await self.ctx.run_in_executor(
             None,
             compute_ml_dataset_tile,
