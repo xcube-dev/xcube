@@ -80,7 +80,7 @@ def resample_in_time(
         dataset = select_variables_subset(dataset, var_names)
 
     resampler = dataset.resample(
-        skipna=True, closed="left", label="left", time=frequency, loffset=offset
+        skipna=True, closed="left", label="left", time=frequency, offset=offset
     )
 
     if isinstance(method, str):
