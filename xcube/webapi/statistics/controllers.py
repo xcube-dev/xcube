@@ -47,10 +47,12 @@ def _compute_statistics(
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
 
-    try:
-        time = np.array(time_label, dtype=dataset.time.dtype)
-    except (TypeError, ValueError) as e:
-        raise ApiError.BadRequest("Invalid 'time'") from e
+    time = None
+    if time_label:
+        try:
+            time = np.array(time_label, dtype=dataset.time.dtype)
+        except (TypeError, ValueError) as e:
+            raise ApiError.BadRequest("Invalid 'time'") from e
 
     if isinstance(geometry, tuple):
         compact_mode = True
@@ -64,7 +66,10 @@ def _compute_statistics(
 
     nan_result = NAN_RESULT_COMPACT if compact_mode else NAN_RESULT
 
-    dataset = dataset.sel(time=time, method="nearest")
+    if time_label:
+        dataset = dataset.sel(time=time, method="nearest")
+    else:
+        dataset = dataset.sel(method="nearest")
 
     x_name, y_name = grid_mapping.xy_dim_names
     if isinstance(geometry, shapely.geometry.Point):

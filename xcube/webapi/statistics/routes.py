@@ -30,7 +30,7 @@ QUERY_PARAM_TIME = {
     "name": "time",
     "in": "query",
     "description": 'Timestamp using format "YYYY-MM-DD hh:mm:ss"',
-    "required": True,
+    "required": False,
     "schema": {"type": "string", "format": "datetime"},
 }
 
@@ -54,7 +54,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
     async def get(self, datasetId: str, varName: str):
         lon = self.request.get_query_arg("lon", type=float, default=UNDEFINED)
         lat = self.request.get_query_arg("lat", type=float, default=UNDEFINED)
-        time = self.request.get_query_arg("time", type=str, default=UNDEFINED)
+        time = self.request.get_query_arg("time", type=str, default=None)
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
         )
@@ -89,7 +89,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
         ],
     )
     async def post(self, datasetId: str, varName: str):
-        time = self.request.get_query_arg("time", type=str, default=UNDEFINED)
+        time = self.request.get_query_arg("time", type=str, default=None)
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
         )
