@@ -1,5 +1,9 @@
 ## Changes in 1.7.1 (in development)
 
+### Fixes
+
+* The `time` query parameter of `/statistics` endpoint of xcube server has now been made 
+  optional (#1066)
 
 ## Changes in 1.7.0
 
