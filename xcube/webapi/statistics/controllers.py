@@ -61,7 +61,7 @@ def _compute_statistics(
     elif time_label is not None:
         raise ApiError.BadRequest(
             "Query parameter 'time' must not be given"
-            "since dataset does not contain a 'time' dimension"
+            " since dataset does not contain a 'time' dimension"
         )
 
     if isinstance(geometry, tuple):
