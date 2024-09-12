@@ -43,7 +43,8 @@ class StatisticsRoutesTest(RoutesTestCase):
             body='{"type": "Point", "coordinates": [-105.591, 35.751]}',
         )
         self.assertBadRequestResponse(
-            response, "Time label must be None when dataset does not contain time"
+            response,
+            "Query parameter 'time' must not be givensince dataset does not contain a 'time' dimension",
         )
 
     def test_fetch_post_statistics_invalid_geometry(self):
@@ -81,7 +82,8 @@ class StatisticsRoutesTest(RoutesTestCase):
             body='{"type": "Point", "coordinates": [-105.591, 35.751]}',
         )
         self.assertBadRequestResponse(
-            response, "Time label must be None when dataset does not contain time"
+            response,
+            "Query parameter 'time' must not be givensince dataset does not contain a 'time' dimension",
         )
 
     def test_fetch_get_statistics_invalid_geometry(self):
