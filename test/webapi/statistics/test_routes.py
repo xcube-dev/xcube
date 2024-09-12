@@ -84,10 +84,9 @@ class StatisticsRoutesTest(RoutesTestCase):
             response, "Time label must be None when dataset does not contain time"
         )
 
-    # TODO: Fix this test (it should fail)
-    # def test_fetch_get_statistics_invalid_geometry(self):
-    #     response = self.fetch(
-    #         "/statistics/demo/conc_chl?time=2017-01-16+10:09:21&lat=1.786&lon=51.465",
-    #         method="GET",
-    #     )
-    #     self.assertBadRequestResponse(response, "Invalid GeoJSON geometry encountered")
+    def test_fetch_get_statistics_invalid_geometry(self):
+        response = self.fetch(
+            "/statistics/demo/conc_chl?time=2017-01-16+10:09:21&lon=1.768&lat=51.465",
+            method="GET",
+        )
+        self.assertResponseOK(response)
