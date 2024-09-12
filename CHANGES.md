@@ -1,3 +1,6 @@
+## Changes in 1.7.1 (in development)
+
+
 ## Changes in 1.7.0
 
 ### Enhancements
@@ -71,6 +74,8 @@
   in the `open_params` of the `store.open_data()` method. (#1054)
   xcube server has been adapted to always open `MultiLevelDataset`s from
   a specified data store, if that data type is supported.
+* Adjustments to `resample_in_time()` in `xcube/core/resampling/temporal.py`
+  so that xcube now supports `xarray=2024.7`.
 
 ### Other changes
 
