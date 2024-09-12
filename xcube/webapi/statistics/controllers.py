@@ -55,7 +55,7 @@ def _compute_statistics(
                 time = np.array(time_label, dtype=dataset.time.dtype)
                 dataset = dataset.sel(time=time, method="nearest")
             except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest("Invalid 'time'") from e
+                raise ApiError.BadRequest("Invalid query parameter 'time'") from e
         else:
             raise ApiError.BadRequest("Missing query parameter 'time'")
     else:
