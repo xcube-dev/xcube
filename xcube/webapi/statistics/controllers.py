@@ -47,10 +47,7 @@ def _compute_statistics(
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
 
-    dataset_contains_time = False
-
-    if "time" in dataset:
-        dataset_contains_time = True
+    dataset_contains_time = "time" in dataset
 
     if dataset_contains_time:
         if time_label is not None:
