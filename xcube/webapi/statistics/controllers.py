@@ -58,11 +58,11 @@ def _compute_statistics(
                 raise ApiError.BadRequest("Invalid query parameter 'time'") from e
         else:
             raise ApiError.BadRequest("Missing query parameter 'time'")
-    else:
-        if time_label is not None:
-            raise ApiError.BadRequest(
-                "Time label must be None when dataset does not contain time"
-            )
+    elif time_label is not None:
+        raise ApiError.BadRequest(
+            "Query parameter 'time' must not be given"
+            "since dataset does not contain a 'time' dimension"
+        )
 
     if isinstance(geometry, tuple):
         compact_mode = True
