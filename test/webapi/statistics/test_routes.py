@@ -26,7 +26,7 @@ class StatisticsRoutesTest(RoutesTestCase):
             method="POST",
             body='{"type": "Point", "coordinates": [1.768, 51.465]}',
         )
-        self.assertBadRequestResponse(response, "Missing query parameter 'time'")
+        self.assertBadRequestResponse(response, "Missing " "query parameter 'time'")
 
     def test_fetch_post_statistics_missing_time_without_time_dimension_dataset(self):
         response = self.fetch(
@@ -44,7 +44,8 @@ class StatisticsRoutesTest(RoutesTestCase):
         )
         self.assertBadRequestResponse(
             response,
-            "Query parameter 'time' must not be given since dataset does not contain a 'time' dimension",
+            "Query parameter 'time' must not be given since "
+            "dataset does not contain a 'time' dimension",
         )
 
     def test_fetch_post_statistics_invalid_geometry(self):
@@ -53,11 +54,14 @@ class StatisticsRoutesTest(RoutesTestCase):
             method="POST",
             body="[1.768, 51.465]",
         )
-        self.assertBadRequestResponse(response, "Invalid GeoJSON geometry encountered")
+        self.assertBadRequestResponse(
+            response, "Invalid " "GeoJSON geometry encountered"
+        )
 
     def test_fetch_get_statistics_ok(self):
         response = self.fetch(
-            "/statistics/demo/conc_chl?lat=1.786&lon=51.465&time=2017-01-16+10:09:21",
+            "/statistics/demo/conc_chl?"
+            "lat=1.786&lon=51.465&time=2017-01-16+10:09:21",
             method="GET",
         )
         self.assertResponseOK(response)
@@ -66,29 +70,32 @@ class StatisticsRoutesTest(RoutesTestCase):
         response = self.fetch(
             "/statistics/demo/conc_chl?lat=1.786&lon=51.465", method="GET"
         )
-        self.assertBadRequestResponse(response, "Missing query parameter 'time'")
+        self.assertBadRequestResponse(response, "Missing " "query parameter 'time'")
 
     def test_fetch_get_statistics_missing_time_without_time_dimension_dataset(self):
         response = self.fetch(
-            "/statistics/cog_local/band-1?lat=-105.591&lon=35.751&type=Point",
+            "/statistics/cog_local/band-1?lat=-105.591&" "lon=35.751&type=Point",
             method="GET",
         )
         self.assertResponseOK(response)
 
     def test_fetch_get_statistics_with_time_without_time_dimension_dataset(self):
         response = self.fetch(
-            "/statistics/cog_local/band-1?lat=-105.591&lon=35.751&type=Point&time=2017-01-16+10:09:21",
+            "/statistics/cog_local/band-1?lat=-105.591&lon=35.751&"
+            "type=Point&time=2017-01-16+10:09:21",
             method="GET",
             body='{"type": "Point", "coordinates": [-105.591, 35.751]}',
         )
         self.assertBadRequestResponse(
             response,
-            "Query parameter 'time' must not be given since dataset does not contain a 'time' dimension",
+            "Query parameter 'time' must not be given since "
+            "dataset does not contain a 'time' dimension",
         )
 
     def test_fetch_get_statistics_invalid_geometry(self):
         response = self.fetch(
-            "/statistics/demo/conc_chl?time=2017-01-16+10:09:21&lon=1.768&lat=51.465",
+            "/statistics/demo/conc_chl?time=2017-01-16+10:09:21&"
+            "lon=1.768&lat=51.465",
             method="GET",
         )
         self.assertResponseOK(response)

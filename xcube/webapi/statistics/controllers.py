@@ -55,7 +55,7 @@ def _compute_statistics(
                 time = np.array(time_label, dtype=dataset.time.dtype)
                 dataset = dataset.sel(time=time, method="nearest")
             except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest("Invalid query parameter 'time'") from e
+                raise ApiError.BadRequest("Invalid query parameter " "'time'") from e
         else:
             raise ApiError.BadRequest("Missing query parameter 'time'")
     elif time_label is not None:
@@ -72,7 +72,7 @@ def _compute_statistics(
         try:
             geometry = shapely.geometry.shape(geometry)
         except (TypeError, ValueError, AttributeError) as e:
-            raise ApiError.BadRequest("Invalid GeoJSON geometry encountered") from e
+            raise ApiError.BadRequest("Invalid GeoJSON geometry " "encountered") from e
 
     nan_result = NAN_RESULT_COMPACT if compact_mode else NAN_RESULT
 
