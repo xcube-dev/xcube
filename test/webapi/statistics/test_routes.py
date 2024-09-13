@@ -83,7 +83,7 @@ class StatisticsRoutesTest(RoutesTestCase):
         )
         self.assertBadRequestResponse(
             response,
-            "Query parameter 'time' must not be givensince dataset does not contain a 'time' dimension",
+            "Query parameter 'time' must not be given since dataset does not contain a 'time' dimension",
         )
 
     def test_fetch_get_statistics_invalid_geometry(self):
