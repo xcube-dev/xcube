@@ -47,10 +47,22 @@ def _compute_statistics(
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
 
-    try:
-        time = np.array(time_label, dtype=dataset.time.dtype)
-    except (TypeError, ValueError) as e:
-        raise ApiError.BadRequest("Invalid 'time'") from e
+    dataset_contains_time = "time" in dataset
+
+    if dataset_contains_time:
+        if time_label is not None:
+            try:
+                time = np.array(time_label, dtype=dataset.time.dtype)
+                dataset = dataset.sel(time=time, method="nearest")
+            except (TypeError, ValueError) as e:
+                raise ApiError.BadRequest("Invalid query parameter " "'time'") from e
+        else:
+            raise ApiError.BadRequest("Missing query parameter 'time'")
+    elif time_label is not None:
+        raise ApiError.BadRequest(
+            "Query parameter 'time' must not be given"
+            " since dataset does not contain a 'time' dimension"
+        )
 
     if isinstance(geometry, tuple):
         compact_mode = True
@@ -60,11 +72,9 @@ def _compute_statistics(
         try:
             geometry = shapely.geometry.shape(geometry)
         except (TypeError, ValueError, AttributeError) as e:
-            raise ApiError.BadRequest("Invalid GeoJSON geometry encountered") from e
+            raise ApiError.BadRequest("Invalid GeoJSON geometry " "encountered") from e
 
     nan_result = NAN_RESULT_COMPACT if compact_mode else NAN_RESULT
-
-    dataset = dataset.sel(time=time, method="nearest")
 
     x_name, y_name = grid_mapping.xy_dim_names
     if isinstance(geometry, shapely.geometry.Point):
