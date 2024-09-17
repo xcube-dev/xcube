@@ -50,10 +50,7 @@ def _compute_statistics(
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
 
-    dataset_contains_time = False
-
-    if "time" in dataset:
-        dataset_contains_time = True
+    dataset_contains_time = "time" in dataset
 
     if dataset_contains_time:
         if time_label is not None:
@@ -61,14 +58,14 @@ def _compute_statistics(
                 time = np.array(time_label, dtype=dataset.time.dtype)
                 dataset = dataset.sel(time=time, method="nearest")
             except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest("Invalid 'time'") from e
+                raise ApiError.BadRequest("Invalid query parameter " "'time'") from e
         else:
             raise ApiError.BadRequest("Missing query parameter 'time'")
-    else:
-        if time_label is not None:
-            raise ApiError.BadRequest(
-                "Time label must be None when dataset does not contain time"
-            )
+    elif time_label is not None:
+        raise ApiError.BadRequest(
+            "Query parameter 'time' must not be given"
+            " since dataset does not contain a 'time' dimension"
+        )
 
     if isinstance(geometry, tuple):
         compact_mode = True
@@ -79,7 +76,7 @@ def _compute_statistics(
             geometry = normalize_geometry(geometry)
         except (TypeError, ValueError, AttributeError) as e:
             raise ApiError.BadRequest(
-                f"Invalid GeoJSON geometry encountered: {e}"
+                f"Invalid GeoJSON geometry " "encountered: {e}"
             ) from e
 
     if geometry is not None and not grid_mapping.crs.is_geographic:

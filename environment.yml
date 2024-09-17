@@ -40,7 +40,7 @@ dependencies:
   - shapely >=1.6
   - tornado >=6.0
   - urllib3 >=1.26
-  - xarray >=2022.6, <=2024.6
+  - xarray >=2022.6
   - zarr >=2.11
   # Testing
   - flake8 >=3.7

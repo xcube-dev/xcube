@@ -50,6 +50,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+out.yml
 *.cover
 .hypothesis/
 .pytest_cache/
@@ -116,3 +117,6 @@ ENV/
 mydask.png
 
 .cfgs
+
+# Alternative xcube demo
+examples/serve/demo2/
