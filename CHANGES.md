@@ -4,7 +4,7 @@
 
 * The `time` query parameter of the `/statistics` endpoint of xcube server has 
    now been made optional. (#1066)
-* The `/statistics` endpoint now supports datasets using `non-WGS84` grid systems, 
+* The `/statistics` endpoint now supports datasets using non-WGS84 grid systems, 
   expanding its compatibility with a wider range of geospatial datasets.
   (#1069)
 
