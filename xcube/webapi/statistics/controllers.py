@@ -1,12 +1,15 @@
-from collections.abc import Mapping
 from typing import Any, Union
 
 import numpy as np
-import xarray as xr
+import pyproj
 import shapely
+import shapely.ops
+import xarray as xr
 
+from xcube.constants import CRS_CRS84
 from xcube.constants import LOG
 from xcube.core.geom import get_dataset_geometry
+from xcube.core.geom import normalize_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.varexpr import VarExprContext
 from xcube.core.varexpr import split_var_assignment
@@ -70,9 +73,17 @@ def _compute_statistics(
     else:
         compact_mode = False
         try:
-            geometry = shapely.geometry.shape(geometry)
+            geometry = normalize_geometry(geometry)
         except (TypeError, ValueError, AttributeError) as e:
-            raise ApiError.BadRequest("Invalid GeoJSON geometry " "encountered") from e
+            raise ApiError.BadRequest(
+                f"Invalid GeoJSON geometry " "encountered: {e}"
+            ) from e
+
+    if geometry is not None and not grid_mapping.crs.is_geographic:
+        project = pyproj.Transformer.from_crs(
+            CRS_CRS84, grid_mapping.crs, always_xy=True
+        ).transform
+        geometry = shapely.ops.transform(project, geometry)
 
     nan_result = NAN_RESULT_COMPACT if compact_mode else NAN_RESULT
 
