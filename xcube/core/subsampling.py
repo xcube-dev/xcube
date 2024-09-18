@@ -175,14 +175,19 @@ _FULL_SLICE = slice(None, None, None)
 def get_variable_subsampling_slices(
     variable: xr.DataArray, step: int, xy_dim_names: Optional[tuple[str, str]] = None
 ) -> Optional[tuple[slice, ...]]:
-    """
-    Compute subsampling slices for *variable*.
-    Return None, if *variable* does not contain spatial
-    dimensions.
+    """Compute subsampling array slices for *variable*.
 
-    variable: the dataset providing the variables
-    step: the integer subsampling step
-    xy_dim_names: the spatial dimension names
+    Args:
+        variable: the dataset providing the variables
+        step: the integer subsampling step
+        xy_dim_names: the spatial dimension names
+
+    Returns:
+        A tuple that comprises array slices for all variable dimensions.
+        The slices for spatial dimensions are subsampled according
+        to *step*, while other slices are cover every array item.
+        Returns `None`, if *variable* does not contain spatial
+        dimensions at all.
     """
     assert_instance(variable, xr.DataArray, name="variable")
     assert_instance(step, int, name="step")
