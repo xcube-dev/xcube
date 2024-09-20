@@ -318,6 +318,28 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         )
         self.assertEqual(("lon", "lat"), transformed_gm.xy_dim_names)
 
+    def test_to_regular(self):
+        gm = _TestGridMapping(
+            **self.kwargs(
+                xy_min=(9.6, 47.6),
+                size=(1000, 1000),
+                tile_size=(1000, 1000),
+                xy_res=(0.0002, 0.0002),
+            )
+        )
+        transformed_gm = gm.transform("EPSG:32633")
+        transformed_gm_regular = transformed_gm.to_regular()
+
+        self.assertIsNot(gm, transformed_gm_regular)
+        self.assertIsInstance(transformed_gm_regular, RegularGridMapping)
+        self.assertEqual(
+            pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
+        )
+        self.assertEqual((827, 1163), transformed_gm_regular.size)
+        self.assertEqual((827, 1163), transformed_gm_regular.tile_size)
+        self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
+        self.assertEqual(False, transformed_gm_regular.is_lon_360)
+
     def test_is_close(self):
         gm1 = _TestGridMapping(
             **self.kwargs(xy_min=(0, 0), size=(400, 200), xy_res=(0.01, 0.01))

@@ -66,7 +66,7 @@ def new_regular_grid_mapping(
     crs: Union[str, pyproj.crs.CRS],
     *,
     tile_size: Union[int, tuple[int, int]] = None,
-    is_j_axis_up: bool = False
+    is_j_axis_up: bool = False,
 ) -> GridMapping:
     width, height = _normalize_int_pair(size, name="size")
     assert_true(width > 1 and height > 1, "invalid size")
@@ -99,7 +99,7 @@ def new_regular_grid_mapping(
         xy_res=(x_res, y_res),
         xy_var_names=_default_xy_var_names(crs),
         xy_dim_names=_default_xy_dim_names(crs),
-        is_lon_360=x_max > 180,
+        is_lon_360=(x_max > 180) and crs.is_geographic,
         is_j_axis_up=is_j_axis_up,
     )
 
@@ -108,7 +108,7 @@ def to_regular_grid_mapping(
     grid_mapping: GridMapping,
     *,
     tile_size: Union[int, tuple[int, int]] = None,
-    is_j_axis_up: bool = False
+    is_j_axis_up: bool = False,
 ) -> GridMapping:
     if grid_mapping.is_regular:
         if tile_size is not None or is_j_axis_up != grid_mapping.is_j_axis_up:
