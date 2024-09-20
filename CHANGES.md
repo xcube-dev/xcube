@@ -7,7 +7,7 @@
 * The `/statistics` endpoint now supports datasets using non-WGS84 grid systems, 
   expanding its compatibility with a wider range of geospatial datasets.
   (#1069)
-* Bug fix in `resampling_in_space` when projecting from geographic to non-geografic
+* Bug fix in `resampling_in_space` when projecting from geographic to non-geographic
   projection. (#1073)
 
 ## Changes in 1.7.0
