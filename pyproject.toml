@@ -9,8 +9,8 @@ authors = [
   {name = "xcube Development Team"}
 ]
 description = """\
-  xcube is a Python package for generating and exploiting 
-  data cubes powered by xarray, dask, and zarr.
+  xcube is a Python package for generating and exploiting \
+  data cubes powered by xarray, dask, and zarr. \
   """
 keywords = [
   "analysis ready data", "data science",
