@@ -48,7 +48,7 @@ build_script:
   - mkdir -p ~/micromamba/pkgs/
   - export MAMBA_ROOT_PREFIX=~/micromamba
   - export MAMBA_EXE=$(pwd)/micromamba
-  - . $MAMBA_ROOT_PREFIX/etc/profile.d/micromamba.sh
+  - . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
 
   # Create environment from build folder environment.yml and install xcube
   - micromamba create --name xc --file $APPVEYOR_BUILD_FOLDER/environment.yml
