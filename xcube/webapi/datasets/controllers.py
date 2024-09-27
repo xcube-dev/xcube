@@ -30,6 +30,7 @@ from .authutil import assert_scopes
 from .authutil import check_scopes
 from .context import DatasetConfig
 from .context import DatasetsContext
+from ..common.telemetry import tracer
 from ..places.controllers import GeoJsonFeatureCollection
 from ..places.controllers import find_places
 
@@ -494,6 +495,7 @@ def get_dataset_coordinates(ctx: DatasetsContext, ds_id: str, dim_name: str) -> 
 
 
 # noinspection PyUnusedLocal
+@tracer.start_as_current_span("get_color_bars.test")
 def get_color_bars(ctx: DatasetsContext, mime_type: str) -> str:
     cmaps = ctx.colormap_registry.to_json()
     if mime_type == "application/json":

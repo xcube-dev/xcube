@@ -18,6 +18,7 @@ from xcube.constants import (
     DEFAULT_SERVER_PORT,
     DEFAULT_SERVER_ADDRESS,
 )
+from xcube.webapi.common.telemetry import tracer
 
 assets_to_show = ["apis", "endpoints", "openapi", "config", "configschema"]
 
@@ -134,6 +135,7 @@ assets_to_show_choices.extend([a + ".json" for a in assets_to_show])
 @cli_option_quiet
 @cli_option_verbosity
 @click.argument("paths", metavar="[PATHS...]", nargs=-1)
+@tracer.start_as_current_span("serve")
 def serve(
     framework_name: str,
     port: int,

@@ -14,6 +14,8 @@ from ..datasets import QUERY_PARAM_CRS
 from ..datasets import QUERY_PARAM_VMAX
 from ..datasets import QUERY_PARAM_VMIN
 
+import opentelemetry.context as context
+
 PATH_PARAM_X = {
     "name": "x",
     "in": "path",
@@ -88,6 +90,7 @@ class TilesHandler(ApiHandler[TilesContext]):
         parameters=TILE_PARAMETERS,
     )
     async def get(self, datasetId: str, varName: str, z: str, y: str, x: str):
+        current_context = context.get_current()
         tile = await self.ctx.run_in_executor(
             None,
             compute_ml_dataset_tile,
@@ -99,6 +102,7 @@ class TilesHandler(ApiHandler[TilesContext]):
             y,
             z,
             {k: v[0] for k, v in self.request.query.items()},
+            current_context,
         )
         self.response.set_header("Content-Type", "image/png")
         await self.response.finish(tile)
