@@ -1,10 +1,13 @@
+import os
+
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+
 otel_config = {
-    "exporter_otlp_endpoint": "http://localhost:4317",
+    "exporter_otlp_endpoint": os.getenv("OTLP_ENDPOINT"),
     "exporter_otlp_insecure": True,
 }
 
