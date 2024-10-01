@@ -66,8 +66,8 @@ DEFAULT_AGG_METHOD = "first"
     default=DEFAULT_AGG_METHOD,
     help=f"Aggregation method(s) to be used for data variables."
     f' Either one of "first", "min", "max", "mean", "median",'
-    f' "auto" or list of assignments to individual variables'
-    f" using the notation"
+    f' "mode", "auto" or list of assignments to individual'
+    f' variables using the notation'
     f' "<var1>=<method1>,<var2>=<method2>,..."'
     f' Defaults to "{DEFAULT_AGG_METHOD}".',
 )

@@ -133,6 +133,28 @@ class SubsampleDatasetTest(unittest.TestCase):
             np.array([2.0, 4.0, 6.0]),
         )
 
+    def test_subsample_dataset_mode(self):
+        subsampled_dataset = subsample_dataset(self.dataset, step=2, agg_methods="mode")
+        self.assert_subsampling_ok(
+            subsampled_dataset,
+            np.array(
+                [
+                    [[2, 4, 6], [4, 6, 8], [1, 3, 5]],
+                    [[12, 14, 16], [14, 16, 18], [11, 13, 15]],
+                ],
+                dtype=np.int16,
+            ),
+            np.array(
+                [
+                    [[0.2, 0.4, 0.6], [0.4, 0.6, 0.8], [0.1, 0.3, 0.5]],
+                    [[1.2, 1.4, 1.6], [1.4, 1.6, 1.8], [1.1, 1.3, 1.5]],
+                ],
+                dtype=np.float64,
+            ),
+            np.array([1.0, 3.0, 5.0]),
+            np.array([2.0, 4.0, 6.0]),
+        )
+
     def assert_subsampling_ok(
         self,
         subsampled_dataset: xr.Dataset,

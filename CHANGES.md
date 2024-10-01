@@ -10,6 +10,11 @@
 * Bug fix in `resampling_in_space` when projecting from geographic to non-geographic
   projection. (#1073)
 
+### Enhancements
+
+* Level creation now supports aggregation method `mode` to aggregate to the value which
+  is most frequent. (#913)
+
 ## Changes in 1.7.0
 
 ### Enhancements

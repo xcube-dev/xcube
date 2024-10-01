@@ -8,11 +8,12 @@ from typing import Tuple, Optional, Union
 from collections.abc import Hashable, Mapping
 
 import numpy as np
+from scipy import stats
 import xarray as xr
 
 from xcube.util.assertions import assert_instance, assert_in, assert_true
 
-AGG_METHODS = "auto", "first", "min", "max", "mean", "median"
+AGG_METHODS = "auto", "first", "min", "max", "mean", "median", "mode"
 DEFAULT_INT_AGG_METHOD = "first"
 DEFAULT_FLOAT_AGG_METHOD = "mean"
 
@@ -40,7 +41,7 @@ def subsample_dataset(
         agg_methods: Optional aggregation methods.
             May be given as string or as mapping from variable name pattern
             to aggregation method. Valid aggregation methods are
-            "auto", "first", "min", "max", "mean", "median".
+            "auto", "first", "min", "max", "mean", "median", and "mode".
             If "auto", the default, "first" is used for integer variables
             and "mean" for floating point variables.
     Returns:
@@ -75,7 +76,10 @@ def subsample_dataset(
                 if y_name in var.dims:
                     dim[y_name] = step
                 var_coarsen = var.coarsen(dim=dim, boundary="pad", coord_func="min")
-                new_var: xr.DataArray = getattr(var_coarsen, agg_method)()
+                if agg_method == "mode":
+                    new_var: xr.DataArray = var_coarsen.reduce(_mode)
+                else:
+                    new_var: xr.DataArray = getattr(var_coarsen, agg_method)()
                 if new_var.dtype != var.dtype:
                     # We don't want, e.g. "mean", to turn data
                     # from dtype unit16 into float64
@@ -107,6 +111,10 @@ def subsample_dataset(
         }
 
     return xr.Dataset(data_vars=new_data_vars, attrs=dataset.attrs)
+
+
+def _mode(x, axis, **kwargs):
+    return stats.mode(x, axis, nan_policy="omit", **kwargs).mode
 
 
 def get_dataset_agg_methods(
