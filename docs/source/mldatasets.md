@@ -98,6 +98,7 @@ The values are aggregation methods. Valid values are
 | `max`    | Minimum value of a window of N x N pixels.                   | 
 | `mean`   | Mean value of a window of N x N pixels.                      | 
 | `median` | Median value of a window of N x N pixels.                    | 
+| `mode`   | Modal (most common) value of a window of N x N pixels.       | 
 
 The following is an example of the `.zlevels` file for a dataset with the 
 data variables `CHL` (chlorophyll) if type `float32` and a variable 
