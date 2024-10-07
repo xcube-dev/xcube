@@ -148,14 +148,16 @@ EXPECTED_DATASETS_COLLECTION = {
 }
 
 
-def assert_equal_deep_dict(self, dict1, dict2):
+def assert_equal_deep_dict(self, dict1, dict2, msg=None):
+    if msg is None:
+        msg = "Error occurred in key:"
     for key in dict1:
         if isinstance(dict1[key], dict):
-            assert_equal_deep_dict(self, dict1[key], dict2[key])
+            assert_equal_deep_dict(self, dict1[key], dict2[key], msg=f"{msg} {key},")
         if hasattr(dict1[key], "__iter__"):
-            self.assertCountEqual(dict1[key], dict2[key])
+            self.assertCountEqual(dict1[key], dict2[key], msg=msg[:-1])
         else:
-            self.assertEqual(dict1[key], dict2[key])
+            self.assertEqual(dict1[key], dict2[key], msg=msg[:-1])
 
 
 class StacControllersTest(unittest.TestCase):
