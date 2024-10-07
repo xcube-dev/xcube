@@ -632,7 +632,7 @@ def _get_single_dataset_collection(
                     {"cellsCount": gm.size[1], "resolution": gm.xy_res[1]},
                 ],
             },
-            "temporal": {"interval": [[time_interval]], "grid": get_time_grid(dataset)},
+            "temporal": {"interval": [time_interval], "grid": get_time_grid(dataset)},
         },
         "id": dataset_dict.get("id"),
         "keywords": [],

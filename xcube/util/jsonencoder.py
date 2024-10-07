@@ -102,7 +102,7 @@ def _convert_default(obj: Any) -> Any:
             elif np.issubdtype(obj.dtype, np.floating):
                 return float(obj)
             elif np.issubdtype(obj.dtype, np.datetime64):
-                return np.datetime_as_string(obj, timezone="UTC", unit="s")
+                return str(np.datetime_as_string(obj, timezone="UTC", unit="s"))
             elif np.issubdtype(obj.dtype, np.str):
                 return str(obj)
         else:

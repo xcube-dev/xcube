@@ -148,6 +148,16 @@ EXPECTED_DATASETS_COLLECTION = {
 }
 
 
+def assert_equal_deep_dict(self, dict1, dict2):
+    for key in dict1:
+        if isinstance(dict1[key], dict):
+            assert_equal_deep_dict(self, dict1[key], dict2[key])
+        if hasattr(dict1[key], "__iter__"):
+            self.assertCountEqual(dict1[key], dict2[key])
+        else:
+            self.assertEqual(dict1[key], dict2[key])
+
+
 class StacControllersTest(unittest.TestCase):
     @functools.lru_cache
     def read_json(self, filename):
@@ -174,7 +184,7 @@ class StacControllersTest(unittest.TestCase):
             "demo-1w",
         )
         self.assertIsInstance(result, dict)
-        self.assertCountEqual(self.read_json("stac-datacubes-item.json"), result)
+        assert_equal_deep_dict(self, self.read_json("stac-datacubes-item.json"), result)
 
     def test_get_single_collection_item(self):
         self.maxDiff = None
@@ -185,7 +195,7 @@ class StacControllersTest(unittest.TestCase):
             DEFAULT_FEATURE_ID,
         )
         self.assertIsInstance(result, dict)
-        self.assertCountEqual(self.read_json("stac-single-item.json"), result)
+        assert_equal_deep_dict(self, self.read_json("stac-single-item.json"), result)
 
     def test_get_collection_item_nonexistent_feature(self):
         self.assertRaises(
@@ -243,13 +253,13 @@ class StacControllersTest(unittest.TestCase):
 
     def test_get_single_collection(self):
         result = get_collection(get_stac_ctx(), BASE_URL, "demo")
-        self.assertCountEqual(self.read_json("demo-collection.json"), result)
+        assert_equal_deep_dict(self, self.read_json("demo-collection.json"), result)
 
     def test_get_single_collection_different_crs(self):
         testing_ctx = StacContext(get_stac_ctx().server_ctx)
         testing_ctx._available_crss = ["OGC:CRS84"]
         result = get_collection(testing_ctx, BASE_URL, "demo")
-        self.assertCountEqual(self.read_json("demo-collection.json"), result)
+        assert_equal_deep_dict(self, self.read_json("demo-collection.json"), result)
 
     def test_get_collections(self):
         result = get_collections(get_stac_ctx(), BASE_URL)

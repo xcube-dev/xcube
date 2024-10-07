@@ -9,6 +9,10 @@
   (#1069)
 * Bug fix in `resampling_in_space` when projecting from geographic to non-geographic
   projection. (#1073)
+* Bug fix of the `extent` field in the single item collection published by the xcube
+  server STAC API so that it follows the 
+  [collection STAC specifications](https://github.com/radiantearth/stac-spec/blob/master/collection-spec/collection-spec.md#extent-object).
+  (#1077)
 
 ## Changes in 1.7.0
 

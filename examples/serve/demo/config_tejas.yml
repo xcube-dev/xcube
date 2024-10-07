@@ -1,0 +1,55 @@
+## Example of OIDC configuration for auth0.
+## Please note the trailing slash in the "Authority" URL.
+#
+#Authentication:
+#  Authority: https://xcube-dev.eu.auth0.com/
+#  Audience: https://xcube-dev/api/
+#
+## Example of OIDC configuration for Keycloak.
+## Please note no trailing slash in the "Authority" URL.
+#
+#Authentication:
+#  Authority: https://kc.brockmann-consult.de/auth/realms/AVL
+#  Audience: avl-xc-api
+
+DatasetAttribution:
+  - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+  - "© by EU H2020 CyanoAlert project"
+
+DatasetChunkCacheSize: 100M
+
+DataStores:
+  - Identifier: deep-esdl
+    StoreId: s3
+    StoreParams:
+      root: deep-esdl-public
+      storage_options:
+        anon: false
+    Datasets:
+      - Identifier: hydrology
+        Path: hydrology-1D-0.009deg-1x1102x966-3.0.2.levels
+        Style: default
+        Variables:
+          - "SM"
+          - "*"
+        AccessControl:
+          # Due to this it will only appear for unauthorized clients
+          IsSubstitute: true
+
+ServiceProvider:
+  ProviderName: Brockmann Consult GmbH
+  ProviderSite: https://www.brockmann-consult.de
+  ServiceContact:
+    IndividualName: Norman Fomferra
+    PositionName: Senior Software Engineer
+    ContactInfo:
+      Phone:
+        Voice: +49 40 696 389 300
+        Facsimile: +49 40 696 389 399
+      Address:
+        DeliveryPoint: Chrysanderstr. 1
+        City: Hamburg
+        AdministrativeArea: Hamburg
+        PostalCode: 21029
+        Country: Germany
+        ElectronicMailAddress: info@brockmann-consult.de
