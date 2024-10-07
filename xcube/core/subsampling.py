@@ -71,15 +71,15 @@ def subsample_dataset(
                 assert slices is not None
                 new_var = var[slices]
             else:
-                dim = dict()
-                if x_name in var.dims:
-                    dim[x_name] = step
-                if y_name in var.dims:
-                    dim[y_name] = step
-                var_coarsen = var.coarsen(dim=dim, boundary="pad", coord_func="min")
                 if agg_method == "mode":
-                    new_var: xr.DataArray = var_coarsen.reduce(_mode)
+                    new_var: xr.DataArray = _mode(var, x_name, y_name, step)
                 else:
+                    dim = dict()
+                    if x_name in var.dims:
+                        dim[x_name] = step
+                    if y_name in var.dims:
+                        dim[y_name] = step
+                    var_coarsen = var.coarsen(dim=dim, boundary="pad", coord_func="min")
                     new_var: xr.DataArray = getattr(var_coarsen, agg_method)()
                 if new_var.dtype != var.dtype:
                     # We don't want, e.g. "mean", to turn data
@@ -114,12 +114,35 @@ def subsample_dataset(
     return xr.Dataset(data_vars=new_data_vars, attrs=dataset.attrs)
 
 
-def _mode(x, axis, **kwargs):
+def _mode(var: xr.DataArray, x_name: str, y_name: str, step: int):
+    dim = dict()
+    drop_axis = []
+    if x_name in var.dims:
+        dim[x_name] = step
+        drop_axis.append(var.dims.index(x_name))
+    if y_name in var.dims:
+        dim[y_name] = step
+        drop_axis.append(var.dims.index(y_name))
+    var_coarsen = var.coarsen(dim=dim, boundary="pad", coord_func="min")
+    if drop_axis[0] > drop_axis[1]:
+        drop_axis[0] += 2
+        drop_axis[1] += 1
+    else:
+        drop_axis[0] += 1
+        drop_axis[1] += 2
+
     def _scipy_mode(x, axis, **kwargs):
         return stats.mode(x, axis, nan_policy="omit", **kwargs).mode
-    if isinstance(x, da.Array):
-        return x.map_blocks(_scipy_mode, axis=axis, dtype=x.dtype, **kwargs)
-    return _scipy_mode(x, axis, **kwargs)
+
+    def _mode_dask(x, axis, **kwargs):
+        return x.map_blocks(
+            _scipy_mode, axis=axis, dtype=x.dtype, drop_axis=drop_axis, **kwargs
+        )
+
+    if isinstance(var.data, da.Array):
+        return var_coarsen.reduce(_mode_dask)
+    else:
+        return var_coarsen.reduce(_scipy_mode)
 
 
 def get_dataset_agg_methods(
