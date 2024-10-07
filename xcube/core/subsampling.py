@@ -3,8 +3,9 @@
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
+import dask.array as da
 import fnmatch
-from typing import Tuple, Optional, Union
+from typing import Optional, Union
 from collections.abc import Hashable, Mapping
 
 import numpy as np
@@ -114,7 +115,11 @@ def subsample_dataset(
 
 
 def _mode(x, axis, **kwargs):
-    return stats.mode(x, axis, nan_policy="omit", **kwargs).mode
+    def _scipy_mode(x, axis, **kwargs):
+        return stats.mode(x, axis, nan_policy="omit", **kwargs).mode
+    if isinstance(x, da.Array):
+        return x.map_blocks(_scipy_mode, axis=axis, dtype=x.dtype, **kwargs)
+    return _scipy_mode(x, axis, **kwargs)
 
 
 def get_dataset_agg_methods(
