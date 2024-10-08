@@ -148,7 +148,19 @@ EXPECTED_DATASETS_COLLECTION = {
 }
 
 
-def assert_equal_deep_dict(self, dict1, dict2, msg=None):
+def assert_equal_deep_dict(
+    self: unittest.TestCase, dict1: dict, dict2: dict, msg: str = None
+):
+    """This function asserts whether two dictionaries are equal while being
+    insensitive to the order of iterables within the dictionaries.
+
+    Args:
+        self: unittest class
+        dict1: dictionary 1 to be tested
+        dict2: dictionary 2 to be tested
+        msg: additional message to be printed if assertion fails; needed to keep
+            track of the key where equality assertion fails.
+    """
     if msg is None:
         msg = "Error occurred in key:"
     for key in dict1:
