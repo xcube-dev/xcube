@@ -133,6 +133,77 @@ class SubsampleDatasetTest(unittest.TestCase):
             np.array([2.0, 4.0, 6.0]),
         )
 
+    def test_subsample_dataset_mode_numpy(self):
+        subsampled_dataset = subsample_dataset(self.dataset, step=2, agg_methods="mode")
+        self.assert_subsampling_ok(
+            subsampled_dataset,
+            np.array(
+                [
+                    [[2, 4, 6], [4, 6, 8], [1, 3, 5]],
+                    [[12, 14, 16], [14, 16, 18], [11, 13, 15]],
+                ],
+                dtype=np.int16,
+            ),
+            np.array(
+                [
+                    [[0.2, 0.4, 0.6], [0.4, 0.6, 0.8], [0.1, 0.3, 0.5]],
+                    [[1.2, 1.4, 1.6], [1.4, 1.6, 1.8], [1.1, 1.3, 1.5]],
+                ],
+                dtype=np.float64,
+            ),
+            np.array([1.0, 3.0, 5.0]),
+            np.array([2.0, 4.0, 6.0]),
+        )
+
+    def test_subsample_dataset_mode_dask(self):
+        import dask.array as da
+        test_data_1 = da.array(
+            [
+                [1, 2, 3, 4, 5, 6],
+                [2, 3, 4, 5, 6, 7],
+                [3, 4, 5, 6, 7, 8],
+                [4, 5, 6, 7, 8, 9],
+                [1, 2, 3, 4, 5, 6],
+            ],
+            dtype=np.int16,
+        )
+        test_data_1 = da.stack([test_data_1, test_data_1 + 10])
+        test_data_2 = 0.1 * test_data_1
+        dask_dataset = new_cube(
+            width=6,  # even
+            height=5,  # odd
+            x_name="x",
+            y_name="y",
+            x_start=0.5,
+            y_start=1.5,
+            x_res=1.0,
+            y_res=1.0,
+            time_periods=2,
+            crs=CRS84,
+            crs_name="spatial_ref",
+            variables=dict(var_1=test_data_1, var_2=test_data_2),
+        )
+        subsampled_dataset = subsample_dataset(dask_dataset, step=2, agg_methods="mode")
+        self.assert_subsampling_ok(
+            subsampled_dataset,
+            np.array(
+                [
+                    [[2, 4, 6], [4, 6, 8], [1, 3, 5]],
+                    [[12, 14, 16], [14, 16, 18], [11, 13, 15]],
+                ],
+                dtype=np.int16,
+            ),
+            np.array(
+                [
+                    [[0.2, 0.4, 0.6], [0.4, 0.6, 0.8], [0.1, 0.3, 0.5]],
+                    [[1.2, 1.4, 1.6], [1.4, 1.6, 1.8], [1.1, 1.3, 1.5]],
+                ],
+                dtype=np.float64,
+            ),
+            np.array([1.0, 3.0, 5.0]),
+            np.array([2.0, 4.0, 6.0]),
+        )
+
     def assert_subsampling_ok(
         self,
         subsampled_dataset: xr.Dataset,

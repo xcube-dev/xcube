@@ -29,9 +29,9 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         agg_methods: Optional aggregation methods. May be given as
             string or as mapping from variable name pattern to
             aggregation method. Valid aggregation methods are None,
-            "first", "min", "max", "mean", "median". If None, the
-            default, "first" is used for integer variables and "mean"
-            for floating point variables.
+            "first", "min", "max", "mean", "median", and "mode".
+            If None, the default, "first" is used for integer
+            variables and "mean" for floating point variables.
     """
 
     def __init__(

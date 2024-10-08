@@ -3,16 +3,18 @@
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
+import dask.array as da
 import fnmatch
-from typing import Tuple, Optional, Union
+from typing import Optional, Union, List
 from collections.abc import Hashable, Mapping
 
 import numpy as np
+from scipy import stats
 import xarray as xr
 
 from xcube.util.assertions import assert_instance, assert_in, assert_true
 
-AGG_METHODS = "auto", "first", "min", "max", "mean", "median"
+AGG_METHODS = "auto", "first", "min", "max", "mean", "median", "mode"
 DEFAULT_INT_AGG_METHOD = "first"
 DEFAULT_FLOAT_AGG_METHOD = "mean"
 
@@ -40,7 +42,7 @@ def subsample_dataset(
         agg_methods: Optional aggregation methods.
             May be given as string or as mapping from variable name pattern
             to aggregation method. Valid aggregation methods are
-            "auto", "first", "min", "max", "mean", "median".
+            "auto", "first", "min", "max", "mean", "median", and "mode".
             If "auto", the default, "first" is used for integer variables
             and "mean" for floating point variables.
     Returns:
@@ -69,13 +71,12 @@ def subsample_dataset(
                 assert slices is not None
                 new_var = var[slices]
             else:
-                dim = dict()
-                if x_name in var.dims:
-                    dim[x_name] = step
-                if y_name in var.dims:
-                    dim[y_name] = step
-                var_coarsen = var.coarsen(dim=dim, boundary="pad", coord_func="min")
-                new_var: xr.DataArray = getattr(var_coarsen, agg_method)()
+                if agg_method == "mode":
+                    new_var: xr.DataArray = _agg_mode(var, x_name, y_name, step)
+                else:
+                    new_var: xr.DataArray = _agg_builtin(
+                        var, x_name, y_name, step, agg_method
+                    )
                 if new_var.dtype != var.dtype:
                     # We don't want, e.g. "mean", to turn data
                     # from dtype unit16 into float64
@@ -108,6 +109,64 @@ def subsample_dataset(
 
     return xr.Dataset(data_vars=new_data_vars, attrs=dataset.attrs)
 
+
+def _agg_mode(var: xr.DataArray, x_name: str, y_name: str, step: int) -> xr.DataArray:
+    var_coarsen = _coarsen(var, x_name, y_name, step)
+    drop_axis = _get_drop_axis(var, x_name, y_name, step)
+
+    def _scipy_mode(x, axis, **kwargs):
+        return stats.mode(x, axis, nan_policy="omit", **kwargs).mode
+
+    def _mode_dask(x, axis, **kwargs):
+        return x.map_blocks(
+            _scipy_mode, axis=axis, dtype=x.dtype, drop_axis=drop_axis, **kwargs
+        )
+
+    if isinstance(var.data, da.Array):
+        return var_coarsen.reduce(_mode_dask)
+    else:
+        return var_coarsen.reduce(_scipy_mode)
+
+
+def _agg_builtin(
+    var: xr.DataArray, x_name: str, y_name: str, step: int, agg_method: str
+) -> xr.DataArray:
+    var_coarsen = _coarsen(var, x_name, y_name, step)
+    return getattr(var_coarsen, agg_method)()
+
+
+def _coarsen(var: xr.DataArray, x_name: str, y_name: str, step: int):
+  dim = dict()
+  if x_name in var.dims:
+      dim[x_name] = step
+  if y_name in var.dims:
+      dim[y_name] = step
+  return var.coarsen(dim=dim, boundary="pad", coord_func="min")
+
+
+def _get_drop_axis(var: xr.DataArray, x_name: str, y_name: str, step: int) -> List[int]:
+    """
+    This function serves to determine the indexes of the dimensions of a coarsened
+    array that will not be included in the array after reduction. These dimensions
+    are the indexes following the indexes of the spatial dimensions from the original
+    array, so first these indexes are determined, then they are shifted appropriately.
+    """
+    drop_axis = []
+    if x_name in var.dims:
+        drop_axis.append(var.dims.index(x_name))
+    if y_name in var.dims:
+        drop_axis.append(var.dims.index(y_name))
+    if len(drop_axis) == 1:
+        drop_axis[0] += 1
+    elif len(drop_axis) == 2:
+        # The latter index must be shifted by two positions
+        if drop_axis[0] > drop_axis[1]:
+            drop_axis[0] += 2
+            drop_axis[1] += 1
+        else:
+            drop_axis[0] += 1
+            drop_axis[1] += 2
+    return drop_axis
 
 def get_dataset_agg_methods(
     dataset: xr.Dataset,
