@@ -1,4 +1,9 @@
-## Changes in 1.7.1 (in development)
+## Changes in 1.7.1
+
+### Enhancements
+
+* Level creation now supports aggregation method `mode` to aggregate to the value which
+  is most frequent. (#913)
 
 ### Fixes
 
@@ -13,11 +18,6 @@
   server STAC API so that it follows the 
   [collection STAC specifications](https://github.com/radiantearth/stac-spec/blob/master/collection-spec/collection-spec.md#extent-object).
   (#1077)
-
-### Enhancements
-
-* Level creation now supports aggregation method `mode` to aggregate to the value which
-  is most frequent. (#913)
 
 ## Changes in 1.7.0
 
