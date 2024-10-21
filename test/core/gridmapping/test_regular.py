@@ -62,8 +62,9 @@ class RegularGridMappingTest(unittest.TestCase):
         self.assertEqual(True, derived_gm.is_j_axis_up)
 
     def test_xy_coords(self):
-        gm = GridMapping.regular((8, 4), (10, 53), 0.1, CRS_WGS84)
-        gm = gm.derive(tile_size=(4, 2))
+        gm = GridMapping.regular((8, 4), (10, 53), 0.1, CRS_WGS84).derive(
+            tile_size=(4, 2)
+        )
         xy_coords = gm.xy_coords
         self.assertIsInstance(xy_coords, xr.DataArray)
         self.assertIs(gm.xy_coords, xy_coords)
