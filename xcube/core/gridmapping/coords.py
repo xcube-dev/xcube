@@ -61,10 +61,7 @@ class Coords1DGridMapping(CoordsGridMapping):
         y, x = xr.broadcast(self._y_coords, self._x_coords)
         tmp = xr.concat([x, y], dim="coord")
         return tmp.chunk(
-            {
-                dim: size for (dim, size) in
-                zip(tmp.dims, self.xy_coords_chunks)
-            }
+            {dim: size for (dim, size) in zip(tmp.dims, self.xy_coords_chunks)}
         )
 
 
@@ -76,10 +73,7 @@ class Coords2DGridMapping(CoordsGridMapping):
     def _new_xy_coords(self) -> xr.DataArray:
         tmp = xr.concat([self._x_coords, self._y_coords], dim="coord")
         return tmp.chunk(
-            {
-                dim: size for (dim, size) in
-                zip(tmp.dims, self.xy_coords_chunks)
-            }
+            {dim: size for (dim, size) in zip(tmp.dims, self.xy_coords_chunks)}
         )
 
 
@@ -178,10 +172,10 @@ def new_grid_mapping_from_coords(
         x = da.asarray(x_coords)
         y = da.asarray(y_coords)
 
-        x_x_diff = _abs_no_nan(da.diff(x, axis=1))
-        x_y_diff = _abs_no_nan(da.diff(x, axis=0))
-        y_x_diff = _abs_no_nan(da.diff(y, axis=1))
-        y_y_diff = _abs_no_nan(da.diff(y, axis=0))
+        x_x_diff = _abs_no_nan(da.diff(x[0, :]))
+        x_y_diff = _abs_no_nan(da.diff(x[:, 0]))
+        y_x_diff = _abs_no_nan(da.diff(y[0, :]))
+        y_y_diff = _abs_no_nan(da.diff(y[:, 0]))
 
         if not is_lon_360 and crs.is_geographic:
             is_anti_meridian_crossed = da.any(da.max(x_x_diff) > 180) or da.any(
@@ -190,32 +184,23 @@ def new_grid_mapping_from_coords(
             if is_anti_meridian_crossed:
                 x_coords = to_lon_360(x_coords)
                 x = da.asarray(x_coords)
-                x_x_diff = _abs_no_nan(da.diff(x, axis=1))
-                x_y_diff = _abs_no_nan(da.diff(x, axis=0))
+                x_x_diff = _abs_no_nan(da.diff(x[0, :]))
+                x_y_diff = _abs_no_nan(da.diff(x[:, 0]))
                 is_lon_360 = True
 
-        is_regular = False
-
-        if da.all(x_y_diff == 0) and da.all(y_x_diff == 0):
-            x_res = x_x_diff[0, 0]
-            y_res = y_y_diff[0, 0]
-            is_regular = (
-                da.allclose(x_x_diff[0, :], x_res, atol=tolerance)
-                and da.allclose(x_x_diff[-1, :], x_res, atol=tolerance)
-                and da.allclose(y_y_diff[:, 0], y_res, atol=tolerance)
-                and da.allclose(y_y_diff[:, -1], y_res, atol=tolerance)
-            )
+        x_res = x_x_diff[0]
+        y_res = y_y_diff[0]
+        is_regular = (
+            da.allclose(x_x_diff, x_res, atol=tolerance)
+            and da.allclose(x_x_diff, x_res, atol=tolerance)
+            and da.allclose(y_y_diff, y_res, atol=tolerance)
+            and da.allclose(y_y_diff, y_res, atol=tolerance)
+        )
 
         if not is_regular:
-            # Let diff arrays have same shape as original by
-            # doubling last rows and columns.
-            x_x_diff_c = da.concatenate([x_x_diff, x_x_diff[:, -1:]], axis=1)
-            y_x_diff_c = da.concatenate([y_x_diff, y_x_diff[:, -1:]], axis=1)
-            x_y_diff_c = da.concatenate([x_y_diff, x_y_diff[-1:, :]], axis=0)
-            y_y_diff_c = da.concatenate([y_y_diff, y_y_diff[-1:, :]], axis=0)
             # Find resolution via area
-            x_abs_diff = da.sqrt(da.square(x_x_diff_c) + da.square(x_y_diff_c))
-            y_abs_diff = da.sqrt(da.square(y_x_diff_c) + da.square(y_y_diff_c))
+            x_abs_diff = da.sqrt(da.square(x_x_diff) + da.square(x_y_diff))
+            y_abs_diff = da.sqrt(da.square(y_x_diff) + da.square(y_y_diff))
             if crs.is_geographic:
                 # Convert degrees into meters
                 x_abs_diff_r = da.radians(x_abs_diff)
@@ -247,14 +232,18 @@ def new_grid_mapping_from_coords(
 
         if tile_size is not None:
             tile_width, tile_height = tile_size
-            x_coords = x_coords.chunk({
+            x_coords = x_coords.chunk(
+                {
                     x_coords.dims[0]: tile_height,
-                    x_coords.dims[1]: tile_height,
-            })
-            y_coords = y_coords.chunk({
+                    x_coords.dims[1]: tile_width,
+                }
+            )
+            y_coords = y_coords.chunk(
+                {
                     y_coords.dims[0]: tile_height,
-                    y_coords.dims[1]: tile_height,
-            })
+                    y_coords.dims[1]: tile_width,
+                }
+            )
 
         # Guess j axis direction
         is_j_axis_up = np.all(y_coords[0, :] < y_coords[-1, :]) or None

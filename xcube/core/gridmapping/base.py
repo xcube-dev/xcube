@@ -170,15 +170,16 @@ class GridMapping(abc.ABC):
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
                 with self._lock:
-                    if other._xy_coords is not None:
-                        other._xy_coords = other._xy_coords.chunk(
-                            {
-                                dim: size
-                                for (dim, size) in zip(
-                                    other._xy_coords.dims, other.xy_coords_chunks
-                                )
-                            }
-                        )
+                    if other._xy_coords is None:
+                        _ = other.xy_coords
+                    other._xy_coords = other._xy_coords.chunk(
+                        {
+                            dim: size
+                            for (dim, size) in zip(
+                                other._xy_coords.dims, other.xy_coords_chunks
+                            )
+                        }
+                    )
         if is_j_axis_up is not None and is_j_axis_up != other._is_j_axis_up:
             other._is_j_axis_up = is_j_axis_up
             if other._y_coords is not None:
