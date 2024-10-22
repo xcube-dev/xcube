@@ -196,7 +196,7 @@ def resample_in_space(
             )
             downscaled_dataset = resample_dataset(
                 source_ds,
-                ((x_scale, 1, 0), (1, y_scale, 0)),
+                ((1 / x_scale, 1, 0), (1, 1 / y_scale, 0)),
                 size=downscaled_size,
                 tile_size=source_gm.tile_size,
                 xy_dim_names=source_gm.xy_dim_names,
@@ -205,7 +205,7 @@ def resample_in_space(
             downscaled_gm = GridMapping.from_dataset(
                 downscaled_dataset,
                 tile_size=source_gm.tile_size,
-                prefer_crs=source_gm.crs,
+                crs=source_gm.crs,
             )
         return rectify_dataset(
             downscaled_dataset,

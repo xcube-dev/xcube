@@ -114,6 +114,8 @@ def to_regular_grid_mapping(
     tile_size: Union[int, tuple[int, int]] = None,
     is_j_axis_up: bool = False,
 ) -> GridMapping:
+    if tile_size is None:
+        tile_size = grid_mapping.tile_size
     if grid_mapping.is_regular:
         if tile_size is not None or is_j_axis_up != grid_mapping.is_j_axis_up:
             return grid_mapping.derive(tile_size=tile_size, is_j_axis_up=is_j_axis_up)

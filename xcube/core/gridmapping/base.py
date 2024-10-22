@@ -10,7 +10,6 @@ from typing import Any
 from typing import Callable
 from collections.abc import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import numpy as np
@@ -696,6 +695,7 @@ class GridMapping(abc.ABC):
         self,
         crs: Union[str, pyproj.crs.CRS],
         *,
+        xy_res: Union[Number, tuple[Number, Number]] = None,
         tile_size: Union[int, tuple[int, int]] = None,
         xy_var_names: tuple[str, str] = None,
         tolerance: float = DEFAULT_TOLERANCE,
@@ -719,6 +719,7 @@ class GridMapping(abc.ABC):
         return transform_grid_mapping(
             self,
             crs,
+            xy_res=xy_res,
             tile_size=tile_size,
             xy_var_names=xy_var_names,
             tolerance=tolerance,
