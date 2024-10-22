@@ -201,6 +201,10 @@ def new_grid_mapping_from_coords(
                 and da.allclose(x_x_diff[-1, :], x_res, atol=tolerance)
                 and da.allclose(y_y_diff[:, 0], y_res, atol=tolerance)
                 and da.allclose(y_y_diff[:, -1], y_res, atol=tolerance)
+                and da.all(x_y_diff[0, :] == 0)
+                and da.all(x_y_diff[-1, :] == 0)
+                and da.all(y_x_diff[0, :] == 0)
+                and da.all(y_x_diff[-1, :] == 0)
             )
             if not is_regular:
                 # Let diff arrays have same shape as original by
