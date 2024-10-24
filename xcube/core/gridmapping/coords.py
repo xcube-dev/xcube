@@ -105,7 +105,7 @@ def new_grid_mapping_from_coords(
     tile_size = _normalize_int_pair(tile_size, default=None)
     is_lon_360 = None  # None means "not yet known"
     if crs.is_geographic:
-        is_lon_360 = bool(np.any(x_coords > 180))
+        is_lon_360 = bool(da.any(x_coords > 180))
 
     x_res = 0
     y_res = 0
@@ -172,12 +172,39 @@ def new_grid_mapping_from_coords(
         height, width = x_coords.shape
         size = width, height
 
+        x = da.asarray(x_coords)
+        y = da.asarray(y_coords)
+
+        x_x_diff = _abs_no_nan(da.diff(x[0, :]))
+        x_y_diff = _abs_no_nan(da.diff(x[:, 0]))
+        y_x_diff = _abs_no_nan(da.diff(y[0, :]))
+        y_y_diff = _abs_no_nan(da.diff(y[:, 0]))
+
+        if not is_lon_360 and crs.is_geographic:
+            is_anti_meridian_crossed = da.any(da.max(x_x_diff) > 180) or da.any(
+                da.max(x_y_diff) > 180
+            )
+            if is_anti_meridian_crossed:
+                x_coords = to_lon_360(x_coords)
+                x = da.asarray(x_coords)
+                x_x_diff = _abs_no_nan(da.diff(x[0, :]))
+                x_y_diff = _abs_no_nan(da.diff(x[:, 0]))
+                is_lon_360 = True
+
         if xy_res is not None:
             x_res, y_res = _normalize_number_pair(xy_res)
         else:
-            x = da.asarray(x_coords)
-            y = da.asarray(y_coords)
+            x_res = x_x_diff[0]
+            y_res = y_y_diff[0]
 
+        is_regular = (
+            da.allclose(x_x_diff, x_res, atol=tolerance)
+            and da.allclose(y_y_diff, y_res, atol=tolerance)
+            and da.all(x_y_diff == 0)
+            and da.all(y_x_diff == 0)
+        )
+
+        if not is_regular and xy_res is None:
             x_x_diff = _abs_no_nan(da.diff(x, axis=1))
             x_y_diff = _abs_no_nan(da.diff(x, axis=0))
             y_x_diff = _abs_no_nan(da.diff(y, axis=1))
@@ -190,56 +217,43 @@ def new_grid_mapping_from_coords(
                 if is_anti_meridian_crossed:
                     x_coords = to_lon_360(x_coords)
                     x = da.asarray(x_coords)
-                    x_x_diff = _abs_no_nan(da.diff(x, axis=1))
-                    x_y_diff = _abs_no_nan(da.diff(x, axis=0))
+                    y_x_diff = _abs_no_nan(da.diff(y, axis=1))
+                    y_y_diff = _abs_no_nan(da.diff(y, axis=0))
                     is_lon_360 = True
 
-            x_res = x_x_diff[0, 0]
-            y_res = y_y_diff[0, 0]
-            is_regular = (
-                da.allclose(x_x_diff[0, :], x_res, atol=tolerance)
-                and da.allclose(x_x_diff[-1, :], x_res, atol=tolerance)
-                and da.allclose(y_y_diff[:, 0], y_res, atol=tolerance)
-                and da.allclose(y_y_diff[:, -1], y_res, atol=tolerance)
-                and da.all(x_y_diff[0, :] == 0)
-                and da.all(x_y_diff[-1, :] == 0)
-                and da.all(y_x_diff[0, :] == 0)
-                and da.all(y_x_diff[-1, :] == 0)
-            )
-            if not is_regular:
-                # Let diff arrays have same shape as original by
-                # doubling last rows and columns.
-                x_x_diff_c = da.concatenate([x_x_diff, x_x_diff[:, -1:]], axis=1)
-                y_x_diff_c = da.concatenate([y_x_diff, y_x_diff[:, -1:]], axis=1)
-                x_y_diff_c = da.concatenate([x_y_diff, x_y_diff[-1:, :]], axis=0)
-                y_y_diff_c = da.concatenate([y_y_diff, y_y_diff[-1:, :]], axis=0)
-                # Find resolution via area
-                x_abs_diff = da.sqrt(da.square(x_x_diff_c) + da.square(x_y_diff_c))
-                y_abs_diff = da.sqrt(da.square(y_x_diff_c) + da.square(y_y_diff_c))
-                if crs.is_geographic:
-                    # Convert degrees into meters
-                    x_abs_diff_r = da.radians(x_abs_diff)
-                    y_abs_diff_r = da.radians(y_abs_diff)
-                    x_abs_diff = _ER * da.cos(x_abs_diff_r) * y_abs_diff_r
-                    y_abs_diff = _ER * y_abs_diff_r
-                xy_areas = (x_abs_diff * y_abs_diff).flatten()
-                xy_areas = da.where(xy_areas > 0, xy_areas, np.nan)
-                # Get indices of min and max area
-                xy_area_index_min = da.nanargmin(xy_areas)
-                xy_area_index_max = da.nanargmax(xy_areas)
-                # Convert area to edge length
-                xy_res_min = math.sqrt(xy_areas[xy_area_index_min])
-                xy_res_max = math.sqrt(xy_areas[xy_area_index_max])
-                # Empirically weight min more than max
-                xy_res = 0.7 * xy_res_min + 0.3 * xy_res_max
-                if crs.is_geographic:
-                    # Convert meters back into degrees
-                    # print(f'xy_res in meters: {xy_res}')
-                    xy_res = math.degrees(xy_res / _ER)
-                    # print(f'xy_res in degrees: {xy_res}')
-                # Because this is an estimation, we can round to a nice number
-                xy_res = round_to_fraction(xy_res, digits=1, resolution=0.5)
-                x_res, y_res = float(xy_res), float(xy_res)
+            # Let diff arrays have same shape as original by
+            # doubling last rows and columns.
+            x_x_diff_c = da.concatenate([x_x_diff, x_x_diff[:, -1:]], axis=1)
+            y_x_diff_c = da.concatenate([y_x_diff, y_x_diff[:, -1:]], axis=1)
+            x_y_diff_c = da.concatenate([x_y_diff, x_y_diff[-1:, :]], axis=0)
+            y_y_diff_c = da.concatenate([y_y_diff, y_y_diff[-1:, :]], axis=0)
+            # Find resolution via area
+            x_abs_diff = da.sqrt(da.square(x_x_diff_c) + da.square(x_y_diff_c))
+            y_abs_diff = da.sqrt(da.square(y_x_diff_c) + da.square(y_y_diff_c))
+            if crs.is_geographic:
+                # Convert degrees into meters
+                x_abs_diff_r = da.radians(x_abs_diff)
+                y_abs_diff_r = da.radians(y_abs_diff)
+                x_abs_diff = _ER * da.cos(x_abs_diff_r) * y_abs_diff_r
+                y_abs_diff = _ER * y_abs_diff_r
+            xy_areas = (x_abs_diff * y_abs_diff).flatten()
+            xy_areas = da.where(xy_areas > 0, xy_areas, np.nan)
+            # Get indices of min and max area
+            xy_area_index_min = da.nanargmin(xy_areas)
+            xy_area_index_max = da.nanargmax(xy_areas)
+            # Convert area to edge length
+            xy_res_min = math.sqrt(xy_areas[xy_area_index_min])
+            xy_res_max = math.sqrt(xy_areas[xy_area_index_max])
+            # Empirically weight min more than max
+            xy_res = 0.7 * xy_res_min + 0.3 * xy_res_max
+            if crs.is_geographic:
+                # Convert meters back into degrees
+                # print(f'xy_res in meters: {xy_res}')
+                xy_res = math.degrees(xy_res / _ER)
+                # print(f'xy_res in degrees: {xy_res}')
+            # Because this is an estimation, we can round to a nice number
+            xy_res = round_to_fraction(xy_res, digits=1, resolution=0.5)
+            x_res, y_res = float(xy_res), float(xy_res)
 
         if tile_size is None and x_coords.chunks is not None:
             j_chunks, i_chunks = x_coords.chunks
@@ -261,7 +275,7 @@ def new_grid_mapping_from_coords(
             )
 
         # Guess j axis direction
-        is_j_axis_up = np.all(y_coords[0, :] < y_coords[-1, :]) or None
+        is_j_axis_up = da.all(y_coords[0, :] < y_coords[-1, :]) or None
 
     assert_true(
         x_res > 0 and y_res > 0,

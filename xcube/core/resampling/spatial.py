@@ -219,7 +219,7 @@ def resample_in_space(
 
     # If CRSes are not both geographic and their CRSes are different
     # transform the source_gm so its CRS matches the target CRS:
-    transformed_source_gm = source_gm.transform(target_gm.crs)
+    transformed_source_gm = source_gm.transform(target_gm.crs, xy_res=target_gm.xy_res)
     transformed_x, transformed_y = transformed_source_gm.xy_coords
     return resample_in_space(
         source_ds.assign(transformed_x=transformed_x, transformed_y=transformed_y),
