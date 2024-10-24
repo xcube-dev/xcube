@@ -10,7 +10,6 @@ from typing import Any
 from typing import Callable
 from collections.abc import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 import numpy as np
@@ -170,15 +169,16 @@ class GridMapping(abc.ABC):
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
                 with self._lock:
-                    if other._xy_coords is not None:
-                        other._xy_coords = other._xy_coords.chunk(
-                            {
-                                dim: size
-                                for (dim, size) in zip(
-                                    other._xy_coords.dims, other.xy_coords_chunks
-                                )
-                            }
-                        )
+                    if other._xy_coords is None:
+                        _ = other.xy_coords
+                    other._xy_coords = other._xy_coords.chunk(
+                        {
+                            dim: size
+                            for (dim, size) in zip(
+                                other._xy_coords.dims, other.xy_coords_chunks
+                            )
+                        }
+                    )
         if is_j_axis_up is not None and is_j_axis_up != other._is_j_axis_up:
             other._is_j_axis_up = is_j_axis_up
             if other._y_coords is not None:
@@ -695,6 +695,7 @@ class GridMapping(abc.ABC):
         self,
         crs: Union[str, pyproj.crs.CRS],
         *,
+        xy_res: Union[Number, tuple[Number, Number]] = None,
         tile_size: Union[int, tuple[int, int]] = None,
         xy_var_names: tuple[str, str] = None,
         tolerance: float = DEFAULT_TOLERANCE,
@@ -718,6 +719,7 @@ class GridMapping(abc.ABC):
         return transform_grid_mapping(
             self,
             crs,
+            xy_res=xy_res,
             tile_size=tile_size,
             xy_var_names=xy_var_names,
             tolerance=tolerance,

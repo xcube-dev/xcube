@@ -3,7 +3,6 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import Tuple
 
 import numpy as np
 import pytest
@@ -978,14 +977,14 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
 
         source_gm = GridMapping.from_dataset(source_ds, prefer_crs=CRS_WGS84)
 
-        target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=None)
-        self.assertEqual(None, target_ds.rrs_665.chunks)
+        target_ds = rectify_dataset(source_ds, source_gm=source_gm)
+        self.assertEqual(((5, 1), (5, 4)), target_ds.rrs_665.chunks)
         np.testing.assert_almost_equal(
             target_ds.rrs_665.values, expected_data, decimal=3
         )
 
-        target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=5)
-        self.assertEqual(((5, 1), (5, 4)), target_ds.rrs_665.chunks)
+        target_ds = rectify_dataset(source_ds, source_gm=source_gm, tile_size=6)
+        self.assertEqual(((6,), (6, 3)), target_ds.rrs_665.chunks)
         np.testing.assert_almost_equal(
             target_ds.rrs_665.values, expected_data, decimal=3
         )
@@ -993,15 +992,15 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
         target_ds = rectify_dataset(
             source_ds, source_gm=source_gm, tile_size=None, is_j_axis_up=True
         )
-        self.assertEqual(None, target_ds.rrs_665.chunks)
+        self.assertEqual(((5, 1), (5, 4)), target_ds.rrs_665.chunks)
         np.testing.assert_almost_equal(
             target_ds.rrs_665.values, expected_data[::-1], decimal=3
         )
 
         target_ds = rectify_dataset(
-            source_ds, source_gm=source_gm, tile_size=5, is_j_axis_up=True
+            source_ds, source_gm=source_gm, tile_size=6, is_j_axis_up=True
         )
-        self.assertEqual(((5, 1), (5, 4)), target_ds.rrs_665.chunks)
+        self.assertEqual(((6,), (6, 3)), target_ds.rrs_665.chunks)
         np.testing.assert_almost_equal(
             target_ds.rrs_665.values, expected_data[::-1], decimal=3
         )
