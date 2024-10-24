@@ -57,7 +57,9 @@ class RegularGridMapping(GridMapping):
         )
         xy_coords = da.rechunk(xy_coords, chunks=(2, 512, 512))
         xy_coords = xr.DataArray(
-            xy_coords, dims=("coord", "lat", "lon"), name="xy_coords"
+            xy_coords,
+            dims=("coord", self.y_coords.dims[0], self.x_coords.dims[0]),
+            name="xy_coords",
         )
         xy_coords.name = "xy_coords"
         return xy_coords
