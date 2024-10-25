@@ -6,6 +6,9 @@
   `xcube/core/gridmapping/transform`, enabling users to set the gridmapping resolution
   directly, which speeds up the method by avoiding time-consuming spatial resolution
   estimation. (#1082)
+* If no `tile_size` is specified for the resampled grid mapping, it defaults to the
+  `tile_size` of the source grid mapping, improving the user-friendliness of
+  resampling and reprojection.
 
 ### Fixes
 
