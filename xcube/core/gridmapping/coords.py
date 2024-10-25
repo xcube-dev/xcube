@@ -107,9 +107,6 @@ def new_grid_mapping_from_coords(
     if crs.is_geographic:
         is_lon_360 = bool(da.any(x_coords > 180))
 
-    x_res = 0
-    y_res = 0
-
     if x_coords.ndim == 1:
         # We have 1D x,y coordinates
         cls = Coords1DGridMapping
@@ -133,16 +130,20 @@ def new_grid_mapping_from_coords(
                 x_diff = _abs_no_zero(x_coords.diff(dim=x_dim))
                 is_lon_360 = True
 
-        x_res, y_res = x_diff[0], y_diff[0]
-        x_diff_equal = np.allclose(x_diff, x_res, atol=tolerance)
-        y_diff_equal = np.allclose(y_diff, y_res, atol=tolerance)
-        is_regular = x_diff_equal and y_diff_equal
-        if is_regular:
-            x_res = round_to_fraction(x_res, 5, 0.25)
-            y_res = round_to_fraction(y_res, 5, 0.25)
+        if xy_res is not None:
+            x_res, y_res = _normalize_number_pair(xy_res)
         else:
-            x_res = round_to_fraction(float(np.nanmedian(x_diff)), 2, 0.5)
-            y_res = round_to_fraction(float(np.nanmedian(y_diff)), 2, 0.5)
+            x_res = x_diff[0]
+            y_res = y_diff[0]
+            is_regular = da.allclose(x_diff, x_res, atol=tolerance) and da.allclose(
+                x_diff, y_res, atol=tolerance
+            )
+            if is_regular:
+                x_res = round_to_fraction(x_res, 5, 0.25)
+                y_res = round_to_fraction(y_res, 5, 0.25)
+            else:
+                x_res = round_to_fraction(float(np.nanmedian(x_diff)), 2, 0.5)
+                y_res = round_to_fraction(float(np.nanmedian(y_diff)), 2, 0.5)
 
         if (
             tile_size is None

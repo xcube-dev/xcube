@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from typing import Optional
 from typing import Union
 
+import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
@@ -588,16 +589,36 @@ class GridMapping(abc.ABC):
             Bounding boxes in [[i_min, j_min, i_max, j_max], ..]] in
             pixel coordinates.
         """
-        from .bboxes import compute_ij_bboxes
-
         if ij_bboxes is None:
             ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
         else:
             ij_bboxes[:, :] = -1
-        xy_coords = self.xy_coords.values
-        compute_ij_bboxes(
+        xy_coords = self.xy_coords
+        return self._compute_ij_bboxes_dask(
             xy_coords[0], xy_coords[1], xy_bboxes, xy_border, ij_border, ij_bboxes
         )
+
+    def _compute_ij_bboxes_dask(
+        self,
+        x_coords: xr.DataArray,
+        y_coords: xr.DataArray,
+        xy_bboxes: np.ndarray,
+        xy_border: float,
+        ij_border: int,
+        ij_bboxes: np.ndarray,
+    ):
+        from .bboxes import compute_ij_bboxes
+
+        da.map_blocks(
+            compute_ij_bboxes,
+            x_coords.values,
+            y_coords.values,
+            xy_bboxes,
+            xy_border,
+            ij_border,
+            ij_bboxes,
+            dtype=ij_bboxes.dtype,
+        ).compute()
         return ij_bboxes
 
     def to_dataset_attrs(self) -> Mapping[str, Any]:
@@ -705,6 +726,7 @@ class GridMapping(abc.ABC):
 
         Args:
             crs: The new spatial coordinate reference system.
+            xy_res: Resolution in x- and y-directions.
             tile_size: Optional new tile size.
             xy_var_names: Optional new coordinate names.
             tolerance: Absolute tolerance used when comparing

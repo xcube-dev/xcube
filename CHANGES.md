@@ -1,5 +1,16 @@
 ## Changes in 1.7.2 (in development)
 
+### Enhancements
+
+* A `xy_res` keyword argument was added to `transform_grid_mapping()` in
+  `xcube/core/gridmapping/transform`, enabling users to set the gridmapping resolution
+  directly, which speeds up the method by avoiding time-consuming spatial resolution
+  estimation. (#1082)
+
+### Fixes
+
+* The function `resampling_in_space` now operates lazily and support chunk-wise,
+  parallel processing. (#1079)
 
 ## Changes in 1.7.1
 
