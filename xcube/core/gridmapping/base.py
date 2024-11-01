@@ -170,6 +170,8 @@ class GridMapping(abc.ABC):
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
                 with self._lock:
+                    # if other._xy_coords has not been initialized before, we will do it
+                    # in the next line. Otherwise, the following lines raise an error
                     if other._xy_coords is None:
                         _ = other.xy_coords
                     other._xy_coords = other._xy_coords.chunk(

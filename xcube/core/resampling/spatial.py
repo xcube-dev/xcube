@@ -184,7 +184,7 @@ def resample_in_space(
             downscaled_gm = source_gm.scale((x_scale, y_scale))
             downscaled_dataset = resample_dataset(
                 source_ds,
-                ((x_scale, 1, 0), (1, y_scale, 0)),
+                ((1 / x_scale, 1, 0), (1, 1 / y_scale, 0)),
                 size=downscaled_gm.size,
                 tile_size=source_gm.tile_size,
                 xy_dim_names=source_gm.xy_dim_names,

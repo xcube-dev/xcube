@@ -12,7 +12,7 @@
 
 ### Fixes
 
-* The function `resampling_in_space` now operates lazily and support chunk-wise,
+* The function `resampling_in_space` now operates lazily and supports chunk-wise,
   parallel processing. (#1079)
 
 ## Changes in 1.7.1
