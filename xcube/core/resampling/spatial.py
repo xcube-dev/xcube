@@ -176,27 +176,15 @@ def resample_in_space(
                 gm_name=gm_name,
                 **(rectify_kwargs or {}),
             )
-
-        # Source has higher resolution than target.
-        # Downscale first, then rectify
-        if source_gm.is_regular:
-            # If source is regular
-            downscaled_gm = source_gm.scale((x_scale, y_scale))
-            downscaled_dataset = resample_dataset(
-                source_ds,
-                ((1 / x_scale, 1, 0), (1, 1 / y_scale, 0)),
-                size=downscaled_gm.size,
-                tile_size=source_gm.tile_size,
-                xy_dim_names=source_gm.xy_dim_names,
-                var_configs=var_configs,
-            )
         else:
+            # Source has higher resolution than target.
+            # Downscale first, then rectify
             _, downscaled_size = scale_xy_res_and_size(
                 source_gm.xy_res, source_gm.size, (x_scale, y_scale)
             )
             downscaled_dataset = resample_dataset(
                 source_ds,
-                ((1 / x_scale, 1, 0), (1, 1 / y_scale, 0)),
+                ((1 / x_scale, 0, 0), (0, 1 / y_scale, 0)),
                 size=downscaled_size,
                 tile_size=source_gm.tile_size,
                 xy_dim_names=source_gm.xy_dim_names,
@@ -207,15 +195,15 @@ def resample_in_space(
                 tile_size=source_gm.tile_size,
                 crs=source_gm.crs,
             )
-        return rectify_dataset(
-            downscaled_dataset,
-            source_gm=downscaled_gm,
-            ref_ds=ref_ds,
-            target_gm=target_gm,
-            encode_cf=encode_cf,
-            gm_name=gm_name,
-            **(rectify_kwargs or {}),
-        )
+            return rectify_dataset(
+                downscaled_dataset,
+                source_gm=downscaled_gm,
+                ref_ds=ref_ds,
+                target_gm=target_gm,
+                encode_cf=encode_cf,
+                gm_name=gm_name,
+                **(rectify_kwargs or {}),
+            )
 
     # If CRSes are not both geographic and their CRSes are different
     # transform the source_gm so its CRS matches the target CRS:
