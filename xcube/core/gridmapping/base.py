@@ -728,7 +728,9 @@ class GridMapping(abc.ABC):
 
         Args:
             crs: The new spatial coordinate reference system.
-            xy_res: Resolution in x- and y-directions.
+            xy_res: Optional resolution in x- and y-directions.
+                If given, speeds up the method by avoiding time-consuming 
+                spatial resolution estimation.
             tile_size: Optional new tile size.
             xy_var_names: Optional new coordinate names.
             tolerance: Absolute tolerance used when comparing
