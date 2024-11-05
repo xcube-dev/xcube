@@ -3,16 +3,21 @@
 # https://opensource.org/licenses/MIT.
 
 import pathlib
-from typing import Type
 from collections.abc import Iterator
 
 import fsspec
 from fsspec.implementations.local import LocalFileSystem
+from fsspec.implementations.http import HTTPFileSystem
 
 
 def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
     """Check whether *fs* is a local filesystem."""
     return "file" in fs.protocol or isinstance(fs, LocalFileSystem)
+
+
+def is_https_fs(fs: fsspec.AbstractFileSystem) -> bool:
+    """Check whether *fs* is a local filesystem."""
+    return "https" in fs.protocol or isinstance(fs, HTTPFileSystem)
 
 
 def get_fs_path_class(fs: fsspec.AbstractFileSystem) -> type[pathlib.PurePath]:

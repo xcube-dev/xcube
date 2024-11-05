@@ -22,6 +22,7 @@ from xcube.core.zarrstore import ZarrStoreHolder
 from xcube.util.assertions import assert_instance
 from xcube.util.assertions import assert_true
 from xcube.util.fspath import is_local_fs
+from xcube.util.fspath import is_https_fs
 from xcube.util.jsonencoder import to_json_value
 from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonBooleanSchema
@@ -230,9 +231,10 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
         # with fs.open(data_id, 'rb') as file:
         #     return xr.open_dataset(file, engine=engine, **open_params)
 
-        is_local = is_local_fs(fs)
-        if is_local:
+        if is_local_fs(fs):
             file_path = data_id
+        elif is_https_fs(fs):
+            file_path = f"{fs.protocol}://{data_id}#mode=bytes"
         else:
             _, file_path = new_temp_file(suffix=".nc")
             fs.get_file(data_id, file_path)
