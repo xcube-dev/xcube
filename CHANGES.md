@@ -1,5 +1,9 @@
 ## Changes in 1.7.2 (in development)
 
+### Enhancements
+
+* The `DatasetNetcdfFsDataAccessor` class has been adjusted, so that NetCDF files can
+  be now opened from a remote HTTPS server using the `"https"` data store. 
 
 ## Changes in 1.7.1
 
