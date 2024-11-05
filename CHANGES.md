@@ -2,8 +2,10 @@
 
 ### Enhancements
 
-* The `DatasetNetcdfFsDataAccessor` class has been adjusted, so that NetCDF files can
-  be now opened from a remote HTTPS server using the `"https"` data store. 
+* The `"https"` data store (`store = new_data_store("https", ...)`) now allows 
+  for lazily accessing NetCDF files.
+  Implementation note: For this to work, the `DatasetNetcdfFsDataAccessor` 
+  class has been adjusted.
 
 ## Changes in 1.7.1
 
