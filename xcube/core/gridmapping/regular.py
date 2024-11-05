@@ -47,13 +47,19 @@ class RegularGridMapping(GridMapping):
 
     def _new_xy_coords(self) -> xr.DataArray:
         self._assert_regular()
-        x_coords_1d = self.x_coords
-        y_coords_1d = self.y_coords
-        y_coords_2d, x_coords_2d = xr.broadcast(y_coords_1d, x_coords_1d)
-        xy_coords = xr.concat([x_coords_2d, y_coords_2d], dim="coord")
-        chunk_sizes = (2, self.tile_height, self.tile_width)
-        xy_coords = xy_coords.chunk(
-            {dim: size for (dim, size) in zip(xy_coords.dims, chunk_sizes)}
+        x_coords_1d = da.asarray(self.x_coords.data).rechunk(self.tile_width)
+        y_coords_1d = da.expand_dims(
+            da.asarray(self.y_coords.data).rechunk(self.tile_height), 1
+        )
+        y_coords_2d, x_coords_2d = da.broadcast_arrays(y_coords_1d, x_coords_1d)
+        xy_coords = da.concatenate(
+            [da.expand_dims(x_coords_2d, 0), da.expand_dims(y_coords_2d, 0)]
+        )
+        xy_coords = da.rechunk(xy_coords, chunks=(2, 512, 512))
+        xy_coords = xr.DataArray(
+            xy_coords,
+            dims=("coord", self.y_coords.dims[0], self.x_coords.dims[0]),
+            name="xy_coords",
         )
         xy_coords.name = "xy_coords"
         return xy_coords
@@ -129,6 +135,8 @@ def to_regular_grid_mapping(
     width = width if width >= 2 else 2
     height = height if height >= 2 else 2
 
+    if tile_size is None:
+        tile_size = grid_mapping.tile_size
     return new_regular_grid_mapping(
         size=(width, height),
         xy_min=(x_min, y_min),

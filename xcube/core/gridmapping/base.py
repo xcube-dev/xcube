@@ -10,9 +10,9 @@ from typing import Any
 from typing import Callable
 from collections.abc import Mapping
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
+import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
@@ -170,15 +170,18 @@ class GridMapping(abc.ABC):
             if other.tile_size != tile_size:
                 other._tile_size = tile_width, tile_height
                 with self._lock:
-                    if other._xy_coords is not None:
-                        other._xy_coords = other._xy_coords.chunk(
-                            {
-                                dim: size
-                                for (dim, size) in zip(
-                                    other._xy_coords.dims, other.xy_coords_chunks
-                                )
-                            }
-                        )
+                    # if other._xy_coords has not been initialized before, we will do it
+                    # in the next line. Otherwise, the following lines raise an error
+                    if other._xy_coords is None:
+                        _ = other.xy_coords
+                    other._xy_coords = other._xy_coords.chunk(
+                        {
+                            dim: size
+                            for (dim, size) in zip(
+                                other._xy_coords.dims, other.xy_coords_chunks
+                            )
+                        }
+                    )
         if is_j_axis_up is not None and is_j_axis_up != other._is_j_axis_up:
             other._is_j_axis_up = is_j_axis_up
             if other._y_coords is not None:
@@ -588,16 +591,36 @@ class GridMapping(abc.ABC):
             Bounding boxes in [[i_min, j_min, i_max, j_max], ..]] in
             pixel coordinates.
         """
-        from .bboxes import compute_ij_bboxes
-
         if ij_bboxes is None:
             ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
         else:
             ij_bboxes[:, :] = -1
-        xy_coords = self.xy_coords.values
-        compute_ij_bboxes(
+        xy_coords = self.xy_coords
+        return self._compute_ij_bboxes_dask(
             xy_coords[0], xy_coords[1], xy_bboxes, xy_border, ij_border, ij_bboxes
         )
+
+    def _compute_ij_bboxes_dask(
+        self,
+        x_coords: xr.DataArray,
+        y_coords: xr.DataArray,
+        xy_bboxes: np.ndarray,
+        xy_border: float,
+        ij_border: int,
+        ij_bboxes: np.ndarray,
+    ):
+        from .bboxes import compute_ij_bboxes
+
+        da.map_blocks(
+            compute_ij_bboxes,
+            x_coords.values,
+            y_coords.values,
+            xy_bboxes,
+            xy_border,
+            ij_border,
+            ij_bboxes,
+            dtype=ij_bboxes.dtype,
+        ).compute()
         return ij_bboxes
 
     def to_dataset_attrs(self) -> Mapping[str, Any]:
@@ -695,6 +718,7 @@ class GridMapping(abc.ABC):
         self,
         crs: Union[str, pyproj.crs.CRS],
         *,
+        xy_res: Union[Number, tuple[Number, Number]] = None,
         tile_size: Union[int, tuple[int, int]] = None,
         xy_var_names: tuple[str, str] = None,
         tolerance: float = DEFAULT_TOLERANCE,
@@ -704,6 +728,9 @@ class GridMapping(abc.ABC):
 
         Args:
             crs: The new spatial coordinate reference system.
+            xy_res: Optional resolution in x- and y-directions.
+                If given, speeds up the method by avoiding time-consuming 
+                spatial resolution estimation.
             tile_size: Optional new tile size.
             xy_var_names: Optional new coordinate names.
             tolerance: Absolute tolerance used when comparing
@@ -718,6 +745,7 @@ class GridMapping(abc.ABC):
         return transform_grid_mapping(
             self,
             crs,
+            xy_res=xy_res,
             tile_size=tile_size,
             xy_var_names=xy_var_names,
             tolerance=tolerance,

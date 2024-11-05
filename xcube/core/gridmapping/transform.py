@@ -13,6 +13,7 @@ from .base import DEFAULT_TOLERANCE
 from .base import GridMapping
 from .coords import new_grid_mapping_from_coords
 from .helpers import _assert_valid_xy_names
+from .helpers import Number
 from .helpers import _normalize_crs
 
 
@@ -40,6 +41,7 @@ def transform_grid_mapping(
     grid_mapping: GridMapping,
     crs: Union[str, pyproj.crs.CRS],
     *,
+    xy_res: Union[Number, tuple[Number, Number]] = None,
     tile_size: Union[int, tuple[int, int]] = None,
     xy_var_names: tuple[str, str] = None,
     tolerance: float = DEFAULT_TOLERANCE,
@@ -80,10 +82,14 @@ def transform_grid_mapping(
     #   on x and y arrays, this will take twice as long as if operation
     #   would be performed on the xy_coords dask array directly.
 
+    if tile_size is None:
+        tile_size = grid_mapping.tile_size
+
     return new_grid_mapping_from_coords(
-        x_coords=xr.DataArray(xy_coords[0], name=xy_var_names[0]),
-        y_coords=xr.DataArray(xy_coords[1], name=xy_var_names[1]),
+        x_coords=xy_coords[0].rename(xy_var_names[0]),
+        y_coords=xy_coords[1].rename(xy_var_names[1]),
         crs=target_crs,
+        xy_res=xy_res,
         tile_size=tile_size,
         tolerance=tolerance,
     )
