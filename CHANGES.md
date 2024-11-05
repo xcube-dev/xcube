@@ -2,13 +2,14 @@
 
 ### Enhancements
 
-* A `xy_res` keyword argument was added to `transform_grid_mapping()` in
-  `xcube/core/gridmapping/transform`, enabling users to set the gridmapping resolution
-  directly, which speeds up the method by avoiding time-consuming spatial resolution
-  estimation. (#1082)
-* If no `tile_size` is specified for the resampled grid mapping, it defaults to the
-  `tile_size` of the source grid mapping, improving the user-friendliness of
-  resampling and reprojection.
+* A `xy_res` keyword argument was added to the `transform()` method of
+  `xcube.core.gridmapping.GridMapping`, enabling users to set the grid-mapping 
+  resolution directly, which speeds up the method by avoiding time-consuming 
+  spatial resolution estimation. (#1082)
+* The behaviour of the function `xcube.core.resample.resample_in_space()` has 
+  been changed if no `tile_size` is specified for the target grid mapping. It now 
+  defaults to the `tile_size` of the source grid mapping, improving the 
+  user-friendliness of resampling and reprojection.
 
 ### Fixes
 
