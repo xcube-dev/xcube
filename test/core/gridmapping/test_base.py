@@ -318,6 +318,42 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         )
         self.assertEqual(("lon", "lat"), transformed_gm.xy_dim_names)
 
+    def test_transform_xy_res(self):
+        gm = _TestGridMapping(
+            **self.kwargs(
+                xy_min=(20, 56),
+                size=(400, 200),
+                tile_size=(200, 200),
+                xy_res=(0.01, 0.01),
+            )
+        )
+        transformed_gm = gm.transform("EPSG:32633", xy_res=1000)
+
+        self.assertIsNot(gm, transformed_gm)
+        self.assertIsInstance(transformed_gm, Coords2DGridMapping)
+        self.assertEqual(pyproj.CRS.from_string("EPSG:32633"), transformed_gm.crs)
+        self.assertEqual((400, 200), transformed_gm.size)
+        self.assertEqual((200, 200), transformed_gm.tile_size)
+        self.assertEqual((1000, 1000), transformed_gm.xy_res)
+        self.assertEqual(None, transformed_gm.is_j_axis_up)
+        self.assertEqual(
+            ("transformed_x", "transformed_y"), transformed_gm.xy_var_names
+        )
+        self.assertEqual(("lon", "lat"), transformed_gm.xy_dim_names)
+
+        transformed_gm_regular = transformed_gm.to_regular()
+        self.assertIsNot(gm, transformed_gm_regular)
+        self.assertIsInstance(transformed_gm_regular, RegularGridMapping)
+        self.assertEqual(
+            pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
+        )
+        self.assertEqual((266, 248), transformed_gm_regular.size)
+        self.assertEqual((200, 200), transformed_gm_regular.tile_size)
+        self.assertEqual((1000, 1000), transformed_gm_regular.xy_res)
+        self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
+        self.assertEqual(("x", "y"), transformed_gm_regular.xy_var_names)
+        self.assertEqual(("x", "y"), transformed_gm_regular.xy_dim_names)
+
     def test_to_regular(self):
         gm = _TestGridMapping(
             **self.kwargs(
@@ -336,7 +372,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
         self.assertEqual((827, 1163), transformed_gm_regular.size)
-        self.assertEqual((827, 1163), transformed_gm_regular.tile_size)
+        self.assertEqual((1000, 1000), transformed_gm_regular.tile_size)
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
         self.assertEqual(False, transformed_gm_regular.is_lon_360)
 

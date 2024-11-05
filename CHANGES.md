@@ -2,10 +2,24 @@
 
 ### Enhancements
 
+* A `xy_res` keyword argument was added to the `transform()` method of
+  `xcube.core.gridmapping.GridMapping`, enabling users to set the grid-mapping 
+  resolution directly, which speeds up the method by avoiding time-consuming 
+  spatial resolution estimation. (#1082)
+* The behaviour of the function `xcube.core.resample.resample_in_space()` has 
+  been changed if no `tile_size` is specified for the target grid mapping. It now 
+  defaults to the `tile_size` of the source grid mapping, improving the 
+  user-friendliness of resampling and reprojection.
 * The `"https"` data store (`store = new_data_store("https", ...)`) now allows 
   for lazily accessing NetCDF files.
   Implementation note: For this to work, the `DatasetNetcdfFsDataAccessor` 
   class has been adjusted.
+
+### Fixes
+
+* The function `xcube.core.resample.resample_in_space()` now always operates
+   lazily and therefore supports chunk-wise, parallel processing. (#1
+
 
 ## Changes in 1.7.1
 
