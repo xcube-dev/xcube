@@ -275,8 +275,10 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         assert_given(data_id, "data_id")
-        if self._is_data_specified(data_id, data_type):
+        if self._is_data_type_available(data_id, data_type):
             fs_path = self._convert_data_id_into_fs_path(data_id)
+            if self.protocol == "https":
+                fs_path = f"{self.protocol}://{fs_path}"
             return self.fs.exists(fs_path)
         return False
 
@@ -508,6 +510,23 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 )
             return False
         return True
+
+    def _is_data_type_available(self, data_id: str, data_type: DataTypeLike) -> bool:
+        ext = self._get_filename_ext(data_id)
+        format_id = _FILENAME_EXT_TO_FORMAT.get(ext.lower())
+        if format_id is None:
+            return False
+        avail_data_types = _FORMAT_TO_DATA_TYPE_ALIASES.get(format_id)
+        data_type = DataType.normalize(data_type)
+        if any(
+            [
+                data_type.is_super_type_of(avail_data_type)
+                for avail_data_type in avail_data_types
+            ]
+        ):
+            return True
+        else:
+            return False
 
     def _assert_data_specified(self, data_id, data_type: DataTypeLike):
         self._is_data_specified(data_id, data_type, require=True)
