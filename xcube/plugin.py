@@ -104,6 +104,8 @@ _FS_DATA_ACCESSOR_ITEMS = (
     ),
     ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format"),
     ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format"),
+    ("vectordatacube", "netcdf", "xarray.Dataset in NetCDF format"),
+    ("vectordatacube", "zarr", "xarray.Dataset in Zarr format"),
 )
 
 _FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS

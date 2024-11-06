@@ -54,6 +54,7 @@ dependencies = [
   "tornado>=6.0",
   "urllib3>=1.26",
   "xarray>=2022.6,<=2024.6",
+  "xvec",
   "zarr>=2.11"
 ]
 classifiers = [
