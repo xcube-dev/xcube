@@ -58,7 +58,7 @@ class TestBaseFsDataStore(unittest.TestCase):
             store.get_data_opener_ids(data_id="test.geotiff", data_type="mldataset"),
         )
 
-    @patch("fsspec.implementations.http.HTTPFileSystem.exists")
+    @patch("fsspec.implementations.http.HTTPFileSystem._exists")
     def test_has_data(self, mock_fs_exists):
         mock_fs_exists.return_value = True
         store = new_data_store("https", root="test.org")
