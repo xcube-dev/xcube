@@ -19,8 +19,11 @@
 
 * The function `xcube.core.resample.resample_in_space()` now always operates
   lazily and therefore supports chunk-wise, parallel processing. (#1082)
-* Bux fix in the `has_data` method `"https"` data store
+* Bux fix in the `has_data` method of the `"https"` data store
   (`store = new_data_store("https", ...)`). (#1084) 
+* Bux fix in the `has_data` method of all filesystem-based data store
+  (`"file", "s3", "https"`). `data_type` can be any of the supported data types,
+  e.g. for `.tif` file, `data_type` can be either `dataset` or `mldataset`. (#1084) 
 
 
 ## Changes in 1.7.1
