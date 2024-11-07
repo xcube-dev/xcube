@@ -9,16 +9,18 @@
 * The behaviour of the function `xcube.core.resample.resample_in_space()` has 
   been changed if no `tile_size` is specified for the target grid mapping. It now 
   defaults to the `tile_size` of the source grid mapping, improving the 
-  user-friendliness of resampling and reprojection.
+  user-friendliness of resampling and reprojection. (#1082)
 * The `"https"` data store (`store = new_data_store("https", ...)`) now allows 
   for lazily accessing NetCDF files.
   Implementation note: For this to work, the `DatasetNetcdfFsDataAccessor` 
-  class has been adjusted.
+  class has been adjusted. (#1083)
 
 ### Fixes
 
 * The function `xcube.core.resample.resample_in_space()` now always operates
-   lazily and therefore supports chunk-wise, parallel processing. (#1
+  lazily and therefore supports chunk-wise, parallel processing. (#1082)
+* Bux fix in the `has_data` method `"https"` data store
+  (`store = new_data_store("https", ...)`). (#1084) 
 
 
 ## Changes in 1.7.1
