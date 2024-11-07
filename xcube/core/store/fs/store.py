@@ -275,10 +275,13 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def has_data(self, data_id: str, data_type: DataTypeLike = None) -> bool:
         assert_given(data_id, "data_id")
+        print(data_id)
         if self._is_data_type_available(data_id, data_type):
             fs_path = self._convert_data_id_into_fs_path(data_id)
             if self.protocol == "https":
                 fs_path = f"{self.protocol}://{fs_path}"
+            print(fs_path)
+            print(self.fs)
             return self.fs.exists(fs_path)
         return False
 
