@@ -27,3 +27,21 @@ class ViewerConfigRoutesTest(RoutesTestCase):
     def test_viewer_config(self):
         response = self.fetch("/viewer/config/config.json")
         self.assertResponseOK(response)
+
+
+class ViewerExtRoutesTest(RoutesTestCase):
+    def test_viewer_ext_root(self):
+        response = self.fetch("/viewer/ext")
+        self.assertResponseOK(response)
+
+    def test_viewer_ext_contributions(self):
+        response = self.fetch("/viewer/ext/contributions")
+        self.assertResponseOK(response)
+
+    def test_viewer_ext_layout(self):
+        response = self.fetch("/viewer/ext/layout")
+        self.assertResponseOK(response)
+
+    def test_viewer_ext_callback(self):
+        response = self.fetch("/viewer/ext/layout")
+        self.assertResponseOK(response)

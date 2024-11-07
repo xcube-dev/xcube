@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+from xcube.util.jsonschema import JsonArraySchema
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.webapi.common.schemas import STRING_SCHEMA
 
@@ -12,9 +13,21 @@ CONFIGURATION_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
+EXTENSION_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Path=STRING_SCHEMA,
+    ),
+    additional_properties=False,
+)
+
+EXTENSIONS_SCHEMA = JsonArraySchema(
+    items=EXTENSION_SCHEMA,
+)
+
 VIEWER_SCHEMA = JsonObjectSchema(
     properties=dict(
         Configuration=CONFIGURATION_SCHEMA,
+        Extensions=EXTENSIONS_SCHEMA,
     ),
     additional_properties=False,
 )

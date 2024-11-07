@@ -27,6 +27,10 @@ class ViewerConfigTest(unittest.TestCase):
             {
                 "Viewer": {
                     "Configuration": {"Path": "s3://xcube-viewer-app/bc/dev/viewer/"},
+                    "Extensions": [
+                        {"Path": "my_ext_1"},
+                        {"Path": "my_ext_2"},
+                    ],
                 }
             }
         )
