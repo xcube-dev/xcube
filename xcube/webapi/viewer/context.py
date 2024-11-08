@@ -1,6 +1,7 @@
 # Copyright (c) 2018-2024 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
+
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
@@ -40,6 +41,7 @@ class ViewerContext(ResourcesContext):
                     if not path.is_absolute():
                         path = Path(self.base_dir) / path
                 with prepend_sys_path(path):
+                    LOG.info(f"Loading viewer extension(s) {','.join(extension_refs)}")
                     self.ext_ctx = ExtensionContext.load(
                         self.server_ctx, extension_refs
                     )
@@ -64,7 +66,7 @@ class ViewerContext(ResourcesContext):
 def prepend_sys_path(path: Path | str | None):
     prev_sys_path = None
     if path is not None:
-        LOG.warning(f"temporarily prepending '{path}' to sys.path")
+        LOG.warning(f"Temporarily prepending '{path}' to sys.path")
         prev_sys_path = sys.path
         sys.path = [str(path)] + sys.path
     try:
@@ -72,3 +74,4 @@ def prepend_sys_path(path: Path | str | None):
     finally:
         if prev_sys_path:
             sys.path = prev_sys_path
+            LOG.info(f"Restored sys.path")
