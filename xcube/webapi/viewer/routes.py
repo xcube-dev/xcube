@@ -3,11 +3,12 @@
 # https://opensource.org/licenses/MIT.
 
 import importlib.resources
+import json
 import os
 import pathlib
 from typing import Union, Optional
 
-from dashipy import __version__ as dashi_version
+from dashipy import Response as ExtResponse
 from dashipy.controllers import get_callback_results
 from dashipy.controllers import get_contributions
 from dashipy.controllers import get_layout
@@ -15,9 +16,9 @@ from dashipy.controllers import get_layout
 from xcube.constants import LOG
 from xcube.server.api import ApiError
 from xcube.server.api import ApiHandler
+from xcube.util.jsonencoder import NumpyJSONEncoder
 from .api import api
 from .context import ViewerContext
-
 
 ENV_VAR_XCUBE_VIEWER_PATH = "XCUBE_VIEWER_PATH"
 
@@ -101,36 +102,57 @@ class ViewerConfigHandler(ApiHandler[ViewerContext]):
         return None
 
 
-@api.route("/viewer/ext")
-class ViewerExtRootHandler(ApiHandler[ViewerContext]):
-    # GET /
-    def get(self):
-        self.response.set_header("Content-Type", "text/plain")
-        self.response.write(f"dashi-server {dashi_version}")
+class ViewerExtHandler(ApiHandler[ViewerContext]):
+    def do_get_contributions(self):
+        self._write_response(get_contributions(self.ctx.ext_ctx))
+
+    def do_get_layout(self, contrib_point: str, contrib_index: str):
+        self._write_response(
+            get_layout(
+                self.ctx.ext_ctx, contrib_point, int(contrib_index), self.request.json
+            )
+        )
+
+    def do_get_callback_results(self):
+        self._write_response(
+            get_callback_results(self.ctx.ext_ctx, self.request.json)
+        )
+
+    def _write_response(self, response: ExtResponse):
+        self.response.set_header("Content-Type", "text/json")
+        if response.ok:
+            self.response.write(
+                json.dumps({"result": response.data}, cls=NumpyJSONEncoder)
+            )
+        else:
+            self.response.set_status(response.status, response.reason)
+            self.response.write(
+                {"error": {"status": response.status, "message": response.reason}}
+            )
 
 
 @api.route("/viewer/ext/contributions")
-class ViewerExtContributionsHandler(ApiHandler[ViewerContext]):
+class ViewerExtContributionsHandler(ViewerExtHandler):
 
     # GET /dashi/contributions
     @api.operation(
-        operationId="getViewerExtContributions",
+        operationId="getViewerContributions",
         summary="Get viewer extensions and all their contributions.",
     )
     def get(self):
-        self.response.write(get_contributions(self.ctx))
+        self.do_get_contributions()
 
 
 # noinspection PyPep8Naming
 @api.route("/viewer/ext/layout/{contribPoint}/{contribIndex}")
-class ViewerExtLayoutHandler(ApiHandler[ViewerContext]):
+class ViewerExtLayoutHandler(ViewerExtHandler):
     # GET /dashi/layout/{contrib_point_name}/{contrib_index}
     def get(self, contribPoint: str, contribIndex: str):
-        self.response.write(get_layout(self.ctx, contribPoint, int(contribIndex), {}))
+        self.do_get_layout(contribPoint, contribIndex)
 
     # POST /dashi/layout/{contrib_point_name}/{contrib_index}
     @api.operation(
-        operationId="getViewerExtLayout",
+        operationId="getViewerContributionLayout",
         summary="Get the initial layout for the given viewer contribution.",
         parameters=[
             {
@@ -148,19 +170,17 @@ class ViewerExtLayoutHandler(ApiHandler[ViewerContext]):
         ],
     )
     def post(self, contribPoint: str, contribIndex: str):
-        self.response.write(
-            get_layout(self.ctx, contribPoint, int(contribIndex), self.request.json)
-        )
+        self.do_get_layout(contribPoint, contribIndex)
 
 
 @api.route("/viewer/ext/callback")
-class ViewerExtCallbackHandler(ApiHandler[ViewerContext]):
+class ViewerExtCallbackHandler(ViewerExtHandler):
 
     # POST /dashi/callback
     @api.operation(
-        operationId="invokeViewerCallbacks",
+        operationId="getViewerContributionCallbackResults",
         summary="Process the viewer contribution callback requests"
         " and return state change requests.",
     )
     def post(self):
-        self.response.write(get_callback_results(self.ctx, self.request.json))
+        self.do_get_callback_results()
