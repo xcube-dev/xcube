@@ -12,10 +12,14 @@ DataStores:
       - Path: openSR_musselbeds_use_case_waddensea_S2L2A_2018-2022.levels
         Identifier: waddensea
         Title: Wadden Sea
-        Style: S2L2A
+        Style: waddensea
         Augmentation:
           Path: compute_indexes.py
           Function: compute_indexes
+      - Path: S2_louisville_time.levels
+        Identifier: louisville
+        Title: Lousiville S2
+        Style: louisville
 
 Viewer:
   Augmentation:
@@ -24,7 +28,7 @@ Viewer:
       - my_viewer_ext.ext
 
 Styles:
-  - Identifier: S2L2A
+  - Identifier: waddensea
     ColorMappings:
       B01:
         ColorBar: "Greys_r"
@@ -78,6 +82,31 @@ Styles:
         Blue:
           Variable: B02
           ValueRange: [0., 0.25]
+
+  - Identifier: louisville
+    ColorMappings:
+      band_1:
+        ColorBar: "gray"
+        ValueRange: [0, 5000]
+      band_2:
+        ColorBar: "gray"
+        ValueRange: [0, 5000]
+      band_3:
+        ColorBar: "gray"
+        ValueRange: [0, 5000]
+      band_4:
+        ColorBar: "bone"
+        ValueRange: [0, 10000]
+      rgb:
+        Red:
+          Variable: band_1
+          ValueRange: [0., 5000]
+        Green:
+          Variable: band_2
+          ValueRange: [0., 5000]
+        Blue:
+          Variable: band_3
+          ValueRange: [0., 5000]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
