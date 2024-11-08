@@ -1,7 +1,9 @@
 from dashipy import Component, Input, State, Output
 from dashipy.components import Box, Dropdown, Checkbox, Typography
-from dashipy.demo.contribs import Panel
-from dashipy.demo.context import Context
+
+from xcube.webapi.viewer.contrib import Panel
+from xcube.webapi.viewer.contrib import get_datasets_ctx
+from xcube.server.api import Context
 
 
 panel = Panel(__name__, title="Panel B")
@@ -66,6 +68,9 @@ def update_info_text(
     color: int = 0,
     info_text: str = "",
 ) -> str:
+    ds_ctx = get_datasets_ctx(ctx)
+    ds_configs = ds_ctx.get_dataset_configs()
+
     opaque = opaque or False
     color = color if color is not None else 0
     return (
@@ -74,4 +79,5 @@ def update_info_text(
         f" it {'is' if opaque else 'is not'} opaque."
         f" The length of the last info text"
         f" was {len(info_text or "")}."
+        f" The number of datasets is {len(ds_configs)}."
     )

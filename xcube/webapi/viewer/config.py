@@ -13,21 +13,24 @@ CONFIGURATION_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
-EXTENSION_SCHEMA = JsonObjectSchema(
-    properties=dict(
-        Path=STRING_SCHEMA,
-    ),
-    additional_properties=False,
+EXTENSIONS_SCHEMA = JsonArraySchema(
+    items=STRING_SCHEMA,
+    min_items=1,
 )
 
-EXTENSIONS_SCHEMA = JsonArraySchema(
-    items=EXTENSION_SCHEMA,
+AUGMENTATION_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Path=STRING_SCHEMA,
+        Extensions=EXTENSIONS_SCHEMA,
+    ),
+    required=["Extensions"],
+    additional_properties=False,
 )
 
 VIEWER_SCHEMA = JsonObjectSchema(
     properties=dict(
         Configuration=CONFIGURATION_SCHEMA,
-        Extensions=EXTENSIONS_SCHEMA,
+        Augmentation=AUGMENTATION_SCHEMA,
     ),
     additional_properties=False,
 )

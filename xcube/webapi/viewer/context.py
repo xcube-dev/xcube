@@ -1,16 +1,23 @@
 # Copyright (c) 2018-2024 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
-
+from contextlib import contextmanager
 from functools import cached_property
+from pathlib import Path
 from typing import Optional
 from collections.abc import Mapping
+import sys
 
+from dashipy import Extension
 from dashipy import ExtensionContext
 import fsspec
 
+from xcube.constants import LOG
 from xcube.server.api import Context
 from xcube.webapi.common.context import ResourcesContext
+from xcube.webapi.viewer.contrib import Panel
+
+Extension.add_contrib_point("panels", Panel)
 
 
 class ViewerContext(ResourcesContext):
@@ -22,14 +29,20 @@ class ViewerContext(ResourcesContext):
 
     def on_update(self, prev_context: Optional[Context]):
         super().on_update(prev_context)
-        if "Viewer" not in self.config:
-            return None
-        extension_infos: list[dict] = self.config["Viewer"].get("Extensions")
-        if extension_infos:
-            extension_modules = [e["Path"] for e in extension_infos if "Path" in e]
-            print("----------------------->", extension_modules)
-            extensions = ExtensionContext.load_extensions(extension_modules)
-            self.ext_ctx = ExtensionContext(self.server_ctx, extensions)
+        viewer_config: dict = self.config.get("Viewer")
+        if viewer_config:
+            augmentation: dict | None = viewer_config.get("Augmentation")
+            if augmentation:
+                extension_refs: list[str] = augmentation["Extensions"]
+                path: Path | None = None
+                if "Path" in augmentation:
+                    path = Path(augmentation["Path"])
+                    if not path.is_absolute():
+                        path = Path(self.base_dir) / path
+                with prepend_sys_path(path):
+                    self.ext_ctx = ExtensionContext.load(
+                        self.server_ctx, extension_refs
+                    )
 
     @cached_property
     def config_items(self) -> Optional[Mapping[str, bytes]]:
@@ -45,3 +58,17 @@ class ViewerContext(ResourcesContext):
             self.config["Viewer"].get("Configuration", {}),
             "'Configuration' item of 'Viewer'",
         )
+
+
+@contextmanager
+def prepend_sys_path(path: Path | str | None):
+    prev_sys_path = None
+    if path is not None:
+        LOG.warning(f"temporarily prepending '{path}' to sys.path")
+        prev_sys_path = sys.path
+        sys.path = [str(path)] + sys.path
+    try:
+        yield path is not None
+    finally:
+        if prev_sys_path:
+            sys.path = prev_sys_path
