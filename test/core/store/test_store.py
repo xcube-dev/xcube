@@ -3,12 +3,14 @@
 # https://opensource.org/licenses/MIT.
 import unittest
 from unittest.mock import patch
+from unittest.mock import MagicMock
 
 from fsspec.registry import register_implementation
 
 from xcube.core.store import DataStoreError
 from xcube.core.store import list_data_store_ids
 from xcube.core.store import new_data_store
+
 import pytest
 
 
@@ -58,27 +60,33 @@ class TestBaseFsDataStore(unittest.TestCase):
             store.get_data_opener_ids(data_id="test.geotiff", data_type="mldataset"),
         )
 
-    @patch("fsspec.implementations.http.HTTPFileSystem.exists")
-    def test_has_data(self, mock_fs_exists):
-        mock_fs_exists.return_value = True
+    @patch("fsspec.filesystem")
+    def test_has_data(self, mock_filesystem):
+        # Mock the HTTPFileSystem instance and its `exists` method
+        mock_http_fs = MagicMock()
+        mock_filesystem.return_value = mock_http_fs
+        mock_http_fs.exists.return_value = True
+        mock_http_fs.sep = "/"
+
         store = new_data_store("https", root="test.org")
 
         res = store.has_data(data_id="test.tif")
-        mock_fs_exists.assert_called_once_with("https://test.org/test.tif")
+        self.assertEqual(mock_filesystem.call_count, 1)
+        mock_http_fs.exists.assert_called_once_with("https://test.org/test.tif")
         self.assertTrue(res)
 
         res = store.has_data(data_id="test.tif", data_type="dataset")
-        mock_fs_exists.assert_called_with("https://test.org/test.tif")
-        self.assertEqual(mock_fs_exists.call_count, 2)
+        mock_http_fs.exists.assert_called_with("https://test.org/test.tif")
+        self.assertEqual(mock_http_fs.exists.call_count, 2)
         self.assertTrue(res)
 
         res = store.has_data(data_id="test.tif", data_type="mldataset")
-        mock_fs_exists.assert_called_with("https://test.org/test.tif")
-        self.assertEqual(mock_fs_exists.call_count, 3)
+        mock_http_fs.exists.assert_called_with("https://test.org/test.tif")
+        self.assertEqual(mock_http_fs.exists.call_count, 3)
         self.assertTrue(res)
 
         res = store.has_data(data_id="test.tif", data_type="geodataframe")
-        self.assertEqual(mock_fs_exists.call_count, 3)
+        self.assertEqual(mock_http_fs.exists.call_count, 3)
         self.assertFalse(res)
 
 
