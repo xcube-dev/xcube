@@ -46,7 +46,7 @@ dependencies:
   - altair
   - pip
   - pip:
-      - dashipy >=0.0.9
+      - git+https://github.com/bcdev/dashi.git#subdirectory=dashipy
   # Testing
   - flake8 >=3.7
   - kerchunk
