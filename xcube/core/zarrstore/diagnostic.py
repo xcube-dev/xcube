@@ -3,7 +3,6 @@
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
-from typing import List
 from collections.abc import Iterator
 
 import zarr.storage
