@@ -30,7 +30,7 @@
   Panel instances provide two decorators `layout()` and `callback()`
   which are used to implement the UI and the interaction behaviour,
   respectively. The functionality is provided by the
-  `https://github.com/bcdev/dashi/dashipy` Python library.
+  `https://github.com/bcdev/chartlets` Python library.
   A working example can be found in `examples/serve/panels-demo`.
   
 

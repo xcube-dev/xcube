@@ -1,5 +1,5 @@
-from dashipy import Component, Input, State, Output
-from dashipy.components import Box, Dropdown, Checkbox, Typography
+from chartlets import Component, Input, State, Output
+from chartlets.components import Box, Dropdown, Checkbox, Typography
 
 from xcube.webapi.viewer.contrib import Panel
 from xcube.webapi.viewer.contrib import get_datasets_ctx

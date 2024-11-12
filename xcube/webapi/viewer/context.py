@@ -9,8 +9,8 @@ from typing import Optional
 from collections.abc import Mapping
 import sys
 
-from dashipy import Extension
-from dashipy import ExtensionContext
+from chartlets import Extension
+from chartlets import ExtensionContext
 import fsspec
 
 from xcube.constants import LOG

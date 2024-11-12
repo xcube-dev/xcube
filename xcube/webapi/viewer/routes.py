@@ -8,10 +8,10 @@ import os
 import pathlib
 from typing import Union, Optional
 
-from dashipy import Response as ExtResponse
-from dashipy.controllers import get_callback_results
-from dashipy.controllers import get_contributions
-from dashipy.controllers import get_layout
+from chartlets import Response as ExtResponse
+from chartlets.controllers import get_callback_results
+from chartlets.controllers import get_contributions
+from chartlets.controllers import get_layout
 
 from xcube.constants import LOG
 from xcube.server.api import ApiError

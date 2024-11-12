@@ -1,4 +1,4 @@
-from dashipy import Contribution
+from chartlets import Contribution
 
 
 class Panel(Contribution):
@@ -6,7 +6,7 @@ class Panel(Contribution):
 
     A panel is a UI-contribution to xcube Viewer.
     To become effective, instances of this class must be added
-    to a ``dashipy.Extension`` instance exported from your extension
+    to a ``chartlets.Extension`` instance exported from your extension
     module.
 
     Args:

@@ -1,4 +1,4 @@
-from dashipy import Extension
+from chartlets import Extension
 from .my_panel_1 import panel as my_panel_1
 
 ext = Extension(__name__)
