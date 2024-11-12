@@ -114,9 +114,7 @@ class ViewerExtHandler(ApiHandler[ViewerContext]):
         )
 
     def do_get_callback_results(self):
-        self._write_response(
-            get_callback_results(self.ctx.ext_ctx, self.request.json)
-        )
+        self._write_response(get_callback_results(self.ctx.ext_ctx, self.request.json))
 
     def _write_response(self, response: ExtResponse):
         self.response.set_header("Content-Type", "text/json")
@@ -146,8 +144,8 @@ class ViewerExtContributionsHandler(ViewerExtHandler):
 # noinspection PyPep8Naming
 @api.route("/viewer/ext/layout/{contribPoint}/{contribIndex}")
 class ViewerExtLayoutHandler(ViewerExtHandler):
-    # GET /dashi/layout/{contrib_point_name}/{contrib_index}
     def get(self, contribPoint: str, contribIndex: str):
+        """This endpoint is for testing only."""
         self.do_get_layout(contribPoint, contribIndex)
 
     # POST /dashi/layout/{contrib_point_name}/{contrib_index}
@@ -176,11 +174,12 @@ class ViewerExtLayoutHandler(ViewerExtHandler):
 @api.route("/viewer/ext/callback")
 class ViewerExtCallbackHandler(ViewerExtHandler):
 
-    # POST /dashi/callback
     @api.operation(
         operationId="getViewerContributionCallbackResults",
-        summary="Process the viewer contribution callback requests"
-        " and return state change requests.",
+        summary=(
+            "Process the viewer contribution callback requests"
+            " and return state change requests."
+        ),
     )
     def post(self):
         self.do_get_callback_results()

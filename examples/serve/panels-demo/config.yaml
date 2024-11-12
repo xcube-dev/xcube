@@ -1,5 +1,8 @@
-DatasetAttribution:
-  - "© by Brockmann Consult GmbH 2024, contains modified Copernicus Data 2019, processed by ESA"
+Viewer:
+  Augmentation:
+    Path: ""
+    Extensions:
+      - my_viewer_ext.ext
 
 DatasetChunkCacheSize: 100M
 
@@ -20,12 +23,6 @@ DataStores:
         Identifier: louisville
         Title: Lousiville S2
         Style: louisville
-
-Viewer:
-  Augmentation:
-    Path: ""
-    Extensions:
-      - my_viewer_ext.ext
 
 Styles:
   - Identifier: waddensea

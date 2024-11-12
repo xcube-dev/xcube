@@ -2,7 +2,17 @@ from dashipy import Contribution
 
 
 class Panel(Contribution):
-    """Panel contribution"""
+    """Panel contribution.
+
+    A panel is a UI-contribution to xcube Viewer.
+    To become effective, instances of this class must be added
+    to a ``dashipy.Extension`` instance exported from your extension
+    module.
+
+    Args:
+        name: A name that is unique within the extension.
+        title: An initial title for the panel.
+    """
 
     def __init__(self, name: str, title: str | None = None):
         super().__init__(name, visible=False, title=title)

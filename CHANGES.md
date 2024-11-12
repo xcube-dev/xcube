@@ -21,6 +21,19 @@
    lazily and therefore supports chunk-wise, parallel processing. (#1
 
 
+### Other changes
+
+* Added experimental feature that allows for extending the xcube Viewer 
+  user interface by _server-side panels_. For this to work, users can now 
+  configure xcube Server to load one or more Python modules that provide 
+  `xcube.webapi.viewer.contrib.Panel` UI-contributions.
+  Panel instances provide two decorators `layout()` and `callback()`
+  which are used to implement the UI and the interaction behaviour,
+  respectively. The functionality is provided by the
+  `https://github.com/bcdev/dashi/dashipy` Python library.
+  A working example can be found in `examples/serve/panels-demo`.
+  
+
 ## Changes in 1.7.1
 
 ### Enhancements
