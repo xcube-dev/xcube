@@ -518,15 +518,10 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             return False
         avail_data_types = _FORMAT_TO_DATA_TYPE_ALIASES.get(format_id)
         data_type = DataType.normalize(data_type)
-        if any(
-            [
-                data_type.is_super_type_of(avail_data_type)
-                for avail_data_type in avail_data_types
-            ]
-        ):
-            return True
-        else:
-            return False
+        return any(
+            data_type.is_super_type_of(avail_data_type)
+            for avail_data_type in avail_data_types
+        )
 
     def _assert_data_specified(self, data_id, data_type: DataTypeLike):
         self._is_data_specified(data_id, data_type, require=True)
