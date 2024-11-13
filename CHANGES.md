@@ -24,7 +24,7 @@
 ### Other changes
 
 * Added experimental feature that allows for extending the xcube Viewer 
-  user interface by _server-side panels_. For this to work, users can now 
+  user interface with _server-side panels_. For this to work, users can now 
   configure xcube Server to load one or more Python modules that provide 
   `xcube.webapi.viewer.contrib.Panel` UI-contributions.
   Panel instances provide two decorators `layout()` and `callback()`
