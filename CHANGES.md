@@ -19,7 +19,8 @@
 
 * The function `xcube.core.resample.resample_in_space()` now always operates
    lazily and therefore supports chunk-wise, parallel processing. (#1
-
+* The explaination of the parameter `xy_scale` in the method 
+  `xcube.core.gridmapping.GridMapping.scale` has been corrected. (#1086)
 
 ## Changes in 1.7.1
 
