@@ -1,7 +1,7 @@
 import xarray as xr
 
 
-def compute_indexes(dataset):
+def compute_indexes(dataset: xr.Dataset) -> xr.Dataset:
     b04 = dataset.B04
     b05 = dataset.B05
     b06 = dataset.B06
