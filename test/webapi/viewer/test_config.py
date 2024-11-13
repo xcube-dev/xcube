@@ -11,7 +11,7 @@ import pytest
 from xcube.webapi.viewer.config import CONFIG_SCHEMA
 
 
-class ViewerConfigTest(unittest.TestCase):
+class ViewerConfigurationTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_validate_instance_ok(self):
         CONFIG_SCHEMA.validate_instance({})
@@ -37,6 +37,7 @@ class ViewerConfigTest(unittest.TestCase):
             CONFIG_SCHEMA.validate_instance(
                 {
                     "Viewer": {
+                        # Missing required "Path"
                         "Config": {},
                     }
                 }
@@ -46,10 +47,49 @@ class ViewerConfigTest(unittest.TestCase):
             CONFIG_SCHEMA.validate_instance(
                 {
                     "Viewer": {
+                        # Forbidden "Title"
                         "Configuration": {
                             "Path": "s3://xcube-viewer-app/bc/dev/viewer/",
                             "Title": "Test!",
                         },
+                    }
+                }
+            )
+
+
+class ViewerAugmentationTest(unittest.TestCase):
+    # noinspection PyMethodMayBeStatic
+    def test_validate_instance_ok(self):
+        CONFIG_SCHEMA.validate_instance({})
+        CONFIG_SCHEMA.validate_instance({"Viewer": {}})
+        CONFIG_SCHEMA.validate_instance(
+            {
+                "Viewer": {
+                    "Augmentation": {
+                        "Extensions": ["my_feature_1.ext", "my_feature_2.ext"]
+                    },
+                }
+            }
+        )
+        CONFIG_SCHEMA.validate_instance(
+            {
+                "Viewer": {
+                    "Augmentation": {
+                        "Path": "home/ext",
+                        "Extensions": ["my_feature_1.ext", "my_feature_2.ext"],
+                    },
+                }
+            }
+        )
+
+    # noinspection PyMethodMayBeStatic
+    def test_validate_instance_fails(self):
+        with pytest.raises(jsonschema.exceptions.ValidationError):
+            CONFIG_SCHEMA.validate_instance(
+                {
+                    "Viewer": {
+                        # Missing required "Extensions"
+                        "Augmentation": {},
                     }
                 }
             )

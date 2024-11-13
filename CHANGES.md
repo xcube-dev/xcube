@@ -22,6 +22,19 @@
 * The explaination of the parameter `xy_scale` in the method 
   `xcube.core.gridmapping.GridMapping.scale` has been corrected. (#1086)
 
+### Other changes
+
+* Added experimental feature that allows for extending the xcube Viewer 
+  user interface with _server-side panels_. For this to work, users can now 
+  configure xcube Server to load one or more Python modules that provide 
+  `xcube.webapi.viewer.contrib.Panel` UI-contributions.
+  Panel instances provide two decorators `layout()` and `callback()`
+  which are used to implement the UI and the interaction behaviour,
+  respectively. The functionality is provided by the
+  `https://github.com/bcdev/chartlets` Python library.
+  A working example can be found in `examples/serve/panels-demo`.
+  
+
 ## Changes in 1.7.1
 
 ### Enhancements

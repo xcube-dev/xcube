@@ -9,6 +9,7 @@ from collections.abc import Mapping
 
 from test.webapi.helpers import get_api_ctx
 from xcube.webapi.viewer.context import ViewerContext
+from xcube.webapi.viewer.contrib import Panel
 
 
 def get_viewer_ctx(
@@ -44,3 +45,16 @@ class ViewerContextTest(unittest.TestCase):
         config.update(dict(Viewer=dict(Configuration=dict(Path=config_path))))
         ctx2 = get_viewer_ctx(server_config=config)
         self.assertEqual(config_path, ctx2.config_path)
+
+    def test_panels(self):
+        ctx = get_viewer_ctx("config-panels.yml")
+        self.assertIsNotNone(ctx.ext_ctx)
+        self.assertIsInstance(ctx.ext_ctx.extensions, list)
+        self.assertEqual(1, len(ctx.ext_ctx.extensions))
+        self.assertIsInstance(ctx.ext_ctx.contributions, dict)
+        self.assertEqual(1, len(ctx.ext_ctx.contributions))
+        self.assertIn("panels", ctx.ext_ctx.contributions)
+        self.assertIsInstance(ctx.ext_ctx.contributions["panels"], list)
+        self.assertEqual(2, len(ctx.ext_ctx.contributions["panels"]))
+        self.assertIsInstance(ctx.ext_ctx.contributions["panels"][0], Panel)
+        self.assertIsInstance(ctx.ext_ctx.contributions["panels"][1], Panel)
