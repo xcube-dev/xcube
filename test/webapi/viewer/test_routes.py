@@ -27,3 +27,251 @@ class ViewerConfigRoutesTest(RoutesTestCase):
     def test_viewer_config(self):
         response = self.fetch("/viewer/config/config.json")
         self.assertResponseOK(response)
+
+
+class ViewerExtRoutesTest(RoutesTestCase):
+    def get_config_filename(self) -> str:
+        return "config-panels.yml"
+
+    def test_viewer_ext_contributions(self):
+        response = self.fetch("/viewer/ext/contributions")
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({"result": expected_contributions_result}, result)
+
+    def test_viewer_ext_layout(self):
+        response = self.fetch(
+            "/viewer/ext/layout/panels/0",
+            method="POST",
+            body={
+                "inputValues": [
+                    "",  # dataset_id
+                ]
+            },
+        )
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({"result": expected_layout_result}, result)
+
+    def test_viewer_ext_callback(self):
+        response = self.fetch(
+            "/viewer/ext/callback",
+            method="POST",
+            body={
+                "callbackRequests": [
+                    {
+                        "contribPoint": "panels",
+                        "contribIndex": 0,
+                        "callbackIndex": 0,
+                        "inputValues": [
+                            "",  # dataset_id
+                            True,  # opaque
+                            1,  # color
+                            "",  # info_text
+                        ],
+                    }
+                ]
+            },
+        )
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({"result": expected_callback_result}, result)
+
+
+expected_callback_result = [
+    {
+        "contribIndex": 0,
+        "contribPoint": "panels",
+        "stateChanges": [
+            {
+                "id": "info_text",
+                "link": "component",
+                "property": "text",
+                "value": (
+                    "The dataset is , the color is green "
+                    "and it is opaque. The length of the "
+                    "last info text was 0. The number of "
+                    "datasets is 1."
+                ),
+            }
+        ],
+    }
+]
+
+expected_layout_result = {
+    "components": [
+        {"id": "opaque", "label": "Opaque", "type": "Checkbox", "value": False},
+        {
+            "id": "color",
+            "label": "Color",
+            "options": [["red", 0], ["green", 1], ["blue", 2], ["yellow", 3]],
+            "style": {"flexGrow": 0, "minWidth": 80},
+            "type": "Dropdown",
+            "value": 0,
+        },
+        {
+            "id": "info_text",
+            "text": (
+                "The dataset is , the color is red and it "
+                "is not opaque. The length of the last "
+                "info text was 0. The number of datasets "
+                "is 1."
+            ),
+            "type": "Typography",
+        },
+    ],
+    "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px",
+        "height": "100%",
+        "width": "100%",
+    },
+    "type": "Box",
+}
+
+expected_contributions_result = {
+    "contributions": {
+        "panels": [
+            {
+                "callbacks": [
+                    {
+                        "function": {
+                            "name": "update_info_text",
+                            "parameters": [
+                                {
+                                    "default": "",
+                                    "name": "dataset_id",
+                                    "type": {"type": "string"},
+                                },
+                                {
+                                    "default": False,
+                                    "name": "opaque",
+                                    "type": {"type": "boolean"},
+                                },
+                                {
+                                    "default": 0,
+                                    "name": "color",
+                                    "type": {"type": "integer"},
+                                },
+                                {
+                                    "default": "",
+                                    "name": "info_text",
+                                    "type": {"type": "string"},
+                                },
+                            ],
+                            "returnType": {"type": "string"},
+                        },
+                        "inputs": [
+                            {
+                                "link": "app",
+                                "property": "controlState.selectedDatasetId",
+                            },
+                            {"id": "opaque", "link": "component", "property": "value"},
+                            {"id": "color", "link": "component", "property": "value"},
+                            {
+                                "id": "info_text",
+                                "link": "component",
+                                "noTrigger": True,
+                                "property": "text",
+                            },
+                        ],
+                        "outputs": [
+                            {"id": "info_text", "link": "component", "property": "text"}
+                        ],
+                    }
+                ],
+                "extension": "viewer_panels",
+                "initialState": {"title": "Panel A", "visible": False},
+                "layout": {
+                    "function": {
+                        "name": "render_panel",
+                        "parameters": [
+                            {
+                                "default": "",
+                                "name": "dataset_id",
+                                "type": {"type": "string"},
+                            }
+                        ],
+                        "returnType": {"class": "Component", "type": "object"},
+                    },
+                    "inputs": [
+                        {"link": "app", "property": "controlState.selectedDatasetId"}
+                    ],
+                },
+                "name": "viewer_panels.my_panel_a",
+            },
+            {
+                "callbacks": [
+                    {
+                        "function": {
+                            "name": "update_info_text",
+                            "parameters": [
+                                {
+                                    "default": "",
+                                    "name": "dataset_id",
+                                    "type": {"type": "string"},
+                                },
+                                {
+                                    "default": False,
+                                    "name": "opaque",
+                                    "type": {"type": "boolean"},
+                                },
+                                {
+                                    "default": 0,
+                                    "name": "color",
+                                    "type": {"type": "integer"},
+                                },
+                                {
+                                    "default": "",
+                                    "name": "info_text",
+                                    "type": {"type": "string"},
+                                },
+                            ],
+                            "returnType": {"type": "string"},
+                        },
+                        "inputs": [
+                            {
+                                "link": "app",
+                                "property": "controlState.selectedDatasetId",
+                            },
+                            {"id": "opaque", "link": "component", "property": "value"},
+                            {"id": "color", "link": "component", "property": "value"},
+                            {
+                                "id": "info_text",
+                                "link": "component",
+                                "noTrigger": True,
+                                "property": "text",
+                            },
+                        ],
+                        "outputs": [
+                            {"id": "info_text", "link": "component", "property": "text"}
+                        ],
+                    }
+                ],
+                "extension": "viewer_panels",
+                "initialState": {"title": "Panel B", "visible": False},
+                "layout": {
+                    "function": {
+                        "name": "render_panel",
+                        "parameters": [
+                            {
+                                "default": "",
+                                "name": "dataset_id",
+                                "type": {"type": "string"},
+                            }
+                        ],
+                        "returnType": {"class": "Component", "type": "object"},
+                    },
+                    "inputs": [
+                        {"link": "app", "property": "controlState.selectedDatasetId"}
+                    ],
+                },
+                "name": "viewer_panels.my_panel_b",
+            },
+        ]
+    },
+    "extensions": [
+        {"contributes": ["panels"], "name": "viewer_panels", "version": "0.0.0"}
+    ],
+}
