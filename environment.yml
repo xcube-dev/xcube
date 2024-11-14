@@ -46,7 +46,7 @@ dependencies:
   - altair
   - pip
   - pip:
-      - git+https://github.com/bcdev/chartlets.git#subdirectory=chartlets.py
+     - chartlets
   # Testing
   - flake8 >=3.7
   - kerchunk
