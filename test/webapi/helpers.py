@@ -52,6 +52,27 @@ def get_server(
     Raise:
         AssertionError: if API context object can not be determined
     """
+    server_config = get_server_config(server_config)
+    framework = framework or MockFramework()
+    extension_registry = extension_registry or get_extension_registry()
+    return Server(framework, server_config, extension_registry=extension_registry)
+
+
+def get_server_config(
+    server_config: Optional[Union[str, Mapping[str, Any]]] = None
+) -> dict[str, Any]:
+    """Get a server configuration for testing.
+
+    The given ``server_config`` is normalized into a dictionary.
+    If ``server_config`` is a path, the configuration is loaded and its
+    ``base_dir`` key is set to the parent directory of the configuration file.
+
+    Args:
+        server_config: Optional path or directory. Defaults to "config.yml".
+
+    Returns:
+        A configuration dictionary.
+    """
     server_config = server_config or "config.yml"
     if isinstance(server_config, str):
         config_path = server_config
@@ -67,10 +88,7 @@ def get_server(
             server_config["base_dir"] = base_dir
     else:
         assert isinstance(server_config, collections.abc.Mapping)
-
-    framework = framework or MockFramework()
-    extension_registry = extension_registry or get_extension_registry()
-    return Server(framework, server_config, extension_registry=extension_registry)
+    return server_config
 
 
 def get_api_ctx(

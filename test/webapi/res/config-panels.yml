@@ -1,8 +1,8 @@
 Viewer:
   Augmentation:
-    Path: ""
+    Path: "viewer/extensions"
     Extensions:
-      - viewer_panels.ext
+      - my_ext.ext
 
 DataStores:
   - Identifier: test
@@ -16,18 +16,3 @@ DataStores:
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
   ProviderSite: "https://www.brockmann-consult.de"
-  ServiceContact:
-    IndividualName: "Norman Fomferra"
-    PositionName: "Senior Software Engineer"
-    ContactInfo:
-      Phone:
-        Voice: "+49 4152 889 303"
-        Facsimile: "+49 4152 889 330"
-      Address:
-        DeliveryPoint: "HZG / GITZ"
-        City: "Geesthacht"
-        AdministrativeArea: "Herzogtum Lauenburg"
-        PostalCode: "21502"
-        Country: "Germany"
-        ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
-
