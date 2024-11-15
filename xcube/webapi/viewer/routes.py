@@ -6,6 +6,7 @@ import importlib.resources
 import json
 import os
 import pathlib
+import random
 from typing import Union, Optional
 
 from chartlets import Response as ExtResponse
@@ -100,6 +101,56 @@ class ViewerConfigHandler(ApiHandler[ViewerContext]):
         elif filename_ext in ("jpeg", "jpg"):
             return "image/jpeg"
         return None
+
+
+@api.route("/viewer/state")
+class ViewerStateHandler(ApiHandler[ViewerContext]):
+
+    _stored_states: dict[str, bytes] = {}
+    # noinspection SpellCheckingInspection
+    _id_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+    @api.operation(
+        operationId="getViewerState",
+        summary="Get a previously stored viewer state.",
+        parameters=[
+            {
+                "name": "stateId",
+                "in": "query",
+                "description": "The state identifier.",
+                "required": True,
+                "schema": {"type": "string"},
+            }
+        ],
+    )
+    def get(self):
+        state_id = self.request.get_query_arg("stateId", str)
+        if state_id in self._stored_states:
+            state = self._stored_states[state_id]
+            LOG.info(f"Restored state of size {len(state)} for key {state_id!r}")
+            self.response.write(state)
+        else:
+            self.response.set_status(404)
+
+    @api.operation(
+        operationId="putViewerState",
+        summary="Store a viewer state and return a new state identifier.",
+    )
+    def put(self):
+        state = self.request.body
+        state_id = self.new_id()
+        self._stored_states[state_id] = state
+        LOG.info(f"Stored state of size {len(state)} using key {state_id!r}")
+        self.response.write({"stateId": state_id})
+
+    @classmethod
+    def new_id(cls, length: int = 8) -> str:
+        states = cls._stored_states
+        chars = cls._id_chars
+        while True:
+            state_id = "".join(random.choice(chars) for _ in range(length))
+            if state_id not in states:
+                return state_id
 
 
 class ViewerExtHandler(ApiHandler[ViewerContext]):
