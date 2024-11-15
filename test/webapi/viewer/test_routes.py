@@ -30,6 +30,11 @@ class ViewerConfigRoutesTest(RoutesTestCase):
 
 
 class ViewerExtRoutesTest(RoutesTestCase):
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.maxDiff = None
+
     def get_config_filename(self) -> str:
         return "config-panels.yml"
 
@@ -181,7 +186,7 @@ expected_contributions_result = {
                         ],
                     }
                 ],
-                "extension": "viewer_panels",
+                "extension": "my_ext",
                 "initialState": {"title": "Panel A", "visible": False},
                 "layout": {
                     "function": {
@@ -199,7 +204,7 @@ expected_contributions_result = {
                         {"link": "app", "property": "controlState.selectedDatasetId"}
                     ],
                 },
-                "name": "viewer_panels.my_panel_a",
+                "name": "my_ext.my_panel_a",
             },
             {
                 "callbacks": [
@@ -249,7 +254,7 @@ expected_contributions_result = {
                         ],
                     }
                 ],
-                "extension": "viewer_panels",
+                "extension": "my_ext",
                 "initialState": {"title": "Panel B", "visible": False},
                 "layout": {
                     "function": {
@@ -267,11 +272,11 @@ expected_contributions_result = {
                         {"link": "app", "property": "controlState.selectedDatasetId"}
                     ],
                 },
-                "name": "viewer_panels.my_panel_b",
+                "name": "my_ext.my_panel_b",
             },
         ]
     },
     "extensions": [
-        {"contributes": ["panels"], "name": "viewer_panels", "version": "0.0.0"}
+        {"contributes": ["panels"], "name": "my_ext", "version": "0.0.0"}
     ],
 }
