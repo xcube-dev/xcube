@@ -68,9 +68,8 @@ class ViewerContext(ResourcesContext):
         else:
             temp_module_path = new_temp_dir("xcube-viewer-aux-")
             LOG.warning(f"Downloading {module_path} to {temp_module_path}")
-            fs.get(fs_path, temp_module_path, recursive=True)
+            fs.get(fs_path + "/**/*", temp_module_path + "/", recursive=True)
             local_module_path = Path(temp_module_path)
-
         with prepend_sys_path(local_module_path):
             LOG.info(f"Loading viewer extension(s) {','.join(extension_refs)}")
             self.ext_ctx = ExtensionContext.load(self.server_ctx, extension_refs)
