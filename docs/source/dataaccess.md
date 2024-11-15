@@ -72,7 +72,7 @@ instance, multi-resolution data cubes would be represented as a xcube
 Vector data is usually provided as an instance of [geopandas.GeoDataFrame].
 
 Data stores can also be writable. All read-only data stores share the same 
-functional interface share the same functional interface and so do writable
+functional interface and so do writable
 data stores. Of course, different data stores will have different
 configuration parameters. Also, the parameters passed to the `open_data()`
 method, or respectively the `write_data()` method, may change based on the 
@@ -117,7 +117,7 @@ parameters as well as the type and value range of each parameter. The
 schemas are also used internally to validate the parameters passed by the 
 user.
 
-xcube comes with a predefined set of writable, filesystem-based data stores,
+xcube comes with a predefined set of writable, filesystem-based data stores.
 Since data stores are xcube extensions, additional data stores can be added 
 by xcube plugins. The data store framework provides a number of global 
 functions that can be used to access the available data stores: 
@@ -183,7 +183,7 @@ We provide the store identifier, list the store parameters, and list
 the common parameters used to open data cubes, i.e., [xarray.Dataset] 
 instances.
 
-Note that some data stores the open parameters may differ by from dataset to 
+Note that in some data stores, the open parameters may differ from dataset to 
 dataset depending on the actual dataset layout, coordinate references 
 system or data type. Some data stores may also provide vector data.
 
