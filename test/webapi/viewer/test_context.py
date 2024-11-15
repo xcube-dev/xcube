@@ -7,7 +7,12 @@ import unittest
 from typing import Optional, Union, Any
 from collections.abc import Mapping
 
+import fsspec
+from chartlets import ExtensionContext
+
+from test.s3test import s3_test
 from test.webapi.helpers import get_api_ctx
+from test.webapi.helpers import get_server_config
 from xcube.webapi.viewer.context import ViewerContext
 from xcube.webapi.viewer.contrib import Panel
 
@@ -46,15 +51,33 @@ class ViewerContextTest(unittest.TestCase):
         ctx2 = get_viewer_ctx(server_config=config)
         self.assertEqual(config_path, ctx2.config_path)
 
-    def test_panels(self):
+    def test_panels_local(self):
         ctx = get_viewer_ctx("config-panels.yml")
-        self.assertIsNotNone(ctx.ext_ctx)
-        self.assertIsInstance(ctx.ext_ctx.extensions, list)
-        self.assertEqual(1, len(ctx.ext_ctx.extensions))
-        self.assertIsInstance(ctx.ext_ctx.contributions, dict)
-        self.assertEqual(1, len(ctx.ext_ctx.contributions))
-        self.assertIn("panels", ctx.ext_ctx.contributions)
-        self.assertIsInstance(ctx.ext_ctx.contributions["panels"], list)
-        self.assertEqual(2, len(ctx.ext_ctx.contributions["panels"]))
-        self.assertIsInstance(ctx.ext_ctx.contributions["panels"][0], Panel)
-        self.assertIsInstance(ctx.ext_ctx.contributions["panels"][1], Panel)
+        self.assert_extensions_ok(ctx.ext_ctx)
+
+    @s3_test()
+    def test_panels_s3(self, endpoint_url: str):
+        server_config = get_server_config("config-panels.yml")
+        bucket_name = "xcube-testing"
+        base_dir = server_config["base_dir"]
+        ext_path = server_config["Viewer"]["Augmentation"]["Path"]
+        # Copy test extension to S3 bucket
+        s3_fs: fsspec.AbstractFileSystem = fsspec.filesystem(
+            "s3", endpoint_url=endpoint_url
+        )
+        s3_fs.put(f"{base_dir}/{ext_path}", f"{bucket_name}/{ext_path}", recursive=True)
+        server_config["base_dir"] = f"s3://{bucket_name}"
+        ctx = get_viewer_ctx(server_config)
+        self.assert_extensions_ok(ctx.ext_ctx)
+
+    def assert_extensions_ok(self, ext_ctx: ExtensionContext | None):
+        self.assertIsNotNone(ext_ctx)
+        self.assertIsInstance(ext_ctx.extensions, list)
+        self.assertEqual(1, len(ext_ctx.extensions))
+        self.assertIsInstance(ext_ctx.contributions, dict)
+        self.assertEqual(1, len(ext_ctx.contributions))
+        self.assertIn("panels", ext_ctx.contributions)
+        self.assertIsInstance(ext_ctx.contributions["panels"], list)
+        self.assertEqual(2, len(ext_ctx.contributions["panels"]))
+        self.assertIsInstance(ext_ctx.contributions["panels"][0], Panel)
+        self.assertIsInstance(ext_ctx.contributions["panels"][1], Panel)
