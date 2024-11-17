@@ -38,7 +38,14 @@
   respectively. The functionality is provided by the
   `https://github.com/bcdev/chartlets` Python library.
   A working example can be found in `examples/serve/panels-demo`.
-  
+
+* The xcube test helper module `test.s3test` has been enhanced to support 
+  testing the experimental _server-side panels_ described above:
+  - added new decorator `@s3_test()` for individual tests with `timeout` arg;
+  - added new context manager `s3_test_server()` with `timeout` arg to be used 
+    within tests function bodies;
+  - `S3Test`, `@s3_test()`, and `s3_test_server()` now restore environment 
+    variables modified for the Moto S3 test server.  
 
 ## Changes in 1.7.1
 

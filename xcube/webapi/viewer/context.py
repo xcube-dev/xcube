@@ -15,6 +15,8 @@ import fsspec
 
 from xcube.constants import LOG
 from xcube.server.api import Context
+from xcube.util.fspath import is_local_fs
+from xcube.util.temp import new_temp_dir
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.viewer.contrib import Panel
 
@@ -34,17 +36,9 @@ class ViewerContext(ResourcesContext):
         if viewer_config:
             augmentation: dict | None = viewer_config.get("Augmentation")
             if augmentation:
+                path: Path | None = augmentation.get("Path")
                 extension_refs: list[str] = augmentation["Extensions"]
-                path: Path | None = None
-                if "Path" in augmentation:
-                    path = Path(augmentation["Path"])
-                    if not path.is_absolute():
-                        path = Path(self.base_dir) / path
-                with prepend_sys_path(path):
-                    LOG.info(f"Loading viewer extension(s) {','.join(extension_refs)}")
-                    self.ext_ctx = ExtensionContext.load(
-                        self.server_ctx, extension_refs
-                    )
+                self.set_extension_context(path, extension_refs)
 
     @cached_property
     def config_items(self) -> Optional[Mapping[str, bytes]]:
@@ -60,6 +54,25 @@ class ViewerContext(ResourcesContext):
             self.config["Viewer"].get("Configuration", {}),
             "'Configuration' item of 'Viewer'",
         )
+
+    def set_extension_context(self, path: Path | None, extension_refs: list[str]):
+        module_path = self.base_dir
+        if path:
+            module_path = f"{module_path}/{path}"
+        fs_root: tuple[fsspec.AbstractFileSystem, str] = fsspec.core.url_to_fs(
+            module_path
+        )
+        fs, fs_path = fs_root
+        if is_local_fs(fs):
+            local_module_path = Path(module_path)
+        else:
+            temp_module_path = new_temp_dir("xcube-viewer-aux-")
+            LOG.warning(f"Downloading {module_path} to {temp_module_path}")
+            fs.get(fs_path + "/**/*", temp_module_path + "/", recursive=True)
+            local_module_path = Path(temp_module_path)
+        with prepend_sys_path(local_module_path):
+            LOG.info(f"Loading viewer extension(s) {','.join(extension_refs)}")
+            self.ext_ctx = ExtensionContext.load(self.server_ctx, extension_refs)
 
 
 @contextmanager
