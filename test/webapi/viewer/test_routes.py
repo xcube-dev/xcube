@@ -29,6 +29,60 @@ class ViewerConfigRoutesTest(RoutesTestCase):
         self.assertResponseOK(response)
 
 
+class ViewerStateRoutesNoConfigTest(RoutesTestCase):
+
+    def test_get(self):
+        response = self.fetch("/viewer/state")
+        self.assertEqual(504, response.status)
+        self.assertEqual("Persistence not supported", response.reason)
+
+    def test_put(self):
+        response = self.fetch("/viewer/state", method="PUT", body={"state": 123})
+        self.assertEqual(504, response.status)
+        self.assertEqual("Persistence not supported", response.reason)
+
+
+class ViewerStateRoutesTest(RoutesTestCase):
+
+    def get_config_filename(self) -> str:
+        return "config-persistence.yml"
+
+    def test_get_and_put_states(self):
+        response = self.fetch("/viewer/state")
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({"keys": []}, result)
+
+        response = self.fetch("/viewer/state", method="PUT", body={"state": "Hallo"})
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertIsInstance(result, dict)
+        self.assertIn("key", result)
+        key1 = result["key"]
+
+        response = self.fetch("/viewer/state", method="PUT", body={"state": "Hello"})
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertIsInstance(result, dict)
+        self.assertIn("key", result)
+        key2 = result["key"]
+
+        response = self.fetch("/viewer/state")
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({key1, key2}, set(result["keys"]))
+
+        response = self.fetch(f"/viewer/state?key={key1}")
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({"state": "Hallo"}, result)
+
+        response = self.fetch(f"/viewer/state?key={key2}")
+        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({"state": "Hello"}, result)
+
+
 class ViewerExtRoutesTest(RoutesTestCase):
 
     def setUp(self) -> None:
@@ -276,7 +330,5 @@ expected_contributions_result = {
             },
         ]
     },
-    "extensions": [
-        {"contributes": ["panels"], "name": "my_ext", "version": "0.0.0"}
-    ],
+    "extensions": [{"contributes": ["panels"], "name": "my_ext", "version": "0.0.0"}],
 }

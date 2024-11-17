@@ -5,8 +5,8 @@
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
-from typing import Optional
-from collections.abc import Mapping
+from typing import Optional, Any
+from collections.abc import Mapping, MutableMapping
 import sys
 
 from chartlets import Extension
@@ -29,16 +29,23 @@ class ViewerContext(ResourcesContext):
     def __init__(self, server_ctx: Context):
         super().__init__(server_ctx)
         self.ext_ctx: ExtensionContext | None = None
+        self.persistence: MutableMapping | None = None
 
     def on_update(self, prev_context: Optional[Context]):
         super().on_update(prev_context)
         viewer_config: dict = self.config.get("Viewer")
-        if viewer_config:
-            augmentation: dict | None = viewer_config.get("Augmentation")
-            if augmentation:
-                path: Path | None = augmentation.get("Path")
-                extension_refs: list[str] = augmentation["Extensions"]
-                self.set_extension_context(path, extension_refs)
+        if not viewer_config:
+            return
+        persistence: dict | None = viewer_config.get("Persistence")
+        if persistence:
+            path = self.get_config_path(persistence, "Persistence")
+            storage_options = persistence.get("StorageOptions")
+            self.set_persistence(path, storage_options)
+        augmentation: dict | None = viewer_config.get("Augmentation")
+        if augmentation:
+            path = augmentation.get("Path")
+            extension_refs = augmentation["Extensions"]
+            self.set_extension_context(path, extension_refs)
 
     @cached_property
     def config_items(self) -> Optional[Mapping[str, bytes]]:
@@ -55,7 +62,15 @@ class ViewerContext(ResourcesContext):
             "'Configuration' item of 'Viewer'",
         )
 
-    def set_extension_context(self, path: Path | None, extension_refs: list[str]):
+    def set_persistence(self, path: str, storage_options: dict[str, Any] | None):
+        fs_root: tuple[fsspec.AbstractFileSystem, str] = fsspec.core.url_to_fs(
+            path, **(storage_options or {})
+        )
+        fs, root = fs_root
+        self.persistence = fs.get_mapper(root, create=True, check=True)
+        LOG.info(f"Viewer persistence established for path {path!r}")
+
+    def set_extension_context(self, path: str | None, extension_refs: list[str]):
         module_path = self.base_dir
         if path:
             module_path = f"{module_path}/{path}"
@@ -67,7 +82,7 @@ class ViewerContext(ResourcesContext):
             local_module_path = Path(module_path)
         else:
             temp_module_path = new_temp_dir("xcube-viewer-aux-")
-            LOG.warning(f"Downloading {module_path} to {temp_module_path}")
+            LOG.warning(f"Downloading {module_path!r} to {temp_module_path!r}")
             fs.get(fs_path + "/**/*", temp_module_path + "/", recursive=True)
             local_module_path = Path(temp_module_path)
         with prepend_sys_path(local_module_path):

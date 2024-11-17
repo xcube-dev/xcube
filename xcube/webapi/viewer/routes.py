@@ -106,51 +106,57 @@ class ViewerConfigHandler(ApiHandler[ViewerContext]):
 @api.route("/viewer/state")
 class ViewerStateHandler(ApiHandler[ViewerContext]):
 
-    _stored_states: dict[str, bytes] = {}
     # noinspection SpellCheckingInspection
     _id_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 
     @api.operation(
         operationId="getViewerState",
-        summary="Get a previously stored viewer state.",
+        summary="Get previously stored viewer state keys or a specific state.",
         parameters=[
             {
-                "name": "stateId",
+                "name": "key",
                 "in": "query",
-                "description": "The state identifier.",
-                "required": True,
+                "description": "The key of a previously stored state.",
+                "required": False,
                 "schema": {"type": "string"},
             }
         ],
     )
     def get(self):
-        state_id = self.request.get_query_arg("stateId", str)
-        if state_id in self._stored_states:
-            state = self._stored_states[state_id]
-            LOG.info(f"Restored state of size {len(state)} for key {state_id!r}")
+        if self.ctx.persistence is None:
+            self.response.set_status(504, "Persistence not supported")
+            return
+        key = self.request.get_query_arg("key", type=str, default="")
+        if key:
+            if key not in self.ctx.persistence:
+                self.response.set_status(404, "State not found")
+                return
+            state = self.ctx.persistence[key]
+            LOG.info(f"Restored state ({len(state)} bytes) for key {key!r}")
             self.response.write(state)
         else:
-            self.response.set_status(404)
+            keys = list(self.ctx.persistence.keys())
+            self.response.write({"keys": keys})
 
     @api.operation(
         operationId="putViewerState",
-        summary="Store a viewer state and return a new state identifier.",
+        summary="Store a viewer state and return a state key.",
     )
     def put(self):
+        if self.ctx.persistence is None:
+            self.response.set_status(504, "Persistence not supported")
+            return
         state = self.request.body
-        state_id = self.new_id()
-        self._stored_states[state_id] = state
-        LOG.info(f"Stored state of size {len(state)} using key {state_id!r}")
-        self.response.write({"stateId": state_id})
+        key = self.new_key()
+        self.ctx.persistence[key] = state
+        LOG.info(f"Stored state ({len(state)} bytes) using key {key!r}")
+        self.response.write({"key": key})
 
-    @classmethod
-    def new_id(cls, length: int = 8) -> str:
-        states = cls._stored_states
-        chars = cls._id_chars
+    def new_key(self, length: int = 8) -> str:
         while True:
-            state_id = "".join(random.choice(chars) for _ in range(length))
-            if state_id not in states:
-                return state_id
+            key = "".join(random.choice(self._id_chars) for _ in range(length))
+            if key not in self.ctx.persistence:
+                return key
 
 
 class ViewerExtHandler(ApiHandler[ViewerContext]):
