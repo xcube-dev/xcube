@@ -1,16 +1,23 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import logging
 import sys
-from typing import Dict, Any, Optional, Union, Sequence, Type, Tuple
+from typing import Dict, Any, Optional, Union, Type, Tuple
+from collections.abc import Sequence
 
 import click
 
-from xcube.constants import (GENERAL_LOG_FORMAT,
-                             XCUBE_LOG_FORMAT,
-                             LOG,
-                             LOG_LEVEL_OFF_NAME,
-                             LOG_LEVEL_OFF,
-                             LOG_LEVEL_DETAIL,
-                             LOG_LEVEL_TRACE)
+from xcube.constants import (
+    GENERAL_LOG_FORMAT,
+    XCUBE_LOG_FORMAT,
+    LOG,
+    LOG_LEVEL_OFF_NAME,
+    LOG_LEVEL_OFF,
+    LOG_LEVEL_DETAIL,
+    LOG_LEVEL_TRACE,
+)
 
 
 def new_cli_ctx_obj():
@@ -30,17 +37,16 @@ def cli_option_traceback(func):
         return value
 
     return click.option(
-        '--traceback',
+        "--traceback",
         is_flag=True,
         help="Enable tracing back errors by dumping the Python call stack. "
-             "Pass as very first option to also trace back error during command-line validation.",
-        callback=_callback)(func)
+        "Pass as very first option to also trace back error during command-line validation.",
+        callback=_callback,
+    )(func)
 
 
 def cli_option_quiet(func):
-    """
-    Decorator for adding a reusable CLI option `--quiet`/'-q'.
-    """
+    """Decorator for adding a reusable CLI option `--quiet`/'-q'."""
 
     # noinspection PyUnusedLocal
     def _callback(ctx: click.Context, param: click.Option, value: bool):
@@ -49,17 +55,17 @@ def cli_option_quiet(func):
         return value
 
     return click.option(
-        '--quiet', '-q',
+        "--quiet",
+        "-q",
         is_flag=True,
         help="Disable output of log messages to the console entirely."
-             " Note, this will also suppress error and warning messages.",
-        callback=_callback
+        " Note, this will also suppress error and warning messages.",
+        callback=_callback,
     )(func)
 
 
 def cli_option_verbosity(func):
-    """
-    Decorator for adding a reusable CLI option `--verbose`/'-v' that
+    """Decorator for adding a reusable CLI option `--verbose`/'-v' that
     can be used multiple times.
     The related kwarg is named `verbosity` and is of type int (= count).
     """
@@ -72,22 +78,23 @@ def cli_option_verbosity(func):
         return value
 
     return click.option(
-        '--verbose', '-v', 'verbosity',
+        "--verbose",
+        "-v",
+        "verbosity",
         count=True,
         help="Enable output of log messages to the console."
-             " Has no effect if --quiet/-q is used."
-             " May be given multiple times to control the level"
-             " of log messages, i.e.,"
-             " -v refers to level INFO, -vv to DETAIL, -vvv to DEBUG,"
-             " -vvvv to TRACE."
-             " If omitted, the log level of the console is WARNING.",
-        callback=_callback
+        " Has no effect if --quiet/-q is used."
+        " May be given multiple times to control the level"
+        " of log messages, i.e.,"
+        " -v refers to level INFO, -vv to DETAIL, -vvv to DEBUG,"
+        " -vvvv to TRACE."
+        " If omitted, the log level of the console is WARNING.",
+        callback=_callback,
     )(func)
 
 
 def cli_option_dry_run(func):
-    """
-    Decorator for adding a reusable CLI option `--dry-run`/'-d'.
+    """Decorator for adding a reusable CLI option `--dry-run`/'-d'.
     The related kwarg is named `dry_run` and is of type bool.
     """
 
@@ -98,11 +105,12 @@ def cli_option_dry_run(func):
         return value
 
     return click.option(
-        '--dry-run', '-d', 'dry_run',
+        "--dry-run",
+        "-d",
+        "dry_run",
         is_flag=True,
-        help="Do not change any data,"
-             " just report what would have been changed.",
-        callback=_callback
+        help="Do not change any data," " just report what would have been changed.",
+        callback=_callback,
     )(func)
 
 
@@ -110,8 +118,7 @@ def cli_option_scheduler(func):
     """Decorator for adding a pre-defined, reusable CLI option `--scheduler`."""
 
     # noinspection PyUnusedLocal
-    def _callback(ctx: click.Context, param: click.Option,
-                  value: Optional[str]):
+    def _callback(ctx: click.Context, param: click.Option, value: Optional[str]):
         if not value:
             return
 
@@ -120,40 +127,46 @@ def cli_option_scheduler(func):
             address, kwargs_string = address_and_kwargs
             kwargs = parse_cli_kwargs(kwargs_string, metavar="SCHEDULER")
         else:
-            address, = address_and_kwargs
+            (address,) = address_and_kwargs
             kwargs = dict()
 
         try:
             # The Dask Client registers itself as the default Dask scheduler, and so runs dask.array used by xarray
             import distributed
+
             scheduler_client = distributed.Client(address, **kwargs)
             ctx_obj = ctx.ensure_object(dict)
             ctx_obj["scheduler"] = scheduler_client
             return scheduler_client
         except ValueError as e:
-            raise click.BadParameter(f'Failed to create Dask scheduler client: {e}') from e
+            raise click.BadParameter(
+                f"Failed to create Dask scheduler client: {e}"
+            ) from e
 
     return click.option(
-        '--scheduler',
-        metavar='SCHEDULER',
+        "--scheduler",
+        metavar="SCHEDULER",
         help="Enable distributed computing using the Dask scheduler identified by SCHEDULER. "
-             "SCHEDULER can have the form <address>?<keyword>=<value>,... where <address> "
-             "is <host> or <host>:<port> and specifies the scheduler's address in your network. "
-             "For more information on distributed computing "
-             "using Dask, refer to http://distributed.dask.org/. "
-             "Pairs of <keyword>=<value> are passed to the Dask client. "
-             "Refer to http://distributed.dask.org/en/latest/api.html#distributed.Client",
-        callback=_callback)(func)
+        "SCHEDULER can have the form <address>?<keyword>=<value>,... where <address> "
+        "is <host> or <host>:<port> and specifies the scheduler's address in your network. "
+        "For more information on distributed computing "
+        "using Dask, refer to http://distributed.dask.org/. "
+        "Pairs of <keyword>=<value> are passed to the Dask client. "
+        "Refer to http://distributed.dask.org/en/latest/api.html#distributed.Client",
+        callback=_callback,
+    )(func)
 
 
-def parse_cli_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
-    """
-    Parse a string value of the form [<kw>=<arg>{,<kw>=<arg>}] into a dictionary.
+def parse_cli_kwargs(value: str, metavar: str = None) -> dict[str, Any]:
+    """Parse a string value of the form [<kw>=<arg>{,<kw>=<arg>}] into a dictionary.
     <kw> must be a valid Python identifier, <arg> must be a Python literal.
 
-    :param value: A string value.
-    :param metavar: Name of a meta-variable used in CLI.
-    :return: a dictionary of keyword-arguments
+    Args:
+        value: A string value.
+        metavar: Name of a meta-variable used in CLI.
+
+    Returns:
+        a dictionary of keyword-arguments
     """
     if value:
         try:
@@ -168,44 +181,53 @@ def parse_cli_kwargs(value: str, metavar: str = None) -> Dict[str, Any]:
         return dict()
 
 
-def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
-                       metavar: str = 'parameter',
-                       item_parser=None,
-                       item_validator=None,
-                       allow_none: bool = True,
-                       allow_empty_items: bool = False,
-                       strip_items: bool = True,
-                       item_plural_name: str = 'items',
-                       num_items: int = None,
-                       num_items_min: int = None,
-                       num_items_max: int = None,
-                       separator: str = ',',
-                       error_type: Type[Exception] = click.ClickException) -> Optional[Tuple[Any, ...]]:
-    """
-    Parse a CLI argument that is supposed to be a sequence.
+def parse_cli_sequence(
+    seq_value: Union[None, str, Sequence[Any]],
+    metavar: str = "parameter",
+    item_parser=None,
+    item_validator=None,
+    allow_none: bool = True,
+    allow_empty_items: bool = False,
+    strip_items: bool = True,
+    item_plural_name: str = "items",
+    num_items: int = None,
+    num_items_min: int = None,
+    num_items_max: int = None,
+    separator: str = ",",
+    error_type: type[Exception] = click.ClickException,
+) -> Optional[tuple[Any, ...]]:
+    """Parse a CLI argument that is supposed to be a sequence.
 
-    :param seq_value: A string, a string sequence, or None.
-    :param metavar: CLI metavar name
-    :param item_parser: an optional function that takes a string and parses it
-    :param item_validator: a optional function that takes a parsed value and parses it
-    :param allow_none: whether it is ok for *seq_value* to be None
-    :param allow_empty_items: whether it is ok to have empty values in *seq_value*
-    :param strip_items: whether to strip values in *seq_value*
-    :param item_plural_name: a name for multiple items
-    :param num_items: expected number of items
-    :param num_items_min: expected minimum number of items
-    :param num_items_max: expected maximum number of items
-    :param separator: expected separator if *seq_value* is a string, default is ','.
-    :param error_type: value error to be raised in case, defaults to ``click.ClickException``
-    :return: parsed and validated *seq_value* as a tuple of values
+    Args:
+        seq_value: A string, a string sequence, or None.
+        metavar: CLI metavar name
+        item_parser: an optional function that takes a string and parses
+            it
+        item_validator: a optional function that takes a parsed value
+            and parses it
+        allow_none: whether it is ok for *seq_value* to be None
+        allow_empty_items: whether it is ok to have empty values in
+            *seq_value*
+        strip_items: whether to strip values in *seq_value*
+        item_plural_name: a name for multiple items
+        num_items: expected number of items
+        num_items_min: expected minimum number of items
+        num_items_max: expected maximum number of items
+        separator: expected separator if *seq_value* is a string,
+            default is ','.
+        error_type: value error to be raised in case, defaults to
+            ``click.ClickException``
+
+    Returns:
+        parsed and validated *seq_value* as a tuple of values
     """
     if seq_value is None:
         if allow_none:
             return None
-        raise error_type(f'{metavar} must be given')
+        raise error_type(f"{metavar} must be given")
     if isinstance(seq_value, str):
-        if ',' in seq_value:
-            items = seq_value.split(',')
+        if "," in seq_value:
+            items = seq_value.split(",")
         elif num_items is not None:
             items = num_items * (seq_value,)
         else:
@@ -214,57 +236,62 @@ def parse_cli_sequence(seq_value: Union[None, str, Sequence[Any]],
         items = seq_value
     item_count = len(items)
     if num_items is not None and item_count != num_items:
-        raise error_type(f'{metavar} must have {num_items} {item_plural_name} separated by {separator!r}')
+        raise error_type(
+            f"{metavar} must have {num_items} {item_plural_name} separated by {separator!r}"
+        )
     if num_items_min is not None and item_count < num_items_min:
-        raise error_type(f'{metavar} must have at least {num_items_min} {item_plural_name} separated by {separator!r}')
+        raise error_type(
+            f"{metavar} must have at least {num_items_min} {item_plural_name} separated by {separator!r}"
+        )
     if num_items_max is not None and item_count > num_items_max:
-        raise error_type(f'{metavar} must have no more than {num_items_max} {item_plural_name} separated by {separator!r}')
+        raise error_type(
+            f"{metavar} must have no more than {num_items_max} {item_plural_name} separated by {separator!r}"
+        )
     if strip_items:
         items = tuple(item.strip() for item in items)
     if not allow_empty_items:
         for item in items:
             if not item:
-                raise error_type(f'{item_plural_name} in {metavar} must not be empty')
+                raise error_type(f"{item_plural_name} in {metavar} must not be empty")
     if item_parser:
         try:
             items = tuple(map(item_parser, items))
         except ValueError as e:
-            raise error_type(f'Invalid {item_plural_name} in {metavar} found: {e}')
+            raise error_type(f"Invalid {item_plural_name} in {metavar} found: {e}")
     if item_validator:
         try:
             for item in items:
                 item_validator(item)
         except ValueError as e:
-            raise error_type(f'Invalid {item_plural_name} in {metavar} found: {e}')
+            raise error_type(f"Invalid {item_plural_name} in {metavar} found: {e}")
     return tuple(items)
 
 
 def assert_positive_int_item(item: int):
-    """
-    A validator for positive integer number sequences.
+    """A validator for positive integer number sequences.
     Frequently used to validate counts or image and tile sizes passes as args to the CLI.
     """
     if item <= 0:
-        raise ValueError('all items must be positive integer numbers')
+        raise ValueError("all items must be positive integer numbers")
 
 
-def handle_cli_exception(e: BaseException,
-                         exit_code: int = None,
-                         traceback_mode: bool = False) -> int:
+def handle_cli_exception(
+    e: BaseException, exit_code: int = None, traceback_mode: bool = False
+) -> int:
     exc_info = traceback_mode and e
     if isinstance(e, click.Abort):
-        LOG.error('Aborted.', exc_info=exc_info)
+        LOG.error("Aborted.", exc_info=exc_info)
         exit_code = exit_code or 1
     elif isinstance(e, click.ClickException):
-        LOG.error('%s', e, exc_info=exc_info)
+        LOG.error("%s", e, exc_info=exc_info)
         exit_code = exit_code or e.exit_code
     elif isinstance(e, OSError):
-        LOG.error('OS error: %s', e, exc_info=exc_info)
+        LOG.error("OS error: %s", e, exc_info=exc_info)
         exit_code = exit_code or 2
     else:
-        LOG.error(f'Internal error: %s', e, exc_info=exc_info)
+        LOG.error(f"Internal error: %s", e, exc_info=exc_info)
         exit_code = exit_code or 3
-    LOG.debug('Exit with code %d', exit_code)
+    LOG.debug("Exit with code %d", exit_code)
     return exit_code
 
 
@@ -273,20 +300,25 @@ def configure_warnings(enable_warnings: bool):
     # filter when --warnings is omitted, but it can be needed during
     # unit testing if a previous test has caused the filter to be changed.
     import warnings
-    warnings.simplefilter('default' if enable_warnings else 'ignore',
-                          category=DeprecationWarning)
-    warnings.simplefilter('default' if enable_warnings else 'ignore',
-                          category=RuntimeWarning)
+
+    warnings.simplefilter(
+        "default" if enable_warnings else "ignore", category=DeprecationWarning
+    )
+    warnings.simplefilter(
+        "default" if enable_warnings else "ignore", category=RuntimeWarning
+    )
 
 
-_general_handler: Union[logging.NullHandler,
-                        logging.FileHandler,
-                        logging.StreamHandler] = logging.NullHandler()
+_general_handler: Union[
+    logging.NullHandler, logging.FileHandler, logging.StreamHandler
+] = logging.NullHandler()
 
 
-def configure_logging(log_file: Optional[str],
-                      log_level: Optional[str],
-                      logger: logging.Logger = logging.getLogger()):
+def configure_logging(
+    log_file: Optional[str],
+    log_level: Optional[str],
+    logger: logging.Logger = logging.getLogger(),
+):
     remove_log_handlers(logger)
     if log_level == LOG_LEVEL_OFF_NAME:
         logger.setLevel(LOG_LEVEL_OFF)
@@ -294,7 +326,7 @@ def configure_logging(log_file: Optional[str],
         logger.setLevel(log_level)
         formatter = logging.Formatter(GENERAL_LOG_FORMAT)
         if log_file:
-            handler = logging.FileHandler(log_file, 'a', encoding='utf8')
+            handler = logging.FileHandler(log_file, "a", encoding="utf8")
         else:
             handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(formatter)
@@ -303,9 +335,11 @@ def configure_logging(log_file: Optional[str],
         _general_handler = handler
 
 
-def configure_cli_output(quiet: Optional[bool] = None,
-                         verbosity: Optional[Union[bool, int]] = None,
-                         logger: logging.Logger = LOG):
+def configure_cli_output(
+    quiet: Optional[bool] = None,
+    verbosity: Optional[Union[bool, int]] = None,
+    logger: logging.Logger = LOG,
+):
     remove_log_handlers(logger)
 
     if quiet:
@@ -323,8 +357,7 @@ def configure_cli_output(quiet: Optional[bool] = None,
 
     logger.setLevel(level)
 
-    if isinstance(_general_handler,
-                  (logging.FileHandler, logging.NullHandler)):
+    if isinstance(_general_handler, (logging.FileHandler, logging.NullHandler)):
         # Only if we do not already redirect output of general logging
         # to stderr, install a new handler with a simple message format
         # for the console.

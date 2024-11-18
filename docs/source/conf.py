@@ -27,7 +27,7 @@ from xcube.version import version
 
 
 project = 'xcube'
-copyright = '2023, Brockmann Consult GmbH'
+copyright = '2018-2024, Brockmann Consult GmbH'
 author = 'Brockmann Consult GmbH'
 
 # The full version, including alpha/beta/rc tags
@@ -41,7 +41,7 @@ doc_title = 'xcube Toolkit Documentation'
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = '1.7'
 
-# The master toctree document.
+# The main toctree document.
 master_doc = 'index'
 
 # The suffix(es) of source filenames.
@@ -59,7 +59,9 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
     'sphinx_autodoc_annotation',
+    'sphinx_markdown_tables',
     'sphinxarg.ext',
     'recommonmark',
 ]
@@ -75,11 +77,12 @@ exclude_patterns = []
 
 # Generate automatic links to the documentation of objects in other projects.
 intersphinx_mapping = {
-    'matplotlib': ('http://matplotlib.org/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
+    'geopandas': ('https://geopandas.org/en/stable/', None),
     'python': ('https://docs.python.org/3/', None),
-    'xarray': ('http://xarray.pydata.org/en/stable/', None),
+    'xarray': ('https://docs.xarray.dev/en/stable/', None),
     'zarr': ('https://zarr.readthedocs.io/en/stable/', None),
 }
 
@@ -129,32 +132,45 @@ autoclass_content = 'class'
 autodoc_member_order = 'bysource'
 autodoc_inherit_docstrings = True
 autodoc_typehints = 'signature'
-autodoc_mock_imports = ['affine',
-                        'blas',
-                        'click',
-                        'cmocean',
-                        'dask',
-                        'distutils'
-                        'fiona',
-                        'gdal',
-                        'geopandas'
-                        'jsonschema'
-                        'matplotlib',
-                        'netcdf4',
-                        'numba',
-                        'numpy',
-                        'osgeo',
-                        'pandas',
-                        # 'pillow',
-                        'proj4',
-                        'pyproj',
-                        'pyyaml',
-                        'rasterio',
-                        's3fs',
-                        'scipy',
-                        'setuptools',
-                        'shapely',
-                        # 'tornado',
-                        'xarray',
-                        'yaml',
-                        'zarr', ]
+
+# Align with requirements.txt
+# autodoc_mock_imports = [
+#     'affine',
+#     'blas',
+#     'botocore',
+#     'cftime',
+#     'click',
+#     'cmocean',
+#     'dask',
+#     'dask_image',
+#     'deprecated',
+#     'distributed',
+#     'distutils',
+#     'fiona',
+#     #  'fsspec',
+#     'gdal',
+#     # 'geopandas',
+#     'jsonschema',
+#     'matplotlib',
+#     'netcdf4',
+#     'numba',
+#     'numcodecs',
+#     # 'numpy',
+#     'osgeo',
+#     # 'pandas',
+#     # 'pillow',
+#     'proj4',
+#     # 'pyproj',
+#     'pyyaml',
+#     'rasterio',
+#     'rfc3339_validator',
+#     'rioxarray',
+#     's3fs',
+#     'scipy',
+#     'setuptools',
+#     # 'shapely',
+#     # 'tornado',
+#     # 'xarray',
+#     'yaml',
+#     # 'zarr',
+# ]

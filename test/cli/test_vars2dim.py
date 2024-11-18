@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 
 import xarray as xr
@@ -19,8 +23,8 @@ class Vars2DimTest(CliDataTest):
         self.assertTrue(os.path.isdir(output_path))
 
         ds = xr.open_zarr(output_path)
-        self.assertIn("var", ds.dims)
-        self.assertEqual(3, ds.dims["var"])
+        self.assertIn("var", ds.sizes)
+        self.assertEqual(3, ds.sizes["var"])
         self.assertIn("var", ds.coords)
         self.assertIn("data", ds.data_vars)
         var_names = ds["var"]

@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 import warnings
 from typing import Tuple
@@ -19,14 +23,16 @@ class ChunkStoreTest(unittest.TestCase):
         self._test_chunk_store(trace_store_calls=True)
 
     def _test_chunk_store(self, trace_store_calls: bool):
-        index_var = gen_index_var(dims=('time', 'lat', 'lon'),
-                                  shape=(4, 8, 16),
-                                  chunks=(2, 4, 8),
-                                  trace_store_calls=trace_store_calls)
+        index_var = gen_index_var(
+            dims=("time", "lat", "lon"),
+            shape=(4, 8, 16),
+            chunks=(2, 4, 8),
+            trace_store_calls=trace_store_calls,
+        )
         self.assertIsNotNone(index_var)
         self.assertEqual((4, 8, 16), index_var.shape)
         self.assertEqual(((2, 2), (4, 4), (8, 8)), index_var.chunks)
-        self.assertEqual(('time', 'lat', 'lon'), index_var.dims)
+        self.assertEqual(("time", "lat", "lon"), index_var.dims)
 
         visited_indexes = set()
 
@@ -39,11 +45,16 @@ class ChunkStoreTest(unittest.TestCase):
             visited_indexes.add(index)
             return index_var_
 
-        result = xr.apply_ufunc(index_var_ufunc, index_var, dask='parallelized', output_dtypes=[index_var.dtype])
+        result = xr.apply_ufunc(
+            index_var_ufunc,
+            index_var,
+            dask="parallelized",
+            output_dtypes=[index_var.dtype],
+        )
         self.assertIsNotNone(result)
         self.assertEqual((4, 8, 16), result.shape)
         self.assertEqual(((2, 2), (4, 4), (8, 8)), result.chunks)
-        self.assertEqual(('time', 'lat', 'lon'), result.dims)
+        self.assertEqual(("time", "lat", "lon"), result.dims)
 
         values = result.values
         self.assertEqual((4, 8, 16), values.shape)
@@ -52,28 +63,30 @@ class ChunkStoreTest(unittest.TestCase):
         print(visited_indexes)
 
         self.assertEqual(8, len(visited_indexes))
-        self.assertEqual({
-            (0, 2, 0, 4, 0, 8),
-            (2, 4, 0, 4, 0, 8),
-            (0, 2, 4, 8, 0, 8),
-            (2, 4, 4, 8, 0, 8),
-            (0, 2, 0, 4, 8, 16),
-            (2, 4, 0, 4, 8, 16),
-            (0, 2, 4, 8, 8, 16),
-            (2, 4, 4, 8, 8, 16),
-        }, visited_indexes)
+        self.assertEqual(
+            {
+                (0, 2, 0, 4, 0, 8),
+                (2, 4, 0, 4, 0, 8),
+                (0, 2, 4, 8, 0, 8),
+                (2, 4, 4, 8, 0, 8),
+                (0, 2, 0, 4, 8, 16),
+                (2, 4, 0, 4, 8, 16),
+                (0, 2, 4, 8, 8, 16),
+                (2, 4, 4, 8, 8, 16),
+            },
+            visited_indexes,
+        )
 
 
 def gen_index_var(dims, shape, chunks, trace_store_calls: bool = False):
     # noinspection PyUnusedLocal
-    def get_chunk(cube_store: ChunkStore, name: str,
-                  index: Tuple[int, ...]) -> bytes:
+    def get_chunk(cube_store: ChunkStore, name: str, index: tuple[int, ...]) -> bytes:
         data = np.zeros(cube_store.chunks, dtype=np.uint64)
         data_view = data.ravel()
         if data_view.base is not data:
-            raise ValueError('view expected')
+            raise ValueError("view expected")
         if data_view.size < cube_store.ndim * 2:
-            raise ValueError('size too small')
+            raise ValueError("size too small")
         for i in range(cube_store.ndim):
             j1 = cube_store.chunks[i] * index[i]
             j2 = j1 + cube_store.chunks[i]
@@ -81,9 +94,8 @@ def gen_index_var(dims, shape, chunks, trace_store_calls: bool = False):
             data_view[2 * i + 1] = j2
         return data.tobytes()
 
-    store = ChunkStore(dims, shape, chunks,
-                       trace_store_calls=trace_store_calls)
-    store.add_lazy_array('__index_var__', '<u8', get_chunk=get_chunk)
+    store = ChunkStore(dims, shape, chunks, trace_store_calls=trace_store_calls)
+    store.add_lazy_array("__index_var__", "<u8", get_chunk=get_chunk)
 
     ds = xr.open_zarr(store)
     return ds.__index_var__
@@ -103,36 +115,28 @@ class LoggingStoreTest(unittest.TestCase):
         self.assertWriteOk(MutableLoggingStore(self.original_store))
 
     def setUp(self) -> None:
-        self.zattrs_value = bytes()
+        self.zattrs_value = b''
         self.original_store = MemoryStore()
-        self.original_store.update({'chl/.zattrs': self.zattrs_value})
+        self.original_store.update({"chl/.zattrs": self.zattrs_value})
 
     def assertReadOk(self, logging_store: LoggingStore):
         # noinspection PyUnresolvedReferences
-        self.assertEqual(['.zattrs'],
-                         logging_store.listdir('chl'))
+        self.assertEqual([".zattrs"], logging_store.listdir("chl"))
         # noinspection PyUnresolvedReferences
-        self.assertEqual(0,
-                         logging_store.getsize('chl'))
-        self.assertEqual({'chl/.zattrs'},
-                         set(logging_store.keys()))
-        self.assertEqual(['chl/.zattrs'],
-                         list(iter(logging_store)))
-        self.assertTrue('chl/.zattrs' in logging_store)
-        self.assertEqual(1,
-                         len(logging_store))
-        self.assertEqual(self.zattrs_value,
-                         logging_store.get('chl/.zattrs'))
+        self.assertEqual(0, logging_store.getsize("chl"))
+        self.assertEqual({"chl/.zattrs"}, set(logging_store.keys()))
+        self.assertEqual(["chl/.zattrs"], list(iter(logging_store)))
+        self.assertTrue("chl/.zattrs" in logging_store)
+        self.assertEqual(1, len(logging_store))
+        self.assertEqual(self.zattrs_value, logging_store.get("chl/.zattrs"))
         # assert original_store not changed
-        self.assertEqual({'chl/.zattrs'},
-                         set(self.original_store.keys()))
+        self.assertEqual({"chl/.zattrs"}, set(self.original_store.keys()))
 
     def assertWriteOk(self, logging_store: MutableLoggingStore):
-        zarray_value = bytes()
-        logging_store['chl/.zarray'] = zarray_value
-        self.assertEqual({'chl/.zattrs',
-                          'chl/.zarray'},
-                         set(self.original_store.keys()))
-        del logging_store['chl/.zarray']
-        self.assertEqual({'chl/.zattrs'},
-                         set(self.original_store.keys()))
+        zarray_value = b''
+        logging_store["chl/.zarray"] = zarray_value
+        self.assertEqual(
+            {"chl/.zattrs", "chl/.zarray"}, set(self.original_store.keys())
+        )
+        del logging_store["chl/.zarray"]
+        self.assertEqual({"chl/.zattrs"}, set(self.original_store.keys()))

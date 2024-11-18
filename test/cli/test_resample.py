@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os.path
 from typing import List
 
@@ -8,79 +12,101 @@ from xcube.core.verify import assert_cube
 
 
 class ResampleTest(CliTest):
-
     def test_help_option(self):
-        result = self.invoke_cli(['resample', '--help'])
+        result = self.invoke_cli(["resample", "--help"])
         self.assertEqual(0, result.exit_code)
 
 
 class ResampleDataTest(CliDataTest):
-    def outputs(self) -> List[str]:
-        return ['out.zarr', 'resampled.zarr']
+    def outputs(self) -> list[str]:
+        return ["out.zarr", "resampled.zarr"]
 
     def test_all_defaults(self):
-        result = self.invoke_cli(['resample', '-v', TEST_ZARR_DIR])
+        result = self.invoke_cli(["resample", "-v", TEST_ZARR_DIR])
         self.assertEqual(0, result.exit_code)
-        self.assertEqual("Opening cube from 'test.zarr'...\n"
-                         "Resampling...\n"
-                         "Writing resampled cube to 'out.zarr'...\n"
-                         "Done.\n",
-                         result.stderr)
-        self.assertTrue(os.path.isdir('out.zarr'))
-        ds = xr.open_zarr('out.zarr')
+        self.assertEqual(
+            "Opening cube from 'test.zarr'...\n"
+            "Resampling...\n"
+            "Writing resampled cube to 'out.zarr'...\n"
+            "Done.\n",
+            result.stderr,
+        )
+        self.assertTrue(os.path.isdir("out.zarr"))
+        ds = xr.open_zarr("out.zarr")
         assert_cube(ds)
-        self.assertIn('precipitation_mean', ds)
-        self.assertIn('temperature_mean', ds)
-        self.assertIn('soil_moisture_mean', ds)
+        self.assertIn("precipitation_mean", ds)
+        self.assertIn("temperature_mean", ds)
+        self.assertIn("soil_moisture_mean", ds)
 
     def test_with_output(self):
-        result = self.invoke_cli(['resample', TEST_ZARR_DIR, '--output', 'resampled.zarr'])
+        result = self.invoke_cli(
+            ["resample", TEST_ZARR_DIR, "--output", "resampled.zarr"]
+        )
         self.assertEqual(0, result.exit_code)
-        self.assertTrue(os.path.isdir('resampled.zarr'))
-        ds = xr.open_zarr('resampled.zarr')
+        self.assertTrue(os.path.isdir("resampled.zarr"))
+        ds = xr.open_zarr("resampled.zarr")
         assert_cube(ds)
-        self.assertIn('precipitation_mean', ds)
-        self.assertIn('temperature_mean', ds)
-        self.assertIn('soil_moisture_mean', ds)
+        self.assertIn("precipitation_mean", ds)
+        self.assertIn("temperature_mean", ds)
+        self.assertIn("soil_moisture_mean", ds)
 
     def test_with_vars(self):
-        result = self.invoke_cli(['resample', TEST_ZARR_DIR, '--vars', 'temperature,precipitation'])
+        result = self.invoke_cli(
+            ["resample", TEST_ZARR_DIR, "--vars", "temperature,precipitation"]
+        )
         self.assertEqual(0, result.exit_code)
-        self.assertTrue(os.path.isdir('out.zarr'))
-        ds = xr.open_zarr('out.zarr')
+        self.assertTrue(os.path.isdir("out.zarr"))
+        ds = xr.open_zarr("out.zarr")
         assert_cube(ds)
-        self.assertIn('precipitation_mean', ds)
-        self.assertIn('temperature_mean', ds)
-        self.assertNotIn('soil_moisture_mean', ds)
+        self.assertIn("precipitation_mean", ds)
+        self.assertIn("temperature_mean", ds)
+        self.assertNotIn("soil_moisture_mean", ds)
 
     def test_downsample_with_multiple_methods(self):
-        result = self.invoke_cli(['resample',
-                                  '--variables', 'temperature',
-                                  '-F', 'all',
-                                  '-M', 'mean',
-                                  '-M', 'count',
-                                  '-M', 'prod',
-                                  TEST_ZARR_DIR])
+        result = self.invoke_cli(
+            [
+                "resample",
+                "--variables",
+                "temperature",
+                "-F",
+                "all",
+                "-M",
+                "mean",
+                "-M",
+                "count",
+                "-M",
+                "prod",
+                TEST_ZARR_DIR,
+            ]
+        )
         self.assertEqual(0, result.exit_code)
-        self.assertTrue(os.path.isdir('out.zarr'))
-        ds = xr.open_zarr('out.zarr')
+        self.assertTrue(os.path.isdir("out.zarr"))
+        ds = xr.open_zarr("out.zarr")
         assert_cube(ds)
-        self.assertIn('temperature_mean', ds)
-        self.assertIn('temperature_count', ds)
-        self.assertIn('temperature_prod', ds)
+        self.assertIn("temperature_mean", ds)
+        self.assertIn("temperature_count", ds)
+        self.assertIn("temperature_prod", ds)
 
     def test_upsample_with_multiple_methods(self):
-        result = self.invoke_cli(['resample',
-                                  '--variables', 'temperature',
-                                  '-F', '12H',
-                                  '-T', '6H',
-                                  # '-K', 'quadratic',
-                                  # '-M', 'interpolate',
-                                  '-M', 'nearest',
-                                  TEST_ZARR_DIR])
+        result = self.invoke_cli(
+            [
+                "resample",
+                "--variables",
+                "temperature",
+                "-F",
+                "12H",
+                "-T",
+                "6H",
+                # '-K', 'quadratic',
+                # '-M', 'interpolate',
+                "-M",
+                "nearest",
+                TEST_ZARR_DIR,
+            ]
+        )
         self.assertEqual(0, result.exit_code)
-        self.assertTrue(os.path.isdir('out.zarr'))
-        ds = xr.open_zarr('out.zarr')
+        self.assertTrue(os.path.isdir("out.zarr"))
+        ds = xr.open_zarr("out.zarr")
         assert_cube(ds)
         # self.assertIn('temperature_interpolate', ds)
-        self.assertIn('temperature_nearest', ds)
+        self.assertIn("temperature_nearest", ds)

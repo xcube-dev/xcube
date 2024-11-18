@@ -1,34 +1,17 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import collections.abc
 from abc import abstractmethod, ABC
-from typing import Generic, TypeVar, Tuple, Any, Iterable, Dict, List, \
-    Sequence, Mapping
+from typing import Generic, TypeVar, Tuple, Any, Dict, List
+from collections.abc import Iterable, Sequence, Mapping
 
-K = TypeVar('K')
-V = TypeVar('V')
+K = TypeVar("K")
+V = TypeVar("V")
 
-_DICT_IS_READONLY = 'dict is read-only'
-_LIST_IS_READONLY = 'list is read-only'
+_DICT_IS_READONLY = "dict is read-only"
+_LIST_IS_READONLY = "list is read-only"
 
 
 class Frozen(ABC):
@@ -48,17 +31,15 @@ class Frozen(ABC):
         """
 
 
-class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
+class FrozenDict(dict[K, V], Frozen, Generic[K, V]):
     """A frozen version of a standard ``dict``."""
 
     @classmethod
     def freeze(cls, other: Mapping) -> "FrozenDict":
-        return FrozenDict({key: freeze_value(value)
-                           for key, value in other.items()})
+        return FrozenDict({key: freeze_value(value) for key, value in other.items()})
 
-    def defrost(self) -> Dict[K, V]:
-        return {key: defrost_value(value)
-                for key, value in self.items()}
+    def defrost(self) -> dict[K, V]:
+        return {key: defrost_value(value) for key, value in self.items()}
 
     ###########################################################
     # dict overrides
@@ -69,7 +50,7 @@ class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
     def pop(self, *args, **kwargs) -> V:
         raise TypeError(_DICT_IS_READONLY)
 
-    def popitem(self) -> Tuple[K, V]:
+    def popitem(self) -> tuple[K, V]:
         raise TypeError(_DICT_IS_READONLY)
 
     def update(self, *args, **kwargs) -> None:
@@ -88,14 +69,14 @@ class FrozenDict(Dict[K, V], Frozen, Generic[K, V]):
         raise TypeError(_DICT_IS_READONLY)
 
 
-class FrozenList(List[V], Frozen, Generic[V]):
+class FrozenList(list[V], Frozen, Generic[V]):
     """A frozen version of a standard ``list``."""
 
     @classmethod
     def freeze(cls, other: Sequence[V]) -> "FrozenList":
         return FrozenList(freeze_value(item) for item in other)
 
-    def defrost(self) -> List[V]:
+    def defrost(self) -> list[V]:
         return [defrost_value(item) for item in self]
 
     ###########################################################
@@ -155,7 +136,8 @@ def freeze_value(value: Any) -> Any:
 
 def defrost_value(value: Any) -> Any:
     """Defrost given *value*, that is, return a deeply
-    mutable version of it."""
+    mutable version of it.
+    """
     if isinstance(value, Frozen):
         return value.defrost()
     return value

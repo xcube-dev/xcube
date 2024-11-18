@@ -4,14 +4,32 @@ DatasetAttribution:
 Datasets:
   - Identifier: demo
     Title: xcube-server Demonstration L2C Cube
+    GroupTitle: Demo
+    Tags: ["demo", "zarr"]
     Path: ../../../examples/serve/demo/cube-1-250-250.zarr
+    Variables:
+      - "conc_chl"
+      - "chl_category"
+      - "conc_tsm"
+      - "chl_tsm_sum"
+      - "kd489"
+      - "*"
     Style: default
     Attribution: © by EU H2020 CyanoAlert project
 
   - Identifier: demo-1w
     Title: xcube-server Demonstration L3 Cube
+    GroupTitle: Demo
+    Tags: ["demo", "zarr", "computed"]
     FileSystem: memory
     Path: script.py
+    Variables:
+      - "conc_chl"
+      - "chl_category"
+      - "conc_tsm"
+      - "chl_tsm_sum"
+      - "kd489"
+      - "*"
     Function: compute_dataset
     InputDatasets: ["demo"]
     InputParameters:
@@ -31,14 +49,57 @@ Styles:
   - Identifier: default
     ColorMappings:
       conc_chl:
-        ColorBar: plasma
-        ValueRange: [0., 24.]
+        ColorBar: my_cmap
+        ValueRange: [0., 20.]
       conc_tsm:
-        ColorBar: PuBuGn
-        ValueRange: [0., 100.]
+        ColorBar: cmap_bloom_risk
+        ValueRange: [0., 1.]
       kd489:
         ColorBar: jet
         ValueRange: [0., 6.]
+
+CustomColorMaps:
+  - Identifier: my_cmap
+    Type: continuous # or categorical, stepwise
+    Colors:
+      - Value: 0
+        Color: red
+        Label: low
+      - Value: 12
+        Color: "#0000FF"
+        Label: medium
+      - Value: 18
+        Color: [0, 255, 0]
+        Label: mediumhigh
+      - Value: 24
+        Color: [0, 1, 0, 0.3]
+        Label: high
+  - Identifier: cmap_bloom_risk
+    Type: categorical
+    Colors:
+      - [ 0, [0, 1, 0., 0.5]]
+      - [ 1, orange]
+      - [ 2, [1, 0, 0]]
+  - Identifier: s2_l2_scl
+    Type: categorical
+    Colors:
+      - [ 0, red,     no data]
+      - [ 1, yellow,  defective]
+      - [ 2, black,   dark area pixels]
+      - [ 3, gray,    cloud shadows]
+      - [ 4, green,   vegetation]
+      - [ 5, tan,     bare soils]
+      - [ 6, blue,    water]
+      - [ 7, "#aaaabb", clouds low prob ]
+      - [ 8, "#bbbbcc", clouds medium prob]
+      - [ 9, "#ccccdd", clouds high prob]
+      - [10, "#ddddee", cirrus]
+      - [11, "#ffffff", snow or ice]
+      - [11, "#ffffff", snow or ice]
+
+Viewer:
+  Configuration:
+    Path: viewer
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"

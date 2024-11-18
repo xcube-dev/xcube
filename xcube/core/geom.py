@@ -1,27 +1,11 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import math
 import warnings
-from typing import Optional, Union, Dict, Tuple, Sequence, Any, Mapping, List
+from typing import Optional, Union, Dict, Tuple, Any, List
+from collections.abc import Sequence, Mapping
 
 import affine
 import dask.array as da
@@ -32,7 +16,6 @@ import shapely.geometry
 import shapely.geometry
 import shapely.wkt
 import xarray as xr
-from deprecated import deprecated
 
 from xcube.core.schema import get_dataset_bounds_var_name
 from xcube.core.schema import get_dataset_chunks
@@ -41,38 +24,37 @@ from xcube.core.update import update_dataset_spatial_attrs
 from xcube.util.geojson import GeoJSON
 from xcube.util.types import normalize_scalar_or_pair
 
-GeometryLike = Union[shapely.geometry.base.BaseGeometry,
-                     Dict[str, Any],
-                     str,
-                     Sequence[Union[float, int]]]
-Bounds = Tuple[float, float, float, float]
-SplitBounds = Tuple[Bounds, Optional[Bounds]]
+GeometryLike = Union[
+    shapely.geometry.base.BaseGeometry, dict[str, Any], str, Sequence[Union[float, int]]
+]
+Bounds = tuple[float, float, float, float]
+SplitBounds = tuple[Bounds, Optional[Bounds]]
 
 Name = str
 Attrs = Mapping[Name, Any]
 GeoJSONFeature = Mapping[Name, Any]
 GeoJSONFeatures = Sequence[GeoJSONFeature]
-GeoDataFrame = 'pandas.geodataframe.GeoDataFrame'
+GeoDataFrame = "pandas.geodataframe.GeoDataFrame"
 VarProps = Mapping[Name, Mapping[Name, Any]]
 
 _INVALID_GEOMETRY_MSG = (
-    'Geometry must be either a shapely geometry object, '
-    'a GeoJSON-serializable dictionary, a geometry WKT string, '
-    'box coordinates (x1, y1, x2, y2), '
-    'or point coordinates (x, y)'
+    "Geometry must be either a shapely geometry object, "
+    "a GeoJSON-serializable dictionary, a geometry WKT string, "
+    "box coordinates (x1, y1, x2, y2), "
+    "or point coordinates (x, y)"
 )
 
-_INVALID_BOX_COORDS_MSG = 'Invalid box coordinates'
+_INVALID_BOX_COORDS_MSG = "Invalid box coordinates"
 
 
 def rasterize_features(
-        dataset: xr.Dataset,
-        features: Union[GeoDataFrame, GeoJSONFeatures],
-        feature_props: Sequence[Name],
-        var_props: Dict[Name, VarProps] = None,
-        tile_size: Union[int, Tuple[int, int]] = None,
-        all_touched: bool = False,
-        in_place: bool = False,
+    dataset: xr.Dataset,
+    features: Union[GeoDataFrame, GeoJSONFeatures],
+    feature_props: Sequence[Name],
+    var_props: dict[Name, VarProps] = None,
+    tile_size: Union[int, tuple[int, int]] = None,
+    all_touched: bool = False,
+    in_place: bool = False,
 ) -> Optional[xr.Dataset]:
     """
     Rasterize feature properties given by *feature_props* of
@@ -111,41 +93,45 @@ def rasterize_features(
                                # Deprecated, no longer used.
     }
 
-    Note that newly created variables will have data type `np.float64`
-    because `np.nan` is used to encode missing values. `fill_value` and
-    `dtype` are used to encode the variables when persisting the data.
+    Note that newly created variables will have data type ``np.float64``
+    because ``np.nan`` is used to encode missing values. ``fill_value`` and
+    ``dtype`` are used to encode the variables when persisting the data.
 
     Currently, the coordinates of the geometries in the given
     *features* must use the same CRS as the given *dataset*.
 
-    :param dataset: The xarray dataset.
-    :param features: A ``geopandas.GeoDataFrame`` instance
-        or a sequence of GeoJSON features.
-    :param feature_props: Sequence of names of numeric feature
-        properties to be rasterized.
-    :param var_props: Optional mapping of feature property name
-        to a name or a 5-tuple (name, dtype, fill_value,
-        attributes, converter) for the new variable.
-    :param tile_size: If given, the unconditional spatial chunk sizes
-        in x- and y-direction in pixels.
-        May be given as integer scalar or x,y-pair of integers.
-    :param all_touched: If True, all pixels intersected by a
-        feature's geometry outlines will be included.
-        If False, only pixels whose center is
-        within the feature polygon or that are selected by Bresenham’s line
-        algorithm will be included in the mask.
-        The default is False.
-    :param in_place: Whether to add new variables to *dataset*.
-        If False, a copy will be created and returned.
-    :return: dataset with rasterized feature_property
+    Args:
+        dataset: The xarray dataset.
+        features: A ``geopandas.GeoDataFrame`` instance
+            or a sequence of GeoJSON features.
+        feature_props: Sequence of names of numeric feature
+            properties to be rasterized.
+        var_props: Optional mapping of feature property name
+            to a name or a 5-tuple (name, dtype, fill_value,
+            attributes, converter) for the new variable.
+        tile_size: If given, the unconditional spatial chunk sizes
+            in x- and y-direction in pixels.
+            May be given as integer scalar or x,y-pair of integers.
+        all_touched: If True, all pixels intersected by a
+            feature's geometry outlines will be included.
+            If False, only pixels whose center is
+            within the feature polygon or that are selected by Bresenham’s line
+            algorithm will be included in the mask.
+            The default is False.
+        in_place: Whether to add new variables to *dataset*.
+            If False, a copy will be created and returned.
+    Returns:
+        dataset with rasterized feature_property
     """
 
     var_props = var_props or {}
     for v in var_props.values():
-        if v and 'converter' in v:
-            warnings.warn(f'the "converter" property of var_props'
-                          f' has been deprecated and will be ignored',
-                          DeprecationWarning)
+        if v and "converter" in v:
+            warnings.warn(
+                f'the "converter" property of var_props'
+                f" has been deprecated and will be ignored",
+                DeprecationWarning,
+            )
 
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     x_min, y_min, x_max, y_max = get_dataset_bounds(dataset)
@@ -160,9 +146,7 @@ def rasterize_features(
     x_res = (x_max - x_min) / width
     y_res = (y_max - y_min) / height
 
-    yx_chunks = _get_spatial_chunks(dataset,
-                                    x_var_name, y_var_name,
-                                    tile_size)
+    yx_chunks = _get_spatial_chunks(dataset, x_var_name, y_var_name, tile_size)
 
     if isinstance(features, gpd.GeoDataFrame):
         geo_data_frame = features
@@ -170,8 +154,7 @@ def rasterize_features(
         geo_data_frame = gpd.GeoDataFrame.from_features(features)
     for feature_prop_name in feature_props:
         if feature_prop_name not in geo_data_frame:
-            raise ValueError(f'feature property '
-                             f'{feature_prop_name!r} not found')
+            raise ValueError(f"feature property " f"{feature_prop_name!r} not found")
 
     # Filter out empty or invalid geometries, remember valid rows
     geometries = []
@@ -189,7 +172,7 @@ def rasterize_features(
         feature_values = geo_data_frame[feature_prop_name].to_numpy()
         feature_values = feature_values[valid_row_indices]
         var_prop_mapping = var_props.get(feature_prop_name, {})
-        dtype = var_prop_mapping.get('dtype', feature_values.dtype)
+        dtype = var_prop_mapping.get("dtype", feature_values.dtype)
         if dtype != feature_values.dtype:
             feature_values = feature_values.astype(dtype=dtype)
         feature_data.append(feature_values)
@@ -210,8 +193,9 @@ def rasterize_features(
     # every feature with all rows processed in each block.
     #
     num_features = len(feature_props)
-    chunks = da.core.normalize_chunks((num_features, *yx_chunks),
-                                      (num_features, height, width))
+    chunks = da.core.normalize_chunks(
+        (num_features, *yx_chunks), (num_features, height, width)
+    )
     rasterized_features = da.map_blocks(
         _rasterize_features_into_block,
         chunks=chunks,
@@ -223,7 +207,7 @@ def rasterize_features(
         y_offset=y_max,
         x_res=x_res,
         y_res=y_res,
-        all_touched=all_touched
+        all_touched=all_touched,
     )
 
     if y_var[0] < y_var[-1]:
@@ -235,51 +219,44 @@ def rasterize_features(
     # Create feature variables from rasterized features
     for feature_index, feature_prop_name in enumerate(feature_props):
         var_prop_mapping = var_props.get(feature_prop_name, {})
-        var_name = var_prop_mapping.get(
-            'name',
-            feature_prop_name.replace(' ', '_')
-        )
-        var_dtype = np.dtype(var_prop_mapping.get('dtype', np.float64))
-        var_fill_value = var_prop_mapping.get('fill_value', np.nan)
-        var_attrs = var_prop_mapping.get('attrs', {})
+        var_name = var_prop_mapping.get("name", feature_prop_name.replace(" ", "_"))
+        var_dtype = np.dtype(var_prop_mapping.get("dtype", np.float64))
+        var_fill_value = var_prop_mapping.get("fill_value", np.nan)
+        var_attrs = var_prop_mapping.get("attrs", {})
 
         feature_image = rasterized_features[feature_index]
 
-        feature_var = xr.DataArray(feature_image,
-                                   coords=yx_coords,
-                                   dims=yx_dims,
-                                   attrs=var_attrs)
-        feature_var.encoding.update(_FillValue=var_fill_value,
-                                    dtype=var_dtype)
+        feature_var = xr.DataArray(
+            feature_image, coords=yx_coords, dims=yx_dims, attrs=var_attrs
+        )
+        feature_var.encoding.update(_FillValue=var_fill_value, dtype=var_dtype)
         dataset[var_name] = feature_var
 
     return dataset
 
 
 def _rasterize_features_into_block(
-        block_info: Dict[Union[str, None], Any] = None,
-        geometries: List[Dict[str, Any]] = None,
-        feature_data: List[np.ndarray] = None,
-        x_offset: float = None,
-        y_offset: float = None,
-        x_res: float = None,
-        y_res: float = None,
-        all_touched: bool = None
+    block_info: dict[Union[str, None], Any] = None,
+    geometries: list[dict[str, Any]] = None,
+    feature_data: list[np.ndarray] = None,
+    x_offset: float = None,
+    y_offset: float = None,
+    x_res: float = None,
+    y_res: float = None,
+    all_touched: bool = None,
 ):
     ret_info = block_info[None]
-    dtype = ret_info['dtype']
-    chunk_shape = ret_info['chunk-shape']
+    dtype = ret_info["dtype"]
+    chunk_shape = ret_info["chunk-shape"]
     num_features, height, width = chunk_shape
     image_shape = height, width
-    _, (y_start, y_end), (x_start, x_end) = ret_info['array-location']
+    _, (y_start, y_end), (x_start, x_end) = ret_info["array-location"]
     x1 = x_offset + x_res * x_start
     x2 = x_offset + x_res * x_end
     y1 = y_offset - y_res * y_start
     y2 = y_offset - y_res * y_end
-    transform = affine.Affine(x_res, 0.0, x1,
-                              0.0, -y_res, y1)
-    block_bounds = shapely.geometry.box(x1, min(y1, y2),
-                                        x2, max(y1, y2))
+    transform = affine.Affine(x_res, 0.0, x1, 0.0, -y_res, y1)
+    block_bounds = shapely.geometry.box(x1, min(y1, y2), x2, max(y1, y2))
     block = np.full(chunk_shape, np.nan, dtype=dtype)
     for row_index, geometry in enumerate(geometries):
         shape = shapely.geometry.shape(geometry)
@@ -288,84 +265,87 @@ def _rasterize_features_into_block(
             continue
         if not shape.is_valid:
             continue
-        mask = rasterio.features.geometry_mask([shape],
-                                               out_shape=image_shape,
-                                               transform=transform,
-                                               all_touched=all_touched,
-                                               invert=True)
+        mask = rasterio.features.geometry_mask(
+            [shape],
+            out_shape=image_shape,
+            transform=transform,
+            all_touched=all_touched,
+            invert=True,
+        )
         for i in range(num_features):
             background = block[i]
-            foreground = np.full(image_shape,
-                                 feature_data[i][row_index],
-                                 dtype=dtype)
+            foreground = np.full(image_shape, feature_data[i][row_index], dtype=dtype)
             block[i, :, :] = np.where(mask, foreground, background)
 
     return block
 
 
 def mask_dataset_by_geometry(
-        dataset: xr.Dataset,
-        geometry: GeometryLike,
-        tile_size: Union[int, Tuple[int, int]] = None,
-        excluded_vars: Sequence[str] = None,
-        no_clip: bool = False,
-        all_touched: bool = False,
-        save_geometry_mask: Union[str, bool] = False,
-        save_geometry_wkt: Union[str, bool] = False
+    dataset: xr.Dataset,
+    geometry: GeometryLike,
+    tile_size: Union[int, tuple[int, int]] = None,
+    excluded_vars: Sequence[str] = None,
+    all_touched: bool = False,
+    no_clip: bool = False,
+    update_attrs: bool = True,
+    save_geometry_mask: Union[str, bool] = False,
+    save_geometry_wkt: Union[str, bool] = False,
 ) -> Optional[xr.Dataset]:
-    """
-    Mask a dataset according to the given geometry. The cells of
+    """Mask a dataset according to the given geometry. The cells of
     variables of the returned dataset will have NaN-values where their
     spatial coordinates are not intersecting
     the given geometry.
 
-    :param dataset: The dataset
-    :param geometry: A geometry-like object,
-        see py:function:`convert_geometry`.
-    :param tile_size: If given, the unconditional spatial chunk sizes
-        in x- and y-direction in pixels.
-        May be given as integer scalar or x,y-pair of integers.
-    :param excluded_vars: Optional sequence of names of data variables
-        that should not be masked (but still may be clipped).
-    :param no_clip: If True, the function will not clip the dataset
-        before masking, this is, the returned dataset will have the same
-        dimension size as the given *dataset*.
-    :param all_touched: If True, all pixels intersected by geometry outlines
-        will be included in the mask. If False, only pixels whose center is
-        within the polygon or that are selected by Bresenham’s line
-        algorithm will be included in the mask.
-        The default value is set to `False`.
-    :param save_geometry_mask: If the value is a string,
-        the effective geometry mask array is stored as a 2D data variable
-        named by *save_geometry_mask*. If the value is True,
-        the name "geometry_mask" is used.
-    :param save_geometry_wkt: If the value is a string,
-        the effective intersection geometry is stored as
-        a Geometry WKT string in the global attribute named
-        by *save_geometry*.
-        If the value is True, the name "geometry_wkt" is used.
-    :return: The dataset spatial subset, or None if the bounding box
-        of the dataset has a no or a zero area intersection with the
-        bounding box of the geometry.
+    Args:
+        dataset: The dataset
+        geometry: A geometry-like object, see
+            :func:`normalize_geometry`.
+        tile_size: If given, the unconditional spatial chunk sizes in x-
+            and y-direction in pixels. May be given as integer scalar or
+            x,y-pair of integers.
+        excluded_vars: Optional sequence of names of data variables that
+            should not be masked (but still may be clipped).
+        all_touched: If True, all pixels intersected by geometry
+            outlines will be included in the mask. If False, only pixels
+            whose center is within the polygon or that are selected by
+            Bresenham’s line algorithm will be included in the mask.
+            The default value is set to `False`.
+        no_clip: If True, the function will not clip the dataset before
+            masking, this is, the returned dataset will have the same
+            dimension size as the given *dataset*.
+        update_attrs: If *no_clip* is ``False``, weather to update
+            (spatial) CF attributes of the returned dataset.
+            The default is ``True``.
+        save_geometry_mask: If the value is a string, the effective
+            geometry mask array is stored as a 2D data variable named by
+            *save_geometry_mask*. If the value is True, the name
+            "geometry_mask" is used.
+        save_geometry_wkt: If the value is a string, the effective
+            intersection geometry is stored as a Geometry WKT string in
+            the global attribute named by *save_geometry*. If the value
+            is True, the name "geometry_wkt" is used.
+
+    Returns:
+        The dataset spatial subset, or None if the bounding box of the
+        dataset has a no or a zero area intersection with the bounding
+        box of the geometry.
     """
     geometry = normalize_geometry(geometry)
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     dataset_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
-    intersection_geometry = intersect_geometries(
-        dataset_bounds,
-        geometry
-    )
+    intersection_geometry = intersect_geometries(dataset_bounds, geometry)
     if intersection_geometry is None:
         return None
 
     if not no_clip:
-        dataset = _clip_dataset_by_geometry(dataset,
-                                            intersection_geometry,
-                                            xy_var_names)
+        dataset = _clip_dataset_by_geometry(
+            dataset,
+            intersection_geometry,
+            xy_var_names,
+            update_attrs=update_attrs,
+        )
 
-    x_min, y_min, x_max, y_max = get_dataset_bounds(
-        dataset, xy_var_names=xy_var_names
-    )
+    x_min, y_min, x_max, y_max = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
 
     x_var_name, y_var_name = xy_var_names
     x_var, y_var = dataset[x_var_name], dataset[y_var_name]
@@ -375,9 +355,7 @@ def mask_dataset_by_geometry(
     x_res = (x_max - x_min) / width
     y_res = (y_max - y_min) / height
 
-    yx_chunks = _get_spatial_chunks(dataset,
-                                    x_var_name, y_var_name,
-                                    tile_size)
+    yx_chunks = _get_spatial_chunks(dataset, x_var_name, y_var_name, tile_size)
 
     chunks = da.core.normalize_chunks(yx_chunks, shape=(height, width))
 
@@ -391,15 +369,17 @@ def mask_dataset_by_geometry(
         y_offset=y_max,
         x_res=x_res,
         y_res=y_res,
-        all_touched=all_touched
+        all_touched=all_touched,
     )
 
     if y_var[0] < y_var[-1]:
         mask_data = mask_data[::-1, ::]
 
-    mask = xr.DataArray(mask_data,
-                        coords={y_var_name: y_var, x_var_name: x_var},
-                        dims=(y_var.dims[0], x_var.dims[0]))
+    mask = xr.DataArray(
+        mask_data,
+        coords={y_var_name: y_var, x_var_name: x_var},
+        dims=(y_var.dims[0], x_var.dims[0]),
+    )
 
     dataset_vars = {}
     for var_name, var in dataset.data_vars.items():
@@ -408,92 +388,87 @@ def mask_dataset_by_geometry(
         else:
             dataset_vars[var_name] = var
 
-    masked_dataset = xr.Dataset(dataset_vars,
-                                coords=dataset.coords,
-                                attrs=dataset.attrs)
+    masked_dataset = xr.Dataset(
+        dataset_vars, coords=dataset.coords, attrs=dataset.attrs
+    )
 
-    _save_geometry_mask(masked_dataset,
-                        mask,
-                        save_geometry_mask)
-    _save_geometry_wkt(masked_dataset,
-                       intersection_geometry,
-                       save_geometry_wkt)
+    _save_geometry_mask(masked_dataset, mask, save_geometry_mask)
+    _save_geometry_wkt(masked_dataset, intersection_geometry, save_geometry_wkt)
 
     return masked_dataset
 
 
 def _mask_block(
-        block_info: Dict[Union[str, None], Any] = None,
-        geometry: Dict[str, Any] = None,
-        x_offset: float = None,
-        y_offset: float = None,
-        x_res: float = None,
-        y_res: float = None,
-        all_touched: bool = None
+    block_info: dict[Union[str, None], Any] = None,
+    geometry: dict[str, Any] = None,
+    x_offset: float = None,
+    y_offset: float = None,
+    x_res: float = None,
+    y_res: float = None,
+    all_touched: bool = None,
 ):
     ret_info = block_info[None]
-    height, width = ret_info['chunk-shape']
-    (y_start, _), (x_start, _) = ret_info['array-location']
+    height, width = ret_info["chunk-shape"]
+    (y_start, _), (x_start, _) = ret_info["array-location"]
     x1 = x_offset + x_res * x_start
     y1 = y_offset - y_res * y_start
-    transform = affine.Affine(x_res, 0.0, x1,
-                              0.0, -y_res, y1)
+    transform = affine.Affine(x_res, 0.0, x1, 0.0, -y_res, y1)
     return rasterio.features.geometry_mask(
         [shapely.geometry.shape(geometry)],
         out_shape=(height, width),
         transform=transform,
         all_touched=all_touched,
-        invert=True
+        invert=True,
     )
 
 
-def _get_spatial_chunks(dataset: xr.Dataset,
-                        x_var_name: str,
-                        y_var_name: str,
-                        tile_size: Union[None, int, Tuple[int, int]]):
+def _get_spatial_chunks(
+    dataset: xr.Dataset,
+    x_var_name: str,
+    y_var_name: str,
+    tile_size: Union[None, int, tuple[int, int]],
+):
     width = dataset[x_var_name].size
     height = dataset[y_var_name].size
     if tile_size:
-        tile_size = normalize_scalar_or_pair(
-            tile_size,
-            item_type=int,
-            name='tile_size'
-        )
+        tile_size = normalize_scalar_or_pair(tile_size, item_type=int, name="tile_size")
         yx_chunks = (min(height, tile_size[1]), min(width, tile_size[0]))
     else:
         dataset_chunks = get_dataset_chunks(dataset)
-        yx_chunks = (dataset_chunks.get(y_var_name),
-                     dataset_chunks.get(x_var_name))
+        yx_chunks = (dataset_chunks.get(y_var_name), dataset_chunks.get(x_var_name))
         if not all(yx_chunks):
             yx_chunks = (min(height, 1024), min(width, 1024))
     return yx_chunks
 
 
 def clip_dataset_by_geometry(
-        dataset: xr.Dataset,
-        geometry: GeometryLike,
-        save_geometry_wkt: Union[str, bool] = False
+    dataset: xr.Dataset,
+    geometry: GeometryLike,
+    update_attrs: bool = True,
+    save_geometry_wkt: Union[str, bool] = False,
 ) -> Optional[xr.Dataset]:
-    """
-    Spatially clip a dataset according to the bounding box of a
+    """Spatially clip a dataset according to the bounding box of a
     given geometry.
 
-    :param dataset: The dataset
-    :param geometry: A geometry-like object,
-        see py:function:`convert_geometry`.
-    :param save_geometry_wkt: If the value is a string,
-        the effective intersection geometry is stored as
-        a Geometry WKT string in the global attribute named
-        by *save_geometry*. If the value is True, the name
-        "geometry_wkt" is used.
-    :return: The dataset spatial subset, or None if the bounding
-        box of the dataset has a no or a zero area
-        intersection with the bounding box of the geometry.
+    Args:
+        dataset: The dataset
+        geometry: A geometry-like object, see
+            :func:`normalize_geometry`.
+        update_attrs: Weather to update (spatial) CF attributes
+            of the returned dataset. The default is ``True``.
+        save_geometry_wkt: If the value is a string, the effective
+            intersection geometry is stored as a Geometry WKT string in
+            the global attribute named by *save_geometry*. If the value
+            is True, the name "geometry_wkt" is used.
+
+    Returns:
+        The dataset spatial subset, or None if the bounding box of the
+        dataset has a no or a zero area intersection with the bounding
+        box of the geometry.
     """
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     intersection_geometry = intersect_geometries(
-        get_dataset_bounds(dataset, xy_var_names=xy_var_names),
-        geometry
+        get_dataset_bounds(dataset, xy_var_names=xy_var_names), geometry
     )
     if intersection_geometry is None:
         return None
@@ -501,15 +476,17 @@ def clip_dataset_by_geometry(
         dataset,
         intersection_geometry,
         xy_var_names,
-        save_geometry_wkt=save_geometry_wkt
+        update_attrs=update_attrs,
+        save_geometry_wkt=save_geometry_wkt,
     )
 
 
 def _clip_dataset_by_geometry(
-        dataset: xr.Dataset,
-        intersection_geometry: shapely.geometry.base.BaseGeometry,
-        xy_var_names: Tuple[str, str],
-        save_geometry_wkt: bool = False
+    dataset: xr.Dataset,
+    intersection_geometry: shapely.geometry.base.BaseGeometry,
+    xy_var_names: tuple[str, str],
+    update_attrs: bool = False,
+    save_geometry_wkt: bool = False,
 ) -> Optional[xr.Dataset]:
     # TODO (forman): the following code is wrong,
     #   if the dataset bounds cross the anti-meridian!
@@ -537,38 +514,35 @@ def _clip_dataset_by_geometry(
         y1 = height - _y2 - 1
         y2 = height - _y1 - 1
 
-    dataset_subset = dataset.isel(**{x_var_name: slice(x1, x2),
-                                     y_var_name: slice(y1, y2)})
+    dataset_subset = dataset.isel(
+        **{x_var_name: slice(x1, x2), y_var_name: slice(y1, y2)}
+    )
 
-    update_dataset_spatial_attrs(dataset_subset,
-                                 update_existing=True,
-                                 in_place=True)
+    if update_attrs:
+        update_dataset_spatial_attrs(
+            dataset_subset, update_existing=True, in_place=True
+        )
 
-    _save_geometry_wkt(dataset_subset,
-                       intersection_geometry,
-                       save_geometry_wkt)
+    _save_geometry_wkt(dataset_subset, intersection_geometry, save_geometry_wkt)
 
     return dataset_subset
 
 
 def _save_geometry_mask(dataset, mask, save_mask):
     if save_mask:
-        var_name = save_mask \
-            if isinstance(save_mask, str) \
-            else 'geometry_mask'
+        var_name = save_mask if isinstance(save_mask, str) else "geometry_mask"
         dataset[var_name] = mask
 
 
 def _save_geometry_wkt(dataset, intersection_geometry, save_geometry):
     if save_geometry:
-        attr_name = save_geometry \
-            if isinstance(save_geometry, str) \
-            else 'geometry_wkt'
+        attr_name = save_geometry if isinstance(save_geometry, str) else "geometry_wkt"
         dataset.attrs.update({attr_name: intersection_geometry.wkt})
 
 
-def intersect_geometries(geometry1: GeometryLike, geometry2: GeometryLike) \
-        -> Optional[shapely.geometry.base.BaseGeometry]:
+def intersect_geometries(
+    geometry1: GeometryLike, geometry2: GeometryLike
+) -> Optional[shapely.geometry.base.BaseGeometry]:
     geometry1 = normalize_geometry(geometry1)
     if geometry1 is None:
         return None
@@ -581,10 +555,10 @@ def intersect_geometries(geometry1: GeometryLike, geometry2: GeometryLike) \
     return intersection_geometry
 
 
-def normalize_geometry(geometry: Optional[GeometryLike]) \
-        -> Optional[shapely.geometry.base.BaseGeometry]:
-    """
-    Convert a geometry-like object into a shapely geometry
+def normalize_geometry(
+    geometry: Optional[GeometryLike],
+) -> Optional[shapely.geometry.base.BaseGeometry]:
+    """Convert a geometry-like object into a shapely geometry
     object (``shapely.geometry.BaseGeometry``).
 
     A geometry-like object may be any shapely geometry object,
@@ -604,8 +578,11 @@ def normalize_geometry(geometry: Optional[GeometryLike]) \
     * In all other cases, 2D geometries are assumed to _not cross
       the anti-meridian at all_.
 
-    :param geometry: A geometry-like object
-    :return: Shapely geometry object or None.
+    Args:
+        geometry: A geometry-like object
+
+    Returns:
+        Shapely geometry object or None.
     """
 
     if isinstance(geometry, shapely.geometry.base.BaseGeometry):
@@ -623,15 +600,11 @@ def normalize_geometry(geometry: Optional[GeometryLike]) \
             if features is not None:
                 geometries = [
                     f2
-                    for f2 in [
-                        GeoJSON.get_feature_geometry(f1)
-                        for f1 in features
-                    ]
+                    for f2 in [GeoJSON.get_feature_geometry(f1) for f1 in features]
                     if f2 is not None
                 ]
                 if geometries:
-                    geometry = dict(type='GeometryCollection',
-                                    geometries=geometries)
+                    geometry = dict(type="GeometryCollection", geometries=geometries)
                     return shapely.geometry.shape(geometry)
         raise ValueError(_INVALID_GEOMETRY_MSG)
 
@@ -664,45 +637,25 @@ def normalize_geometry(geometry: Optional[GeometryLike]) \
     raise ValueError(_INVALID_GEOMETRY_MSG)
 
 
-@deprecated(version="0.11.2",
-            reason="convert_geometry() has been"
-                   " renamed to normalize_geometry()")
-def convert_geometry(geometry: Optional[GeometryLike]) \
-        -> Optional[shapely.geometry.base.BaseGeometry]:
-    return normalize_geometry(geometry)
-
-
-convert_geometry.__doc__ = normalize_geometry.__doc__
-
-
-@deprecated(version="0.11.2",
-            reason='Uses wrong definition of "inverted". No longer used.')
-def is_dataset_y_axis_inverted(
-        dataset: Union[xr.Dataset, xr.DataArray],
-        xy_var_names: Tuple[str, str] = None
+def is_lon_lat_dataset(
+    dataset: Union[xr.Dataset, xr.DataArray], xy_var_names: tuple[str, str] = None
 ) -> bool:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
-    y_var = dataset[xy_var_names[1]]
-    return float(y_var[0]) < float(y_var[-1])
-
-
-def is_lon_lat_dataset(dataset: Union[xr.Dataset, xr.DataArray],
-                       xy_var_names: Tuple[str, str] = None) -> bool:
-    if xy_var_names is None:
-        xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     x_var_name, y_var_name = xy_var_names
-    if x_var_name == 'lon' and y_var_name == 'lat':
+    if x_var_name == "lon" and y_var_name == "lat":
         return True
     x_var = dataset[x_var_name]
     y_var = dataset[y_var_name]
-    return x_var.attrs.get('long_name') == 'longitude' \
-           and y_var.attrs.get('long_name') == 'latitude'
+    return (
+        x_var.attrs.get("long_name") == "longitude"
+        and y_var.attrs.get("long_name") == "latitude"
+    )
 
 
-def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray],
-                         xy_var_names: Tuple[str, str] = None) \
-        -> shapely.geometry.base.BaseGeometry:
+def get_dataset_geometry(
+    dataset: Union[xr.Dataset, xr.DataArray], xy_var_names: tuple[str, str] = None
+) -> shapely.geometry.base.BaseGeometry:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     geo_bounds = get_dataset_bounds(dataset, xy_var_names=xy_var_names)
@@ -712,18 +665,20 @@ def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray],
         return shapely.geometry.box(*geo_bounds)
 
 
-def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
-                       xy_var_names: Optional[Tuple[str, str]] = None) -> Bounds:
+def get_dataset_bounds(
+    dataset: Union[xr.Dataset, xr.DataArray],
+    xy_var_names: Optional[tuple[str, str]] = None,
+) -> Bounds:
     if xy_var_names is None:
         xy_var_names = get_dataset_xy_var_names(dataset, must_exist=True)
     x_name, y_name = xy_var_names
     x_var, y_var = dataset.coords[x_name], dataset.coords[y_name]
-    is_lon = xy_var_names[0] == 'lon'
+    is_lon = xy_var_names[0] == "lon"
 
     # Note, x_min > x_max then we intersect with the anti-meridian
     x_bnds_name = get_dataset_bounds_var_name(dataset, x_name)
-    if x_bnds_name:
-        x_bnds_var = dataset.coords[x_bnds_name]
+    if x_bnds_name is not None:
+        x_bnds_var = dataset[x_bnds_name]
         x1 = x_bnds_var[0, 0]
         x2 = x_bnds_var[0, 1]
         x3 = x_bnds_var[-1, 0]
@@ -733,16 +688,16 @@ def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
     else:
         x_min = x_var[0]
         x_max = x_var[-1]
-        delta = (x_max - x_min
-                 + (0 if (x_max >= x_min or not is_lon)
-                    else 360)) / (x_var.size - 1)
+        delta = (x_max - x_min + (0 if (x_max >= x_min or not is_lon) else 360)) / (
+            x_var.size - 1
+        )
         x_min -= 0.5 * delta
         x_max += 0.5 * delta
 
     # Note, x-axis may be inverted
     y_bnds_name = get_dataset_bounds_var_name(dataset, y_name)
-    if y_bnds_name:
-        y_bnds_var = dataset.coords[y_bnds_name]
+    if y_bnds_name is not None:
+        y_bnds_var = dataset[y_bnds_name]
         y1 = y_bnds_var[0, 0]
         y2 = y_bnds_var[0, 1]
         y3 = y_bnds_var[-1, 0]
@@ -759,25 +714,22 @@ def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray],
     return float(x_min), float(y_min), float(x_max), float(y_max)
 
 
-def get_box_split_bounds(lon_min: float, lat_min: float,
-                         lon_max: float, lat_max: float) -> SplitBounds:
+def get_box_split_bounds(
+    lon_min: float, lat_min: float, lon_max: float, lat_max: float
+) -> SplitBounds:
     if lon_max >= lon_min:
-        return ((lon_min, lat_min, lon_max, lat_max),
-                None)
+        return ((lon_min, lat_min, lon_max, lat_max), None)
     else:
-        return ((lon_min, lat_min, 180.0, lat_max),
-                (-180.0, lat_min, lon_max, lat_max))
+        return ((lon_min, lat_min, 180.0, lat_max), (-180.0, lat_min, lon_max, lat_max))
 
 
 def get_box_split_bounds_geometry(
-        lon_min: float, lat_min: float,
-        lon_max: float, lat_max: float
+    lon_min: float, lat_min: float, lon_max: float, lat_max: float
 ) -> shapely.geometry.base.BaseGeometry:
     box_1, box_2 = get_box_split_bounds(lon_min, lat_min, lon_max, lat_max)
     if box_2 is not None:
         return shapely.geometry.MultiPolygon(
-            polygons=[shapely.geometry.box(*box_1),
-                      shapely.geometry.box(*box_2)]
+            polygons=[shapely.geometry.box(*box_1), shapely.geometry.box(*box_2)]
         )
     else:
         return shapely.geometry.box(*box_1)

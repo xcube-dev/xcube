@@ -1,29 +1,13 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import threading
 import time
 import traceback
 from abc import ABC
-from typing import Sequence, Optional, Any, Tuple, Type, List
+from typing import Optional, Any, Tuple, Type, List
+from collections.abc import Sequence
 
 import dask.callbacks
 import dask.diagnostics
@@ -38,10 +22,10 @@ class ProgressState:
         self._label = label
         self._total_work = total_work
         self._super_work = super_work
-        self._super_work_ahead = 1.
+        self._super_work_ahead = 1.0
         self._exc_info = None
         self._traceback = None
-        self._completed_work = 0.
+        self._completed_work = 0.0
         self._finished = False
         self._start_time = None
         self._start_time = time.perf_counter()
@@ -71,21 +55,23 @@ class ProgressState:
         return self._super_work * work / self._total_work
 
     @property
-    def exc_info(self) -> Optional[Tuple[Type, BaseException, Any]]:
+    def exc_info(self) -> Optional[tuple[type, BaseException, Any]]:
         return self._exc_info
 
     @exc_info.setter
-    def exc_info(self, exc_info: Tuple[Type, BaseException, Any]):
+    def exc_info(self, exc_info: tuple[type, BaseException, Any]):
         self._exc_info = exc_info
 
     @property
-    def exc_info_text(self) -> Optional[Tuple[str, str, List[str]]]:
+    def exc_info_text(self) -> Optional[tuple[str, str, list[str]]]:
         if not self.exc_info:
             return None
         exc_type, exc_value, exc_traceback = self.exc_info
-        return (f'{type(exc_value).__name__}',
-                f'{exc_value}',
-                traceback.format_exception(exc_type, exc_value, exc_traceback))
+        return (
+            f"{type(exc_value).__name__}",
+            f"{exc_value}",
+            traceback.format_exception(exc_type, exc_value, exc_traceback),
+        )
 
     @property
     def finished(self) -> bool:
@@ -101,11 +87,11 @@ class ProgressState:
 
     @super_work_ahead.setter
     def super_work_ahead(self, work: float):
-        assert_true(work > 0, 'work must be greater than zero')
+        assert_true(work > 0, "work must be greater than zero")
         self._super_work_ahead = work
 
     def inc_work(self, work: float):
-        assert_true(work > 0, 'work must be greater than zero')
+        assert_true(work > 0, "work must be greater than zero")
         self._completed_work += work
 
     def finish(self):
@@ -114,25 +100,18 @@ class ProgressState:
 
 
 class ProgressObserver(ABC):
-    """
-    A progress observer is notified about nested state changes when using the
-    :class:observe_progress context manager.
+    """A progress observer is notified about nested state changes when using the
+    :class:`observe_progress` context manager.
     """
 
     def on_begin(self, state_stack: Sequence[ProgressState]):
-        """
-        Called, if an observed code block begins execution.
-        """
+        """Called, if an observed code block begins execution."""
 
     def on_update(self, state_stack: Sequence[ProgressState]):
-        """
-        Called, if the progress state has changed within an observed code block.
-        """
+        """Called, if the progress state has changed within an observed code block."""
 
     def on_end(self, state_stack: Sequence[ProgressState]):
-        """
-        Called, if an observed block of code ends execution.
-        """
+        """Called, if an observed block of code ends execution."""
 
     def activate(self):
         _ProgressContext.instance().add_observer(self)
@@ -167,8 +146,7 @@ class _ProgressContext:
             observer.on_end(self._state_stack)
 
     def begin(self, label: str, total_work: float) -> ProgressState:
-        super_work = self._state_stack[-1].super_work_ahead \
-            if self._state_stack else 1
+        super_work = self._state_stack[-1].super_work_ahead if self._state_stack else 1
         progress_state = ProgressState(label, total_work, super_work)
         self._state_stack.append(progress_state)
         self.emit_begin()
@@ -186,29 +164,29 @@ class _ProgressContext:
         return progress_state
 
     def worked(self, work: float):
-        assert_true(self._state_stack,
-                    'worked() method call is missing a current context')
-        assert_true(work > 0, 'work must be greater than zero')
+        assert_true(
+            self._state_stack, "worked() method call is missing a current context"
+        )
+        assert_true(work > 0, "work must be greater than zero")
         for s in reversed(self._state_stack):
             s.inc_work(work)
             work = s.to_super_work(work)
         self.emit_update()
 
     def will_work(self, work: float):
-        assert_true(self._state_stack,
-                    'will_work() method call is missing a current context')
+        assert_true(
+            self._state_stack, "will_work() method call is missing a current context"
+        )
         # noinspection PyProtectedMember
         self._state_stack[-1].super_work_ahead = work
 
     @classmethod
-    def instance(cls) -> '_ProgressContext':
+    def instance(cls) -> "_ProgressContext":
         return cls._instance
 
     @classmethod
-    def set_instance(cls, instance: '_ProgressContext' = None) \
-            -> '_ProgressContext':
-        cls._instance, old_instance = \
-            (instance or _ProgressContext()), cls._instance
+    def set_instance(cls, instance: "_ProgressContext" = None) -> "_ProgressContext":
+        cls._instance, old_instance = (instance or _ProgressContext()), cls._instance
         return old_instance
 
 
@@ -216,11 +194,12 @@ _ProgressContext.set_instance()
 
 
 class new_progress_observers:
-    """
-    Takes zero or more progress observers and activates them in the enclosed context.
+    """Takes zero or more progress observers and activates them in the enclosed context.
     Progress observers from an outer context will no longer be active.
 
-    :param observers: progress observers that will temporarily replace existing ones.
+    Args:
+        observers: progress observers that will temporarily replace
+            existing ones.
     """
 
     def __init__(self, *observers: ProgressObserver):
@@ -237,12 +216,12 @@ class new_progress_observers:
 
 
 class add_progress_observers:
-    """
-    Takes zero or more progress observers and uses them only in the
+    """Takes zero or more progress observers and uses them only in the
     enclosed context. Any progress observers from an outer context
     remain active.
 
-    :param observers: progress observers to be added temporarily.
+    Args:
+        observers: progress observers to be added temporarily.
     """
 
     def __init__(self, *observers: ProgressObserver):
@@ -258,16 +237,16 @@ class add_progress_observers:
 
 
 class observe_progress:
-    """
-    Context manager for observing progress in the enclosed context.
+    """Context manager for observing progress in the enclosed context.
 
-    :param label: A label.
-    :param total_work: The total work.
+    Args:
+        label: A label.
+        total_work: The total work.
     """
 
     def __init__(self, label: str, total_work: float):
-        assert_given(label, 'label')
-        assert_true(total_work > 0, 'total_work must be greater than zero')
+        assert_given(label, "label")
+        assert_true(total_work > 0, "total_work must be greater than zero")
         self._label = label
         self._total_work = total_work
         self._state: Optional[ProgressState] = None
@@ -285,9 +264,8 @@ class observe_progress:
         self._assert_used_correctly()
         return self._state
 
-    def __enter__(self) -> 'observe_progress':
-        self._state = _ProgressContext.instance().begin(self._label,
-                                                        self._total_work)
+    def __enter__(self) -> "observe_progress":
+        self._state = _ProgressContext.instance().begin(self._label, self._total_work)
         return self
 
     def __exit__(self, type, value, traceback):
@@ -304,29 +282,33 @@ class observe_progress:
         _ProgressContext.instance().will_work(work)
 
     def _assert_used_correctly(self):
-        assert_true(self._state is not None,
-                    'observe_progress() must be used with "with" statement')
+        assert_true(
+            self._state is not None,
+            'observe_progress() must be used with "with" statement',
+        )
 
 
 class observe_dask_progress(dask.callbacks.Callback):
-    """
-    Observe progress made by Dask tasks.
+    """Observe progress made by Dask tasks.
 
-    :param label: A label.
-    :param total_work: The total work.
-    :param interval: Time in seconds to between progress reports.
-    :param initial_interval: Time in seconds to wait before progress
-        is reported.
+    Args:
+        label: A label.
+        total_work: The total work.
+        interval: Time in seconds to between progress reports.
+        initial_interval: Time in seconds to wait before progress is
+            reported.
     """
 
-    def __init__(self,
-                 label: str,
-                 total_work: float,
-                 interval: float = 0.1,
-                 initial_interval: float = 0):
+    def __init__(
+        self,
+        label: str,
+        total_work: float,
+        interval: float = 0.1,
+        initial_interval: float = 0,
+    ):
         super().__init__()
-        assert_given(label, 'label')
-        assert_true(total_work > 0, 'total_work must be greater than zero')
+        assert_given(label, "label")
+        assert_true(total_work > 0, "total_work must be greater than zero")
         self._label = label
         self._total_work = total_work
         self._state: Optional[ProgressState] = None
@@ -335,10 +317,9 @@ class observe_dask_progress(dask.callbacks.Callback):
         self._last_worked = 0
         self._running = False
 
-    def __enter__(self) -> 'observe_dask_progress':
+    def __enter__(self) -> "observe_dask_progress":
         super().__enter__()
-        self._state = _ProgressContext.instance().begin(self._label,
-                                                        self._total_work)
+        self._state = _ProgressContext.instance().begin(self._label, self._total_work)
         return self
 
     def __exit__(self, type, value, traceback):
@@ -387,9 +368,10 @@ class observe_dask_progress(dask.callbacks.Callback):
         dask_state = self._dask_state
         if not dask_state:
             return
-        num_done = len(dask_state['finished'])
-        num_tasks = num_done + sum(len(dask_state[k])
-                                   for k in ['ready', 'waiting', 'running'])
+        num_done = len(dask_state["finished"])
+        num_tasks = num_done + sum(
+            len(dask_state[k]) for k in ["ready", "waiting", "running"]
+        )
         if num_done < num_tasks:
             work_fraction = num_done / num_tasks if num_tasks > 0 else 0
             worked = work_fraction * self._total_work

@@ -1,27 +1,10 @@
-# The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import math
-from typing import Union, Callable, Optional, \
-    Sequence, Tuple, Mapping, Hashable, Any
+from typing import Union, Callable, Optional, Any
+from collections.abc import Sequence, Mapping, Hashable
 
 import numpy as np
 import xarray as xr
@@ -31,84 +14,127 @@ from dask_image import ndinterp
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.helpers import AffineTransformMatrix
 from xcube.util.assertions import assert_true
+from .cf import complete_resampled_dataset
 
 NDImage = Union[np.ndarray, da.Array]
 Aggregator = Callable[[NDImage], NDImage]
 
 
 def affine_transform_dataset(
-        dataset: xr.Dataset,
-        source_gm: GridMapping,
-        target_gm: GridMapping,
-        var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
-        reuse_coords: bool = False,
+    source_ds: xr.Dataset,
+    /,
+    source_gm: Optional[GridMapping] = None,
+    target_gm: Optional[GridMapping] = None,
+    ref_ds: Optional[xr.Dataset] = None,
+    var_configs: Optional[Mapping[Hashable, Mapping[str, Any]]] = None,
+    encode_cf: bool = True,
+    gm_name: Optional[str] = None,
+    reuse_coords: bool = False,
 ) -> xr.Dataset:
-    """
-    Resample dataset according to an affine transformation.
+    """Resample dataset according to an affine transformation.
 
     The affine transformation will be applied only if the CRS of
     *source_gm* and the CRS of *target_gm* are both geographic or equal.
     Otherwise, a ``ValueError`` will be raised.
 
-    :param dataset: The source dataset
-    :param source_gm: Source grid mapping of *dataset*.
-        Must be regular. Must have same CRS as *target_gm*.
-    :param target_gm: Target grid mapping.
-        Must be regular. Must have same CRS as *source_gm*.
-    :param var_configs: Optional resampling configurations
-        for individual variables.
-    :param reuse_coords: Whether to either reuse target
-        coordinate arrays from target_gm or to compute
-        new ones.
-    :return: The resampled target dataset.
+    New in 1.6: If *target_ds* is given, its coordinate
+    variables are copied by reference into the returned
+    dataset.
+
+    Args:
+        source_ds: The source dataset
+        source_gm: Optional source grid mapping of *dataset*.
+            If not provided, computed from *source_ds*.
+            Must be regular and must have same CRS as *target_gm*.
+        target_gm: Optional target grid mapping. If not provided,
+            computed from *target_ds* or source grid mapping.
+            Must be regular and must have same CRS as source grid mapping.
+        ref_ds: An optional dataset that provides the
+            target grid mapping if *target_gm* is not provided.
+            If *ref_ds* is given, its coordinate variables are copied
+            by reference into the returned dataset.
+        var_configs: Optional resampling configurations for individual
+            variables.
+        encode_cf: Whether to encode the target grid mapping into the
+            resampled dataset in a CF-compliant way. Defaults to
+            ``True``.
+        gm_name: Name for the grid mapping variable. Defaults to "crs".
+            Used only if *encode_cf* is ``True``.
+        reuse_coords: Whether to either reuse target coordinate arrays
+            from target_gm or to compute new ones.
+
+    Returns:
+        The resampled target dataset.
     """
+    if source_gm is None:
+        # No source grid mapping given, so do derive it from dataset
+        source_gm = GridMapping.from_dataset(source_ds)
+
+    if target_gm is None:
+        # No target grid mapping given, so do derive it
+        # from reference dataset or source grid mapping
+        if ref_ds is not None:
+            target_gm = GridMapping.from_dataset(ref_ds)
+        else:
+            target_gm = source_gm.to_regular()
+
     # Are source and target both geographic grid mappings?
-    both_geographic = source_gm.crs.is_geographic \
-                      and target_gm.crs.is_geographic
+    both_geographic = source_gm.crs.is_geographic and target_gm.crs.is_geographic
     if not (both_geographic or source_gm.crs == target_gm.crs):
-        raise ValueError(f'CRS of source_gm and target_gm must be equal,'
-                         f' was "{source_gm.crs.name}"'
-                         f' and "{target_gm.crs.name}"')
-    GridMapping.assert_regular(source_gm, name='source_gm')
-    GridMapping.assert_regular(target_gm, name='target_gm')
+        raise ValueError(
+            f"CRS of source_gm and target_gm must be equal,"
+            f' was "{source_gm.crs.name}"'
+            f' and "{target_gm.crs.name}"'
+        )
+    GridMapping.assert_regular(source_gm, name="source_gm")
+    GridMapping.assert_regular(target_gm, name="target_gm")
     resampled_dataset = resample_dataset(
-        dataset=dataset,
+        dataset=source_ds,
         matrix=target_gm.ij_transform_to(source_gm),
         size=target_gm.size,
         tile_size=target_gm.tile_size,
         xy_dim_names=source_gm.xy_dim_names,
-        var_configs=var_configs
+        var_configs=var_configs,
     )
-    has_bounds = any(dataset[var_name].attrs.get('bounds')
-                     for var_name in source_gm.xy_var_names)
+    has_bounds = any(
+        source_ds[var_name].attrs.get("bounds") for var_name in source_gm.xy_var_names
+    )
     new_coords = target_gm.to_coords(
         xy_var_names=source_gm.xy_var_names,
         xy_dim_names=source_gm.xy_dim_names,
         exclude_bounds=not has_bounds,
-        reuse_coords=reuse_coords
+        reuse_coords=reuse_coords,
     )
-    return resampled_dataset.assign_coords(new_coords)
+    return complete_resampled_dataset(
+        encode_cf,
+        resampled_dataset.assign_coords(new_coords),
+        target_gm,
+        gm_name,
+        ref_ds.coords if ref_ds else None,
+    )
 
 
 def resample_dataset(
-        dataset: xr.Dataset,
-        matrix: AffineTransformMatrix,
-        size: Tuple[int, int],
-        tile_size: Tuple[int, int],
-        xy_dim_names: Tuple[str, str],
-        var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
+    dataset: xr.Dataset,
+    matrix: AffineTransformMatrix,
+    size: tuple[int, int],
+    tile_size: tuple[int, int],
+    xy_dim_names: tuple[str, str],
+    var_configs: Mapping[Hashable, Mapping[str, Any]] = None,
 ) -> xr.Dataset:
-    """
-    Resample dataset according to an affine transformation.
+    """Resample dataset according to an affine transformation.
 
-    :param dataset: The source dataset
-    :param matrix: Affine transformation matrix.
-    :param size: Target image size.
-    :param tile_size: Target image tile size.
-    :param xy_dim_names: Names of the spatial dimensions.
-    :param var_configs: Optional resampling configurations
-        for individual variables.
-    :return: The resampled target dataset.
+    Args:
+        dataset: The source dataset
+        matrix: Affine transformation matrix.
+        size: Target image size.
+        tile_size: Target image tile size.
+        xy_dim_names: Names of the spatial dimensions.
+        var_configs: Optional resampling configurations for individual
+            variables.
+
+    Returns:
+        The resampled target dataset.
     """
     ((i_scale, _, i_off), (_, j_scale, j_off)) = matrix
     width, height = size
@@ -122,28 +148,26 @@ def resample_dataset(
         new_var = None
         if var.ndim >= 2 and var.dims[-2:] == yx_dims:
             var_config = var_configs.get(k, dict())
-            if np.issubdtype(var.dtype, np.integer) \
-                    or np.issubdtype(var.dtype, bool):
+            if np.issubdtype(var.dtype, np.integer) or np.issubdtype(var.dtype, bool):
                 spline_order = 0
                 aggregator = None
                 recover_nan = False
             else:
                 spline_order = 1
                 aggregator = np.nanmean
-                recover_nan = True
+                # forman: changed default from True to False (v1.6, 2024-06-05)
+                recover_nan = False
             var_data = resample_ndimage(
                 var.data,
                 scale=(j_scale, i_scale),
                 offset=(j_off, i_off),
                 shape=(height, width),
                 chunks=(tile_height, tile_width),
-                spline_order=var_config.get('spline_order', spline_order),
-                aggregator=var_config.get('aggregator', aggregator),
-                recover_nan=var_config.get('recover_nan', recover_nan),
+                spline_order=var_config.get("spline_order", spline_order),
+                aggregator=var_config.get("aggregator", aggregator),
+                recover_nan=var_config.get("recover_nan", recover_nan),
             )
-            new_var = xr.DataArray(var_data,
-                                   dims=var.dims,
-                                   attrs=var.attrs)
+            new_var = xr.DataArray(var_data, dims=var.dims, attrs=var.attrs)
         elif x_dim not in var.dims and y_dim not in var.dims:
             new_var = var.copy()
         if new_var is not None:
@@ -152,20 +176,18 @@ def resample_dataset(
             elif k in dataset.data_vars:
                 data_vars[k] = new_var
 
-    return xr.Dataset(data_vars=data_vars,
-                      coords=coords,
-                      attrs=dataset.attrs)
+    return xr.Dataset(data_vars=data_vars, coords=coords, attrs=dataset.attrs)
 
 
 def resample_ndimage(
-        image: NDImage,
-        scale: Union[float, Tuple[float, float]] = 1,
-        offset: Union[float, Tuple[float, float]] = None,
-        shape: Union[int, Tuple[int, int]] = None,
-        chunks: Sequence[int] = None,
-        spline_order: int = 1,
-        aggregator: Optional[Aggregator] = np.nanmean,
-        recover_nan: bool = False
+    image: NDImage,
+    scale: Union[float, tuple[float, float]] = 1,
+    offset: Union[float, tuple[float, float]] = None,
+    shape: Union[int, tuple[int, int]] = None,
+    chunks: Sequence[int] = None,
+    spline_order: int = 1,
+    aggregator: Optional[Aggregator] = np.nanmean,
+    recover_nan: bool = False,
 ) -> da.Array:
     image = da.asarray(image)
     offset = _normalize_offset(offset, image.ndim)
@@ -182,62 +204,69 @@ def resample_ndimage(
         # Downsampling
         # ------------
         axes = {image.ndim - 2: divisor_y, image.ndim - 1: divisor_x}
-        elongation = _normalize_scale((scale_y / divisor_y,
-                                       scale_x / divisor_x), image.ndim)
-        larger_shape = resize_shape(shape, (divisor_y, divisor_x),
-                                    divisor_x=divisor_x,
-                                    divisor_y=divisor_y)
+        elongation = _normalize_scale(
+            (scale_y / divisor_y, scale_x / divisor_x), image.ndim
+        )
+        larger_shape = resize_shape(
+            shape, (divisor_y, divisor_x), divisor_x=divisor_x, divisor_y=divisor_y
+        )
         # print('Downsampling: ', scale)
         # print('  divisor:', (divisor_y, divisor_x))
         # print('  elongation:', elongation)
         # print('  shape:', shape)
         # print('  larger_shape:', larger_shape)
-        divisible_chunks = _make_divisible_tiles(larger_shape,
-                                                 divisor_x, divisor_y)
-        image = _transform_array(image,
-                                 elongation, offset,
-                                 larger_shape, divisible_chunks,
-                                 spline_order, recover_nan)
+        divisible_chunks = _make_divisible_tiles(larger_shape, divisor_x, divisor_y)
+        image = _transform_array(
+            image,
+            elongation,
+            offset,
+            larger_shape,
+            divisible_chunks,
+            spline_order,
+            recover_nan,
+        )
         image = da.coarsen(aggregator, image, axes)
         if shape != image.shape:
-            image = image[..., 0:shape[-2], 0:shape[-1]]
+            image = image[..., 0 : shape[-2], 0 : shape[-1]]
         if chunks is not None:
             image = image.rechunk(chunks)
     else:
         # Upsampling
         # ----------
         # print('Upsampling: ', scale)
-        image = _transform_array(image,
-                                 scale, offset,
-                                 shape, chunks,
-                                 spline_order, recover_nan)
+        image = _transform_array(
+            image, scale, offset, shape, chunks, spline_order, recover_nan
+        )
     return image
 
 
-def _transform_array(image: da.Array,
-                     scale: Tuple[float, ...],
-                     offset: Tuple[float, ...],
-                     shape: Tuple[int, ...],
-                     chunks: Optional[Tuple[int, ...]],
-                     spline_order: int,
-                     recover_nan: bool) -> da.Array:
-    """
-    Apply affine transformation to ND-image.
+def _transform_array(
+    image: da.Array,
+    scale: tuple[float, ...],
+    offset: tuple[float, ...],
+    shape: tuple[int, ...],
+    chunks: Optional[tuple[int, ...]],
+    spline_order: int,
+    recover_nan: bool,
+) -> da.Array:
+    """Apply affine transformation to ND-image.
 
-    :param image: ND-image with shape (..., size_y, size_x)
-    :param scale: Scaling factors (1, ..., 1, sy, sx)
-    :param offset: Offset values (0, ..., 0, oy, ox)
-    :param shape: (..., size_y, size_x)
-    :param chunks: (..., chunk_size_y, chunk_size_x)
-    :param spline_order: 0 ... 5
-    :param recover_nan: True/False
-    :return: Transformed ND-image.
+    Args:
+        image: ND-image with shape (..., size_y, size_x)
+        scale: Scaling factors (1, ..., 1, sy, sx)
+        offset: Offset values (0, ..., 0, oy, ox)
+        shape: (..., size_y, size_x)
+        chunks: (..., chunk_size_y, chunk_size_x)
+        spline_order: 0 ... 5
+        recover_nan: True/False
+
+    Returns:
+        Transformed ND-image.
     """
-    assert_true(len(scale) == image.ndim, 'invalid scale')
-    assert_true(len(offset) == image.ndim, 'invalid offset')
-    assert_true(len(shape) == image.ndim, 'invalid shape')
-    assert_true(chunks is None or len(chunks) == image.ndim,
-                'invalid chunks')
+    assert_true(len(scale) == image.ndim, "invalid scale")
+    assert_true(len(offset) == image.ndim, "invalid offset")
+    assert_true(len(shape) == image.ndim, "invalid shape")
+    assert_true(chunks is None or len(chunks) == image.ndim, "invalid chunks")
     if _is_no_op(image, scale, offset, shape):
         return image
     # As of scipy 0.18, matrix = scale is no longer supported.
@@ -249,7 +278,7 @@ def _transform_array(image: da.Array,
         order=spline_order,
         output_shape=shape,
         output_chunks=chunks,
-        mode='constant',
+        mode="constant",
     )
     if recover_nan and spline_order > 0:
         # We can "recover" values that are neighbours to NaN values
@@ -260,29 +289,30 @@ def _transform_array(image: da.Array,
             # Yes, then
             # 1. replace NaN by zero
             filled_im = da.where(mask, 0.0, image)
-            # 2. transform the zeo-filled image
-            scaled_im = ndinterp.affine_transform(filled_im,
-                                                  matrix,
-                                                  **at_kwargs,
-                                                  cval=0.0)
+            # 2. transform the zero-filled image
+            scaled_im = ndinterp.affine_transform(
+                filled_im, matrix, **at_kwargs, cval=0.0
+            )
             # 3. transform the inverted mask
-            scaled_norm = ndinterp.affine_transform(1.0 - mask,
-                                                    matrix,
-                                                    **at_kwargs,
-                                                    cval=0.0)
+            scaled_norm = ndinterp.affine_transform(
+                1.0 - mask, matrix, **at_kwargs, cval=0.0
+            )
             # 4. put back NaN where there was zero,
             #    otherwise decode using scaled mask
-            return da.where(da.isclose(scaled_norm, 0.0),
-                            np.nan, scaled_im / scaled_norm)
+            return da.where(
+                da.isclose(scaled_norm, 0.0), np.nan, scaled_im / scaled_norm
+            )
 
     # No dealing with NaN required
     return ndinterp.affine_transform(image, matrix, **at_kwargs, cval=np.nan)
 
 
-def resize_shape(shape: Sequence[int],
-                 scale: Union[float, Tuple[float, ...]],
-                 divisor_x: int = 1,
-                 divisor_y: int = 1) -> Tuple[int, ...]:
+def resize_shape(
+    shape: Sequence[int],
+    scale: Union[float, tuple[float, ...]],
+    divisor_x: int = 1,
+    divisor_y: int = 1,
+) -> tuple[int, ...]:
     scale = _normalize_scale(scale, len(shape))
     height, width = shape[-2], shape[-1]
     scale_y, scale_x = scale[-2], scale[-1]
@@ -293,13 +323,11 @@ def resize_shape(shape: Sequence[int],
     return tuple(shape[0:-2]) + (h, w)
 
 
-def _make_divisible_tiles(larger_shape: Tuple[int, ...],
-                          divisor_x: int,
-                          divisor_y: int) -> Tuple[int, ...]:
-    w = min(larger_shape[-1],
-            divisor_x * ((2048 + divisor_x - 1) // divisor_x))
-    h = min(larger_shape[-2],
-            divisor_y * ((2048 + divisor_y - 1) // divisor_y))
+def _make_divisible_tiles(
+    larger_shape: tuple[int, ...], divisor_x: int, divisor_y: int
+) -> tuple[int, ...]:
+    w = min(larger_shape[-1], divisor_x * ((2048 + divisor_x - 1) // divisor_x))
+    h = min(larger_shape[-2], divisor_y * ((2048 + divisor_y - 1) // divisor_y))
     return (len(larger_shape) - 2) * (1,) + (h, w)
 
 
@@ -307,51 +335,51 @@ def _normalize_image(im: NDImage) -> da.Array:
     return da.asarray(im)
 
 
-def _normalize_offset(offset: Optional[Sequence[float]],
-                      ndim: int) -> Tuple[int, ...]:
-    return _normalize_pair(offset, 0.0, ndim, 'offset')
+def _normalize_offset(
+    offset: Optional[Sequence[float]], ndim: int
+) -> tuple[float, ...]:
+    return _normalize_pair(offset, 0.0, ndim, "offset")
 
 
-def _normalize_scale(scale: Optional[Sequence[float]],
-                     ndim: int) -> Tuple[int, ...]:
-    return _normalize_pair(scale, 1.0, ndim, 'scale')
+def _normalize_scale(scale: Optional[Sequence[float]], ndim: int) -> tuple[float, ...]:
+    return _normalize_pair(scale, 1.0, ndim, "scale")
 
 
-def _normalize_pair(pair: Optional[Sequence[float]],
-                    default: float,
-                    ndim: int,
-                    name: str) -> Tuple[int, ...]:
+def _normalize_pair(
+    pair: Optional[Sequence[float]], default: float, ndim: int, name: str
+) -> tuple[float, ...]:
     if pair is None:
         pair = [default, default]
     elif isinstance(pair, (int, float)):
         pair = [pair, pair]
     elif len(pair) != 2:
-        raise ValueError(f'illegal image {name}')
+        raise ValueError(f"illegal image {name}")
     return (ndim - 2) * (default,) + tuple(pair)
 
 
-def _normalize_shape(shape: Optional[Sequence[int]],
-                     im: NDImage) -> Tuple[int, ...]:
+def _normalize_shape(shape: Optional[Sequence[int]], im: NDImage) -> tuple[int, ...]:
     if shape is None:
         return im.shape
     if len(shape) != 2:
-        raise ValueError('illegal image shape')
+        raise ValueError("illegal image shape")
     return im.shape[0:-2] + tuple(shape)
 
 
-def _normalize_chunks(chunks: Optional[Sequence[int]],
-                      shape: Tuple[int, ...]) -> Optional[Tuple[int, ...]]:
+def _normalize_chunks(
+    chunks: Optional[Sequence[int]], shape: tuple[int, ...]
+) -> Optional[tuple[int, ...]]:
     if chunks is None:
         return None
     if len(chunks) < 2 or len(chunks) > len(shape):
-        raise ValueError('illegal image chunks')
+        raise ValueError("illegal image chunks")
     return (len(shape) - len(chunks)) * (1,) + tuple(chunks)
 
 
-def _is_no_op(im: NDImage,
-              scale: Sequence[float],
-              offset: Sequence[float],
-              shape: Tuple[int, ...]):
-    return shape == im.shape \
-           and all(math.isclose(s, 1) for s in scale) \
-           and all(math.isclose(o, 0) for o in offset)
+def _is_no_op(
+    im: NDImage, scale: Sequence[float], offset: Sequence[float], shape: tuple[int, ...]
+):
+    return (
+        shape == im.shape
+        and all(math.isclose(s, 1) for s in scale)
+        and all(math.isclose(o, 0) for o in offset)
+    )

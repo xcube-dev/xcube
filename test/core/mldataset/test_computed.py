@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import os
 import unittest
 import zipfile
@@ -30,24 +34,24 @@ def get_script_dir():
 class ComputedMultiLevelDatasetTest(unittest.TestCase):
     def test_it(self):
         ml_ds2 = ComputedMultiLevelDataset(
-            os.path.join(os.path.dirname(__file__),
-                         "..", "..", "webapi", "res", "script.py"),
+            os.path.join(
+                os.path.dirname(__file__), "..", "..", "webapi", "res", "script.py"
+            ),
             "compute_dataset",
             ["my_ml_dataset"],
             get_input_ml_dataset_getter(),
-            ds_id="ml_ds2"
+            ds_id="ml_ds2",
         )
         self.assertEqual(3, ml_ds2.num_levels)
 
         ds0 = ml_ds2.get_dataset(0)
-        self.assertEqual({'time': 3, 'lat': 720, 'lon': 1440, 'bnds': 2},
-                         ds0.dims)
+        self.assertEqual({"time": 3, "lat": 720, "lon": 1440, "bnds": 2}, ds0.sizes)
 
         ds1 = ml_ds2.get_dataset(1)
-        self.assertEqual({'time': 3, 'lat': 360, 'lon': 720}, ds1.dims)
+        self.assertEqual({"time": 3, "lat": 360, "lon": 720}, ds1.sizes)
 
         ds2 = ml_ds2.get_dataset(2)
-        self.assertEqual({'time': 3, 'lat': 180, 'lon': 360}, ds2.dims)
+        self.assertEqual({"time": 3, "lat": 180, "lon": 360}, ds2.sizes)
 
         self.assertEqual([ds0, ds1, ds2], ml_ds2.datasets)
 
@@ -63,11 +67,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
             )
 
         with open(f"{script_dir}/module_2.py", "w") as fp:
-            fp.write(
-                "\n"
-                "def process_dataset(ds):\n"
-                "    return ds.copy()\n"
-            )
+            fp.write("\n" "def process_dataset(ds):\n" "    return ds.copy()\n")
 
         try:
             computed_ml_ds = ComputedMultiLevelDataset(
@@ -75,7 +75,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
                 "compute_dataset",
                 ["my_ml_dataset"],
                 get_input_ml_dataset_getter(),
-                ds_id="ml_ds2"
+                ds_id="ml_ds2",
             )
             self.assert_computed_ml_dataset_ok(computed_ml_ds)
         finally:
@@ -93,11 +93,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
                     b"    return m2.process_dataset(ds)\n"
                 )
             with zf.open(f"module_2.py", "w") as fp:
-                fp.write(
-                    b"\n"
-                    b"def process_dataset(ds):\n"
-                    b"    return ds.copy()\n"
-                )
+                fp.write(b"\n" b"def process_dataset(ds):\n" b"    return ds.copy()\n")
 
         try:
             computed_ml_ds = ComputedMultiLevelDataset(
@@ -105,27 +101,26 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
                 "module_1:compute_dataset",
                 ["my_ml_dataset"],
                 get_input_ml_dataset_getter(),
-                ds_id="ml_ds2"
+                ds_id="ml_ds2",
             )
             self.assert_computed_ml_dataset_ok(computed_ml_ds)
         finally:
             rimraf(script_dir)
 
-    def assert_computed_ml_dataset_ok(
-            self,
-            computed_ml_ds: ComputedMultiLevelDataset
-    ):
+    def assert_computed_ml_dataset_ok(self, computed_ml_ds: ComputedMultiLevelDataset):
         self.assertEqual(3, computed_ml_ds.num_levels)
         self.assertEqual(1, computed_ml_ds.num_inputs)
-        self.assertEqual(computed_ml_ds.grid_mapping,
-                         computed_ml_ds.get_input_dataset(0).grid_mapping)
+        self.assertEqual(
+            computed_ml_ds.grid_mapping,
+            computed_ml_ds.get_input_dataset(0).grid_mapping,
+        )
 
         # assert output is same as input
         base_dataset = computed_ml_ds.get_dataset(0)
-        self.assertEqual({'lon', 'lat',
-                          'lat_bnds', 'lon_bnds',
-                          'time'}, set(base_dataset.coords))
-        self.assertEqual({'noise'}, set(base_dataset.data_vars))
+        self.assertEqual(
+            {"lon", "lat", "lat_bnds", "lon_bnds", "time"}, set(base_dataset.coords)
+        )
+        self.assertEqual({"noise"}, set(base_dataset.data_vars))
         # assert we can compute without exception being raised:
         for i in range(computed_ml_ds.num_levels):
             computed_ml_ds.get_dataset(i).compute()

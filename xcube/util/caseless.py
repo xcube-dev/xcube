@@ -1,18 +1,21 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from typing import Dict, TypeVar, Optional
 
 
-def caseless_dict(*args, **kwargs) -> Dict:
+def caseless_dict(*args, **kwargs) -> dict:
     """Create a dictionary that compares its string keys in a case-insensitive manner."""
     return _CaselessDict(*args, **kwargs)
 
 
-_KT = TypeVar('_KT')
-_VT = TypeVar('_VT')
-_VT_co = TypeVar('_VT_co', covariant=True)
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+_VT_co = TypeVar("_VT_co", covariant=True)
 
 
 class _CaselessDict(dict):
-
     def __init__(self, *args, **kwargs: _VT):
         super().__init__(*args, **kwargs)
         self._lc_keys = {k.lower() if isinstance(k, str) else k: k for k in self.keys()}

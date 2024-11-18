@@ -18,7 +18,7 @@ __pycache__/
 env/
 build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
@@ -50,6 +50,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+out.yml
 *.cover
 .hypothesis/
 .pytest_cache/
@@ -112,11 +113,10 @@ ENV/
 # Test data
 *.nc/
 
-# Test notebooks used for development
-scripts
-examples/gen/cmd_files
-
 # Dask
 mydask.png
 
 .cfgs
+
+# Alternative xcube demo
+examples/serve/demo2/

@@ -1,42 +1,32 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import click
 
-DEFAULT_OUTPUT_PATH = 'out.csv'
+DEFAULT_OUTPUT_PATH = "out.csv"
 DEFAULT_NUM_POINTS_MAX = 100
 
 
 @click.command(name="genpts", hidden=True)
-@click.argument('cube')
-@click.option('--output', '-o', 'output_path',
-              help=f'Output path. Defaults to "{DEFAULT_OUTPUT_PATH}".',
-              default=DEFAULT_OUTPUT_PATH)
-@click.option('--number', '-n', 'num_points_max',
-              help=f'Number of point_data. Defaults to "{DEFAULT_NUM_POINTS_MAX}".',
-              type=int,
-              default=DEFAULT_NUM_POINTS_MAX)
+@click.argument("cube")
+@click.option(
+    "--output",
+    "-o",
+    "output_path",
+    help=f'Output path. Defaults to "{DEFAULT_OUTPUT_PATH}".',
+    default=DEFAULT_OUTPUT_PATH,
+)
+@click.option(
+    "--number",
+    "-n",
+    "num_points_max",
+    help=f'Number of point_data. Defaults to "{DEFAULT_NUM_POINTS_MAX}".',
+    type=int,
+    default=DEFAULT_NUM_POINTS_MAX,
+)
 def genpts(cube: str, output_path: str, num_points_max: int):
-    """
-    Generate synthetic data points from CUBE.
+    """Generate synthetic data points from CUBE.
 
     Generates synthetic data points for a given data CUBE and write points to a CSV and GeoJSON file.
     The primary use of the tool is to point datasets for machine learning tasks
@@ -70,9 +60,15 @@ def genpts(cube: str, output_path: str, num_points_max: int):
         point = cube.isel(time=it, lat=iy, lon=ix)
 
         if _all_data_vars_valid(point):
-            point_data['time'].append(point.time.values + 0.5 * temporal_res * np.random.logistic(scale=0.2))
-            point_data['lat'].append(point.lat.values + 0.5 * spatial_res * np.random.logistic(scale=0.2))
-            point_data['lon'].append(point.lon.values + 0.5 * spatial_res * np.random.logistic(scale=0.2))
+            point_data["time"].append(
+                point.time.values + 0.5 * temporal_res * np.random.logistic(scale=0.2)
+            )
+            point_data["lat"].append(
+                point.lat.values + 0.5 * spatial_res * np.random.logistic(scale=0.2)
+            )
+            point_data["lon"].append(
+                point.lon.values + 0.5 * spatial_res * np.random.logistic(scale=0.2)
+            )
             for var_name, var in point.data_vars.items():
                 value = var.values
                 if np.issubdtype(value.dtype, np.floating):
@@ -80,11 +76,12 @@ def genpts(cube: str, output_path: str, num_points_max: int):
                 point_data[var_name].append(value)
             num_points += 1
 
-    if output_path.endswith('.csv'):
+    if output_path.endswith(".csv"):
         pd.DataFrame(point_data).to_csv(output_path)
-    elif output_path.endswith('.geojson'):
+    elif output_path.endswith(".geojson"):
         import json
-        with open(output_path, 'w') as fp:
+
+        with open(output_path, "w") as fp:
             json.dump(_to_geojson_dict(point_data, num_points), fp, indent=2)
 
 
@@ -93,11 +90,11 @@ def _to_geojson_dict(point_data, num_points):
 
     features = []
     for i in range(num_points):
-        x = float(point_data['lon'][i])
-        y = float(point_data['lat'][i])
+        x = float(point_data["lon"][i])
+        y = float(point_data["lat"][i])
         properties = {}
         for k, v in point_data.items():
-            if k in {'lon', 'lat'}:
+            if k in {"lon", "lat"}:
                 continue
             value = v[i]
             if np.issubdtype(value.dtype, np.floating):
@@ -107,20 +104,19 @@ def _to_geojson_dict(point_data, num_points):
             else:
                 value = int(value)
             properties[k] = value
-        features.append({
-            "type": "Feature",
-            "id": i,
-            "geometry": {
-                "type": "Point",
-                "coordinates": (x, y),
-            },
-            "properties": properties,
-        })
-    return {
-        "type": "FeatureCollection",
-        "features": features
-    }
+        features.append(
+            {
+                "type": "Feature",
+                "id": i,
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": (x, y),
+                },
+                "properties": properties,
+            }
+        )
+    return {"type": "FeatureCollection", "features": features}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     genpts.main()

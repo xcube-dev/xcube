@@ -1,15 +1,21 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from typing import Any
 import array
 
+
 # noinspection PyUnresolvedReferences
 class AlmostEqualDeepMixin:
-
-    def assertAlmostEqualDeep(self,
-                              first: Any,
-                              second: Any,
-                              msg: str = None,
-                              places: int = None,
-                              delta: float = None):
+    def assertAlmostEqualDeep(
+        self,
+        first: Any,
+        second: Any,
+        msg: str = None,
+        places: int = None,
+        delta: float = None,
+    ):
         """
         Performs self.assertAlmostEqual() on number, and numbers in dictionaries and sequences.
 
@@ -44,19 +50,25 @@ class AlmostEqualDeepMixin:
                 if key not in second:
                     self.assertEqual(first, second, msg=msg)  # fail
                 second_value = second[key]
-                self.assertAlmostEqualDeep(first_value, second_value, msg=msg, delta=delta, places=places)
+                self.assertAlmostEqualDeep(
+                    first_value, second_value, msg=msg, delta=delta, places=places
+                )
             for key, second_value in second.items():
                 if key not in first:
                     self.assertEqual(first, second, msg=msg)  # fail
             # success
             return
 
-        if isinstance(first, (list, tuple, array.array)) and isinstance(second, (list, tuple, array.array)):
+        if isinstance(first, (list, tuple, array.array)) and isinstance(
+            second, (list, tuple, array.array)
+        ):
             if len(first) != len(second):
                 # let fail
                 self.assertEqual(first, second, msg=msg)
             for first_value, second_value in zip(first, second):
-                self.assertAlmostEqualDeep(first_value, second_value, msg=msg, delta=delta, places=places)
+                self.assertAlmostEqualDeep(
+                    first_value, second_value, msg=msg, delta=delta, places=places
+                )
             # success
             return
 

@@ -1,8 +1,8 @@
-.. _xcube repository: https://github.com/dcs4cop/xcube/tree/master/examples/gen/data
+.. _xcube repository: https://github.com/dcs4cop/xcube/tree/main/examples/gen/data
 .. _Copernicus Marine Environment Monitoring Service: http://marine.copernicus.eu/
 .. _Product User Manual: http://resources.marine.copernicus.eu/documents/PUM/CMEMS-SST-PUM-010-001.pdf
-.. _configuration file: https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/xcube_sst_demo_config.yml
-.. _configuration file which takes Sentinel-3 Ocean and Land Colour Instrument (OLCI): https://github.com/dcs4cop/xcube/tree/master/examples/gen/config_files/xcube_olci_demo_config.yml
+.. _configuration file: https://github.com/dcs4cop/xcube/tree/main/examples/gen/config_files/xcube_sst_demo_config.yml
+.. _configuration file which takes Sentinel-3 Ocean and Land Colour Instrument (OLCI): https://github.com/dcs4cop/xcube/tree/main/examples/gen/config_files/xcube_olci_demo_config.yml
 
 .. warning:: This chapter is a work in progress and currently less than a draft.
 
@@ -27,7 +27,7 @@ Before starting the example, you need to activate the xcube environment:
 
     $ conda activate xcube
 
-If you want to take a look at the input data you can use :doc:`cli/xcube dump` to print out the metadata of a selected input file:
+If you want to take a look at the input data you can use :doc:`../cli/xcube_dump` to print out the metadata of a selected input file:
 
 ::
 
@@ -153,7 +153,7 @@ Optimizing and pruning a xcube dataset
 ======================================
 
 If you want to optimize your generated xcube dataset e.g. for publishing it in a xcube viewer via xcube serve
-you can use  :doc:`cli/xcube optimize`:
+you can use  :doc:`../cli/xcube_optimize`:
 
 ::
 
@@ -165,7 +165,7 @@ a file called .zmetadata. .zmetadata contains the information stored in .zattrs 
 xcube dataset and makes requests of metadata faster. The option ``-C`` optimizes coordinate variables by converting any
 chunked arrays into single, non-chunked, contiguous arrays.
 
-For deleting empty chunks :doc:`cli/xcube prune` can be used. It deletes all data files associated with empty (NaN-only)
+For deleting empty chunks :doc:`../cli/xcube_prune` can be used. It deletes all data files associated with empty (NaN-only)
 chunks of an xcube dataset, and is restricted to the ZARR format.
 
 ::
@@ -175,7 +175,7 @@ chunks of an xcube dataset, and is restricted to the ZARR format.
 The pruned xcube dataset is saved in place and does not need an output path. The size of the xcube dataset was 6,8 MB before pruning it
 and 6,5 MB afterwards. According to the output printed to the terminal, 30 block files were deleted.
 
-The metadata of the xcube dataset can be viewed with :doc:`cli/xcube dump` as well:
+The metadata of the xcube dataset can be viewed with :doc:`../cli/xcube_dump` as well:
 
 ::
 

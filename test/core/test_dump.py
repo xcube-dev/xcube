@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 from test.sampledata import new_test_dataset
@@ -6,12 +10,15 @@ from xcube.core.dump import dump_dataset
 
 class DumpDatasetTest(unittest.TestCase):
     def test_dump_dataset(self):
-        dataset = new_test_dataset(["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
-                                   precipitation=0.4, temperature=275.2)
+        dataset = new_test_dataset(
+            ["2010-01-01", "2010-01-02", "2010-01-03", "2010-01-04", "2010-01-05"],
+            precipitation=0.4,
+            temperature=275.2,
+        )
         for var in dataset.variables.values():
             var.encoding.update({"_FillValue": 999.0})
 
-        print(dataset.dims)
+        print(dataset.sizes)
 
         text = dump_dataset(dataset)
         self.assertIn("<xarray.Dataset>", text)
@@ -36,11 +43,15 @@ class DumpDatasetTest(unittest.TestCase):
         self.assertIn("    _FillValue:  999.0\n", text)
 
         text = dump_dataset(dataset, ["precipitation"])
-        self.assertIn("<xarray.DataArray 'precipitation' (time: 5, lat: 180, lon: 360)>\n", text)
+        precip_regex = (
+            r"<xarray\.DataArray 'precipitation' .*"
+            r"\(time: 5, lat: 180, lon: 360\)>( Size: 3MB)?\n"
+        )
+        self.assertRegex(text, precip_regex)
         self.assertNotIn("Encoding:\n", text)
         self.assertNotIn("    _FillValue:  999.0", text)
 
         text = dump_dataset(dataset, ["precipitation"], show_var_encoding=True)
-        self.assertIn("<xarray.DataArray 'precipitation' (time: 5, lat: 180, lon: 360)>\n", text)
+        self.assertRegex(text, precip_regex)
         self.assertIn("Encoding:\n", text)
         self.assertIn("    _FillValue:  999.0", text)

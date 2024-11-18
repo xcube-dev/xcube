@@ -1,5 +1,5 @@
-.. _xcube.core.gen.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/master/xcube/core/gen/iproc.py
-.. _setup.py: https://github.com/dcs4cop/xcube/blob/master/setup.py
+.. _xcube.core.gen.iproc.DefaultInputProcessor: https://github.com/dcs4cop/xcube/blob/main/xcube/core/gen/iproc.py
+.. _pyproject.toml: https://github.com/dcs4cop/xcube/blob/main/pyproject.toml
 .. _`Creating and discovering plugins`: https://packaging.python.org/guides/creating-and-discovering-plugins/
 .. _`Python Packing User Guide`: https://packaging.python.org/
 .. _`Dynamic Discovery of Services and Plugins`: https://setuptools.readthedocs.io/en/latest/setuptools.html#dynamic-discovery-of-services-and-plugins
@@ -30,7 +30,7 @@ Installing Plugins
 Plugins are installed by simply installing the plugin's package into xcube's Python environment.
 
 In order to be detected by xcube, an plugin package's name must either start with ``xcube_``
-or the plugin package's ``setup.py`` file must specify an entry point in the group
+or the plugin package's ``setup.py`` or ``pyproject.toml`` file must specify an entry point in the group
 ``xcube_plugins``. Details are provided below in section `plugin_development`_.
 
 
@@ -92,7 +92,7 @@ defines a non-empty entry point group ``xcube_plugins`` is an xcube plugin. An e
 ``xcube_plugins`` group has the format ``<name> = <fully-qualified-module-path>:<init-func-name>``,
 and therefore specifies where plugin *initializer function* named ``<init-func-name>`` is found.
 As an example, refer to the xcube standard plugin definitions in xcube's
-`setup.py`_ file.
+`pyproject.toml`_ file.
 
 For more information on Setuptools entry points refer to section `Creating and discovering plugins`_ in the
 `Python Packing User Guide`_ and `Dynamic Discovery of Services and Plugins`_ in the `Setuptools documentation`_.

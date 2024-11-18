@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import copy
 import json
 import unittest
@@ -18,59 +22,53 @@ from xcube.core.store import DatasetDescriptor
 from xcube.core.store import MutableDataStore
 from xcube.core.store import new_data_store
 
-CALLBACK_MOCK_URL = 'https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback'
+CALLBACK_MOCK_URL = "https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback"
 
 
 class LocalCubeGeneratorTest(unittest.TestCase):
-    REQUEST: Dict[str, Any] = dict(
-        input_config=dict(
-            store_id='memory',
-            data_id='S2L2A.zarr'
-        ),
+    REQUEST: dict[str, Any] = dict(
+        input_config=dict(store_id="memory", data_id="S2L2A.zarr"),
         cube_config=dict(
-            variable_names=['B01', 'B02', 'B03'],
-            crs='WGS84',
+            variable_names=["B01", "B02", "B03"],
+            crs="WGS84",
             bbox=[12.2, 52.1, 13.9, 54.8],
             spatial_res=0.05,
-            time_range=['2010-01-01', None],
-            time_period='4D',
+            time_range=["2010-01-01", None],
+            time_period="4D",
             chunks=dict(time=None, lat=90, lon=90),
-            metadata=dict(title='A S2L2A subset'),
+            metadata=dict(title="A S2L2A subset"),
             variable_metadata=dict(
-                B01=dict(long_name='Band 1'),
-                B02=dict(long_name='Band 2'),
-                B03=dict(long_name='Band 3'),
+                B01=dict(long_name="Band 1"),
+                B02=dict(long_name="Band 2"),
+                B03=dict(long_name="Band 3"),
             ),
         ),
         output_config=dict(
-            store_id='memory',
-            data_id='CHL.zarr',
+            store_id="memory",
+            data_id="CHL.zarr",
             replace=True,
         ),
-        callback_config=dict(
-            api_uri=CALLBACK_MOCK_URL,
-            access_token='dfsvdfsv'
-        )
+        callback_config=dict(api_uri=CALLBACK_MOCK_URL, access_token="dfsvdfsv"),
     )
 
     def setUp(self) -> None:
-        self.data_store: MutableDataStore = new_data_store('memory')
-        with open('_request.json', 'w') as fp:
+        self.data_store: MutableDataStore = new_data_store("memory")
+        with open("_request.json", "w") as fp:
             json.dump(self.REQUEST, fp)
-        with open('_request.yaml', 'w') as fp:
+        with open("_request.yaml", "w") as fp:
             yaml.dump(self.REQUEST, fp)
         self.data_store.write_data(
             new_cube(variables=dict(B01=0.1, B02=0.2, B03=0.3)),
-            'S2L2A.zarr',
+            "S2L2A.zarr",
             replace=True,
         )
 
     def tearDown(self) -> None:
-        rimraf('_request.json')
-        rimraf('_request.yaml')
-        self.data_store.delete_data('S2L2A.zarr')
-        if self.data_store.has_data('CHL.zarr'):
-            self.data_store.delete_data('CHL.zarr')
+        rimraf("_request.json")
+        rimraf("_request.yaml")
+        self.data_store.delete_data("S2L2A.zarr")
+        if self.data_store.has_data("CHL.zarr"):
+            self.data_store.delete_data("CHL.zarr")
 
     @requests_mock.Mocker()
     def test_generate_cube_from_dict(self, m):
@@ -80,45 +78,45 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     @requests_mock.Mocker()
     def test_generate_cube_from_json(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        self.assertGeneratedCubeOk('_request.json')
+        self.assertGeneratedCubeOk("_request.json")
 
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
-        self.assertGeneratedCubeOk('_request.yaml')
+        self.assertGeneratedCubeOk("_request.yaml")
 
     def assertGeneratedCubeOk(self, request):
         generator = LocalCubeGenerator(verbosity=1)
         result = generator.generate_cube(request)
         self.assertIsInstance(result, CubeGeneratorResult)
-        self.assertEqual('ok', result.status)
+        self.assertEqual("ok", result.status)
         self.assertEqual(201, result.status_code)
         cube_reference = result.result
         self.assertIsInstance(cube_reference, CubeReference)
-        self.assertEqual('CHL.zarr', cube_reference.data_id)
+        self.assertEqual("CHL.zarr", cube_reference.data_id)
         dataset = self.data_store.open_data(cube_reference.data_id)
         self.assertIsInstance(dataset, xr.Dataset)
-        self.assertIn('B01', dataset)
-        self.assertIn('B02', dataset)
-        self.assertIn('B03', dataset)
-        self.assertEqual('A S2L2A subset', dataset.attrs.get('title'))
-        self.assertEqual('Band 1', dataset.B01.attrs.get('long_name'))
-        self.assertEqual('Band 2', dataset.B02.attrs.get('long_name'))
-        self.assertEqual('Band 3', dataset.B03.attrs.get('long_name'))
+        self.assertIn("B01", dataset)
+        self.assertIn("B02", dataset)
+        self.assertIn("B03", dataset)
+        self.assertEqual("A S2L2A subset", dataset.attrs.get("title"))
+        self.assertEqual("Band 1", dataset.B01.attrs.get("long_name"))
+        self.assertEqual("Band 2", dataset.B02.attrs.get("long_name"))
+        self.assertEqual("Band 3", dataset.B03.attrs.get("long_name"))
 
     @requests_mock.Mocker()
     def test_generate_cube_from_yaml_empty(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
         request = copy.deepcopy(self.REQUEST)
-        request['cube_config']['time_range'] = ['2019-01-01', '2020-01-01']
+        request["cube_config"]["time_range"] = ["2019-01-01", "2020-01-01"]
 
         generator = LocalCubeGenerator()
         result = generator.generate_cube(request)
-        self.assertEqual('warning', result.status)
+        self.assertEqual("warning", result.status)
         self.assertEqual(422, result.status_code)
         self.assertEqual(None, result.result)
         self.assertIsInstance(result.message, str)
-        self.assertIn('An empty cube has been generated', result.message)
+        self.assertIn("An empty cube has been generated", result.message)
         self.assertEqual(None, generator.generated_data_id)
         self.assertEqual(None, generator.generated_cube, xr.Dataset)
         self.assertEqual(None, generator.generated_gm)
@@ -127,23 +125,25 @@ class LocalCubeGeneratorTest(unittest.TestCase):
     def test_generate_cube_with_internal_error(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
         request = self.REQUEST.copy()
-        request['cube_config']['metadata'] = {
-            'inverse_fine_structure_constant': 138
-        }
+        request["cube_config"]["metadata"] = {"inverse_fine_structure_constant": 138}
 
         generator = LocalCubeGenerator()
         with self.assertRaises(ValueError) as cm:
             generator.generate_cube(request)
-        self.assertEqual(('inverse_fine_structure_constant must be 137'
-                          ' or running in wrong universe',),
-                         cm.exception.args)
+        self.assertEqual(
+            (
+                "inverse_fine_structure_constant must be 137"
+                " or running in wrong universe",
+            ),
+            cm.exception.args,
+        )
 
     @requests_mock.Mocker()
     def test_get_cube_info_from_dict(self, m):
         m.put(CALLBACK_MOCK_URL, json={})
         result = LocalCubeGenerator(verbosity=1).get_cube_info(self.REQUEST)
         self.assertIsInstance(result, CubeInfoResult)
-        self.assertEqual('ok', result.status)
+        self.assertEqual("ok", result.status)
         self.assertEqual(200, result.status_code)
         cube_info = result.result
         self.assertIsInstance(cube_info, CubeInfo)
@@ -152,6 +152,7 @@ class LocalCubeGeneratorTest(unittest.TestCase):
         # JSON-serialisation smoke test
         cube_info_dict = result.to_dict()
         json.dumps(cube_info_dict, indent=2)
+
 
 # class CubeGeneratorS3Input(S3Test):
 #     BUCKET_NAME = 'xcube-s3-test'

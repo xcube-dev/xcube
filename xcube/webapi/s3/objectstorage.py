@@ -1,26 +1,10 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import collections.abc
-from typing import Union, Iterator, Tuple, Mapping
+from typing import Union, Tuple
+from collections.abc import Iterator, Mapping
 
 import xarray as xr
 import zarr.storage
@@ -37,15 +21,12 @@ class ObjectStorage(collections.abc.Mapping):
     * "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
     * "{dataset_id}/{*path}" for other datasets.
 
-    :param datasets: Mapping from dataset Identifier
-        to (multi-level) datasets.
+    Args:
+        datasets: Mapping from dataset Identifier to (multi-level)
+            datasets.
     """
 
-    def __init__(self,
-                 datasets: Mapping[
-                     str,
-                     Union[xr.Dataset, MultiLevelDataset]
-                 ]):
+    def __init__(self, datasets: Mapping[str, Union[xr.Dataset, MultiLevelDataset]]):
         self.datasets = datasets
 
     def __len__(self) -> int:
@@ -68,7 +49,8 @@ class ObjectStorage(collections.abc.Mapping):
     def __contains__(self, key: str) -> bool:
         """Overridden to avoid a call to __getitem__(),
         which will load data, but we want this to happen
-        for direct __getitem__() calls only."""
+        for direct __getitem__() calls only.
+        """
         try:
             zarr_store, item_key = self._parse_key(key)
         except (KeyError, ApiError.NotFound):
@@ -89,7 +71,7 @@ class ObjectStorage(collections.abc.Mapping):
             )
         return value
 
-    def _parse_key(self, key: str) -> Tuple[zarr.storage.BaseStore, str]:
+    def _parse_key(self, key: str) -> tuple[zarr.storage.BaseStore, str]:
         """Parses a given *key* which is expected to have format
         "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
         "{dataset_id}/{*path}" for other datasets.

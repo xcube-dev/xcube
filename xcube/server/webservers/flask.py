@@ -1,26 +1,10 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import concurrent.futures
-from typing import Sequence, Union, Callable, Optional, Any, Awaitable, Tuple
+from typing import Union, Callable, Optional, Any, Tuple
+from collections.abc import Sequence, Awaitable
 
 from xcube.server.api import ApiRoute
 from xcube.server.api import ApiStaticRoute
@@ -31,8 +15,7 @@ from xcube.util.jsonschema import JsonObjectSchema
 
 
 class FlaskFramework(Framework):
-    """
-    The Flask web server framework.
+    """The Flask web server framework.
 
     TODO: implement me!
     """
@@ -41,14 +24,12 @@ class FlaskFramework(Framework):
     def config_schema(self) -> Optional[JsonObjectSchema]:
         return None
 
-    def add_static_routes(self,
-                          static_routes: Sequence[ApiStaticRoute],
-                          url_prefix: str):
+    def add_static_routes(
+        self, static_routes: Sequence[ApiStaticRoute], url_prefix: str
+    ):
         raise NotImplementedError()
 
-    def add_routes(self,
-                   routes: Sequence[ApiRoute],
-                   url_prefix: str):
+    def add_routes(self, routes: Sequence[ApiRoute], url_prefix: str):
         raise NotImplementedError()
 
     def update(self, ctx: Context):
@@ -60,16 +41,16 @@ class FlaskFramework(Framework):
     def stop(self, ctx: Context):
         raise NotImplementedError()
 
-    def call_later(self,
-                   delay: Union[int, float],
-                   callback: Callable,
-                   *args,
-                   **kwargs) -> object:
+    def call_later(
+        self, delay: Union[int, float], callback: Callable, *args, **kwargs
+    ) -> object:
         raise NotImplementedError()
 
-    def run_in_executor(self,
-                        executor: Optional[concurrent.futures.Executor],
-                        function: Callable[..., ReturnT],
-                        *args: Any,
-                        **kwargs: Any) -> Awaitable[ReturnT]:
+    def run_in_executor(
+        self,
+        executor: Optional[concurrent.futures.Executor],
+        function: Callable[..., ReturnT],
+        *args: Any,
+        **kwargs: Any
+    ) -> Awaitable[ReturnT]:
         raise NotImplementedError()

@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import xarray as xr
@@ -15,9 +19,12 @@ class IdentityMultiLevelDatasetTest(unittest.TestCase):
         mlds = BaseMultiLevelDataset(get_test_dataset())
         mmlds = MappedMultiLevelDataset(mlds, map_ds)
         self.assertEqual(mmlds.num_levels, mlds.num_levels)
-        self.assertEqual(set(mmlds.base_dataset.data_vars),
-                         set(mlds.base_dataset.data_vars))
-        self.assertEqual(set(mmlds.base_dataset.data_vars),
-                         set(mlds.base_dataset.data_vars))
-        xr.testing.assert_allclose(mmlds.base_dataset.noise,
-                                   2 * mlds.base_dataset.noise)
+        self.assertEqual(
+            set(mmlds.base_dataset.data_vars), set(mlds.base_dataset.data_vars)
+        )
+        self.assertEqual(
+            set(mmlds.base_dataset.data_vars), set(mlds.base_dataset.data_vars)
+        )
+        xr.testing.assert_allclose(
+            mmlds.base_dataset.noise, 2 * mlds.base_dataset.noise
+        )

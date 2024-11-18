@@ -1,41 +1,32 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import xarray as xr
 
 from xcube.core.verify import assert_cube
 
 
-def vars_to_dim(cube: xr.Dataset,
-                dim_name: str = 'var',
-                var_name='data',
-                cube_asserted: bool = False):
-    """
-    Convert data variables into a dimension.
+def vars_to_dim(
+    cube: xr.Dataset,
+    dim_name: str = "var",
+    var_name="data",
+    cube_asserted: bool = False,
+):
+    """Convert data variables into a dimension.
 
-    :param cube: The xcube dataset.
-    :param dim_name: The name of the new dimension and coordinate variable. Defaults to 'var'.
-    :param var_name: The name of the new, single data variable. Defaults to 'data'.
-    :param cube_asserted: If False, *cube* will be verified, otherwise it is expected to be a valid cube.
-    :return: A new xcube dataset with data variables turned into a new dimension.
+    Args:
+        cube: The xcube dataset.
+        dim_name: The name of the new dimension and coordinate variable.
+            Defaults to 'var'.
+        var_name: The name of the new, single data variable. Defaults to
+            'data'.
+        cube_asserted: If False, *cube* will be verified, otherwise it
+            is expected to be a valid cube.
+
+    Returns:
+        A new xcube dataset with data variables turned into a new
+        dimension.
     """
 
     if not cube_asserted:

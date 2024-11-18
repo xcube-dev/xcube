@@ -1,28 +1,12 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import threading
 import uuid
 from abc import abstractmethod, ABCMeta
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, Optional
+from collections.abc import Mapping
 
 import xarray as xr
 
@@ -36,24 +20,27 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     i.e. read or computed by the abstract method
     ``get_dataset_lazily(index, **kwargs)``.
 
-    :param ds_id: Optional dataset identifier.
-    :param parameters: Optional keyword arguments that will be
-        passed to the ``get_dataset_lazily`` method.
+    Args:
+        ds_id: Optional dataset identifier.
+        parameters: Optional keyword arguments that will be passed to
+            the ``get_dataset_lazily`` method.
     """
 
-    def __init__(self,
-                 grid_mapping: Optional[GridMapping] = None,
-                 num_levels: Optional[int] = None,
-                 ds_id: Optional[str] = None,
-                 parameters: Optional[Mapping[str, Any]] = None):
+    def __init__(
+        self,
+        grid_mapping: Optional[GridMapping] = None,
+        num_levels: Optional[int] = None,
+        ds_id: Optional[str] = None,
+        parameters: Optional[Mapping[str, Any]] = None,
+    ):
         if grid_mapping is not None:
-            assert_instance(grid_mapping, GridMapping, name='grid_mapping')
+            assert_instance(grid_mapping, GridMapping, name="grid_mapping")
         if ds_id is not None:
-            assert_instance(ds_id, str, name='ds_id')
+            assert_instance(ds_id, str, name="ds_id")
         self._grid_mapping = grid_mapping
         self._num_levels = num_levels
         self._ds_id = ds_id
-        self._level_datasets: Dict[int, xr.Dataset] = {}
+        self._level_datasets: dict[int, xr.Dataset] = {}
         self._parameters = parameters or {}
         self._lock = threading.RLock()
 
@@ -66,7 +53,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
 
     @ds_id.setter
     def ds_id(self, ds_id: str):
-        assert_instance(ds_id, str, name='ds_id')
+        assert_instance(ds_id, str, name="ds_id")
         self._ds_id = ds_id
 
     @property
@@ -93,14 +80,16 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def get_dataset(self, index: int) -> xr.Dataset:
         """Get or compute the dataset for the level at given *index*.
 
-        :param index: the level index
-        :return: the dataset for the level at *index*.
+        Args:
+            index: the level index
+
+        Returns:
+            the dataset for the level at *index*.
         """
         if index not in self._level_datasets:
             with self._lock:
                 # noinspection PyTypeChecker
-                level_dataset = self._get_dataset_lazily(index,
-                                                         self._parameters)
+                level_dataset = self._get_dataset_lazily(index, self._parameters)
                 self.set_dataset(index, level_dataset)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
@@ -112,8 +101,9 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         has the correct spatial dimension sizes for the
         given level at *index*.
 
-        :param index: the level index
-        :param level_dataset: the dataset for the level at *index*.
+        Args:
+            index: the level index
+            level_dataset: the dataset for the level at *index*.
         """
         with self._lock:
             self._level_datasets[index] = level_dataset
@@ -122,26 +112,30 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def _get_num_levels_lazily(self) -> int:
         """Retrieve, i.e. read or compute, the number of levels.
 
-        :return: the number of dataset levels.
+        Returns:
+            the number of dataset levels.
         """
 
     @abstractmethod
-    def _get_dataset_lazily(self, index: int,
-                            parameters: Dict[str, Any]) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, parameters: dict[str, Any]) -> xr.Dataset:
         """Retrieve, i.e. read or compute, the dataset for the
         level at given *index*.
 
-        :param index: the level index
-        :param parameters: *parameters* keyword argument that
-            was passed to constructor.
-        :return: the dataset for the level at *index*.
+        Args:
+            index: the level index
+            parameters: *parameters* keyword argument that was passed to
+                constructor.
+
+        Returns:
+            the dataset for the level at *index*.
         """
 
     def _get_grid_mapping_lazily(self) -> GridMapping:
         """Retrieve, i.e. read or compute, the tile grid used
         by the multi-level dataset.
 
-        :return: the dataset for the level at *index*.
+        Returns:
+            the dataset for the level at *index*.
         """
         return GridMapping.from_dataset(self.get_dataset(0))
 

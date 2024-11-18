@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 import dask.array as da
@@ -9,75 +13,113 @@ from xcube.core.gridmapping.bboxes import compute_xy_bbox
 
 
 class ComputeIJBBoxesTest(unittest.TestCase):
-
     def setUp(self) -> None:
-        lon = xr.DataArray(np.linspace(10., 20., 11), dims='x')
-        lat = xr.DataArray(np.linspace(50., 60., 11), dims='y')
+        lon = xr.DataArray(np.linspace(10.0, 20.0, 11), dims="x")
+        lat = xr.DataArray(np.linspace(50.0, 60.0, 11), dims="y")
         lat, lon = xr.broadcast(lat, lon)
         self.lon_values = lon.values
         self.lat_values = lat.values
 
     def test_all_included(self):
-        xy_bboxes = np.array([[10., 50., 20., 60.]])
+        xy_bboxes = np.array([[10.0, 50.0, 20.0, 60.0]])
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[0, 0, 11, 11]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes, np.array([[0, 0, 11, 11]], dtype=np.int64)
+        )
 
     def test_tiles(self):
-        a0 = 0.
-        a1 = a0 + 5.
-        a2 = a1 + 5.
-        xy_bboxes = np.array([[10. + a0, 50. + a0, 10. + a1, 50. + a1],
-                              [10. + a1, 50. + a0, 10. + a2, 50. + a1],
-                              [10. + a0, 50. + a1, 10. + a1, 50. + a2],
-                              [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
+        a0 = 0.0
+        a1 = a0 + 5.0
+        a2 = a1 + 5.0
+        xy_bboxes = np.array(
+            [
+                [10.0 + a0, 50.0 + a0, 10.0 + a1, 50.0 + a1],
+                [10.0 + a1, 50.0 + a0, 10.0 + a2, 50.0 + a1],
+                [10.0 + a0, 50.0 + a1, 10.0 + a1, 50.0 + a2],
+                [10.0 + a1, 50.0 + a1, 10.0 + a2, 50.0 + a2],
+            ]
+        )
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[0, 0, 6, 6],
-                                                 [5, 0, 11, 6],
-                                                 [0, 5, 6, 11],
-                                                 [5, 5, 11, 11]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes,
+            np.array(
+                [[0, 0, 6, 6], [5, 0, 11, 6], [0, 5, 6, 11], [5, 5, 11, 11]],
+                dtype=np.int64,
+            ),
+        )
 
     def test_none_found(self):
-        a0 = 11.
-        a1 = a0 + 5.
-        a2 = a1 + 5.
-        xy_bboxes = np.array([[10. + a0, 50. + a0, 10. + a1, 50. + a1],
-                              [10. + a1, 50. + a0, 10. + a2, 50. + a1],
-                              [10. + a0, 50. + a1, 10. + a1, 50. + a2],
-                              [10. + a1, 50. + a1, 10. + a2, 50. + a2]])
+        a0 = 11.0
+        a1 = a0 + 5.0
+        a2 = a1 + 5.0
+        xy_bboxes = np.array(
+            [
+                [10.0 + a0, 50.0 + a0, 10.0 + a1, 50.0 + a1],
+                [10.0 + a1, 50.0 + a0, 10.0 + a2, 50.0 + a1],
+                [10.0 + a0, 50.0 + a1, 10.0 + a1, 50.0 + a2],
+                [10.0 + a1, 50.0 + a1, 10.0 + a2, 50.0 + a2],
+            ]
+        )
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[-1, -1, -1, -1],
-                                                 [-1, -1, -1, -1],
-                                                 [-1, -1, -1, -1],
-                                                 [-1, -1, -1, -1]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes,
+            np.array(
+                [
+                    [-1, -1, -1, -1],
+                    [-1, -1, -1, -1],
+                    [-1, -1, -1, -1],
+                    [-1, -1, -1, -1],
+                ],
+                dtype=np.int64,
+            ),
+        )
 
     def test_with_border(self):
         xy_bboxes = np.array([[12.4, 51.6, 12.6, 51.7]])
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[-1, -1, -1, -1]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 0.0, 0, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes, np.array([[-1, -1, -1, -1]], dtype=np.int64)
+        )
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 0.5, 0, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[2, 2, 4, 3]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 0.5, 0, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes, np.array([[2, 2, 4, 3]], dtype=np.int64)
+        )
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 1.0, 0, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[2, 1, 4, 3]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 1.0, 0, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes, np.array([[2, 1, 4, 3]], dtype=np.int64)
+        )
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 2.0, 0, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[1, 0, 5, 4]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 2.0, 0, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes, np.array([[1, 0, 5, 4]], dtype=np.int64)
+        )
         ij_bboxes = np.full_like(xy_bboxes, -1, dtype=np.int64)
-        compute_ij_bboxes(self.lon_values, self.lat_values, xy_bboxes, 2.0, 2, ij_bboxes)
-        np.testing.assert_almost_equal(ij_bboxes,
-                                       np.array([[0, 0, 7, 6]], dtype=np.int64))
+        compute_ij_bboxes(
+            self.lon_values, self.lat_values, xy_bboxes, 2.0, 2, ij_bboxes
+        )
+        np.testing.assert_almost_equal(
+            ij_bboxes, np.array([[0, 0, 7, 6]], dtype=np.int64)
+        )
 
 
 class ComputeXYBBoxTest(unittest.TestCase):
@@ -112,11 +154,12 @@ class ComputeXYBBoxTest(unittest.TestCase):
         x = np.full(h * w, np.nan)
         y = np.full(h * w, np.nan)
 
-        x[np.random.randint(0, w)] = 73.
-        y[np.random.randint(0, h)] = 34.
+        x[np.random.randint(0, w)] = 73.0
+        y[np.random.randint(0, h)] = 34.0
 
-        xy_coords = da.array([x.reshape((h, w)), y.reshape((h, w))], dtype=np.float64) \
-            .rechunk((2, 512, 512))
+        xy_coords = da.array(
+            [x.reshape((h, w)), y.reshape((h, w))], dtype=np.float64
+        ).rechunk((2, 512, 512))
         xy_bbox = compute_xy_bbox(xy_coords)
 
-        self.assertEqual((73., 34., 73., 34.), xy_bbox)
+        self.assertEqual((73.0, 34.0, 73.0, 34.0), xy_bbox)

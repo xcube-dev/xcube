@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 from typing import Tuple, Union
 
 import dask.array as da
@@ -27,31 +10,30 @@ import xarray as xr
 
 
 @nb.jit(nopython=True, nogil=True, parallel=True, cache=True)
-def compute_ij_bboxes(x_image: np.ndarray,
-                      y_image: np.ndarray,
-                      xy_boxes: np.ndarray,
-                      xy_border: float,
-                      ij_border: int,
-                      ij_boxes: np.ndarray):
-    """
-    Compute bounding boxes in the image's i,j coordinates from given
+def compute_ij_bboxes(
+    x_image: np.ndarray,
+    y_image: np.ndarray,
+    xy_boxes: np.ndarray,
+    xy_border: float,
+    ij_border: int,
+    ij_boxes: np.ndarray,
+):
+    """Compute bounding boxes in the image's i,j coordinates from given
     x,y coordinates *x_image*, *y_image* and bounding boxes
     in x,y coordinates *xy_boxes*.
 
     *ij_boxes* must be pre-allocated to match shape of
     *xy_boxes* and initialised with negative integers.
 
-    :param x_image: The x coordinates image.
-        A 2D array of shape (height, width).
-    :param y_image: The y coordinates image.
-        A 2D array of shape (height, width).
-    :param xy_boxes: The x,y bounding boxes.
-    :param xy_border: A border added to the
-        x,y bounding boxes.
-    :param ij_border: A border added to the resulting
-        i,j bounding boxes.
-    :param ij_boxes: The resulting
-        i,j bounding boxes.
+    Args:
+        x_image: The x coordinates image. A 2D array of shape (height,
+            width).
+        y_image: The y coordinates image. A 2D array of shape (height,
+            width).
+        xy_boxes: The x,y bounding boxes.
+        xy_border: A border added to the x,y bounding boxes.
+        ij_border: A border added to the resulting i,j bounding boxes.
+        ij_boxes: The resulting i,j bounding boxes.
     """
     h = x_image.shape[0]
     w = x_image.shape[1]
@@ -108,8 +90,9 @@ def compute_ij_bboxes(x_image: np.ndarray,
             ij_bbox[3] = j_max
 
 
-def compute_xy_bbox(xy_coords: Union[xr.DataArray, np.ndarray, da.Array]) \
-        -> Tuple[float, float, float, float]:
+def compute_xy_bbox(
+    xy_coords: Union[xr.DataArray, np.ndarray, da.Array]
+) -> tuple[float, float, float, float]:
     xy_coords = da.asarray(xy_coords)
     result = da.reduction(
         xy_coords,
@@ -119,8 +102,7 @@ def compute_xy_bbox(xy_coords: Union[xr.DataArray, np.ndarray, da.Array]) \
         # concatenate=False,
         dtype=xy_coords.dtype,
         axis=(1, 2),
-        meta=np.array([[0, 0], [0, 0]],
-                      dtype=xy_coords.dtype)
+        meta=np.array([[0, 0], [0, 0]], dtype=xy_coords.dtype),
     )
     x_min, x_max, y_min, y_max = map(float, result.compute().flatten())
     return x_min, y_min, x_max, y_max
@@ -165,5 +147,4 @@ def compute_xy_bbox_block(xy_block: np.ndarray, axis: int, keepdims: bool):
     y_min = y_min if y_min != np.inf else np.nan
     x_max = x_max if x_max != -np.inf else np.nan
     y_max = y_max if y_max != -np.inf else np.nan
-    return np.array([[[x_min, x_max]], [[y_min, y_max]]],
-                    dtype=xy_block.dtype)
+    return np.array([[[x_min, x_max]], [[y_min, y_max]]], dtype=xy_block.dtype)

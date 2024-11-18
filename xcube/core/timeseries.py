@@ -1,26 +1,10 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Union, Sequence, Optional, AbstractSet, Set
+from typing import AbstractSet, Optional, Union
+from collections.abc import Sequence
 
 import numpy as np
 import pyproj
@@ -34,18 +18,20 @@ from xcube.core.geom import normalize_geometry
 from xcube.core.geom import get_dataset_geometry
 from xcube.core.geom import mask_dataset_by_geometry
 from xcube.core.gridmapping import GridMapping
-from xcube.core.select import select_variables_subset
+from xcube.core.varexpr import VarExprContext
+from xcube.core.varexpr import split_var_assignment
 from xcube.util.timeindex import ensure_time_index_compatible
 from xcube.util.assertions import assert_instance
+from xcube.constants import CRS_CRS84
 
 Date = Union[np.datetime64, str]
 
-AGG_MEAN = 'mean'
-AGG_MEDIAN = 'median'
-AGG_STD = 'std'
-AGG_MIN = 'min'
-AGG_MAX = 'max'
-AGG_COUNT = 'count'
+AGG_MEAN = "mean"
+AGG_MEDIAN = "median"
+AGG_STD = "std"
+AGG_MIN = "min"
+AGG_MAX = "max"
+AGG_COUNT = "count"
 
 MUST_LOAD = True
 CAN_COMPUTE = False
@@ -56,25 +42,22 @@ AGG_METHODS = {
     AGG_STD: CAN_COMPUTE,
     AGG_MIN: CAN_COMPUTE,
     AGG_MAX: CAN_COMPUTE,
-    AGG_COUNT: CAN_COMPUTE
+    AGG_COUNT: CAN_COMPUTE,
 }
-
-_CRS84 = pyproj.CRS.from_string('CRS84')
 
 
 def get_time_series(
-        cube: xr.Dataset,
-        grid_mapping: Optional[GridMapping] = None,
-        geometry: Optional[GeometryLike] = None,
-        var_names: Optional[Sequence[str]] = None,
-        start_date: Optional[Date] = None,
-        end_date: Optional[Date] = None,
-        agg_methods: Union[str, Sequence[str], AbstractSet[str]] = AGG_MEAN,
-        use_groupby: bool = False,
-        cube_asserted: Optional[bool] = None
+    dataset: xr.Dataset,
+    grid_mapping: Optional[GridMapping] = None,
+    geometry: Optional[GeometryLike] = None,
+    var_names: Optional[Sequence[str]] = None,
+    start_date: Optional[Date] = None,
+    end_date: Optional[Date] = None,
+    agg_methods: Union[str, Sequence[str], AbstractSet[str]] = AGG_MEAN,
+    use_groupby: bool = False,
+    cube_asserted: Optional[bool] = None,
 ) -> Optional[xr.Dataset]:
-    """
-    Get a time series dataset from a data *cube*.
+    """Get a time series dataset from a data *cube*.
 
     *geometry* may be provided as a (shapely) geometry object, a valid
     GeoJSON object, a valid WKT string,
@@ -97,38 +80,56 @@ def get_time_series(
     output variables remain,
     the function returns ``None``.
 
-    :param cube: The xcube dataset
-    :param grid_mapping: Grid mapping of *cube*.
-    :param geometry: Optional geometry
-    :param var_names: Optional sequence of names of variables to be included.
-    :param start_date: Optional start date.
-    :param end_date: Optional end date.
-    :param agg_methods: Aggregation methods. May be single string or
-        sequence of strings. Possible values are
-        'mean', 'median', 'min', 'max', 'std', 'count'. Defaults to 'mean'.
-        Ignored if geometry is a point.
-    :param use_groupby: Use group-by operation. May increase or decrease
-        runtime performance and/or memory consumption.
-    :param cube_asserted: Deprecated and ignored since xcube 0.11.0.
-        No replacement.
+    Args:
+        dataset: The dataset
+        grid_mapping: Grid mapping of *cube*.
+        geometry: Optional geometry
+        var_names: Optional sequence of names of variables to be
+            included.
+        start_date: Optional start date.
+        end_date: Optional end date.
+        agg_methods: Aggregation methods. May be single string or
+            sequence of strings. Possible values are 'mean', 'median',
+            'min', 'max', 'std', 'count'. Defaults to 'mean'. Ignored if
+            geometry is a point.
+        use_groupby: Use group-by operation. May increase or decrease
+            runtime performance and/or memory consumption.
+        cube_asserted: Deprecated and ignored since xcube 0.11.0. No
+            replacement.
     """
     if cube_asserted is not None:
-        warnings.warn('cube_asserted has been deprecated'
-                      ' and will be removed soon.', DeprecationWarning)
-    assert_instance(cube, xr.Dataset)
+        warnings.warn(
+            "cube_asserted has been deprecated" " and will be removed soon.",
+            DeprecationWarning,
+        )
+    assert_instance(dataset, xr.Dataset)
     if grid_mapping is not None:
         assert_instance(grid_mapping, GridMapping)
     else:
-        grid_mapping = GridMapping.from_dataset(cube)
+        grid_mapping = GridMapping.from_dataset(dataset)
 
     geometry = normalize_geometry(geometry)
     if geometry is not None and not grid_mapping.crs.is_geographic:
-        project = pyproj.Transformer.from_crs(_CRS84,
-                                              grid_mapping.crs,
-                                              always_xy=True).transform
+        project = pyproj.Transformer.from_crs(
+            CRS_CRS84, grid_mapping.crs, always_xy=True
+        ).transform
         geometry = shapely.ops.transform(project, geometry)
 
-    dataset = select_variables_subset(cube, var_names)
+    if var_names is not None:
+        data_vars: dict[str, xr.DataArray] = {}
+        for var_name_or_assign in var_names:
+            var_name, var_expr = split_var_assignment(var_name_or_assign)
+            if var_expr:
+                variable = VarExprContext(dataset).evaluate(var_expr)
+            else:
+                var_name = var_name_or_assign
+                variable = dataset[var_name]
+
+            if isinstance(variable, xr.DataArray) and "time" in variable.dims:
+                data_vars[var_name] = variable
+
+        dataset = xr.Dataset(data_vars)
+
     if len(dataset.data_vars) == 0:
         return None
 
@@ -143,35 +144,38 @@ def get_time_series(
         if not bounds.contains(geometry):
             return None
         indexers = {x_name: geometry.x, y_name: geometry.y}
-        dataset = dataset.sel(**indexers, method='Nearest')
+        dataset = dataset.sel(**indexers, method="Nearest")
         return dataset.assign_attrs(max_number_of_observations=1)
 
     agg_methods = normalize_agg_methods(agg_methods)
 
     if geometry is not None:
-        dataset = mask_dataset_by_geometry(dataset, geometry,
-                                           save_geometry_mask='__mask__')
+        dataset = mask_dataset_by_geometry(
+            dataset,
+            geometry,
+            update_attrs=False,
+            save_geometry_mask="__mask__",
+        )
         if dataset is None:
             return None
-        mask = dataset['__mask__']
+        mask = dataset["__mask__"]
         max_number_of_observations = np.count_nonzero(mask)
-        dataset = dataset.drop_vars(['__mask__'])
+        dataset = dataset.drop_vars(["__mask__"])
     else:
-        max_number_of_observations = \
-            dataset[y_name].size * dataset[x_name].size
+        max_number_of_observations = dataset[y_name].size * dataset[x_name].size
 
-    must_load = len(agg_methods) > 1 \
-                or any(AGG_METHODS[agg_method] == MUST_LOAD
-                       for agg_method in agg_methods)
+    must_load = len(agg_methods) > 1 or any(
+        AGG_METHODS[agg_method] == MUST_LOAD for agg_method in agg_methods
+    )
     if must_load:
         dataset.load()
 
     agg_datasets = []
     if use_groupby:
-        time_group = dataset.groupby('time')
+        time_group = dataset.groupby("time")
         for agg_method in agg_methods:
             method = getattr(time_group, agg_method)
-            if agg_method == 'count':
+            if agg_method == "count":
                 agg_dataset = method(dim=xr.ALL_DIMS)
             else:
                 agg_dataset = method(dim=xr.ALL_DIMS, skipna=True)
@@ -179,7 +183,7 @@ def get_time_series(
     else:
         for agg_method in agg_methods:
             method = getattr(dataset, agg_method)
-            if agg_method == 'count':
+            if agg_method == "count":
                 agg_dataset = method(dim=(y_name, x_name))
             else:
                 agg_dataset = method(dim=(y_name, x_name), skipna=True)
@@ -200,17 +204,18 @@ def get_time_series(
     return ts_dataset
 
 
-def normalize_agg_methods(agg_methods: Union[str, Sequence[str]],
-                          exception_type=ValueError) -> Set[str]:
+def normalize_agg_methods(
+    agg_methods: Union[str, Sequence[str]], exception_type=ValueError
+) -> set[str]:
     agg_methods = agg_methods or [AGG_MEAN]
     if isinstance(agg_methods, str):
         agg_methods = [agg_methods]
     agg_methods = set(agg_methods)
     invalid_agg_methods = agg_methods - set(AGG_METHODS.keys())
     if invalid_agg_methods:
-        s = 's' if len(invalid_agg_methods) > 1 else ''
+        s = "s" if len(invalid_agg_methods) > 1 else ""
         raise exception_type(
-            f'invalid aggregation method{s}:'
+            f"invalid aggregation method{s}:"
             f' {", ".join(sorted(list(invalid_agg_methods)))}'
         )
     return agg_methods

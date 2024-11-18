@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import functools
 import math
@@ -31,11 +14,12 @@ from xcube.util.config import to_resolved_name_dict_pairs
 from xcube.util.expression import compute_array_expr
 
 
-def evaluate_dataset(dataset: xr.Dataset,
-                     processed_variables: NameDictPairList = None,
-                     errors: str = 'raise') -> xr.Dataset:
-    """
-    Compute new variables or mask existing variables in *dataset*
+def evaluate_dataset(
+    dataset: xr.Dataset,
+    processed_variables: NameDictPairList = None,
+    errors: str = "raise",
+) -> xr.Dataset:
+    """Compute new variables or mask existing variables in *dataset*
     by the evaluation of Python expressions, that may refer to other
     existing or new variables.
     Returns a new dataset that contains the old and new variables,
@@ -52,11 +36,11 @@ def evaluate_dataset(dataset: xr.Dataset,
     2. The attribute ``valid_pixel_expression`` masks out
        invalid variable values.
 
-    In both cases the attribuite value must be a string that forms
+    In both cases the attribute value must be a string that forms
     a valid Python expression that can reference any other preceding
     variables by name.
     The expression can also reference any flags defined by another
-    variable according the their CF attributes ``flag_meaning``
+    variable according to their CF attributes ``flag_meaning``
     and ``flag_values``.
 
     Invalid variable values may be masked out using the value the
@@ -67,12 +51,15 @@ def evaluate_dataset(dataset: xr.Dataset,
 
     Other attributes will be stored as variable metadata as-is.
 
-    :param dataset: A dataset.
-    :param processed_variables: Optional list of variable
-        name-attributes pairs that will processed in the given order.
-    :param errors: How to deal with errors while evaluating expressions.
-           May be be one of "raise", "warn", or "ignore".
-    :return: new dataset with computed variables
+    Args:
+        dataset: A dataset.
+        processed_variables: Optional list of variable name-attributes
+            pairs that will be processed in the given order.
+        errors: How to deal with errors while evaluating expressions.
+            May be be one of "raise", "warn", or "ignore".
+
+    Returns:
+        new dataset with computed variables
     """
 
     if processed_variables:
@@ -81,8 +68,7 @@ def evaluate_dataset(dataset: xr.Dataset,
         )
     else:
         var_names = list(dataset.data_vars)
-        var_names = sorted(var_names,
-                           key=functools.partial(_get_var_sort_key, dataset))
+        var_names = sorted(var_names, key=functools.partial(_get_var_sort_key, dataset))
         processed_variables = [(var_name, None) for var_name in var_names]
 
     # Initialize namespace with some constants and modules
@@ -111,37 +97,39 @@ def evaluate_dataset(dataset: xr.Dataset,
             if var_props is None:
                 var_props = dict()
 
-        do_load = var_props.get('load', False)
+        do_load = var_props.get("load", False)
 
-        expression = var_props.get('expression')
+        expression = var_props.get("expression")
         if expression:
             # Compute new variable
-            computed_array = compute_array_expr(expression,
-                                                namespace=namespace,
-                                                result_name=f'{var_name!r}',
-                                                errors=errors)
+            computed_array = compute_array_expr(
+                expression,
+                namespace=namespace,
+                result_name=f"{var_name!r}",
+                errors=errors,
+            )
             if computed_array is not None:
-                if hasattr(computed_array, 'attrs'):
+                if hasattr(computed_array, "attrs"):
                     var = computed_array
                     var.attrs.update(var_props)
                 if do_load:
                     computed_array.load()
                 namespace[var_name] = computed_array
 
-        valid_pixel_expression = var_props.get('valid_pixel_expression')
+        valid_pixel_expression = var_props.get("valid_pixel_expression")
         if valid_pixel_expression:
             # Compute new mask for existing variable
             if var is None:
-                raise ValueError(f'undefined variable {var_name!r}')
+                raise ValueError(f"undefined variable {var_name!r}")
             valid_mask = compute_array_expr(
                 valid_pixel_expression,
                 namespace=namespace,
-                result_name=f'valid mask for {var_name!r}',
-                errors=errors
+                result_name=f"valid mask for {var_name!r}",
+                errors=errors,
             )
             if valid_mask is not None:
                 masked_var = var.where(valid_mask)
-                if hasattr(masked_var, 'attrs'):
+                if hasattr(masked_var, "attrs"):
                     masked_var.attrs.update(var_props)
                 if do_load:
                     masked_var.load()
@@ -158,8 +146,8 @@ def evaluate_dataset(dataset: xr.Dataset,
 def _get_var_sort_key(dataset: xr.Dataset, var_name: str):
     # noinspection SpellCheckingInspection
     attrs = dataset[var_name].attrs
-    a1 = attrs.get('expression')
-    a2 = attrs.get('valid_pixel_expression')
+    a1 = attrs.get("expression")
+    a2 = attrs.get("valid_pixel_expression")
     v1 = 10 * len(a1) if a1 is not None else 0
     v2 = 100 * len(a2) if a2 is not None else 0
     return v1 + v2

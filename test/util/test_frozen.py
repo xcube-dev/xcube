@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -48,47 +31,47 @@ class FrozenDictTest(unittest.TestCase):
         self.assertNotIsInstance(defrosted, FrozenDict)
         self.assertIsInstance(defrosted, dict)
 
-        self.assertNotIsInstance(defrosted['c'], FrozenDict)
-        self.assertIsInstance(defrosted['c'], dict)
+        self.assertNotIsInstance(defrosted["c"], FrozenDict)
+        self.assertIsInstance(defrosted["c"], dict)
 
-        self.assertNotIsInstance(defrosted['d'], FrozenList)
-        self.assertIsInstance(defrosted['d'], list)
+        self.assertNotIsInstance(defrosted["d"], FrozenList)
+        self.assertIsInstance(defrosted["d"], list)
 
-        self.assertNotIsInstance(defrosted['d'][0], FrozenDict)
-        self.assertIsInstance(defrosted['d'][0], dict)
+        self.assertNotIsInstance(defrosted["d"][0], FrozenDict)
+        self.assertIsInstance(defrosted["d"][0], dict)
 
-        self.assertNotIsInstance(defrosted['d'][1], FrozenDict)
-        self.assertIsInstance(defrosted['d'][1], dict)
+        self.assertNotIsInstance(defrosted["d"][1], FrozenDict)
+        self.assertIsInstance(defrosted["d"][1], dict)
 
     def assertFlatOk(self, dct: dict):
         self.assertEqual(self.FLAT, dct)
         with pytest.raises(TypeError, match="dict is read-only"):
-            dct['x'] = 'Take this'
+            dct["x"] = "Take this"
         with pytest.raises(TypeError, match="dict is read-only"):
-            del dct['a']
+            del dct["a"]
         with pytest.raises(TypeError, match="dict is read-only"):
-            dct.update(x='Take this')
+            dct.update(x="Take this")
         with pytest.raises(TypeError, match="dict is read-only"):
-            dct.pop('a')
+            dct.pop("a")
         with pytest.raises(TypeError, match="dict is read-only"):
             dct.popitem()
         with pytest.raises(TypeError, match="dict is read-only"):
             dct.clear()
 
     def assertNestedOk(self, dct: dict):
-        self.assertFlatOk(dct['c'])
-        self.assertFlatOk(dct['d'][0])
-        self.assertFlatOk(dct['d'][1])
+        self.assertFlatOk(dct["c"])
+        self.assertFlatOk(dct["d"][0])
+        self.assertFlatOk(dct["d"][1])
 
         with pytest.raises(TypeError, match="dict is read-only"):
-            dct['c'] = 3
+            dct["c"] = 3
 
         with pytest.raises(TypeError, match="list is read-only"):
-            dct['d'][0] = 3
+            dct["d"][0] = 3
 
 
 class FrozenListTest(unittest.TestCase):
-    FLAT = ['A', 'B', 'C']
+    FLAT = ["A", "B", "C"]
     NESTED = [1, True, FLAT, [FLAT, FLAT]]
 
     def test_freeze_flat(self):
@@ -118,9 +101,9 @@ class FrozenListTest(unittest.TestCase):
     def assertFlatOk(self, lst: list):
         self.assertEqual(self.FLAT, lst)
         with pytest.raises(TypeError, match="list is read-only"):
-            lst.append('X')
+            lst.append("X")
         with pytest.raises(TypeError, match="list is read-only"):
-            lst.extend(['X'])
+            lst.extend(["X"])
         with pytest.raises(TypeError, match="list is read-only"):
             lst.clear()
         with pytest.raises(TypeError, match="list is read-only"):
@@ -128,15 +111,15 @@ class FrozenListTest(unittest.TestCase):
         with pytest.raises(TypeError, match="list is read-only"):
             lst.sort()
         with pytest.raises(TypeError, match="list is read-only"):
-            lst.remove('A')
+            lst.remove("A")
         with pytest.raises(TypeError, match="list is read-only"):
-            lst.insert(1, 'X')
+            lst.insert(1, "X")
         with pytest.raises(TypeError, match="list is read-only"):
-            lst[1] = 'Take this'
+            lst[1] = "Take this"
         with pytest.raises(TypeError, match="list is read-only"):
             lst *= 3
         with pytest.raises(TypeError, match="list is read-only"):
-            lst += ['X']
+            lst += ["X"]
 
     def assertNestedOk(self, lst: list):
         self.assertFlatOk(lst[2])
@@ -144,17 +127,17 @@ class FrozenListTest(unittest.TestCase):
         self.assertFlatOk(lst[3][1])
 
         with pytest.raises(TypeError, match="list is read-only"):
-            lst[2] = 'X'
+            lst[2] = "X"
 
         with pytest.raises(TypeError, match="list is read-only"):
-            lst[3][0] = 'X'
+            lst[3][0] = "X"
 
 
 class FreezeValueTest(unittest.TestCase):
     def test_primitives(self):
         self.assertEqual(True, freeze_value(True))
         self.assertEqual(26, freeze_value(26))
-        self.assertEqual('X', freeze_value('X'))
+        self.assertEqual("X", freeze_value("X"))
 
     def test_sequences(self):
         self.assertEqual([1, 2, 3], freeze_value([1, 2, 3]))
@@ -164,20 +147,21 @@ class FreezeValueTest(unittest.TestCase):
         self.assertIsInstance(freeze_value((1, 2, 3)), FrozenList)
 
     def test_dict(self):
-        self.assertEqual({'x': 32, 'y': 42}, freeze_value({'x': 32, 'y': 42}))
-        self.assertIsInstance(freeze_value({'x': 32, 'y': 42}), FrozenDict)
+        self.assertEqual({"x": 32, "y": 42}, freeze_value({"x": 32, "y": 42}))
+        self.assertIsInstance(freeze_value({"x": 32, "y": 42}), FrozenDict)
+
 
 class DefrostValueTest(unittest.TestCase):
     def test_primitives(self):
         self.assertEqual(True, defrost_value(True))
         self.assertEqual(26, defrost_value(26))
-        self.assertEqual('X', defrost_value('X'))
+        self.assertEqual("X", defrost_value("X"))
 
     def test_frozen_dict(self):
-        defrosted = defrost_value(FrozenDict({'A': 2, 'B': 6}))
+        defrosted = defrost_value(FrozenDict({"A": 2, "B": 6}))
         self.assertNotIsInstance(defrosted, FrozenDict)
         self.assertIsInstance(defrosted, dict)
-        self.assertEqual({'A': 2, 'B': 6}, defrosted)
+        self.assertEqual({"A": 2, "B": 6}, defrosted)
 
     def test_frozen_list(self):
         defrosted = defrost_value(FrozenList([1, 2, 3]))

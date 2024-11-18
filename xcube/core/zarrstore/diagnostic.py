@@ -1,26 +1,9 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube development team and contributors
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import collections.abc
-from typing import Iterator, List
+from collections.abc import Iterator
 
 import zarr.storage
 
@@ -29,12 +12,13 @@ class DiagnosticZarrStore(zarr.storage.Store):
     """A diagnostic Zarr store used for testing and investigating
     behaviour of Zarr and xarray's Zarr backend.
 
-    :param store: Wrapped Zarr store.
+    Args:
+        store: Wrapped Zarr store.
     """
 
     def __init__(self, store: collections.abc.MutableMapping):
         self.store = store
-        self.records: List[str] = []
+        self.records: list[str] = []
         if hasattr(self.store, "listdir"):
             self.listdir = self._listdir
         if hasattr(self.store, "getsize"):
@@ -43,7 +27,7 @@ class DiagnosticZarrStore(zarr.storage.Store):
     def _add_record(self, record: str):
         self.records.append(record)
 
-    def _listdir(self, path: str = "") -> List[str]:
+    def _listdir(self, path: str = "") -> list[str]:
         self._add_record(f"listdir({path!r})")
         # noinspection PyUnresolvedReferences
         return self.store.listdir(path=path)

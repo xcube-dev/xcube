@@ -1,35 +1,18 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import sys
 
 import click
 from xcube.constants import LOG
 
+
 # noinspection PyShadowingBuiltins
-@click.command(name='verify')
-@click.argument('cube')
+@click.command(name="verify")
+@click.argument("cube")
 def verify(cube):
-    """
-    Perform cube verification.
+    """Perform cube verification.
 
     \b
     The tool verifies that CUBE
@@ -53,7 +36,7 @@ def _verify(input_path: str = None, monitor=None):
     from xcube.core.dsio import open_dataset
     from xcube.core.verify import verify_cube
 
-    LOG.info(f'Opening cube from {input_path!r}...')
+    LOG.info(f"Opening cube from {input_path!r}...")
     with open_dataset(input_path) as cube:
         report = verify_cube(cube)
 
@@ -61,7 +44,7 @@ def _verify(input_path: str = None, monitor=None):
         monitor("INPUT is a valid cube.")
         return
 
-    monitor('INPUT is not a valid cube due to the following reasons:')
-    monitor('- ' + '\n- '.join(report))
+    monitor("INPUT is not a valid cube due to the following reasons:")
+    monitor("- " + "\n- ".join(report))
     # According to http://tldp.org/LDP/abs/html/exitcodes.html, exit code 3 is not reserved
     sys.exit(3)

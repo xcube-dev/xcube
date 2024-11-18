@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from test.cli.helpers import CliTest
 
 
@@ -7,9 +11,9 @@ class ServerCliTest(CliTest):
         self.assertEqual(0, result.exit_code)
 
     def test_update_after(self):
-        result = self.invoke_cli(["serve",
-                                  "--update-after", "0.1",
-                                  "--stop-after", "0.2"])
+        result = self.invoke_cli(
+            ["serve", "--update-after", "0.1", "--stop-after", "0.2"]
+        )
         self.assertEqual(0, result.exit_code)
 
     def test_commands(self):

@@ -1,70 +1,282 @@
-# The MIT License (MIT)
-# Copyright (c) 2023 by the xcube team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
-from ..helpers import RoutesTestCase
+from test.webapi.helpers import RoutesTestCase
 
 
-class S3RoutesNewTest(RoutesTestCase):
+class ViewerRoutesTest(RoutesTestCase):
+    def test_viewer(self):
+        response = self.fetch("/viewer")
+        self.assertResponseOK(response)
 
-    def test_fetch_head_s3_object(self):
-        self._assert_fetch_s3_object(method='HEAD')
+        response = self.fetch("/viewer/")
+        self.assertResponseOK(response)
 
-    def test_fetch_get_s3_object(self):
-        self._assert_fetch_s3_object(method='GET')
+        response = self.fetch("/viewer/index.html")
+        self.assertResponseOK(response)
 
-    def _assert_fetch_s3_object(self, method):
-        # response = self.fetch('/s3/datasets/demo.zarr', method=method)
-        # self.assertResponseOK(response)
-        # response = self.fetch('/s3/datasets/demo.zarr/', method=method)
-        # self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/.zattrs',
-                              method=method)
+        response = self.fetch("/viewer/manifest.json")
         self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/.zgroup',
-                              method=method)
+
+        response = self.fetch("/viewer/images/logo.png")
         self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/.zarray',
-                              method=method)
-        self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3/datasets/demo.zarr/time/.zattrs',
-                              method=method)
+
+
+class ViewerConfigRoutesTest(RoutesTestCase):
+    def test_viewer_config(self):
+        response = self.fetch("/viewer/config/config.json")
         self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/time/.zarray',
-                              method=method)
+
+
+class ViewerExtRoutesTest(RoutesTestCase):
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.maxDiff = None
+
+    def get_config_filename(self) -> str:
+        return "config-panels.yml"
+
+    def test_viewer_ext_contributions(self):
+        response = self.fetch("/viewer/ext/contributions")
         self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/time/.zgroup',
-                              method=method)
-        self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3/datasets/demo.zarr/time/0',
-                              method=method)
+        result = response.json()
+        self.assertEqual({"result": expected_contributions_result}, result)
+
+    def test_viewer_ext_layout(self):
+        response = self.fetch(
+            "/viewer/ext/layout/panels/0",
+            method="POST",
+            body={
+                "inputValues": [
+                    "",  # dataset_id
+                ]
+            },
+        )
         self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/.zattrs',
-                              method=method)
+        result = response.json()
+        self.assertEqual({"result": expected_layout_result}, result)
+
+    def test_viewer_ext_callback(self):
+        response = self.fetch(
+            "/viewer/ext/callback",
+            method="POST",
+            body={
+                "callbackRequests": [
+                    {
+                        "contribPoint": "panels",
+                        "contribIndex": 0,
+                        "callbackIndex": 0,
+                        "inputValues": [
+                            "",  # dataset_id
+                            True,  # opaque
+                            1,  # color
+                            "",  # info_text
+                        ],
+                    }
+                ]
+            },
+        )
         self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/.zarray',
-                              method=method)
-        self.assertResponseOK(response)
-        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/.zgroup',
-                              method=method)
-        self.assertResourceNotFoundResponse(response)
-        response = self.fetch('/s3/datasets/demo.zarr/conc_chl/3.2.4',
-                              method=method)
-        self.assertResponseOK(response)
+        result = response.json()
+        self.assertEqual({"result": expected_callback_result}, result)
+
+
+expected_callback_result = [
+    {
+        "contribIndex": 0,
+        "contribPoint": "panels",
+        "stateChanges": [
+            {
+                "id": "info_text",
+                "link": "component",
+                "property": "text",
+                "value": (
+                    "The dataset is , the color is green "
+                    "and it is opaque. The length of the "
+                    "last info text was 0. The number of "
+                    "datasets is 1."
+                ),
+            }
+        ],
+    }
+]
+
+expected_layout_result = {
+    "components": [
+        {"id": "opaque", "label": "Opaque", "type": "Checkbox", "value": False},
+        {
+            "id": "color",
+            "label": "Color",
+            "options": [["red", 0], ["green", 1], ["blue", 2], ["yellow", 3]],
+            "style": {"flexGrow": 0, "minWidth": 80},
+            "type": "Dropdown",
+            "value": 0,
+        },
+        {
+            "id": "info_text",
+            "text": (
+                "The dataset is , the color is red and it "
+                "is not opaque. The length of the last "
+                "info text was 0. The number of datasets "
+                "is 1."
+            ),
+            "type": "Typography",
+        },
+    ],
+    "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "6px",
+        "height": "100%",
+        "width": "100%",
+    },
+    "type": "Box",
+}
+
+expected_contributions_result = {
+    "contributions": {
+        "panels": [
+            {
+                "callbacks": [
+                    {
+                        "function": {
+                            "name": "update_info_text",
+                            "parameters": [
+                                {
+                                    "default": "",
+                                    "name": "dataset_id",
+                                    "type": {"type": "string"},
+                                },
+                                {
+                                    "default": False,
+                                    "name": "opaque",
+                                    "type": {"type": "boolean"},
+                                },
+                                {
+                                    "default": 0,
+                                    "name": "color",
+                                    "type": {"type": "integer"},
+                                },
+                                {
+                                    "default": "",
+                                    "name": "info_text",
+                                    "type": {"type": "string"},
+                                },
+                            ],
+                            "returnType": {"type": "string"},
+                        },
+                        "inputs": [
+                            {
+                                "link": "app",
+                                "property": "controlState.selectedDatasetId",
+                            },
+                            {"id": "opaque", "link": "component", "property": "value"},
+                            {"id": "color", "link": "component", "property": "value"},
+                            {
+                                "id": "info_text",
+                                "link": "component",
+                                "noTrigger": True,
+                                "property": "text",
+                            },
+                        ],
+                        "outputs": [
+                            {"id": "info_text", "link": "component", "property": "text"}
+                        ],
+                    }
+                ],
+                "extension": "my_ext",
+                "initialState": {"title": "Panel A", "visible": False},
+                "layout": {
+                    "function": {
+                        "name": "render_panel",
+                        "parameters": [
+                            {
+                                "default": "",
+                                "name": "dataset_id",
+                                "type": {"type": "string"},
+                            }
+                        ],
+                        "returnType": {"class": "Component", "type": "object"},
+                    },
+                    "inputs": [
+                        {"link": "app", "property": "controlState.selectedDatasetId"}
+                    ],
+                },
+                "name": "my_ext.my_panel_a",
+            },
+            {
+                "callbacks": [
+                    {
+                        "function": {
+                            "name": "update_info_text",
+                            "parameters": [
+                                {
+                                    "default": "",
+                                    "name": "dataset_id",
+                                    "type": {"type": "string"},
+                                },
+                                {
+                                    "default": False,
+                                    "name": "opaque",
+                                    "type": {"type": "boolean"},
+                                },
+                                {
+                                    "default": 0,
+                                    "name": "color",
+                                    "type": {"type": "integer"},
+                                },
+                                {
+                                    "default": "",
+                                    "name": "info_text",
+                                    "type": {"type": "string"},
+                                },
+                            ],
+                            "returnType": {"type": "string"},
+                        },
+                        "inputs": [
+                            {
+                                "link": "app",
+                                "property": "controlState.selectedDatasetId",
+                            },
+                            {"id": "opaque", "link": "component", "property": "value"},
+                            {"id": "color", "link": "component", "property": "value"},
+                            {
+                                "id": "info_text",
+                                "link": "component",
+                                "noTrigger": True,
+                                "property": "text",
+                            },
+                        ],
+                        "outputs": [
+                            {"id": "info_text", "link": "component", "property": "text"}
+                        ],
+                    }
+                ],
+                "extension": "my_ext",
+                "initialState": {"title": "Panel B", "visible": False},
+                "layout": {
+                    "function": {
+                        "name": "render_panel",
+                        "parameters": [
+                            {
+                                "default": "",
+                                "name": "dataset_id",
+                                "type": {"type": "string"},
+                            }
+                        ],
+                        "returnType": {"class": "Component", "type": "object"},
+                    },
+                    "inputs": [
+                        {"link": "app", "property": "controlState.selectedDatasetId"}
+                    ],
+                },
+                "name": "my_ext.my_panel_b",
+            },
+        ]
+    },
+    "extensions": [
+        {"contributes": ["panels"], "name": "my_ext", "version": "0.0.0"}
+    ],
+}

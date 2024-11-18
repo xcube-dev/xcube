@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import unittest
 
 from xcube.core.new import new_cube
@@ -10,8 +14,8 @@ class VarsToDimTest(unittest.TestCase):
 
         ds = vars_to_dim(dataset)
 
-        self.assertIn("var", ds.dims)
-        self.assertEqual(2, ds.dims["var"])
+        self.assertIn("var", ds.sizes)
+        self.assertEqual(2, ds.sizes["var"])
         self.assertIn("var", ds.coords)
         self.assertIn("data", ds.data_vars)
         var_names = ds["var"]

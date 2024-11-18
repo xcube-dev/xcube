@@ -1,10 +1,10 @@
-The xcube generator
-===================
+Cube Generator
+==============
 
 Introduction
 ------------
 
-The *generator* is an xcube feature which allows users to create,
+The *cube generator* is an xcube feature which allows users to create,
 manipulate, and write xcube datasets according to a supplied
 configuration. The same configuration can be used to generate a dataset
 on the user's local computer or remotely, using an online server.
@@ -28,7 +28,7 @@ other documents and in the code itself:
 
 * Probably the most thorough documentation is available in the `Jupyter
   demo
-  notebooks <https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/generators>`__
+  notebooks <https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/generators>`__
   in the xcube repository. These can be run in any `JupyterLab
   environment <https://jupyterlab.readthedocs.io/en/latest/>`__
   containing an xcube installation. They combine explanation with
@@ -46,14 +46,14 @@ other documents and in the code itself:
 * For the YAML/JSON configuration syntax used with the command-line
   interface, there are several examples available in the
   `examples/gen2/configs
-  subdirectory <https://github.com/dcs4cop/xcube/tree/master/examples/gen2/configs>`__
+  subdirectory <https://github.com/dcs4cop/xcube/tree/main/examples/gen2/configs>`__
   of the xcube repository.
 
 * For the REST API underlying the Python and command-line interfaces,
   there is a `formal definition on
   SwaggerHub <https://app.swaggerhub.com/apis/bcdev/xcube-generator_api/>`__, and
   `one of the example
-  notebooks <https://github.com/dcs4cop/xcube/tree/master/examples/notebooks/generators/5_rest_api.ipynb>`__
+  notebooks <https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/generators/5_rest_api.ipynb>`__
   demonstrates its usage with the Python `requests` library.
 
 The generation process

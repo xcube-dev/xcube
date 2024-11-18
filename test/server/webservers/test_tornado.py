@@ -1,27 +1,18 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import (Sequence, Optional, Callable, Any,
-                    Awaitable, Union, Tuple, Type, Dict)
+from typing import (
+    Optional,
+    Callable,
+    Any,
+    Union,
+    Tuple,
+    Type,
+    Dict,
+)
+from collections.abc import Sequence, Awaitable
 
 import pytest
 import tornado.httputil
@@ -49,15 +40,31 @@ class TornadoFrameworkTest(unittest.TestCase):
         self.application = MockApplication()
         self.io_loop = MockIOLoop()
         # noinspection PyTypeChecker
-        self.framework = TornadoFramework(application=self.application,
-                                          io_loop=self.io_loop)
+        self.framework = TornadoFramework(
+            application=self.application, io_loop=self.io_loop
+        )
 
     def test_config_schema(self):
-        self.assertIsInstance(self.framework.config_schema,
-                              JsonObjectSchema)
+        self.assertIsInstance(self.framework.config_schema, JsonObjectSchema)
 
-    # def test_add_routes(self):
-    #     self.framework.add_routes([ApiRoute()])
+    def test_add_routes(self):
+        class Handler(ApiHandler):
+            pass
+
+        self.framework.add_routes(
+            [
+                route0 := ApiRoute("foo", "foo/bar", Handler),
+                route1 := ApiRoute("foo", "foo/baz", Handler, slash=True),
+            ],
+            "/",
+        )
+        self.assertEqual(
+            [
+                ("/foo/bar", TornadoRequestHandler, {"api_route": route0}),
+                ("/foo/baz/?", TornadoRequestHandler, {"api_route": route1}),
+            ],
+            self.application.handlers,
+        )
 
     def test_start_and_update_and_stop(self):
         server = mock_server(framework=self.framework, config={})
@@ -92,201 +99,250 @@ class TornadoFrameworkTest(unittest.TestCase):
     def test_path_to_pattern_ok(self):
         p2p = TornadoFramework.path_to_pattern
 
-        self.assertEqual("/collections",
-                         p2p("/collections"))
+        self.assertEqual("/collections", p2p("/collections"))
 
-        self.assertEqual("/collections/"
-                         "("
-                         "?P<collection_id>"
-                         "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
-                         ")",
-                         p2p("/collections/{collection_id}"))
+        self.assertEqual(
+            "/collections/"
+            "("
+            "?P<collection_id>"
+            "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
+            ")",
+            p2p("/collections/{collection_id}"),
+        )
 
-        self.assertEqual("/collections/"
-                         "("
-                         "?P<collection_id>"
-                         "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
-                         ")"
-                         "/items",
-                         p2p("/collections/{collection_id}/items"))
+        self.assertEqual(
+            "/collections/"
+            "("
+            "?P<collection_id>"
+            "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
+            ")"
+            "/items",
+            p2p("/collections/{collection_id}/items"),
+        )
 
-        self.assertEqual("/collections/"
-                         "("
-                         "?P<collection_id>"
-                         "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
-                         ")"
-                         "/items/"
-                         "("
-                         "?P<item_id>"
-                         "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
-                         ")",
-                         p2p("/collections/{collection_id}/items/{item_id}"))
+        self.assertEqual(
+            "/collections/"
+            "("
+            "?P<collection_id>"
+            "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
+            ")"
+            "/items/"
+            "("
+            "?P<item_id>"
+            "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
+            ")",
+            p2p("/collections/{collection_id}/items/{item_id}"),
+        )
 
-        self.assertEqual("/s3bucket/"
-                         "("
-                         "?P<dataset_id>"
-                         "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
-                         ")"
-                         "\\/?"
-                         "(?P<path>.*)",
-                         p2p("/s3bucket/{dataset_id}/{*path}"))
+        self.assertEqual(
+            "/s3bucket/"
+            "("
+            "?P<dataset_id>"
+            "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
+            ")"
+            "\\/?"
+            "(?P<path>.*)",
+            p2p("/s3bucket/{dataset_id}/{*path}"),
+        )
 
     def test_path_to_pattern_fails(self):
         p2p = TornadoFramework.path_to_pattern
 
         with self.assertRaises(ValueError) as cm:
-            p2p('/datasets/{dataset id}')
-        self.assertEqual('"{name}" in path must be a valid identifier,'
-                         ' but got "dataset id"',
-                         f"{cm.exception}")
+            p2p("/datasets/{dataset id}")
+        self.assertEqual(
+            '"{name}" in path must be a valid identifier, but got "dataset id"',
+            f"{cm.exception}",
+        )
 
         with self.assertRaises(ValueError) as cm:
-            p2p('/datasets/{dataset_id')
-        self.assertEqual('missing closing "}"'
-                         ' in "/datasets/{dataset_id"',
-                         f"{cm.exception}")
+            p2p("/datasets/{dataset_id")
+        self.assertEqual(
+            'missing closing "}" in "/datasets/{dataset_id"', f"{cm.exception}",
+        )
 
         with self.assertRaises(ValueError) as cm:
-            p2p('/datasets/dataset_id}/bbox')
-        self.assertEqual('missing opening "{"'
-                         ' in "/datasets/dataset_id}/bbox"',
-                         f"{cm.exception}")
+            p2p("/datasets/dataset_id}/bbox")
+        self.assertEqual(
+            'missing opening "{" in "/datasets/dataset_id}/bbox"', f"{cm.exception}",
+        )
 
         with self.assertRaises(ValueError) as cm:
-            p2p('/datasets/{*dataset_id}/places')
-        self.assertEqual('wildcard variable must be last in path,'
-                         ' but path was "/datasets/{*dataset_id}/places"',
-                         f"{cm.exception}")
+            p2p("/datasets/{*dataset_id}/places")
+        self.assertEqual(
+            "wildcard variable must be last in path,"
+            ' but path was "/datasets/{*dataset_id}/places"',
+            f"{cm.exception}",
+        )
 
         with self.assertRaises(ValueError) as cm:
-            p2p('/datasets/{*dataset_id}/{*places}')
-        self.assertEqual('only a single wildcard variable is allowed,'
-                         ' but found 2 in path'
-                         ' "/datasets/{*dataset_id}/{*places}"',
-                         f"{cm.exception}")
-
-
-# class TornadoRequestHandlerTest(unittest.TestCase):
-#     def test_basic_props(self):
-#         TornadoRequestHandler()
+            p2p("/datasets/{*dataset_id}/{*places}")
+        self.assertEqual(
+            "only a single wildcard variable is allowed,"
+            " but found 2 in path"
+            ' "/datasets/{*dataset_id}/{*places}"',
+            f"{cm.exception}",
+        )
 
 
 class TornadoApiRequestTest(unittest.TestCase):
     def test_basic_props(self):
         body = b'{"type": "feature", "id": 137}'
         tr = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets',
-            body=body
+            method="GET", host="localhost:8080", uri="/datasets", body=body
         )
         request = TornadoApiRequest(tr)
         self.assertEqual("http://localhost:8080/datasets", request.url)
         self.assertEqual(body, request.body)
         self.assertEqual({"type": "feature", "id": 137}, request.json)
-        self.assertEqual([],
-                         request.get_query_args('details'))
-
-    def test_url_for_path(self):
-        tr = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets?details=1',
-        )
-
-        request = TornadoApiRequest(tr)
-        self.assertEqual("http://localhost:8080/collections",
-                         request.url_for_path('collections'))
-        self.assertEqual("http://localhost:8080/collections?details=1",
-                         request.url_for_path('/collections',
-                                              query='details=1'))
-
-        request = TornadoApiRequest(tr,
-                                    url_prefix='/api/v1')
-        self.assertEqual(
-            "http://localhost:8080/api/v1/collections?details=1",
-            request.url_for_path('/collections',
-                                 query='details=1')
-        )
-
-        request = TornadoApiRequest(tr,
-                                    url_prefix='/api/v1',
-                                    reverse_url_prefix='/proxy/9999')
-        self.assertEqual(
-            "http://localhost:8080/api/v1/collections?details=1",
-            request.url_for_path('/collections',
-                                 query='details=1')
-        )
-        self.assertEqual(
-            "http://localhost:8080/proxy/9999/collections?details=1",
-            request.url_for_path('/collections',
-                                 query='details=1',
-                                 reverse=True)
-        )
+        self.assertEqual([], request.get_query_args("details"))
 
     def test_get_query_args(self):
         tr = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets?details=1',
+            method="GET",
+            host="localhost:8080",
+            uri="/datasets?details=1",
         )
         request = TornadoApiRequest(tr)
-        self.assertEqual(['1'],
-                         request.get_query_args('details'))
-        self.assertEqual(['1'],
-                         request.get_query_args('details', type=str))
-        self.assertEqual([1],
-                         request.get_query_args('details', type=int))
-        self.assertEqual([True],
-                         request.get_query_args('details', type=bool))
+        self.assertEqual(["1"], request.get_query_args("details"))
+        self.assertEqual(["1"], request.get_query_args("details", type=str))
+        self.assertEqual([1], request.get_query_args("details", type=int))
+        self.assertEqual([True], request.get_query_args("details", type=bool))
 
     def test_get_query_args_case_insensitive(self):
         tr = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets?details=1',
+            method="GET",
+            host="localhost:8080",
+            uri="/datasets?details=1",
         )
         request = TornadoApiRequest(tr)
         request.make_query_lower_case()
-        self.assertEqual(['1'],
-                         request.get_query_args('details'))
-        self.assertEqual(['1'],
-                         request.get_query_args('DETAILS'))
-        self.assertEqual(['1'],
-                         request.get_query_args('Details'))
+        self.assertEqual(["1"], request.get_query_args("details"))
+        self.assertEqual(["1"], request.get_query_args("DETAILS"))
+        self.assertEqual(["1"], request.get_query_args("Details"))
 
     def test_get_query_args_invalid_type(self):
         tr = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets?details=x',
+            method="GET",
+            host="localhost:8080",
+            uri="/datasets?details=x",
         )
         request = TornadoApiRequest(tr)
         with self.assertRaises(ApiError.BadRequest) as cm:
-            request.get_query_args('details', type=int)
-        self.assertEqual("HTTP status 400:"
-                         " Query parameter 'details'"
-                         " must have type 'int'.",
-                         f'{cm.exception}')
+            request.get_query_args("details", type=int)
+        self.assertEqual(
+            "HTTP status 400: Query parameter 'details' must have type 'int'.",
+            f"{cm.exception}",
+        )
 
     def test_invalid_json(self):
         tr = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets?details=x',
+            method="GET",
+            host="localhost:8080",
+            uri="/datasets?details=x",
         )
         request = TornadoApiRequest(tr)
         with self.assertRaises(ApiError.BadRequest) as cm:
             # noinspection PyUnusedLocal
             result = request.json
-        self.assertEqual("HTTP status 400:"
-                         " Body does not contain valid JSON:"
-                         " Expecting value: line 1 column 1 (char 0)",
-                         f'{cm.exception}')
+        self.assertEqual(
+            "HTTP status 400:"
+            " Body does not contain valid JSON:"
+            " Expecting value: line 1 column 1 (char 0)",
+            f"{cm.exception}",
+        )
+
+
+class TornadoApiRequestUrlTest(unittest.TestCase):
+    tr = tornado.httputil.HTTPServerRequest(
+        method="GET",
+        host="localhost:8080",
+        uri="/datasets?details=1",
+    )
+
+    def test_prefixes_not_given(self):
+        request = TornadoApiRequest(self.tr)
+        self.assertEqual(
+            "http://localhost:8080/collections", request.url_for_path("collections")
+        )
+        self.assertEqual(
+            "http://localhost:8080/collections?details=1",
+            request.url_for_path("/collections", query="details=1"),
+        )
+        self.assertEqual("http://localhost:8080", request.base_url)
+        self.assertEqual("http://localhost:8080", request.reverse_base_url)
+
+    def test_rel_url_prefix_given(self):
+        request = TornadoApiRequest(self.tr, url_prefix="/api/v1")
+        self.assertEqual(
+            "http://localhost:8080/api/v1/collections?details=1",
+            request.url_for_path("/collections", query="details=1"),
+        )
+        self.assertEqual("http://localhost:8080/api/v1", request.base_url)
+        self.assertEqual("http://localhost:8080/api/v1", request.reverse_base_url)
+
+    def test_rel_url_prefix_and_rel_reverse_url_prefix_given(self):
+        request = TornadoApiRequest(
+            self.tr, url_prefix="/api/v1", reverse_url_prefix="/proxy/9999"
+        )
+        self.assertEqual(
+            "http://localhost:8080/api/v1/collections?details=1",
+            request.url_for_path("/collections", query="details=1"),
+        )
+        self.assertEqual(
+            "http://localhost:8080/proxy/9999/collections?details=1",
+            request.url_for_path("/collections", query="details=1", reverse=True),
+        )
+        self.assertEqual("http://localhost:8080/api/v1", request.base_url)
+        self.assertEqual("http://localhost:8080/proxy/9999", request.reverse_base_url)
+
+    def test_abs_url_prefix_given(self):
+        request = TornadoApiRequest(self.tr, url_prefix="https://test.com")
+        self.assertEqual(
+            "https://test.com/collections?details=1",
+            request.url_for_path("/collections", query="details=1"),
+        )
+        self.assertEqual(
+            "https://test.com/collections?details=1",
+            request.url_for_path("/collections", query="details=1", reverse=True),
+        )
+        self.assertEqual("https://test.com", request.base_url)
+        self.assertEqual("https://test.com", request.reverse_base_url)
+
+    def test_abs_url_prefix_and_rel_reverse_url_prefix_given(self):
+        request = TornadoApiRequest(
+            self.tr,
+            url_prefix="https://test.com/api/v1",
+            reverse_url_prefix="/proxy/9999",
+        )
+        self.assertEqual(
+            "https://test.com/api/v1/collections?details=1",
+            request.url_for_path("/collections", query="details=1"),
+        )
+        self.assertEqual(
+            "http://localhost:8080/proxy/9999/collections?details=1",
+            request.url_for_path("/collections", query="details=1", reverse=True),
+        )
+        self.assertEqual("https://test.com/api/v1", request.base_url)
+        self.assertEqual("http://localhost:8080/proxy/9999", request.reverse_base_url)
+
+    def test_abs_reverse_url_prefix_given(self):
+        request = TornadoApiRequest(
+            self.tr, url_prefix="", reverse_url_prefix="https://test.com/api"
+        )
+        self.assertEqual(
+            "http://localhost:8080/collections?details=1",
+            request.url_for_path("/collections", query="details=1"),
+        )
+        self.assertEqual(
+            "https://test.com/api/collections?details=1",
+            request.url_for_path("/collections", query="details=1", reverse=True),
+        )
+        self.assertEqual("http://localhost:8080", request.base_url)
+        self.assertEqual("https://test.com/api", request.reverse_base_url)
 
 
 class TornadoRequestHandlerTest(unittest.TestCase):
-
     # noinspection PyMethodMayBeStatic
     def test_api_error_converted(self):
         application = tornado.web.Application()
@@ -295,10 +351,10 @@ class TornadoRequestHandlerTest(unittest.TestCase):
 
         # noinspection PyTypeChecker
         request = tornado.httputil.HTTPServerRequest(
-            method='GET',
-            host='localhost:8080',
-            uri='/datasets?details=x',
-            connection=MockConnection()
+            method="GET",
+            host="localhost:8080",
+            uri="/datasets?details=x",
+            connection=MockConnection(),
         )
 
         class TestHandler(ApiHandler):
@@ -317,9 +373,8 @@ class TornadoRequestHandlerTest(unittest.TestCase):
             def options(self):
                 raise ApiError(554)
 
-        api_route = ApiRoute('test', '/test', TestHandler)
-        handler = TornadoRequestHandler(application, request,
-                                        api_route=api_route)
+        api_route = ApiRoute("test", "/test", TestHandler)
+        handler = TornadoRequestHandler(application, request, api_route=api_route)
 
         async def test_it():
             with pytest.raises(tornado.web.HTTPError, match=r".*550.*"):
@@ -334,10 +389,12 @@ class TornadoRequestHandlerTest(unittest.TestCase):
                 await handler.options()
 
         import asyncio
+
         asyncio.run(test_it())
 
 
 # Helpers
+
 
 class MockIOLoop:
     def __init__(self):
@@ -384,16 +441,15 @@ class MockConnection:
 
 
 class MockContext(Context):
-
     def __init__(self):
-        self._api = Api('test')
+        self._api = Api("test")
         self._config = {}
 
     @property
-    def apis(self) -> Tuple[Api]:
-        return self._api,
+    def apis(self) -> tuple[Api]:
+        return (self._api,)
 
-    def get_open_api_doc(self, include_all: bool = False) -> Dict[str, Any]:
+    def get_open_api_doc(self, include_all: bool = False) -> dict[str, Any]:
         return {}
 
     @property
@@ -401,11 +457,10 @@ class MockContext(Context):
         # noinspection PyTypeChecker
         return self._config
 
-    def get_api_ctx(self,
-                    api_name: str,
-                    cls: Optional[Type[ApiContextT]] = None) \
-            -> Optional[ApiContextT]:
-        return self._api if api_name == 'test' else None
+    def get_api_ctx(
+        self, api_name: str, cls: Optional[type[ApiContextT]] = None
+    ) -> Optional[ApiContextT]:
+        return self._api if api_name == "test" else None
 
     def on_update(self, prev_context: Optional["Context"]):
         pass
@@ -413,12 +468,16 @@ class MockContext(Context):
     def on_dispose(self):
         pass
 
-    def call_later(self, delay: Union[int, float], callback: Callable,
-                   *args, **kwargs) -> object:
+    def call_later(
+        self, delay: Union[int, float], callback: Callable, *args, **kwargs
+    ) -> object:
         pass
 
-    def run_in_executor(self,
-                        executor: Optional[concurrent.futures.Executor],
-                        function: Callable[..., ReturnT], *args: Any,
-                        **kwargs: Any) -> Awaitable[ReturnT]:
+    def run_in_executor(
+        self,
+        executor: Optional[concurrent.futures.Executor],
+        function: Callable[..., ReturnT],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Awaitable[ReturnT]:
         pass

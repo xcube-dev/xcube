@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 
 import os
@@ -43,56 +26,67 @@ class CacheStore(metaclass=ABCMeta):
 
     @abstractmethod
     def can_load_from_key(self, key) -> bool:
-        """
-        Test whether a stored value representation can be loaded from the given key.
-        :param key: the key
-        :return: True, if so
+        """Test whether a stored value representation
+        can be loaded from the given key.
+
+        Args:
+            key: the key
+
+        Returns: True, if so
         """
         pass
 
     @abstractmethod
     def load_from_key(self, key):
-        """
-        Load a stored value representation of the value and its size from the given key.
-        :param key: the key
-        :return: a 2-element sequence containing the stored representation of the value and it's size
+        """Load a stored value representation of the value
+        and its size from the given key.
+
+        Args:
+            key: the key
+
+        Returns: a 2-element sequence containing the stored representation of the value and it's size
         """
         pass
 
     @abstractmethod
     def store_value(self, key, value):
-        """
-        Store a value and return it's stored representation and size in any unit, e.g. in bytes.
-        :param key: the key
-        :param value: the value
-        :return: a 2-element sequence containing the stored representation of the value and it's size
+        """Store a value and return it's stored representation
+        and size in any unit, e.g. in bytes.
+
+        Args:
+            key: the key
+            value: the value
+
+        Returns: a 2-element sequence containing the stored
+            representation of the value and it's size
         """
         pass
 
     @abstractmethod
     def restore_value(self, key, stored_value):
-        """
-        Restore a vale from its stored representation.
-        :param key: the key
-        :param stored_value: the stored representation of the value
-        :return: the item
+        """Restore a vale from its stored representation.
+
+        Args:
+            key: the key
+            stored_value: the stored representation of the value
+
+        Returns: the item
         """
         pass
 
     @abstractmethod
     def discard_value(self, key, stored_value):
-        """
-        Discard a value from it's storage.
-        :param key: the key
-        :param stored_value: the stored representation of the value
+        """Discard a value from it's storage.
+
+        Args:
+            key: the key
+            stored_value: the stored representation of the value
         """
         pass
 
 
 class MemoryCacheStore(CacheStore):
-    """
-    Simple memory store.
-    """
+    """Simple memory store."""
 
     def can_load_from_key(self, key) -> bool:
         # This store type does not maintain key-value pairs on its own
@@ -102,39 +96,44 @@ class MemoryCacheStore(CacheStore):
         raise NotImplementedError()
 
     def store_value(self, key, value):
-        """
-        Return (value, 1).
-        :param key: the key
-        :param value: the original value
-        :return: the tuple (stored value, size) where stored value is the sequence [key, value].
+        """Return (value, 1).
+
+        Args:
+            key: the key
+            value: the original value
+
+        Returns:
+            the tuple (stored value, size) where stored value is the
+            sequence [key, value].
         """
         return [key, value], _compute_object_size(value)
 
     def restore_value(self, key, stored_value):
-        """
-        :param key: the key
-        :param stored_value: the stored representation of the value
-        :return: the original value.
+        """Args:
+            key: the key
+            stored_value: the stored representation of the value
+
+        Returns:
+            the original value.
         """
         if key != stored_value[0]:
-            raise ValueError('key does not match stored value')
+            raise ValueError("key does not match stored value")
         return stored_value[1]
 
     def discard_value(self, key, stored_value):
-        """
-        Clears the value in the given stored_value.
-        :param key: the key
-        :param stored_value: the stored representation of the value
+        """Clears the value in the given stored_value.
+
+        Args:
+            key: the key
+            stored_value: the stored representation of the value
         """
         if key != stored_value[0]:
-            raise ValueError('key does not match stored value')
+            raise ValueError("key does not match stored value")
         stored_value[1] = None
 
 
 class FileCacheStore(CacheStore):
-    """
-    Simple file store for values which can be written and read as bytes, e.g. encoded PNG images.
-    """
+    """Simple file store for values which can be written and read as bytes, e.g. encoded PNG images."""
 
     def __init__(self, cache_dir: str, ext: str):
         self.cache_dir = cache_dir
@@ -153,13 +152,13 @@ class FileCacheStore(CacheStore):
         dir_path = os.path.dirname(path)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path, exist_ok=True)
-        with open(path, 'wb') as fp:
+        with open(path, "wb") as fp:
             fp.write(value)
         return path, os.path.getsize(path)
 
     def restore_value(self, key, stored_value):
         path = self._key_to_path(key)
-        with open(path, 'rb') as fp:
+        with open(path, "rb") as fp:
             return fp.read()
 
     def discard_value(self, key, stored_value):
@@ -167,7 +166,7 @@ class FileCacheStore(CacheStore):
         try:
             os.remove(path)
             # TODO (forman): also remove empty directories up to self.cache_dir
-        except IOError:
+        except OSError:
             pass
 
     def _key_to_path(self, key):
@@ -203,9 +202,18 @@ _T0 = time.process_time()
 
 
 class Cache:
-    """
-    An implementation of a cache.
+    """An implementation of a cache.
     See https://en.wikipedia.org/wiki/Cache_algorithms
+
+    Args:
+        store: the cache store, see CacheStore interface
+        capacity: the size capacity in units used by the store's
+            ``store()`` method
+        threshold: a number greater than zero and less than one
+        policy: cache replacement policy. This is a function that
+            maps a :class:`Cache.Item` to a numerical value.
+            See :data:`POLICY_LRU`, :data:`POLICY_MRU`,
+            :data:`POLICY_LFU`, :data:`POLICY_RR`
     """
 
     class Item:
@@ -257,17 +265,14 @@ class Cache:
             self.access_time = time.process_time() - _T0
             self.access_count += 1
 
-    def __init__(self, store=MemoryCacheStore(), capacity=1000, threshold=0.75, policy=POLICY_LRU, parent_cache=None):
-        """
-        Constructor.
-
-        :param store: the cache store, see CacheStore interface
-        :param capacity: the size capacity in units used by the store's store() method
-        :param threshold: a number greater than zero and less than one
-        :param policy: cache replacement policy. This is a function that maps a :py:class:`Cache.Item`
-                       to a numerical value. See :py:data:`POLICY_LRU`,
-                       :py:data:`POLICY_MRU`, :py:data:`POLICY_LFU`, :py:data:`POLICY_RR`
-        """
+    def __init__(
+        self,
+        store=MemoryCacheStore(),
+        capacity=1000,
+        threshold=0.75,
+        policy=POLICY_LRU,
+        parent_cache=None,
+    ):
         self._store = store
         self._capacity = capacity
         self._threshold = threshold
@@ -358,7 +363,9 @@ class Cache:
             self._remove_item(item)
             item.discard(self._store, key)
             if _DEBUG_CACHE:
-                _debug_print('Cache: discarded value for key "%s" from parent cache' % key)
+                _debug_print(
+                    'Cache: discarded value for key "%s" from parent cache' % key
+                )
         self._lock.release()
 
     def _add_item(self, item):
@@ -375,7 +382,7 @@ class Cache:
 
     def trim(self, extra_size=0):
         if _DEBUG_CACHE:
-            _debug_print('trimming...')
+            _debug_print("trimming...")
         self._lock.acquire()
         self._item_list.sort(key=self._policy)
         keys = []
@@ -418,17 +425,28 @@ def _debug_print(msg):
 
 
 def _compute_object_size(obj):
-    if hasattr(obj, 'nbytes'):
+    if hasattr(obj, "nbytes"):
         # A numpy ndarray instance
         return obj.nbytes
-    elif hasattr(obj, 'size') and hasattr(obj, 'mode'):
+    elif hasattr(obj, "size") and hasattr(obj, "mode"):
         # A PIL Image instance
         w, h = obj.size
         m = obj.mode
-        return w * h * (4 if m in ('RGBA', 'RGBx', 'I', 'F') else
-                        3 if m in ('RGB', 'YCbCr', 'LAB', 'HSV') else
-                        1. / 8. if m == '1' else
-                        1)
+        return (
+            w
+            * h
+            * (
+                4
+                if m in ("RGBA", "RGBx", "I", "F")
+                else (
+                    3
+                    if m in ("RGB", "YCbCr", "LAB", "HSV")
+                    else 1.0 / 8.0
+                    if m == "1"
+                    else 1
+                )
+            )
+        )
     else:
         return sys.getsizeof(obj)
 
@@ -437,10 +455,16 @@ def parse_mem_size(mem_size_text: str) -> Optional[int]:
     mem_size_text = mem_size_text.upper()
     if mem_size_text != "" and mem_size_text not in ("OFF", "NONE", "NULL", "FALSE"):
         unit = mem_size_text[-1]
-        factors = {"B": 10 ** 0, "K": 10 ** 3, "M": 10 ** 6, "G": 10 ** 9, "T": 10 ** 12}
+        factors = {
+            "B": 10**0,
+            "K": 10**3,
+            "M": 10**6,
+            "G": 10**9,
+            "T": 10**12,
+        }
         try:
             if unit in factors:
-                capacity = int(mem_size_text[0: -1]) * factors[unit]
+                capacity = int(mem_size_text[0:-1]) * factors[unit]
             else:
                 capacity = int(mem_size_text)
         except ValueError:

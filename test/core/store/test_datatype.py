@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import copy
 import unittest
 
@@ -5,11 +9,16 @@ import geopandas
 import xarray
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store.datatype import ANY_TYPE, DataTypeLike
+from xcube.core.store.datatype import ANY_TYPE
 from xcube.core.store.datatype import DATASET_TYPE
+from xcube.core.store.datatype import DATASET_ITERATOR_TYPE
+from xcube.core.store.datatype import DataIterator
 from xcube.core.store.datatype import DataType
+from xcube.core.store.datatype import DataTypeLike
 from xcube.core.store.datatype import GEO_DATA_FRAME_TYPE
+from xcube.core.store.datatype import GEO_DATA_FRAME_ITERATOR_TYPE
 from xcube.core.store.datatype import MULTI_LEVEL_DATASET_TYPE
+from xcube.core.store.datatype import MULTI_LEVEL_DATASET_ITERATOR_TYPE
 from xcube.util.jsonschema import JsonStringSchema
 
 
@@ -27,87 +36,133 @@ class C:
 
 class DataTypeTest(unittest.TestCase):
     def test_normalize_to_any(self):
-        self.assertNormalizeOk('any',
-                               ANY_TYPE,
-                               object,
-                               'any',
-                               ('any', '*', 'object', 'builtins.object'))
-        self.assertNormalizeOk(None,
-                               ANY_TYPE,
-                               object,
-                               'any',
-                               ('any', '*', 'object', 'builtins.object'))
-        self.assertNormalizeOk(type(None),
-                               ANY_TYPE,
-                               object,
-                               'any',
-                               ('any', '*', 'object', 'builtins.object'))
+        self.assertNormalizeOk(
+            "any", ANY_TYPE, object, "any", ("any", "*", "object", "builtins.object")
+        )
+        self.assertNormalizeOk(
+            None, ANY_TYPE, object, "any", ("any", "*", "object", "builtins.object")
+        )
+        self.assertNormalizeOk(
+            type(None),
+            ANY_TYPE,
+            object,
+            "any",
+            ("any", "*", "object", "builtins.object"),
+        )
 
     def test_normalize_to_dataset(self):
-        self.assertNormalizeOk('dataset',
-                               DATASET_TYPE,
-                               xarray.Dataset,
-                               'dataset',
-                               ('dataset',
-                                'xarray.Dataset',
-                                'xarray.core.dataset.Dataset'))
+        self.assertNormalizeOk(
+            "dataset",
+            DATASET_TYPE,
+            xarray.Dataset,
+            "dataset",
+            ("dataset", "xarray.Dataset", "xarray.core.dataset.Dataset"),
+        )
 
     def test_normalize_to_mldataset(self):
-        self.assertNormalizeOk('mldataset',
-                               MULTI_LEVEL_DATASET_TYPE,
-                               MultiLevelDataset,
-                               'mldataset',
-                               ('mldataset',
-                                'xcube.MultiLevelDataset',
-                                'xcube.core.mldataset.MultiLevelDataset',
-                                'xcube.core.mldataset.abc.MultiLevelDataset'))
+        self.assertNormalizeOk(
+            "mldataset",
+            MULTI_LEVEL_DATASET_TYPE,
+            MultiLevelDataset,
+            "mldataset",
+            (
+                "mldataset",
+                "xcube.MultiLevelDataset",
+                "xcube.core.mldataset.MultiLevelDataset",
+                "xcube.core.mldataset.abc.MultiLevelDataset",
+            ),
+        )
 
     def test_normalize_to_geodataframe(self):
-        self.assertNormalizeOk('geodataframe',
-                               GEO_DATA_FRAME_TYPE,
-                               geopandas.GeoDataFrame,
-                               'geodataframe',
-                               ('geodataframe',
-                                'geopandas.GeoDataFrame',
-                                'geopandas.geodataframe.GeoDataFrame'))
+        self.assertNormalizeOk(
+            "geodataframe",
+            GEO_DATA_FRAME_TYPE,
+            geopandas.GeoDataFrame,
+            "geodataframe",
+            (
+                "geodataframe",
+                "geopandas.GeoDataFrame",
+                "geopandas.geodataframe.GeoDataFrame",
+            ),
+        )
 
-    def assertNormalizeOk(self,
-                          data_type: DataTypeLike,
-                          expected_data_type,
-                          expected_dtype,
-                          expected_alias,
-                          expected_aliases):
+    def test_normalize_to_dataset_iterator(self):
+        self.assertNormalizeOk(
+            "dsiter",
+            DATASET_ITERATOR_TYPE,
+            DataIterator,
+            "dsiter",
+            (
+                "dsiter",
+                "DataIterator[xarray.Dataset]",
+                "xcube.core.store.datatype.DataIterator",
+            ),
+        )
+
+    def test_normalize_to_ml_dataset_iterator(self):
+        self.assertNormalizeOk(
+            "mldsiter",
+            MULTI_LEVEL_DATASET_ITERATOR_TYPE,
+            DataIterator,
+            "mldsiter",
+            (
+                "mldsiter",
+                "DataIterator[xcube.MultiLevelDataset]",
+                "xcube.core.store.datatype.DataIterator",
+            ),
+        )
+
+    def test_normalize_to_gdf_iterator(self):
+        self.assertNormalizeOk(
+            "gdfiter",
+            GEO_DATA_FRAME_ITERATOR_TYPE,
+            DataIterator,
+            "gdfiter",
+            (
+                "gdfiter",
+                "DataIterator[geopandas.GeoDataFrame]",
+                "xcube.core.store.datatype.DataIterator",
+            ),
+        )
+
+    def assertNormalizeOk(
+        self,
+        data_type: DataTypeLike,
+        expected_data_type,
+        expected_dtype,
+        expected_alias,
+        expected_aliases,
+    ):
         data_type = DataType.normalize(data_type)
         self.assertIs(expected_data_type, data_type)
         self.assertIs(expected_dtype, data_type.dtype)
         self.assertEqual(expected_alias, data_type.alias)
         self.assertEqual(expected_alias, str(data_type))
-        self.assertEqual(f'{expected_alias!r}', repr(data_type))
+        self.assertEqual(f"{expected_alias!r}", repr(data_type))
         self.assertEqual(expected_aliases, data_type.aliases)
-        for other_alias in data_type.aliases:
-            self.assertIs(data_type,
-                          DataType.normalize(other_alias))
-        self.assertIs(expected_data_type,
-                      DataType.normalize(expected_dtype))
-        self.assertIs(expected_data_type,
-                      DataType.normalize(expected_data_type))
+        self.assertIs(expected_data_type, DataType.normalize(expected_data_type))
+        # The following tests are not applicable to iterators,
+        # because iterators are not (cannot be) forced to have
+        # a specific item type.
+        if data_type.dtype is not DataIterator:
+            for other_alias in data_type.aliases:
+                self.assertIs(data_type, DataType.normalize(other_alias))
+            self.assertIs(expected_data_type, DataType.normalize(expected_dtype))
 
     def test_normalize_non_default_types(self):
         data_type = DataType.normalize(str)
         self.assertIs(str, data_type.dtype)
-        self.assertEqual('builtins.str', data_type.alias)
+        self.assertEqual("builtins.str", data_type.alias)
 
     def test_normalize_failure(self):
         with self.assertRaises(ValueError) as cm:
-            DataType.normalize('Gnartz')
-        self.assertEqual("unknown data type 'Gnartz'",
-                         f'{cm.exception}')
+            DataType.normalize("Gnartz")
+        self.assertEqual("unknown data type 'Gnartz'", f"{cm.exception}")
 
         with self.assertRaises(ValueError) as cm:
             # noinspection PyTypeChecker
             DataType.normalize(42)
-        self.assertEqual("cannot convert 42 into a data type",
-                         f'{cm.exception}')
+        self.assertEqual("cannot convert 42 into a data type", f"{cm.exception}")
 
     def test_equality(self):
         self.assertIs(DATASET_TYPE, DATASET_TYPE)

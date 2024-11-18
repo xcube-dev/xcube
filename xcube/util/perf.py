@@ -1,28 +1,10 @@
-# The MIT License (MIT)
-# Copyright (c) 2019 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import functools
 import logging
 import time
-import warnings
 from contextlib import AbstractContextManager
 from typing import Optional
 
@@ -30,8 +12,8 @@ from xcube.constants import LOG
 
 
 def measure_time_cm(logger=None, disabled=False):
-    """
-    Get a context manager for measuring execution time of code blocks and logging the result.
+    """Get a context manager for measuring execution time of code blocks
+    and logging the result.
 
     Measure duration and log output:::
 
@@ -45,9 +27,13 @@ def measure_time_cm(logger=None, disabled=False):
             do_heavy_computation()
         print("heavy computation took %2.f seconds" % cm.duration)
 
-    :param logger: The logger to be used. May be a string or logger object. Defaults to "xcube".
-    :param disabled: If True, efficiently disables timing and logging.
-    :return: a context manager callable
+    Args:
+        logger: The logger to be used. May be a string or logger object.
+            Defaults to "xcube".
+        disabled: If True, efficiently disables timing and logging.
+
+    Returns:
+        a context manager callable
     """
     if disabled:
         return _do_not_measure_time_cm
@@ -56,27 +42,10 @@ def measure_time_cm(logger=None, disabled=False):
 
 
 class measure_time(AbstractContextManager):
-    def __init__(self,
-                 *args,
-                 tag: Optional[str] = None,
-                 logger: Optional[logging.Logger] = None,
-                 **kwargs):
-        self.message = tag
-        self.args = args
+    def __init__(self, *args, logger: Optional[logging.Logger] = None, **kwargs):
+        self.message = args[0] if args else None
+        self.args = args[1:] if args else ()
         self.kwargs = kwargs
-        if tag is not None:
-            warnings.warn('The keyword "tag" has been deprecated,'
-                          ' use first argument "message" instead',
-                          DeprecationWarning)
-        elif args:
-            self.message = args[0]
-            self.args = args[1:]
-        else:
-            warnings.warn('Calling measure_time() without "message"'
-                          ' argument is deprecated.',
-                          DeprecationWarning)
-            self.message = None
-            self.args = None
         if isinstance(logger, str):
             self.logger = logging.getLogger(logger)
         elif logger is None:
@@ -102,7 +71,6 @@ class measure_time(AbstractContextManager):
 
 
 class _do_not_measure_time_cm(AbstractContextManager):
-
     # noinspection PyUnusedLocal
     def __init__(self, *args, **kwargs):
         self.duration = None

@@ -1,23 +1,6 @@
-# The MIT License (MIT)
-# Copyright (c) 2021 by the xcube development team and contributors
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of
-# this software and associated documentation files (the "Software"), to deal in
-# the Software without restriction, including without limitation the rights to
-# use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-# of the Software, and to permit persons to whom the Software is furnished to do
-# so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 from typing import Optional
 
@@ -51,34 +34,34 @@ from ..response import CubeReference
 
 
 class LocalCubeGenerator(CubeGenerator):
-    """
-    Generator tool for data cubes.
+    """Generator tool for data cubes.
 
     Creates cube views from one or more cube stores, resamples them to a
     common grid, optionally performs some cube transformation, and writes
     the resulting cube to some target cube store.
 
-    :param store_pool: An optional pool of pre-configured data stores
-        referenced from *gen_config* input/output configurations.
-    :param verbosity: Level of verbosity, 0 means off.
-    :param raise_on_error: Whether to raise a CubeGeneratorError
-        exception on generator failures. If False, the default,
-        the returned result will have the "status" field set to "error"
-        while other fields such as "message", "traceback", "output"
-        provide more failure details.
+    Args:
+        store_pool: An optional pool of pre-configured data stores
+            referenced from *gen_config* input/output configurations.
+        verbosity: Level of verbosity, 0 means off.
+        raise_on_error: Whether to raise a CubeGeneratorError exception
+            on generator failures. If False, the default, the returned
+            result will have the "status" field set to "error" while
+            other fields such as "message", "traceback", "output"
+            provide more failure details.
     """
 
-    def __init__(self,
-                 store_pool: DataStorePool = None,
-                 raise_on_error: bool = False,
-                 verbosity: int = 0):
-        super().__init__(raise_on_error=raise_on_error,
-                         verbosity=verbosity)
+    def __init__(
+        self,
+        store_pool: DataStorePool = None,
+        raise_on_error: bool = False,
+        verbosity: int = 0,
+    ):
+        super().__init__(raise_on_error=raise_on_error, verbosity=verbosity)
         if store_pool is not None:
-            assert_instance(store_pool, DataStorePool, 'store_pool')
+            assert_instance(store_pool, DataStorePool, "store_pool")
 
-        self._store_pool = store_pool if store_pool is not None \
-            else DataStorePool()
+        self._store_pool = store_pool if store_pool is not None else DataStorePool()
         self._generated_data_id: Optional[str] = None
         self._generated_cube: Optional[xr.Dataset] = None
         self._generated_gm: Optional[GridMapping] = None
@@ -98,9 +81,7 @@ class LocalCubeGenerator(CubeGenerator):
         """Return the recently generated data cube."""
         return self._generated_gm
 
-    def _generate_cube(self, request: CubeGeneratorRequestLike) \
-            -> CubeGeneratorResult:
-
+    def _generate_cube(self, request: CubeGeneratorRequestLike) -> CubeGeneratorResult:
         request = CubeGeneratorRequest.normalize(request)
         request = request.for_local()
 
@@ -115,14 +96,12 @@ class LocalCubeGenerator(CubeGenerator):
             if observer is not None:
                 observer.deactivate()
 
-    def __generate_cube(self, request: CubeGeneratorRequest) \
-            -> CubeGeneratorResult:
+    def __generate_cube(self, request: CubeGeneratorRequest) -> CubeGeneratorResult:
+        cube_config = (
+            request.cube_config if request.cube_config is not None else CubeConfig()
+        )
 
-        cube_config = request.cube_config \
-            if request.cube_config is not None else CubeConfig()
-
-        opener = CubeOpener(cube_config,
-                            store_pool=self._store_pool)
+        opener = CubeOpener(cube_config, store_pool=self._store_pool)
 
         subsetter = CubeSubsetter()
         resampler_xy = CubeResamplerXY()
@@ -140,8 +119,7 @@ class LocalCubeGenerator(CubeGenerator):
 
         md_adjuster = CubeMetadataAdjuster()
 
-        cube_writer = CubeWriter(request.output_config,
-                                 store_pool=self._store_pool)
+        cube_writer = CubeWriter(request.output_config, store_pool=self._store_pool)
 
         num_inputs = len(request.input_configs)
         # Estimated workload:
@@ -155,35 +133,31 @@ class LocalCubeGenerator(CubeGenerator):
         post_rechunker_work = 1
         metadata_adjuster_work = 1
         writer_work = 100  # this is where dask processing takes place
-        total_work = (opener_work
-                      + subsetter_work
-                      + resampler_t_work
-                      + resampler_xy_work) * num_inputs \
-                     + combiner_work \
-                     + rechunker_work \
-                     + executor_work \
-                     + post_rechunker_work \
-                     + metadata_adjuster_work \
-                     + writer_work
+        total_work = (
+            (opener_work + subsetter_work + resampler_t_work + resampler_xy_work)
+            * num_inputs
+            + combiner_work
+            + rechunker_work
+            + executor_work
+            + post_rechunker_work
+            + metadata_adjuster_work
+            + writer_work
+        )
 
         t_cubes = []
-        with observe_progress('Generating cube',
-                              total_work) as progress:
+        with observe_progress("Generating cube", total_work) as progress:
             for input_config in request.input_configs:
                 progress.will_work(opener_work)
                 t_cube = opener.open_cube(input_config)
 
                 progress.will_work(subsetter_work)
-                t_cube = transform_cube(t_cube, subsetter,
-                                        'subsetting')
+                t_cube = transform_cube(t_cube, subsetter, "subsetting")
 
                 progress.will_work(resampler_t_work)
-                t_cube = transform_cube(t_cube, resampler_t,
-                                        'resampling in time')
+                t_cube = transform_cube(t_cube, resampler_t, "resampling in time")
 
                 progress.will_work(resampler_xy_work)
-                t_cube = transform_cube(t_cube, resampler_xy,
-                                        'resampling in space')
+                t_cube = transform_cube(t_cube, resampler_xy, "resampling in space")
 
                 t_cubes.append(t_cube)
 
@@ -191,20 +165,16 @@ class LocalCubeGenerator(CubeGenerator):
             t_cube = combiner.combine_cubes(t_cubes)
 
             progress.will_work(rechunker_work)
-            t_cube = transform_cube(t_cube, rechunker,
-                                    'rechunking')
+            t_cube = transform_cube(t_cube, rechunker, "rechunking")
 
             progress.will_work(executor_work)
-            t_cube = transform_cube(t_cube, code_executor,
-                                    'executing user code')
+            t_cube = transform_cube(t_cube, code_executor, "executing user code")
 
             progress.will_work(post_rechunker_work)
-            t_cube = transform_cube(t_cube, post_rechunker,
-                                    'post-rechunking')
+            t_cube = transform_cube(t_cube, post_rechunker, "post-rechunking")
 
             progress.will_work(metadata_adjuster_work)
-            t_cube = transform_cube(t_cube, md_adjuster,
-                                    'adjusting metadata')
+            t_cube = transform_cube(t_cube, md_adjuster, "adjusting metadata")
 
             progress.will_work(writer_work)
             cube, gm, _ = t_cube
@@ -222,27 +192,25 @@ class LocalCubeGenerator(CubeGenerator):
 
         if self._generated_data_id is not None:
             return CubeGeneratorResult(
-                status='ok',
+                status="ok",
                 status_code=201,
                 result=CubeReference(data_id=data_id),
-                message=f'Cube generated successfully'
-                        f' after {total_time:.2f} seconds'
+                message=f"Cube generated successfully"
+                f" after {total_time:.2f} seconds",
             )
         else:
             return CubeGeneratorResult(
-                status='warning',
+                status="warning",
                 status_code=422,
-                message=f'An empty cube has been generated'
-                        f' after {total_time:.2f} seconds.'
-                        f' No data has been written at all.'
+                message=f"An empty cube has been generated"
+                f" after {total_time:.2f} seconds."
+                f" No data has been written at all.",
             )
 
-    def _get_cube_info(self, request: CubeGeneratorRequestLike) \
-            -> CubeInfoResult:
+    def _get_cube_info(self, request: CubeGeneratorRequestLike) -> CubeInfoResult:
         request = CubeGeneratorRequest.normalize(request)
-        informant = CubeInformant(request=request.for_local(),
-                                  store_pool=self._store_pool)
+        informant = CubeInformant(
+            request=request.for_local(), store_pool=self._store_pool
+        )
         cube_info = informant.generate()
-        return CubeInfoResult(result=cube_info,
-                              status='ok',
-                              status_code=200)
+        return CubeInfoResult(result=cube_info, status="ok", status_code=200)

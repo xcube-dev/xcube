@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import time
 from unittest import TestCase
 
@@ -38,15 +42,6 @@ class MeasureTimeTest(TestCase):
         self.assertEqual(("Mrs X",), cm.args)
         self.assertEqual(2, len(logger.output))
         self.assertTrue(logger.output[1].startswith("Hello Mrs X: took "))
-
-    def test_enabled_deprecated(self):
-        measure_time = measure_time_cm(disabled=False)
-        with measure_time(tag="Hello") as cm:
-            time.sleep(0.06)
-        self.assertTrue(hasattr(cm, "duration"))
-        self.assertTrue(cm.duration > 0.05)
-        self.assertIsNotNone(cm.logger)
-        self.assertEqual("Hello", cm.message)
 
     def test_disabled(self):
         measure_time = measure_time_cm(disabled=True)

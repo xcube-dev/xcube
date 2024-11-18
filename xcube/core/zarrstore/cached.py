@@ -1,27 +1,11 @@
-# The MIT License (MIT)
-# Copyright (c) 2022 by the xcube development team and contributors
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
 import collections.abc
 import warnings
-from typing import Iterator, List
+from typing import List
+from collections.abc import Iterator
 
 import zarr.storage
 
@@ -38,10 +22,10 @@ class CachedZarrStore(zarr.storage.Store):
     Note that iterating keys and containment checks are performed
     on *store* only.
 
-    :param store: A Zarr store that is known
-        to be slow in reading values.
-    :param cache: A writable Zarr store that can
-        read values faster than *store*.
+    Args:
+        store: A Zarr store that is known to be slow in reading values.
+        cache: A writable Zarr store that can read values faster than
+            *store*.
     """
 
     _readable = True  # Because the base class is readable
@@ -49,22 +33,24 @@ class CachedZarrStore(zarr.storage.Store):
     _writeable = False  # Because this is not yet supported
     _erasable = False  # Because this is not yet supported
 
-    def __init__(self,
-                 store: collections.abc.MutableMapping,
-                 cache: collections.abc.MutableMapping):
+    def __init__(
+        self,
+        store: collections.abc.MutableMapping,
+        cache: collections.abc.MutableMapping,
+    ):
         assert_instance(store, collections.abc.MutableMapping, name="store")
         assert_instance(cache, collections.abc.MutableMapping, name="cache")
         if not isinstance(store, zarr.storage.BaseStore):
             store = zarr.storage.KVStore(store)
         if not isinstance(cache, zarr.storage.BaseStore):
             cache = zarr.storage.KVStore(cache)
-        assert_true(store.is_readable(), message='store must be readable')
-        assert_true(cache.is_readable(), message='cache must be readable')
-        assert_true(cache.is_writeable(), message='cache must be writable')
+        assert_true(store.is_readable(), message="store must be readable")
+        assert_true(cache.is_readable(), message="cache must be readable")
+        assert_true(cache.is_writeable(), message="cache must be writable")
         self._store = store
         self._cache = cache
-        self._implement_op('listdir')
-        self._implement_op('getsize')
+        self._implement_op("listdir")
+        self._implement_op("getsize")
 
     @property
     def store(self) -> zarr.storage.BaseStore:
@@ -79,7 +65,7 @@ class CachedZarrStore(zarr.storage.Store):
             assert hasattr(self, "_" + op)
             setattr(self, op, getattr(self, "_" + op))
 
-    def _listdir(self, path: str = "") -> List[str]:
+    def _listdir(self, path: str = "") -> list[str]:
         # noinspection PyUnresolvedReferences
         return self._store.listdir(path=path)
 

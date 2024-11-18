@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2024 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 import copy
 from unittest import TestCase
 
@@ -16,15 +20,18 @@ from matplotlib import cm
 # * http://matplotlib.org/api/colors_api.html#
 # * https://bids.github.io/colormap/
 
+
 class PILImageTest(TestCase):
     def test_array_to_rgba(self):
         nan = np.nan
-        array = np.array([
-            [0.0, 0.1, 0.2, nan],
-            [0.2, 0.3, nan, 0.5],
-            [0.4, nan, 0.6, 0.7],
-            [nan, 0.7, 0.8, 0.9],
-        ])
+        array = np.array(
+            [
+                [0.0, 0.1, 0.2, nan],
+                [0.2, 0.3, nan, 0.5],
+                [0.4, nan, 0.6, 0.7],
+                [nan, 0.7, 0.8, 0.9],
+            ]
+        )
         # print(array, array.dtype)
 
         min = 0.1
@@ -48,35 +55,40 @@ class PILImageTest(TestCase):
         # However, in doing we would modify the global cm.gist_earth singleton so we create a copy here:
         #
         cmap_copy = copy.copy(cm.gist_earth)
-        cmap_copy.set_bad('k', 0)
+        cmap_copy.set_bad("k", 0)
         array = cmap_copy(array, bytes=True)
         # print(array, array.dtype)
-        self.assertEqual([[[0, 0, 0, 255],
-                           [0, 0, 0, 255],
-                           [23, 64, 121, 255],
-                           [0, 0, 0, 0],
-                           ],
+        self.assertEqual(
+            [
+                [
+                    [0, 0, 0, 255],
+                    [0, 0, 0, 255],
+                    [23, 64, 121, 255],
+                    [0, 0, 0, 0],
+                ],
+                [
+                    [23, 64, 121, 255],
+                    [48, 128, 126, 255],
+                    [0, 0, 0, 0],
+                    [130, 168, 83, 255],
+                ],
+                [
+                    [65, 149, 82, 255],
+                    [0, 0, 0, 0],
+                    [184, 179, 95, 255],
+                    [212, 176, 147, 255],
+                ],
+                [
+                    [0, 0, 0, 0],
+                    [212, 176, 147, 255],
+                    [253, 250, 250, 255],
+                    [253, 250, 250, 255],
+                ],
+            ],
+            array.tolist(),
+        )
 
-                          [[23, 64, 121, 255],
-                           [48, 128, 126, 255],
-                           [0, 0, 0, 0],
-                           [130, 168, 83, 255],
-                           ],
-
-                          [[65, 149, 82, 255],
-                           [0, 0, 0, 0],
-                           [184, 179, 95, 255],
-                           [212, 176, 147, 255],
-                           ],
-
-                          [[0, 0, 0, 0],
-                           [212, 176, 147, 255],
-                           [253, 250, 250, 255],
-                           [253, 250, 250, 255],
-                           ],
-                          ], array.tolist())
-
-        im = Image.fromarray(array, mode='RGBA')
+        im = Image.fromarray(array, mode="RGBA")
 
         # im.show('Raw Image')
 
