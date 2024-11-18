@@ -23,6 +23,8 @@ from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
 from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
 from .impl.mldataset import DatasetLevelsFsDataAccessor
 from .impl.mldataset import MultiLevelDatasetLevelsFsDataAccessor
+from .impl.vectordatacube import VectorDataCubeNetcdfFsDataAccessor
+from .impl.vectordatacube import VectorDataCubeZarrFsDataAccessor
 from .store import FsDataStore
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
@@ -120,6 +122,8 @@ for cls in (
     MultiLevelDatasetLevelsFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
     GeoDataFrameGeoJsonFsDataAccessor,
+    VectorDataCubeNetcdfFsDataAccessor,
+    VectorDataCubeZarrFsDataAccessor
 ):
     register_fs_data_accessor_class(cls)
 

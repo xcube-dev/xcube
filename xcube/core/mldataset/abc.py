@@ -153,12 +153,12 @@ class MultiLevelDataset(metaclass=ABCMeta):
 
 class VectorDataCube(xr.Dataset):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self, geometry_column: str = "geometry", crs: str = "crs", *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
-        for coord_name, coord_values in self.coords.items():
-            if isinstance(coord_values.to_index(), xvec.GeometryIndex):
-                return
-        raise ValueError(f"Dataset has no Coordinate with an xvec.GeometryIndex.")
+        self.xvec.set_geom_indexes(geometry_column, crs=crs)
+        self.xvec.encode_cf()
 
     @classmethod
     def from_dataset(cls, dataset):

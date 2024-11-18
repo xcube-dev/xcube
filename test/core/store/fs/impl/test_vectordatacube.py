@@ -18,9 +18,10 @@ class VectorDataCubeStoreTest(unittest.TestCase):
         store = new_data_store("file")
         vdc = new_vector_data_cube()
         data_id = store.write_data(
-            vdc, data_id="vdc_test.zarr"
+            vdc, data_id="vdc_test.zarr", writer_id="vectordatacube:zarr:file"
         )
         self.assertIsNotNone(data_id)
+        store.delete_data(data_id)
 
 class VectorDataCubeZarrFsDataAccessorTest(unittest.TestCase):
 

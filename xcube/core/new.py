@@ -11,6 +11,8 @@ import random
 from shapely import Point
 import xarray as xr
 
+from xcube.core.mldataset.abc import VectorDataCube
+
 
 def new_cube(
     title="Test Cube",
@@ -473,7 +475,8 @@ def new_vector_data_cube(
             v.attrs["grid_mapping"] = crs_name
         data_vars[crs_name] = xr.DataArray(0, attrs=crs.to_cf())
 
-    ds = xr.Dataset(data_vars=data_vars, coords=coords, attrs=attrs)
-    ds = ds.xvec.set_geom_indexes(geometry_name, crs=crs)
-    # ds = ds.xvec.encode_cf()
+    ds = VectorDataCube(
+        geometry_column=geometry_name, crs=crs, data_vars=data_vars,
+        coords=coords, attrs=attrs
+    )
     return ds
