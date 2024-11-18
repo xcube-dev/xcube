@@ -214,6 +214,8 @@ def register_default_data_types():
         MULTI_LEVEL_DATASET_ITERATOR_TYPE,
         GEO_DATA_FRAME_TYPE,
         GEO_DATA_FRAME_ITERATOR_TYPE,
+        VECTOR_DATA_CUBE_TYPE,
+        VECTOR_DATA_CUBE_ITERATOR_TYPE,
     ]:
         DataType.register_data_type(data_type)
 

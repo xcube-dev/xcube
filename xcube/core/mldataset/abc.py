@@ -9,6 +9,7 @@ from typing import Any, Dict, Callable, Tuple
 from collections.abc import Sequence
 
 import xarray as xr
+import xvec
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
@@ -148,3 +149,21 @@ class MultiLevelDataset(metaclass=ABCMeta):
             if x_res > given_x_res and y_res > given_y_res:
                 return max(0, level - 1)
         return self.num_levels - 1
+
+
+class VectorDataCube(xr.Dataset):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for coord_name, coord_values in self.coords.items():
+            if isinstance(coord_values.to_index(), xvec.GeometryIndex):
+                return
+        raise ValueError(f"Dataset has no Coordinate with an xvec.GeometryIndex.")
+
+    @classmethod
+    def from_dataset(cls, dataset):
+        return cls(
+            data_vars=dataset.data_vars,
+            coords=dataset.coords,
+            attrs=dataset.attrs
+        )
