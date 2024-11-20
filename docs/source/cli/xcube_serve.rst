@@ -269,7 +269,7 @@ The xcube server endpoint ``/viewer/state`` allows for persisting viewer state
 if configured via the ``Viewer/Persistence`` setting. It requires a ``Path``
 which may be either an absolute local path or a URL or it may be relative to
 the configuration's ``base_dìr`` setting.
-xcube Server will use this location to persist xcube Viewer states.
+xcube Server will use this location to persist xcube Viewer states,
 therefore it should refer to a writable and have sufficient space.
 A single state takes at least 2000 bytes but can also have several megabytes
 depending on the user's activities (user shapes, layers, time-series, statistics).
