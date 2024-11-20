@@ -1,7 +1,10 @@
-import altair
+import altair as alt
 from chartlets import Component, Input, State, Output
 from chartlets.components import Box, Button, Plot, Select
+import numpy as np
+import pandas as pd
 
+from xcube.core.geom import mask_dataset_by_geometry
 from xcube.webapi.viewer.contrib import Panel
 from xcube.webapi.viewer.contrib import get_dataset
 from xcube.server.api import Context
@@ -22,23 +25,17 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
             "flexDirection": "column",
             "width": "100%",
             "height": 300,
-            "gap": "6px",
+            "gap": 6,
         },
     )
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
     select_var_1 = Select(
-        id="select_var_1",
-        label="Variable 1",
-        value=var_name_1,
-        options=var_names
+        id="select_var_1", label="Variable 1", value=var_name_1, options=var_names
     )
     select_var_2 = Select(
-        id="select_var_2",
-        label="Variable 2",
-        value=var_name_2,
-        options=var_names
+        id="select_var_2", label="Variable 2", value=var_name_2, options=var_names
     )
 
     select_box = Box(
@@ -46,16 +43,12 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         style={
             "display": "flex",
             "flexDirection": "row",
-            "gap": 6
-        }
+            "gap": 6,
+            "paddingTop": 40,
+        },
     )
 
-    button = Button(
-        id="button",
-        text="Update",
-        disabled=True,
-        style={"maxWidth": 100}
-    )
+    button = Button(id="button", text="Update", disabled=True, style={"maxWidth": 100})
 
     return Box(
         children=[plot, select_box, button],
@@ -89,18 +82,50 @@ def update_plot(
     var_name_1: str | None = None,
     var_name_2: str | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
-) -> altair.Chart | None:
+) -> alt.Chart | None:
     dataset = get_dataset(ctx, dataset_id)
-    if dataset is None or place_geometry is None:
+    if dataset is None or place_geometry is None or not var_name_1 or not var_name_2:
         print("panel disabled")
         return None
-    variable_1 = dataset[var_name_1]
-    variable_2 = dataset[var_name_2]
-    print("variable_1", variable_1)
-    print("variable_2", variable_2)
-    print("time_label", time_label)
-    print("place_geometry", place_geometry)
-    return None
+    if "time" in dataset.coords:
+        if time_label:
+            dataset = dataset.sel(time=pd.Timestamp(time_label[0:-1]), method="nearest")
+        else:
+            dataset = dataset.isel(time=-1)
+
+    dataset = mask_dataset_by_geometry(dataset, place_geometry)
+
+    var_data_1: np.ndarray = dataset[var_name_1].values.flatten()
+    var_data_2: np.ndarray = dataset[var_name_2].values.flatten()
+    x_range = [np.nanmin(var_data_1), np.nanmax(var_data_1)]
+    y_range = [np.nanmin(var_data_2), np.nanmax(var_data_2)]
+    num_bins = min(64, var_data_1.size)
+    hist2d, x_edges, y_edges = np.histogram2d(
+        var_data_1,
+        var_data_2,
+        bins=num_bins,
+        range=np.array([x_range, y_range]),
+    )
+    print(np.nanmin(hist2d), np.nanmax(hist2d))
+
+    x, y = np.meshgrid(
+        np.linspace(x_range[0], x_range[1], num_bins),
+        np.linspace(y_range[0], y_range[1], num_bins),
+    )
+
+    source = pd.DataFrame(
+        {var_name_1: x.ravel(), var_name_2: y.ravel(), "count": hist2d.ravel()}
+    )
+
+    return (
+        alt.Chart(source)
+        .mark_rect()
+        .encode(
+            x=f"{var_name_1}:Q",
+            y=f"{var_name_2}:Q",
+            color=alt.Color("count:Q", scale=alt.Scale(scheme="greenblue")),
+        )
+    )
 
 
 @panel.callback(
