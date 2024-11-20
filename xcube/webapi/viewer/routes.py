@@ -6,6 +6,7 @@ import importlib.resources
 import json
 import os
 import pathlib
+import random
 from typing import Union, Optional
 
 from chartlets import Response as ExtResponse
@@ -100,6 +101,62 @@ class ViewerConfigHandler(ApiHandler[ViewerContext]):
         elif filename_ext in ("jpeg", "jpg"):
             return "image/jpeg"
         return None
+
+
+@api.route("/viewer/state")
+class ViewerStateHandler(ApiHandler[ViewerContext]):
+
+    # noinspection SpellCheckingInspection
+    _id_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+    @api.operation(
+        operationId="getViewerState",
+        summary="Get previously stored viewer state keys or a specific state.",
+        parameters=[
+            {
+                "name": "key",
+                "in": "query",
+                "description": "The key of a previously stored state.",
+                "required": False,
+                "schema": {"type": "string"},
+            }
+        ],
+    )
+    def get(self):
+        if self.ctx.persistence is None:
+            self.response.set_status(504, "Persistence not supported")
+            return
+        key = self.request.get_query_arg("key", type=str, default="")
+        if key:
+            if key not in self.ctx.persistence:
+                self.response.set_status(404, "State not found")
+                return
+            state = self.ctx.persistence[key]
+            LOG.info(f"Restored state ({len(state)} bytes) for key {key!r}")
+            self.response.write(state)
+        else:
+            keys = list(self.ctx.persistence.keys())
+            self.response.write({"keys": keys})
+
+    @api.operation(
+        operationId="putViewerState",
+        summary="Store a viewer state and return a state key.",
+    )
+    def put(self):
+        if self.ctx.persistence is None:
+            self.response.set_status(504, "Persistence not supported")
+            return
+        state = self.request.body
+        key = self.new_key()
+        self.ctx.persistence[key] = state
+        LOG.info(f"Stored state ({len(state)} bytes) using key {key!r}")
+        self.response.write({"key": key})
+
+    def new_key(self, length: int = 8) -> str:
+        while True:
+            key = "".join(random.choice(self._id_chars) for _ in range(length))
+            if key not in self.ctx.persistence:
+                return key
 
 
 class ViewerExtHandler(ApiHandler[ViewerContext]):

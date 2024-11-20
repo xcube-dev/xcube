@@ -6,14 +6,33 @@
   `xcube.core.gridmapping.GridMapping`, enabling users to set the grid-mapping 
   resolution directly, which speeds up the method by avoiding time-consuming 
   spatial resolution estimation. (#1082)
-* The behaviour of the function `xcube.core.resample.resample_in_space()` has 
+
+* The behaviour of the function `xcube.core.resample.resample_in_space()` has
   been changed if no `tile_size` is specified for the target grid mapping. It now 
   defaults to the `tile_size` of the source grid mapping, improving the 
   user-friendliness of resampling and reprojection. (#1082)
+
 * The `"https"` data store (`store = new_data_store("https", ...)`) now allows 
   for lazily accessing NetCDF files.
   Implementation note: For this to work, the `DatasetNetcdfFsDataAccessor` 
   class has been adjusted. (#1083)
+
+* Added new endpoint `/viewer/state` to xcube Server that allows for xcube Viewer 
+  state persistence. (#1088)
+  
+  The new viewer API operations are:
+  - `GET /viewer/state` to get a keys of stored states or restore a specific state;
+  - `PUT /viewer/state` to store a state and receive a key for it.
+  
+  Persistence is configured using new optional `Viewer/Persistence` setting:
+  ```yaml
+  Viewer:
+   Persistence:
+     # Any filesystem. Can also be relative to base_dir.
+     Path: memory://states
+     # Filesystem-specific storage options   
+     # StorageOptions: ...
+  ```
 
 ### Fixes
 
