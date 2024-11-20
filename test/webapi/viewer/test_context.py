@@ -5,7 +5,7 @@
 import collections.abc
 import unittest
 from typing import Optional, Union, Any
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
 
 import fsspec
 from chartlets import ExtensionContext
@@ -50,6 +50,14 @@ class ViewerContextTest(unittest.TestCase):
         config.update(dict(Viewer=dict(Configuration=dict(Path=config_path))))
         ctx2 = get_viewer_ctx(server_config=config)
         self.assertEqual(config_path, ctx2.config_path)
+
+    def test_without_persistence(self):
+        ctx = get_viewer_ctx()
+        self.assertIsNone(ctx.persistence)
+
+    def test_with_persistence(self):
+        ctx = get_viewer_ctx("config-persistence.yml")
+        self.assertIsInstance(ctx.persistence, MutableMapping)
 
     def test_panels_local(self):
         ctx = get_viewer_ctx("config-panels.yml")

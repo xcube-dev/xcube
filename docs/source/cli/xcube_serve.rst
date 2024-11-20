@@ -234,7 +234,9 @@ respect to ``base_dir`` and to normalize it. For example
 .. _viewer configuration:
 
 Viewer Configuration [optional]
-------------------------------
+-------------------------------
+
+### Viewer Branding
 
 The xcube server endpoint ``/viewer/config/{*path}`` allows
 for configuring the viewer accessible via endpoint ``/viewer``.
@@ -259,6 +261,40 @@ All its values are optional, if not provided,
 are used instead. 
 
 .. _datasets:
+
+
+### Viewer State Persistence
+
+The xcube server endpoint ``/viewer/state`` allows for persisting viewer state
+if configured via the ``Viewer/Persistence`` setting. It requires a ``Path``
+which may be either an absolute local path or a URL or it may be relative to
+the configuration's ``base_dìr`` setting.
+xcube Server will use this location to persist xcube Viewer states,
+therefore it should refer to a writable and have sufficient space.
+A single state takes at least 2000 bytes but can also have several megabytes
+depending on the user's activities (user shapes, layers, time-series, statistics).
+
+.. code-block:: yaml
+
+    Viewer:
+      Persistence:
+        Path: user-states
+
+You can add filesystem-specific storage options using the ``StorageOptions``
+setting. For example:
+
+.. code-block:: yaml
+
+    Viewer:
+      Persistence:
+        Path: s3://my-project-bucket/viewer/states
+        StorageOptions:
+           key: my-key
+           secret: my-secret
+           region: my-region
+
+Note that it is not possible yet to limit state information stored.
+If desired, this should be implemented outside of xcube server.
 
 Datasets [mandatory]
 --------------------
