@@ -90,12 +90,13 @@ def update_plot(
     dataset_id: str | None = None,
     time_label: float | None = None,
     place_geometry: str | None = None,
-    var_name_1: str | None = None,
-    var_name_2: str | None = None,
+    var_1_name: str | None = None,
+    var_2_name: str | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> alt.Chart | None:
     dataset = get_dataset(ctx, dataset_id)
-    if dataset is None or place_geometry is None or not var_name_1 or not var_name_2:
+    if dataset is None or not place_geometry or not var_1_name or not var_2_name:
+        # TODO: set error message in panel UI
         print("panel disabled")
         return None
 
@@ -115,11 +116,12 @@ def update_plot(
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
+        # TODO: set error message in panel UI
         print("dataset is None after masking, invalid geometry?")
         return None
 
-    var_1_data: np.ndarray = dataset[var_name_1].values.ravel()
-    var_2_data: np.ndarray = dataset[var_name_2].values.ravel()
+    var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
+    var_2_data: np.ndarray = dataset[var_2_name].values.ravel()
     var_1_range = [np.nanmin(var_1_data), np.nanmax(var_1_data)]
     var_2_range = [np.nanmin(var_2_data), np.nanmax(var_2_data)]
     num_bins = min(NUM_BINS_MAX, var_1_data.size)
@@ -131,11 +133,11 @@ def update_plot(
         density=True,
     )
     # x and y 2D arrays with bin centers
-    x, y = np.meshgrid(np.arange(num_bins), np.arange(num_bins)[::-1])
+    x, y = np.meshgrid(np.arange(num_bins), np.arange(num_bins))
     # z = hist2d
-    z = np.where(hist2d > 0.0, hist2d, np.nan)
+    z = np.where(hist2d > 0.0, hist2d, np.nan).T
     source = pd.DataFrame(
-        {var_name_1: x.ravel(), var_name_2: y.ravel(), "z": z.ravel()}
+        {var_1_name: x.ravel(), var_2_name: y.ravel(), "z": z.ravel()}
     )
     # TODO: use edges or center coordinates as tick labels.
     x_centers = x_edges[0:-1] + np.diff(x_edges) / 2
@@ -147,11 +149,12 @@ def update_plot(
         .mark_rect()
         .encode(
             x=alt.X(
-                f"{var_name_1}:O",
+                f"{var_1_name}:O",
                 # scale=alt.Scale(bins=x_centers),
             ),
             y=alt.Y(
-                f"{var_name_2}:O",
+                f"{var_2_name}:O",
+                sort="descending",
                 # scale=alt.Scale(bins=y_centers),
             ),
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
