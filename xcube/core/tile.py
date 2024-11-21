@@ -12,6 +12,7 @@ from collections.abc import Hashable, Sequence
 import PIL
 import matplotlib.colors
 import numpy as np
+import pandas as pd
 import pyproj
 import xarray as xr
 
@@ -725,6 +726,13 @@ def _get_non_spatial_labels(
                 label = coord_var[-1].values
             else:
                 try:
+                    if np.issubdtype(coord_var.dtype, np.datetime64):
+                        timestamp = pd.Timestamp(label)
+                        if timestamp.tz is not None:
+                            # Convert the timestamp to timezone-naive, since
+                            # NumPy doesn't like parsing timezone-aware
+                            # representations into datetime64 types.
+                            label = timestamp.tz_convert(None).isoformat()
                     label = np.array(label).astype(coord_var.dtype)
                 except (TypeError, ValueError) as e:
                     raise TileRequestException(

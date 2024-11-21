@@ -43,8 +43,11 @@
 * Bux fix in the `has_data` method of all filesystem-based data store
   (`"file", "s3", "https"`). `data_type` can be any of the supported data types,
   e.g. for `.tif` file, `data_type` can be either `dataset` or `mldataset`. (#1084) 
-* The explaination of the parameter `xy_scale` in the method 
+* The explanation of the parameter `xy_scale` in the method
   `xcube.core.gridmapping.GridMapping.scale` has been corrected. (#1086)
+* The spurious tileserver/viewer warning "no explicit representation of
+  timezones available…" (formerly "parsing timezone aware datetimes is
+  deprecated…") is no longer generated. (#807)
 
 ### Other changes
 
