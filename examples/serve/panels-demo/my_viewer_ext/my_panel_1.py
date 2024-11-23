@@ -24,7 +24,7 @@ panel = Panel(__name__, title="2D Histogram")
 NUM_BINS_MAX = 64
 
 
-@panel.layout(State(source="app", property="controlState.selectedDatasetId"))
+@panel.layout(State(source="app", property="selectedDatasetId"))
 def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
@@ -77,9 +77,9 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
 
 # noinspection PyUnusedLocal
 @panel.callback(
-    State(source="app", property="controlState.selectedDatasetId"),
-    State(source="app", property="controlState.selectedTimeLabel"),
-    State(source="app", property="controlState.selectedPlaceGeometry"),
+    State(source="app", property="selectedDatasetId"),
+    State(source="app", property="selectedTimeLabel"),
+    State(source="app", property="selectedPlaceGeometry"),
     State("select_var_1"),
     State("select_var_2"),
     Input("button", "clicked"),
@@ -163,8 +163,8 @@ def update_plot(
 
 
 @panel.callback(
-    Input(source="app", property="controlState.selectedDatasetId"),
-    Input(source="app", property="controlState.selectedPlaceGeometry"),
+    Input(source="app", property="selectedDatasetId"),
+    Input(source="app", property="selectedPlaceGeometry"),
     Output("button", "disabled"),
 )
 def enable_button(
@@ -176,7 +176,7 @@ def enable_button(
 
 
 @panel.callback(
-    Input(source="app", property="controlState.selectedDatasetId"),
+    Input(source="app", property="selectedDatasetId"),
     State("select_var_1", "value"),
     State("select_var_2", "value"),
     Output("select_var_1", "options"),
