@@ -5,7 +5,7 @@ import pyproj
 import shapely
 import shapely.ops
 from chartlets import Component, Input, State, Output
-from chartlets.components import Box, Button, Plot, Select
+from chartlets.components import Box, Button, CircularProgress, Plot, Select
 
 from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
@@ -28,17 +28,7 @@ NUM_BINS_MAX = 64
 def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
-    plot = Plot(
-        id="plot",
-        chart=None,
-        style={
-            "display": "flex",
-            "flexDirection": "column",
-            "width": "100%",
-            "height": 300,
-            "gap": 6,
-        },
-    )
+    plot = Plot(id="plot", chart=None, style={"paddingTop": 6})
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
@@ -56,8 +46,9 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         style={
             "display": "flex",
             "flexDirection": "row",
+            "alignItems": "center",
             "gap": 6,
-            "paddingTop": 50,
+            "padding": 6,
         },
     )
 
@@ -75,7 +66,17 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     )
 
 
-# noinspection PyUnusedLocal
+@panel.callback(
+    Input("button", "clicked"),
+    Output("button", ""),
+)
+def show_progress(
+    _ctx: Context,
+    _clicked: bool | None = None,  # trigger, will always be True
+) -> alt.Chart | None:
+    return CircularProgress(id="button", size=28)
+
+
 @panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
@@ -84,6 +85,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     State("select_var_2"),
     Input("button", "clicked"),
     Output("plot", "chart"),
+    Output("button"),
 )
 def update_plot(
     ctx: Context,
@@ -144,7 +146,7 @@ def update_plot(
     y_centers = y_edges[0:-1] + np.diff(y_edges) / 2
     # TODO: limit number of ticks on axes to, e.g., 10.
     # TODO: allow chart to be adjusted to available container (<div>) size.
-    return (
+    chart = (
         alt.Chart(source)
         .mark_rect()
         .encode(
@@ -159,7 +161,11 @@ def update_plot(
             ),
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
         )
-    ).properties(width=320, height=320)
+    ).properties(width=360, height=360)
+
+    button = Button(id="button", text="Update", style={"maxWidth": 100})
+
+    return chart, button
 
 
 @panel.callback(
