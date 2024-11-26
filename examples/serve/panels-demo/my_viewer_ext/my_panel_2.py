@@ -13,7 +13,7 @@ COLORS = [(0, "red"), (1, "green"), (2, "blue"), (3, "yellow")]
 
 
 @panel.layout(
-    Input("@app", "selectedDatasetId"),
+    State("@app", "selectedDatasetId"),
 )
 def render_panel(
     ctx: Context,

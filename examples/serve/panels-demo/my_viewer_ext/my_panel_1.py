@@ -67,17 +67,6 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
 
 
 @panel.callback(
-    Input("button", "clicked"),
-    Output("button", ""),
-)
-def show_progress(
-    _ctx: Context,
-    _clicked: bool | None = None,  # trigger, will always be True
-) -> alt.Chart | None:
-    return CircularProgress(id="button", size=28)
-
-
-@panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGeometry"),
@@ -85,7 +74,6 @@ def show_progress(
     State("select_var_2"),
     Input("button", "clicked"),
     Output("plot", "chart"),
-    Output("button"),
 )
 def update_plot(
     ctx: Context,
@@ -163,9 +151,7 @@ def update_plot(
         )
     ).properties(width=360, height=360)
 
-    button = Button(id="button", text="Update", style={"maxWidth": 100})
-
-    return chart, button
+    return chart
 
 
 @panel.callback(
@@ -173,7 +159,7 @@ def update_plot(
     Input("@app", "selectedPlaceGeometry"),
     Output("button", "disabled"),
 )
-def enable_button(
+def set_button_disablement(
     _ctx: Context,
     dataset_id: str | None = None,
     place_geometry: str | None = None,
@@ -225,3 +211,16 @@ def get_var_select_options(
             var_name_2 = var_names[0]
 
     return var_names, var_name_1, var_name_2
+
+
+# TODO: Doesn't work. We need to ensure that show_progress() returns
+#   before update_plot()
+# @panel.callback(
+#     Input("button", "clicked"),
+#     Output("button", ""),
+# )
+def show_progress(
+    _ctx: Context,
+    _clicked: bool | None = None,  # trigger, will always be True
+) -> alt.Chart | None:
+    return CircularProgress(id="button", size=28)
