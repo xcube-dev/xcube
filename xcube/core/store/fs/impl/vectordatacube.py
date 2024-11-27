@@ -5,6 +5,7 @@
 import xarray as xr
 import xvec
 
+from xcube.core.mldataset.abc import VectorDataCube
 from xcube.util.assertions import assert_instance
 from ...datatype import DataType
 from ...datatype import VECTOR_DATA_CUBE_TYPE
@@ -22,7 +23,9 @@ class VectorDataCubeZarrFsDataAccessor(DatasetZarrFsDataAccessor):
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         dataset = super().open_data(data_id, **open_params)
-        return dataset.xvec.decode_cf()
+        dataset = dataset.xvec.decode_cf()
+        dataset = VectorDataCube.from_dataset(dataset)
+        return dataset
 
     def write_data(
         self, data: xr.Dataset, data_id: str, replace=False, **write_params
@@ -41,7 +44,7 @@ class VectorDataCubeNetcdfFsDataAccessor(DatasetNetcdfFsDataAccessor):
     def get_data_type(cls) -> DataType:
         return VECTOR_DATA_CUBE_TYPE
 
-    def open_data(self, data_id: str, **open_params) -> xr.Dataset:
+    def open_data(self, data_id: str, **open_params) -> VectorDataCube:
         dataset = super().open_data(data_id, **open_params)
         return dataset.xvec.decode_cf()
 

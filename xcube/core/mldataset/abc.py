@@ -154,11 +154,17 @@ class MultiLevelDataset(metaclass=ABCMeta):
 class VectorDataCube(xr.Dataset):
 
     def __init__(
-        self, geometry_column: str = "geometry", crs: str = "crs", *args, **kwargs
+        self, geometry_column: str = "geometry", crs = None, *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
-        self.xvec.set_geom_indexes(geometry_column, crs=crs)
-        self.xvec.encode_cf()
+        # self.assign_coords(
+        #     dict(
+        #         geometry_column=self.get(geometry_column)
+        #     )
+        # )
+        # {geometry_column= self[geometry_name]})
+        # self.xvec.set_geom_indexes(geometry_column, crs=crs)
+        # self.xvec.encode_cf()
 
     @classmethod
     def from_dataset(cls, dataset):
