@@ -29,7 +29,7 @@ def render_panel(
         label="Opaque",
     )
 
-    color_Select = Select(
+    color_select = Select(
         id="color",
         value=color,
         label="Color",
@@ -38,7 +38,7 @@ def render_panel(
     )
 
     info_text = Typography(
-        id="info_text", children=[update_info_text(ctx, dataset_id, opaque, color)]
+        id="info_text", children=update_info_text(ctx, dataset_id, opaque, color)
     )
 
     return Box(
@@ -49,7 +49,7 @@ def render_panel(
             "height": "100%",
             "gap": "6px",
         },
-        children=[opaque_checkbox, color_Select, info_text],
+        children=[opaque_checkbox, color_select, info_text],
     )
 
 
@@ -58,26 +58,28 @@ def render_panel(
     Input("@app", "selectedDatasetId"),
     Input("opaque"),
     Input("color"),
-    State("info_text", "text"),
-    Output("info_text", "text"),
+    State("info_text", "children"),
+    Output("info_text", "children"),
 )
 def update_info_text(
     ctx: Context,
     dataset_id: str = "",
     opaque: bool = False,
     color: int = 0,
-    info_text: str = "",
-) -> str:
+    info_children: list[str] = "",
+) -> list[str]:
     ds_ctx = get_datasets_ctx(ctx)
     ds_configs = ds_ctx.get_dataset_configs()
 
+    info_text = info_children[0] if info_children else ""
+
     opaque = opaque or False
     color = color if color is not None else 0
-    return (
+    return [
         f"The dataset is {dataset_id},"
         f" the color is {COLORS[color][1]} and"
         f" it {'is' if opaque else 'is not'} opaque."
         f" The length of the last info text"
         f" was {len(info_text or "")}."
         f" The number of datasets is {len(ds_configs)}."
-    )
+    ]

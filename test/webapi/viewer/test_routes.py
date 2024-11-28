@@ -144,38 +144,35 @@ expected_callback_result = [
         "stateChanges": [
             {
                 "id": "info_text",
-                "link": "component",
                 "property": "text",
-                "value": (
-                    "The dataset is , the color is green "
-                    "and it is opaque. The length of the "
-                    "last info text was 0. The number of "
-                    "datasets is 1."
-                ),
+                "value": "The dataset is , the color is green and "
+                "it is opaque. The length of the last "
+                "info text was 0. The number of "
+                "datasets is 1.",
             }
         ],
     }
 ]
 
 expected_layout_result = {
-    "components": [
+    "children": [
         {"id": "opaque", "label": "Opaque", "type": "Checkbox", "value": False},
         {
             "id": "color",
             "label": "Color",
-            "options": [["red", 0], ["green", 1], ["blue", 2], ["yellow", 3]],
+            "options": [[0, "red"], [1, "green"], [2, "blue"], [3, "yellow"]],
             "style": {"flexGrow": 0, "minWidth": 80},
-            "type": "Dropdown",
+            "type": "Select",
             "value": 0,
         },
         {
-            "id": "info_text",
-            "text": (
+            "children": [
                 "The dataset is , the color is red and it "
                 "is not opaque. The length of the last "
-                "info text was 0. The number of datasets "
-                "is 1."
-            ),
+                "info text was 0. The number of "
+                "datasets is 1."
+            ],
+            "id": "info_text",
             "type": "Typography",
         },
     ],
@@ -223,21 +220,18 @@ expected_contributions_result = {
                         },
                         "inputs": [
                             {
-                                "link": "app",
-                                "property": "controlState.selectedDatasetId",
+                                "id": "@app",
+                                "property": "selectedDatasetId",
                             },
-                            {"id": "opaque", "link": "component", "property": "value"},
-                            {"id": "color", "link": "component", "property": "value"},
+                            {"id": "opaque", "property": "value"},
+                            {"id": "color", "property": "value"},
                             {
                                 "id": "info_text",
-                                "link": "component",
                                 "noTrigger": True,
                                 "property": "text",
                             },
                         ],
-                        "outputs": [
-                            {"id": "info_text", "link": "component", "property": "text"}
-                        ],
+                        "outputs": [{"id": "info_text", "property": "text"}],
                     }
                 ],
                 "extension": "my_ext",
@@ -255,7 +249,11 @@ expected_contributions_result = {
                         "returnType": {"class": "Component", "type": "object"},
                     },
                     "inputs": [
-                        {"link": "app", "property": "controlState.selectedDatasetId"}
+                        {
+                            "id": "@app",
+                            "noTrigger": True,
+                            "property": "selectedDatasetId",
+                        }
                     ],
                 },
                 "name": "my_ext.my_panel_a",
@@ -291,21 +289,18 @@ expected_contributions_result = {
                         },
                         "inputs": [
                             {
-                                "link": "app",
-                                "property": "controlState.selectedDatasetId",
+                                "id": "@app",
+                                "property": "selectedDatasetId",
                             },
-                            {"id": "opaque", "link": "component", "property": "value"},
-                            {"id": "color", "link": "component", "property": "value"},
+                            {"id": "opaque", "property": "value"},
+                            {"id": "color", "property": "value"},
                             {
                                 "id": "info_text",
-                                "link": "component",
                                 "noTrigger": True,
                                 "property": "text",
                             },
                         ],
-                        "outputs": [
-                            {"id": "info_text", "link": "component", "property": "text"}
-                        ],
+                        "outputs": [{"id": "info_text", "property": "text"}],
                     }
                 ],
                 "extension": "my_ext",
@@ -323,7 +318,11 @@ expected_contributions_result = {
                         "returnType": {"class": "Component", "type": "object"},
                     },
                     "inputs": [
-                        {"link": "app", "property": "controlState.selectedDatasetId"}
+                        {
+                            "id": "@app",
+                            "noTrigger": True,
+                            "property": "selectedDatasetId",
+                        }
                     ],
                 },
                 "name": "my_ext.my_panel_b",

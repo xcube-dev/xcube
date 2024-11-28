@@ -46,7 +46,7 @@ dependencies:
   - altair
   - pip
   - pip:
-     - chartlets
+     - chartlets >=0.0.28
   # Testing
   - flake8 >=3.7
   - kerchunk

@@ -58,7 +58,7 @@
   Panel instances provide two decorators `layout()` and `callback()`
   which are used to implement the UI and the interaction behaviour,
   respectively. The functionality is provided by the
-  `https://github.com/bcdev/chartlets` Python library.
+  [Chartlets](https://bcdev.github.io/chartlets/) Python library.
   A working example can be found in `examples/serve/panels-demo`.
 
 * The xcube test helper module `test.s3test` has been enhanced to support 
