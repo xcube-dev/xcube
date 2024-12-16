@@ -107,7 +107,10 @@ Datasets that use a non-geographic grid must provide the 1-D coordinates
 
 * In case the grid refers to a known spatial reference system (projected CRS), 
   the dataset must make use of the CRS encoding described in the 
-  [CF Conventions on Grid Mapping], i.e. add a variable `spatial_ref`.
+  [CF Conventions on Grid Mapping]. The CRS is encoded in the attributes of a 
+  special 0-D variable. It is suggested to call that variable `spatial_ref` 
+  for compatibility with `rasterio`. However, the name `crs` is also 
+  frequently used.
 * In case the grid is referring to satellite viewing geometry, the dataset must provide 
   2-D coordinates `lat` and `lon` both having the dimensions `y`, `x` – 
   in exactly this order, and apply the [CF Conventions on 2-D Lat and Lon].
