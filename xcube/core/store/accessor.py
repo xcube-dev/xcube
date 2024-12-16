@@ -225,6 +225,21 @@ class DataOpener(ABC):
             DataStoreError: If an error occurs.
         """
 
+    def close(self):
+        """Closes this data opener.
+
+        Should be called if the data opener is no longer needed.
+
+        This method may close local files, remote connections, or release
+        allocated resources.
+
+        The default implementation does nothing.
+        """
+
+    def __del__(self):
+        """Overridden to call ``close()``."""
+        self.close()
+
 
 class DataDeleter(ABC):
     """An interface that specifies a parameterized `delete_data()` operation.

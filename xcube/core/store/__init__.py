@@ -27,6 +27,10 @@ from .descriptor import VariableDescriptor
 from .descriptor import new_data_descriptor
 from .error import DataStoreError
 from .fs.registry import new_fs_data_store
+from .preload import PreloadEvent
+from .preload import PreloadEventType
+from .preload import PreloadHandle
+from .preload import PreloadMonitor
 from .search import DataSearcher
 from .search import DefaultSearchMixin
 from .store import DataStore
