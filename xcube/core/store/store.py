@@ -471,11 +471,6 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         """Get the JSON schema that describes the keyword
         arguments that can be passed to ``preload_data()``.
 
-        Refer to the ``DataPreloader`` interface for more information.
-
-        Warning: This is an experimental and potentially unstable API
-        introduced in xcube 1.8.
-
         Returns:
             A ``JsonObjectSchema`` object whose properties describe
             the parameters of ``preload_data()``.
@@ -493,7 +488,14 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         Warning: This is an experimental and potentially unstable API
         introduced in xcube 1.8.
 
-        Refer to the ``DataPreloader`` interface for more information.
+        The method may be blocking or non-blocking.
+        Implementations may offer the following keyword arguments
+        in *preload_params*:
+
+        - ``blocking``: whether the preload process is blocking.
+          Should be `True` by default if supported.
+        - ``monitor``: a callback function that serves as a progress monitor.
+          It receives the preload handle and the recent partial state update.
 
         Args:
             data_ids: Data identifiers to be preloaded.
@@ -503,7 +505,7 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
 
         Returns:
             A handle for the preload process. The default implementation
-            returns an empty process handle.
+            returns an empty preload handle.
         """
         return NullPreloadHandle()
 

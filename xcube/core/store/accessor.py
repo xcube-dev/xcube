@@ -352,9 +352,17 @@ temporarily in a cache for access.
     ) -> PreloadHandle:
         """Preload the given data items for faster access.
 
-        The method is blocking by default. You can pass a `monitor` to observe the
-        preload process, to cancel it, or to pass a function that is called if the
-        preload process successfully completed.
+        Warning: This is an experimental and potentially unstable API
+        introduced in xcube 1.8.
+
+        The method may be blocking or non-blocking.
+        Implementations may offer the following keyword arguments
+        in *preload_params*:
+
+        - ``blocking``: whether the preload process is blocking.
+          Should be `True` by default if supported.
+        - ``monitor``: a callback function that serves as a progress monitor.
+          It receives the preload handle and the recent partial state update.
 
         Args:
             data_ids: Data identifiers to be preloaded.

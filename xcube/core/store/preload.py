@@ -237,20 +237,25 @@ class ExecutorPreloadHandle(PreloadHandle):
         return data_id
 
     def _handle_preload_data_done(self, f: Future[str]):
+        # Find the data_id that belongs to given feature f
         data_id: str | None = None
         for data_id, future in self._futures.items():
             if f is future:
                 break
-        if data_id is None:
-            return
+        assert data_id is not None
         try:
             _value = f.result()
+            # No exceptions, notify everything seems ok
             self.notify(PreloadState(data_id, status=PreloadStatus.stopped))
         except CancelledError as e:
+            # Raised if future has been cancelled
+            # while executing `_run_preload_data`
             self.notify(
                 PreloadState(data_id, status=PreloadStatus.cancelled, exception=e)
             )
         except Exception as e:
+            # Raised if any exception occurred
+            # while executing `_run_preload_data`
             self.notify(PreloadState(data_id, status=PreloadStatus.failed, exception=e))
 
     def show(self) -> Any:
