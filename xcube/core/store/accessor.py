@@ -339,9 +339,9 @@ class DataPreloader(ABC):
     access is by file download, access is bandwidth limited, or not allowing
     for sub-setting.
 
-    Data stores may differently implement the ``preload_data()`` method,
-    usually not at all. If preloading is required, the data will be
-    downloaded in most cases and made available via some temporary cache.
+Data stores may implement the ``preload_data()`` method differently—or not at all.
+In most cases, if preloading is required, the data will be downloaded and stored
+temporarily in a cache for access.
     """
 
     @abstractmethod
