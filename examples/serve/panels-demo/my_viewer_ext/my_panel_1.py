@@ -5,7 +5,7 @@ import pyproj
 import shapely
 import shapely.ops
 from chartlets import Component, Input, State, Output
-from chartlets.components import Box, Button, CircularProgress, Plot, Select
+from chartlets.components import Box, Button, CircularProgress, VegaChart, Select
 
 from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
@@ -28,7 +28,7 @@ NUM_BINS_MAX = 64
 def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
-    plot = Plot(id="plot", chart=None, style={"paddingTop": 6})
+    chart_comp = VegaChart(id="histo_2d", chart=None, style={"paddingTop": 6})
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
@@ -53,7 +53,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     )
 
     return Box(
-        children=[plot, controls],
+        children=[chart_comp, controls],
         style={
             "display": "flex",
             "flexDirection": "column",
@@ -73,7 +73,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     State("select_var_1"),
     State("select_var_2"),
     Input("button", "clicked"),
-    Output("plot", "chart"),
+    Output("histo_2d", "chart"),
 )
 def update_plot(
     ctx: Context,
