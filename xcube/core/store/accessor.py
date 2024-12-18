@@ -334,7 +334,7 @@ class DataPreloader(ABC):
     Hence, the approach taken by ``DataStore.open_data(data_id, ...)`` alone
     is suboptimal for a user's perspective. This is because the method is
     blocking as it is not asynchronous, it may take long time before it
-    returns, it cannot report any progress while doing so.
+    returns, and it cannot report any progress while doing so.
     The reasons for slow and unresponsive data APIs are manifold: intended
     access is by file download, access is bandwidth limited, or not allowing
     for sub-setting.
