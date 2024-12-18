@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import abstractmethod, ABC
-from typing import Tuple, Any, Optional, List, Type, Dict, Union
+from typing import Any, Optional, Union
 from collections.abc import Iterator, Container
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
@@ -13,13 +13,14 @@ from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
 from .accessor import DataOpener
+from .accessor import DataPreloader
 from .accessor import DataWriter
 from .assertions import assert_valid_params
 from .datatype import DataTypeLike
 from .descriptor import DataDescriptor
 from .error import DataStoreError
 from .preload import PreloadHandle
-from .preload import PreloadMonitor
+from .preload import NullPreloadHandle
 from .search import DataSearcher
 
 
@@ -141,7 +142,7 @@ def list_data_store_ids(detail: bool = False) -> Union[list[str], dict[str, Any]
 #######################################################
 
 
-class DataStore(DataOpener, DataSearcher, ABC):
+class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
     """A data store represents a collection of data resources that
     can be enumerated, queried, and opened in order to obtain
     in-memory representations of the data. The same data resource may be
@@ -466,11 +467,25 @@ class DataStore(DataOpener, DataSearcher, ABC):
             DataStoreError: If an error occurs.
         """
 
+    def get_preload_data_params_schema(self) -> JsonObjectSchema:
+        """Get the JSON schema that describes the keyword
+        arguments that can be passed to ``preload_data()``.
+
+        Refer to the ``DataPreloader`` interface for more information.
+
+        Warning: This is an experimental and potentially unstable API
+        introduced in xcube 1.8.
+
+        Returns:
+            A ``JsonObjectSchema`` object whose properties describe
+            the parameters of ``preload_data()``.
+        """
+        return JsonObjectSchema(additional_properties=False)
+
     # noinspection PyMethodMayBeStatic
     def preload_data(
         self,
         *data_ids: str,
-        monitor: PreloadMonitor | None = None,
         **preload_params: Any,
     ) -> PreloadHandle:
         """Preload the given data items for faster access.
@@ -478,24 +493,10 @@ class DataStore(DataOpener, DataSearcher, ABC):
         Warning: This is an experimental and potentially unstable API
         introduced in xcube 1.8.
 
-        Many implementations of this ``DataStore`` interface rely on remote
-        data APIs. Such API may provide only limited data access performance.
-        Hence, the approach taken by ``store.open_data(data_id, ...)`` alone
-        is suboptimal for a user's perspective. This is because the method is
-        blocking as it is not asynchronous, it may take long time before it
-        returns, it cannot report any progress while doing so.
-        The reasons for slow and unresponsive data APIs are manifold: intended
-        access is by file download, access is bandwidth limited, or not allowing
-        for sub-setting.
-
-        Data stores may differently implement the ``preload_data()`` method,
-        usually not at all. If preloading is required, the data will be
-        downloaded in most cases and made available via some temporary cache.
+        Refer to the ``DataPreloader`` interface for more information.
 
         Args:
             data_ids: Data identifiers to be preloaded.
-            monitor: A monitor that can be used to observe and/or cancel
-              the preload process.
             preload_params: data store specific preload parameters.
               See method ``get_preload_data_params_schema()`` for information
               on the possible options.
@@ -507,18 +508,6 @@ class DataStore(DataOpener, DataSearcher, ABC):
         return NullPreloadHandle()
 
     # noinspection PyMethodMayBeStatic
-    def get_preload_data_params_schema(self) -> JsonObjectSchema:
-        """Get the JSON schema that describes the keyword
-        arguments that can be passed to ``preload_data()``.
-
-        Warning: This is an experimental and potentially unstable API
-        introduced in xcube 1.8.
-
-        Returns:
-            A ``JsonObjectSchema`` object whose properties describe
-            the parameters of ``preload_data()``.
-        """
-        return JsonObjectSchema(additional_properties=False)
 
 
 class MutableDataStore(DataStore, DataWriter, ABC):

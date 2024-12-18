@@ -2,6 +2,10 @@
 
 ### Enhancements
 
+* Enhanced the `xcube.core.store.DataStore` class to support _preloading_ 
+  of data resources. The preloading API is represented by 
+  new `xcube.core.store.DataPreloader` interface. 
+
 * A `xy_res` keyword argument was added to the `transform()` method of
   `xcube.core.gridmapping.GridMapping`, enabling users to set the grid-mapping 
   resolution directly, which speeds up the method by avoiding time-consuming 

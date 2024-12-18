@@ -2,116 +2,105 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+from abc import abstractmethod, ABC
+from asyncio import CancelledError
+from concurrent.futures import Executor, Future
+from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
-from typing import Callable
+import threading
+from typing import Any, Callable
+
+import tabulate
+
+from xcube.util.assertions import assert_given, assert_instance
 
 
-class PreloadState(Enum):
-    """Preload process state."""
+class PreloadStatus(Enum):
+    """Preload process status."""
 
-    created = "created"
+    waiting = "waiting"
     started = "started"
     stopped = "stopped"
     cancelled = "cancelled"
     failed = "failed"
 
+    def __str__(self):
+        return self.name.upper()
 
-class PreloadEventType(Enum):
-    """Type of preload process event."""
-
-    state = "state"
-    progress = "progress"
-    info = "info"
-    warning = "warning"
-    error = "error"
+    def __repr__(self):
+        return f"{self.__class__.__name__}.{self.name}"
 
 
-class PreloadEvent:
-    """Event to occur during the preload process."""
+class PreloadState:
+    """Preload state."""
 
-    @classmethod
-    def state(cls, state: PreloadState):
-        """Create an event of type ``state``."""
-        return PreloadEvent(PreloadEventType.state, state=state)
-
-    @classmethod
-    def progress(cls, progress: float):
-        """Create an event of type ``process``."""
-        return PreloadEvent(PreloadEventType.progress, progress=progress)
-
-    @classmethod
-    def info(cls, message: str):
-        """Create an event of type ``info``."""
-        return PreloadEvent(PreloadEventType.info, message=message)
-
-    @classmethod
-    def warning(cls, message: str, warning: Warning | None = None):
-        """Create an event of type ``warning``."""
-        return PreloadEvent(PreloadEventType.warning, message=message, warning=warning)
-
-    @classmethod
-    def error(cls, message: str, exception: Exception | None = None):
-        """Create an event of type ``error``."""
-        return PreloadEvent(
-            PreloadEventType.error, message=message, exception=exception
-        )
-
-    # noinspection PyShadowingBuiltins
     def __init__(
         self,
-        type: PreloadEventType,
-        state: PreloadState | None = None,
+        data_id: str,
+        status: PreloadStatus | None = None,
         progress: float | None = None,
         message: str | None = None,
-        warning: Warning | None = None,
-        exception: Exception | None = None,
+        exception: BaseException | None = None,
     ):
-        self.type = type
-        self.state = state
+        assert_given(data_id, name="data_id")
+        self.data_id = data_id
+        self.status = status
         self.progress = progress
         self.message = message
-        self.warning = warning
         self.exception = exception
 
+    def update(self, event: "PreloadState"):
+        """Update this state with the given partial state.
 
-class PreloadMonitor:
+        Args:
+            event: the partial state.
+        """
+        assert_instance(event, PreloadState, name="data_id")
+        if self.data_id == event.data_id:
+            if event.status is not None:
+                self.status = event.status
+            if event.progress is not None:
+                self.progress = event.progress
+            if event.message is not None:
+                self.message = event.message
+            if event.exception is not None:
+                self.exception = event.exception
 
-    def __init__(
-        self,
-        on_event: Callable[["PreloadMonitor", PreloadEvent], None] | None = None,
-        on_done: Callable[["PreloadMonitor"], None] | None = None,
-    ):
-        self._is_cancelled = False
-        if on_event:
-            self.on_event = on_event
-        if on_done:
-            self.on_done = on_done
+    def __str__(self):
+        return ", ".join(f"{k}={v}" for k, v in _to_dict(self).items())
 
-    @property
-    def is_cancelled(self):
-        """Is cancellation requested?"""
-        return self._is_cancelled
+    def __repr__(self):
+        args = ", ".join(f"{k}={v!r}" for k, v in _to_dict(self).items())
+        return f"{self.__class__.__name__}({args})"
 
-    def cancel(self):
-        """Request cancellation."""
-        self._is_cancelled = True
 
-    def on_event(self, event: PreloadEvent):
-        """Called when an event occurs."""
+class PreloadHandle(ABC):
+    """A handle for a preload job.
 
-    def on_done(self):
-        """Called when the preload process is done and
-        the data is ready to be accessed.
+    TODO: add more doc
+    """
 
-        The method is not called only on success.
+    @abstractmethod
+    def get_state(self, data_id: str) -> PreloadState:
+        """Get the preload state for the given *data_id*.
+
+        Args:
+            data_id: The data identifier.
+        Returns:
+            The preload state.
         """
 
+    @property
+    @abstractmethod
+    def cancelled(self) -> bool:
+        """True` if the preload job has been cancelled."""
 
-class PreloadHandle:
-    """Represents an ongoing preload process."""
+    @abstractmethod
+    def cancel(self):
+        """Cancel the preload job."""
 
     def close(self):
-        """Closes the preload.
+        """Close the preload job.
 
         Should be called if the preloaded data is no longer needed.
 
@@ -119,6 +108,27 @@ class PreloadHandle:
         this preload object.
 
         The default implementation does nothing.
+        """
+
+    @abstractmethod
+    def show(self) -> Any:
+        """Show the current state of the preload job.
+
+        This method is useful for non-blocking / asynchronous preload
+        implementations, especially in a Jupyter Notebook context.
+        In this case an implementation might want to display a widget
+        suitable for in-place updating, e.g., an ``ipywidgets`` widget.
+        """
+
+    def notify(self, event: PreloadState):
+        """Notify about a preload state change.
+
+        Updates the preload job using the given partial state
+        *event* that refers to state changes of a running
+        preload task.
+
+        Args:
+            event: A partial state
         """
 
     def __enter__(self) -> "PreloadHandle":
@@ -132,3 +142,263 @@ class PreloadHandle:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Exit the context. Calls ``close()``."""
         self.close()
+
+
+class NullPreloadHandle(PreloadHandle):
+    """Null-pattern implementation of a ``PreloadHandle``."""
+
+    def get_state(self, data_id: str) -> PreloadState:
+        return PreloadState(data_id)
+
+    @property
+    def cancelled(self) -> bool:
+        return False
+
+    def cancel(self):
+        pass
+
+    def show(self) -> Any:
+        return None
+
+
+class ExecutorPreloadHandle(PreloadHandle):
+    """TODO - Add docs"""
+
+    def __init__(
+        self,
+        data_ids: tuple[str, ...],
+        preload_data: Callable[[PreloadHandle, str], None] | None = None,
+        executor: Executor | None = None,
+        blocking: bool = True,
+    ):
+        self._preload_data = preload_data
+        self._executor = executor or ThreadPoolExecutor()
+        self._blocking = blocking
+
+        self._states = {data_id: PreloadState(data_id=data_id) for data_id in data_ids}
+        self._cancel_event = threading.Event()
+        self._display = PreloadDisplay.create(list(self._states.values()))
+        self._lock = threading.Lock()
+        self._futures: dict[str, Future[str]] = {}
+        for data_id in data_ids:
+            future: Future[str] = self._executor.submit(self._run_preload_data, data_id)
+            future.add_done_callback(self._handle_preload_data_done)
+            self._futures[data_id] = future
+
+        if blocking:
+            self._display.show()
+            self._executor.shutdown(wait=True)
+
+    def get_state(self, data_id: str) -> PreloadState:
+        return self._states[data_id]
+
+    @property
+    def cancelled(self) -> bool:
+        """Return true if and only if the internal flag is true."""
+        return self._cancel_event.is_set()
+
+    def cancel(self):
+        self._cancel_event.set()
+        for future in self._futures.values():
+            future.cancel()
+        self._executor.shutdown(wait=False)
+
+    def notify(self, event: PreloadState):
+        state = self._states[event.data_id]
+        if (
+            event.status is not None
+            and event.status != state.status
+            and state.status
+            in (PreloadStatus.stopped, PreloadStatus.cancelled, PreloadStatus.failed)
+        ):
+            # Status cannot be changed
+            return
+        with self._lock:
+            state.update(event)
+            self._display.update()
+
+    def preload_data(self, data_id: str):
+        """Preload the data resource given by *data_id*.
+
+        Concurrently executes the *preload_data* passed to the constructor,
+        if any. Otherwise, it does nothing.
+
+        Can be overridden by clients to implement the actual preload operation.
+
+        Args:
+           data_id: The data identifier of the data resource to be preloaded.
+        """
+        if self._preload_data is not None:
+            self._preload_data(self, data_id)
+
+    def _run_preload_data(self, data_id: str) -> str:
+        self.notify(PreloadState(data_id, status=PreloadStatus.started))
+        self.preload_data(data_id)
+        return data_id
+
+    def _handle_preload_data_done(self, f: Future[str]):
+        data_id: str | None = None
+        for data_id, future in self._futures.items():
+            if f is future:
+                break
+        if data_id is None:
+            return
+        try:
+            _value = f.result()
+            self.notify(PreloadState(data_id, status=PreloadStatus.stopped))
+        except CancelledError as e:
+            self.notify(
+                PreloadState(data_id, status=PreloadStatus.cancelled, exception=e)
+            )
+        except Exception as e:
+            self.notify(PreloadState(data_id, status=PreloadStatus.failed, exception=e))
+
+    def show(self) -> Any:
+        return self._display.show()
+
+    def _repr_html_(self):
+        return self._display.to_html()
+
+    def __str__(self):
+        return self._display.to_text()
+
+    def __repr__(self):
+        return self._display.to_text()
+
+    def __enter__(self) -> "PreloadHandle":
+        """Enter the context.
+
+        Does nothing but returning this handle.
+        Only useful when in blocking mode.
+
+        Returns:
+            This object.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit the context.
+
+        Calls ``close()`` if in blocking mode.
+        Otherwise, does nothing.
+        """
+        if self._blocking:
+            self.close()
+
+
+class PreloadDisplay(ABC):
+
+    @classmethod
+    def create(cls, states: list[PreloadState]) -> "PreloadDisplay":
+        try:
+            # noinspection PyUnresolvedReferences
+            from IPython.display import display
+
+            if display is not None:
+                try:
+                    return IPyWidgetsPreloadDisplay(states)
+                except ImportError:
+                    return IPyPreloadDisplay(states)
+        except ImportError:
+            pass
+        return PreloadDisplay(states)
+
+    def __init__(self, states: list[PreloadState]):
+        self.states = states
+
+    def _repr_html_(self) -> str:
+        return self.to_html()
+
+    def to_text(self) -> str:
+        return self.tabulate(table_format="simple")
+
+    def to_html(self) -> str:
+        return self.tabulate(table_format="html")
+
+    def tabulate(self, table_format: str = "simple") -> str:
+        """Generate HTML table from job list."""
+        rows = [
+            [
+                state.data_id,
+                f"{state.status}" if state.status is not None else "-",
+                (
+                    f"{round(state.progress * 100)}%"
+                    if state.progress is not None
+                    else "-"
+                ),
+                state.message or "-",
+                state.exception or "-",
+            ]
+            for state in self.states
+        ]
+
+        return tabulate.tabulate(
+            rows,
+            headers=["Data ID", "Status", "Progress", "Message", "Exception"],
+            tablefmt=table_format,
+        )
+
+    def show(self):
+        """Display the widget container."""
+        print(self.to_text())
+
+    def update(self):
+        """Update the display."""
+        print(self.to_text())
+
+    def log(self, message: str):
+        """Log a message to the output widget."""
+        print(message)
+
+
+class IPyPreloadDisplay(PreloadDisplay):
+    def __init__(self, states: list[PreloadState]):
+        super().__init__(states)
+        from IPython import display
+
+        self._ipy_display = display
+
+    def show(self):
+        """Display the widget container."""
+        self._ipy_display.display(self.to_html())
+
+    def update(self):
+        """Update the display."""
+        self._ipy_display.clear_output(wait=True)
+        self._ipy_display.display(self.to_html())
+
+    def log(self, message: str):
+        """Log a message to the output widget."""
+        self._ipy_display.display(message)
+
+
+class IPyWidgetsPreloadDisplay(IPyPreloadDisplay):
+
+    def __init__(self, states: list[PreloadState]):
+        super().__init__(states)
+        import ipywidgets
+
+        self._state_table = ipywidgets.HTML(self.to_html())
+        self._output = ipywidgets.Output()  # not used yet
+        self._container = ipywidgets.VBox([self._state_table, self._output])
+
+    def show(self):
+        """Display the widget container."""
+        self._ipy_display.display(self._container)
+
+    def update(self):
+        """Update the display."""
+        self._state_table.value = self.to_html()
+
+    def log(self, message: str):
+        """Log a message to the output widget."""
+        with self._output:
+            print(message)
+
+
+def _to_dict(obj: object):
+    return {
+        k: v
+        for k, v in obj.__dict__.items()
+        if isinstance(k, str) and not k.startswith("_") and v is not None
+    }
