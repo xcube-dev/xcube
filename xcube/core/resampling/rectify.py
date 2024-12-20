@@ -642,8 +642,9 @@ def _compute_var_image_numpy(
     dst_height = dst_src_ij_images.shape[-2]
     dst_shape = src_var.shape[:-2] + (dst_height, dst_width)
     dst_values = np.full(dst_shape, fill_value, dtype=src_var.dtype)
+    src_bbox = [0, 0, src_var.shape[-2], src_var.shape[-1]]
     _compute_var_image_numpy_parallel(
-        src_var, dst_src_ij_images, dst_values, interpolation
+        src_var, dst_src_ij_images, dst_values, src_bbox, interpolation
     )
     return dst_values
 
@@ -686,6 +687,7 @@ def _compute_var_image_numpy_parallel(
     src_var_image: np.ndarray,
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
+    src_bbox: list[int],
     interpolation: int,
 ):
     """Extract source pixels from np.ndarray source
@@ -698,6 +700,7 @@ def _compute_var_image_numpy_parallel(
             src_var_image,
             dst_src_ij_images,
             dst_var_image,
+            src_bbox,
             interpolation,
         )
 

@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Union, Tuple
+from typing import Union
 
 import numpy as np
 import pyproj
@@ -70,6 +70,9 @@ def transform_grid_mapping(
         output_dtypes=[np.float64],
         dask="parallelized",
     )
+    xy_min = transformer.transform(*grid_mapping.xy_bbox[:2])
+    xy_max = transformer.transform(*grid_mapping.xy_bbox[2:])
+    xy_bbox = xy_min + xy_max
 
     xy_var_names = xy_var_names or ("transformed_x", "transformed_y")
 
@@ -90,6 +93,7 @@ def transform_grid_mapping(
         y_coords=xy_coords[1].rename(xy_var_names[1]),
         crs=target_crs,
         xy_res=xy_res,
+        xy_bbox=xy_bbox,
         tile_size=tile_size,
         tolerance=tolerance,
     )

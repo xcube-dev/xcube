@@ -868,7 +868,8 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
 
         target_rad = np.full((13, 13), np.nan, dtype=np.float64)
 
-        compute_var_image(source_ds.rad.values, dst_src_ij, target_rad, 0)
+        src_bbox = [0, 0, source_ds.rad.shape[-1], source_ds.rad.shape[-2]]
+        compute_var_image(source_ds.rad.values, dst_src_ij, target_rad, src_bbox, 0)
 
         if not is_j_axis_up:
             np.testing.assert_almost_equal(
