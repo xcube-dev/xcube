@@ -137,14 +137,14 @@ def new_grid_mapping_from_coords(
             x_res = x_diff[0]
             y_res = y_diff[0]
             is_regular = da.allclose(x_diff, x_res, atol=tolerance) and da.allclose(
-                x_diff, y_res, atol=tolerance
+                y_diff, y_res, atol=tolerance
             )
             if is_regular:
                 x_res = round_to_fraction(float(x_res), 5, 0.25)
                 y_res = round_to_fraction(float(y_res), 5, 0.25)
             else:
-                x_res = round_to_fraction(float(np.nanmedian(x_diff)), 2, 0.5)
-                y_res = round_to_fraction(float(np.nanmedian(y_diff)), 2, 0.5)
+                x_res = round_to_fraction(float(np.nanmedian(x_diff, axis=0)), 2, 0.5)
+                y_res = round_to_fraction(float(np.nanmedian(y_diff, axis=0)), 2, 0.5)
 
         if (
             tile_size is None
