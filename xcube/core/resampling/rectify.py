@@ -47,7 +47,7 @@ def rectify_dataset(
 
     For example, a dataset may comprise variables with
     spatial dimensions ``var(..., y_dim, x_dim)``,
-    then one the function expects coordinates to be provided
+    then the function expects coordinates to be provided
     in two forms:
 
     1. One-dimensional ``x_var(x_dim)``
@@ -55,7 +55,7 @@ def rectify_dataset(
     2. Two-dimensional ``x_var(y_dim, x_dim)``
        and ``y_var(y_dim, x_dim)`` (coordinate) variables.
 
-    If *target_gm* is given and it defines a tile size,
+    If *target_gm* is given, and it defines a tile size,
     or *tile_size* is given and the number of tiles is
     greater than one in the output's x- or y-direction, then the
     returned dataset will be composed of lazy, chunked dask
