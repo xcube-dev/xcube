@@ -976,7 +976,9 @@ class RectifySentinel2DatasetTest(SourceDatasetMixin, unittest.TestCase):
             ]
         )
 
-        source_gm = GridMapping.from_dataset(source_ds, prefer_crs=CRS_WGS84)
+        source_gm = GridMapping.from_dataset(
+            source_ds, prefer_crs=CRS_WGS84, tolerance=1e-6
+        )
 
         target_ds = rectify_dataset(source_ds, source_gm=source_gm)
         self.assertEqual(((5, 1), (5, 4)), target_ds.rrs_665.chunks)
