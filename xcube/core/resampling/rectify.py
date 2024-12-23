@@ -669,8 +669,8 @@ def _compute_var_image_xarray_dask_block(
     src_bbox = [
         int(np.nanmin(dst_src_ij_images[0])),
         int(np.nanmin(dst_src_ij_images[1])),
-        min(int(np.nanmax(dst_src_ij_images[0])) + 1, src_var_image.shape[-1]),
-        min(int(np.nanmax(dst_src_ij_images[1])) + 1, src_var_image.shape[-2]),
+        min(int(np.nanmax(dst_src_ij_images[0])) + 2, src_var_image.shape[-1]),
+        min(int(np.nanmax(dst_src_ij_images[1])) + 2, src_var_image.shape[-2]),
     ]
     src_var_image = src_var_image[
         ..., src_bbox[1] : src_bbox[3], src_bbox[0] : src_bbox[2]
