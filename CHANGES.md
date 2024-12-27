@@ -2,6 +2,14 @@
 
 ### Enhancements
 
+* Added a new _preload API_ to xcube data stores: 
+  - Enhanced the `xcube.core.store.DataStore` class to optionally support
+    preloading of datasets via an API represented by the  
+    new `xcube.core.store.DataPreloader` interface. 
+  - Added handy default implementations `NullPreloadHandle` and `ExecutorPreloadHandle` 
+    to be returned by implementations of the `prepare_data()` method of a 
+    given data store.
+
 * A `xy_res` keyword argument was added to the `transform()` method of
   `xcube.core.gridmapping.GridMapping`, enabling users to set the grid-mapping 
   resolution directly, which speeds up the method by avoiding time-consuming 
