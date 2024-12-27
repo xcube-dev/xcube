@@ -77,7 +77,8 @@ class PreloadState:
 class PreloadHandle(ABC):
     """A handle for a preload job.
 
-    TODO: add more doc
+    Instances of this class are returned by the
+    ``DataStore.preload_data()`` method.
     """
 
     @abstractmethod
@@ -162,7 +163,38 @@ class NullPreloadHandle(PreloadHandle):
 
 
 class ExecutorPreloadHandle(PreloadHandle):
-    """TODO - Add docs"""
+    """An implementation of a ``PreloadHandle`` that uses a
+    ``concurrent.futures.Executor`` for concurrently preloading data.
+
+    You can either use this class
+
+    - directly, by passing your `preload_data` function to the constructor
+    - or by deriving your own class from it, then overriding the
+      default implementation of its ``preload_data`` method.
+
+    By default, the preload state updates are displayed. How, depends on the
+    context: If executed in Jupyter notebooks (``IPython.display`` is available)
+    the handle makes use of ``ipywidgets``, if installed, otherwise it outputs HTML.
+    If not executed in a notebook it dumps process information to ``stdout``.
+    If you don't want any output of preload state updates or results,
+    use the ``silent`` flag.
+
+    Args:
+        data_ids: The identifiers of the data resources to be preloaded.
+        preload_data: The function that preloads individual datasets.
+            Optional. If not provided, you should override the
+            ``preload_data`` method to implement the preloading.
+        executor: Optional executor such as an instance of
+            ``concurrent.futures.thread.ThreadPoolExecutor`` or
+            ``concurrent.futures.process.ProcessPoolExecutor``.
+            If not provided, a ``ThreadPoolExecutor`` with default settings
+            will be used.
+        blocking: `True` (the default) if the constructor should wait for
+            all preload task to finish before the calling thread
+            continues execution.
+        silent: ``True`` if you don't want any preload state output.
+            Defaults to ``False``.
+    """
 
     def __init__(
         self,
@@ -170,6 +202,7 @@ class ExecutorPreloadHandle(PreloadHandle):
         preload_data: Callable[[PreloadHandle, str], None] | None = None,
         executor: Executor | None = None,
         blocking: bool = True,
+        silent: bool = False,
     ):
         self._preload_data = preload_data
         self._executor = executor or ThreadPoolExecutor()
@@ -177,7 +210,8 @@ class ExecutorPreloadHandle(PreloadHandle):
 
         self._states = {data_id: PreloadState(data_id=data_id) for data_id in data_ids}
         self._cancel_event = threading.Event()
-        self._display = PreloadDisplay.create(list(self._states.values()))
+        self._display = PreloadDisplay.create(list(self._states.values()), silent)
+        self._silent = silent
         self._lock = threading.Lock()
         self._futures: dict[str, Future[str]] = {}
         for data_id in data_ids:
@@ -186,7 +220,8 @@ class ExecutorPreloadHandle(PreloadHandle):
             self._futures[data_id] = future
 
         if blocking:
-            self._display.show()
+            if not self._silent:
+                self._display.show()
             self._executor.shutdown(wait=True)
 
     def get_state(self, data_id: str) -> PreloadState:
@@ -215,7 +250,8 @@ class ExecutorPreloadHandle(PreloadHandle):
             return
         with self._lock:
             state.update(event)
-            self._display.update()
+            if not self._silent:
+                self._display.update()
 
     def preload_data(self, data_id: str):
         """Preload the data resource given by *data_id*.
@@ -294,7 +330,7 @@ class ExecutorPreloadHandle(PreloadHandle):
 class PreloadDisplay(ABC):
 
     @classmethod
-    def create(cls, states: list[PreloadState]) -> "PreloadDisplay":
+    def create(cls, states: list[PreloadState], silent: bool | None = None) -> "PreloadDisplay":
         try:
             # noinspection PyUnresolvedReferences
             from IPython.display import display
