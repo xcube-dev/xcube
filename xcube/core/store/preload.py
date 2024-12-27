@@ -55,7 +55,7 @@ class PreloadState:
         Args:
             event: the partial state.
         """
-        assert_instance(event, PreloadState, name="data_id")
+        assert_instance(event, PreloadState, name="event")
         if self.data_id == event.data_id:
             if event.status is not None:
                 self.status = event.status
