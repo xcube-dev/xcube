@@ -2,6 +2,17 @@
 
 ### Enhancements
 
+
+* The method `xcube.core.GridMapping.transform` now supports lazy execution. If
+  computations based on actual data are required—such as determining whether the
+  grid mapping is regular or estimating the resolution in the x or y direction—only a
+  single chunk is accessed whenever possible, ensuring faster performance.
+
+* The function `xcube.core.resampling.rectify_dataset` now supports `xarray.Datasets`
+  containing multi-dimensional data variables structured as `var(..., y_dim, x_dim)`.
+  The two spatial dimensions (`y_dim` and `x_dim`) must occupy the last two positions 
+  in the variable's dimensions.
+
 * Added a new _preload API_ to xcube data stores: 
   - Enhanced the `xcube.core.store.DataStore` class to optionally support
     preloading of datasets via an API represented by the  
