@@ -609,8 +609,15 @@ def _compute_var_image_xarray_dask(
     """Extract source pixels from xarray.DataArray source
     with dask.array.Array data.
     """
+    # If the source variable is not 3D, dummy variables are added to ensure
+    # that `_compute_var_image_xarray_dask_block` always operates on 3D chunks
+    # when processing each Dask chunk.
+    if src_var.ndim == 1:
+        src_var = src_var.expand_dims(dim={"dummy0": 1, "dummy1": 1})
     if src_var.ndim == 2:
         src_var = src_var.expand_dims(dim={"dummy": 1})
+    # Retrieve the chunk size required for `da.map_blocks`, as the resulting array
+    # will have a different shape.
     chunksize = src_var.shape[:-2] + dst_src_ij_images.chunksize[-2:]
     arr = da.map_blocks(
         _compute_var_image_xarray_dask_block,
@@ -625,6 +632,8 @@ def _compute_var_image_xarray_dask(
     arr = arr[..., : dst_src_ij_images.shape[-2], : dst_src_ij_images.shape[-1]]
     if arr.shape[0] == 1:
         arr = arr[0, :, :]
+    if arr.shape[0] == 1:
+        arr = arr[0, :]
     return arr
 
 
@@ -642,7 +651,7 @@ def _compute_var_image_numpy(
     dst_height = dst_src_ij_images.shape[-2]
     dst_shape = src_var.shape[:-2] + (dst_height, dst_width)
     dst_values = np.full(dst_shape, fill_value, dtype=src_var.dtype)
-    src_bbox = [0, 0, src_var.shape[-2], src_var.shape[-1]]
+    src_bbox = (0, 0, src_var.shape[-2], src_var.shape[-1])
     _compute_var_image_numpy_parallel(
         src_var, dst_src_ij_images, dst_values, src_bbox, interpolation
     )
@@ -666,12 +675,12 @@ def _compute_var_image_xarray_dask_block(
     if np.all(np.isnan(dst_src_ij_images[0])):
         return dst_out
     dst_values = np.full(dst_shape, fill_value, dtype=src_var_image.dtype)
-    src_bbox = [
+    src_bbox = (
         int(np.nanmin(dst_src_ij_images[0])),
         int(np.nanmin(dst_src_ij_images[1])),
         min(int(np.nanmax(dst_src_ij_images[0])) + 2, src_var_image.shape[-1]),
         min(int(np.nanmax(dst_src_ij_images[1])) + 2, src_var_image.shape[-2]),
-    ]
+    )
     src_var_image = src_var_image[
         ..., src_bbox[1] : src_bbox[3], src_bbox[0] : src_bbox[2]
     ].values.astype(np.float64)
@@ -687,7 +696,7 @@ def _compute_var_image_numpy_parallel(
     src_var_image: np.ndarray,
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
-    src_bbox: list[int],
+    src_bbox: tuple[int, int, int, int],
     interpolation: int,
 ):
     """Extract source pixels from np.ndarray source
@@ -712,7 +721,7 @@ def _compute_var_image_numpy_sequential(
     src_var_image: np.ndarray,
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
-    src_bbox: list[int],
+    src_bbox: tuple[int, int, int, int],
     interpolation: int,
 ):
     """Extract source pixels from np.ndarray source
@@ -736,7 +745,7 @@ def _compute_var_image_for_dest_line(
     src_var_image: np.ndarray,
     dst_src_ij_images: np.ndarray,
     dst_var_image: np.ndarray,
-    src_bbox: list[int],
+    src_bbox: tuple[int, int, int, int],
     interpolation: int,
 ):
     """Extract source pixels from *src_values* np.ndarray
