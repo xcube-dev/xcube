@@ -209,16 +209,17 @@ def resample_in_space(
     # transform the source_gm so its CRS matches the target CRS:
     transformed_source_gm = source_gm.transform(target_gm.crs, xy_res=target_gm.xy_res)
     source_ds = source_ds.drop_vars(source_gm.xy_dim_names)
+    for var in source_ds.data_vars:
+        if "grid_mapping" in source_ds[var].attrs:
+            attrs = source_ds[var].attrs
+            source_ds = source_ds.drop_vars(attrs["grid_mapping"])
+            del attrs["grid_mapping"]
+            source_ds[var] = source_ds[var].assign_attrs(attrs)
     if "crs" in source_ds:
         source_ds = source_ds.drop_vars("crs")
     if "spatial_ref" in source_ds:
         source_ds = source_ds.drop_vars("spatial_ref")
     source_ds = source_ds.copy()
-    for var in source_ds.data_vars:
-        if "grid_mapping" in source_ds[var].attrs:
-            attrs = source_ds[var].attrs
-            del attrs["grid_mapping"]
-            source_ds[var] = source_ds[var].assign_attrs(attrs)
     transformed_x, transformed_y = transformed_source_gm.xy_coords
     attrs = dict(grid_mapping="spatial_ref")
     transformed_x.attrs = attrs
