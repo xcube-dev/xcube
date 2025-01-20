@@ -52,6 +52,9 @@
      # Filesystem-specific storage options   
      # StorageOptions: ...
   ```
+* The `get_data_ids()` method in `DataStore` has an enhanced `include_attrs` parameter. 
+  Previously accepting only `Containers[str]`, it now also supports a `boolean` value. 
+  Setting `include_attrs` to `True` retrieves all attributes of the data_ids.
 
 ### Fixes
 

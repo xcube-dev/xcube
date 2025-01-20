@@ -263,11 +263,13 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return tuple(data_type_aliases)
 
     def get_data_ids(
-        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+        self,
+        data_type: DataTypeLike = None,
+        include_attrs: Container[str] | bool = False,
     ) -> _DataIds:
         data_type = DataType.normalize(data_type)
         # TODO: do not ignore names in include_attrs
-        return_tuples = include_attrs is not None
+        return_tuples = include_attrs is not False
         data_ids = self._generate_data_ids("", data_type, return_tuples, 1)
         if self._includes or self._excludes:
             yield from self._filter_data_ids(data_ids, return_tuples)
