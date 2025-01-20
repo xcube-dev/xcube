@@ -40,7 +40,7 @@ dependencies:
   - shapely >=1.6
   - tabulate >=0.9
   - tornado >=6.0
-  - urllib3 >=1.26
+  - urllib3 >=2.0
   - xarray >=2024.7
   - zarr >=2.11,<3  # until we can ensure zarr 3 compatibility; see Issue #1102
   # Chartlets
