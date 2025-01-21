@@ -55,6 +55,8 @@
 * The `get_data_ids()` method in `DataStore` has an enhanced `include_attrs` parameter. 
   Previously accepting only `Container[str]`, it now also supports a `bool` value. 
   Setting `include_attrs` to `True` retrieves all attributes of the data_ids.
+  
+* Updated dependency `urllib3` to be `>=2.0`.
 
 ### Fixes
 
