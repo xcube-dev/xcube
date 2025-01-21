@@ -187,147 +187,141 @@ expected_layout_result = {
 }
 
 expected_contributions_result = {
+    "extensions": [{"name": "my_ext", "version": "0.0.0", "contributes": ["panels"]}],
     "contributions": {
         "panels": [
             {
+                "name": "my_ext.my_panel_a",
+                "initialState": {"visible": False, "title": "Panel A"},
+                "extension": "my_ext",
+                "layout": {
+                    "function": {
+                        "name": "render_panel",
+                        "parameters": [
+                            {
+                                "name": "dataset_id",
+                                "schema": {"type": "string"},
+                                "default": "",
+                            }
+                        ],
+                        "return": {"schema": {"type": "object", "class": "Component"}},
+                    },
+                    "inputs": [
+                        {
+                            "id": "@app",
+                            "property": "selectedDatasetId",
+                            "noTrigger": True,
+                        }
+                    ],
+                },
                 "callbacks": [
                     {
                         "function": {
                             "name": "update_info_text",
                             "parameters": [
                                 {
-                                    "default": "",
                                     "name": "dataset_id",
-                                    "type": {"type": "string"},
-                                },
-                                {
-                                    "default": False,
-                                    "name": "opaque",
-                                    "type": {"type": "boolean"},
-                                },
-                                {
-                                    "default": 0,
-                                    "name": "color",
-                                    "type": {"type": "integer"},
-                                },
-                                {
+                                    "schema": {"type": "string"},
                                     "default": "",
+                                },
+                                {
+                                    "name": "opaque",
+                                    "schema": {"type": "boolean"},
+                                    "default": False,
+                                },
+                                {
+                                    "name": "color",
+                                    "schema": {"type": "integer"},
+                                    "default": 0,
+                                },
+                                {
                                     "name": "info_text",
-                                    "type": {"type": "string"},
+                                    "schema": {"type": "string"},
+                                    "default": "",
                                 },
                             ],
-                            "returnType": {"type": "string"},
+                            "return": {"schema": {"type": "string"}},
                         },
                         "inputs": [
-                            {
-                                "id": "@app",
-                                "property": "selectedDatasetId",
-                            },
+                            {"id": "@app", "property": "selectedDatasetId"},
                             {"id": "opaque", "property": "value"},
                             {"id": "color", "property": "value"},
                             {
                                 "id": "info_text",
-                                "noTrigger": True,
                                 "property": "text",
+                                "noTrigger": True,
                             },
                         ],
                         "outputs": [{"id": "info_text", "property": "text"}],
                     }
                 ],
-                "extension": "my_ext",
-                "initialState": {"title": "Panel A", "visible": False},
-                "layout": {
-                    "function": {
-                        "name": "render_panel",
-                        "parameters": [
-                            {
-                                "default": "",
-                                "name": "dataset_id",
-                                "type": {"type": "string"},
-                            }
-                        ],
-                        "returnType": {"class": "Component", "type": "object"},
-                    },
-                    "inputs": [
-                        {
-                            "id": "@app",
-                            "noTrigger": True,
-                            "property": "selectedDatasetId",
-                        }
-                    ],
-                },
-                "name": "my_ext.my_panel_a",
             },
             {
+                "name": "my_ext.my_panel_b",
+                "initialState": {"visible": False, "title": "Panel B"},
+                "extension": "my_ext",
+                "layout": {
+                    "function": {
+                        "name": "render_panel",
+                        "parameters": [
+                            {
+                                "name": "dataset_id",
+                                "schema": {"type": "string"},
+                                "default": "",
+                            }
+                        ],
+                        "return": {"schema": {"type": "object", "class": "Component"}},
+                    },
+                    "inputs": [
+                        {
+                            "id": "@app",
+                            "property": "selectedDatasetId",
+                            "noTrigger": True,
+                        }
+                    ],
+                },
                 "callbacks": [
                     {
                         "function": {
                             "name": "update_info_text",
                             "parameters": [
                                 {
-                                    "default": "",
                                     "name": "dataset_id",
-                                    "type": {"type": "string"},
-                                },
-                                {
-                                    "default": False,
-                                    "name": "opaque",
-                                    "type": {"type": "boolean"},
-                                },
-                                {
-                                    "default": 0,
-                                    "name": "color",
-                                    "type": {"type": "integer"},
-                                },
-                                {
+                                    "schema": {"type": "string"},
                                     "default": "",
+                                },
+                                {
+                                    "name": "opaque",
+                                    "schema": {"type": "boolean"},
+                                    "default": False,
+                                },
+                                {
+                                    "name": "color",
+                                    "schema": {"type": "integer"},
+                                    "default": 0,
+                                },
+                                {
                                     "name": "info_text",
-                                    "type": {"type": "string"},
+                                    "schema": {"type": "string"},
+                                    "default": "",
                                 },
                             ],
-                            "returnType": {"type": "string"},
+                            "return": {"schema": {"type": "string"}},
                         },
                         "inputs": [
-                            {
-                                "id": "@app",
-                                "property": "selectedDatasetId",
-                            },
+                            {"id": "@app", "property": "selectedDatasetId"},
                             {"id": "opaque", "property": "value"},
                             {"id": "color", "property": "value"},
                             {
                                 "id": "info_text",
-                                "noTrigger": True,
                                 "property": "text",
+                                "noTrigger": True,
                             },
                         ],
                         "outputs": [{"id": "info_text", "property": "text"}],
                     }
                 ],
-                "extension": "my_ext",
-                "initialState": {"title": "Panel B", "visible": False},
-                "layout": {
-                    "function": {
-                        "name": "render_panel",
-                        "parameters": [
-                            {
-                                "default": "",
-                                "name": "dataset_id",
-                                "type": {"type": "string"},
-                            }
-                        ],
-                        "returnType": {"class": "Component", "type": "object"},
-                    },
-                    "inputs": [
-                        {
-                            "id": "@app",
-                            "noTrigger": True,
-                            "property": "selectedDatasetId",
-                        }
-                    ],
-                },
-                "name": "my_ext.my_panel_b",
             },
         ]
     },
-    "extensions": [{"contributes": ["panels"], "name": "my_ext", "version": "0.0.0"}],
 }
