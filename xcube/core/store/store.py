@@ -199,7 +199,9 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
 
     @abstractmethod
     def get_data_ids(
-        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+        self,
+        data_type: DataTypeLike = None,
+        include_attrs: Container[str] | bool = False,
     ) -> Union[Iterator[str], Iterator[tuple[str, dict[str, Any]]]]:
         """Get an iterator over the data resource identifiers for the
         given type *data_type*. If *data_type* is omitted, all data
@@ -217,8 +219,12 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         Hence, the type of the returned iterator items depends on the
         value of *include_attrs*:
 
-        - If *include_attrs* is None (the default), the method returns
+        - If *include_attrs* is False (the default), the method returns
           an iterator of dataset identifiers *data_id* of type `str`.
+        - If *include_attrs* is True, the method returns an iterator of tuples
+          (*data_id*, *attrs*) of type `Tuple[str, Dict]`, where *attrs*
+          is a dictionary filled with all the attributes available respectively
+          for each *data_id*.
         - If *include_attrs* is a sequence of attribute names, even an
           empty one, the method returns an iterator of tuples
           (*data_id*, *attrs*) of type `Tuple[str, Dict]`, where *attrs*
@@ -254,7 +260,9 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         """
 
     def list_data_ids(
-        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+        self,
+        data_type: DataTypeLike = None,
+        include_attrs: Container[str] | bool = False,
     ) -> Union[list[str], list[tuple[str, dict[str, Any]]]]:
         """Convenience version of `get_data_ids()` that returns a list rather
         than an iterator.
@@ -263,11 +271,14 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
             data_type: If given, only data identifiers that are
                 available as this type are returned. If this is omitted,
                 all available data identifiers are returned.
-            include_attrs: A sequence of names of attributes to be
-                returned for each dataset identifier. If given, the
-                store will attempt to provide the set of requested
+            include_attrs: A boolean or sequence of names of attributes to be
+                returned for each dataset identifier. If a sequence of names of
+                attributes given, the store will attempt to provide the set of requested
                 dataset attributes in addition to the data ids. (added
-                in xcube 0.8.0)
+                in xcube 0.8.0).
+                If True, all the attributes for each dataset identifier will be
+                returned.
+                If False (default), only the data_ids are returned.
 
         Returns:
             A list comprising the identifiers and titles of data
