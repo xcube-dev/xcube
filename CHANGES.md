@@ -1,4 +1,4 @@
-## Changes in 1.8.0 (in development)
+## Changes in 1.8.0
 
 ### Enhancements
 
