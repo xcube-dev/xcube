@@ -4,6 +4,7 @@ import pandas as pd
 import pyproj
 import shapely
 import shapely.ops
+import shapely.geometry
 from chartlets import Component, Input, State, Output
 from chartlets.components import Box, Button, CircularProgress, Select, VegaChart
 
@@ -103,6 +104,15 @@ def update_plot(
             CRS_CRS84, grid_mapping.crs, always_xy=True
         ).transform
         place_geometry = shapely.ops.transform(project, place_geometry)
+
+    if (
+        place_geometry is None
+        or place_geometry.is_empty
+        or isinstance(place_geometry, shapely.geometry.Point)
+    ):
+        # TODO: set error message in panel UI
+        print("2-D histogram only works for geometries with a non-zero extent.")
+        return
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:

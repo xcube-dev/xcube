@@ -7,22 +7,20 @@ Viewer:
 DatasetChunkCacheSize: 100M
 
 DataStores:
-  - Identifier: opensr-test
+  - Identifier: xcube-examples
     StoreId: s3
     StoreParams:
-      root: opensr-test
+      root: xcube-examples
+      storage_options:
+        anon: true
     Datasets:
-      - Path: openSR_musselbeds_use_case_waddensea_S2L2A_2018-2022.levels
+      - Path: openSR_nordfriesland_S2L2A_selected_dates_10m-v4.levels
         Identifier: waddensea
-        Title: Wadden Sea
+        Title: Wadden Sea Nordfriesland
         Style: waddensea
         Augmentation:
           Path: compute_indexes.py
           Function: compute_indexes
-      - Path: S2_louisville_time.levels
-        Identifier: louisville
-        Title: Lousiville S2
-        Style: louisville
 
 Styles:
   - Identifier: waddensea
