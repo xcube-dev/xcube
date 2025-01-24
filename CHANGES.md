@@ -1,3 +1,12 @@
+## Changes in 1.8.1 (in development)
+
+### Fixes
+
+* Bug fix in `resampling_in_space`: Resolved an issue where the `resampling_in_space`
+  function no longer worked with irregular grid mappings, such as Sentinel-3 data,   
+  due to changes introduced in version 1.8.0. (#1114)
+
+  
 ## Changes in 1.8.0
 
 ### Enhancements

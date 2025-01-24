@@ -347,7 +347,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((266, 248), transformed_gm_regular.size)
+        self.assertEqual((267, 249), transformed_gm_regular.size)
         self.assertEqual((200, 200), transformed_gm_regular.tile_size)
         self.assertEqual((1000, 1000), transformed_gm_regular.xy_res)
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)
