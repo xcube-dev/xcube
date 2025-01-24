@@ -20,6 +20,7 @@ from .datatype import DataType
 from .datatype import DataTypeLike
 from .datatype import GEO_DATA_FRAME_TYPE
 from .datatype import MULTI_LEVEL_DATASET_TYPE
+from .datatype import VECTOR_DATA_CUBE_TYPE
 from .descriptor import DataDescriptor
 from .descriptor import DatasetDescriptor
 from .descriptor import GeoDataFrameDescriptor
