@@ -12,7 +12,11 @@ from fsspec.implementations.http import HTTPFileSystem
 
 def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
     """Check whether *fs* is a local filesystem."""
-    return "file" in fs.protocol or isinstance(fs, LocalFileSystem)
+    return (
+        "file" in fs.protocol
+        or "local" in fs.protocol
+        or isinstance(fs, LocalFileSystem)
+    )
 
 
 def is_https_fs(fs: fsspec.AbstractFileSystem) -> bool:

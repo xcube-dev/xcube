@@ -112,7 +112,7 @@ class TestThreadedProgressObservers(unittest.TestCase):
 
         observer.on_begin([state_stack])
         self.assertTrue(_mock.called)
-        _mock.stop()
+        _mock_patch.stop()
 
         _mock = _mock_patch.start()
         state_stack1 = ProgressState("Test", 100, 100)
@@ -134,7 +134,7 @@ class TestThreadedProgressObservers(unittest.TestCase):
 
         observer.on_end([state_stack])
         self.assertTrue(_mock.called)
-        _mock.stop()
+        _mock_patch.stop()
 
         _mock = _mock_patch.start()
         state_stack1 = ProgressState("Test", 100, 100)

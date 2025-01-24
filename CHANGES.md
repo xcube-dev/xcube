@@ -1,25 +1,101 @@
-## Changes in 1.7.2 (in development)
+## Changes in 1.8.0
 
 ### Enhancements
+
+
+* The method `xcube.core.GridMapping.transform` now supports lazy execution. If
+  computations based on actual data are required—such as determining whether the
+  grid mapping is regular or estimating the resolution in the x or y direction—only a
+  single chunk is accessed whenever possible, ensuring faster performance.
+
+* The function `xcube.core.resampling.rectify_dataset` now supports `xarray.Datasets`
+  containing multi-dimensional data variables structured as `var(..., y_dim, x_dim)`.
+  The two spatial dimensions (`y_dim` and `x_dim`) must occupy the last two positions 
+  in the variable's dimensions.
+
+* Added a new _preload API_ to xcube data stores: 
+  - Enhanced the `xcube.core.store.DataStore` class to optionally support
+    preloading of datasets via an API represented by the  
+    new `xcube.core.store.DataPreloader` interface. 
+  - Added handy default implementations `NullPreloadHandle` and `ExecutorPreloadHandle` 
+    to be returned by implementations of the `prepare_data()` method of a 
+    given data store.
 
 * A `xy_res` keyword argument was added to the `transform()` method of
   `xcube.core.gridmapping.GridMapping`, enabling users to set the grid-mapping 
   resolution directly, which speeds up the method by avoiding time-consuming 
   spatial resolution estimation. (#1082)
-* The behaviour of the function `xcube.core.resample.resample_in_space()` has 
+
+* The behaviour of the function `xcube.core.resample.resample_in_space()` has
   been changed if no `tile_size` is specified for the target grid mapping. It now 
   defaults to the `tile_size` of the source grid mapping, improving the 
-  user-friendliness of resampling and reprojection.
+  user-friendliness of resampling and reprojection. (#1082)
+
 * The `"https"` data store (`store = new_data_store("https", ...)`) now allows 
   for lazily accessing NetCDF files.
   Implementation note: For this to work, the `DatasetNetcdfFsDataAccessor` 
-  class has been adjusted.
+  class has been adjusted. (#1083)
+
+* Added new endpoint `/viewer/state` to xcube Server that allows for xcube Viewer 
+  state persistence. (#1088)
+  
+  The new viewer API operations are:
+  - `GET /viewer/state` to get a keys of stored states or restore a specific state;
+  - `PUT /viewer/state` to store a state and receive a key for it.
+  
+  Persistence is configured using new optional `Viewer/Persistence` setting:
+  ```yaml
+  Viewer:
+   Persistence:
+     # Any filesystem. Can also be relative to base_dir.
+     Path: memory://states
+     # Filesystem-specific storage options   
+     # StorageOptions: ...
+  ```
+* The `get_data_ids()` method in `DataStore` has an enhanced `include_attrs` parameter. 
+  Previously accepting only `Container[str]`, it now also supports a `bool` value. 
+  Setting `include_attrs` to `True` retrieves all attributes of the data_ids.
+  
+* Updated dependency `urllib3` to be `>=2.0`.
 
 ### Fixes
 
+* The function `xcube.core.resample.resample_in_space()` now supports the parameter
+  `source_ds_subset=True` when calling `rectify_dataset`. This feature enables
+  performing the reprojection exclusively on the spatially congruent subset of 
+  the dataset.
 * The function `xcube.core.resample.resample_in_space()` now always operates
-   lazily and therefore supports chunk-wise, parallel processing. (#1
+  lazily and therefore supports chunk-wise, parallel processing. (#1082)
+* Bug fix in the `has_data` method of the `"https"` data store
+  (`store = new_data_store("https", ...)`). (#1084) 
+* Bug fix in the `has_data` method of all filesystem-based data store
+  (`"file", "s3", "https"`). `data_type` can be any of the supported data types,
+  e.g. for `.tif` file, `data_type` can be either `dataset` or `mldataset`. (#1084) 
+* The explanation of the parameter `xy_scale` in the method
+  `xcube.core.gridmapping.GridMapping.scale` has been corrected. (#1086)
+* The spurious tileserver/viewer warning "no explicit representation of
+  timezones available…" (formerly "parsing timezone aware datetimes is
+  deprecated…") is no longer generated. (#807)
 
+### Other changes
+
+* Added experimental feature that allows for extending the xcube Viewer 
+  user interface with _server-side panels_. For this to work, users can now 
+  configure xcube Server to load one or more Python modules that provide 
+  `xcube.webapi.viewer.contrib.Panel` UI-contributions.
+  Panel instances provide two decorators `layout()` and `callback()`
+  which are used to implement the UI and the interaction behaviour,
+  respectively. The functionality is provided by the
+  [Chartlets](https://bcdev.github.io/chartlets/) Python library.
+  A working example can be found in `examples/serve/panels-demo`.
+
+* The xcube test helper module `test.s3test` has been enhanced to support 
+  testing the experimental _server-side panels_ described above:
+  - added new decorator `@s3_test()` for individual tests with `timeout` arg;
+  - added new context manager `s3_test_server()` with `timeout` arg to be used 
+    within tests function bodies;
+  - `S3Test`, `@s3_test()`, and `s3_test_server()` now restore environment 
+    variables modified for the Moto S3 test server.  
 
 ## Changes in 1.7.1
 

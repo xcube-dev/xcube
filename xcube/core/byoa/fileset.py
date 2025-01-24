@@ -6,7 +6,7 @@ import fnmatch
 import os.path
 import re
 import zipfile
-from typing import Any, Dict, Optional, List, Union
+from typing import Any, Optional, Union
 from collections.abc import Collection, Iterator
 
 import fsspec

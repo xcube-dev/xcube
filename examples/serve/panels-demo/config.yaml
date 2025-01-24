@@ -1,0 +1,108 @@
+Viewer:
+  Augmentation:
+    Path: ""
+    Extensions:
+      - my_viewer_ext.ext
+
+DatasetChunkCacheSize: 100M
+
+DataStores:
+  - Identifier: xcube-examples
+    StoreId: s3
+    StoreParams:
+      root: xcube-examples
+      storage_options:
+        anon: true
+    Datasets:
+      - Path: openSR_nordfriesland_S2L2A_selected_dates_10m-v4.levels
+        Identifier: waddensea
+        Title: Wadden Sea Nordfriesland
+        Style: waddensea
+        Augmentation:
+          Path: compute_indexes.py
+          Function: compute_indexes
+
+Styles:
+  - Identifier: waddensea
+    ColorMappings:
+      B01:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B02:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B03:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B04:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B05:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B06:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B07:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B08:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B8A:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B09:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B10:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B11:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      B12:
+        ColorBar: "Greys_r"
+        ValueRange: [0., 0.25]
+      SCL:
+        ColorBar: "Accent"
+        ValueRange: [ 0, 255 ]
+      rgb:
+        Red:
+          Variable: B04
+          ValueRange: [0., 0.25]
+        Green:
+          Variable: B03
+          ValueRange: [0., 0.25]
+        Blue:
+          Variable: B02
+          ValueRange: [0., 0.25]
+
+  - Identifier: louisville
+    ColorMappings:
+      band_1:
+        ColorBar: "gray"
+        ValueRange: [0, 5000]
+      band_2:
+        ColorBar: "gray"
+        ValueRange: [0, 5000]
+      band_3:
+        ColorBar: "gray"
+        ValueRange: [0, 5000]
+      band_4:
+        ColorBar: "bone"
+        ValueRange: [0, 10000]
+      rgb:
+        Red:
+          Variable: band_1
+          ValueRange: [0., 5000]
+        Green:
+          Variable: band_2
+          ValueRange: [0., 5000]
+        Blue:
+          Variable: band_3
+          ValueRange: [0., 5000]
+
+ServiceProvider:
+  ProviderName: "Brockmann Consult GmbH"
+  ProviderSite: "https://www.brockmann-consult.de"

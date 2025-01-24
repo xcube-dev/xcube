@@ -7,7 +7,7 @@ import inspect
 import os.path
 import sys
 import warnings
-from typing import Any, Union, Dict, Callable, Optional, Tuple
+from typing import Any, Union, Callable, Optional
 
 from xcube.util.assertions import assert_given
 from xcube.util.assertions import assert_instance

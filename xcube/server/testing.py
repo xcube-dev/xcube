@@ -10,7 +10,7 @@ import time
 import unittest
 from abc import ABC
 from contextlib import closing
-from typing import Dict, Optional, Any, Union, Tuple
+from typing import Any, IO, Iterable
 
 import urllib3
 from urllib3.exceptions import MaxRetryError
@@ -18,6 +18,10 @@ from urllib3.exceptions import MaxRetryError
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
 from xcube.util.extension import ExtensionRegistry
+
+
+Body = dict | str | bytes | IO[Any] | Iterable[bytes]
+JsonData = None | bool | int | float | str | list | dict
 
 
 # taken from https://stackoverflow.com/a/45690594
@@ -83,8 +87,8 @@ class ServerTestCase(unittest.TestCase, ABC):
         self,
         path: str,
         method: str = "GET",
-        headers: Optional[dict[str, str]] = None,
-        body: Optional[Any] = None,
+        headers: dict[str, str] | None = None,
+        body: Body | None = None,
     ) -> urllib3.response.HTTPResponse:
         """Fetches the response for given request.
 
@@ -108,9 +112,9 @@ class ServerTestCase(unittest.TestCase, ABC):
         self,
         path: str,
         method: str = "GET",
-        headers: Optional[dict[str, str]] = None,
-        body: Optional[Any] = None,
-    ) -> tuple[Union[type(None), bool, int, float, str, list, dict], int]:
+        headers: dict[str, str] | None = None,
+        body: Body | None = None,
+    ) -> tuple[JsonData, int]:
         """Fetches the response's JSON value for given request.
 
         Args:
@@ -166,8 +170,8 @@ class ServerTestCase(unittest.TestCase, ABC):
     def assertResponse(
         self,
         response: urllib3.response.HTTPResponse,
-        expected_status: Optional[int] = None,
-        expected_message: Optional[str] = None,
+        expected_status: int | None = None,
+        expected_message: str | None = None,
     ):
         """Assert that response
         has the given status code *expected_status*, if given, and
@@ -193,7 +197,7 @@ class ServerTestCase(unittest.TestCase, ABC):
     @classmethod
     def parse_error_message(
         cls, response: urllib3.response.HTTPResponse
-    ) -> Optional[str]:
+    ) -> str | None:
         """Parse an error message from the given response object."""
         # noinspection PyBroadException
         try:

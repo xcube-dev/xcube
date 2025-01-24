@@ -104,7 +104,6 @@ def get_dataset_grid_mapping_proxies(
 
     # Find coordinate variables.
     #
-
     latitude_longitude_coords = GridCoords()
     rotated_latitude_longitude_coords = GridCoords()
     projected_coords = GridCoords()

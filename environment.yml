@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # Python
-  - python >=3.9
+  - python >=3.10
   # Required
   - affine >=2.2
   - botocore >=1.34.51
@@ -38,10 +38,16 @@ dependencies:
   - s3fs >=2021.6
   - setuptools >=41.0
   - shapely >=1.6
+  - tabulate >=0.9
   - tornado >=6.0
-  - urllib3 >=1.26
-  - xarray >=2022.6
-  - zarr >=2.11
+  - urllib3 >=2.0
+  - xarray >=2024.7
+  - zarr >=2.11,<3  # until we can ensure zarr 3 compatibility; see Issue #1102
+  # Chartlets
+  - altair
+  - pip
+  - pip:
+     - chartlets >=0.1.0
   # Testing
   - flake8 >=3.7
   - kerchunk

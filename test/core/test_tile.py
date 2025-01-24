@@ -3,12 +3,14 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
+import warnings
 from typing import Optional
 
 import matplotlib.cm
 import matplotlib.colors
 import numpy as np
 import pyproj
+import pytest
 import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset
@@ -384,6 +386,39 @@ class ComputeRgbaTileTest(TileTest, unittest.TestCase):
 
         tile = compute_rgba_tile(*args, **kwargs, format="png")
         self.assertIsInstance(tile, bytes)
+
+    def test_timezone_aware_time_label(self):
+        # Test that Issue #807 (PR #808) is fixed.
+        crs_name = WEB_MERCATOR_CRS_NAME
+        ml_ds = self._get_ml_dataset(crs_name)
+        ml_ds.set_dataset(
+            0,
+            ml_ds.get_dataset(0).assign_coords(
+                time=xr.DataArray(np.array(
+                    [np.datetime64("2001-01-01T01:01:01")]
+                ), dims="time")
+            )
+        )
+        args = [ml_ds, ("var_a", "var_b", "var_c"), 0, 0, 0, CMAP_PROVIDER]
+        kwargs = dict(
+            crs_name=crs_name,
+            tile_size=10,
+            value_ranges=(0, 10),
+            non_spatial_labels={"time": "2001-01-01T01:01:01Z"},
+            tile_enlargement=0,
+        )
+        with warnings.catch_warnings(record=True) as warning_list:
+            compute_rgba_tile(*args, **kwargs, format="numpy")
+        for w in warning_list:
+            # Re-issue captured warnings in case they're needed, e.g. to debug
+            # a test failure.
+            warnings.warn_explicit(
+                w.message, w.category, w.filename, w.lineno, source=w.source
+            )
+        assert all(
+            "no explicit representation of timezones available"
+            not in str(w.message) for w in warning_list
+        ), "NumPy timezone warning issued during tile computation"
 
 
 class GetVarValidRangeTest(unittest.TestCase):
