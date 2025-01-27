@@ -6,7 +6,10 @@ import shapely
 import shapely.ops
 
 from chartlets import Component, Input, State, Output, Container
-from chartlets.components import Box, Button, Typography, Plot  # VegaChart
+
+from chartlets.components import Box, Button, Typography, Plot, Select  # VegaChart
+
+# from chartlets.components import Box, Button, Typography, Select, VegaChart
 
 from xcube.webapi.viewer.contrib import Panel, get_dataset
 from xcube.server.api import Context
@@ -35,11 +38,23 @@ def render_panel(
         alt.theme.enable(name="default")  # in viewer: light
 
     plot = Plot(id="plot", chart=None, style={"flexGrow": 3})  # , theme="dark")
+    # plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme="dark")
 
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
 
     place_text = Typography(
         id="text", children=[text], color="pink", style={"flexGrow": 3}
+    )
+
+    places = ["a", "b", "c"]
+    places = "a"
+    place_names = ["a", "b", "c"]
+    select_places = Select(
+        id="select_places",
+        label="places",
+        value=places,
+        options=place_names,
+        #    #  multiple=True,
     )
 
     button = Button(
@@ -61,7 +76,7 @@ def render_panel(
     places = Component(id="places", children=[])  # [None])
 
     return Box(
-        children=[place_text, plot, controls, places],
+        children=[place_text, plot, controls, places, select_places],
         style={
             "display": "flex",
             "flexDirection": "column",
@@ -77,7 +92,7 @@ def render_panel(
 def get_wavelength(
     dataset,
     time_label: float,
-    placegroup: dict[str, Any],
+    placegroup: list[str],
     places: list,
 ) -> pd.DataFrame:
 
@@ -142,7 +157,7 @@ def get_wavelength(
                     print(var)
                     value = dataset_place[var].values.item()
                     res.append(
-                        {"place": placelabel, "variable": var, "reflectance": value}
+                        {"places": placelabel, "variable": var, "reflectance": value}
                     )
 
                 res = pd.DataFrame(res)
@@ -198,8 +213,7 @@ def update_plot(
     placeid: str,
     places: list,
     #  theme_mode: str,
-    _clicked: bool | None = None,
-    #   _new_theme: bool | None = None,  # trigger, will always be True
+    _dataset: bool | None = None,
 ) -> alt.Chart | None:
 
     print("placeid")
@@ -240,7 +254,7 @@ def update_plot(
         .encode(
             x="wavelength:Q",
             y="reflectance:Q",
-            color="place:N",
+            color="places:N",
             tooltip=["variable", "wavelength", "reflectance"],
         )
     ).properties(
@@ -254,21 +268,21 @@ def update_plot(
 # selected place, so the old plot gets lost.
 # It is needed to find a way to save the place name of the plot to create a plot for
 # the same place again.
-@panel.callback(
-    State("@app", "themeMode"),
-    Input("@app", "themeMode"),
-)
-def update_theme(
-    ctx: Context,
-    theme_mode: str,
-    _new_theme: bool | None = None,  # trigger, will always be True
-) -> None:
-
-    if theme_mode == "light":
-        theme_mode = "default"
-
-    if alt.theme.active != theme_mode:
-        alt.theme.enable(name=theme_mode)
+# @panel.callback(
+#     State("@app", "themeMode"),
+#     Input("@app", "themeMode"),
+# )
+# def update_theme(
+#     ctx: Context,
+#     theme_mode: str,
+#     _new_theme: bool | None = None,  # trigger, will always be True
+# ) -> None:
+#
+#     if theme_mode == "light":
+#         theme_mode = "default"
+#
+#     if alt.theme.active != theme_mode:
+#         alt.theme.enable(name=theme_mode)
 
 
 # # TODO - add selectedDatasetName to Available State Properties
@@ -330,3 +344,24 @@ def add_place(
 
     print(places)
     return places
+
+
+# @panel.callback(
+#     State("places", "children"),
+#     Input("button_reset", "clicked"),
+#     Output("places", "children"),
+# )
+# def clear_places(
+#     ctx: Context,
+#     places: list,
+#     _clicked: bool | None = None,
+# ) -> list:
+#
+#     print(places)
+#     if places is None:
+#         print("nothing to reset")
+#     else:
+#         places = []
+#
+#     print(places)
+#     return places
