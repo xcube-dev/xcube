@@ -7,9 +7,8 @@ import shapely.ops
 
 from chartlets import Component, Input, State, Output, Container
 
-from chartlets.components import Box, Button, Typography, Plot, Select  # VegaChart
-
-# from chartlets.components import Box, Button, Typography, Select, VegaChart
+# from chartlets.components import Box, Button, Typography, Plot, Select  # VegaChart
+from chartlets.components import Box, Button, Typography, Select, VegaChart
 
 from xcube.webapi.viewer.contrib import Panel, get_dataset
 from xcube.server.api import Context
@@ -32,13 +31,13 @@ def render_panel(
     theme_mode: str,
 ) -> Component:
 
-    if theme_mode == "dark":
-        alt.theme.enable(name=theme_mode)
-    else:
-        alt.theme.enable(name="default")  # in viewer: light
+    # if theme_mode == "dark":
+    #    alt.theme.enable(name=theme_mode)
+    # else:
+    #    alt.theme.enable(name="default")  # in viewer: light
 
-    plot = Plot(id="plot", chart=None, style={"flexGrow": 3})  # , theme="dark")
-    # plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme="dark")
+    # plot = Plot(id="plot", chart=None, style={"flexGrow": 3})  # , theme="dark")
+    plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme="dark")
 
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
 
