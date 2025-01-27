@@ -10,6 +10,7 @@ import xarray as xr
 from dask import array as da
 
 from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping.coords import Coords2DGridMapping
 from xcube.core.gridmapping.helpers import scale_xy_res_and_size
 from .affine import affine_transform_dataset
 from .affine import resample_dataset
@@ -208,7 +209,8 @@ def resample_in_space(
     # If CRSes are not both geographic and their CRSes are different
     # transform the source_gm so its CRS matches the target CRS:
     transformed_source_gm = source_gm.transform(target_gm.crs, xy_res=target_gm.xy_res)
-    source_ds = source_ds.drop_vars(source_gm.xy_dim_names)
+    if not isinstance(source_gm, Coords2DGridMapping):
+        source_ds = source_ds.drop_vars(source_gm.xy_dim_names)
     list_grid_mapping = []
     for var in source_ds.data_vars:
         if "grid_mapping" in source_ds[var].attrs:
