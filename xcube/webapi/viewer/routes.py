@@ -163,17 +163,31 @@ class ViewerStateHandler(ApiHandler[ViewerContext]):
 
 class ViewerExtHandler(ApiHandler[ViewerContext]):
     def do_get_contributions(self):
-        self._write_response(get_contributions(self.ctx.ext_ctx))
+        if self.ctx.ext_ctx is None:
+            self._write_no_ext_status()
+        else:
+            self._write_response(get_contributions(self.ctx.ext_ctx))
 
     def do_get_layout(self, contrib_point: str, contrib_index: str):
-        self._write_response(
-            get_layout(
-                self.ctx.ext_ctx, contrib_point, int(contrib_index), self.request.json
+        if self.ctx.ext_ctx is None:
+            self._write_no_ext_status()
+        else:
+            self._write_response(
+                get_layout(
+                    self.ctx.ext_ctx,
+                    contrib_point,
+                    int(contrib_index),
+                    self.request.json,
+                )
             )
-        )
 
     def do_get_callback_results(self):
-        self._write_response(get_callback_results(self.ctx.ext_ctx, self.request.json))
+        if self.ctx.ext_ctx is None:
+            self._write_no_ext_status()
+        else:
+            self._write_response(
+                get_callback_results(self.ctx.ext_ctx, self.request.json)
+            )
 
     def _write_response(self, response: ExtResponse):
         self.response.set_header("Content-Type", "text/json")
@@ -186,6 +200,10 @@ class ViewerExtHandler(ApiHandler[ViewerContext]):
             self.response.write(
                 {"error": {"status": response.status, "message": response.reason}}
             )
+
+    def _write_no_ext_status(self):
+        self.response.set_status(404, "No extensions configured")
+        self.response.finish()
 
 
 @api.route("/viewer/ext/contributions")
