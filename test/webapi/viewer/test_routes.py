@@ -137,6 +137,51 @@ class ViewerExtRoutesTest(RoutesTestCase):
         self.assertEqual({"result": expected_callback_result}, result)
 
 
+class ViewerExtRoutesWithDefaultConfigTest(RoutesTestCase):
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.maxDiff = None
+
+    def test_viewer_ext_contributions(self):
+        response = self.fetch("/viewer/ext/contributions")
+        self.assertResourceNotFoundResponse(response)
+
+    def test_viewer_ext_layout(self):
+        response = self.fetch(
+            "/viewer/ext/layout/panels/0",
+            method="POST",
+            body={
+                "inputValues": [
+                    "",  # dataset_id
+                ]
+            },
+        )
+        self.assertResourceNotFoundResponse(response)
+
+    def test_viewer_ext_callback(self):
+        response = self.fetch(
+            "/viewer/ext/callback",
+            method="POST",
+            body={
+                "callbackRequests": [
+                    {
+                        "contribPoint": "panels",
+                        "contribIndex": 0,
+                        "callbackIndex": 0,
+                        "inputValues": [
+                            "",  # dataset_id
+                            True,  # opaque
+                            1,  # color
+                            "",  # info_text
+                        ],
+                    }
+                ]
+            },
+        )
+        self.assertResourceNotFoundResponse(response)
+
+
 expected_callback_result = [
     {
         "contribIndex": 0,
