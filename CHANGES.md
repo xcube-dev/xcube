@@ -1,3 +1,9 @@
+## Changes in 1.8.2 (in development)
+
+* No longer logging a `TypeError` if xcube server's 
+  `GET viewer/ext/contributions` is called without any 
+  viewer extensions configured. (#1116)
+
 ## Changes in 1.8.1
 
 ### Fixes
