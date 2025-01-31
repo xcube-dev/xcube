@@ -1,4 +1,8 @@
-## Changes in 1.8.2 (in development)
+## Changes in 1.8.2
+
+* Bundled xcube Viewer 
+  [1.4.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.1)
+  with fixes regarding the _share_ feature.
 
 * No longer logging a `TypeError` if xcube server's 
   `GET viewer/ext/contributions` is called without any 
