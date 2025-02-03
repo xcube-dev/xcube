@@ -39,7 +39,7 @@ def render_panel(
     if theme_mode == "light":
         theme_mode = "default"
     # plot = Plot(id="plot", chart=None, style={"flexGrow": 3})  # , theme="dark")
-    plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme=theme_mode)
+    plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme="default")
 
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
 
@@ -55,7 +55,7 @@ def render_panel(
         label="places",
         value=places,
         options=place_names,
-        multiple=True,
+        # multiple=True,
     )
 
     button = Button(
@@ -77,7 +77,7 @@ def render_panel(
     places = Component(id="places", children=[])  # [None])
 
     return Box(
-        children=[place_text, plot, controls, places, select_places],
+        children=[place_text, plot, controls, places],  # , select_places],
         style={
             "display": "flex",
             "flexDirection": "column",
