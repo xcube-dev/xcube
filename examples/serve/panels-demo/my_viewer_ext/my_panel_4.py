@@ -39,7 +39,7 @@ def render_panel(
     if theme_mode == "light":
         theme_mode = "default"
     # plot = Plot(id="plot", chart=None, style={"flexGrow": 3})  # , theme="dark")
-    plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme="default")
+    plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme=theme_mode)
 
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
 
@@ -155,7 +155,7 @@ def get_wavelength(
 
                 res = []
                 for var in variables:
-                    print(var)
+                    # print(var)
                     value = dataset_place[var].values.item()
                     res.append(
                         {"places": placelabel, "variable": var, "reflectance": value}
@@ -163,7 +163,7 @@ def get_wavelength(
 
                 res = pd.DataFrame(res)
                 res["wavelength"] = wavelengths
-                print(res)
+                # print(res)
                 # if not source.empty:
                 #  source = pd.DataFrame()
                 #  print("source")
@@ -243,7 +243,7 @@ def update_plot(
     #         "place": ["b", "b", "b", "b"],
     #     }
     # )
-    print(source)
+    # print(source)
     if source is None:
         # TODO: set error message in panel UI
         print("No reflectances found in Variables")
@@ -284,6 +284,21 @@ def update_plot(
 #
 #     if alt.theme.active != theme_mode:
 #         alt.theme.enable(name=theme_mode)
+
+
+@panel.callback(
+    State("@app", "themeMode"), Input("@app", "themeMode"), Output("plot", "theme")
+)
+def update_theme(
+    ctx: Context,
+    theme_mode: str,
+    _new_theme: bool | None = None,  # trigger, will always be True
+) -> str:
+
+    if theme_mode == "light":
+        theme_mode = "default"
+
+    return theme_mode
 
 
 # # TODO - add selectedDatasetName to Available State Properties
