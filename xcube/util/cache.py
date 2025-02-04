@@ -439,7 +439,9 @@ def _compute_object_size(obj):
                 else (
                     3
                     if m in ("RGB", "YCbCr", "LAB", "HSV")
-                    else 1.0 / 8.0 if m == "1" else 1
+                    else 1.0 / 8.0
+                    if m == "1"
+                    else 1
                 )
             )
         )

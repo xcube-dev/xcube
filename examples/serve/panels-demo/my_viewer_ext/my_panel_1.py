@@ -7,18 +7,16 @@ import numpy as np
 import pandas as pd
 import pyproj
 import shapely
-import shapely.ops
 import shapely.geometry
-from chartlets import Component, Input, State, Output
+import shapely.ops
+from chartlets import Component, Input, Output, State
 from chartlets.components import Box, Button, CircularProgress, Select, VegaChart
 
 from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
 from xcube.core.gridmapping import GridMapping
-from xcube.webapi.viewer.contrib import Panel
-from xcube.webapi.viewer.contrib import get_dataset
 from xcube.server.api import Context
-
+from xcube.webapi.viewer.contrib import Panel, get_dataset
 
 panel = Panel(__name__, title="2D Histogram")
 

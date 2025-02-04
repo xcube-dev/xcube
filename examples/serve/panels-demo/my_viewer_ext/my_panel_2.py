@@ -2,13 +2,11 @@
 #  Permissions are hereby granted under the terms of the MIT License:
 #  https://opensource.org/licenses/MIT.
 
-from chartlets import Component, Input, State, Output
-from chartlets.components import Box, Select, Checkbox, Typography
+from chartlets import Component, Input, Output, State
+from chartlets.components import Box, Checkbox, Select, Typography
 
-from xcube.webapi.viewer.contrib import Panel
-from xcube.webapi.viewer.contrib import get_datasets_ctx
 from xcube.server.api import Context
-
+from xcube.webapi.viewer.contrib import Panel, get_datasets_ctx
 
 panel = Panel(__name__, title="Panel B")
 
