@@ -1,17 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
 from xcube.server.api import ApiError
 from xcube.webapi.places.controllers import find_places
+
 from .test_context import get_places_ctx
 
 BAD_REQUEST_MSG = (
-    "HTTP status 400:"
-    " Received invalid geometry bbox,"
-    " geometry WKT, or GeoJSON object"
+    "HTTP status 400: Received invalid geometry bbox, geometry WKT, or GeoJSON object"
 )
 
 

@@ -1,9 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import time
+
 import xarray as xr
+
 from xcube.webapi.compute.op.decorator import operation
 
 from ..helpers import RoutesTestCase
@@ -144,7 +146,7 @@ class ComputeJobsRoutesTest(RoutesTestCase):
             },
         )
         job2, status2 = self.fetch_json(
-            f'/compute/jobs/{job1.get("jobId")}',
+            f"/compute/jobs/{job1.get('jobId')}",
             method="DELETE",
         )
         self.assertEqual(job2["state"]["status"], "cancelled")

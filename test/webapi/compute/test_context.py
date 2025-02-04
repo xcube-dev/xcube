@@ -1,18 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import Union, Any
 from collections.abc import Mapping
-
 from test.webapi.helpers import get_api_ctx
+from typing import Any, Union
+
 from xcube.server.api import Context
 from xcube.webapi.compute.context import ComputeContext, is_job_status
 
 
 def get_compute_ctx(
-    server_config: Union[str, Mapping[str, Any]] = "config.yml"
+    server_config: Union[str, Mapping[str, Any]] = "config.yml",
 ) -> ComputeContext:
     return get_api_ctx("compute", ComputeContext, server_config)
 

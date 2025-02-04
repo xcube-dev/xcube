@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import unittest
@@ -8,19 +8,12 @@ from typing import Optional
 
 from tornado import concurrent
 
-from xcube.server.api import Api
-from xcube.server.api import ApiContext
-from xcube.server.api import Context
-from xcube.server.server import Server
-from xcube.server.server import ServerContext
+from xcube.server.api import Api, ApiContext, Context
+from xcube.server.server import Server, ServerContext
 from xcube.util.frozen import FrozenDict
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-from .mocks import MockApiContext
-from .mocks import MockFramework
-from .mocks import mock_extension_registry
-from .mocks import mock_server
+from xcube.util.jsonschema import JsonArraySchema, JsonObjectSchema, JsonStringSchema
+
+from .mocks import MockApiContext, MockFramework, mock_extension_registry, mock_server
 
 
 class ServerTest(unittest.TestCase):
@@ -119,7 +112,7 @@ class ServerTest(unittest.TestCase):
                     "type": "object",
                     "title": "API specification",
                     "additionalProperties": False,
-                    "description": "selected = (includes | ALL) - " "(excludes | NONE)",
+                    "description": "selected = (includes | ALL) - (excludes | NONE)",
                     "properties": {
                         "excludes": {
                             "type": "array",
@@ -195,7 +188,7 @@ class ServerTest(unittest.TestCase):
                                 "type": "object",
                                 "properties": {},
                                 "additionalProperties": True,
-                                "title": "Optional OpenAPI operation " "metadata",
+                                "title": "Optional OpenAPI operation metadata",
                             },
                         },
                         "additionalProperties": False,
@@ -234,9 +227,7 @@ class ServerTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             Server(MockFramework(), {}, extension_registry=extension_registry)
         self.assertEqual(
-            f"API 'datasets':"
-            f" configuration parameter 'address'"
-            f" is already defined.",
+            f"API 'datasets': configuration parameter 'address' is already defined.",
             f"{cm.exception}",
         )
 
@@ -386,7 +377,7 @@ class ServerTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             Server(MockFramework(), {}, extension_registry=extension_registry)
         self.assertEqual(
-            "API 'timeseries':" " missing API dependency 'datasets'", f"{cm.exception}"
+            "API 'timeseries': missing API dependency 'datasets'", f"{cm.exception}"
         )
 
 

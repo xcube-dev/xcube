@@ -1,22 +1,24 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-import unittest
-import unittest.mock
 import os
 import sys
+import unittest
+import unittest.mock
 from builtins import ImportError
 
 import numpy as np
 
-from xcube.util.dask import _NestedList
-from xcube.util.dask import compute_array_from_func
-from xcube.util.dask import get_chunk_sizes
-from xcube.util.dask import get_chunk_slice_tuples
-from xcube.util.dask import new_cluster
-from xcube.util.dask import _CLUSTER_ACCOUNT_ENV_VAR_NAME
-from xcube.util.dask import _CLUSTER_TAGS_ENV_VAR_NAME
+from xcube.util.dask import (
+    _CLUSTER_ACCOUNT_ENV_VAR_NAME,
+    _CLUSTER_TAGS_ENV_VAR_NAME,
+    _NestedList,
+    compute_array_from_func,
+    get_chunk_sizes,
+    get_chunk_slice_tuples,
+    new_cluster,
+)
 
 
 class DaskTest(unittest.TestCase):

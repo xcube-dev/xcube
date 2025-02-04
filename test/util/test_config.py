@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from io import StringIO
@@ -9,13 +9,14 @@ import fsspec
 import pytest
 import yaml
 
-from xcube.util.config import flatten_dict
-from xcube.util.config import load_configs
-from xcube.util.config import merge_config
-from xcube.util.config import to_name_dict_pair
-from xcube.util.config import to_name_dict_pairs
-from xcube.util.config import to_resolved_name_dict_pairs
-
+from xcube.util.config import (
+    flatten_dict,
+    load_configs,
+    merge_config,
+    to_name_dict_pair,
+    to_name_dict_pairs,
+    to_resolved_name_dict_pairs,
+)
 
 # from yaml.parser import ParserError # needs to be kept for last test, which is still not working properly
 
@@ -396,6 +397,6 @@ class LoadConfigsTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_load_configs_fails(self):
         with pytest.raises(
-            ValueError, match="Cannot find configuration" " 'memory://config_1.yaml'"
+            ValueError, match="Cannot find configuration 'memory://config_1.yaml'"
         ):
             load_configs("memory://config_1.yaml")

@@ -1,16 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 from unittest import TestCase
 
-from xcube.util.assertions import assert_false
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_in
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_not_none
-from xcube.util.assertions import assert_subclass
-from xcube.util.assertions import assert_true
+from xcube.util.assertions import (
+    assert_false,
+    assert_given,
+    assert_in,
+    assert_instance,
+    assert_not_none,
+    assert_subclass,
+    assert_true,
+)
 
 
 class AssertTest(TestCase):

@@ -1,16 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 from typing import Tuple
 
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.normalize import encode_cube
-from xcube.core.store import DataStorePool
-from xcube.core.store import get_data_store_instance
-from xcube.core.store import new_data_writer
+from xcube.core.store import DataStorePool, get_data_store_instance, new_data_writer
 from xcube.util.progress import observe_dask_progress
+
 from ..config import OutputConfig
 
 
@@ -44,6 +43,6 @@ class CubeWriter:
                 dataset,
                 data_id=output_config.data_id,
                 replace=output_config.replace or False,
-                **write_params
+                **write_params,
             )
         return data_id, dataset

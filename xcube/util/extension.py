@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 
 import importlib
-from typing import List, Any, Dict, Callable, Optional
 from collections.abc import Mapping, Sequence
+from typing import Any, Callable, Dict, List, Optional
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

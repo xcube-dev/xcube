@@ -1,15 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import List
 from collections.abc import Sequence
+from typing import List
 
 import click
 
-from xcube.constants import EXTENSION_POINT_DATASET_IOS, LOG
-from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
-from xcube.constants import RESAMPLING_METHOD_NAMES
+from xcube.constants import (
+    EXTENSION_POINT_DATASET_IOS,
+    EXTENSION_POINT_INPUT_PROCESSORS,
+    LOG,
+    RESAMPLING_METHOD_NAMES,
+)
 from xcube.core.gen.defaults import DEFAULT_OUTPUT_PATH, DEFAULT_OUTPUT_RESAMPLING
 from xcube.util.extension import Extension
 

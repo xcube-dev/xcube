@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import functools
 import gzip
@@ -13,15 +13,13 @@ import pyproj
 
 from xcube.core.gridmapping import CRS_CRS84
 from xcube.core.select import select_subset
-from xcube.core.varexpr import VarExprContext
-from xcube.core.varexpr import split_var_assignment
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
+from xcube.core.varexpr import VarExprContext, split_var_assignment
+from xcube.server.api import ApiError, ApiHandler
+
+from ..datasets import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
 from .api import api
 from .config import DEFAULT_MAX_VOXEL_COUNT
 from .context import VolumesContext
-from ..datasets import PATH_PARAM_DATASET_ID
-from ..datasets import PATH_PARAM_VAR_NAME
 
 
 # noinspection PyPep8Naming
@@ -134,7 +132,7 @@ class VolumesContextHandler(ApiHandler[VolumesContext]):
             raise ApiError.BadRequest(
                 f"Volume too large, please select a smaller dataset subset."
                 f" Maximum is {max_voxel_count} voxels,"
-                f' got {" x ".join(map(str, var.shape))} = {voxel_count}.'
+                f" got {' x '.join(map(str, var.shape))} = {voxel_count}."
             )
 
         # TODO (forman): allow for any dtype

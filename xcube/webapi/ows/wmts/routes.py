@@ -1,30 +1,36 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiError, ApiHandler
+
+from ...datasets import (
+    PATH_PARAM_DATASET_ID,
+    PATH_PARAM_VAR_NAME,
+    QUERY_PARAM_CMAP,
+    QUERY_PARAM_CRS,
+    QUERY_PARAM_NORM,
+    QUERY_PARAM_VMAX,
+    QUERY_PARAM_VMIN,
+)
+from ...tiles import (
+    PATH_PARAM_X,
+    PATH_PARAM_Y,
+    PATH_PARAM_Z,
+    QUERY_PARAM_RETINA,
+    QUERY_PARAM_TIME,
+)
+from ...tiles.controllers import compute_ml_dataset_tile
 from .api import api
 from .context import WmtsContext
-from .controllers import WMTS_CRS84_TMS_ID
-from .controllers import WMTS_TILE_FORMAT
-from .controllers import WMTS_VERSION
-from .controllers import WMTS_WEB_MERCATOR_TMS_ID
-from .controllers import get_crs_name_from_tms_id
-from .controllers import get_wmts_capabilities_xml
-from ...datasets import PATH_PARAM_DATASET_ID
-from ...datasets import PATH_PARAM_VAR_NAME
-from ...datasets import QUERY_PARAM_CMAP
-from ...datasets import QUERY_PARAM_CRS
-from ...datasets import QUERY_PARAM_NORM
-from ...datasets import QUERY_PARAM_VMAX
-from ...datasets import QUERY_PARAM_VMIN
-from ...tiles import PATH_PARAM_X
-from ...tiles import PATH_PARAM_Y
-from ...tiles import PATH_PARAM_Z
-from ...tiles import QUERY_PARAM_RETINA
-from ...tiles import QUERY_PARAM_TIME
-from ...tiles.controllers import compute_ml_dataset_tile
+from .controllers import (
+    WMTS_CRS84_TMS_ID,
+    WMTS_TILE_FORMAT,
+    WMTS_VERSION,
+    WMTS_WEB_MERCATOR_TMS_ID,
+    get_crs_name_from_tms_id,
+    get_wmts_capabilities_xml,
+)
 
 _VALID_WMTS_TMS_IDS = (WMTS_CRS84_TMS_ID, WMTS_WEB_MERCATOR_TMS_ID)
 
@@ -93,7 +99,7 @@ class WmtsCapabilitiesXmlForTmsHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
     @api.operation(
         operationId="getWmtsTmsCapabilities",
-        summary="Gets the WMTS capabilities" " for tile matrix set as XML document",
+        summary="Gets the WMTS capabilities for tile matrix set as XML document",
         parameters=[PATH_PARAM_TMS_ID],
     )
     async def get(self, tmsId):
@@ -144,7 +150,7 @@ class WmtsImageTileForTmsHandler(ApiHandler[WmtsContext]):
     # noinspection PyPep8Naming
     @api.operation(
         operationId="getWmtsTmsImageTile",
-        summary="Gets a WMTS image tile" " for given tile matrix set in PNG format",
+        summary="Gets a WMTS image tile for given tile matrix set in PNG format",
         parameters=TMS_TILE_PARAMETERS,
     )
     async def get(
@@ -213,7 +219,7 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
                 ds_id, var_name = layer.split(".")
             except ValueError as e:
                 raise ApiError.BadRequest(
-                    'value for "layer" parameter must be' ' "<dataset>.<variable>"'
+                    'value for "layer" parameter must be "<dataset>.<variable>"'
                 ) from e
             # For time being, we ignore "style"
             # style = self.request.get_query_arg("style"
@@ -222,7 +228,7 @@ class WmtsKvpHandler(ApiHandler[WmtsContext]):
             ).lower()
             if mime_type not in (WMTS_TILE_FORMAT, "png"):
                 raise ApiError.BadRequest(
-                    f'value for "format" parameter' f' must be "{WMTS_TILE_FORMAT}"'
+                    f'value for "format" parameter must be "{WMTS_TILE_FORMAT}"'
                 )
             tms_id = self.request.get_query_arg(
                 "tilematrixset", default=WMTS_CRS84_TMS_ID

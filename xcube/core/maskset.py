@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import random
 from collections.abc import Iterable
@@ -10,7 +10,6 @@ import dask.array as da
 import matplotlib.colors
 import numpy as np
 import xarray as xr
-
 
 # TODO: this would be useful to have in xarray:
 #       >>> ds = xr.open_dataset("my/path/to/cf/netcdf.nc", decode_flags=True)
@@ -56,16 +55,16 @@ class MaskSet:
             raise ValueError("flag_var must have the attribute 'flag_meanings'")
         flag_meanings = flag_var.attrs.get("flag_meanings")
         if not isinstance(flag_meanings, str):
-            raise TypeError("attribute 'flag_meanings' of flag_var " "must be a string")
+            raise TypeError("attribute 'flag_meanings' of flag_var must be a string")
 
         flag_names = flag_meanings.split(" ")
         if flag_masks is not None and len(flag_names) != len(flag_masks):
             raise ValueError(
-                "attributes 'flag_meanings' and 'flag_masks' " "are not corresponding"
+                "attributes 'flag_meanings' and 'flag_masks' are not corresponding"
             )
         if flag_values is not None and len(flag_names) != len(flag_values):
             raise ValueError(
-                "attributes 'flag_meanings' and 'flag_values' " "are not corresponding"
+                "attributes 'flag_meanings' and 'flag_values' are not corresponding"
             )
 
         flag_colors = flag_var.attrs.get("flag_colors")
@@ -258,6 +257,7 @@ class MaskSet:
                 return cmap, norm
         return matplotlib.colormaps.get_cmap(default), None
 
+
 _MASK_DTYPES = (
     (2**8, np.uint8),
     (2**16, np.uint16),
@@ -317,7 +317,6 @@ def _sanitize_flag_values(
     flag_var: xr.DataArray,
     flag_values: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray]:
-
     index_tracker = np.arange(len(flag_values))
     fill_value = None
     for d in (flag_var.encoding, flag_var.attrs):

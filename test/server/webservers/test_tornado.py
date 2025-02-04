@@ -1,37 +1,33 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import (
-    Optional,
-    Callable,
-    Any,
-    Union,
-    Tuple,
-    Type,
-    Dict,
-)
-from collections.abc import Sequence, Awaitable
+from collections.abc import Awaitable, Sequence
+from test.server.mocks import mock_server
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import pytest
 import tornado.httputil
 import tornado.web
 from tornado import concurrent
 
-from test.server.mocks import mock_server
-from xcube.server.api import Api
-from xcube.server.api import ApiContextT
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
-from xcube.server.api import ApiRoute
-from xcube.server.api import Context
-from xcube.server.api import ServerConfig
+from xcube.server.api import (
+    Api,
+    ApiContextT,
+    ApiError,
+    ApiHandler,
+    ApiRoute,
+    Context,
+    ServerConfig,
+)
 from xcube.server.asyncexec import ReturnT
-from xcube.server.webservers.tornado import SERVER_CTX_ATTR_NAME
-from xcube.server.webservers.tornado import TornadoApiRequest
-from xcube.server.webservers.tornado import TornadoFramework
-from xcube.server.webservers.tornado import TornadoRequestHandler
+from xcube.server.webservers.tornado import (
+    SERVER_CTX_ATTR_NAME,
+    TornadoApiRequest,
+    TornadoFramework,
+    TornadoRequestHandler,
+)
 from xcube.util.jsonschema import JsonObjectSchema
 
 
@@ -102,21 +98,12 @@ class TornadoFrameworkTest(unittest.TestCase):
         self.assertEqual("/collections", p2p("/collections"))
 
         self.assertEqual(
-            "/collections/"
-            "("
-            "?P<collection_id>"
-            "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
-            ")",
+            "/collections/(?P<collection_id>[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+)",
             p2p("/collections/{collection_id}"),
         )
 
         self.assertEqual(
-            "/collections/"
-            "("
-            "?P<collection_id>"
-            "[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+"
-            ")"
-            "/items",
+            "/collections/(?P<collection_id>[^\\;\\/\\?\\:\\@\\&\\=\\+\\$\\,]+)/items",
             p2p("/collections/{collection_id}/items"),
         )
 
@@ -158,13 +145,15 @@ class TornadoFrameworkTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             p2p("/datasets/{dataset_id")
         self.assertEqual(
-            'missing closing "}" in "/datasets/{dataset_id"', f"{cm.exception}",
+            'missing closing "}" in "/datasets/{dataset_id"',
+            f"{cm.exception}",
         )
 
         with self.assertRaises(ValueError) as cm:
             p2p("/datasets/dataset_id}/bbox")
         self.assertEqual(
-            'missing opening "{" in "/datasets/dataset_id}/bbox"', f"{cm.exception}",
+            'missing opening "{" in "/datasets/dataset_id}/bbox"',
+            f"{cm.exception}",
         )
 
         with self.assertRaises(ValueError) as cm:

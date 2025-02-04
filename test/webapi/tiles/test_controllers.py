@@ -1,20 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
+from test.webapi.helpers import get_api_ctx
 from typing import Union
 
-from test.webapi.helpers import get_api_ctx
-from xcube.server.api import ApiError
-from xcube.server.api import ServerConfig
+from xcube.constants import CRS84
+from xcube.server.api import ApiError, ServerConfig
 from xcube.webapi.tiles.context import TilesContext
 from xcube.webapi.tiles.controllers import compute_ml_dataset_tile
-from xcube.constants import CRS84
 
 
 def get_tiles_ctx(
-    server_config: Union[str, ServerConfig] = "config.yml"
+    server_config: Union[str, ServerConfig] = "config.yml",
 ) -> TilesContext:
     return get_api_ctx("tiles", TilesContext, server_config)
 
@@ -39,7 +38,7 @@ class TilesControllerTest(unittest.TestCase):
                 ctx, "demo-rgb", "conc_tsm", CRS84, "0", "0", "0", {}
             )
         self.assertEqual(
-            "HTTP status 404:" ' Dataset "demo-rgb" not found', f"{cm.exception}"
+            'HTTP status 404: Dataset "demo-rgb" not found', f"{cm.exception}"
         )
 
     def test_compute_ml_dataset_tile_invalid_variable(self):
@@ -47,7 +46,7 @@ class TilesControllerTest(unittest.TestCase):
         with self.assertRaises(ApiError.NotFound) as cm:
             compute_ml_dataset_tile(ctx, "demo", "conc_tdi", CRS84, "0", "0", "0", {})
         self.assertEqual(
-            "HTTP status 404:" ' Variable "conc_tdi" not found in dataset "demo"',
+            'HTTP status 404: Variable "conc_tdi" not found in dataset "demo"',
             f"{cm.exception}",
         )
 
@@ -98,7 +97,7 @@ class TilesControllerTest(unittest.TestCase):
                 ctx, "demo", "conc_tsm", CRS84, "0", "0", "0", dict(time="Gnaaark!")
             )
         self.assertEqual(
-            "HTTP status 400:" " Illegal label 'Gnaaark!' for dimension 'time'",
+            "HTTP status 400: Illegal label 'Gnaaark!' for dimension 'time'",
             f"{cm.exception}",
         )
 
@@ -114,7 +113,7 @@ class TilesControllerTest(unittest.TestCase):
                 ctx, "demo-rgb", "rgb", CRS84, "0", "0", "0", dict(b="refl_3")
             )
         self.assertEqual(
-            "HTTP status 404:" " Variable 'refl_3' not found in dataset 'demo-rgb'",
+            "HTTP status 404: Variable 'refl_3' not found in dataset 'demo-rgb'",
             f"{cm.exception}",
         )
 

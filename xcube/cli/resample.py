@@ -1,20 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Dict, Any
 from collections.abc import Sequence
+from typing import Any, Dict
 
 import click
 
 from xcube.cli.common import (
-    configure_cli_output,
     cli_option_quiet,
     cli_option_verbosity,
+    configure_cli_output,
 )
-from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
-from xcube.constants import LOG
+from xcube.constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR, LOG
 
 UPSAMPLING_METHODS = ["asfreq", "ffill", "bfill", "pad", "nearest", "interpolate"]
 DOWNSAMPLING_METHODS = [
@@ -217,9 +216,7 @@ def _resample_in_time(
     dry_run: bool = False,
     monitor=None,
 ):
-    from xcube.core.dsio import guess_dataset_format
-    from xcube.core.dsio import open_cube
-    from xcube.core.dsio import write_cube
+    from xcube.core.dsio import guess_dataset_format, open_cube, write_cube
     from xcube.core.resampling import resample_in_time
     from xcube.core.update import update_dataset_chunk_encoding
 

@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import copy
 import unittest
@@ -9,16 +9,18 @@ import geopandas
 import xarray
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store.datatype import ANY_TYPE
-from xcube.core.store.datatype import DATASET_TYPE
-from xcube.core.store.datatype import DATASET_ITERATOR_TYPE
-from xcube.core.store.datatype import DataIterator
-from xcube.core.store.datatype import DataType
-from xcube.core.store.datatype import DataTypeLike
-from xcube.core.store.datatype import GEO_DATA_FRAME_TYPE
-from xcube.core.store.datatype import GEO_DATA_FRAME_ITERATOR_TYPE
-from xcube.core.store.datatype import MULTI_LEVEL_DATASET_TYPE
-from xcube.core.store.datatype import MULTI_LEVEL_DATASET_ITERATOR_TYPE
+from xcube.core.store.datatype import (
+    ANY_TYPE,
+    DATASET_ITERATOR_TYPE,
+    DATASET_TYPE,
+    GEO_DATA_FRAME_ITERATOR_TYPE,
+    GEO_DATA_FRAME_TYPE,
+    MULTI_LEVEL_DATASET_ITERATOR_TYPE,
+    MULTI_LEVEL_DATASET_TYPE,
+    DataIterator,
+    DataType,
+    DataTypeLike,
+)
 from xcube.util.jsonschema import JsonStringSchema
 
 

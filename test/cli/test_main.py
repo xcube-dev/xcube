@@ -1,14 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import warnings
+from test.cli.helpers import CliTest
 
 import pytest
 from click import command
 
 import xcube.cli.main
-from test.cli.helpers import CliTest
 
 
 class ClickMainTest(CliTest):

@@ -1,25 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os.path
 import unittest
-from typing import Union, Any
 from collections.abc import Mapping
+from test.webapi.helpers import get_api_ctx, get_server
+from typing import Any, Union
 
 import pytest
 import xarray as xr
 
-from test.webapi.helpers import get_api_ctx
-from test.webapi.helpers import get_server
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.server.api import ApiError
-from xcube.server.api import Context
+from xcube.server.api import ApiError, Context
 from xcube.webapi.datasets.context import DatasetsContext
 
 
 def get_datasets_ctx(
-    server_config: Union[str, Mapping[str, Any]] = "config.yml"
+    server_config: Union[str, Mapping[str, Any]] = "config.yml",
 ) -> DatasetsContext:
     return get_api_ctx("datasets", DatasetsContext, server_config)
 
@@ -59,7 +57,7 @@ class DatasetsContextTest(unittest.TestCase):
             ctx.get_variable_for_z("demo", "conc_ys", 0)
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual(
-            "HTTP status 404:" ' Variable "conc_ys" not found in dataset "demo"',
+            'HTTP status 404: Variable "conc_ys" not found in dataset "demo"',
             f"{cm.exception}",
         )
 
@@ -74,7 +72,7 @@ class DatasetsContextTest(unittest.TestCase):
             ctx.get_dataset("demo", expected_var_names=["conc_ys"])
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual(
-            "HTTP status 404:" ' Variable "conc_ys" not found in dataset "demo"',
+            'HTTP status 404: Variable "conc_ys" not found in dataset "demo"',
             f"{cm.exception}",
         )
 

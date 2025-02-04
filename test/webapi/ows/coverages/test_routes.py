@@ -1,18 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
+
+from xcube.webapi.ows.coverages.routes import PATH_PREFIX
 
 from ...helpers import RoutesTestCase
 
-from xcube.webapi.ows.coverages.routes import PATH_PREFIX
 _COVERAGE_PREFIX = PATH_PREFIX + "/collections/demo/coverage"
 
 
 class CoveragesRoutesTest(RoutesTestCase):
     def test_fetch_coverage_json(self):
-        response = self.fetch(
-            _COVERAGE_PREFIX + "?f=application/json"
-        )
+        response = self.fetch(_COVERAGE_PREFIX + "?f=application/json")
         self.assertResponseOK(response)
 
     def test_fetch_coverage_html(self):
@@ -26,9 +25,7 @@ class CoveragesRoutesTest(RoutesTestCase):
         self.assertEqual("text/html", response.headers["Content-Type"])
 
     def test_fetch_coverage_netcdf(self):
-        response = self.fetch(
-            _COVERAGE_PREFIX + "?f=application/netcdf"
-        )
+        response = self.fetch(_COVERAGE_PREFIX + "?f=application/netcdf")
         self.assertResponseOK(response)
         self.assertEqual(
             "50.00125,0.00125,52.49875,4.99875", response.headers["Content-Bbox"]

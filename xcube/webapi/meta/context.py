@@ -1,11 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import datetime
 
-from xcube.server.api import ApiContext
-from xcube.server.api import Context
+from xcube.server.api import ApiContext, Context
 from xcube.server.server import ServerContext
 
 

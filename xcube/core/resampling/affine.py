@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import math
-from typing import Union, Callable, Optional, Any
-from collections.abc import Sequence, Mapping, Hashable
+from collections.abc import Hashable, Mapping, Sequence
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import xarray as xr
@@ -14,6 +14,7 @@ from dask_image import ndinterp
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.helpers import AffineTransformMatrix
 from xcube.util.assertions import assert_true
+
 from .cf import complete_resampled_dataset
 
 NDImage = Union[np.ndarray, da.Array]

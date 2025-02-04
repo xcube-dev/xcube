@@ -1,15 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
+from test.webapi.helpers import get_api_ctx
 from unittest.mock import MagicMock
 
 import fiona
 import shapely
 from shapely.geometry import mapping
 
-from test.webapi.helpers import get_api_ctx
 from xcube.server.api import Context
 from xcube.webapi.places.context import PlacesContext
 

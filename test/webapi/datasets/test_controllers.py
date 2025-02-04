@@ -1,23 +1,25 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 
 import os.path
 import unittest
+from test.webapi.helpers import get_api_ctx
 from typing import Any, Optional
 
-from test.webapi.helpers import get_api_ctx
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
 from xcube.webapi.datasets.context import DatasetsContext
-from xcube.webapi.datasets.controllers import filter_variable_names
-from xcube.webapi.datasets.controllers import find_dataset_places
-from xcube.webapi.datasets.controllers import get_color_bars
-from xcube.webapi.datasets.controllers import get_dataset
-from xcube.webapi.datasets.controllers import get_datasets
-from xcube.webapi.datasets.controllers import get_legend
-from xcube.webapi.datasets.controllers import get_time_chunk_size
+from xcube.webapi.datasets.controllers import (
+    filter_variable_names,
+    find_dataset_places,
+    get_color_bars,
+    get_dataset,
+    get_datasets,
+    get_legend,
+    get_time_chunk_size,
+)
 
 
 def get_datasets_ctx(server_config=None) -> DatasetsContext:
@@ -135,7 +137,7 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
             get_color_bars(get_datasets_ctx(), "text/xml")
         self.assertEqual(400, cm.exception.status_code)
         self.assertEqual(
-            "HTTP status 400:" " Format 'text/xml' not supported for colormaps",
+            "HTTP status 400: Format 'text/xml' not supported for colormaps",
             f"{cm.exception}",
         )
 
@@ -150,8 +152,7 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
             {
                 "varNames": ["conc_chl", "conc_tsm", "kd489"],
                 "normRanges": [(0.0, 24.0), (0.0, 100.0), (0.0, 6.0)],
-                "tileUrl": "http://test/datasets/demo-rgb/vars/rgb/"
-                "tiles2/{z}/{y}/{x}",
+                "tileUrl": "http://test/datasets/demo-rgb/vars/rgb/tiles2/{z}/{y}/{x}",
                 "tileLevelMin": 7,
                 "tileLevelMax": 9,
             },
@@ -328,7 +329,7 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
         with self.assertRaises(ApiError.Unauthorized) as cm:
             get_dataset(ctx, "remote_base_1w")
         self.assertEqual(
-            "HTTP status 401: Missing permission" ' "read:dataset:remote_base_1w"',
+            'HTTP status 401: Missing permission "read:dataset:remote_base_1w"',
             f"{cm.exception}",
         )
 
@@ -445,13 +446,13 @@ class DatasetLegendTest(unittest.TestCase):
         with self.assertRaises(ApiError.BadRequest) as cm:
             get_legend(ctx, "demo", "conc_chl", dict(vmin="sun-shine"))
         self.assertEqual(
-            "HTTP status 400:" " Invalid color legend parameter(s)", f"{cm.exception}"
+            "HTTP status 400: Invalid color legend parameter(s)", f"{cm.exception}"
         )
 
         with self.assertRaises(ApiError.BadRequest) as cm:
             get_legend(ctx, "demo", "conc_chl", dict(width="sun-shine"))
         self.assertEqual(
-            "HTTP status 400:" " Invalid color legend parameter(s)", f"{cm.exception}"
+            "HTTP status 400: Invalid color legend parameter(s)", f"{cm.exception}"
         )
 
 

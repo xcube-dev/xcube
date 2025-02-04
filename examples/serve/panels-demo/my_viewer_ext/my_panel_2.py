@@ -1,3 +1,7 @@
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
+
 from chartlets import Component, Input, State, Output
 from chartlets.components import Box, Select, Checkbox, Typography
 
@@ -19,7 +23,6 @@ def render_panel(
     ctx: Context,
     dataset_id: str = "",
 ) -> Component:
-
     opaque = False
     color = 0
 
@@ -80,6 +83,6 @@ def update_info_text(
         f" the color is {COLORS[color][1]} and"
         f" it {'is' if opaque else 'is not'} opaque."
         f" The length of the last info text"
-        f" was {len(info_text or "")}."
+        f" was {len(info_text or '')}."
         f" The number of datasets is {len(ds_configs)}."
     ]

@@ -1,15 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import collections.abc
 import json
 import math
 import pathlib
 import warnings
-from functools import cached_property
-from typing import Any, Optional, List, Union, Dict
 from collections.abc import Mapping, Sequence
+from functools import cached_property
+from typing import Any, Dict, List, Optional, Union
 
 import fsspec
 import fsspec.core
@@ -20,12 +20,11 @@ import zarr
 # noinspection PyUnresolvedReferences
 import xcube.core.zarrstore
 from xcube.core.gridmapping import GridMapping
-from xcube.core.subsampling import AggMethods, AggMethod
+from xcube.core.subsampling import AggMethod, AggMethods
 from xcube.util.assertions import assert_instance
-from xcube.util.fspath import get_fs_path_class
-from xcube.util.fspath import resolve_path
-from xcube.util.types import ScalarOrPair
-from xcube.util.types import normalize_scalar_or_pair
+from xcube.util.fspath import get_fs_path_class, resolve_path
+from xcube.util.types import ScalarOrPair, normalize_scalar_or_pair
+
 from .abc import MultiLevelDataset
 from .base import BaseMultiLevelDataset
 from .lazy import LazyMultiLevelDataset
@@ -112,7 +111,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             with self.fs.open(f"{self._path}/.zlevels") as fp:
                 spec = json.load(fp)
             if not isinstance(spec, collections.abc.Mapping):
-                raise TypeError("Unexpected .zlevels file." " Must be a JSON object.")
+                raise TypeError("Unexpected .zlevels file. Must be a JSON object.")
         # TODO (forman): validate JSON object
         return spec
 
@@ -159,7 +158,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             )
         except ValueError as e:
             raise FsMultiLevelDatasetError(
-                f"Failed to open" f" dataset {level_path!r}:" f" {e}"
+                f"Failed to open dataset {level_path!r}: {e}"
             ) from e
 
         level_dataset.zarr_store.set(level_zarr_store)

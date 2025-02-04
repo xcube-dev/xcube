@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import unittest
@@ -8,8 +8,7 @@ import unittest
 import numpy as np
 import pytest
 
-from xcube.util.jsonencoder import NumpyJSONEncoder
-from xcube.util.jsonencoder import to_json_value
+from xcube.util.jsonencoder import NumpyJSONEncoder, to_json_value
 
 PY_INPUT = {
     "py_bool": True,
@@ -99,7 +98,7 @@ class ToJsonValueTest(unittest.TestCase):
 
         with pytest.raises(
             TypeError,
-            match="Property names of JSON objects" " must be strings, but got bool",
+            match="Property names of JSON objects must be strings, but got bool",
         ):
             to_json_value({True: 13})
 
@@ -140,6 +139,6 @@ class ToJsonValueTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_fails_correctly(self):
         with pytest.raises(
-            TypeError, match="Object of type object" " is not JSON serializable"
+            TypeError, match="Object of type object is not JSON serializable"
         ):
             to_json_value(object())

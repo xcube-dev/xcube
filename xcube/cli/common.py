@@ -1,22 +1,22 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import logging
 import sys
-from typing import Dict, Any, Optional, Union, Type, Tuple
 from collections.abc import Sequence
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 import click
 
 from xcube.constants import (
     GENERAL_LOG_FORMAT,
-    XCUBE_LOG_FORMAT,
     LOG,
-    LOG_LEVEL_OFF_NAME,
-    LOG_LEVEL_OFF,
     LOG_LEVEL_DETAIL,
+    LOG_LEVEL_OFF,
+    LOG_LEVEL_OFF_NAME,
     LOG_LEVEL_TRACE,
+    XCUBE_LOG_FORMAT,
 )
 
 
@@ -109,7 +109,7 @@ def cli_option_dry_run(func):
         "-d",
         "dry_run",
         is_flag=True,
-        help="Do not change any data," " just report what would have been changed.",
+        help="Do not change any data, just report what would have been changed.",
         callback=_callback,
     )(func)
 

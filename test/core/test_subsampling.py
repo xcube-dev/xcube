@@ -1,17 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
 import numpy as np
 import xarray as xr
 
-from xcube.core.new import new_cube
-from xcube.core.subsampling import find_agg_method
-from xcube.core.subsampling import get_dataset_agg_methods
-from xcube.core.subsampling import subsample_dataset
 from xcube.constants import CRS84
+from xcube.core.new import new_cube
+from xcube.core.subsampling import (
+    find_agg_method,
+    get_dataset_agg_methods,
+    subsample_dataset,
+)
 
 
 class SubsampleDatasetTest(unittest.TestCase):
@@ -157,6 +159,7 @@ class SubsampleDatasetTest(unittest.TestCase):
 
     def test_subsample_dataset_mode_dask(self):
         import dask.array as da
+
         test_data_1 = da.array(
             [
                 [1, 2, 3, 4, 5, 6],

@@ -1,15 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import Optional, Union, Tuple
 import warnings
+from typing import Optional, Tuple, Union
 
 import pyproj
 import xarray as xr
 
-from .base import DEFAULT_TOLERANCE
-from .base import GridMapping
+from .base import DEFAULT_TOLERANCE, GridMapping
 from .cfconv import get_dataset_grid_mapping_proxies
 from .coords import new_grid_mapping_from_coords
 from .helpers import _normalize_crs

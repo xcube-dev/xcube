@@ -1,17 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import os
 import types
 import unittest
-from typing import Any
 from collections.abc import Mapping
+from test.webapi.helpers import get_api_ctx
+from typing import Any
 
 import requests
 
-from test.webapi.helpers import get_api_ctx
 from xcube.server.api import ApiError
 
 # noinspection PyProtectedMember
@@ -216,7 +216,7 @@ class AuthContextGetAccessTokenTest(unittest.TestCase):
         with self.assertRaises(ApiError.BadRequest) as cm:
             AuthContext.get_access_token({"Authorization": "Bearer"})
         self.assertEqual(
-            "HTTP status 400: Invalid header." " Bearer token not found.",
+            "HTTP status 400: Invalid header. Bearer token not found.",
             f"{cm.exception}",
         )
 

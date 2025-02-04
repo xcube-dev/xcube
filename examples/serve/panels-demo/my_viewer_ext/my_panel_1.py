@@ -1,3 +1,7 @@
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
+
 import altair as alt
 import numpy as np
 import pandas as pd
@@ -204,7 +208,6 @@ def get_var_select_options(
     var_name_1: str | None = None,
     var_name_2: str | None = None,
 ) -> tuple[list, str | None, str | None]:
-
     if dataset is not None:
         var_names = [
             var_name

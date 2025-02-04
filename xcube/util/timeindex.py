@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 """Utilities to ensure compatibility between time variables and their indexers
 
@@ -13,14 +13,14 @@ this compatibility before attempting an indexing operation. See
 https://github.com/dcs4cop/xcube/issues/605 for more background information.
 """
 
-from typing import Dict, Any, Union
+import logging
+import warnings
 from collections.abc import Hashable
+from typing import Any, Dict, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-import logging
-import warnings
 
 logger = logging.getLogger("xcube")
 
@@ -118,9 +118,7 @@ def _ensure_timestamp_compatible(
             new_contents = _ensure_timestamp_compatible(var, contents, time_name)
             return time_value if contents == new_contents else np.array(new_contents)
         else:
-            warnings.warn(
-                "Indexer is a multi-element ndarray; " "leaving it unmodified"
-            )
+            warnings.warn("Indexer is a multi-element ndarray; leaving it unmodified")
             return time_value
 
     cant_determine_warning_template = (

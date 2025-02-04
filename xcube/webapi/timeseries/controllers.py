@@ -1,9 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import Any, Optional, Union
 from collections.abc import Sequence
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -18,6 +18,7 @@ from xcube.core.varexpr import split_var_assignment
 from xcube.server.api import ApiError
 from xcube.util.geojson import GeoJSON
 from xcube.util.perf import measure_time
+
 from .context import TimeSeriesContext
 
 TimeSeriesValue = dict[str, Union[str, bool, int, float, None]]
@@ -220,7 +221,7 @@ def _get_time_series_for_point(
         var_key = timeseries.AGG_MIN
     if not var_key:
         raise ApiError.BadRequest(
-            "Aggregation methods must include one of" ' "mean", "median", "min", "max"'
+            'Aggregation methods must include one of "mean", "median", "min", "max"'
         )
 
     var_names = [var_name_or_assign]
@@ -273,7 +274,7 @@ def collect_timeseries_result(
             num_type = bool
         else:
             raise ValueError(
-                f"cannot convert {values.dtype}" f" into JSON-convertible value"
+                f"cannot convert {values.dtype} into JSON-convertible value"
             )
         var_values_map[key] = [
             (num_type(v) if f else None) for f, v in zip(np.isfinite(values), values)
@@ -376,5 +377,5 @@ def _get_float_value(values: Optional[np.ndarray], index: int) -> Optional[float
 def _check_max_valids(max_valids):
     if not (max_valids is None or max_valids == -1 or max_valids > 0):
         raise ApiError.BadRequest(
-            f"max_valids must be either None, -1 or positive," f" was {max_valids}"
+            f"max_valids must be either None, -1 or positive, was {max_valids}"
         )

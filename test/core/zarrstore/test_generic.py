@@ -1,27 +1,28 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import Dict, Any
+from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
+from typing import Any, Dict
 
 import numpy as np
 import pytest
 import s3fs
 import xarray as xr
 
-from test.s3test import MOTO_SERVER_ENDPOINT_URL
-from test.s3test import S3Test
 from xcube.core.new import new_cube
 from xcube.core.zarrstore.diagnostic import DiagnosticZarrStore
-from xcube.core.zarrstore.generic import GenericArray
-from xcube.core.zarrstore.generic import GenericZarrStore
-from xcube.core.zarrstore.generic import dict_to_bytes
-from xcube.core.zarrstore.generic import get_array_slices
-from xcube.core.zarrstore.generic import get_chunk_indexes
-from xcube.core.zarrstore.generic import get_chunk_padding
-from xcube.core.zarrstore.generic import get_chunk_shape
-from xcube.core.zarrstore.generic import ndarray_to_bytes
+from xcube.core.zarrstore.generic import (
+    GenericArray,
+    GenericZarrStore,
+    dict_to_bytes,
+    get_array_slices,
+    get_chunk_indexes,
+    get_chunk_padding,
+    get_chunk_shape,
+    ndarray_to_bytes,
+)
 
 
 # noinspection PyMethodMayBeStatic
@@ -219,13 +220,13 @@ class GenericArrayTest(unittest.TestCase):
 
     def test_finalize_validates_data_get_data(self):
         with pytest.raises(
-            ValueError, match="array 'x':" " either data or get_data must be defined"
+            ValueError, match="array 'x': either data or get_data must be defined"
         ):
             GenericArray(name="x", dims=["x"]).finalize()
 
         with pytest.raises(
             ValueError,
-            match="array 'x':" " data and get_data" " cannot be defined together",
+            match="array 'x': data and get_data cannot be defined together",
         ):
             GenericArray(
                 name="x", dims=["x"], data=self.data, get_data=self.get_data
@@ -252,7 +253,7 @@ class GenericArrayTest(unittest.TestCase):
             ).finalize()
 
         with pytest.raises(
-            ValueError, match="array 'x':" " dims and shape must have same length"
+            ValueError, match="array 'x': dims and shape must have same length"
         ):
             GenericArray(
                 name="x",
@@ -264,7 +265,7 @@ class GenericArrayTest(unittest.TestCase):
 
     def test_finalize_validates_chunks(self):
         with pytest.raises(
-            ValueError, match="array 'x':" " dims and chunks must have same length"
+            ValueError, match="array 'x': dims and chunks must have same length"
         ):
             GenericArray(
                 name="x",
@@ -278,9 +279,7 @@ class GenericArrayTest(unittest.TestCase):
     def test_finalize_validates_filters(self):
         with pytest.raises(
             TypeError,
-            match="array 'x':"
-            " filter items must be an instance"
-            " of numcodecs.abc.Codec",
+            match="array 'x': filter items must be an instance of numcodecs.abc.Codec",
         ):
             # noinspection PyTypeChecker
             GenericArray(
@@ -296,9 +295,7 @@ class GenericArrayTest(unittest.TestCase):
     def test_finalize_validates_compressor(self):
         with pytest.raises(
             TypeError,
-            match="array 'x':"
-            " compressor must be an instance"
-            " of numcodecs.abc.Codec",
+            match="array 'x': compressor must be an instance of numcodecs.abc.Codec",
         ):
             # noinspection PyTypeChecker
             GenericArray(
@@ -333,7 +330,7 @@ class GenericArrayTest(unittest.TestCase):
     def test_finalize_validates_order(self):
         with pytest.raises(
             ValueError,
-            match="array 'x':" " order must be one of \\('C', 'F'\\)," " was 'D'",
+            match="array 'x': order must be one of \\('C', 'F'\\), was 'D'",
         ):
             # noinspection PyTypeChecker
             GenericArray(
@@ -567,20 +564,18 @@ class GenericZarrStoreTest(unittest.TestCase):
         )
 
         with pytest.raises(
-            ValueError, match="can only rename arrays," " but 'tsm' is not an array"
+            ValueError, match="can only rename arrays, but 'tsm' is not an array"
         ):
             store.rename("tsm", "tsm_new")
 
         with pytest.raises(
             ValueError,
-            match="cannot rename array"
-            " 'chl_old' into 'x'"
-            " because it already exists",
+            match="cannot rename array 'chl_old' into 'x' because it already exists",
         ):
             store.rename("chl_old", "x")
 
         with pytest.raises(
-            ValueError, match="cannot rename array 'chl_old'" " into 'chl/0'"
+            ValueError, match="cannot rename array 'chl_old' into 'chl/0'"
         ):
             store.rename("chl_old", "chl/0")
 
@@ -637,7 +632,7 @@ class GenericZarrStoreTest(unittest.TestCase):
         store = self.new_zarr_store((3, 6, 8), (1, 2, 4), self.get_data)
         with pytest.raises(
             TypeError,
-            match="xcube.core.zarrstore.generic.GenericZarrStore" " is read-only",
+            match="xcube.core.zarrstore.generic.GenericZarrStore is read-only",
         ):
             store["tsm/0.0.0"] = np.zeros((1, 2, 4)).tobytes()
 

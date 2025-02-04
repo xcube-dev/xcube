@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 """
 Test for the normalization operation
@@ -16,16 +16,18 @@ import xarray as xr
 from jdcal import gcal2jd
 from numpy.testing import assert_array_almost_equal
 
+from xcube.constants import CRS_CRS84
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
-from xcube.core.normalize import DatasetIsNotACubeError
-from xcube.core.normalize import adjust_spatial_attrs
-from xcube.core.normalize import decode_cube
-from xcube.core.normalize import encode_cube
-from xcube.core.normalize import normalize_coord_vars
-from xcube.core.normalize import normalize_dataset
-from xcube.core.normalize import normalize_missing_time
-from xcube.constants import CRS_CRS84
+from xcube.core.normalize import (
+    DatasetIsNotACubeError,
+    adjust_spatial_attrs,
+    decode_cube,
+    encode_cube,
+    normalize_coord_vars,
+    normalize_dataset,
+    normalize_missing_time,
+)
 
 
 # noinspection PyPep8Naming
@@ -89,7 +91,7 @@ class DecodeCubeTest(TestCase):
         with self.assertRaises(DatasetIsNotACubeError) as cm:
             decode_cube(dataset)
         self.assertEqual(
-            "Failed to detect grid mapping:" " cannot find any grid mapping in dataset",
+            "Failed to detect grid mapping: cannot find any grid mapping in dataset",
             f"{cm.exception}",
         )
 
@@ -100,7 +102,7 @@ class DecodeCubeTest(TestCase):
         with self.assertRaises(DatasetIsNotACubeError) as cm:
             decode_cube(dataset, force_geographic=True)
         self.assertEqual(
-            "Grid mapping must use geographic CRS," " but was 'ETRS89 / UTM zone 32N'",
+            "Grid mapping must use geographic CRS, but was 'ETRS89 / UTM zone 32N'",
             f"{cm.exception}",
         )
 
@@ -474,7 +476,7 @@ class AdjustSpatialTest(TestCase):
         self.assertEqual(ds2.attrs["geospatial_lon_resolution"], 4)
         self.assertEqual(
             ds2.attrs["geospatial_bounds"],
-            "POLYGON((-20.0 -42.0, -20.0 42.0, 60.0 42.0, 60.0" " -42.0, -20.0 -42.0))",
+            "POLYGON((-20.0 -42.0, -20.0 42.0, 60.0 42.0, 60.0 -42.0, -20.0 -42.0))",
         )
 
     def test_nominal_inverted(self):
@@ -530,7 +532,7 @@ class AdjustSpatialTest(TestCase):
         self.assertEqual(ds2.attrs["geospatial_lon_resolution"], 4)
         self.assertEqual(
             ds2.attrs["geospatial_bounds"],
-            "POLYGON((-20.0 -42.0, -20.0 42.0, 60.0 42.0, 60.0" " -42.0, -20.0 -42.0))",
+            "POLYGON((-20.0 -42.0, -20.0 42.0, 60.0 42.0, 60.0 -42.0, -20.0 -42.0))",
         )
 
     def test_bnds(self):
@@ -600,7 +602,7 @@ class AdjustSpatialTest(TestCase):
         self.assertEqual(ds2.attrs["geospatial_lon_resolution"], 4)
         self.assertEqual(
             ds2.attrs["geospatial_bounds"],
-            "POLYGON((-20.0 -42.0, -20.0 42.0, 60.0 42.0, 60.0" " -42.0, -20.0 -42.0))",
+            "POLYGON((-20.0 -42.0, -20.0 42.0, 60.0 42.0, 60.0 -42.0, -20.0 -42.0))",
         )
 
     def test_bnds_inverted(self):

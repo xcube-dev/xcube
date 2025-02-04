@@ -1,22 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
 import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
 from collections.abc import Iterable, Mapping
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import botocore.exceptions
 import pandas as pd
@@ -26,8 +17,8 @@ import xarray as xr
 import zarr
 from deprecated import deprecated
 
-from xcube.constants import EXTENSION_POINT_DATASET_IOS
 from xcube.constants import (
+    EXTENSION_POINT_DATASET_IOS,
     FORMAT_NAME_CSV,
     FORMAT_NAME_MEM,
     FORMAT_NAME_NETCDF4,

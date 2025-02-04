@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import click
 
@@ -41,10 +41,10 @@ def vars2dim(cube, variable, dim_name, output=None, format=None):
     with a new dimension DIM-NAME and writes the results to OUTPUT.
     """
 
-    from xcube.core.dsio import guess_dataset_format
-    from xcube.core.dsio import open_dataset, write_dataset
-    from xcube.core.vars2dim import vars_to_dim
     import os
+
+    from xcube.core.dsio import guess_dataset_format, open_dataset, write_dataset
+    from xcube.core.vars2dim import vars_to_dim
 
     if not output:
         dirname = os.path.dirname(cube)

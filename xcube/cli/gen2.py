@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import sys
 import traceback
-from typing import Dict, Any
+from typing import Any, Dict
 
 import click
 
@@ -23,7 +23,7 @@ from xcube.constants import LOG
     "--stores",
     "stores_config_path",
     metavar="STORES_CONFIG",
-    help="A JSON or YAML file that maps store names to " "parameterized data stores.",
+    help="A JSON or YAML file that maps store names to parameterized data stores.",
 )
 @click.option(
     "--service",
@@ -117,9 +117,7 @@ def gen2(
     }
 
     """
-    from xcube.core.gen2 import CubeGenerator
-    from xcube.core.gen2 import CubeGeneratorError
-    from xcube.core.gen2 import CubeGeneratorRequest
+    from xcube.core.gen2 import CubeGenerator, CubeGeneratorError, CubeGeneratorRequest
     from xcube.util.versions import get_xcube_versions
 
     configure_cli_output(quiet=quiet, verbosity=verbosity)

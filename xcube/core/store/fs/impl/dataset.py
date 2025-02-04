@@ -1,9 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 from abc import ABC
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import fsspec
 import rasterio
@@ -13,28 +13,26 @@ import xarray as xr
 import zarr
 from rasterio.session import AWSSession
 
-from xcube.core.zarrstore import LoggingZarrStore
-
 # Note, we need the following reference to register the
 # xarray property accessor
 # noinspection PyUnresolvedReferences
-from xcube.core.zarrstore import ZarrStoreHolder
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from xcube.util.fspath import is_local_fs
-from xcube.util.fspath import is_https_fs
+from xcube.core.zarrstore import LoggingZarrStore, ZarrStoreHolder
+from xcube.util.assertions import assert_instance, assert_true
+from xcube.util.fspath import is_https_fs, is_local_fs
 from xcube.util.jsonencoder import to_json_value
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonIntegerSchema,
+    JsonNumberSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 from xcube.util.temp import new_temp_file
-from ..accessor import FsDataAccessor
-from ...datatype import DATASET_TYPE
-from ...datatype import DataType
+
+from ...datatype import DATASET_TYPE, DataType
 from ...error import DataStoreError
+from ..accessor import FsDataAccessor
 
 ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -43,7 +41,7 @@ ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             minimum=0,
         ),
         group=JsonStringSchema(
-            description="Group path." " (a.k.a. path in zarr terminology.).",
+            description="Group path. (a.k.a. path in zarr terminology.).",
             min_length=1,
         ),
         chunks=JsonObjectSchema(
@@ -100,7 +98,7 @@ ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
         group=JsonStringSchema(
-            description="Group path." " (a.k.a. path in zarr terminology.).",
+            description="Group path. (a.k.a. path in zarr terminology.).",
             min_length=1,
         ),
         encoding=JsonObjectSchema(
@@ -117,7 +115,7 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             default=True,
         ),
         append_dim=JsonStringSchema(
-            description="If set, the dimension on which the" " data will be appended.",
+            description="If set, the dimension on which the data will be appended.",
             min_length=1,
         ),
     ),
@@ -160,7 +158,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         try:
             dataset = xr.open_zarr(zarr_store, consolidated=consolidated, **open_params)
         except ValueError as e:
-            raise DataStoreError(f"Failed to open" f" dataset {data_id!r}: {e}") from e
+            raise DataStoreError(f"Failed to open dataset {data_id!r}: {e}") from e
 
         dataset.zarr_store.set(zarr_store)
         return dataset
@@ -188,7 +186,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
                 **write_params,
             )
         except ValueError as e:
-            raise DataStoreError(f"Failed to write" f" dataset {data_id!r}: {e}") from e
+            raise DataStoreError(f"Failed to write dataset {data_id!r}: {e}") from e
         return data_id
 
     def delete_data(self, data_id: str, **delete_params):
@@ -379,7 +377,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
         arrays = {}
         if array.ndim == 3:
             for i in range(array.shape[0]):
-                name = f'{array.name or "band"}_{i + 1}'
+                name = f"{array.name or 'band'}_{i + 1}"
                 dims = array.dims[-2:]
                 coords = {
                     n: v
@@ -391,7 +389,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
                     band_data, coords=coords, dims=dims, attrs=dict(**array.attrs)
                 )
         elif array.ndim == 2:
-            name = f'{array.name or "band"}'
+            name = f"{array.name or 'band'}"
             arrays[name] = array
         else:
             raise RuntimeError("number of dimensions must be 2 or 3")

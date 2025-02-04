@@ -1,18 +1,20 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 import math
 
 import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-from xcube.core.select import select_spatial_subset
-from xcube.core.select import select_temporal_subset
-from xcube.core.select import select_variables_subset
-from .transformer import CubeTransformer
-from .transformer import TransformedCube
+from xcube.core.select import (
+    select_spatial_subset,
+    select_temporal_subset,
+    select_variables_subset,
+)
+
 from ..config import CubeConfig
+from .transformer import CubeTransformer, TransformedCube
 
 
 class CubeSubsetter(CubeTransformer):

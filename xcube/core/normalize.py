@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import warnings
-from datetime import datetime
-from typing import Optional, Union, Tuple
 from collections.abc import Sequence
+from datetime import datetime
+from typing import Optional, Tuple, Union
 
 import cftime
 import numpy as np
@@ -14,8 +14,7 @@ import xarray as xr
 from jdcal import jd2gcal
 
 from xcube.core.gridmapping import GridMapping
-from xcube.core.timecoord import get_timestamp_from_string
-from xcube.core.timecoord import get_timestamps_from_string
+from xcube.core.timecoord import get_timestamp_from_string, get_timestamps_from_string
 from xcube.core.verify import assert_cube
 
 DatetimeTypes = np.datetime64, cftime.datetime, datetime
@@ -190,12 +189,11 @@ def decode_cube(
     try:
         grid_mapping = GridMapping.from_dataset(dataset, tolerance=1e-4)
     except ValueError as e:
-        raise DatasetIsNotACubeError(f"Failed to detect grid mapping:" f" {e}") from e
+        raise DatasetIsNotACubeError(f"Failed to detect grid mapping: {e}") from e
     if force_geographic and not grid_mapping.crs.is_geographic:
         # We will need to overcome this soon!
         raise DatasetIsNotACubeError(
-            f"Grid mapping must use geographic CRS,"
-            f" but was {grid_mapping.crs.name!r}"
+            f"Grid mapping must use geographic CRS, but was {grid_mapping.crs.name!r}"
         )
 
     x_dim_name, y_dim_name = grid_mapping.xy_dim_names
@@ -932,7 +930,7 @@ def _normalize_dim_order(ds: xr.Dataset) -> xr.Dataset:
                 ds = ds.copy()
                 copy_created = True
             ds[var_name] = var.transpose(*dim_names)
-            if var.encoding and hasattr(ds[var_name].data, 'chunksize'):
+            if var.encoding and hasattr(ds[var_name].data, "chunksize"):
                 ds[var_name].encoding["chunks"] = ds[var_name].data.chunksize
 
     return ds

@@ -1,27 +1,31 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import glob
 import json
 import unittest
+import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-import warnings
 
 import fsspec
 import pytest
 import xarray as xr
 
-from xcube.core.store import DataStore, DatasetDescriptor, DataType
-from xcube.core.store import MutableDataStore
-from xcube.core.store import new_data_store
+from xcube.core.store import (
+    DatasetDescriptor,
+    DataStore,
+    DataType,
+    MutableDataStore,
+    new_data_store,
+)
 from xcube.core.store.ref.schema import REF_STORE_SCHEMA
 from xcube.core.store.ref.store import ReferenceDataStore
 
 try:
-    from kerchunk.netCDF3 import NetCDF3ToZarr
     from kerchunk.combine import MultiZarrToZarr
+    from kerchunk.netCDF3 import NetCDF3ToZarr
 
     has_kerchunk = True
 except ImportError:
@@ -270,9 +274,7 @@ class NormalizeRefTest(unittest.TestCase):
             self.normalize_ref({})
         with pytest.raises(
             TypeError,
-            match=(
-                "value of data_descriptor key" " in refs item must be a dict or None"
-            ),
+            match=("value of data_descriptor key in refs item must be a dict or None"),
         ):
             self.normalize_ref({"ref_path": "bibo", "data_descriptor": 13})
 

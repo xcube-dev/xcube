@@ -1,8 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
+from test.sampledata import create_highroc_dataset
 
 import numpy as np
 
@@ -10,7 +11,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from numpy.testing import assert_array_almost_equal
 
-from test.sampledata import create_highroc_dataset
 from xcube.core.reproject import reproject_xy_to_wgs84
 
 nan = np.nan

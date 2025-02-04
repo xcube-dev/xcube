@@ -1,12 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
 from xcube.server.api import ApiError
-from xcube.webapi.datasets.authutil import assert_scopes
-from xcube.webapi.datasets.authutil import check_scopes
+from xcube.webapi.datasets.authutil import assert_scopes, check_scopes
 
 
 class DatasetScopesTest(unittest.TestCase):

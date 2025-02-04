@@ -1,8 +1,8 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import Any, Optional, Callable, Type, Dict
+from typing import Any, Callable, Dict, Optional, Type
 
 import jsonschema
 import xarray as xr
@@ -10,13 +10,15 @@ import xarray as xr
 from xcube.core.byoa import CodeConfig
 from xcube.core.gridmapping import GridMapping
 from xcube.util.jsonschema import JsonObjectSchema
-from .transformer import CubeTransformer
-from .transformer import TransformedCube
+
 from ..config import CubeConfig
 from ..error import CubeGeneratorError
-from ..processor import DatasetProcessor
-from ..processor import METHOD_NAME_DATASET_PROCESSOR
-from ..processor import METHOD_NAME_PARAMS_SCHEMA_GETTER
+from ..processor import (
+    METHOD_NAME_DATASET_PROCESSOR,
+    METHOD_NAME_PARAMS_SCHEMA_GETTER,
+    DatasetProcessor,
+)
+from .transformer import CubeTransformer, TransformedCube
 
 
 class CubeUserCodeExecutor(CubeTransformer):

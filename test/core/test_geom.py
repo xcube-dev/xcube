@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -12,13 +12,15 @@ import shapely.wkt
 import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
-from xcube.core.geom import clip_dataset_by_geometry
-from xcube.core.geom import get_dataset_bounds
-from xcube.core.geom import get_dataset_geometry
-from xcube.core.geom import is_lon_lat_dataset
-from xcube.core.geom import mask_dataset_by_geometry
-from xcube.core.geom import normalize_geometry
-from xcube.core.geom import rasterize_features
+from xcube.core.geom import (
+    clip_dataset_by_geometry,
+    get_dataset_bounds,
+    get_dataset_geometry,
+    is_lon_lat_dataset,
+    mask_dataset_by_geometry,
+    normalize_geometry,
+    rasterize_features,
+)
 from xcube.core.new import new_cube
 from xcube.util.types import normalize_scalar_or_pair
 
@@ -400,7 +402,7 @@ class DatasetGeometryTest(unittest.TestCase):
         self.assertIn(geometry_wkt_name, dataset.attrs)
         actual = shapely.wkt.loads(dataset.attrs[geometry_wkt_name])
         expected = shapely.wkt.loads(
-            "POLYGON ((-33.75 -33.75, 33.75 33.75," " 101.25 -33.75, -33.75 -33.75))"
+            "POLYGON ((-33.75 -33.75, 33.75 33.75, 101.25 -33.75, -33.75 -33.75))"
         )
         self.assertTrue(actual.difference(expected).is_empty)
 

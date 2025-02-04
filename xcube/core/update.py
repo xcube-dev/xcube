@@ -1,15 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import datetime
-from typing import Any
-from typing import Dict
+from typing import Any, Dict
 
 import xarray as xr
 
-from xcube.constants import FORMAT_NAME_NETCDF4
-from xcube.constants import FORMAT_NAME_ZARR
+from xcube.constants import FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR
 from xcube.core.gridmapping import GridMapping
 from xcube.util.config import NameDictPairList
 

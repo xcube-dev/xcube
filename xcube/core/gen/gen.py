@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import cProfile
 import glob
@@ -11,8 +11,8 @@ import sys
 import time
 import traceback
 import warnings
-from typing import Any, Callable, Dict, Tuple
 from collections.abc import Sequence
+from typing import Any, Callable, Dict, Tuple
 
 import xarray as xr
 
@@ -24,8 +24,7 @@ from xcube.core.gen.defaults import (
     DEFAULT_OUTPUT_SIZE,
 )
 from xcube.core.gen.iproc import InputProcessor, find_input_processor_class
-from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping import CRS_WGS84
+from xcube.core.gridmapping import CRS_WGS84, GridMapping
 from xcube.core.optimize import optimize_dataset
 from xcube.core.select import select_spatial_subset, select_variables_subset
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970

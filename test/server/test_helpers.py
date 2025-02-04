@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -9,9 +9,8 @@ import yaml
 from xcube.core.dsio import rimraf
 from xcube.server.helpers import ConfigChangeObserver
 from xcube.server.server import Server
-from .test_server import MockApiContext
-from .test_server import MockFramework
-from .test_server import mock_extension_registry
+
+from .test_server import MockApiContext, MockFramework, mock_extension_registry
 
 
 class ConfigChangeObserverTest(unittest.TestCase):

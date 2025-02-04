@@ -1,14 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import click
 
 from xcube.cli.common import (
-    parse_cli_kwargs,
     cli_option_quiet,
     cli_option_verbosity,
     configure_cli_output,
+    parse_cli_kwargs,
 )
 
 DEFAULT_OUTPUT_PATH = "out.zarr"
@@ -78,8 +78,7 @@ def chunk(
         write_kwargs = parse_cli_kwargs(params, metavar="PARAMS")
 
     from xcube.core.chunk import chunk_dataset
-    from xcube.core.dsio import guess_dataset_format
-    from xcube.core.dsio import open_dataset, write_dataset
+    from xcube.core.dsio import guess_dataset_format, open_dataset, write_dataset
 
     format_name = format if format else guess_dataset_format(output)
 

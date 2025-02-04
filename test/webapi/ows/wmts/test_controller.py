@@ -1,27 +1,26 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
 import unittest
+from test.webapi.helpers import get_api_ctx, get_server
 
 import pyproj
 
-from test.webapi.helpers import get_api_ctx
-from test.webapi.helpers import get_server
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
 from xcube.webapi.ows.wmts.context import WmtsContext
 from xcube.webapi.ows.wmts.controllers import (
+    WMTS_CRS84_TMS_ID,
+    WMTS_WEB_MERCATOR_TMS_ID,
+    get_crs84_bbox,
     get_operations_metadata_element,
     get_service_identification_element,
     get_service_provider_element,
     get_tile_matrix_set_crs84_element,
     get_tile_matrix_set_web_mercator_element,
     get_wmts_capabilities_xml,
-    get_crs84_bbox,
-    WMTS_CRS84_TMS_ID,
-    WMTS_WEB_MERCATOR_TMS_ID,
 )
 
 

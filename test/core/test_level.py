@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
 import time
@@ -10,9 +10,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.dsio import rimraf
-from xcube.core.level import compute_levels
-from xcube.core.level import read_levels
-from xcube.core.level import write_levels
+from xcube.core.level import compute_levels, read_levels, write_levels
 
 
 def get_path(filename):

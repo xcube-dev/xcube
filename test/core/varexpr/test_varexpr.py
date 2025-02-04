@@ -1,14 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import math
 import unittest
 
 import pytest
 
-from xcube.core.varexpr import VarExprError
-from xcube.core.varexpr import evaluate
+from xcube.core.varexpr import VarExprError, evaluate
 
 
 class VarExprEvaluateTest(unittest.TestCase):

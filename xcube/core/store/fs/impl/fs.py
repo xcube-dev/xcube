@@ -1,13 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-from ..accessor import COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES
-from ..accessor import FsAccessor
+from xcube.util.jsonschema import (
+    JsonBooleanSchema,
+    JsonIntegerSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
+
+from ..accessor import COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES, FsAccessor
 
 
 class FileFsAccessor(FsAccessor):
@@ -129,7 +131,7 @@ class AzureFsAccessor(FsAccessor):
         return JsonObjectSchema(
             properties=dict(
                 anon=JsonBooleanSchema(
-                    title="Whether to anonymously connect to" " Azure Blob Storage."
+                    title="Whether to anonymously connect to Azure Blob Storage."
                 ),
                 account_name=JsonStringSchema(
                     min_length=1,

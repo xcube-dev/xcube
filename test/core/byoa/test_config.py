@@ -1,12 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os.path
 import unittest
 
-from xcube.core.byoa import CodeConfig
-from xcube.core.byoa import FileSet
+from xcube.core.byoa import CodeConfig, FileSet
 
 INLINE_CODE = (
     'def process_dataset(ds, text="Hello"):\n'
@@ -103,7 +102,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsNone(code_config.inline_code)
         self.assertIsInstance(code_config.file_set, FileSet)
         self.assertEqual(
-            "https://github.com/dcs4cop/" "xcube-byoa-examples/archive/v0.1.0.dev0.zip",
+            "https://github.com/dcs4cop/xcube-byoa-examples/archive/v0.1.0.dev0.zip",
             code_config.file_set.path,
         )
         self.assertEqual(
@@ -214,7 +213,7 @@ class CodeConfigTest(unittest.TestCase):
         with self.assertRaises(RuntimeError) as e:
             code_config.for_local()
         self.assertEqual(
-            ("CodeConfig.for_local() failed" " due to an invalid internal state",),
+            ("CodeConfig.for_local() failed due to an invalid internal state",),
             e.exception.args,
         )
 
@@ -274,7 +273,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(service_code_config.file_set, FileSet)
         self.assertFalse(service_code_config.file_set.is_local_dir())
         self.assertEqual(
-            "https://github.com/dcs4cop/" "xcube-byoa-examples/archive/v0.1.0.dev0.zip",
+            "https://github.com/dcs4cop/xcube-byoa-examples/archive/v0.1.0.dev0.zip",
             service_code_config.file_set.path,
         )
         self.assertEqual(
@@ -307,11 +306,11 @@ class CodeConfigTest(unittest.TestCase):
 
         d = CodeConfig.from_file_set(
             FileSet("github://dcs4cop:xcube@v0.8.2.dev0", includes="*.py"),
-            callable_ref=("test.core.byoa.test_config:" "modify_dataset"),
+            callable_ref=("test.core.byoa.test_config:modify_dataset"),
         ).to_dict()
         self.assertIsInstance(d.get("file_set"), dict)
         self.assertEqual(
-            ("test.core.byoa.test_config:" "modify_dataset"), d.get("callable_ref")
+            ("test.core.byoa.test_config:modify_dataset"), d.get("callable_ref")
         )
 
 

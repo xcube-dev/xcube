@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import pathlib
 import unittest
@@ -8,8 +8,7 @@ import unittest
 import fsspec
 import fsspec.implementations.local
 
-from xcube.util.fspath import get_fs_path_class
-from xcube.util.fspath import resolve_path
+from xcube.util.fspath import get_fs_path_class, resolve_path
 
 
 class FsPathTest(unittest.TestCase):

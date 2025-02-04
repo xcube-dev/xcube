@@ -1,14 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import unittest
 
-from xcube.core.gen2.config import CallbackConfig
-from xcube.core.gen2.config import CubeConfig
-from xcube.core.gen2.config import InputConfig
-from xcube.core.gen2.config import OutputConfig
+from xcube.core.gen2.config import CallbackConfig, CubeConfig, InputConfig, OutputConfig
 
 
 class InputConfigTest(unittest.TestCase):

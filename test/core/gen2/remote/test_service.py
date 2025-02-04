@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import os.path
@@ -9,8 +9,7 @@ import unittest
 
 import requests
 
-from xcube.core.gen2 import CubeGeneratorError
-from xcube.core.gen2 import ServiceConfig
+from xcube.core.gen2 import CubeGeneratorError, ServiceConfig
 from xcube.core.gen2.remote.generator import RemoteCubeGenerator
 
 PARENT_DIR = os.path.dirname(__file__)
@@ -304,7 +303,7 @@ class ServiceTest(unittest.TestCase):
         self.assertEqual(400, result_dict.get("status_code"))
         self.assertEqual(None, result_dict.get("result"))
         self.assertEqual(
-            'Data resource "DATASET-8.zarr"' " does not exist in store",
+            'Data resource "DATASET-8.zarr" does not exist in store',
             result_dict.get("message"),
         )
         self.assertEqual(None, result_dict.get("output"))
@@ -343,8 +342,7 @@ class ServiceTest(unittest.TestCase):
         self.assertEqual(400, result_dict.get("status_code"))
         self.assertEqual(None, result_dict.get("result"))
         self.assertEqual(
-            "inverse_fine_structure_constant must be 137"
-            " or running in wrong universe",
+            "inverse_fine_structure_constant must be 137 or running in wrong universe",
             result_dict.get("message"),
         )
         self.assertEqual(None, result_dict.get("output"))

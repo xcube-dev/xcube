@@ -1,14 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.schema import rechunk_cube
-from .transformer import CubeTransformer
-from .transformer import TransformedCube
+
 from ..config import CubeConfig
+from .transformer import CubeTransformer, TransformedCube
 
 
 class CubeRechunker(CubeTransformer):

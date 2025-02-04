@@ -1,16 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from unittest.mock import patch
 
 import requests_mock
 
+from xcube.core.gen2.progress import (
+    ApiProgressCallbackObserver,
+    TerminalProgressCallbackObserver,
+    _ThreadedProgressObserver,
+)
 from xcube.core.gen2.request import CubeGeneratorRequest
-from xcube.core.gen2.progress import ApiProgressCallbackObserver
-from xcube.core.gen2.progress import TerminalProgressCallbackObserver
-from xcube.core.gen2.progress import _ThreadedProgressObserver
 from xcube.util.progress import ProgressState
 
 

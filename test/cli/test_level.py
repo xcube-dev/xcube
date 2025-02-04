@@ -1,13 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os.path
-from typing import List, Tuple, Optional, Dict
+from test.cli.helpers import TEST_NC_FILE, TEST_ZARR_DIR, CliDataTest, CliTest
+from typing import Dict, List, Optional, Tuple
 
-from test.cli.helpers import CliDataTest
-from test.cli.helpers import CliTest
-from test.cli.helpers import TEST_NC_FILE, TEST_ZARR_DIR
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import new_fs_data_store
 

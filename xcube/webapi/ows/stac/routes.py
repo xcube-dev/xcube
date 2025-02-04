@@ -1,26 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from xcube.server.api import ApiHandler, ApiError
+from xcube.server.api import ApiError, ApiHandler
 
 from .api import api
+from .config import DEFAULT_COLLECTION_ID, PATH_PREFIX
 from .context import StacContext
 from .controllers import (
     get_collection,
+    get_collection_item,
     get_collection_queryables,
-    get_single_collection_items,
     get_collection_schema,
-)
-from .controllers import get_collection_item
-from .controllers import get_datasets_collection_items
-from .controllers import get_collections
-from .controllers import get_conformance
-from .controllers import get_root
-from .controllers import search
-from .config import (
-    PATH_PREFIX,
-    DEFAULT_COLLECTION_ID,
+    get_collections,
+    get_conformance,
+    get_datasets_collection_items,
+    get_root,
+    get_single_collection_items,
+    search,
 )
 
 

@@ -1,11 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
-from xcube.core.gen2.local.helpers import is_empty_cube
-from xcube.core.gen2.local.helpers import strip_cube
+from xcube.core.gen2.local.helpers import is_empty_cube, strip_cube
 from xcube.core.new import new_cube
 
 

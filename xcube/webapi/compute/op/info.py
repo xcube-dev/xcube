@@ -1,14 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import collections.abc
 import inspect
 import typing
-from typing import Callable, Dict, Any
-from mashumaro.jsonschema import build_json_schema
+from typing import Any, Callable, Dict
 
 import xarray as xr
+from mashumaro.jsonschema import build_json_schema
 
 from xcube.core.mldataset import MultiLevelDataset
 
@@ -77,7 +77,7 @@ class OpInfo:
         op_info = getattr(op, _ATTR_NAME_OP_INFO, None)
         if not isinstance(op_info, OpInfo):
             raise ValueError(
-                f"function {op.__name__}() is not" f" registered as an operation"
+                f"function {op.__name__}() is not registered as an operation"
             )
         return op_info
 

@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
-from typing import List, Callable, Optional, Tuple
 from collections.abc import Sequence
+from typing import Callable, List, Optional, Tuple
 
 import xarray as xr
 from deprecated import deprecated

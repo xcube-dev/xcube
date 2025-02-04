@@ -1,12 +1,12 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 
 import collections.abc
+from collections.abc import Iterable, Iterator, KeysView
 from logging import Logger
 from typing import Optional
-from collections.abc import Iterator, Iterable, KeysView
 
 import zarr.storage
 

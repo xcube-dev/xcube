@@ -1,37 +1,34 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import abc
 import copy
 import math
 import threading
-from typing import Any
-from typing import Callable
 from collections.abc import Mapping
-from typing import Optional
-from typing import Union
+from typing import Any, Callable, Optional, Union
 
 import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from xcube.util.dask import get_block_iterators
-from xcube.util.dask import get_chunk_sizes
 from xcube.constants import CRS_CRS84
-from .helpers import AffineTransformMatrix
-from .helpers import Number
-from .helpers import _assert_valid_xy_coords
-from .helpers import _assert_valid_xy_names
-from .helpers import _from_affine
-from .helpers import _normalize_int_pair
-from .helpers import _normalize_number_pair
-from .helpers import _to_affine
-from .helpers import scale_xy_res_and_size
+from xcube.util.assertions import assert_given, assert_instance, assert_true
+from xcube.util.dask import get_block_iterators, get_chunk_sizes
+
+from .helpers import (
+    AffineTransformMatrix,
+    Number,
+    _assert_valid_xy_coords,
+    _assert_valid_xy_names,
+    _from_affine,
+    _normalize_int_pair,
+    _normalize_number_pair,
+    _to_affine,
+    scale_xy_res_and_size,
+)
 
 # WGS84, axis order: lat, lon
 CRS_WGS84 = pyproj.crs.CRS(4326)
@@ -100,13 +97,13 @@ class GridMapping(abc.ABC):
             assert_instance(x_coords, xr.DataArray, name="x_coords")
             assert_true(
                 x_coords.ndim in (1, 2),
-                message=f"x_coords.ndim must be 1 or 2," f" was {x_coords.ndim}",
+                message=f"x_coords.ndim must be 1 or 2, was {x_coords.ndim}",
             )
         if y_coords is not None:
             assert_instance(y_coords, xr.DataArray, name="y_coords")
             assert_true(
                 y_coords.ndim in (1, 2),
-                message=f"y_coords.ndim must be 1 or 2," f" was {y_coords.ndim}",
+                message=f"y_coords.ndim must be 1 or 2, was {y_coords.ndim}",
             )
         if xy_coords is not None:
             assert_instance(xy_coords, xr.DataArray, name="xy_coords")
@@ -929,12 +926,12 @@ class GridMapping(abc.ABC):
     def assert_regular(cls, value: Any, name: str = None):
         assert_instance(value, GridMapping, name=name)
         if not value.is_regular:
-            raise ValueError(f'{name or "value"} must' f" be a regular grid mapping")
+            raise ValueError(f"{name or 'value'} must be a regular grid mapping")
 
     def _assert_regular(self):
         if not self.is_regular:
             raise NotImplementedError(
-                "Operation not implemented" " for non-regular grid mappings"
+                "Operation not implemented for non-regular grid mappings"
             )
 
     def _repr_markdown_(self) -> str:

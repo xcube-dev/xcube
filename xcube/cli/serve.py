@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import sys
 from pathlib import Path
-from typing import List, Optional, Any, Dict
+from typing import Any, Dict, List, Optional
 
 import click
 
@@ -14,9 +14,9 @@ from xcube.cli.common import (
     configure_cli_output,
 )
 from xcube.constants import (
+    DEFAULT_SERVER_ADDRESS,
     DEFAULT_SERVER_FRAMEWORK,
     DEFAULT_SERVER_PORT,
-    DEFAULT_SERVER_ADDRESS,
 )
 
 assets_to_show = ["apis", "endpoints", "openapi", "config", "configschema"]
@@ -33,7 +33,7 @@ assets_to_show_choices.extend([a + ".json" for a in assets_to_show])
     metavar="FRAMEWORK",
     default=DEFAULT_SERVER_FRAMEWORK,
     type=click.Choice(["tornado", "flask"]),
-    help=f"Web server framework." f' Defaults to "{DEFAULT_SERVER_FRAMEWORK}"',
+    help=f'Web server framework. Defaults to "{DEFAULT_SERVER_FRAMEWORK}"',
 )
 @click.option(
     "--port",
@@ -41,14 +41,14 @@ assets_to_show_choices.extend([a + ".json" for a in assets_to_show])
     metavar="PORT",
     default=None,
     type=int,
-    help=f"Service port number." f" Defaults to {DEFAULT_SERVER_PORT}",
+    help=f"Service port number. Defaults to {DEFAULT_SERVER_PORT}",
 )
 @click.option(
     "--address",
     "-a",
     metavar="ADDRESS",
     default=None,
-    help=f"Service address." f' Defaults to "{DEFAULT_SERVER_ADDRESS}".',
+    help=f'Service address. Defaults to "{DEFAULT_SERVER_ADDRESS}".',
 )
 @click.option(
     "--config",
@@ -105,7 +105,7 @@ assets_to_show_choices.extend([a + ".json" for a in assets_to_show])
     metavar="TIME",
     type=float,
     default=None,
-    help="Check for server configuration updates every" " TIME seconds.",
+    help="Check for server configuration updates every TIME seconds.",
 )
 @click.option(
     "--stop-after",
@@ -129,7 +129,7 @@ assets_to_show_choices.extend([a + ".json" for a in assets_to_show])
     "--open-viewer",
     "open_viewer",
     is_flag=True,
-    help=f"After starting the server," f" open xcube Viewer in a browser tab.",
+    help=f"After starting the server, open xcube Viewer in a browser tab.",
 )
 @cli_option_quiet
 @cli_option_verbosity
@@ -177,10 +177,10 @@ def serve(
     Note, if --show  is provided, the ASSET will be shown and the program
     will exit immediately.
     """
+    from xcube.server.config import normalize_base_dir
     from xcube.server.framework import get_framework_class
     from xcube.server.helpers import ConfigChangeObserver
     from xcube.server.server import Server
-    from xcube.server.config import normalize_base_dir
     from xcube.util.config import load_configs
 
     configure_cli_output(quiet=quiet, verbosity=verbosity)
@@ -322,7 +322,7 @@ def show_asset(server, asset_to_show: str):
     if format_name.lower() not in available_formats:
         raise click.ClickException(
             f"Invalid format {format_name}."
-            f' Must be one of {", ".join(available_formats.keys())}.'
+            f" Must be one of {', '.join(available_formats.keys())}."
         )
     output_fn = available_formats[format_name.lower()]
 
@@ -365,6 +365,6 @@ def show_asset(server, asset_to_show: str):
         raise click.ClickException(
             f"Invalid command {asset_to_show}. "
             f"Possible commands are "
-            f'{", ".join(" ".join(k) for k in available_commands.keys())}.'
+            f"{', '.join(' '.join(k) for k in available_commands.keys())}."
         )
     return command_fn()

@@ -1,17 +1,20 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import sys
-from typing import List, Optional, Dict, AbstractSet, Set, Any
 from collections.abc import Sequence
+from typing import AbstractSet, Any, Dict, List, Optional, Set
 
 import click
 
-from xcube.constants import EXTENSION_POINT_DATA_OPENERS, LOG
-from xcube.constants import EXTENSION_POINT_DATA_STORES
-from xcube.constants import EXTENSION_POINT_DATA_WRITERS
+from xcube.constants import (
+    EXTENSION_POINT_DATA_OPENERS,
+    EXTENSION_POINT_DATA_STORES,
+    EXTENSION_POINT_DATA_WRITERS,
+    LOG,
+)
 from xcube.util.plugin import get_extension_registry
 
 _NO_TITLE = "<no title>"
@@ -24,7 +27,7 @@ def store_list():
     """List names of data stores."""
     print(f"Data stores:")
     count = _dump_data_stores()
-    print(f'{count} data store{"s" if count != 1 else ""} found.')
+    print(f"{count} data store{'s' if count != 1 else ''} found.")
 
 
 @click.command(name="list")
@@ -32,7 +35,7 @@ def opener_list():
     """List names of data openers."""
     print(f"Data openers:")
     count = _dump_data_openers()
-    print(f'{count} data opener{"s" if count != 1 else ""} found.')
+    print(f"{count} data opener{'s' if count != 1 else ''} found.")
 
 
 @click.command(name="list")
@@ -40,7 +43,7 @@ def writer_list():
     """List names of data writers."""
     print(f"Data writers:")
     count = _dump_data_writers()
-    print(f'{count} data writer{"s" if count != 1 else ""} found.')
+    print(f"{count} data writer{'s' if count != 1 else ''} found.")
 
 
 @click.command(name="info")
@@ -91,9 +94,11 @@ def store_info(
     extension = get_extension_registry().get_extension(
         EXTENSION_POINT_DATA_STORES, store_id
     )
-    from xcube.core.store import get_data_store_params_schema
-    from xcube.core.store import MutableDataStore
-    from xcube.core.store import DataStoreError
+    from xcube.core.store import (
+        DataStoreError,
+        MutableDataStore,
+        get_data_store_params_schema,
+    )
 
     params_schema = get_data_store_params_schema(store_id)
     description = extension.metadata.get("description")
@@ -142,7 +147,7 @@ def store_info(
         if show_data_ids:
             print(f"\nData resources:")
             count = _dump_store_data_ids(data_store)
-            print(f'{count} data resource{"s" if count != 1 else ""} found.')
+            print(f"{count} data resource{'s' if count != 1 else ''} found.")
 
 
 @click.command(name="data")
@@ -302,11 +307,12 @@ def dump(
             base_dir: "."
 
     """
-    from xcube.core.store import DataStoreConfig
-    from xcube.core.store import DataStorePool
-    import yaml
     import json
     import os.path
+
+    import yaml
+
+    from xcube.core.store import DataStoreConfig, DataStorePool
 
     if csv_format:
         output_format = "csv"
@@ -404,7 +410,7 @@ def dump(
                         + "\n"
                     )
 
-        LOG.info(f"Dumped {len(rows)} store entry/ies" f" to {output_file_path}.")
+        LOG.info(f"Dumped {len(rows)} store entry/ies to {output_file_path}.")
 
     else:
         last_store_dict = None
@@ -436,9 +442,7 @@ def dump(
             else:
                 yaml.dump(dict(stores=store_list), fp, indent=2)
 
-        LOG.info(
-            f"Dumped entries of {len(store_list)} store(s)" f" to {output_file_path}."
-        )
+        LOG.info(f"Dumped entries of {len(store_list)} store(s) to {output_file_path}.")
 
 
 def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_props):
@@ -467,13 +471,13 @@ def _get_store_data_var_tuples(store_pool, data_type, include_props, exclude_pro
             try:
                 store_instance = store_pool.get_store(store_instance_id)
             except BaseException as error:
-                LOG.error(f"Cannot open store" f' "{store_instance_id}": {error}')
+                LOG.error(f'Cannot open store "{store_instance_id}": {error}')
                 continue
 
             try:
                 data_descriptors = store_instance.search_data(data_type=data_type)
             except BaseException as error:
-                LOG.error(f"Cannot search store" f' "{store_instance_id}": {error}')
+                LOG.error(f'Cannot search store "{store_instance_id}": {error}')
                 continue
 
             for data_descriptor in data_descriptors:
@@ -590,7 +594,7 @@ def _format_params_schema(
         text.append("Parameters:")
         for param_name, param_schema in params_schema.properties.items():
             text.append(
-                f'{"* " if param_name in params_schema.required else "  "}'
+                f"{'* ' if param_name in params_schema.required else '  '}"
                 f"{param_name:>24s}  {_format_param_schema(param_schema)}"
             )
     else:
@@ -625,7 +629,7 @@ def _format_param_schema(param_schema: "xcube.util.jsonschema.JsonSchema"):
         )
     if param_schema.enum:
         param_info.append(
-            f'Must be one of {", ".join(map(json.dumps, param_schema.enum))}.'
+            f"Must be one of {', '.join(map(json.dumps, param_schema.enum))}."
         )
     if param_schema.const != UNDEFINED:
         param_info.append(f"Must be {json.dumps(param_schema.const)}.")
@@ -651,7 +655,7 @@ def _dump_extensions(point: str) -> int:
     count = 0
     for extension in get_extension_registry().find_extensions(point):
         print(
-            f'  {extension.name:>24s}  {extension.metadata.get("description", "<no description>")}'
+            f"  {extension.name:>24s}  {extension.metadata.get('description', '<no description>')}"
         )
         count += 1
     return count
@@ -677,7 +681,7 @@ def _dump_store_writers(data_store: "xcube.core.store.DataStore") -> int:
 def _dump_store_data_ids(data_store: "xcube.core.store.DataStore") -> int:
     count = 0
     for data_id, data_attrs in sorted(data_store.get_data_ids(include_attrs=["title"])):
-        print(f'  {data_id:>32s}  {data_attrs.get("title") or _NO_TITLE}')
+        print(f"  {data_id:>32s}  {data_attrs.get('title') or _NO_TITLE}")
         count += 1
     return count
 
@@ -688,7 +692,7 @@ def _dump_named_extensions(point: str, names: Sequence[str]) -> int:
         extension = get_extension_registry().get_extension(point, name)
         if extension:
             print(
-                f'  {name:>24s}  {extension.metadata.get("description", _NO_DESCRIPTION)}'
+                f"  {name:>24s}  {extension.metadata.get('description', _NO_DESCRIPTION)}"
             )
         else:
             print(f"  {name:>24s}  {_UNKNOWN_EXTENSION}")
@@ -709,8 +713,7 @@ def _dump_data_resources(data_store: "xcube.core.store.DataStore") -> int:
 def _new_data_store(
     store_id: str, store_params: list[str]
 ) -> "xcube.core.store.DataStore":
-    from xcube.core.store import get_data_store_params_schema
-    from xcube.core.store import new_data_store
+    from xcube.core.store import get_data_store_params_schema, new_data_store
 
     store_params_dict = dict()
     if store_params:

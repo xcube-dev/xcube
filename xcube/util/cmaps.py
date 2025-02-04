@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import base64
 import io
@@ -9,7 +9,7 @@ import os
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Optional, Any, Union
+from typing import Any, Optional, Union
 
 import fsspec
 import matplotlib
@@ -18,7 +18,7 @@ import numpy as np
 from PIL import Image
 
 from xcube.constants import LOG
-from xcube.util.assertions import assert_instance, assert_given, assert_in
+from xcube.util.assertions import assert_given, assert_in, assert_instance
 
 try:
     # noinspection PyPackageRequirements
@@ -86,7 +86,7 @@ SEQUENTIAL_CATEGORY = ColormapCategory(
 
 SEQUENTIAL_2_CATEGORY = ColormapCategory(
     "Sequential (2)",
-    "Many of the values from the Sequential 2 plots are monotonically" " increasing.",
+    "Many of the values from the Sequential 2 plots are monotonically increasing.",
     [
         "binary",
         "gist_yarg",
@@ -182,7 +182,7 @@ MISCELLANEOUS_CATEGORY = ColormapCategory(
 
 OCEAN_CATEGORY = ColormapCategory(
     "Ocean",
-    "Colormaps for commonly-used oceanographic variables" " (from module cmocean.cm).",
+    "Colormaps for commonly-used oceanographic variables (from module cmocean.cm).",
 )
 
 CUSTOM_CATEGORY = ColormapCategory(
@@ -412,7 +412,6 @@ class ColormapRegistry(ColormapProvider):
         return cmap, colormap
 
     def to_json(self) -> list:
-
         def get_cmap_info(cm_name):
             if self._colormaps[cm_name].cm_code is not None:
                 return [
@@ -664,13 +663,13 @@ def load_custom_colormap(custom_colormap_path: str) -> Optional[Colormap]:
     try:
         # Currently, we only support SNAP *.cpd files
         colormap = load_snap_cpd_colormap(custom_colormap_path)
-        LOG.info(f"Loaded custom colormap" f" {custom_colormap_path!r}")
+        LOG.info(f"Loaded custom colormap {custom_colormap_path!r}")
         return colormap
     except FileNotFoundError:
-        LOG.error(f"Missing custom colormap file:" f" {custom_colormap_path}")
+        LOG.error(f"Missing custom colormap file: {custom_colormap_path}")
     except ValueError as e:
         LOG.error(
-            f"Detected invalid custom colormap" f" {custom_colormap_path!r}: {e}",
+            f"Detected invalid custom colormap {custom_colormap_path!r}: {e}",
             exc_info=True,
         )
     return None

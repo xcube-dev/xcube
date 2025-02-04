@@ -1,23 +1,22 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import functools
 import operator
-from typing import Optional, Tuple
 from collections.abc import Sequence
+from typing import Optional, Tuple
 
 import click
 
 from xcube.cli.common import (
-    parse_cli_sequence,
     assert_positive_int_item,
     cli_option_quiet,
     cli_option_verbosity,
     configure_cli_output,
+    parse_cli_sequence,
 )
-from xcube.constants import FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM
-from xcube.constants import LOG
+from xcube.constants import FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR, LOG
 
 OUTPUT_FORMAT_NAMES = [FORMAT_NAME_ZARR, FORMAT_NAME_NETCDF4, FORMAT_NAME_MEM]
 
@@ -60,7 +59,7 @@ DEFAULT_CRS = "EPSG:4326"
     "output_format",
     metavar="FORMAT",
     type=click.Choice(OUTPUT_FORMAT_NAMES),
-    help="Output format. " "If omitted, format will be guessed from OUTPUT.",
+    help="Output format. If omitted, format will be guessed from OUTPUT.",
 )
 @click.option(
     "--size",
@@ -213,13 +212,10 @@ def _rectify(
 ):
     import pyproj.crs
 
-    from xcube.core.dsio import guess_dataset_format
-    from xcube.core.dsio import open_dataset
-    from xcube.core.dsio import write_dataset
+    from xcube.core.dsio import guess_dataset_format, open_dataset, write_dataset
     from xcube.core.gridmapping import GridMapping
     from xcube.core.resampling import rectify_dataset
-    from xcube.core.sentinel3 import is_sentinel3_product
-    from xcube.core.sentinel3 import open_sentinel3_product
+    from xcube.core.sentinel3 import is_sentinel3_product, open_sentinel3_product
 
     if not output_format:
         output_format = guess_dataset_format(output_path)

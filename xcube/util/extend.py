@@ -1,19 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import inspect
 import threading
-from typing import (
-    Type,
-    TypeVar,
-    Any,
-    Optional,
-    Callable,
-    Tuple,
-    Union,
-)
 from collections.abc import Mapping, Sequence
+from typing import Any, Callable, Optional, Tuple, Type, TypeVar, Union
 
 from xcube.util.assertions import assert_true
 
@@ -82,12 +74,11 @@ def extend(
     """
     assert_true(
         inspect.isclass(base_class),
-        message=f"base_class must be a class type,"
-        f" but was {type(base_class).__name__}",
+        message=f"base_class must be a class type, but was {type(base_class).__name__}",
     )
     assert_true(
         isinstance(name, str) and name.isidentifier(),
-        message=f"name must be a valid identifier," f" but was {name!r}",
+        message=f"name must be a valid identifier, but was {name!r}",
     )
     assert_true(doc is None or isinstance(doc, str), message="doc must be a string")
 
@@ -103,7 +94,7 @@ def extend(
     def add_class_property(ext_class: ExtClass) -> ExtClass:
         assert_true(
             inspect.isclass(ext_class),
-            message="the extend() decorator can" " be used with classes only",
+            message="the extend() decorator can be used with classes only",
         )
 
         def _get_property(base: Base):

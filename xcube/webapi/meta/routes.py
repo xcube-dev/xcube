@@ -1,17 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import pkgutil
 import sys
 from string import Template
 
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiError, ApiHandler
+
+from ...constants import LOG
 from .api import api
 from .context import MetaContext
 from .controllers import get_service_info
-from ...constants import LOG
 
 
 @api.route("/")

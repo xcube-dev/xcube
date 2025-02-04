@@ -1,22 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import itertools
 import os
 import re
 import uuid
 import warnings
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
 from collections.abc import Iterable, Mapping, Sequence
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import dask.array as da
 import dask.array.core as dac
@@ -236,7 +228,7 @@ def new_cluster(
             import coiled
         except ImportError as e:
             raise ImportError(
-                f"provider 'coiled' requires package" f"'coiled' to be installed"
+                f"provider 'coiled' requires package'coiled' to be installed"
             ) from e
         if software is None and "JUPYTER_IMAGE" in os.environ:
             # If the JUPYTER_IMAGE environment variable is set, we're

@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from collections.abc import Sequence
@@ -8,12 +8,14 @@ from collections.abc import Sequence
 import dask
 import dask.array.random
 
-from xcube.util.progress import ProgressObserver
-from xcube.util.progress import ProgressState
-from xcube.util.progress import add_progress_observers
-from xcube.util.progress import new_progress_observers
-from xcube.util.progress import observe_dask_progress
-from xcube.util.progress import observe_progress
+from xcube.util.progress import (
+    ProgressObserver,
+    ProgressState,
+    add_progress_observers,
+    new_progress_observers,
+    observe_dask_progress,
+    observe_progress,
+)
 
 
 class _TestProgressObserver(ProgressObserver):

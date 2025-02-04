@@ -1,22 +1,22 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
+from test.sampledata import create_highroc_dataset
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 import rioxarray  # this is needed for adding crs to a dataset and used as rio
+import xarray as xr
 
-from test.sampledata import create_highroc_dataset
 from xcube.core.new import new_cube
 from xcube.core.update import (
     update_dataset_attrs,
-    update_dataset_spatial_attrs,
     update_dataset_chunk_encoding,
+    update_dataset_spatial_attrs,
+    update_dataset_var_attrs,
 )
-from xcube.core.update import update_dataset_var_attrs
 
 
 class UpdateVariablePropsTest(unittest.TestCase):

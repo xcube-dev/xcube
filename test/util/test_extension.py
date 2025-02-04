@@ -1,12 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from typing import Any
 
-from xcube.util.extension import ExtensionRegistry, Extension, get_extension_registry
-from xcube.util.extension import import_component
+from xcube.util.extension import (
+    Extension,
+    ExtensionRegistry,
+    get_extension_registry,
+    import_component,
+)
 
 
 class A:

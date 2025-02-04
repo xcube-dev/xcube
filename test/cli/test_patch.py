@@ -1,14 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
+from test.cli.helpers import CliTest
 
 import click
 import xarray as xr
 import yaml
 
-from test.cli.helpers import CliTest
 from xcube.cli.patch import parse_metadata
 from xcube.core.dsio import rimraf
 from xcube.core.new import new_cube
@@ -169,7 +169,7 @@ class MetadataTest(unittest.TestCase):
         with self.assertRaises(click.ClickException) as cm:
             parse_metadata({"zarr_consolidated_format": 1, "metadata": {".zattrs": []}})
         self.assertEqual(
-            "Invalid metadata format:" ' entry ".zattrs" is not an object',
+            'Invalid metadata format: entry ".zattrs" is not an object',
             f"{cm.exception}",
         )
 

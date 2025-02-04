@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import abc
 import math
@@ -11,20 +11,21 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from .base import DEFAULT_TOLERANCE
-from .base import GridMapping
-from .helpers import _assert_valid_xy_names
-from .helpers import _default_xy_var_names
-from .helpers import _normalize_crs
-from .helpers import _normalize_int_pair
-from .helpers import _normalize_number_pair
-from .helpers import Number
-from .helpers import _to_int_or_float
-from .helpers import from_lon_360
-from .helpers import round_to_fraction
-from .helpers import to_lon_360
+from xcube.util.assertions import assert_instance, assert_true
+
+from .base import DEFAULT_TOLERANCE, GridMapping
+from .helpers import (
+    Number,
+    _assert_valid_xy_names,
+    _default_xy_var_names,
+    _normalize_crs,
+    _normalize_int_pair,
+    _normalize_number_pair,
+    _to_int_or_float,
+    from_lon_360,
+    round_to_fraction,
+    to_lon_360,
+)
 
 _ER = 6371000
 
@@ -162,11 +163,11 @@ def new_grid_mapping_from_coords(
 
         assert_true(
             x_coords.shape == y_coords.shape,
-            "shapes of x_coords and y_coords" " 2D arrays must be equal",
+            "shapes of x_coords and y_coords 2D arrays must be equal",
         )
         assert_true(
             x_coords.dims == y_coords.dims,
-            "dimensions of x_coords and y_coords" " 2D arrays must be equal",
+            "dimensions of x_coords and y_coords 2D arrays must be equal",
         )
 
         y_dim, x_dim = x_coords.dims

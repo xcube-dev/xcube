@@ -1,9 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import shutil
 import unittest
+from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from typing import Set
 
 import fsspec
@@ -11,13 +12,13 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from test.s3test import MOTO_SERVER_ENDPOINT_URL
-from test.s3test import S3Test
 from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping.cfconv import GridCoords
-from xcube.core.gridmapping.cfconv import GridMappingProxy
-from xcube.core.gridmapping.cfconv import add_spatial_ref
-from xcube.core.gridmapping.cfconv import get_dataset_grid_mapping_proxies
+from xcube.core.gridmapping.cfconv import (
+    GridCoords,
+    GridMappingProxy,
+    add_spatial_ref,
+    get_dataset_grid_mapping_proxies,
+)
 from xcube.core.new import new_cube
 from xcube.core.store.fs.registry import new_fs_data_store
 

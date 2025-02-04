@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 from typing import List
 
@@ -8,7 +8,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.geom import is_lon_lat_dataset
-from xcube.core.schema import get_dataset_xy_var_names, get_dataset_time_var_name
+from xcube.core.schema import get_dataset_time_var_name, get_dataset_xy_var_names
 
 
 def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:

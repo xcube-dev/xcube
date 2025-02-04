@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -8,8 +8,7 @@ import pyproj
 
 from xcube.core.gen2 import CubeConfig
 from xcube.core.gen2.local.mdadjuster import CubeMetadataAdjuster
-from xcube.core.gridmapping import CRS_CRS84
-from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping import CRS_CRS84, GridMapping
 from xcube.core.new import new_cube
 
 
@@ -54,7 +53,7 @@ class CubeMetadataAdjusterTest(unittest.TestCase):
                 "Conventions": "CF-1.7",
                 "title": "S2L2A subset",
                 "geospatial_bounds_crs": "CRS84",
-                "geospatial_bounds": "POLYGON((53 11, 53 12," " 54 12, 54 11, 53 11))",
+                "geospatial_bounds": "POLYGON((53 11, 53 12, 54 12, 54 11, 53 11))",
                 "geospatial_lat_max": 12,
                 "geospatial_lat_min": 11,
                 "geospatial_lat_resolution": 0.001,

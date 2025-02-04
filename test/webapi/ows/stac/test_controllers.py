@@ -1,44 +1,45 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 import datetime
+import functools
 import json
 import unittest
 from pathlib import Path
-import functools
 
 import pandas as pd
 import pyproj
 import xarray as xr
+
 import xcube
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
 from xcube.webapi.ows.stac.config import (
     DEFAULT_CATALOG_DESCRIPTION,
+    DEFAULT_CATALOG_ID,
+    DEFAULT_CATALOG_TITLE,
+    DEFAULT_COLLECTION_DESCRIPTION,
+    DEFAULT_COLLECTION_ID,
+    DEFAULT_COLLECTION_TITLE,
     DEFAULT_FEATURE_ID,
 )
-from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_ID
-from xcube.webapi.ows.stac.config import DEFAULT_CATALOG_TITLE
-from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_DESCRIPTION
-from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
-from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_TITLE
 from xcube.webapi.ows.stac.context import StacContext
 from xcube.webapi.ows.stac.controllers import (
     STAC_VERSION,
-    get_collection_queryables,
-    get_datacube_dimensions,
-    get_single_collection_items,
     crs_to_uri_or_wkt,
+    get_collection,
+    get_collection_item,
+    get_collection_queryables,
+    get_collection_schema,
+    get_collections,
+    get_conformance,
+    get_datacube_dimensions,
+    get_datasets_collection_items,
+    get_root,
+    get_single_collection_items,
     get_time_grid,
 )
-from xcube.webapi.ows.stac.controllers import get_collection
-from xcube.webapi.ows.stac.controllers import get_collection_item
-from xcube.webapi.ows.stac.controllers import get_datasets_collection_items
-from xcube.webapi.ows.stac.controllers import get_collections
-from xcube.webapi.ows.stac.controllers import get_conformance
-from xcube.webapi.ows.stac.controllers import get_root
-from xcube.webapi.ows.stac.controllers import get_collection_schema
 
 from .test_context import get_stac_ctx
 
@@ -111,7 +112,7 @@ EXPECTED_DATASETS_COLLECTION = {
             "type": "application/json",
         },
         {
-            "href": f"{BASE_URL}{PATH_PREFIX}/collections/" f"{DEFAULT_COLLECTION_ID}",
+            "href": f"{BASE_URL}{PATH_PREFIX}/collections/{DEFAULT_COLLECTION_ID}",
             "rel": "self",
             "title": "this collection",
             "type": "application/json",

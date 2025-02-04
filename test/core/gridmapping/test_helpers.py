@@ -1,12 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from fractions import Fraction
 
-from xcube.core.gridmapping.helpers import _to_int_or_float
-from xcube.core.gridmapping.helpers import round_to_fraction
+from xcube.core.gridmapping.helpers import _to_int_or_float, round_to_fraction
 
 
 class RoundToFractionTest(unittest.TestCase):

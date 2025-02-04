@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import inspect
 from typing import Any, Callable, Union
@@ -10,12 +10,7 @@ import xarray as xr
 
 from .error import VarExprError
 from .exprvar import ExprVar
-from .names import (
-    _GLOBAL_NAMES,
-    get_xarray_funcs,
-    get_numpy_ufuncs,
-    get_constants,
-)
+from .names import _GLOBAL_NAMES, get_constants, get_numpy_ufuncs, get_xarray_funcs
 from .varexpr import evaluate
 
 

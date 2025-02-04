@@ -1,20 +1,20 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
+from collections.abc import Mapping
 from functools import cached_property
 from itertools import filterfalse
 from string import Template
-from typing import Optional, Dict, Any, Set, Union
-from collections.abc import Mapping
+from typing import Any, Dict, Optional, Set, Union
 
 import jwt
 import jwt.algorithms
 import requests
 
-from xcube.server.api import ApiContext
-from xcube.server.api import ApiError
+from xcube.server.api import ApiContext, ApiError
+
 from .config import AuthConfig
 
 
@@ -103,7 +103,7 @@ class AuthContext(ApiContext):
         ):
             # "alg" should be "RS256" or "HS256" or others
             raise ApiError.BadRequest(
-                "Invalid header." " A signed JWT Access Token is expected."
+                "Invalid header. A signed JWT Access Token is expected."
             )
 
         # The key identifier of the access token which we must validate.
@@ -159,13 +159,13 @@ class AuthContext(ApiContext):
 
         if parts[0].lower() != "bearer":
             raise ApiError.BadRequest(
-                "Invalid header." ' Authorization header must start with "Bearer".'
+                'Invalid header. Authorization header must start with "Bearer".'
             )
         elif len(parts) == 1:
-            raise ApiError.BadRequest("Invalid header." " Bearer token not found.")
+            raise ApiError.BadRequest("Invalid header. Bearer token not found.")
         elif len(parts) > 2:
             raise ApiError.BadRequest(
-                "Invalid header." " Authorization header must be Bearer token."
+                "Invalid header. Authorization header must be Bearer token."
             )
 
         return parts[1]

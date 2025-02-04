@@ -1,15 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import Callable, Optional, Union, Any, List
+from typing import Any, Callable, List, Optional, Union
 
-from xcube.util.jsonschema import JsonSchema
-from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonObjectSchema, JsonSchema
 
 from .info import PyType
-from .registry import OpRegistry
-from .registry import OP_REGISTRY
+from .registry import OP_REGISTRY, OpRegistry
 
 
 def operation(
@@ -108,6 +106,4 @@ def op_param(
 
 def _assert_decorator_target_ok(decorator_name: str, target: Any):
     if not callable(target):
-        raise TypeError(
-            f"decorator {decorator_name!r}" f" can be used with callables only"
-        )
+        raise TypeError(f"decorator {decorator_name!r} can be used with callables only")

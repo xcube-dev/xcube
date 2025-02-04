@@ -1,22 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os.path
-from typing import Any, Dict, Optional, List, Union
 from collections.abc import Mapping
+from typing import Any, Dict, List, Optional, Union
 
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.assertions import assert_given, assert_instance
+from xcube.util.jsonschema import (
+    JsonIntegerSchema,
+    JsonNumberSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
+
+from ...util.config import load_json_or_yaml_config
 from .assertions import assert_valid_config
 from .error import DataStoreError
-from .store import DataStore
-from .store import new_data_store
-from ...util.config import load_json_or_yaml_config
+from .store import DataStore, new_data_store
 
 
 def get_data_store_instance(
@@ -328,7 +329,7 @@ class DataStorePool:
         if isinstance(data_store_pool, dict):
             return DataStorePool.from_dict(data_store_pool)
         raise TypeError(
-            "data_store_pool must be a str, dict, " "or a DataStorePool instance"
+            "data_store_pool must be a str, dict, or a DataStorePool instance"
         )
 
     @classmethod
@@ -352,5 +353,5 @@ class DataStorePool:
         assert_instance(store_instance_id, str, name="store_instance_id")
         if store_instance_id not in self._instances:
             raise DataStoreError(
-                f"Configured data store instance" f' "{store_instance_id}" not found.'
+                f'Configured data store instance "{store_instance_id}" not found.'
             )

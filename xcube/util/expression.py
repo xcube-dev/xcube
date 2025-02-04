@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import ast
 import warnings
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def compute_array_expr(
@@ -65,7 +65,7 @@ def compute_expr(
     except Exception as e:
         result = None
         if result_name:
-            msg = f"failed computing {result_name}" f" from expression {expr!r}: {e}"
+            msg = f"failed computing {result_name} from expression {expr!r}: {e}"
         else:
             msg = f"failed computing expression {expr!r}: {e}"
         if errors == "raise":

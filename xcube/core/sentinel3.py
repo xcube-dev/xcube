@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
-from typing import Set, Tuple, Union
 from collections.abc import Mapping
+from typing import Set, Tuple, Union
 
 import xarray as xr
 

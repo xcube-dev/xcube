@@ -1,14 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 from test.cli.helpers import CliDataTest
 from test.core.test_optimize import (
-    TEST_CUBE,
-    INPUT_CUBE_PATH,
     INPUT_CUBE_FILE_SET,
+    INPUT_CUBE_PATH,
+    TEST_CUBE,
     list_file_set,
 )
+
 from xcube.core.dsio import rimraf
 
 OUTPUT_CUBE_OPTIMIZED_DEFAULT_PATH = "test-optimized.zarr"

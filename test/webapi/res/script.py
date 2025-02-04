@@ -1,12 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import numpy as np
 import xarray as xr
 
-from xcube.core.mldataset import IdentityMultiLevelDataset
-from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.mldataset import IdentityMultiLevelDataset, MultiLevelDataset
 
 
 def compute_dataset(ds, period="1W", incl_stdev=False):

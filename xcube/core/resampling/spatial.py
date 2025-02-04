@@ -1,9 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import Union, Callable, Any, Optional
-from collections.abc import Mapping, Hashable
+from collections.abc import Hashable, Mapping
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import xarray as xr
@@ -12,8 +12,8 @@ from dask import array as da
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.coords import Coords2DGridMapping
 from xcube.core.gridmapping.helpers import scale_xy_res_and_size
-from .affine import affine_transform_dataset
-from .affine import resample_dataset
+
+from .affine import affine_transform_dataset, resample_dataset
 from .rectify import rectify_dataset
 
 NDImage = Union[np.ndarray, da.Array]

@@ -1,15 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import pandas as pd
 
 from xcube.server.api import ApiHandler
+
+from ..datasets import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
 from .api import api
 from .context import TimeSeriesContext
 from .controllers import get_time_series
-from ..datasets import PATH_PARAM_DATASET_ID
-from ..datasets import PATH_PARAM_VAR_NAME
 
 
 # noinspection PyPep8Naming
@@ -17,7 +17,7 @@ from ..datasets import PATH_PARAM_VAR_NAME
 class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
     @api.operation(
         operation_id="getTimeSeries",
-        summary="Get the time-series for a variable" " and given GeoJSON object.",
+        summary="Get the time-series for a variable and given GeoJSON object.",
         parameters=[
             PATH_PARAM_DATASET_ID,
             PATH_PARAM_VAR_NAME,

@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -9,14 +9,12 @@ import xarray as xr
 # noinspection PyUnresolvedReferences
 import xcube.core.xarray
 from xcube.core.byoa import CodeConfig
-from xcube.core.gen2 import CubeGeneratorError, CubeConfig
+from xcube.core.gen2 import CubeConfig, CubeGeneratorError
 from xcube.core.gen2.local.usercode import CubeUserCodeExecutor
 from xcube.core.gen2.processor import DatasetProcessor
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import JsonIntegerSchema, JsonObjectSchema, JsonStringSchema
 
 
 def process_dataset_function(dataset: xr.Dataset, name: str = None, value: int = None):

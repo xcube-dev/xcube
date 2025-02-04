@@ -1,29 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import os.path
 import sys
-from typing import Optional, Dict, Any, Union
 from collections.abc import Sequence
+from typing import Any, Dict, Optional, Union
 
 import jsonschema
 import yaml
 
 from xcube.core.byoa import CodeConfig
-from xcube.util.assertions import assert_false
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from .config import CallbackConfig
-from .config import CubeConfig
-from .config import InputConfig
-from .config import OutputConfig
-from .error import CubeGeneratorError
+from xcube.util.assertions import assert_false, assert_instance, assert_true
+from xcube.util.jsonschema import JsonArraySchema, JsonObject, JsonObjectSchema
+
 from ...constants import LOG
+from .config import CallbackConfig, CubeConfig, InputConfig, OutputConfig
+from .error import CubeGeneratorError
 
 CubeGeneratorRequestLike = Union[str, dict, "CubeGeneratorRequest"]
 
@@ -146,7 +140,7 @@ class CubeGeneratorRequest(JsonObject):
         if isinstance(request, dict):
             return CubeGeneratorRequest.from_dict(request)
         raise TypeError(
-            "request must be a str, dict, " "or a CubeGeneratorRequest instance"
+            "request must be a str, dict, or a CubeGeneratorRequest instance"
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -190,7 +184,7 @@ class CubeGeneratorRequest(JsonObject):
         """
         request_dict = cls._load_request_file(request_file, verbosity=verbosity)
         if verbosity:
-            LOG.info(f"Cube generator request loaded " f'from {request_file or "TTY"}.')
+            LOG.info(f"Cube generator request loaded from {request_file or 'TTY'}.")
         return cls.from_dict(request_dict)
 
     @classmethod
@@ -199,14 +193,14 @@ class CubeGeneratorRequest(JsonObject):
     ) -> dict:
         if gen_config_file is not None and not os.path.exists(gen_config_file):
             raise CubeGeneratorError(
-                f"Cube generator request " f'"{gen_config_file}" not found.'
+                f'Cube generator request "{gen_config_file}" not found.'
             )
 
         try:
             if gen_config_file is None:
                 if not sys.stdin.isatty():
                     if verbosity:
-                        LOG.info("Awaiting generator" " request JSON from TTY...")
+                        LOG.info("Awaiting generator request JSON from TTY...")
                     return json.load(sys.stdin)
             else:
                 with open(gen_config_file) as fp:
@@ -216,7 +210,7 @@ class CubeGeneratorRequest(JsonObject):
                         return yaml.safe_load(fp)
         except BaseException as e:
             raise CubeGeneratorError(
-                f"Error loading generator request" f' "{gen_config_file}": {e}'
+                f'Error loading generator request "{gen_config_file}": {e}'
             ) from e
 
         raise CubeGeneratorError(f"Missing cube generator request.")

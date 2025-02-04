@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -9,9 +9,7 @@ import pyproj
 import pytest
 import xarray as xr
 
-from xcube.core.gridmapping import GridMapping
-from xcube.core.gridmapping import CRS_CRS84
-from xcube.core.gridmapping import CRS_WGS84
+from xcube.core.gridmapping import CRS_CRS84, CRS_WGS84, GridMapping
 from xcube.core.resampling import affine_transform_dataset
 
 nan = np.nan

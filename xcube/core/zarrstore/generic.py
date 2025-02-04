@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import collections.abc
 import inspect
@@ -9,9 +9,8 @@ import json
 import math
 import threading
 import warnings
-from typing import Dict, Tuple, Any, Callable, Optional, List
 from collections.abc import Iterator, Sequence
-from typing import Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numcodecs.abc
 import numpy as np
@@ -168,18 +167,14 @@ class GenericArray(dict[str, any]):
         data = self.get("data")
         get_data = self.get("get_data")
         if data is None and get_data is None:
-            raise ValueError(
-                f"array {name!r}:" f" either data or get_data must be defined"
-            )
+            raise ValueError(f"array {name!r}: either data or get_data must be defined")
         if get_data is not None:
             if data is not None:
                 raise ValueError(
-                    f"array {name!r}:"
-                    f" data and get_data cannot"
-                    f" be defined together"
+                    f"array {name!r}: data and get_data cannot be defined together"
                 )
             if not callable(get_data):
-                raise TypeError(f"array {name!r}:" f" get_data must be a callable")
+                raise TypeError(f"array {name!r}: get_data must be a callable")
             sig = inspect.signature(get_data)
             get_data_info = {
                 "has_array_info": "array_info" in sig.parameters,
@@ -216,13 +211,9 @@ class GenericArray(dict[str, any]):
         if shape is None:
             raise ValueError(f"array {name!r}: missing shape")
         if len(shape) != ndim:
-            raise ValueError(
-                f"array {name!r}:" f" dims and shape must have same length"
-            )
+            raise ValueError(f"array {name!r}: dims and shape must have same length")
         if len(chunks) != ndim:
-            raise ValueError(
-                f"array {name!r}:" f" dims and chunks must have same length"
-            )
+            raise ValueError(f"array {name!r}: dims and chunks must have same length")
 
         num_chunks = tuple(map(lambda x: math.ceil(x[0] / x[1]), zip(shape, chunks)))
 
@@ -264,9 +255,7 @@ class GenericArray(dict[str, any]):
         allowed_orders = ("C", "F")
         if order not in allowed_orders:
             raise ValueError(
-                f"array {name!r}:"
-                f" order must be one of {allowed_orders},"
-                f" was {order!r}"
+                f"array {name!r}: order must be one of {allowed_orders}, was {order!r}"
             )
 
         chunk_encoding = self.get("chunk_encoding") or "bytes"
@@ -282,8 +271,7 @@ class GenericArray(dict[str, any]):
         if attrs is not None:
             if not isinstance(attrs, dict):
                 raise TypeError(
-                    f"array {name!r}:"
-                    f" attrs must be dict, was {type(attrs).__name__}"
+                    f"array {name!r}: attrs must be dict, was {type(attrs).__name__}"
                 )
 
         # Note: passing the properties as dictionary
@@ -450,7 +438,7 @@ class GenericZarrStore(zarr.storage.Store):
         array = self._arrays.get(src_path)
         if array is None:
             raise ValueError(
-                f"can only rename arrays, but {src_path!r}" f" is not an array"
+                f"can only rename arrays, but {src_path!r} is not an array"
             )
         if dst_path in self._arrays:
             raise ValueError(
@@ -458,7 +446,7 @@ class GenericZarrStore(zarr.storage.Store):
                 f" {dst_path!r} because it already exists"
             )
         if "/" in dst_path:
-            raise ValueError(f"cannot rename array {src_path!r}" f" into {dst_path!r}")
+            raise ValueError(f"cannot rename array {src_path!r} into {dst_path!r}")
         array["name"] = dst_path
         self._arrays[dst_path] = array
         del self._arrays[src_path]
@@ -796,7 +784,7 @@ def get_chunk_padding(
 
 def get_chunk_indexes(num_chunks: tuple[int, ...]) -> Iterator[tuple[int, ...]]:
     if not num_chunks:
-        yield 0,
+        yield (0,)
     else:
         yield from itertools.product(*tuple(map(range, map(int, num_chunks))))
 

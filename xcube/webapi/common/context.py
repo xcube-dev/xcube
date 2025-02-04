@@ -1,19 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import threading
-from typing import Any, Dict, List, Optional, Union, Tuple
-from collections.abc import Mapping, Iterator
+from collections.abc import Iterator, Mapping
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import fsspec
 
 from xcube.constants import LOG
-from xcube.server.api import ApiContext
-from xcube.server.api import ApiError
-from xcube.server.api import Context
-from xcube.server.config import get_base_dir
-from xcube.server.config import resolve_config_path
+from xcube.server.api import ApiContext, ApiError, Context
+from xcube.server.config import get_base_dir, resolve_config_path
 from xcube.util.perf import measure_time_cm
 from xcube.version import version
 from xcube.webapi.auth import AuthContext
@@ -184,7 +181,7 @@ class ResourcesContext(ApiContext):
                     i += 1
             elif c == "}" and es:
                 es = False
-                yield value[i0:i],  # Yes, return a 1-tuple.
+                yield (value[i0:i],)  # Yes, return a 1-tuple.
                 i0 = i + 1
         if i0 == 0:
             yield value

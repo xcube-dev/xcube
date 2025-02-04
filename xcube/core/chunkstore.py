@@ -1,27 +1,25 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import itertools
 import json
-from collections.abc import MutableMapping
-from typing import Dict, Tuple, Callable, Any
-from collections.abc import Sequence
-from typing import Union
+from collections.abc import MutableMapping, Sequence
+from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-from deprecated import deprecated
-from xcube.constants import LOG_LEVEL_TRACE
-from xcube.core.zarrstore import LoggingZarrStore
 import collections.abc
+from collections.abc import Iterable, Iterator, KeysView
 from logging import Logger
 from typing import Optional
-from collections.abc import Iterator, Iterable, KeysView
 
-from xcube.constants import LOG
+from deprecated import deprecated
+
+from xcube.constants import LOG, LOG_LEVEL_TRACE
+from xcube.core.zarrstore import LoggingZarrStore
 from xcube.util.assertions import assert_instance
 
 GetChunk = Callable[["ChunkStore", str, tuple[int, ...]], bytes]

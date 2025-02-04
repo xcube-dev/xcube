@@ -1,20 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import collections.abc
 import datetime
 import hashlib
 import time
-from typing import Dict, Any, List, Optional
 from collections.abc import Mapping
+from typing import Any, Dict, List, Optional
 
 from xcube.util.assertions import assert_instance
 
 _CONTENT_LENGTH_DUMMY = -1
-_LAST_MODIFIED_DUMMY = str(
-    datetime.datetime.fromtimestamp(time.time(), datetime.UTC)
-)
+_LAST_MODIFIED_DUMMY = str(datetime.datetime.fromtimestamp(time.time(), datetime.UTC))
 
 
 def list_s3_bucket_v2(
@@ -301,18 +299,18 @@ def _value_to_xml(
         for attr_name, attr_value in element_attrs.items():
             attrs += f' {attr_name}="{_value_to_text(attr_value)}"'
     if element_value is None:
-        lines.append(f'{indent * "  "}<{element_name}{attrs}/>')
+        lines.append(f"{indent * '  '}<{element_name}{attrs}/>")
     elif isinstance(element_value, dict):
-        lines.append(f'{indent * "  "}<{element_name}{attrs}>')
+        lines.append(f"{indent * '  '}<{element_name}{attrs}>")
         for sub_element_name, sub_element_value in element_value.items():
             _value_to_xml(lines, sub_element_name, sub_element_value, indent=indent + 1)
-        lines.append(f'{indent * "  "}</{element_name}>')
+        lines.append(f"{indent * '  '}</{element_name}>")
     elif isinstance(element_value, list):
         for item in element_value:
             _value_to_xml(lines, element_name, item, indent=indent)
     else:
         lines.append(
-            f'{indent * "  "}'
+            f"{indent * '  '}"
             f"<{element_name}{attrs}>"
             f"{_value_to_text(element_value)}"
             f"</{element_name}>"

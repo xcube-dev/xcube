@@ -1,13 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
-from xcube.core.gen2.response import CubeGeneratorResult
-from xcube.core.gen2.response import CubeInfo
-from xcube.core.gen2.response import CubeInfoResult
-from xcube.core.gen2.response import CubeReference
+from xcube.core.gen2.response import (
+    CubeGeneratorResult,
+    CubeInfo,
+    CubeInfoResult,
+    CubeReference,
+)
 from xcube.core.store import DatasetDescriptor
 
 

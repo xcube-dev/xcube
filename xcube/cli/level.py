@@ -1,15 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 from typing import Optional, Tuple
 
 import click
 
 from xcube.cli.common import (
-    configure_cli_output,
     cli_option_quiet,
     cli_option_verbosity,
+    configure_cli_output,
 )
 from xcube.constants import LOG
 
@@ -67,7 +67,7 @@ DEFAULT_AGG_METHOD = "first"
     help=f"Aggregation method(s) to be used for data variables."
     f' Either one of "first", "min", "max", "mean", "median",'
     f' "mode", "auto" or list of assignments to individual'
-    f' variables using the notation'
+    f" variables using the notation"
     f' "<var1>=<method1>,<var2>=<method2>,..."'
     f' Defaults to "{DEFAULT_AGG_METHOD}".',
 )
@@ -110,10 +110,10 @@ def level(
     INPUT may be an S3 object storage URL of the form
     "s3://<bucket>/<path>" or "https://<endpoint>".
     """
-    import time
     import os
-    from xcube.cli.common import parse_cli_sequence
-    from xcube.cli.common import assert_positive_int_item
+    import time
+
+    from xcube.cli.common import assert_positive_int_item, parse_cli_sequence
     from xcube.core.store import new_fs_data_store
     from xcube.core.subsampling import assert_valid_agg_methods
 
@@ -152,15 +152,13 @@ def level(
         dir_path = os.path.dirname(input_path).replace("\\", "/")
         basename, ext = os.path.splitext(os.path.basename(input_path))
         output_protocol = input_protocol
-        output_path = f'{dir_path}/{basename + ".levels"}'
+        output_path = f"{dir_path}/{basename + '.levels'}"
     else:
         output_protocol, output_path = _split_protocol_and_path(output_path)
 
     if link_input and input_protocol != output_protocol:
         raise click.ClickException(
-            "Links can be used only"
-            " if input and output are in"
-            " the same filesystem"
+            "Links can be used only if input and output are in the same filesystem"
         )
 
     start_time = time.time()

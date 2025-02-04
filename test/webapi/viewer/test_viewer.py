@@ -1,16 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
 import unittest
-from collections.abc import Iterable
-from collections.abc import Mapping
-from typing import Optional, Any, Union
+from collections.abc import Iterable, Mapping
+from typing import Any, Optional, Union
 
 import pytest
-from xcube.core.mldataset import BaseMultiLevelDataset
 
+from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
 from xcube.webapi.datasets.context import DatasetsContext
@@ -151,7 +150,7 @@ class ViewerTest(unittest.TestCase):
             self.assertEqual(expected_server_url, viewer.server_url)
 
             expected_viewer_url = (
-                f"{expected_server_url}/viewer/" f"?serverUrl={expected_server_url}"
+                f"{expected_server_url}/viewer/?serverUrl={expected_server_url}"
             )
             self.assertEqual(expected_viewer_url, viewer.viewer_url)
         else:

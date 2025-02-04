@@ -1,12 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
+from test.cli.helpers import TEST_ZARR_DIR, CliDataTest
 
 import xarray as xr
-
-from test.cli.helpers import CliDataTest, TEST_ZARR_DIR
 
 
 class Vars2DimTest(CliDataTest):

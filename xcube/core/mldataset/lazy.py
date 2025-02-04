@@ -1,17 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import threading
 import uuid
-from abc import abstractmethod, ABCMeta
-from typing import Any, Dict, Optional
+from abc import ABCMeta, abstractmethod
 from collections.abc import Mapping
+from typing import Any, Dict, Optional
 
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.util.assertions import assert_instance
+
 from .abc import MultiLevelDataset
 
 

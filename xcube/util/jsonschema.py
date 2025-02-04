@@ -1,14 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import collections.abc
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable, Union, Tuple, Optional
 from collections.abc import Mapping, Sequence
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.util.assertions import assert_instance, assert_true
 
 # Make sure rfc3339-validator package is installed : jsonschema uses it for
 # validating instances of JsonDateSchema and JsonDatetimeSchema.

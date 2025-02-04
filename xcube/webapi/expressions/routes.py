@@ -1,13 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 from xcube.server.api import ApiHandler
+
 from ..datasets.routes import PATH_PARAM_DATASET_ID
 from .api import api
 from .context import ExpressionsContext
-from .controllers import get_expressions_capabilities
-from .controllers import validate_expression
+from .controllers import get_expressions_capabilities, validate_expression
 
 PATH_PARAM_VAR_EXPR = {
     "name": "varExpr",

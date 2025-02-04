@@ -1,31 +1,30 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import concurrent.futures
 import inspect
 import os.path
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Mapping, Sequence
 from typing import (
     Any,
+    Callable,
+    Dict,
+    Generic,
     List,
     Optional,
     Tuple,
-    Dict,
     Type,
-    Generic,
     TypeVar,
     Union,
-    Callable,
 )
-from collections.abc import Sequence, Awaitable, Mapping
 
-from .asyncexec import AsyncExecution
-from ..util.assertions import assert_instance
-from ..util.assertions import assert_true
+from ..util.assertions import assert_instance, assert_true
 from ..util.frozen import FrozenDict
 from ..util.jsonschema import JsonObjectSchema
 from ..util.undefined import UNDEFINED
+from .asyncexec import AsyncExecution
 
 _SERVER_CONTEXT_ATTR_NAME = "__xcube_server_context"
 _HTTP_METHODS = {"head", "get", "post", "put", "delete", "options"}
@@ -800,7 +799,7 @@ class ApiRoute:
         return repr(self)
 
     def __repr__(self) -> str:
-        args = f"{self.api_name!r}," f" {self.path!r}," f" {self.handler_cls.__name__}"
+        args = f"{self.api_name!r}, {self.path!r}, {self.handler_cls.__name__}"
         if self.handler_kwargs:
             args += f", handler_kwargs={self.handler_kwargs!r}"
         return f"ApiRoute({args})"

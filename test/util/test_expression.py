@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from collections import namedtuple
@@ -9,9 +9,7 @@ import numpy as np
 import numpy.testing as npt
 import xarray as xr
 
-from xcube.util.expression import compute_array_expr
-from xcube.util.expression import compute_expr
-from xcube.util.expression import transpile_expr
+from xcube.util.expression import compute_array_expr, compute_expr, transpile_expr
 
 
 class ComputeArrayExprTest(unittest.TestCase):
@@ -163,7 +161,7 @@ class ComputeExprTest(unittest.TestCase):
             compute_expr("b < 1", result_name="mask of 'CHL'")
         self.assertTrue(
             f"{cm.exception}".startswith(
-                "failed computing mask of 'CHL' from " "expression 'b < 1': "
+                "failed computing mask of 'CHL' from expression 'b < 1': "
             )
         )
 
@@ -215,15 +213,15 @@ class TranspileExprTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            "np.logical_or(np.logical_and(a, b), " "np.logical_and(c, d))",
+            "np.logical_or(np.logical_and(a, b), np.logical_and(c, d))",
             transpile_expr("a and b or c and d"),
         )
         self.assertEqual(
-            "np.logical_or(np.logical_or(a, " "np.logical_and(b, c)), d)",
+            "np.logical_or(np.logical_or(a, np.logical_and(b, c)), d)",
             transpile_expr("a or b and c or d"),
         )
         self.assertEqual(
-            "np.logical_and(np.logical_or(a, b), " "np.logical_or(c, d))",
+            "np.logical_and(np.logical_or(a, b), np.logical_or(c, d))",
             transpile_expr("(a or b) and (c or d)"),
         )
 

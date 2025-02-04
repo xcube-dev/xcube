@@ -1,17 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from abc import ABCMeta
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
 import click
 import click.testing
 
-from xcube.core.new import new_cube
 from xcube.cli.main import cli
 from xcube.core.dsio import rimraf
+from xcube.core.new import new_cube
 
 TEST_NC_FILE = "test.nc"
 TEST_ZARR_DIR = "test.zarr"

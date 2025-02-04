@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import abc
 import fnmatch
@@ -11,16 +11,17 @@ import sys
 import time
 import traceback
 import warnings
-from typing import Callable, Dict, Optional, Any, List
+from typing import Any, Callable, Dict, List, Optional
 
-from xcube.constants import PLUGIN_ENTRY_POINT_GROUP_NAME
-from xcube.constants import PLUGIN_INIT_TIME__WARN_LIMIT
-from xcube.constants import PLUGIN_LOAD_TIME_WARN_LIMIT
-from xcube.constants import PLUGIN_MODULE_FUNCTION_NAME
-from xcube.constants import PLUGIN_MODULE_NAME
-from xcube.constants import PLUGIN_MODULE_PREFIX
-from xcube.util.extension import Extension
-from xcube.util.extension import ExtensionRegistry
+from xcube.constants import (
+    PLUGIN_ENTRY_POINT_GROUP_NAME,
+    PLUGIN_INIT_TIME__WARN_LIMIT,
+    PLUGIN_LOAD_TIME_WARN_LIMIT,
+    PLUGIN_MODULE_FUNCTION_NAME,
+    PLUGIN_MODULE_NAME,
+    PLUGIN_MODULE_PREFIX,
+)
+from xcube.util.extension import Extension, ExtensionRegistry
 
 _PLUGIN_REGISTRY_INIT = dict()
 
@@ -69,8 +70,7 @@ def discover_plugin_modules(module_prefixes=None):
     # See https://github.com/xcube-dev/xcube/issues/963
     for module_prefix in module_prefixes:
         for path_hook in fnmatch.filter(
-            sys.path,
-            f'__editable__.{module_prefix}*.finder.__path_hook__'
+            sys.path, f"__editable__.{module_prefix}*.finder.__path_hook__"
         ):
             module_name = path_hook.split("-")[0].split(".")[1]
             entry_points.append(_ModuleEntryPoint(module_name))
@@ -93,9 +93,7 @@ def load_plugins(
     else:
         # verbose=True for specified xcube plugins.
         _collect_plugins(
-            list(importlib.metadata.entry_points(
-                group=PLUGIN_ENTRY_POINT_GROUP_NAME
-            )),
+            list(importlib.metadata.entry_points(group=PLUGIN_ENTRY_POINT_GROUP_NAME)),
             ext_registry,
             True,
             plugins,
@@ -188,7 +186,7 @@ def _emit_warning_for_error(entry_point, e):
     # We use warning and not raise to allow loading
     # xcube despite a broken plugin. Raise would stop xcube.
     warnings.warn(
-        f"Unexpected exception while loading" f" xcube plugin {entry_point.name!r}: {e}"
+        f"Unexpected exception while loading xcube plugin {entry_point.name!r}: {e}"
     )
     traceback.print_exc(file=sys.stderr)
 

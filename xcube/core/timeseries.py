@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import AbstractSet, Optional, Union
 from collections.abc import Sequence
+from typing import AbstractSet, Optional, Union
 
 import numpy as np
 import pyproj
@@ -13,16 +13,17 @@ import shapely.ops
 import shapely.wkt
 import xarray as xr
 
-from xcube.core.geom import GeometryLike
-from xcube.core.geom import normalize_geometry
-from xcube.core.geom import get_dataset_geometry
-from xcube.core.geom import mask_dataset_by_geometry
-from xcube.core.gridmapping import GridMapping
-from xcube.core.varexpr import VarExprContext
-from xcube.core.varexpr import split_var_assignment
-from xcube.util.timeindex import ensure_time_index_compatible
-from xcube.util.assertions import assert_instance
 from xcube.constants import CRS_CRS84
+from xcube.core.geom import (
+    GeometryLike,
+    get_dataset_geometry,
+    mask_dataset_by_geometry,
+    normalize_geometry,
+)
+from xcube.core.gridmapping import GridMapping
+from xcube.core.varexpr import VarExprContext, split_var_assignment
+from xcube.util.assertions import assert_instance
+from xcube.util.timeindex import ensure_time_index_compatible
 
 Date = Union[np.datetime64, str]
 
@@ -99,7 +100,7 @@ def get_time_series(
     """
     if cube_asserted is not None:
         warnings.warn(
-            "cube_asserted has been deprecated" " and will be removed soon.",
+            "cube_asserted has been deprecated and will be removed soon.",
             DeprecationWarning,
         )
     assert_instance(dataset, xr.Dataset)
@@ -216,6 +217,6 @@ def normalize_agg_methods(
         s = "s" if len(invalid_agg_methods) > 1 else ""
         raise exception_type(
             f"invalid aggregation method{s}:"
-            f' {", ".join(sorted(list(invalid_agg_methods)))}'
+            f" {', '.join(sorted(list(invalid_agg_methods)))}"
         )
     return agg_methods

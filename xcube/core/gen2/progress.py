@@ -1,20 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import threading
+from collections.abc import Sequence
 from time import sleep
 from timeit import default_timer
-from collections.abc import Sequence
 
 import requests
 
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_true
-from xcube.util.progress import ProgressObserver
-from xcube.util.progress import ProgressState
-from .config import CallbackConfig
+from xcube.util.assertions import assert_given, assert_true
+from xcube.util.progress import ProgressObserver, ProgressState
+
 from ...constants import LOG
+from .config import CallbackConfig
 
 
 def _format_time(t):

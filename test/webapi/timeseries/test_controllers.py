@@ -1,21 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 import os
 import os.path
 import unittest
+from test.mixins import AlmostEqualDeepMixin
+from test.webapi.helpers import get_api_ctx
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from test.mixins import AlmostEqualDeepMixin
-from test.webapi.helpers import get_api_ctx
 from xcube.webapi.timeseries.context import TimeSeriesContext
-from xcube.webapi.timeseries.controllers import collect_timeseries_result
-from xcube.webapi.timeseries.controllers import get_time_series
+from xcube.webapi.timeseries.controllers import (
+    collect_timeseries_result,
+    get_time_series,
+)
 
 
 def get_timeseries_ctx(server_config=None) -> TimeSeriesContext:

@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import json
 
@@ -8,7 +8,6 @@ from ..helpers import RoutesTestCase
 
 
 class StatisticsRoutesTest(RoutesTestCase):
-
     def get_config_filename(self) -> str:
         """Get configuration filename.
         Default impl. returns ``'config.yml'``."""
@@ -49,7 +48,7 @@ class StatisticsRoutesTest(RoutesTestCase):
             method="POST",
             body='{"type": "Point", "coordinates": [1.768, 51.465]}',
         )
-        self.assertBadRequestResponse(response, "Missing " "query parameter 'time'")
+        self.assertBadRequestResponse(response, "Missing query parameter 'time'")
 
     def test_fetch_post_statistics_missing_time_without_time_dimension_dataset(self):
         response = self.fetch(
@@ -77,17 +76,13 @@ class StatisticsRoutesTest(RoutesTestCase):
             method="POST",
             body="[1.768, 51.465, 11.542]",
         )
-        self.assertBadRequestResponse(
-            response, "Invalid " "GeoJSON geometry encountered"
-        )
+        self.assertBadRequestResponse(response, "Invalid GeoJSON geometry encountered")
         response = self.fetch(
             "/statistics/demo/conc_chl?time=2017-01-16+10:09:21",
             method="POST",
             body="[1.768]",
         )
-        self.assertBadRequestResponse(
-            response, "Invalid " "GeoJSON geometry encountered"
-        )
+        self.assertBadRequestResponse(response, "Invalid GeoJSON geometry encountered")
 
     def test_crs_conversion_post_statistics_with_coordinates_outside_bounds(self):
         response = self.fetch(
@@ -119,11 +114,11 @@ class StatisticsRoutesTest(RoutesTestCase):
         response = self.fetch(
             "/statistics/demo/conc_chl?lon=1.786&lat=51.465", method="GET"
         )
-        self.assertBadRequestResponse(response, "Missing " "query parameter 'time'")
+        self.assertBadRequestResponse(response, "Missing query parameter 'time'")
 
     def test_fetch_get_statistics_missing_time_without_time_dimension_dataset(self):
         response = self.fetch(
-            "/statistics/cog_local/band_1?lon=-105.591&" "lat=35.751&type=Point",
+            "/statistics/cog_local/band_1?lon=-105.591&lat=35.751&type=Point",
             method="GET",
         )
         self.assertResponseOK(response)
@@ -142,8 +137,7 @@ class StatisticsRoutesTest(RoutesTestCase):
 
     def test_fetch_get_statistics(self):
         response = self.fetch(
-            "/statistics/demo/conc_chl?time=2017-01-30+10:46:34&"
-            "lon=1.262&lat=50.243",
+            "/statistics/demo/conc_chl?time=2017-01-30+10:46:34&lon=1.262&lat=50.243",
             method="GET",
         )
         self.assertResponseOK(response)

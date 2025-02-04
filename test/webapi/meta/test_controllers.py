@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
-
 from test.mixins import AlmostEqualDeepMixin
 from test.webapi.helpers import get_api_ctx
+
 from xcube.webapi.meta.context import MetaContext
 from xcube.webapi.meta.controllers import get_service_info
 

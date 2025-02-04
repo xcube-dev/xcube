@@ -1,18 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import Optional, Dict, Union, List, Any
+from typing import Any, Dict, List, Optional, Union
 
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-from ..response import CubeGeneratorResult
-from ..response import CubeInfo
-from ..response import make_cube_generator_result_class
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonIntegerSchema,
+    JsonNumberSchema,
+    JsonObject,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
+
+from ..response import CubeGeneratorResult, CubeInfo, make_cube_generator_result_class
 
 
 class CubeGeneratorToken(JsonObject):
@@ -47,7 +48,7 @@ class CubeGeneratorJobStatus(JsonObject):
         start_time: str = None,
         completion_time: str = None,
         conditions: list[dict[str, Any]] = None,
-        **additional_properties
+        **additional_properties,
     ):
         self.succeeded: Optional[int] = succeeded
         self.failed: Optional[int] = failed
@@ -87,7 +88,7 @@ class CubeGeneratorProgressState(JsonObject):
         progress: float,
         # worked: Union[int, float],
         total_work: Union[int, float],
-        **additional_properties
+        **additional_properties,
     ):
         self.progress: float = float(progress)
         # self.worked: float = float(worked)
@@ -153,7 +154,7 @@ class CubeGeneratorState(JsonObject):
         job_result: Optional[CubeGeneratorResult] = None,
         output: Optional[list[str]] = None,
         progress: Optional[list[CubeGeneratorProgress]] = None,
-        **additional_properties
+        **additional_properties,
     ):
         self.job_id = job_id
         self.job_status = job_status

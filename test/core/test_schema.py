@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -9,9 +9,7 @@ import pytest
 import xarray as xr
 
 from xcube.core.new import new_cube
-from xcube.core.schema import CubeSchema
-from xcube.core.schema import get_dataset_chunks
-from xcube.core.schema import get_dataset_xy_var_names
+from xcube.core.schema import CubeSchema, get_dataset_chunks, get_dataset_xy_var_names
 
 
 class CubeSchemaTest(unittest.TestCase):
@@ -317,7 +315,7 @@ class GetDatasetXYVarNamesTest(unittest.TestCase):
         self.assertIsNone(get_dataset_xy_var_names(dataset))
 
         with pytest.raises(
-            ValueError, match="dataset has no valid" " spatial coordinate variables"
+            ValueError, match="dataset has no valid spatial coordinate variables"
         ):
             get_dataset_xy_var_names(dataset, must_exist=True)
 

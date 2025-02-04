@@ -1,15 +1,12 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import concurrent.futures
-from typing import Union, Callable, Optional, Any, Tuple
-from collections.abc import Sequence, Awaitable
+from collections.abc import Awaitable, Sequence
+from typing import Any, Callable, Optional, Tuple, Union
 
-from xcube.server.api import ApiRoute
-from xcube.server.api import ApiStaticRoute
-from xcube.server.api import Context
-from xcube.server.api import ReturnT
+from xcube.server.api import ApiRoute, ApiStaticRoute, Context, ReturnT
 from xcube.server.framework import Framework
 from xcube.util.jsonschema import JsonObjectSchema
 
@@ -51,6 +48,6 @@ class FlaskFramework(Framework):
         executor: Optional[concurrent.futures.Executor],
         function: Callable[..., ReturnT],
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Awaitable[ReturnT]:
         raise NotImplementedError()

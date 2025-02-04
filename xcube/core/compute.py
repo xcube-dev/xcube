@@ -1,17 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import inspect
 import warnings
-from typing import Tuple, Dict, Any, Callable, Union, AbstractSet
 from collections.abc import Sequence
+from typing import AbstractSet, Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 import xarray as xr
 
-from xcube.core.schema import CubeSchema
 from xcube.core.chunkstore import ChunkStore
+from xcube.core.schema import CubeSchema
 from xcube.core.verify import assert_cube
 
 CubeFuncOutput = Union[
@@ -274,7 +274,7 @@ def compute_dataset(
             if must_rechunk:
                 if not has_warned:
                     warnings.warn(
-                        f'Input variables must not be chunked in dimension(s): {", ".join(var_core_dims)}.\n'
+                        f"Input variables must not be chunked in dimension(s): {', '.join(var_core_dims)}.\n"
                         f"Rechunking applies, which may drastically decrease runtime performance "
                         f"and increase memory usage."
                     )
@@ -313,14 +313,14 @@ def _inspect_cube_func(cube_func: CubeFunc, input_var_names: Sequence[str] = Non
     if False in true_args and any(true_args[true_args.index(False) :]):
         raise ValueError(
             f"invalid cube_func {cube_func_name!r}: "
-            f'any argument must occur before any of {", ".join(_PREDEFINED_KEYWORDS)}, '
-            f'but got {", ".join(args)}'
+            f"any argument must occur before any of {', '.join(_PREDEFINED_KEYWORDS)}, "
+            f"but got {', '.join(args)}"
         )
     if not all(true_args) and varargs:
         raise ValueError(
             f"invalid cube_func {cube_func_name!r}: "
-            f'any argument must occur before any of {", ".join(_PREDEFINED_KEYWORDS)}, '
-            f'but got {", ".join(args)} before *{varargs}'
+            f"any argument must occur before any of {', '.join(_PREDEFINED_KEYWORDS)}, "
+            f"but got {', '.join(args)} before *{varargs}"
         )
     num_input_vars = len(input_var_names) if input_var_names else 0
     num_args = sum(true_args)
@@ -328,7 +328,7 @@ def _inspect_cube_func(cube_func: CubeFunc, input_var_names: Sequence[str] = Non
         raise ValueError(
             f"invalid cube_func {cube_func_name!r}: "
             f"expected {num_input_vars} arguments, "
-            f'but got {", ".join(args)}'
+            f"but got {', '.join(args)}"
         )
     has_input_params = "input_params" in args or "input_params" in kwonlyargs
     has_dim_coords = "dim_coords" in args or "dim_coords" in kwonlyargs

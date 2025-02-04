@@ -1,15 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
+from test.sampledata import SourceDatasetMixin
 
 import numpy as np
 import pyproj
 import shapely.wkt
 import xarray as xr
 
-from test.sampledata import SourceDatasetMixin
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.coords import Coords2DGridMapping
 

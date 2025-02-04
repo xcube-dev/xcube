@@ -1,28 +1,29 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import itertools
 import json
 import math
 import unittest
-from collections.abc import MutableMapping
-from typing import Dict, Any
-from collections.abc import KeysView, Iterator, Sequence
+from collections.abc import Iterator, KeysView, MutableMapping, Sequence
+from test.sampledata import create_highroc_dataset
+from typing import Any, Dict
 
 import cftime
 import numpy as np
 import pytest
 import xarray as xr
 
-from test.sampledata import create_highroc_dataset
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
-from xcube.core.select import select_label_subset
-from xcube.core.select import select_spatial_subset
-from xcube.core.select import select_subset
-from xcube.core.select import select_temporal_subset
-from xcube.core.select import select_variables_subset
+from xcube.core.select import (
+    select_label_subset,
+    select_spatial_subset,
+    select_subset,
+    select_temporal_subset,
+    select_variables_subset,
+)
 
 
 class SelectVariablesSubsetTest(unittest.TestCase):
@@ -409,13 +410,13 @@ class SelectLabelSubsetTest(unittest.TestCase):
 
         with pytest.raises(
             TypeError,
-            match="predicate for variable 'a'" " must be callable with signature",
+            match="predicate for variable 'a' must be callable with signature",
         ):
             # noinspection PyTypeChecker
             select_label_subset(ds, "time", dict(a=137))
 
         with pytest.raises(
-            TypeError, match="predicate" " must be callable with signature"
+            TypeError, match="predicate must be callable with signature"
         ):
             # noinspection PyTypeChecker
             select_label_subset(ds, "time", 137)
@@ -583,7 +584,7 @@ class VirtualChunkStore(MutableMapping):
                 tuple(range(math.ceil(s / c))) for s, c in zip(shape, chunks)
             ]
             for index in itertools.product(*chunk_indices):
-                key = f'{name}/{"/".join(index)}'
+                key = f"{name}/{'/'.join(index)}"
                 entries[key] = data
 
         return entries

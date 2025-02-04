@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import os
 import os.path
@@ -26,7 +26,7 @@ Monitor = Callable[[str, int], None]
 @click.option(
     "--dry-run",
     is_flag=True,
-    help="Just read and process input, " "but don't produce any output.",
+    help="Just read and process input, but don't produce any output.",
 )
 def prune(dataset_path: str, quiet: bool, verbosity: int, dry_run: bool):
     """
@@ -53,8 +53,7 @@ def prune(dataset_path: str, quiet: bool, verbosity: int, dry_run: bool):
 
 def _prune(input_path: str, dry_run: bool, monitor: Monitor):
     from xcube.core.chunk import get_empty_dataset_chunks
-    from xcube.core.dsio import guess_dataset_format
-    from xcube.core.dsio import open_dataset
+    from xcube.core.dsio import guess_dataset_format, open_dataset
 
     input_format = guess_dataset_format(input_path)
     if input_format != FORMAT_NAME_ZARR:
@@ -84,13 +83,12 @@ def _prune(input_path: str, dry_run: bool, monitor: Monitor):
                     num_deleted += 1
             if num_deleted > 0:
                 monitor(
-                    f"Deleted {num_deleted} block file(s) "
-                    f"for variable {var_name!r}.",
+                    f"Deleted {num_deleted} block file(s) for variable {var_name!r}.",
                     2,
                 )
             elif num_empty_chunks > 0:
                 monitor(
-                    f"No block files for variable {var_name!r} " f"could be deleted.", 2
+                    f"No block files for variable {var_name!r} could be deleted.", 2
                 )
             num_deleted_total += num_deleted
 
@@ -119,9 +117,7 @@ def _delete_block_file(
             os.remove(block_path)
             return True
         except OSError as e:
-            monitor(f"Failed to delete " f"block file {block_path}: {e}", 0)
+            monitor(f"Failed to delete block file {block_path}: {e}", 0)
     else:
-        monitor(
-            f"Could find neither " f"block file {block_path_1} nor {block_path_2}", 0
-        )
+        monitor(f"Could find neither block file {block_path_1} nor {block_path_2}", 0)
     return False

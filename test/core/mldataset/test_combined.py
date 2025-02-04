@@ -1,12 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.mldataset import CombinedMultiLevelDataset
-from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.mldataset import (
+    BaseMultiLevelDataset,
+    CombinedMultiLevelDataset,
+    MultiLevelDataset,
+)
+
 from .helpers import get_test_dataset
 
 

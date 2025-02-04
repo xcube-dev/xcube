@@ -1,13 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from abc import abstractmethod, ABC
+import threading
+from abc import ABC, abstractmethod
 from asyncio import CancelledError
 from concurrent.futures import Executor, Future
 from concurrent.futures.thread import ThreadPoolExecutor
 from enum import Enum
-import threading
 from typing import Any, Callable
 
 import tabulate
@@ -328,9 +328,10 @@ class ExecutorPreloadHandle(PreloadHandle):
 
 
 class PreloadDisplay(ABC):
-
     @classmethod
-    def create(cls, states: list[PreloadState], silent: bool | None = None) -> "PreloadDisplay":
+    def create(
+        cls, states: list[PreloadState], silent: bool | None = None
+    ) -> "PreloadDisplay":
         try:
             # noinspection PyUnresolvedReferences
             from IPython.display import display
@@ -414,7 +415,6 @@ class IPyPreloadDisplay(PreloadDisplay):
 
 
 class IPyWidgetsPreloadDisplay(IPyPreloadDisplay):
-
     def __init__(self, states: list[PreloadState]):
         super().__init__(states)
         import ipywidgets

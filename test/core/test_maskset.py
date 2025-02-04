@@ -1,25 +1,22 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
+from test.sampledata import (
+    create_c2rcc_flag_var,
+    create_cci_lccs_class_var,
+    create_cmems_sst_flag_var,
+    create_highroc_dataset,
+)
 
 import matplotlib
 import numpy as np
 import xarray as xr
 from numpy.testing import assert_array_almost_equal
 
-from test.sampledata import (
-    create_highroc_dataset,
-    create_c2rcc_flag_var,
-    create_cmems_sst_flag_var,
-    create_cci_lccs_class_var,
-)
-from xcube.core.maskset import MaskSet
-
 # noinspection PyProtectedMember
-from xcube.core.maskset import _sanitize_flag_values
-
+from xcube.core.maskset import MaskSet, _sanitize_flag_values
 
 nan = float("nan")
 

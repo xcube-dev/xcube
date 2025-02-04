@@ -1,20 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict, List, Optional, Callable
-from collections.abc import Iterator
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from typing import Any, Callable, Dict, List, Optional
 
 import fiona
 import fsspec
 import pyproj
 import shapely
-
 from fiona.collection import Collection
 
-from xcube.server.api import ApiError
-from xcube.server.api import Context
+from xcube.server.api import ApiError, Context
 from xcube.webapi.common.context import ResourcesContext
 
 PlaceGroup = dict[str, Any]
@@ -156,7 +153,7 @@ class PlacesContext(ResourcesContext):
                 join_property = place_join.get("Property")
                 if not join_property:
                     raise ApiError.InvalidServerConfig(
-                        "Missing 'Property' entry in 'Join'" " of a 'PlaceGroups' item"
+                        "Missing 'Property' entry in 'Join' of a 'PlaceGroups' item"
                     )
                 join_encoding = place_join.get("CharacterEncoding", "utf-8")
                 join = dict(
@@ -198,7 +195,7 @@ class PlacesContext(ResourcesContext):
         sub_place_group_configs = place_group_config.get("Places")
         if sub_place_group_configs:
             raise ApiError.InvalidServerConfig(
-                "Invalid 'Places' entry in a 'PlaceGroups' item:" " not implemented yet"
+                "Invalid 'Places' entry in a 'PlaceGroups' item: not implemented yet"
             )
 
     @staticmethod

@@ -1,16 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
 import xarray as xr
 
 from xcube.core.gen2 import CubeConfig
-from xcube.core.gen2.local.transformer import CubeIdentity
-from xcube.core.gen2.local.transformer import CubeTransformer
-from xcube.core.gen2.local.transformer import TransformedCube
-from xcube.core.gen2.local.transformer import transform_cube
+from xcube.core.gen2.local.transformer import (
+    CubeIdentity,
+    CubeTransformer,
+    TransformedCube,
+    transform_cube,
+)
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
 

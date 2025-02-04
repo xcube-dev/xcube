@@ -1,17 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 import unittest
-from unittest.mock import patch
-from unittest.mock import MagicMock
-
-from fsspec.registry import register_implementation
-
-from xcube.core.store import DataStoreError
-from xcube.core.store import list_data_store_ids
-from xcube.core.store import new_data_store
+from unittest.mock import MagicMock, patch
 
 import pytest
+from fsspec.registry import register_implementation
+
+from xcube.core.store import DataStoreError, list_data_store_ids, new_data_store
 
 
 class ListDataStoreTest(unittest.TestCase):
@@ -49,7 +45,6 @@ class ListDataStoreTest(unittest.TestCase):
 
 
 class TestBaseFsDataStore(unittest.TestCase):
-
     def test_get_data_opener_ids(self):
         store = new_data_store("file")
         self.assertEqual(

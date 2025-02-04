@@ -1,17 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
-from xcube.core.store import DataOpener
-from xcube.core.store import DataWriter
-from xcube.core.store import MutableDataStore
-from xcube.core.store import find_data_opener_extensions
-from xcube.core.store import find_data_store_extensions
-from xcube.core.store import find_data_writer_extensions
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.core.store import (
+    DataOpener,
+    DataWriter,
+    MutableDataStore,
+    find_data_opener_extensions,
+    find_data_store_extensions,
+    find_data_writer_extensions,
+)
+from xcube.util.jsonschema import JsonObjectSchema, JsonStringSchema
 
 expected_fs_data_accessor_ids: set = {
     "dataset:netcdf:file",

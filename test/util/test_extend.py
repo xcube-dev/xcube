@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 
@@ -104,7 +104,7 @@ class ExtendTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             extend(MyBase, "my_ext")(MyExt)
         self.assertEqual(
-            "a property named my_ext" " already exists in class MyBase",
+            "a property named my_ext already exists in class MyBase",
             f"{cm.exception}",
         )
 
@@ -118,7 +118,7 @@ class ExtendTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             extend(MyBase, "my ext")(MyExt)
         self.assertEqual(
-            "name must be a valid identifier," " but was 'my ext'", f"{cm.exception}"
+            "name must be a valid identifier, but was 'my ext'", f"{cm.exception}"
         )
 
     def test_illegal_base_class(self):
@@ -129,7 +129,7 @@ class ExtendTest(unittest.TestCase):
             # noinspection PyTypeChecker
             extend("base_class", "my_ext")(MyExt)
         self.assertEqual(
-            "base_class must be a class type," " but was str", f"{cm.exception}"
+            "base_class must be a class type, but was str", f"{cm.exception}"
         )
 
     def test_illegal_ext_class(self):
@@ -140,5 +140,5 @@ class ExtendTest(unittest.TestCase):
             # noinspection PyTypeChecker
             extend(MyBase, "my_ext")("ext_class")
         self.assertEqual(
-            "the extend() decorator" " can be used with classes only", f"{cm.exception}"
+            "the extend() decorator can be used with classes only", f"{cm.exception}"
         )

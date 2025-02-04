@@ -1,6 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 """
 A simple processing remote compatible with the actual xcube Generator
@@ -18,7 +18,7 @@ import json
 import os
 import os.path
 import subprocess
-from typing import Dict, Any, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import click
 import flask
@@ -27,8 +27,7 @@ import werkzeug.exceptions
 import yaml
 
 from xcube.core.gen2.request import CubeGeneratorRequest
-from xcube.util.temp import new_temp_dir
-from xcube.util.temp import new_temp_file
+from xcube.util.temp import new_temp_dir, new_temp_file
 
 Job = tuple[
     subprocess.Popen,  # process

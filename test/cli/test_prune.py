@@ -1,17 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
-import numpy as np
 import os.path
 import sys
+from test.cli.helpers import CliTest
 
+import numpy as np
 import xarray as xr
 
-from test.cli.helpers import CliTest
 from xcube.cli.prune import _delete_block_file
-from xcube.core.dsio import rimraf
-from xcube.core.dsio import write_cube
+from xcube.core.dsio import rimraf, write_cube
 from xcube.core.new import new_cube
 from xcube.core.verify import assert_cube
 
@@ -147,7 +146,7 @@ class PruneDataTest(CliTest):
         file_path = os.path.join(self.TEST_CUBE, "precipitation", "0.3.76")
         dir_path = os.path.join(self.TEST_CUBE, "precipitation", "0", "3", "76")
         self.assertEqual(
-            f"Could find neither block file " f"{file_path} nor " f"{dir_path}",
+            f"Could find neither block file {file_path} nor {dir_path}",
             actual_message,
         )
 

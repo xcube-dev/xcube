@@ -1,13 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 from xcube.core.store.fs.accessor import COMMON_STORAGE_OPTIONS_SCHEMA_PROPERTIES
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonComplexSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonComplexSchema,
+    JsonIntegerSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 
 REF_STORE_SCHEMA = JsonObjectSchema(
     properties=dict(

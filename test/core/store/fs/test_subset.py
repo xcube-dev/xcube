@@ -1,15 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
-# Permissions are hereby granted under the terms of the MIT License:
-# https://opensource.org/licenses/MIT.
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
 
 import unittest
 from abc import ABC, abstractmethod
+from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from typing import Tuple
 
 import fsspec
 
-from test.s3test import MOTO_SERVER_ENDPOINT_URL
-from test.s3test import S3Test
 from xcube.core.new import new_cube
 from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
