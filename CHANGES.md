@@ -1,3 +1,13 @@
+## Changes in 1.8.3 (in development)
+
+### Other changes
+
+* Reformatted code base according to the default settings used by 
+  [isort](https://pycqa.github.io/isort/) and
+  [ruff](https://docs.astral.sh/ruff/). Updated development 
+  dependencies accordingly.
+* Updated copyright notices.
+
 ## Changes in 1.8.2
 
 * Bundled xcube Viewer 
