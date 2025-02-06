@@ -5,7 +5,7 @@
 import urllib.parse
 import warnings
 from collections.abc import Mapping
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import pyproj
@@ -23,6 +23,7 @@ from xcube.core.tilingscheme import (
 from xcube.webapi.common.xml import Document, Element
 
 from .context import WmtsContext
+from ...datasets.context import DatasetsContext
 
 WMTS_VERSION = "1.0.0"
 WMTS_URL_PREFIX = f"wmts/{WMTS_VERSION}"
@@ -246,9 +247,8 @@ def get_dim_elements(
 def get_ds_theme_element(
     ds_name: str, ds: xr.Dataset, dataset_config: Mapping[str, Any]
 ) -> Element:
-    ds_title = dataset_config.get("Title", ds.attrs.get("title", ds_name))
-    ds_abstract = dataset_config.get(
-        "Abstract", ds.attrs.get("abstract", ds.attrs.get("comment", ""))
+    ds_title, ds_abstract = DatasetsContext.get_dataset_title_and_description(
+        ds, dataset_config
     )
     return Element(
         "Theme",
@@ -268,11 +268,10 @@ def get_var_layer_and_theme_element(
     var_tile_url_templ_pattern: str,
     tms_id: str,
 ) -> tuple[Element, Element]:
-    var_id = f"{ds_name}.{var_name}"
-    var_title = (
-        ds_name + "/" + var.attrs.get("title", var.attrs.get("long_name", var_name))
+    var_title, var_abstract = DatasetsContext.get_variable_title_and_description(
+        var_name, var
     )
-    var_abstract = var.attrs.get("comment", var.attrs.get("abstract", ""))
+    var_id = f"{ds_name}.{var_name}"
     var_theme_element = Element(
         "Theme",
         elements=[

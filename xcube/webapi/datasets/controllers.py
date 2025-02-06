@@ -6,7 +6,7 @@ import functools
 import io
 import json
 from collections.abc import Mapping
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Optional
 
 import matplotlib.colorbar
 import matplotlib.colors
@@ -220,9 +220,9 @@ def get_dataset(
         spatial_var_names = filter_variable_names(spatial_var_names, var_name_patterns)
         if not spatial_var_names:
             LOG.warning(
-                f"No variable matched any of the patterns given"
-                f' in the "Variables" filter.'
-                f' You may specify a wildcard "*" as last item.'
+                "No variable matched any of the patterns given"
+                ' in the "Variables" filter.'
+                ' You may specify a wildcard "*" as last item.'
             )
 
     for var_name in spatial_var_names:
@@ -326,7 +326,7 @@ def get_dataset(
 def _update_dataset_title_properties(
     dataset_config: Mapping[str, Any], dataset_dict: dict[str, Any]
 ):
-    for dc_key in ("Title", "GroupTitle", "Tags"):
+    for dc_key in ("Title", "Description", "GroupTitle", "Tags"):
         dd_key = dc_key[0].lower() + dc_key[1:]
         if dc_key in dataset_config:
             # Note, dataset_config is validated
