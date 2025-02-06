@@ -71,7 +71,7 @@ sort imports statements as follows:
    e.g., `from xcube.a.b.c import d`. 
 1. 1st-party xcube module imports from local modules: 
    Relative imports such as `from .c import d` are ok
-   while `..c import d` are not ok.
+   while `from ..c import d` are not ok.
 
 ### Line length
 
