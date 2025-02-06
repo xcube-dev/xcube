@@ -1,18 +1,21 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import hashlib
 from typing import Optional
 
-from xcube.server.api import ApiHandler, ApiError
+from xcube.server.api import ApiError, ApiHandler
+
 from .api import api
 from .context import S3Context
-from .listbucket import _LAST_MODIFIED_DUMMY
-from .listbucket import dict_to_xml
-from .listbucket import list_bucket_result_to_xml
-from .listbucket import list_s3_bucket_v1
-from .listbucket import list_s3_bucket_v2
+from .listbucket import (
+    _LAST_MODIFIED_DUMMY,
+    dict_to_xml,
+    list_bucket_result_to_xml,
+    list_s3_bucket_v1,
+    list_s3_bucket_v2,
+)
 
 BUCKET_PARAMETER = {
     "name": "bucket",

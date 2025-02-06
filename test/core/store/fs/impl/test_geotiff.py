@@ -1,9 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os.path
 import unittest
+from test.s3test import S3Test
 
 import fsspec
 import rasterio as rio
@@ -12,10 +13,11 @@ import s3fs
 import xarray
 import xarray as xr
 
-from test.s3test import S3Test
 from xcube.core.store.fs.impl.dataset import DatasetGeoTiffFsDataAccessor
-from xcube.core.store.fs.impl.geotiff import GeoTIFFMultiLevelDataset
-from xcube.core.store.fs.impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
+from xcube.core.store.fs.impl.geotiff import (
+    GeoTIFFMultiLevelDataset,
+    MultiLevelDatasetGeoTiffFsDataAccessor,
+)
 from xcube.util.jsonschema import JsonSchema
 
 

@@ -1,10 +1,8 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-
+from xcube.util.jsonschema import JsonIntegerSchema, JsonObjectSchema
 
 COMPUTE_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(

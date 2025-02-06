@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,14 +9,14 @@ import pyproj
 import pyproj.transformer as pt
 import xarray as xr
 
-from .base import DEFAULT_TOLERANCE
-from .base import GridMapping
+from .base import DEFAULT_TOLERANCE, GridMapping
 from .coords import new_grid_mapping_from_coords
-from .helpers import _assert_valid_xy_names
-from .helpers import _normalize_number_pair
-from .helpers import Number
-from .helpers import _normalize_crs
-
+from .helpers import (
+    Number,
+    _assert_valid_xy_names,
+    _normalize_crs,
+    _normalize_number_pair,
+)
 
 # Cannot be used, but should, see TODO in transform_grid_mapping()
 #

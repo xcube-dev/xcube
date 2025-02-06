@@ -1,11 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import math
 from fractions import Fraction
-from typing import Any
-from typing import Tuple, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 import affine
 import dask.array as da
@@ -13,9 +12,7 @@ import numpy as np
 import pyproj.crs
 import xarray as xr
 
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.util.assertions import assert_given, assert_instance, assert_true
 from xcube.util.undefined import UNDEFINED
 
 Number = Union[int, float]
@@ -63,7 +60,7 @@ def _normalize_int_pair(
         return default
     else:
         assert_given(name, "name")
-        raise ValueError(f"{name} must be an int" f" or a sequence of two ints")
+        raise ValueError(f"{name} must be an int or a sequence of two ints")
 
 
 def _normalize_number_pair(
@@ -79,7 +76,7 @@ def _normalize_number_pair(
         return default
     else:
         assert_given(name, "name")
-        raise ValueError(f"{name} must be a number" f" or a sequence of two numbers")
+        raise ValueError(f"{name} must be a number or a sequence of two numbers")
 
 
 def to_lon_360(lon_var: Union[np.ndarray, da.Array, xr.DataArray]):
@@ -110,7 +107,7 @@ def _assert_valid_xy_names(value: Any, name: str = None):
     assert_instance(value, tuple, name=name)
     assert_true(
         len(value) == 2 and all(value) and value[0] != value[1],
-        f'invalid {name or "value"}',
+        f"invalid {name or 'value'}",
     )
 
 

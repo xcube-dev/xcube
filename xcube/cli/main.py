@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,12 +9,12 @@ import click
 from xcube.cli.common import (
     cli_option_scheduler,
     cli_option_traceback,
-    handle_cli_exception,
-    new_cli_ctx_obj,
     configure_logging,
     configure_warnings,
+    handle_cli_exception,
+    new_cli_ctx_obj,
 )
-from xcube.constants import EXTENSION_POINT_CLI_COMMANDS, LOG_LEVELS, LOG_LEVEL_OFF_NAME
+from xcube.constants import EXTENSION_POINT_CLI_COMMANDS, LOG_LEVEL_OFF_NAME, LOG_LEVELS
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
 
@@ -31,7 +31,7 @@ from xcube.version import version
     type=click.Choice(LOG_LEVELS),
     default=LOG_LEVEL_OFF_NAME,
     help=f"Log level."
-    f' Must be one of {", ".join(LOG_LEVELS)}.'
+    f" Must be one of {', '.join(LOG_LEVELS)}."
     f" Defaults to {LOG_LEVEL_OFF_NAME}."
     f" If the level is not {LOG_LEVEL_OFF_NAME},"
     f" any log messages up to the given level will be"
@@ -54,8 +54,7 @@ from xcube.version import version
     "--warnings",
     "-w",
     is_flag=True,
-    help="Show any warnings emitted during operation"
-    " (warnings are hidden by default).",
+    help="Show any warnings emitted during operation (warnings are hidden by default).",
 )
 def cli(traceback=False, scheduler=None, log_level=None, log_file=None, warnings=None):
     """xcube Toolkit"""

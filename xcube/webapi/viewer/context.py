@@ -1,17 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import sys
+from collections.abc import Mapping, MutableMapping
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
-from typing import Optional, Any
-from collections.abc import Mapping, MutableMapping
-import sys
+from typing import Any, Optional
 
-from chartlets import Extension
-from chartlets import ExtensionContext
 import fsspec
+from chartlets import Extension, ExtensionContext
 
 from xcube.constants import LOG
 from xcube.server.api import Context

@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -11,9 +11,9 @@ from xcube.util.assertions import assert_instance
 from xcube.util.fspath import is_local_fs
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.temp import new_temp_file
+
+from ...datatype import GEO_DATA_FRAME_TYPE, DataType
 from ..accessor import FsDataAccessor
-from ...datatype import DataType
-from ...datatype import GEO_DATA_FRAME_TYPE
 
 
 class GeoDataFrameFsDataAccessor(FsDataAccessor):

@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -7,19 +7,12 @@ from typing import Optional
 
 import pytest
 
-from xcube.server.api import Api
-from xcube.server.api import ApiContext
-from xcube.server.api import ApiHandler
-from xcube.server.api import ApiRoute
-from xcube.server.api import Context
-from xcube.server.api import ApiError
+from xcube.server.api import Api, ApiContext, ApiError, ApiHandler, ApiRoute, Context
 from xcube.server.server import ServerContext
 from xcube.util.frozen import FrozenDict
 from xcube.util.undefined import UNDEFINED
-from .mocks import MockApiRequest
-from .mocks import MockApiResponse
-from .mocks import MockFramework
-from .mocks import mock_server
+
+from .mocks import MockApiRequest, MockApiResponse, MockFramework, mock_server
 
 
 class ApiTest(unittest.TestCase):

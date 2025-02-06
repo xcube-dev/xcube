@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -8,9 +8,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from xcube.core.extract import get_cube_point_indexes
-from xcube.core.extract import get_cube_values_for_points
-from xcube.core.extract import get_dataset_indexes
+from xcube.core.extract import (
+    get_cube_point_indexes,
+    get_cube_values_for_points,
+    get_dataset_indexes,
+)
 from xcube.core.new import new_cube
 
 
@@ -150,8 +152,7 @@ class GetDatasetIndexesTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             get_dataset_indexes(cell, "lon", np.array([-149.5]))
         self.assertEqual(
-            "cannot determine cell boundaries"
-            " for coordinate variable 'lon' of size 1",
+            "cannot determine cell boundaries for coordinate variable 'lon' of size 1",
             f"{cm.exception}",
         )
 

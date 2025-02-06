@@ -1,12 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.webapi.common.schemas import IDENTIFIER_SCHEMA
-from xcube.webapi.common.schemas import PATH_SCHEMA
-from xcube.webapi.common.schemas import STRING_SCHEMA
+from xcube.util.jsonschema import JsonArraySchema, JsonObjectSchema
+from xcube.webapi.common.schemas import IDENTIFIER_SCHEMA, PATH_SCHEMA, STRING_SCHEMA
 
 PLACE_GROUP_JOIN_SCHEMA = JsonObjectSchema(
     properties=dict(

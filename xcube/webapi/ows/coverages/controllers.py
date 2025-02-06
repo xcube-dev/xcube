@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 import os
 import re
 import tempfile
-from typing import Optional, Any, Literal, NamedTuple, Union
 from collections.abc import Mapping, Sequence
+from typing import Any, Literal, NamedTuple, Optional, Union
 
 import numpy as np
 import pyproj
@@ -192,7 +192,7 @@ def _apply_properties(collection_id, ds, properties):
     else:
         raise ApiError.BadRequest(
             f"The following properties are not present in the coverage "
-            f'{collection_id}: {", ".join(unrecognized_vars)}'
+            f"{collection_id}: {', '.join(unrecognized_vars)}"
         )
     return ds
 
@@ -202,7 +202,7 @@ def _assert_coverage_size_ok(scaling: CoverageScaling):
     x, y = scaling.size
     if (x * y) > size_limit:
         raise ApiError.ContentTooLarge(
-            f"Requested coverage is too large:" f"{x} × {y} > {size_limit}."
+            f"Requested coverage is too large:{x} × {y} > {size_limit}."
         )
 
 

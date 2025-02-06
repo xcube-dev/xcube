@@ -1,28 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
+from collections.abc import Container, Iterator
 from typing import Any, Optional, Union
-from collections.abc import Iterator, Container
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
-from xcube.util.extension import Extension
-from xcube.util.extension import ExtensionPredicate
-from xcube.util.extension import ExtensionRegistry
+from xcube.util.extension import Extension, ExtensionPredicate, ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
-from .accessor import DataOpener
-from .accessor import DataPreloader
-from .accessor import DataWriter
+
+from .accessor import DataOpener, DataPreloader, DataWriter
 from .assertions import assert_valid_params
 from .datatype import DataTypeLike
 from .descriptor import DataDescriptor
 from .error import DataStoreError
-from .preload import PreloadHandle
-from .preload import NullPreloadHandle
+from .preload import NullPreloadHandle, PreloadHandle
 from .search import DataSearcher
-
 
 #######################################################
 # Data store instantiation and registry query
@@ -73,8 +68,7 @@ def get_data_store_class(
     extension_registry = extension_registry or get_extension_registry()
     if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
         raise DataStoreError(
-            f'Unknown data store "{data_store_id}"'
-            f" (may be due to missing xcube plugin)"
+            f'Unknown data store "{data_store_id}" (may be due to missing xcube plugin)'
         )
     return extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,14 +9,14 @@ from typing import List
 import click
 import click.testing
 
-from xcube.cli.grid import grid as cli
 from xcube.cli.grid import (
     factor_out_two,
+    find_close_resolutions,
     get_adjusted_box,
     get_levels,
-    meters_to_degrees,
-    find_close_resolutions,
 )
+from xcube.cli.grid import grid as cli
+from xcube.cli.grid import meters_to_degrees
 
 
 class GridToolsTest(unittest.TestCase):

@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -8,9 +8,9 @@ import itertools
 import os
 import os.path
 import warnings
-from functools import cached_property
-from typing import Any, Optional, Callable, Union
 from collections.abc import Collection, Mapping
+from functools import cached_property
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -18,31 +18,37 @@ import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.mldataset import IdentityMultiLevelDataset
-from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.mldataset import augment_ml_dataset
-from xcube.core.mldataset import open_ml_dataset_from_python_code
-from xcube.core.store import DATASET_TYPE
-from xcube.core.store import DataStoreConfig
-from xcube.core.store import DataStorePool
-from xcube.core.store import DatasetDescriptor
-from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
-from xcube.core.tile import get_var_cmap_params
-from xcube.core.tile import get_var_valid_range
-from xcube.core.tile import DEFAULT_CMAP_NAME
-from xcube.core.tile import DEFAULT_CMAP_NORM
-from xcube.core.tile import DEFAULT_VALUE_RANGE
+from xcube.core.mldataset import (
+    BaseMultiLevelDataset,
+    IdentityMultiLevelDataset,
+    MultiLevelDataset,
+    augment_ml_dataset,
+    open_ml_dataset_from_python_code,
+)
+from xcube.core.store import (
+    DATASET_TYPE,
+    MULTI_LEVEL_DATASET_TYPE,
+    DatasetDescriptor,
+    DataStoreConfig,
+    DataStorePool,
+)
+from xcube.core.tile import (
+    DEFAULT_CMAP_NAME,
+    DEFAULT_CMAP_NORM,
+    DEFAULT_VALUE_RANGE,
+    get_var_cmap_params,
+    get_var_valid_range,
+)
 from xcube.core.varexpr import split_var_assignment
-from xcube.server.api import Context, ApiError
-from xcube.server.api import ServerConfig
+from xcube.server.api import ApiError, Context, ServerConfig
 from xcube.server.config import is_absolute_path
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
+from xcube.util.assertions import assert_given, assert_instance
 from xcube.util.cache import parse_mem_size
-from xcube.util.cmaps import ColormapRegistry
-from xcube.util.cmaps import load_custom_colormap
-from xcube.util.cmaps import create_colormap_from_config
+from xcube.util.cmaps import (
+    ColormapRegistry,
+    create_colormap_from_config,
+    load_custom_colormap,
+)
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.places import PlacesContext
 
@@ -240,7 +246,7 @@ class DatasetsContext(ResourcesContext):
             for var_name in expected_var_names:
                 if var_name not in dataset:
                     raise ApiError.NotFound(
-                        f'Variable "{var_name}" not found' f' in dataset "{ds_id}"'
+                        f'Variable "{var_name}" not found in dataset "{ds_id}"'
                     )
         return dataset
 
@@ -266,13 +272,12 @@ class DatasetsContext(ResourcesContext):
         index = ml_dataset.num_levels - 1 - z_index
         if index < 0 or index >= ml_dataset.num_levels:
             raise ApiError.NotFound(
-                f'Variable "{var_name}" has no z-index {z_index}'
-                f' in dataset "{ds_id}"'
+                f'Variable "{var_name}" has no z-index {z_index} in dataset "{ds_id}"'
             )
         dataset = ml_dataset.get_dataset(index)
         if var_name not in dataset:
             raise ApiError.NotFound(
-                f'Variable "{var_name}" not found' f' in dataset "{ds_id}"'
+                f'Variable "{var_name}" not found in dataset "{ds_id}"'
             )
         return dataset[var_name]
 
@@ -504,7 +509,6 @@ class DatasetsContext(ResourcesContext):
     def get_color_mapping(
         self, ds_id: str, var_name: str
     ) -> tuple[str, str, tuple[float, float]]:
-
         if split_var_assignment(var_name)[1]:
             # var_name is an assignment expression, the result is unknown yet,
             # so we must return default values here.
@@ -646,9 +650,7 @@ class DatasetsContext(ResourcesContext):
                 open_params["data_type"] = "mldataset"
 
             with self.measure_time(
-                tag=f"Opened dataset {ds_id!r}"
-                f" from data store"
-                f" {store_instance_id!r}"
+                tag=f"Opened dataset {ds_id!r} from data store {store_instance_id!r}"
             ):
                 dataset = data_store.open_data(data_id, **open_params)
 
@@ -665,14 +667,10 @@ class DatasetsContext(ResourcesContext):
             fs_type = dataset_config.get("FileSystem")
             if fs_type != "memory":
                 raise ApiError.InvalidServerConfig(
-                    f"Invalid FileSystem {fs_type!r}"
-                    f" in dataset configuration"
-                    f" {ds_id!r}"
+                    f"Invalid FileSystem {fs_type!r} in dataset configuration {ds_id!r}"
                 )
 
-            with self.measure_time(
-                tag=f"Opened dataset {ds_id!r}" f" from {fs_type!r}"
-            ):
+            with self.measure_time(tag=f"Opened dataset {ds_id!r} from {fs_type!r}"):
                 ml_dataset = _open_ml_dataset_from_python_code(self, dataset_config)
 
         augmentation = dataset_config.get("Augmentation")
@@ -753,7 +751,7 @@ class DatasetsContext(ResourcesContext):
         ds = self.get_dataset(ds_name)
         if dim_name not in ds.coords:
             raise ApiError.NotFound(
-                f"Dimension {dim_name!r} has no coordinates" f" in dataset {ds_name!r}"
+                f"Dimension {dim_name!r} has no coordinates in dataset {ds_name!r}"
             )
         return ds, ds.coords[dim_name]
 
@@ -850,7 +848,7 @@ def _open_ml_dataset_from_python_code(
     chunk_cache_capacity = ctx.get_dataset_chunk_cache_capacity(dataset_config)
     if chunk_cache_capacity:
         warnings.warn(
-            "chunk cache size is not effective for" " datasets computed from scripts"
+            "chunk cache size is not effective for datasets computed from scripts"
         )
     for input_dataset_id in input_dataset_ids:
         if not ctx.get_dataset_config(input_dataset_id):

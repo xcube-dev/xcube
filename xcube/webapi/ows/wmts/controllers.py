@@ -1,25 +1,27 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import urllib.parse
 import warnings
-from typing import Dict, List, Tuple, Any
 from collections.abc import Mapping
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pyproj
 import xarray as xr
 
+from xcube.constants import CRS_CRS84
 from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.tilingscheme import EARTH_CIRCUMFERENCE_WGS84
-from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
-from xcube.core.tilingscheme import TilingScheme
-from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
-from xcube.webapi.common.xml import Document
-from xcube.webapi.common.xml import Element
-from xcube.constants import CRS_CRS84
+from xcube.core.tilingscheme import (
+    EARTH_CIRCUMFERENCE_WGS84,
+    GEOGRAPHIC_CRS_NAME,
+    WEB_MERCATOR_CRS_NAME,
+    TilingScheme,
+)
+from xcube.webapi.common.xml import Document, Element
+
 from .context import WmtsContext
 
 WMTS_VERSION = "1.0.0"
@@ -41,7 +43,7 @@ _STD_PIXEL_SIZE_IN_METERS = 0.28e-3
 # '/tile/%s/%s/%s/' is the pattern for
 # '/tile/{ds_name}/{var_name}/{tms_id}/'
 _TILE_URL_TEMPLATE = (
-    WMTS_URL_PREFIX + "/tile/%s/%s/%s/" "{TileMatrix}/" "{TileRow}/" "{TileCol}.png"
+    WMTS_URL_PREFIX + "/tile/%s/%s/%s/{TileMatrix}/{TileRow}/{TileCol}.png"
 )
 
 
@@ -93,8 +95,7 @@ def get_capabilities_element(ctx: WmtsContext, base_url: str, tms_id: str) -> El
             crs84_bbox = get_crs84_bbox(grid_mapping)
         except ValueError:
             warnings.warn(
-                f"cannot compute geographical"
-                f" bounds for dataset {ds_name}, ignoring it"
+                f"cannot compute geographical bounds for dataset {ds_name}, ignoring it"
             )
             continue
 
@@ -297,11 +298,11 @@ def get_var_layer_and_theme_element(
                 elements=[
                     Element(
                         "ows:LowerCorner",
-                        text=f"{var_geo_bbox[0]}" f" {var_geo_bbox[1]}",
+                        text=f"{var_geo_bbox[0]} {var_geo_bbox[1]}",
                     ),
                     Element(
                         "ows:UpperCorner",
-                        text=f"{var_geo_bbox[2]}" f" {var_geo_bbox[3]}",
+                        text=f"{var_geo_bbox[2]} {var_geo_bbox[3]}",
                     ),
                 ],
             ),
@@ -640,7 +641,7 @@ def get_service_identification_element():
             Element("ows:Title", text="xcube WMTS"),
             Element(
                 "ows:Abstract",
-                text="Web Map Tile Service (WMTS)" " for xcube-conformant data cubes",
+                text="Web Map Tile Service (WMTS) for xcube-conformant data cubes",
             ),
             Element(
                 "ows:Keywords",
@@ -680,7 +681,7 @@ def get_crs84_bbox(grid_mapping: GridMapping) -> tuple[float, float, float, floa
     coords = np.array([np.nanmin(x), np.nanmin(y), np.nanmax(x), np.nanmax(y)])
     if not np.all(np.isfinite(coords)):
         raise ValueError(
-            "grid mapping bbox cannot" " be represented in geographical coordinates"
+            "grid mapping bbox cannot be represented in geographical coordinates"
         )
     # noinspection PyTypeChecker
     return tuple(map(float, coords))

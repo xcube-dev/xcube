@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -7,9 +7,7 @@ from typing import Tuple
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
-
-from xcube.webapi.compute.op.decorator import operation
-from xcube.webapi.compute.op.decorator import op_param
+from xcube.webapi.compute.op.decorator import op_param, operation
 
 
 @operation

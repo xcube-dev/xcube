@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -30,7 +30,6 @@ class ViewerConfigRoutesTest(RoutesTestCase):
 
 
 class ViewerStateRoutesNoConfigTest(RoutesTestCase):
-
     def test_get(self):
         response = self.fetch("/viewer/state")
         self.assertEqual(501, response.status)
@@ -43,7 +42,6 @@ class ViewerStateRoutesNoConfigTest(RoutesTestCase):
 
 
 class ViewerStateRoutesTest(RoutesTestCase):
-
     def get_config_filename(self) -> str:
         return "config-persistence.yml"
 
@@ -84,7 +82,6 @@ class ViewerStateRoutesTest(RoutesTestCase):
 
 
 class ViewerExtRoutesTest(RoutesTestCase):
-
     def setUp(self) -> None:
         super().setUp()
         self.maxDiff = None
@@ -138,7 +135,6 @@ class ViewerExtRoutesTest(RoutesTestCase):
 
 
 class ViewerExtRoutesWithDefaultConfigTest(RoutesTestCase):
-
     def setUp(self) -> None:
         super().setUp()
         self.maxDiff = None

@@ -1,12 +1,12 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 import fnmatch
 import functools
 import io
 import json
-from typing import Dict, Tuple, List, Set, Optional, Any, Callable
 from collections.abc import Mapping
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import matplotlib.colorbar
 import matplotlib.colors
@@ -15,23 +15,22 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.constants import LOG
-from xcube.core.geom import get_dataset_bounds
-from xcube.core.geom import get_dataset_geometry
+from xcube.constants import CRS_CRS84, LOG
+from xcube.core.geom import get_dataset_bounds, get_dataset_geometry
 from xcube.core.normalize import DatasetIsNotACubeError
 from xcube.core.store import DataStoreError
 from xcube.core.tilingscheme import TilingScheme
 from xcube.core.timecoord import timestamp_to_iso_string
 from xcube.server.api import ApiError
-from xcube.constants import CRS_CRS84
-from .authutil import READ_ALL_DATASETS_SCOPE
-from .authutil import READ_ALL_VARIABLES_SCOPE
-from .authutil import assert_scopes
-from .authutil import check_scopes
-from .context import DatasetConfig
-from .context import DatasetsContext
-from ..places.controllers import GeoJsonFeatureCollection
-from ..places.controllers import find_places
+
+from ..places.controllers import GeoJsonFeatureCollection, find_places
+from .authutil import (
+    READ_ALL_DATASETS_SCOPE,
+    READ_ALL_VARIABLES_SCOPE,
+    assert_scopes,
+    check_scopes,
+)
+from .context import DatasetConfig, DatasetsContext
 
 
 def find_dataset_places(
@@ -419,7 +418,7 @@ def get_time_chunk_size(
             return max(*time_chunks)
         else:
             LOG.warning(
-                f"variable {var_name!r} not" f" found in time-chunked dataset {ds_id!r}"
+                f"variable {var_name!r} not found in time-chunked dataset {ds_id!r}"
             )
     return None
 
@@ -509,7 +508,7 @@ def get_color_bars(ctx: DatasetsContext, mime_type: str) -> str:
             + '<body style="padding: 0.2em; font-family: sans-serif">\n'
         )
         html_body = ""
-        html_foot = "</body>\n" "</html>\n"
+        html_foot = "</body>\n</html>\n"
         for cmap_cat, cmap_desc, cmap_bars in cmaps:
             html_body += "    <h2>%s</h2>\n" % cmap_cat
             html_body += "    <p>%s</p>\n" % cmap_desc
@@ -524,9 +523,7 @@ def get_color_bars(ctx: DatasetsContext, mime_type: str) -> str:
                     f' width="100%%"'
                     f' height="24"/>'
                 )
-                name_cell = (
-                    f'<td style="width: 5em">' f"<code>{cmap_name}</code>" f"</td>"
-                )
+                name_cell = f'<td style="width: 5em"><code>{cmap_name}</code></td>'
                 image_cell = f'<td style="width: 40em">{cmap_image}</td>'
                 row = f"<tr>{name_cell}{image_cell}</tr>\n"
                 html_body += f"        {row}\n"

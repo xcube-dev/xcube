@@ -1,46 +1,36 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
 import concurrent.futures
 import copy
-from typing import (
-    Optional,
-    Dict,
-    Any,
-    Union,
-    Callable,
-    Tuple,
-    Type,
-    List,
-)
-from collections.abc import Sequence, Awaitable, Mapping
+from collections.abc import Awaitable, Mapping, Sequence
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import jsonschema.exceptions
 
-from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.constants import LOG
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_subclass
+from xcube.constants import EXTENSION_POINT_SERVER_APIS, LOG
+from xcube.util.assertions import assert_instance, assert_subclass
 from xcube.util.extension import ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
 from xcube.version import version
-from .api import Api
-from .api import ApiContext
-from .api import ApiContextT
-from .api import ApiRoute
-from .api import ApiStaticRoute
-from .api import Context
-from .api import ReturnT
-from .api import ServerConfig
-from .asyncexec import AsyncExecution
-from .config import BASE_SERVER_CONFIG_SCHEMA
-from .config import get_url_prefix
-from .config import resolve_config_path
-from .framework import Framework
+
 from ..util.frozen import FrozenDict
+from .api import (
+    Api,
+    ApiContext,
+    ApiContextT,
+    ApiRoute,
+    ApiStaticRoute,
+    Context,
+    ReturnT,
+    ServerConfig,
+)
+from .asyncexec import AsyncExecution
+from .config import BASE_SERVER_CONFIG_SCHEMA, get_url_prefix, resolve_config_path
+from .framework import Framework
 
 
 class Server(AsyncExecution):
@@ -219,8 +209,7 @@ class Server(AsyncExecution):
                 for req_api_name in api.required_apis:
                     if req_api_name not in api_lookup:
                         raise ValueError(
-                            f"API {api.name!r}: missing API"
-                            f" dependency {req_api_name!r}"
+                            f"API {api.name!r}: missing API dependency {req_api_name!r}"
                         )
 
         assert_required_apis_available()
@@ -304,9 +293,7 @@ class Server(AsyncExecution):
         for k, v in config_schema_update.properties.items():
             if k in config_schema.properties:
                 raise ValueError(
-                    f"{schema_name}:"
-                    f" configuration parameter {k!r}"
-                    f" is already defined."
+                    f"{schema_name}: configuration parameter {k!r} is already defined."
                 )
             config_schema.properties[k] = v
         if config_schema_update.required:

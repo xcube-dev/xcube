@@ -1,17 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import List, Any, Dict
+from test.util.test_progress import _TestProgressObserver
+from typing import Any, Dict, List
 
 import requests_mock
 
-from test.util.test_progress import _TestProgressObserver
-from xcube.core.gen2 import CostEstimation
-from xcube.core.gen2 import CubeGenerator
-from xcube.core.gen2 import CubeInfoWithCosts
-from xcube.core.gen2 import ServiceConfig
+from xcube.core.gen2 import (
+    CostEstimation,
+    CubeGenerator,
+    CubeInfoWithCosts,
+    ServiceConfig,
+)
 from xcube.core.gen2.remote.generator import RemoteCubeGenerator
 from xcube.core.gen2.remote.response import CubeInfoWithCostsResult
 from xcube.core.store import DatasetDescriptor

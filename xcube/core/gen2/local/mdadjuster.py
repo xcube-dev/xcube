@@ -1,17 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 import pandas as pd
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.version import version
-from .transformer import CubeTransformer
-from .transformer import TransformedCube
+
 from ..config import CubeConfig
+from .transformer import CubeTransformer, TransformedCube
 
 
 class CubeMetadataAdjuster(CubeTransformer):
@@ -56,7 +56,7 @@ class CubeMetadataAdjuster(CubeTransformer):
         if key in metadata and metadata[key] != value:
             # Note, this is an easter egg that causes
             # an intended internal error for testing
-            raise ValueError(f"{key} must be {value}" f" or running in wrong universe")
+            raise ValueError(f"{key} must be {value} or running in wrong universe")
 
 
 def get_geospatial_attrs(gm: GridMapping) -> dict[str, Any]:

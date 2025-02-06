@@ -1,24 +1,25 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from test.sampledata import create_highroc_dataset
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from test.sampledata import create_highroc_dataset
 from xcube.core.new import new_cube
-from xcube.core.timecoord import add_time_coords
-from xcube.core.timecoord import from_time_in_days_since_1970
-from xcube.core.timecoord import get_end_time_from_attrs
-from xcube.core.timecoord import get_start_time_from_attrs
-from xcube.core.timecoord import get_time_range_from_attrs
-from xcube.core.timecoord import get_time_range_from_data
-from xcube.core.timecoord import timestamp_to_iso_string
-from xcube.core.timecoord import to_time_in_days_since_1970
-
+from xcube.core.timecoord import (
+    add_time_coords,
+    from_time_in_days_since_1970,
+    get_end_time_from_attrs,
+    get_start_time_from_attrs,
+    get_time_range_from_attrs,
+    get_time_range_from_data,
+    timestamp_to_iso_string,
+    to_time_in_days_since_1970,
+)
 
 # from xcube.core.timecoord import find_datetime_format
 # from xcube.core.timecoord import get_timestamp_from_string

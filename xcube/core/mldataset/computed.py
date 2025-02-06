@@ -1,21 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os.path
 import uuid
+from collections.abc import Mapping, Sequence
 from typing import Any, Callable, Optional
-from collections.abc import Sequence, Mapping
 
 import xarray as xr
 
-from xcube.core.byoa import CodeConfig
-from xcube.core.byoa import FileSet
+from xcube.core.byoa import CodeConfig, FileSet
 from xcube.core.gridmapping import GridMapping
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.util.assertions import assert_given, assert_instance, assert_true
 from xcube.util.perf import measure_time
+
 from .abc import MultiLevelDataset
 from .lazy import LazyMultiLevelDataset
 
@@ -142,7 +140,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         ]
         try:
             with measure_time(
-                f"Computed in-memory dataset" f" {self.ds_id!r} at level {index}"
+                f"Computed in-memory dataset {self.ds_id!r} at level {index}"
             ):
                 computed_value = self._callable_obj(*input_datasets, **parameters)
         except Exception as e:
@@ -171,8 +169,8 @@ def augment_ml_dataset(
     is_factory: bool = False,
     exception_type: type = ValueError,
 ):
-    from .identity import IdentityMultiLevelDataset
     from .combined import CombinedMultiLevelDataset
+    from .identity import IdentityMultiLevelDataset
 
     with measure_time(f"Added augmentation from {script_path}"):
         orig_id = ml_dataset.ds_id

@@ -1,15 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os.path
+from test.cli.helpers import TEST_ZARR_DIR, CliDataTest
 from typing import List
 
 import fiona
 import pandas as pd
-
-from test.cli.helpers import CliDataTest
-from test.cli.helpers import TEST_ZARR_DIR
 
 TEST_CSV = os.path.join(os.path.dirname(__file__), "out.csv")
 TEST_GEOJSON = os.path.join(os.path.dirname(__file__), "out.geojson")

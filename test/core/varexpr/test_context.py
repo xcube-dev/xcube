@@ -1,15 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
 
+import numpy as np
 import pytest
 import xarray as xr
-import numpy as np
 
-from xcube.core.varexpr import VarExprContext
-from xcube.core.varexpr import VarExprError
+from xcube.core.varexpr import VarExprContext, VarExprError
 from xcube.core.varexpr.exprvar import ExprVar
 
 var_a_data = np.array([[0, 1], [2, 3]])

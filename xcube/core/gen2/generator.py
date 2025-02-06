@@ -1,22 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import traceback
 from abc import ABC, abstractmethod
-from typing import Optional, TypeVar, Type
+from typing import Optional, Type, TypeVar
 
-from xcube.core.store import DataStorePool
-from xcube.core.store import DataStorePoolLike
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.core.store import DataStorePool, DataStorePoolLike
+from xcube.util.assertions import assert_instance, assert_true
+
 from .error import CubeGeneratorError
 from .progress import ConsoleProgressObserver
 from .remote.config import ServiceConfigLike
 from .request import CubeGeneratorRequestLike
-from .response import CubeGeneratorResult
-from .response import CubeInfoResult
-from .response import GenericCubeGeneratorResult
+from .response import CubeGeneratorResult, CubeInfoResult, GenericCubeGeneratorResult
 
 R = TypeVar("R", bound=GenericCubeGeneratorResult)
 
@@ -93,7 +90,7 @@ class CubeGenerator(ABC):
 
             assert_true(
                 stores_config is None,
-                "service_config and stores_config cannot be" " given at the same time.",
+                "service_config and stores_config cannot be given at the same time.",
             )
             assert_instance(
                 service_config, (str, dict, ServiceConfig, type(None)), "service_config"

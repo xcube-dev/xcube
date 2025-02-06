@@ -1,12 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import time
-from collections.abc import MutableMapping
+from collections.abc import Iterator, MutableMapping
 from types import MethodType
-from typing import TypeVar, List, Callable, Any, Tuple
-from collections.abc import Iterator
+from typing import Any, Callable, List, Tuple, TypeVar
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")

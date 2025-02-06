@@ -1,24 +1,24 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Tuple, Union
 from collections.abc import Collection, Mapping
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
 
-from xcube.constants import CRS_WKT_EPSG_4326
-from xcube.constants import EXTENSION_POINT_INPUT_PROCESSORS
+from xcube.constants import CRS_WKT_EPSG_4326, EXTENSION_POINT_INPUT_PROCESSORS
 from xcube.core.gridmapping import GridMapping
 from xcube.core.resampling import rectify_dataset
-from xcube.core.timecoord import get_time_range_from_attrs
-from xcube.core.timecoord import get_time_range_from_data
-from xcube.core.timecoord import to_time_in_days_since_1970
-from xcube.util.plugin import ExtensionComponent
-from xcube.util.plugin import get_extension_registry
+from xcube.core.timecoord import (
+    get_time_range_from_attrs,
+    get_time_range_from_data,
+    to_time_in_days_since_1970,
+)
+from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
 
 class ReprojectionInfo:
@@ -353,7 +353,7 @@ class XYInputProcessor(InputProcessor, metaclass=ABCMeta):
             )
         if output_resampling != "Nearest":
             warnings.warn(
-                f"{warn_prefix}: ignoring " f"dst_resampling = {output_resampling!r}"
+                f"{warn_prefix}: ignoring dst_resampling = {output_resampling!r}"
             )
         if include_non_spatial_vars:
             warnings.warn(

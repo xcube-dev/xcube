@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -74,9 +74,9 @@ def extract(
 
     from xcube.core.dsio import open_dataset
     from xcube.core.extract import (
-        get_cube_values_for_points,
         DEFAULT_INDEX_NAME_PATTERN,
         DEFAULT_REF_NAME_PATTERN,
+        get_cube_values_for_points,
     )
 
     # We may make the following CLI options
@@ -84,9 +84,7 @@ def extract(
     ref_name_pattern = DEFAULT_REF_NAME_PATTERN
     time_col_names = ["time"]
 
-    points = pd.read_csv(
-        points_path, parse_dates=time_col_names
-    )
+    points = pd.read_csv(points_path, parse_dates=time_col_names)
     points.time = points.time.dt.tz_localize(tz=None)
     with open_dataset(cube_path) as cube:
         values = get_cube_values_for_points(

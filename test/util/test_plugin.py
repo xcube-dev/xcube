@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
 
 from xcube.util.extension import ExtensionRegistry
-from xcube.util.plugin import get_plugins, load_plugins, discover_plugin_modules
+from xcube.util.plugin import discover_plugin_modules, get_plugins, load_plugins
 
 
 def init_plugin(ext_registry: ExtensionRegistry):

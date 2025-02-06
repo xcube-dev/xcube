@@ -1,18 +1,20 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Sequence
 
-from xcube.core.store import DATASET_TYPE
-from xcube.core.store import DataStoreError
-from xcube.core.store import DataStorePool
-from xcube.core.store import DatasetDescriptor
-from xcube.core.store import get_data_store_instance
-from xcube.core.store import new_data_opener
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.core.store import (
+    DATASET_TYPE,
+    DatasetDescriptor,
+    DataStoreError,
+    DataStorePool,
+    get_data_store_instance,
+    new_data_opener,
+)
+from xcube.util.assertions import assert_instance, assert_true
 from xcube.util.progress import observe_progress
+
 from ..config import InputConfig
 from ..error import CubeGeneratorError
 
