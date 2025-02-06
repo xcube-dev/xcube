@@ -10,7 +10,6 @@ import fiona.crs
 import fsspec
 import pyproj
 import shapely
-import shapely.geometry
 import shapely.ops
 
 from xcube.server.api import ApiError, Context
@@ -261,7 +260,7 @@ class PlacesContext(ResourcesContext):
         cls, feature_collection: fiona.Collection
     ) -> Iterator[dict[str, Any]]:
         source_crs = feature_collection.crs
-        target_crs = fiona.crs.from_epsg(4326)
+        target_crs = fiona.crs.CRS.from_epsg(4326)
         project: Callable | None = None
         if not source_crs == target_crs:
             project = pyproj.Transformer.from_crs(
