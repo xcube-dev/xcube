@@ -43,7 +43,7 @@ We mainly follow conventions stated in
 its recommendation of [PEP-484](https://www.python.org/dev/peps/pep-0484/)
 syntax for type hints.
 
-The code style of XRLint equals the default settings 
+The code style of xcube equals the default settings 
 of [Black](https://black.readthedocs.io/) 
 which are also largely implemented by [Ruff](https://docs.astral.sh/ruff/). 
 
