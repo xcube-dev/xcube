@@ -24,6 +24,7 @@ class PlacesRoutesTest(RoutesTestCase):
                         "sourceEncoding": "utf-8",
                         "sourcePaths": [],
                         "title": "Points inside the cube",
+                        "description": None,
                         "type": "FeatureCollection",
                     },
                     {
@@ -34,6 +35,7 @@ class PlacesRoutesTest(RoutesTestCase):
                         "sourceEncoding": "utf-8",
                         "sourcePaths": [],
                         "title": "Points outside the cube",
+                        "description": None,
                         "type": "FeatureCollection",
                     },
                 ]

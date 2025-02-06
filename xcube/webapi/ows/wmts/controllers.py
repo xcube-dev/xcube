@@ -276,7 +276,7 @@ def get_var_layer_and_theme_element(
         "Theme",
         elements=[
             Element("ows:Identifier", text=var_id),
-            Element("ows:Title", text=var_title),
+            Element("ows:Title", text=f"{ds_name}/{var_title}"),
             Element("ows:Abstract", text=var_abstract),
             Element("LayerRef", text=var_id),
         ],

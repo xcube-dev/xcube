@@ -107,7 +107,7 @@ class DatasetsContextTest(unittest.TestCase):
 
     def test_get_dataset_configs_with_duplicate_ids_from_stores(self):
         with self.assertRaises(ApiError.InvalidServerConfig) as sce:
-            ctx = get_datasets_ctx("config-datastores-double-ids.yml")
+            get_datasets_ctx("config-datastores-double-ids.yml")
         self.assertEqual(
             "HTTP status 580:"
             " User-defined identifiers can only be assigned to "
