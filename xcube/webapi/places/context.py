@@ -3,13 +3,14 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Iterator, Sequence
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 import fiona
+import fiona.crs
 import fsspec
 import pyproj
 import shapely
-from fiona.collection import Collection
+import shapely.ops
 
 from xcube.server.api import ApiError, Context
 from xcube.webapi.common.context import ResourcesContext
@@ -84,7 +85,7 @@ class PlacesContext(ResourcesContext):
         base_url: str,
         is_global: bool = False,
         load_features: bool = False,
-        qualifiers: list[str] = list(),
+        qualifiers: Optional[list[str]] = None,
     ) -> list[PlaceGroup]:
         place_groups = []
         for place_group_config in place_group_configs:
@@ -97,15 +98,17 @@ class PlacesContext(ResourcesContext):
             place_groups.append(place_group)
         for q in [
             qualifier
-            for qualifier in qualifiers
+            for qualifier in (qualifiers or ())
             if qualifier in self._additional_place_groups
         ]:
             for place_group in self._additional_place_groups[q]:
                 place_groups.append(place_group)
         return place_groups
 
-    def add_place_group(self, place_group: PlaceGroup, qualifiers: list[str] = list()):
-        for qualifier in qualifiers:
+    def add_place_group(
+        self, place_group: PlaceGroup, qualifiers: Optional[list[str]] = None
+    ):
+        for qualifier in qualifiers or ():
             if qualifier not in self._additional_place_groups:
                 self._additional_place_groups[qualifier] = []
             self._additional_place_groups[qualifier].append(place_group)
@@ -138,7 +141,7 @@ class PlacesContext(ResourcesContext):
         if place_group is None:
             place_group_title = place_group_config.get("Title", place_group_id)
             place_path_wc = self.get_config_path(
-                place_group_config, f"'PlaceGroups' item"
+                place_group_config, "'PlaceGroups' item"
             )
             fs, place_path = fsspec.core.url_to_fs(place_path_wc)
             source_paths = [fs.unstrip_protocol(p) for p in fs.glob(place_path)]
@@ -252,10 +255,11 @@ class PlacesContext(ResourcesContext):
 
     @classmethod
     def _to_geo_interface(
-        cls, feature_collection: Collection
+        cls, feature_collection: fiona.Collection
     ) -> Iterator[dict[str, Any]]:
         source_crs = feature_collection.crs
         target_crs = fiona.crs.CRS.from_epsg(4326)
+        project: Callable | None = None
         if not source_crs == target_crs:
             project = pyproj.Transformer.from_crs(
                 source_crs, target_crs, always_xy=True
@@ -275,7 +279,7 @@ class PlacesContext(ResourcesContext):
                     and geometry.get("type") != "GeometryCollection"
                 ):
                     del geometry["geometries"]
-            if not source_crs == target_crs:
+            if project is not None:
                 geometry = feature.get("geometry")
                 shapely_geom = shapely.geometry.shape(geometry)
                 feature["geometry"] = shapely.ops.transform(
