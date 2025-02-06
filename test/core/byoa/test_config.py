@@ -273,7 +273,7 @@ class CodeConfigTest(unittest.TestCase):
         self.assertIsInstance(service_code_config.file_set, FileSet)
         self.assertFalse(service_code_config.file_set.is_local_dir())
         self.assertEqual(
-            "https://github.com/dcs4cop/xcube-byoa-examples/archive/v0.1.0.dev0.zip",
+            "https://github.com/xcube-dev/xcube-byoa-examples/archive/v0.1.0.dev0.zip",
             service_code_config.file_set.path,
         )
         self.assertEqual(
