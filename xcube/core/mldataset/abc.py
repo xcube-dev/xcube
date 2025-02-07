@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, Tuple
 
 import xarray as xr
 import xvec
+from jinja2.lexer import TOKEN_DOT
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
@@ -156,6 +157,7 @@ class VectorDataCube(xr.Dataset):
         self, geometry_column: str = "geometry", crs = None, *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
+        # TODO add check that dataset qualifies as vector data cube
         # self.assign_coords(
         #     dict(
         #         geometry_column=self.get(geometry_column)
