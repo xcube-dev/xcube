@@ -180,6 +180,9 @@ class StacControllersTest(unittest.TestCase):
             content = json.load(fp)
         return content
 
+    def setUp(self):
+        self.maxDiff = None
+
     # Commented out to keep coverage checkers happy.
     # @staticmethod
     # def write_json(filename, content):

@@ -8,7 +8,7 @@ import itertools
 import os
 import os.path
 import warnings
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Collection, Mapping
 from functools import cached_property
 from typing import Any, Callable, Optional, Union
 
@@ -170,7 +170,7 @@ class DatasetsContext(ResourcesContext):
 
     def set_ml_dataset(self, ml_dataset: MultiLevelDataset):
         self._set_dataset_entry(
-            (ml_dataset, dict(Identifier=ml_dataset.ds_id, Hidden=True))
+            (ml_dataset, _new_dataset_config(Identifier=ml_dataset.ds_id, Hidden=True))
         )
 
     def add_dataset(
@@ -204,11 +204,8 @@ class DatasetsContext(ResourcesContext):
             if dataset_config["Identifier"] == ds_id:
                 del dataset_configs[index]
                 break
-        ds_title, ds_description = self.get_dataset_title_and_description(dataset)
-        dataset_config = dict(
-            Identifier=ds_id,
-            Title=title or ds_title,
-            Description=description or ds_description,
+        dataset_config = _new_dataset_config(
+            Identifier=ds_id, Title=title, Description=description
         )
         if style is not None:
             dataset_config.update(dict(Style=style))
@@ -240,16 +237,15 @@ class DatasetsContext(ResourcesContext):
             ml_dataset.ds_id = ds_id
         else:
             ds_id = ml_dataset.ds_id
-        ds_title, ds_description = self.get_dataset_title_and_description(
-            ml_dataset.base_dataset
-        )
         self._set_dataset_entry(
             (
                 ml_dataset,
-                dict(
-                    Identifier=ds_id,
-                    Title=title or ds_title,
-                    Description=description or ds_description,
+                (
+                    dict(
+                        Identifier=ds_id,
+                        Title=title,
+                        Description=description,
+                    )
                 ),
             )
         )
@@ -849,48 +845,6 @@ class DatasetsContext(ResourcesContext):
             raise ApiError.InvalidServerConfig(f"Invalid {cache_size_key}")
         return cache_size
 
-    @classmethod
-    def get_dataset_title_and_description(
-        cls,
-        dataset: xr.Dataset,
-        dataset_config: Mapping[str, Any] | None = None,
-    ) -> tuple[str, str]:
-        dataset_config = dataset_config or {}
-        ds_title = dataset_config.get(
-            "Title",
-            _get_str_attr(
-                dataset.attrs,
-                ("title", "name"),
-                dataset_config.get(
-                    "Identifier",
-                ),
-            ),
-        )
-        ds_description = dataset_config.get(
-            "Description",
-            _get_str_attr(
-                dataset.attrs,
-                ("description", "abstract", "comment"),
-            ),
-        )
-        return ds_title or "", ds_description or ""
-
-    @classmethod
-    def get_variable_title_and_description(
-        cls,
-        var_name: str,
-        var: xr.DataArray,
-    ) -> tuple[str, str]:
-        var_title = _get_str_attr(
-            var.attrs,
-            ("title", "name", "long_name"),
-            var_name,
-        )
-        var_description = _get_str_attr(
-            var.attrs, ("description", "abstract", "comment")
-        )
-        return var_title or "", var_description or ""
-
 
 def _open_ml_dataset_from_python_code(
     ctx: DatasetsContext, dataset_config: DatasetConfig
@@ -1007,11 +961,5 @@ def _is_wildcard(string: str) -> bool:
     return "?" in string or "*" in string
 
 
-def _get_str_attr(
-    attrs: Mapping[str, Any], keys: Sequence[str], default: Optional[str] = None
-) -> Optional[str]:
-    for k in keys:
-        v = attrs.get(k)
-        if isinstance(v, str) and v.strip():
-            return v
-    return default
+def _new_dataset_config(**kwargs) -> dict[str, Any]:
+    return {k: v for k, v in kwargs.items() if v is not None}

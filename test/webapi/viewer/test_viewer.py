@@ -193,19 +193,19 @@ class ViewerTest(unittest.TestCase):
             new_cube(variables={"analysed_sst": 282.0}),
             ds_id="my_sst_2",
             title="My SST 2",
-            description="It is a test",
+            description="It is test 2",
         )
         self.assertEqual("my_sst_2", ds_id_2)
 
         ds_config_1 = self.viewer.datasets_ctx.get_dataset_config(ds_id_1)
         self.assertEqual(
-            {"Identifier": ds_id_1, "Title": "My SST 1", "Description": "It is a test"},
+            {"Identifier": ds_id_1, "Title": "My SST 1", "Description": None},
             ds_config_1,
         )
 
         ds_config_2 = self.viewer.datasets_ctx.get_dataset_config(ds_id_2)
         self.assertEqual(
-            {"Identifier": ds_id_2, "Title": "My SST 2", "Description": "It is a test"},
+            {"Identifier": ds_id_2, "Title": "My SST 2", "Description": "It is test 2"},
             ds_config_2,
         )
 
@@ -268,6 +268,11 @@ class ViewerTest(unittest.TestCase):
 
         ds_config = self.viewer.datasets_ctx.get_dataset_config(ds_id)
         self.assertEqual(
-            {"Identifier": ds_id, "Title": "My SST", "Description": "", "Style": ds_id},
+            {
+                "Identifier": ds_id,
+                "Title": "My SST",
+                "Description": None,
+                "Style": ds_id,
+            },
             ds_config,
         )

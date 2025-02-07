@@ -315,6 +315,89 @@ class DatasetsContextTest(unittest.TestCase):
             list(ctx._tokenize_value("${resolve_config_path('../test')}")),
         )
 
+    def test_title_and_description(self):
+        self.assertEqual(
+            ("", None),
+            DatasetsContext.get_dataset_title_and_description(
+                xr.Dataset(),
+            ),
+        )
+        self.assertEqual(
+            ("From Identifier", None),
+            DatasetsContext.get_dataset_title_and_description(
+                xr.Dataset(), {"Identifier": "From Identifier"}
+            ),
+        )
+
+        ds_with_attr = xr.Dataset(
+            attrs={
+                "title": "From title Attr",
+                "name": "From name Attr",
+                "description": "From description Attr",
+                "abstract": "From abstract Attr",
+                "comment": "From comment Attr",
+            }
+        )
+
+        self.assertEqual(
+            ("From Title", "From Description"),
+            DatasetsContext.get_dataset_title_and_description(
+                ds_with_attr,
+                {"Title": "From Title", "Description": "From Description"},
+            ),
+        )
+
+        self.assertEqual(
+            ("From title Attr", "From description Attr"),
+            DatasetsContext.get_dataset_title_and_description(
+                ds_with_attr,
+            ),
+        )
+
+        del ds_with_attr.attrs["description"]
+        self.assertEqual(
+            ("From title Attr", "From abstract Attr"),
+            DatasetsContext.get_dataset_title_and_description(
+                ds_with_attr,
+            ),
+        )
+
+        del ds_with_attr.attrs["abstract"]
+        self.assertEqual(
+            ("From title Attr", "From comment Attr"),
+            DatasetsContext.get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "xyz"},
+            ),
+        )
+
+        del ds_with_attr.attrs["comment"]
+        self.assertEqual(
+            ("From title Attr", None),
+            DatasetsContext.get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "xyz"},
+            ),
+        )
+
+        del ds_with_attr.attrs["title"]
+        self.assertEqual(
+            ("From name Attr", None),
+            DatasetsContext.get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "From Identifier"},
+            ),
+        )
+
+        del ds_with_attr.attrs["name"]
+        self.assertEqual(
+            ("From Identifier", None),
+            DatasetsContext.get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "From Identifier"},
+            ),
+        )
+
 
 class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
     def setUp(self) -> None:

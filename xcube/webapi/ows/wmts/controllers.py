@@ -21,9 +21,10 @@ from xcube.core.tilingscheme import (
     TilingScheme,
 )
 from xcube.webapi.common.xml import Document, Element
+from xcube.webapi.datasets.context import DatasetsContext
 
 from .context import WmtsContext
-from ...datasets.context import DatasetsContext
+from ...datasets.controllers import get_dataset_title_and_description
 
 WMTS_VERSION = "1.0.0"
 WMTS_URL_PREFIX = f"wmts/{WMTS_VERSION}"
@@ -155,9 +156,11 @@ def get_capabilities_element(ctx: WmtsContext, base_url: str, tms_id: str) -> El
             "xmlns:ows": "http://www.opengis.net/ows/1.1",
             "xmlns:xlink": "http://www.w3.org/1999/xlink",
             "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "xsi:schemaLocation": "http://www.opengis.net/wmts/1.0"
-            " http://schemas.opengis.net/wmts/1.0.0/"
-            "wmtsGetCapabilities_response.xsd",
+            "xsi:schemaLocation": (
+                "http://www.opengis.net/wmts/1.0"
+                " http://schemas.opengis.net/wmts/1.0.0/"
+                "wmtsGetCapabilities_response.xsd"
+            ),
             "version": WMTS_VERSION,
         },
         elements=[
@@ -218,8 +221,8 @@ def get_dim_elements(
         dim_element = Element(
             "Dimension",
             elements=[
-                Element("ows:Identifier", text=f"{dim_name}"),
-                Element("ows:Title", text=dim_title),
+                Element("ows:Identifier", text=str(dim_name)),
+                Element("ows:Title", text=str(dim_title)),
                 Element("ows:UOM", text=units),
                 Element("Default", text=default),
                 Element("Current", text=current),
@@ -247,15 +250,13 @@ def get_dim_elements(
 def get_ds_theme_element(
     ds_name: str, ds: xr.Dataset, dataset_config: Mapping[str, Any]
 ) -> Element:
-    ds_title, ds_abstract = DatasetsContext.get_dataset_title_and_description(
-        ds, dataset_config
-    )
+    ds_title, ds_abstract = get_dataset_title_and_description(ds, dataset_config)
     return Element(
         "Theme",
         elements=[
             Element("ows:Identifier", text=ds_name),
             Element("ows:Title", text=ds_title),
-            Element("ows:Abstract", text=ds_abstract),
+            Element("ows:Abstract", text=ds_abstract or ""),
         ],
     )
 
@@ -272,12 +273,13 @@ def get_var_layer_and_theme_element(
         var_name, var
     )
     var_id = f"{ds_name}.{var_name}"
+    var_title = f"{ds_name}/{var_title}"
     var_theme_element = Element(
         "Theme",
         elements=[
             Element("ows:Identifier", text=var_id),
-            Element("ows:Title", text=f"{ds_name}/{var_title}"),
-            Element("ows:Abstract", text=var_abstract),
+            Element("ows:Title", text=var_title),
+            Element("ows:Abstract", text=var_abstract or ""),
             Element("LayerRef", text=var_id),
         ],
     )
@@ -289,9 +291,9 @@ def get_var_layer_and_theme_element(
     layer_element = Element(
         "Layer",
         elements=[
-            Element("ows:Identifier", text=f"{ds_name}.{var_name}"),
-            Element("ows:Title", text=f"{var_title}"),
-            Element("ows:Abstract", text=f"{var_abstract}"),
+            Element("ows:Identifier", text=var_id),
+            Element("ows:Title", text=var_title),
+            Element("ows:Abstract", text=var_abstract),
             Element(
                 "ows:WGS84BoundingBox",
                 elements=[
