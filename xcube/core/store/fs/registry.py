@@ -32,7 +32,7 @@ from .impl.mldataset import (
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
 )
-from impl.vectordatacube import (
+from .impl.vectordatacube import (
     VectorDataCubeNetcdfFsDataAccessor,
     VectorDataCubeZarrFsDataAccessor
 )
