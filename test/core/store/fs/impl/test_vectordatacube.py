@@ -6,10 +6,10 @@ import unittest
 
 from xcube.core.new import new_vector_data_cube
 
+from xcube.core.mldataset.abc import VectorDataCube
 from xcube.core.store import new_data_store
 from xcube.core.store.datatype import VECTOR_DATA_CUBE_TYPE
 from xcube.core.store.fs.impl.vectordatacube import VectorDataCubeZarrFsDataAccessor
-from xcube.core.store.fs.impl.vectordatacube import VectorDataCubeNetcdfFsDataAccessor
 
 
 class VectorDataCubeStoreTest(unittest.TestCase):
@@ -28,43 +28,14 @@ class VectorDataCubeStoreTest(unittest.TestCase):
         self.assertIsNotNone(data_id)
         ds = store.open_data(data_id, opener_id="vectordatacube:zarr:file")
         self.assertIsNotNone(ds)
+        self.assertIsInstance(ds, VectorDataCube)
         store.delete_data(data_id)
-
-    def test_read_from_store_s3(self):
-        store = new_data_store(
-            "s3",
-            root="doors-cubes/vdcs",
-            max_depth=1,
-            storage_options=dict(
-                anon=False
-            )
-        )
-        ds1 = store.open_data(
-            'flowfm_his_ds.zarr', opener_id="vectordatacube:zarr:s3"
-        )
-        self.assertIsNotNone(ds1)
-        # store.get
-        # print(store.list_data_ids())
-        # vdc = new_vector_data_cube(
-        #     variables=dict(
-        #         precipitation=0.5,
-        #         soilmoisture=1.0
-        #     )
-        # )
-        # data_id = store.write_data(
-        #     vdc, data_id="vdc_test.zarr", writer_id="vectordatacube:zarr:file"
-        # )
-        # self.assertIsNotNone(data_id)
-        # ds = store.open_data(data_id, opener_id="vectordatacube:zarr:file")
-        # self.assertIsNotNone(ds)
-        # store.delete_data(data_id)
 
 class VectorDataCubeZarrFsDataAccessorTest(unittest.TestCase):
 
     @classmethod
     def setUp(self):
         self.accessor = VectorDataCubeZarrFsDataAccessor()
-        # self.vdc = new_vector_data_cube()
 
     def test_get_data_type(self):
         self.assertEqual(VECTOR_DATA_CUBE_TYPE, self.accessor.get_data_type())
