@@ -1,10 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import threading
-from typing import Dict, List, Any, Union, Optional
 from collections.abc import Mapping, Sequence
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -12,16 +13,17 @@ import xarray as xr
 from xcube.core.chunk import chunk_dataset
 from xcube.core.dsio import open_cube, write_cube
 from xcube.core.dump import dump_dataset
-from xcube.core.extract import DEFAULT_INDEX_NAME_PATTERN
-from xcube.core.extract import get_cube_point_indexes
-from xcube.core.extract import get_cube_values_for_indexes
-from xcube.core.extract import get_cube_values_for_points
-from xcube.core.extract import get_dataset_indexes
+from xcube.core.extract import (
+    DEFAULT_INDEX_NAME_PATTERN,
+    get_cube_point_indexes,
+    get_cube_values_for_indexes,
+    get_cube_values_for_points,
+    get_dataset_indexes,
+)
 from xcube.core.gridmapping import GridMapping
 from xcube.core.level import compute_levels
 from xcube.core.new import new_cube
-from xcube.core.normalize import DatasetIsNotACubeError
-from xcube.core.normalize import decode_cube
+from xcube.core.normalize import DatasetIsNotACubeError, decode_cube
 from xcube.core.schema import CubeSchema, get_cube_schema
 from xcube.core.select import select_variables_subset
 from xcube.core.vars2dim import vars_to_dim

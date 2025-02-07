@@ -1,12 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os
+from test.cli.helpers import TEST_NC_FILE, TEST_ZARR_DIR, CliDataTest
 
 import xarray as xr
-
-from test.cli.helpers import CliDataTest, TEST_NC_FILE, TEST_ZARR_DIR
 
 
 class ChunkTest(CliDataTest):
@@ -73,7 +72,7 @@ class ChunkTest(CliDataTest):
             ]
         )
         self.assertEqual(
-            "Error: Invalid value for CHUNKS:" " 'time=1,lat!gnnn,lon=40'\n",
+            "Error: Invalid value for CHUNKS: 'time=1,lat!gnnn,lon=40'\n",
             result.stderr,
         )
         self.assertEqual(1, result.exit_code)

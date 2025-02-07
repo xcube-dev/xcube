@@ -1,9 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Union, Tuple, Type
 from collections.abc import Container
+from typing import Any, Union
 
 _DEFAULT_NAME = "value"
 
@@ -55,9 +55,7 @@ def assert_instance(
     """
     if not isinstance(value, dtype):
         raise exception_type(
-            f"{name or _DEFAULT_NAME} "
-            f"must be an instance of "
-            f"{dtype}, was {type(value)}"
+            f"{name or _DEFAULT_NAME} must be an instance of {dtype}, was {type(value)}"
         )
 
 
@@ -78,7 +76,7 @@ def assert_subclass(
     """
     if not issubclass(value, cls):
         raise exception_type(
-            f"{name or _DEFAULT_NAME} " f"must be a subclass of " f"{cls}, was {value}"
+            f"{name or _DEFAULT_NAME} must be a subclass of {cls}, was {value}"
         )
 
 
@@ -98,7 +96,7 @@ def assert_in(
         exception_type: The exception type. Default is ``ValueError``.
     """
     if value not in container:
-        raise exception_type(f"{name or _DEFAULT_NAME} " f"must be one of {container}")
+        raise exception_type(f"{name or _DEFAULT_NAME} must be one of {container}")
 
 
 def assert_true(value: Any, message: str, exception_type: type[Exception] = ValueError):

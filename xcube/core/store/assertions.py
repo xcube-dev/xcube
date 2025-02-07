@@ -1,13 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Dict, Any, Callable
+from typing import Any, Callable, Dict, Optional
 
 import jsonschema
 
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObjectSchema
+
 from .error import DataStoreError
 
 
@@ -70,4 +71,4 @@ def _assert_valid(
         try:
             validator(obj, schema)
         except jsonschema.ValidationError as e:
-            raise DataStoreError(f"Invalid {kind}" f" detected: {e.message}") from e
+            raise DataStoreError(f"Invalid {kind} detected: {e.message}") from e

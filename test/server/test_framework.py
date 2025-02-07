@@ -1,13 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
 
 from xcube.plugin import init_plugin
-from xcube.server.framework import Framework
-from xcube.server.framework import get_framework_class
-from xcube.server.framework import get_framework_names
+from xcube.server.framework import Framework, get_framework_class, get_framework_names
 from xcube.util.plugin import get_extension_registry
 
 

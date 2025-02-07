@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -7,8 +7,7 @@ import unittest
 import pytest
 import zarr.storage
 
-from xcube.core.zarrstore import CachedZarrStore
-from xcube.core.zarrstore import DiagnosticZarrStore
+from xcube.core.zarrstore import CachedZarrStore, DiagnosticZarrStore
 
 
 class CachedZarrStoreTest(unittest.TestCase):

@@ -1,25 +1,27 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
+import fnmatch
 import json
 import re
-from typing import Optional
 from collections.abc import Collection
-import fnmatch
-from xcube.server.api import ApiHandler, ApiRequest, ApiError
+from typing import Optional
+
+from xcube.server.api import ApiError, ApiHandler, ApiRequest
+
 from .api import api
 from .context import CoveragesContext
 from .controllers import (
+    get_collection_metadata,
     get_coverage_as_json,
+    get_coverage_data,
     get_coverage_domainset,
     get_coverage_rangetype,
-    get_collection_metadata,
-    get_coverage_data,
 )
-
 
 PATH_PREFIX = "/ogc"
 _COVERAGE_PREFIX = PATH_PREFIX + "/collections/{collectionId}/coverage"
+
 
 # noinspection PyAbstractClass,PyMethodMayBeStatic
 @api.route(_COVERAGE_PREFIX, slash=True)
@@ -61,7 +63,7 @@ class CoveragesCoverageHandler(ApiHandler[CoveragesContext]):
         content_bbox = content_crs = None
         if content_type is None:
             raise ApiError.UnsupportedMediaType(
-                f'Available media types: {", ".join(available_types)}\n'
+                f"Available media types: {', '.join(available_types)}\n"
             )
         elif content_type in {"text/html", "html"}:
             result = (

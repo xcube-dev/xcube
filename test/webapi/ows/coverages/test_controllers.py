@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 import json
@@ -7,23 +7,24 @@ import tempfile
 import unittest
 from io import BytesIO
 from pathlib import Path
+from test.webapi.ows.coverages.test_context import get_coverages_ctx
+
 import numpy as np
 import pyproj
-import xarray as xr
 import rioxarray
+import xarray as xr
 
-from test.webapi.ows.coverages.test_context import get_coverages_ctx
 from xcube.server.api import ApiError
 from xcube.webapi.ows.coverages.controllers import (
+    dtype_to_opengis_datatype,
     get_coverage_as_json,
     get_coverage_data,
+    get_coverage_rangetype_for_dataset,
     get_crs_from_dataset,
-    dtype_to_opengis_datatype,
     get_dataarray_description,
     get_units,
     is_xy_order,
     transform_bbox,
-    get_coverage_rangetype_for_dataset,
 )
 
 

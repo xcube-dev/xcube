@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,12 +9,14 @@ import unittest
 import jsonschema
 import yaml
 
-from xcube.core.store import DataStore
-from xcube.core.store import DataStoreConfig
-from xcube.core.store import DataStoreError
-from xcube.core.store import DataStoreInstance
-from xcube.core.store import DataStorePool
-from xcube.core.store import get_data_store_instance
+from xcube.core.store import (
+    DataStore,
+    DataStoreConfig,
+    DataStoreError,
+    DataStoreInstance,
+    DataStorePool,
+    get_data_store_instance,
+)
 
 
 class GetDataStoreTest(unittest.TestCase):
@@ -104,7 +106,7 @@ class DataStoreConfigTest(unittest.TestCase):
             # noinspection PyTypeChecker
             DataStoreConfig("directory", store_params=[1, "B"])
         self.assertEqual(
-            "store_params must be an instance" " of <class 'dict'>, was <class 'list'>",
+            "store_params must be an instance of <class 'dict'>, was <class 'list'>",
             f"{cm.exception}",
         )
 

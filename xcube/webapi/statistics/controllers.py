@@ -1,3 +1,7 @@
+# Copyright (c) 2018-2025 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+
 from typing import Any, Union
 
 import numpy as np
@@ -6,17 +10,17 @@ import shapely
 import shapely.ops
 import xarray as xr
 
-from xcube.constants import CRS_CRS84
-from xcube.constants import LOG
-from xcube.core.geom import get_dataset_geometry
-from xcube.core.geom import normalize_geometry
-from xcube.core.geom import mask_dataset_by_geometry
-from xcube.core.varexpr import VarExprContext
-from xcube.core.varexpr import split_var_assignment
+from xcube.constants import CRS_CRS84, LOG
+from xcube.core.geom import (
+    get_dataset_geometry,
+    mask_dataset_by_geometry,
+    normalize_geometry,
+)
+from xcube.core.varexpr import VarExprContext, split_var_assignment
 from xcube.server.api import ApiError
 from xcube.util.perf import measure_time_cm
-from .context import StatisticsContext
 
+from .context import StatisticsContext
 
 NAN_RESULT = {"count": 0}
 NAN_RESULT_COMPACT = {}
@@ -58,7 +62,7 @@ def _compute_statistics(
                 time = np.array(time_label, dtype=dataset.time.dtype)
                 dataset = dataset.sel(time=time, method="nearest")
             except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest("Invalid query parameter " "'time'") from e
+                raise ApiError.BadRequest("Invalid query parameter 'time'") from e
         else:
             raise ApiError.BadRequest("Missing query parameter 'time'")
     elif time_label is not None:
@@ -76,7 +80,7 @@ def _compute_statistics(
             geometry = normalize_geometry(geometry)
         except (TypeError, ValueError, AttributeError) as e:
             raise ApiError.BadRequest(
-                f"Invalid GeoJSON geometry " "encountered: {e}"
+                f"Invalid GeoJSON geometry encountered: {{e}}"
             ) from e
 
     if geometry is not None and not grid_mapping.crs.is_geographic:

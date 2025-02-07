@@ -1,33 +1,42 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Any
 from collections.abc import Sequence
+from typing import Any, Optional
 
 import fsspec
 
-from .accessor import FsAccessor
-from .accessor import FsDataAccessor
-from .impl.dataset import DatasetGeoTiffFsDataAccessor
-from .impl.dataset import DatasetNetcdfFsDataAccessor
-from .impl.dataset import DatasetZarrFsDataAccessor
-from .impl.fs import AzureFsAccessor
-from .impl.fs import FileFsAccessor
-from .impl.fs import FtpFsAccessor
-from .impl.fs import HttpsFsAccessor
-from .impl.fs import MemoryFsAccessor
-from .impl.fs import S3FsAccessor
-from .impl.geodataframe import GeoDataFrameGeoJsonFsDataAccessor
-from .impl.geodataframe import GeoDataFrameShapefileFsDataAccessor
-from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
-from .impl.mldataset import DatasetLevelsFsDataAccessor
-from .impl.mldataset import MultiLevelDatasetLevelsFsDataAccessor
-from .impl.vectordatacube import VectorDataCubeNetcdfFsDataAccessor
-from .impl.vectordatacube import VectorDataCubeZarrFsDataAccessor
-from .store import FsDataStore
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
+from .accessor import FsAccessor, FsDataAccessor
+from .impl.dataset import (
+    DatasetGeoTiffFsDataAccessor,
+    DatasetNetcdfFsDataAccessor,
+    DatasetZarrFsDataAccessor,
+)
+from .impl.fs import (
+    AzureFsAccessor,
+    FileFsAccessor,
+    FtpFsAccessor,
+    HttpsFsAccessor,
+    MemoryFsAccessor,
+    S3FsAccessor,
+)
+from .impl.geodataframe import (
+    GeoDataFrameGeoJsonFsDataAccessor,
+    GeoDataFrameShapefileFsDataAccessor,
+)
+from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
+from .impl.mldataset import (
+    DatasetLevelsFsDataAccessor,
+    MultiLevelDatasetLevelsFsDataAccessor,
+)
+from impl.vectordatacube import (
+    VectorDataCubeNetcdfFsDataAccessor,
+    VectorDataCubeZarrFsDataAccessor
+)
+from .store import FsDataStore
 
 ############################################
 # FsAccessor

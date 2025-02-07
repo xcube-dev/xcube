@@ -1,3 +1,32 @@
+## Changes in 1.8.3 (in development)
+
+### Other changes
+
+* Reformatted code base according to the default settings used by 
+  [isort](https://pycqa.github.io/isort/) and
+  [ruff](https://docs.astral.sh/ruff/). Updated development 
+  dependencies accordingly.
+* Updated copyright notices.
+
+## Changes in 1.8.2
+
+* Bundled xcube Viewer 
+  [1.4.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.1)
+  with fixes regarding the _share_ feature.
+
+* No longer logging a `TypeError` if xcube server's 
+  `GET viewer/ext/contributions` is called without any 
+  viewer extensions configured. (#1116)
+
+## Changes in 1.8.1
+
+### Fixes
+
+* Bug fix in `resample_in_space`: Resolved an issue where the `resample_in_space`
+  function no longer worked with irregular grid mappings, such as Sentinel-3 data,   
+  due to changes introduced in version 1.8.0. (#1114)
+
+  
 ## Changes in 1.8.0
 
 ### Enhancements

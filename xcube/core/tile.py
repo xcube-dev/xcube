@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,34 +6,27 @@ import io
 import logging
 import math
 import warnings
-from typing import Any, Optional, Union
 from collections.abc import Hashable, Sequence
+from typing import Any, Optional, Union
 
-import PIL
 import matplotlib.colors
 import numpy as np
 import pandas as pd
+import PIL
 import pyproj
 import xarray as xr
 
 from xcube.constants import LOG
-from xcube.core.varexpr import VarExprContext
-from xcube.core.varexpr import split_var_assignment
-from xcube.util.assertions import assert_in
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from xcube.util.cmaps import ColormapProvider
-from xcube.util.cmaps import DEFAULT_CMAP_NAME
+from xcube.core.varexpr import VarExprContext, split_var_assignment
+from xcube.util.assertions import assert_in, assert_instance, assert_true
+from xcube.util.cmaps import DEFAULT_CMAP_NAME, ColormapProvider
 from xcube.util.perf import measure_time_cm
 from xcube.util.projcache import ProjCache
 from xcube.util.timeindex import ensure_time_label_compatible
-from xcube.util.types import Pair
-from xcube.util.types import ScalarOrPair
-from xcube.util.types import normalize_scalar_or_pair
+from xcube.util.types import Pair, ScalarOrPair, normalize_scalar_or_pair
+
 from .mldataset import MultiLevelDataset
-from .tilingscheme import DEFAULT_CRS_NAME
-from .tilingscheme import DEFAULT_TILE_SIZE
-from .tilingscheme import TilingScheme
+from .tilingscheme import DEFAULT_CRS_NAME, DEFAULT_TILE_SIZE, TilingScheme
 
 DEFAULT_VALUE_RANGE = (0.0, 1.0)
 DEFAULT_CMAP_NORM = "lin"
@@ -442,7 +435,7 @@ def compute_rgba_tile(
     num_components = len(variable_names)
     assert_true(
         num_components in (1, 3),
-        message="number of names in" " variable_names must be 1 or 3",
+        message="number of names in variable_names must be 1 or 3",
     )
     tile_size = normalize_scalar_or_pair(tile_size)
     tile_width, tile_height = tile_size
@@ -454,7 +447,7 @@ def compute_rgba_tile(
         value_ranges = num_components * (value_ranges,)
     assert_true(
         num_components == len(value_ranges),
-        message="value_ranges must have" " same length as variable_names",
+        message="value_ranges must have same length as variable_names",
     )
     format = _normalize_format(format)
     assert_in(format, ("png", "numpy"), name="format")
@@ -707,10 +700,7 @@ def _get_non_spatial_labels(
         if label is None:
             if logger:
                 logger.debug(
-                    (
-                        f"missing label for dimension {dim!r},"
-                        f" using first label instead"
-                    )
+                    (f"missing label for dimension {dim!r}, using first label instead")
                 )
             label = coord_var[0].values
 

@@ -1,9 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import json
-from typing import Any, Union, List, Dict
+from typing import Any, Dict, List, Union
 
 import numpy as np
 
@@ -77,9 +77,7 @@ def to_json_value(obj: Any) -> JsonValue:
         except TypeError:
             # Same as json.JSONEncoder.default(self, obj)
             raise TypeError(
-                f"Object of type"
-                f" {obj.__class__.__name__}"
-                f" is not JSON serializable"
+                f"Object of type {obj.__class__.__name__} is not JSON serializable"
             )
 
 

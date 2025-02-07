@@ -1,12 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
 
-
-from xcube.core.store import PreloadStatus
-from xcube.core.store import PreloadState
+from xcube.core.store import PreloadState, PreloadStatus
 
 
 class PreloadStateTest(unittest.TestCase):
@@ -15,10 +13,7 @@ class PreloadStateTest(unittest.TestCase):
             "test.zip", status=PreloadStatus.started, progress=0.71, message="Unzipping"
         )
         self.assertEqual(
-            "data_id=test.zip, "
-            "status=STARTED, "
-            "progress=0.71, "
-            "message=Unzipping",
+            "data_id=test.zip, status=STARTED, progress=0.71, message=Unzipping",
             str(state),
         )
 

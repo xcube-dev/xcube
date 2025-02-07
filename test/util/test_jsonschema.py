@@ -1,23 +1,25 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
 from collections import namedtuple
-from typing import Dict, Any
+from typing import Any, Dict
 
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonComplexSchema
-from xcube.util.jsonschema import JsonDateSchema
-from xcube.util.jsonschema import JsonDatetimeSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNullSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonSimpleSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonComplexSchema,
+    JsonDateSchema,
+    JsonDatetimeSchema,
+    JsonIntegerSchema,
+    JsonNullSchema,
+    JsonNumberSchema,
+    JsonObject,
+    JsonObjectSchema,
+    JsonSimpleSchema,
+    JsonStringSchema,
+)
 
 
 class JsonComplexSchemaTest(unittest.TestCase):

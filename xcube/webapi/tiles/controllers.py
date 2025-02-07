@@ -1,19 +1,22 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Dict
 from collections.abc import Mapping
+from typing import Dict, Optional
 
 from xcube.constants import LOG
-from xcube.core.tile import DEFAULT_CRS_NAME
-from xcube.core.tile import DEFAULT_FORMAT
-from xcube.core.tile import TileNotFoundException
-from xcube.core.tile import TileRequestException
-from xcube.core.tile import compute_rgba_tile
+from xcube.core.tile import (
+    DEFAULT_CRS_NAME,
+    DEFAULT_FORMAT,
+    TileNotFoundException,
+    TileRequestException,
+    compute_rgba_tile,
+)
 from xcube.core.tilingscheme import DEFAULT_TILE_SIZE
 from xcube.server.api import ApiError
 from xcube.util.perf import measure_time_cm
+
 from .context import TilesContext
 
 

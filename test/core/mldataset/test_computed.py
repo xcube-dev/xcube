@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -7,8 +7,8 @@ import unittest
 import zipfile
 
 from xcube.core.dsio import rimraf
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.mldataset import ComputedMultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset, ComputedMultiLevelDataset
+
 from .helpers import get_test_dataset
 
 
@@ -67,7 +67,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
             )
 
         with open(f"{script_dir}/module_2.py", "w") as fp:
-            fp.write("\n" "def process_dataset(ds):\n" "    return ds.copy()\n")
+            fp.write("\ndef process_dataset(ds):\n    return ds.copy()\n")
 
         try:
             computed_ml_ds = ComputedMultiLevelDataset(
@@ -93,7 +93,7 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
                     b"    return m2.process_dataset(ds)\n"
                 )
             with zf.open(f"module_2.py", "w") as fp:
-                fp.write(b"\n" b"def process_dataset(ds):\n" b"    return ds.copy()\n")
+                fp.write(b"\ndef process_dataset(ds):\n    return ds.copy()\n")
 
         try:
             computed_ml_ds = ComputedMultiLevelDataset(

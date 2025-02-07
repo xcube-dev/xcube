@@ -1,8 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from test.sampledata import SourceDatasetMixin, create_s2plus_dataset
 
 import numpy as np
 import pytest
@@ -10,10 +11,7 @@ import pytest
 # noinspection PyUnresolvedReferences
 import xarray as xr
 
-from test.sampledata import SourceDatasetMixin
-from test.sampledata import create_s2plus_dataset
-from xcube.core.gridmapping import CRS_WGS84
-from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping import CRS_WGS84, GridMapping
 from xcube.core.resampling import rectify_dataset
 
 nan = np.nan
@@ -82,7 +80,6 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_rectify_2x2_to_7x7_with_ref_ds(self):
-
         source_ds = self.new_2x2_dataset_with_irregular_coords()
         # Add offset to "rad" so its values do not lie on a plane
         source_ds["rad"] = source_ds.rad + xr.DataArray(
@@ -797,14 +794,18 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         return (lon, lat, *vars)
 
     def test_compute_and_extract_source_pixels(self):
-        from xcube.core.resampling.rectify import _compute_ij_images_numpy_parallel
-        from xcube.core.resampling.rectify import _compute_var_image_numpy_parallel
+        from xcube.core.resampling.rectify import (
+            _compute_ij_images_numpy_parallel,
+            _compute_var_image_numpy_parallel,
+        )
 
         self._assert_compute_and_extract_source_pixels(
             _compute_ij_images_numpy_parallel, _compute_var_image_numpy_parallel, False
         )
-        from xcube.core.resampling.rectify import _compute_ij_images_numpy_sequential
-        from xcube.core.resampling.rectify import _compute_var_image_numpy_sequential
+        from xcube.core.resampling.rectify import (
+            _compute_ij_images_numpy_sequential,
+            _compute_var_image_numpy_sequential,
+        )
 
         self._assert_compute_and_extract_source_pixels(
             _compute_ij_images_numpy_sequential,
@@ -813,14 +814,18 @@ class RectifyDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
 
     def test_compute_and_extract_source_pixels_j_axis_up(self):
-        from xcube.core.resampling.rectify import _compute_ij_images_numpy_parallel
-        from xcube.core.resampling.rectify import _compute_var_image_numpy_parallel
+        from xcube.core.resampling.rectify import (
+            _compute_ij_images_numpy_parallel,
+            _compute_var_image_numpy_parallel,
+        )
 
         self._assert_compute_and_extract_source_pixels(
             _compute_ij_images_numpy_parallel, _compute_var_image_numpy_parallel, True
         )
-        from xcube.core.resampling.rectify import _compute_ij_images_numpy_sequential
-        from xcube.core.resampling.rectify import _compute_var_image_numpy_sequential
+        from xcube.core.resampling.rectify import (
+            _compute_ij_images_numpy_sequential,
+            _compute_var_image_numpy_sequential,
+        )
 
         self._assert_compute_and_extract_source_pixels(
             _compute_ij_images_numpy_sequential,

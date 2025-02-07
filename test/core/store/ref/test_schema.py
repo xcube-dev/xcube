@@ -1,9 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import unittest
 import json
+import unittest
+
 from xcube.core.store.ref.schema import REF_STORE_SCHEMA
 from xcube.util.jsonschema import JsonObjectSchema
 

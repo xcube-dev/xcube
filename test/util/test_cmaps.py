@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,14 +9,17 @@ from unittest import TestCase
 import matplotlib.colors
 import numpy as np
 
-from xcube.util.cmaps import Colormap, CUSTOM_CATEGORY
-from xcube.util.cmaps import ColormapCategory
-from xcube.util.cmaps import ColormapRegistry
-from xcube.util.cmaps import create_colormap_from_config
-from xcube.util.cmaps import DEFAULT_CMAP_NAME
-from xcube.util.cmaps import parse_cm_name
-from xcube.util.cmaps import parse_cm_code
-from xcube.util.cmaps import load_snap_cpd_colormap
+from xcube.util.cmaps import (
+    CUSTOM_CATEGORY,
+    DEFAULT_CMAP_NAME,
+    Colormap,
+    ColormapCategory,
+    ColormapRegistry,
+    create_colormap_from_config,
+    load_snap_cpd_colormap,
+    parse_cm_code,
+    parse_cm_name,
+)
 
 registry = ColormapRegistry()
 
@@ -360,11 +363,7 @@ class ColormapParseTest(TestCase):
     # User-defined color bars, #975
     def test_parse_cm_code(self):
         cm_name, cmap = parse_cm_code(
-            '{"name": "ucb783473",'
-            ' "colors": ['
-            '[0.0, "#00000000"], '
-            '[1.0, "#ffffffff"]'
-            "]}"
+            '{"name": "ucb783473", "colors": [[0.0, "#00000000"], [1.0, "#ffffffff"]]}'
         )
         self.assertEqual("ucb783473", cm_name)
         self.assertIsInstance(cmap, Colormap)

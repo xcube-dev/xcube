@@ -1,29 +1,29 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import json
 import os.path
 import time
-from typing import Type, TypeVar, Dict, Any, Optional, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import requests
 
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonschema import JsonObject
 from xcube.util.progress import observe_progress
-from .config import ServiceConfig
-from .response import CubeGeneratorProgress
-from .response import CubeGeneratorState
-from .response import CubeGeneratorToken
-from .response import CubeInfoWithCostsResult
+
 from ..error import CubeGeneratorError
 from ..generator import CubeGenerator
-from ..request import CubeGeneratorRequest
-from ..request import CubeGeneratorRequestLike
-from ..response import CubeGeneratorResult
-from ..response import CubeInfoResult
-from ..response import GenericCubeGeneratorResult
+from ..request import CubeGeneratorRequest, CubeGeneratorRequestLike
+from ..response import CubeGeneratorResult, CubeInfoResult, GenericCubeGeneratorResult
+from .config import ServiceConfig
+from .response import (
+    CubeGeneratorProgress,
+    CubeGeneratorState,
+    CubeGeneratorToken,
+    CubeInfoWithCostsResult,
+)
 
 _BASE_HEADERS = {
     "Accept": "application/json",

@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import abc
-from typing import Union, Callable, Optional, Any, TypeVar
 from collections.abc import Awaitable
+from typing import Any, Callable, Optional, TypeVar, Union
 
 from tornado import concurrent
 
@@ -41,7 +41,7 @@ class AsyncExecution(abc.ABC):
         executor: Optional[concurrent.futures.Executor],
         function: Callable[..., ReturnT],
         *args: Any,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Awaitable[ReturnT]:
         """Concurrently runs a *function* in a
         ``concurrent.futures.Executor``.

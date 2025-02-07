@@ -1,17 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
 import os
-from typing import Any
 from collections.abc import Mapping
-from typing import Optional, Type, TypeVar
-from typing import Union
+from test.server.mocks import MockFramework
+from typing import Any, Optional, Type, TypeVar, Union
 
 import yaml
 
-from test.server.mocks import MockFramework
 from xcube.server.api import Context
 from xcube.server.framework import Framework
 from xcube.server.server import Server
@@ -59,7 +57,7 @@ def get_server(
 
 
 def get_server_config(
-    server_config: Optional[Union[str, Mapping[str, Any]]] = None
+    server_config: Optional[Union[str, Mapping[str, Any]]] = None,
 ) -> dict[str, Any]:
     """Get a server configuration for testing.
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -66,7 +66,7 @@ class measure_time(AbstractContextManager):
                 self.message + ": took %.2fms",
                 *self.args,
                 self.duration * 1000,
-                **self.kwargs
+                **self.kwargs,
             )
 
 

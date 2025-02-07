@@ -1,19 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import math
-from typing import Optional, Tuple, List, Union
 from collections.abc import Sequence
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import pyproj
 
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
-from xcube.util.types import Pair
-from xcube.util.types import ScalarOrPair
-from xcube.util.types import normalize_scalar_or_pair
+from xcube.util.assertions import assert_given, assert_instance
+from xcube.util.types import Pair, ScalarOrPair, normalize_scalar_or_pair
 
 WEB_MERCATOR_CRS_NAME = "EPSG:3857"
 WEB_MERCATOR_CRS_ALIASES = (

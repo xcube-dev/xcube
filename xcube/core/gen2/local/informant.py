@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,22 +6,20 @@ import datetime
 import numbers
 import traceback
 import warnings
-from typing import Optional, Any, Tuple
 from collections.abc import Sequence
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 import pyproj
 
-from xcube.core.store import DataStorePool
-from xcube.core.store import DatasetDescriptor
-from xcube.core.store import VariableDescriptor
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from .describer import DatasetsDescriber
+from xcube.core.store import DatasetDescriptor, DataStorePool, VariableDescriptor
+from xcube.util.assertions import assert_instance, assert_true
+
 from ..config import CubeConfig
 from ..error import CubeGeneratorError
 from ..request import CubeGeneratorRequest
 from ..response import CubeInfo
+from .describer import DatasetsDescriber
 
 
 class CubeInformant:
@@ -202,9 +200,7 @@ class CubeInformant:
             try:
                 tile_width, tile_height = tile_size
             except (TypeError, ValueError):
-                raise ValueError(
-                    "tile_size must be a" " tuple (tile_width, tile_height)"
-                )
+                raise ValueError("tile_size must be a tuple (tile_width, tile_height)")
             tile_size = tile_width, tile_height
 
         time_range = cube_config.time_range

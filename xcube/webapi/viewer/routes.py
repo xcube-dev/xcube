@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -7,17 +7,15 @@ import json
 import os
 import pathlib
 import random
-from typing import Union, Optional
+from typing import Optional, Union
 
 from chartlets import Response as ExtResponse
-from chartlets.controllers import get_callback_results
-from chartlets.controllers import get_contributions
-from chartlets.controllers import get_layout
+from chartlets.controllers import get_callback_results, get_contributions, get_layout
 
 from xcube.constants import LOG
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiError, ApiHandler
 from xcube.util.jsonencoder import NumpyJSONEncoder
+
 from .api import api
 from .context import ViewerContext
 
@@ -74,12 +72,12 @@ class ViewerConfigHandler(ApiHandler[ViewerContext]):
     def get(self, path: Optional[str]):
         config_items = self.ctx.config_items
         if config_items is None:
-            raise ApiError.NotFound(f"xcube viewer has" f" not been been configured")
+            raise ApiError.NotFound(f"xcube viewer has not been been configured")
         try:
             data = config_items[path]
         except KeyError:
             raise ApiError.NotFound(
-                f"The item {path!r} was not found" f" in viewer configuration"
+                f"The item {path!r} was not found in viewer configuration"
             )
         content_type = self.get_content_type(path)
         self.response.set_header("Content-Length", str(len(data)))
@@ -105,7 +103,6 @@ class ViewerConfigHandler(ApiHandler[ViewerContext]):
 
 @api.route("/viewer/state")
 class ViewerStateHandler(ApiHandler[ViewerContext]):
-
     # noinspection SpellCheckingInspection
     _id_chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 
@@ -163,17 +160,31 @@ class ViewerStateHandler(ApiHandler[ViewerContext]):
 
 class ViewerExtHandler(ApiHandler[ViewerContext]):
     def do_get_contributions(self):
-        self._write_response(get_contributions(self.ctx.ext_ctx))
+        if self.ctx.ext_ctx is None:
+            self._write_no_ext_status()
+        else:
+            self._write_response(get_contributions(self.ctx.ext_ctx))
 
     def do_get_layout(self, contrib_point: str, contrib_index: str):
-        self._write_response(
-            get_layout(
-                self.ctx.ext_ctx, contrib_point, int(contrib_index), self.request.json
+        if self.ctx.ext_ctx is None:
+            self._write_no_ext_status()
+        else:
+            self._write_response(
+                get_layout(
+                    self.ctx.ext_ctx,
+                    contrib_point,
+                    int(contrib_index),
+                    self.request.json,
+                )
             )
-        )
 
     def do_get_callback_results(self):
-        self._write_response(get_callback_results(self.ctx.ext_ctx, self.request.json))
+        if self.ctx.ext_ctx is None:
+            self._write_no_ext_status()
+        else:
+            self._write_response(
+                get_callback_results(self.ctx.ext_ctx, self.request.json)
+            )
 
     def _write_response(self, response: ExtResponse):
         self.response.set_header("Content-Type", "text/json")
@@ -187,10 +198,13 @@ class ViewerExtHandler(ApiHandler[ViewerContext]):
                 {"error": {"status": response.status, "message": response.reason}}
             )
 
+    def _write_no_ext_status(self):
+        self.response.set_status(404, "No extensions configured")
+        self.response.finish()
+
 
 @api.route("/viewer/ext/contributions")
 class ViewerExtContributionsHandler(ViewerExtHandler):
-
     # GET /dashi/contributions
     @api.operation(
         operationId="getViewerContributions",
@@ -232,7 +246,6 @@ class ViewerExtLayoutHandler(ViewerExtHandler):
 
 @api.route("/viewer/ext/callback")
 class ViewerExtCallbackHandler(ViewerExtHandler):
-
     @api.operation(
         operationId="getViewerContributionCallbackResults",
         summary=(

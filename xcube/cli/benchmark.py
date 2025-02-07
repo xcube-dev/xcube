@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -67,8 +67,8 @@ def benchmark(config: str, repeats: int):
     times = np.ndarray((repetition_count, param_combination_count), dtype=np.float64)
 
     import subprocess
-    import time
     import sys
+    import time
 
     for repetition_index in range(repetition_count):
         for param_combination_index in range(param_combination_count):
@@ -120,7 +120,7 @@ def benchmark(config: str, repeats: int):
                 f"{times_max[param_combination_index]}"
             )
     else:
-        print(f"id;" f"{';'.join(param_names)};" f"time")
+        print(f"id;{';'.join(param_names)};time")
         for param_combination_index in range(param_combination_count):
             param_values = param_values_combinations[param_combination_index]
             print(

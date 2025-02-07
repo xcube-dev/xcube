@@ -3,6 +3,8 @@ Viewer:
     Path: ""
     Extensions:
       - my_viewer_ext.ext
+  Persistence:
+     Path: memory://states
 
 DatasetChunkCacheSize: 100M
 

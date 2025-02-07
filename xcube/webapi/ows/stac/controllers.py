@@ -1,12 +1,12 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 
 import datetime
-from typing import Any, Optional, Union
-from collections.abc import Hashable, Mapping
 import itertools
+from collections.abc import Hashable, Mapping
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -15,21 +15,24 @@ import xarray as xr
 
 import xcube
 from xcube.core.gridmapping import CRS_CRS84, GridMapping
-from xcube.server.api import ApiError
-from xcube.server.api import ServerConfig
+from xcube.server.api import ApiError, ServerConfig
 from xcube.util.jsonencoder import to_json_value
 from xcube.util.jsonschema import JsonObjectSchema
-from .config import DEFAULT_CATALOG_DESCRIPTION, DEFAULT_FEATURE_ID
-from .config import DEFAULT_CATALOG_ID
-from .config import DEFAULT_CATALOG_TITLE
-from .config import DEFAULT_COLLECTION_DESCRIPTION
-from .config import DEFAULT_COLLECTION_ID
-from .config import DEFAULT_COLLECTION_TITLE
-from .config import PATH_PREFIX
-from .context import StacContext
-from ..coverages.controllers import get_crs_from_dataset
-from ...datasets.controllers import get_dataset
+
 from ...datasets.context import DatasetsContext
+from ...datasets.controllers import get_dataset
+from ..coverages.controllers import get_crs_from_dataset
+from .config import (
+    DEFAULT_CATALOG_DESCRIPTION,
+    DEFAULT_CATALOG_ID,
+    DEFAULT_CATALOG_TITLE,
+    DEFAULT_COLLECTION_DESCRIPTION,
+    DEFAULT_COLLECTION_ID,
+    DEFAULT_COLLECTION_TITLE,
+    DEFAULT_FEATURE_ID,
+    PATH_PREFIX,
+)
+from .context import StacContext
 
 _REL_DOMAINSET = "http://www.opengis.net/def/rel/ogc/1.0/coverage-domainset"
 _REL_RANGETYPE = "http://www.opengis.net/def/rel/ogc/1.0/coverage-rangetype"
@@ -131,7 +134,7 @@ def get_root(ctx: DatasetsContext, base_url: str):
                 "rel": "conformance",
                 "href": f"{base_url}{PATH_PREFIX}/conformance",
                 "type": "application/json",
-                "title": "OGC API conformance classes" " implemented by this server",
+                "title": "OGC API conformance classes implemented by this server",
             },
             {
                 "rel": "data",
@@ -652,7 +655,7 @@ def _get_single_dataset_collection(
             },
             {
                 "rel": "items",
-                "href": f"{base_url}{PATH_PREFIX}/collections/" f"{dataset_id}/items",
+                "href": f"{base_url}{PATH_PREFIX}/collections/{dataset_id}/items",
                 "title": "feature collection of data cube items",
             },
             {
@@ -725,7 +728,7 @@ def crs_to_uri_or_wkt(crs: pyproj.CRS) -> str:
     if auth_and_code is not None:
         authority, code = auth_and_code
         version = 0  # per https://docs.ogc.org/pol/09-048r6.html#toc13
-        return f"http://www.opengis.net/def/crs/" f"{authority}/{version}/{code}"
+        return f"http://www.opengis.net/def/crs/{authority}/{version}/{code}"
     else:
         return crs.to_wkt()
 

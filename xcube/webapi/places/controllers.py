@@ -1,8 +1,8 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict, Union, Optional
+from typing import Any, Dict, Optional, Union
 
 import shapely.geometry
 import shapely.wkt
@@ -11,10 +11,10 @@ from shapely.lib import ShapelyError
 from xcube.constants import LOG
 from xcube.core.geom import get_box_split_bounds_geometry
 from xcube.util.perf import measure_time
-from .context import ALL_PLACES
-from .context import PlacesContext
+
 from ...server.api import ApiError
 from ...util.assertions import assert_instance
+from .context import ALL_PLACES, PlacesContext
 
 GeoJsonFeatureCollection = dict
 GeoJsonFeature = dict

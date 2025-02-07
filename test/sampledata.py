@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -355,7 +355,6 @@ def create_cci_lccs_class_var(flag_values_as_list=False):
 
 
 class SourceDatasetMixin:
-
     @classmethod
     def new_2x2_dataset_with_irregular_coords(cls):
         lon = np.array([[1.0, 6.0], [0.0, 2.0]])

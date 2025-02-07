@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2018-2025 by xcube team and contributors
+  ~ Permissions are hereby granted under the terms of the MIT License:
+  ~ https://opensource.org/licenses/MIT.
+  -->
+
 <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
   <Name>datasets</Name>
   <Prefix>bibo.zarr/</Prefix>

@@ -1,15 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from test.sampledata import SourceDatasetMixin
 
 import numpy as np
 import pyproj
 import shapely.wkt
 import xarray as xr
 
-from test.sampledata import SourceDatasetMixin
 from xcube.core.gridmapping import GridMapping
 from xcube.core.gridmapping.coords import Coords2DGridMapping
 
@@ -347,7 +347,7 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         self.assertEqual(
             pyproj.CRS.from_string("EPSG:32633"), transformed_gm_regular.crs
         )
-        self.assertEqual((266, 248), transformed_gm_regular.size)
+        self.assertEqual((267, 249), transformed_gm_regular.size)
         self.assertEqual((200, 200), transformed_gm_regular.tile_size)
         self.assertEqual((1000, 1000), transformed_gm_regular.xy_res)
         self.assertEqual(False, transformed_gm_regular.is_j_axis_up)

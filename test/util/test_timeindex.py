@@ -1,15 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 from unittest import TestCase
 
+import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
-import pandas as pd
-from pytz import UTC
-import numpy as np
 from pandas import DatetimeTZDtype
+from pytz import UTC
 
 from xcube.util.timeindex import ensure_time_label_compatible
 

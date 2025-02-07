@@ -1,8 +1,8 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, List
+from typing import List, Optional
 
 from xcube.util.assertions import assert_instance
 
@@ -28,7 +28,7 @@ class CubeGeneratorError(ValueError):
         status_code: Optional[int] = None,
         remote_traceback: Optional[list[str]] = None,
         remote_output: Optional[list[str]] = None,
-        **kwargs
+        **kwargs,
     ):
         # noinspection PyArgumentList
         super().__init__(*args, **kwargs)

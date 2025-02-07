@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -7,21 +7,20 @@ import inspect
 import os.path
 import sys
 import warnings
-from typing import Any, Union, Callable, Optional
+from typing import Any, Callable, Optional, Union
 
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.assertions import assert_given, assert_instance, assert_true
+from xcube.util.jsonschema import (
+    JsonBooleanSchema,
+    JsonObject,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 from xcube.util.temp import new_temp_dir
-from .constants import DEFAULT_CALLABLE_NAME
-from .constants import DEFAULT_MODULE_NAME
-from .constants import TEMP_FILE_PREFIX
-from .fileset import FileSet
+
 from ...constants import LOG
+from .constants import DEFAULT_CALLABLE_NAME, DEFAULT_MODULE_NAME, TEMP_FILE_PREFIX
+from .fileset import FileSet
 
 
 class CodeConfig(JsonObject):
@@ -368,7 +367,7 @@ def _for_service(code_config: CodeConfig) -> "CodeConfig":
         # is always a local ZIP archive.
         return code_config
 
-    raise RuntimeError("for_service() failed due to an " "invalid CodeConfig state")
+    raise RuntimeError("for_service() failed due to an invalid CodeConfig state")
 
 
 def _for_local(code_config: CodeConfig) -> "CodeConfig":
@@ -388,7 +387,7 @@ def _for_local(code_config: CodeConfig) -> "CodeConfig":
     file_set = code_config.file_set
     if file_set is None:
         raise RuntimeError(
-            "CodeConfig.for_local() failed" " due to an invalid internal state"
+            "CodeConfig.for_local() failed due to an invalid internal state"
         )
 
     if file_set.is_local_dir() or (file_set.is_local_zip() and not file_set.sub_path):
@@ -442,12 +441,10 @@ def _load_callable(
     _callable = getattr(module, callable_name, None)
     if _callable is None:
         raise ImportError(
-            f"callable {callable_name!r}" f" not found in module {module_name!r}"
+            f"callable {callable_name!r} not found in module {module_name!r}"
         )
     if not callable(_callable):
-        raise ImportError(
-            f"{callable_name} of module {callable_name}" f" is not callable"
-        )
+        raise ImportError(f"{callable_name} of module {callable_name} is not callable")
     LOG.info(f"Imported {callable_ref!r} from {dir_path}")
     return _callable
 
@@ -479,17 +476,17 @@ def _callable_to_module(
     """
     callable_name = _callable.__name__
     if not callable_name:
-        raise ValueError(f"cannot detect name " f"for func_or_class")
+        raise ValueError(f"cannot detect name for func_or_class")
 
     module = inspect.getmodule(_callable)
     module_name = module.__name__ if module is not None else None
     if not module_name:
-        raise ValueError(f"cannot detect module " f"for callable {callable_name!r}")
+        raise ValueError(f"cannot detect module for callable {callable_name!r}")
 
     source_file = inspect.getabsfile(_callable)
     if source_file is None:
         raise ValueError(
-            f"cannot detect source file " f"for func_or_class {callable_name!r}"
+            f"cannot detect source file for func_or_class {callable_name!r}"
         )
 
     module_path, ext = os.path.splitext(os.path.normpath(source_file))
@@ -497,7 +494,7 @@ def _callable_to_module(
         module_name.replace(".", "/")
     ):
         raise ValueError(
-            f"cannot detect module path " f"for func_or_class {callable_name!r}"
+            f"cannot detect module path for func_or_class {callable_name!r}"
         )
 
     module_path = os.path.normpath(module_path[0 : -len(module_name)])
@@ -544,7 +541,7 @@ def _normalize_inline_code(
     module_name = module_name or _next_user_module_name()
     if all(map(callable, code)):
         warnings.warn(
-            "inline code may not be executable due to missing " "import statements"
+            "inline code may not be executable due to missing import statements"
         )
     inline_code = "\n\n".join(
         [c if isinstance(c, str) else inspect.getsource(c) for c in code]

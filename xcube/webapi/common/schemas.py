@@ -1,11 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonNumberSchema,
+    JsonStringSchema,
+)
 
 BOOLEAN_SCHEMA = JsonBooleanSchema()
 NUMBER_SCHEMA = JsonNumberSchema()

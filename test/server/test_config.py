@@ -1,13 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
 from typing import Callable
 
-from xcube.server.config import get_reverse_url_prefix
-from xcube.server.config import get_url_prefix
-from xcube.server.config import resolve_config_path
+from xcube.server.config import (
+    get_reverse_url_prefix,
+    get_url_prefix,
+    resolve_config_path,
+)
 
 
 class ResolveConfigPathTest(unittest.TestCase):
