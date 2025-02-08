@@ -21,10 +21,10 @@ from xcube.core.tilingscheme import (
     TilingScheme,
 )
 from xcube.webapi.common.xml import Document, Element
-from xcube.webapi.datasets.context import DatasetsContext
+from xcube.webapi.datasets.controllers import (get_dataset_title_and_description,
+    get_variable_title_and_description)
 
 from .context import WmtsContext
-from ...datasets.controllers import get_dataset_title_and_description
 
 WMTS_VERSION = "1.0.0"
 WMTS_URL_PREFIX = f"wmts/{WMTS_VERSION}"
@@ -269,7 +269,7 @@ def get_var_layer_and_theme_element(
     var_tile_url_templ_pattern: str,
     tms_id: str,
 ) -> tuple[Element, Element]:
-    var_title, var_abstract = DatasetsContext.get_variable_title_and_description(
+    var_title, var_abstract = get_variable_title_and_description(
         var_name, var
     )
     var_id = f"{ds_name}.{var_name}"

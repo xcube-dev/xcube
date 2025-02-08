@@ -2,11 +2,12 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-
 import os.path
 import unittest
 from test.webapi.helpers import get_api_ctx
 from typing import Any, Optional
+
+import xarray as xr
 
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
@@ -18,7 +19,7 @@ from xcube.webapi.datasets.controllers import (
     get_dataset,
     get_datasets,
     get_legend,
-    get_time_chunk_size,
+    get_time_chunk_size, get_dataset_title_and_description,
 )
 
 
@@ -193,6 +194,88 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
         actual_ids = {f["id"] for f in features if "id" in f}
         self.assertEqual(expected_ids, actual_ids)
 
+    def test_title_and_description(self):
+        self.assertEqual(
+            ("", None),
+            get_dataset_title_and_description(
+                xr.Dataset(),
+            ),
+        )
+        self.assertEqual(
+            ("From Identifier", None),
+            get_dataset_title_and_description(
+                xr.Dataset(), {"Identifier": "From Identifier"}
+            ),
+        )
+
+        ds_with_attr = xr.Dataset(
+            attrs={
+                "title": "From title Attr",
+                "name": "From name Attr",
+                "description": "From description Attr",
+                "abstract": "From abstract Attr",
+                "comment": "From comment Attr",
+            }
+        )
+
+        self.assertEqual(
+            ("From Title", "From Description"),
+            get_dataset_title_and_description(
+                ds_with_attr,
+                {"Title": "From Title", "Description": "From Description"},
+            ),
+        )
+
+        self.assertEqual(
+            ("From title Attr", "From description Attr"),
+            get_dataset_title_and_description(
+                ds_with_attr,
+            ),
+        )
+
+        del ds_with_attr.attrs["description"]
+        self.assertEqual(
+            ("From title Attr", "From abstract Attr"),
+            get_dataset_title_and_description(
+                ds_with_attr,
+            ),
+        )
+
+        del ds_with_attr.attrs["abstract"]
+        self.assertEqual(
+            ("From title Attr", "From comment Attr"),
+            get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "xyz"},
+            ),
+        )
+
+        del ds_with_attr.attrs["comment"]
+        self.assertEqual(
+            ("From title Attr", None),
+            get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "xyz"},
+            ),
+        )
+
+        del ds_with_attr.attrs["title"]
+        self.assertEqual(
+            ("From name Attr", None),
+            get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "From Identifier"},
+            ),
+        )
+
+        del ds_with_attr.attrs["name"]
+        self.assertEqual(
+            ("From Identifier", None),
+            get_dataset_title_and_description(
+                ds_with_attr,
+                {"Identifier": "From Identifier"},
+            ),
+        )
 
 class DatasetsAuthControllerTest(DatasetsControllerTestBase):
     @staticmethod

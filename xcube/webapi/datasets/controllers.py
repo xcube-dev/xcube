@@ -231,7 +231,7 @@ def get_dataset(
         ):
             continue
 
-        var_title, var_description = DatasetsContext.get_variable_title_and_description(
+        var_title, var_description = get_variable_title_and_description(
             var_name, var
         )
         assert bool(var_title)
@@ -357,7 +357,7 @@ def get_variable_title_and_description(
 def _update_dataset_desc_properties(
     ds: xr.Dataset, dataset_config: Mapping[str, Any], dataset_dict: dict[str, Any]
 ):
-    ds_title, ds_description = DatasetsContext.get_dataset_title_and_description(
+    ds_title, ds_description = get_dataset_title_and_description(
         ds, dataset_config
     )
     group_title = dataset_config.get("GroupTitle")
