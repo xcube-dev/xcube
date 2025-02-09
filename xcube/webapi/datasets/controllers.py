@@ -231,11 +231,7 @@ def get_dataset(
         ):
             continue
 
-        var_title, var_description = get_variable_title_and_description(
-            var_name, var
-        )
-        assert bool(var_title)
-        assert var_description is None or isinstance(var_description, str)
+        var_title, var_description = get_variable_title_and_description(var_name, var)
         variable_dict = dict(
             id=f"{ds_id}.{var_name}",
             name=var_name,
@@ -244,9 +240,10 @@ def get_dataset(
             dtype=str(var.dtype),
             units=var.attrs.get("units", ""),
             title=var_title,
-            description=var_description,
             timeChunkSize=get_time_chunk_size(ts_ds, var_name, ds_id),
         )
+        if var_description:
+            variable_dict["description"] = var_description
 
         tile_url = _get_dataset_tile_url2(ctx, ds_id, var_name, base_url)
         # Note that tileUrl is no longer used since xcube viewer v0.13
@@ -357,9 +354,7 @@ def get_variable_title_and_description(
 def _update_dataset_desc_properties(
     ds: xr.Dataset, dataset_config: Mapping[str, Any], dataset_dict: dict[str, Any]
 ):
-    ds_title, ds_description = get_dataset_title_and_description(
-        ds, dataset_config
-    )
+    ds_title, ds_description = get_dataset_title_and_description(ds, dataset_config)
     group_title = dataset_config.get("GroupTitle")
     tags = dataset_config.get("Tags")
 

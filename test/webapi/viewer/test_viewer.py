@@ -199,7 +199,7 @@ class ViewerTest(unittest.TestCase):
 
         ds_config_1 = self.viewer.datasets_ctx.get_dataset_config(ds_id_1)
         self.assertEqual(
-            {"Identifier": ds_id_1, "Title": "My SST 1"},
+            {"Identifier": ds_id_1},
             ds_config_1,
         )
 

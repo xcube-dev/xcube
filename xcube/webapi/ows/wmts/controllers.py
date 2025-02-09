@@ -21,8 +21,10 @@ from xcube.core.tilingscheme import (
     TilingScheme,
 )
 from xcube.webapi.common.xml import Document, Element
-from xcube.webapi.datasets.controllers import (get_dataset_title_and_description,
-    get_variable_title_and_description)
+from xcube.webapi.datasets.controllers import (
+    get_dataset_title_and_description,
+    get_variable_title_and_description,
+)
 
 from .context import WmtsContext
 
@@ -269,9 +271,7 @@ def get_var_layer_and_theme_element(
     var_tile_url_templ_pattern: str,
     tms_id: str,
 ) -> tuple[Element, Element]:
-    var_title, var_abstract = get_variable_title_and_description(
-        var_name, var
-    )
+    var_title, var_abstract = get_variable_title_and_description(var_name, var)
     var_id = f"{ds_name}.{var_name}"
     var_title = f"{ds_name}/{var_title}"
     var_theme_element = Element(
