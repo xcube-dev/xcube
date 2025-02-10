@@ -251,18 +251,12 @@ def update_plot(
 
     chart = (
         alt.Chart(source)
-        # .mark_line(point=True)
-        .mark_line().encode(
-            x="wavelength:Q",
-            y="reflectance:Q",
+        .mark_line(point=True)
+        .encode(
+            alt.X("wavelength:Q").scale(zero=False),
+            alt.Y("reflectance:Q").scale(zero=False),
             color="places:N",
-            # color="symbol",
-            shape=alt.Shape(
-                "places:N",
-                scale=alt.Scale(
-                    range=["cross", "circle", "square", "triangle-right", "diamond"]
-                ),
-            ),
+            shape="places:N",
             tooltip=["variable", "wavelength", "reflectance"],
         )
     ).properties(
