@@ -23,12 +23,14 @@ panel = Panel(__name__, title="Spectral View")
 @panel.layout(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
+    State("@app", "selectedPlaceGroup"),
     State("@app", "themeMode"),
 )
 def render_panel(
     ctx: Context,
     dataset_id: str,
     time_label: float,
+    place_group: list[str],
     theme_mode: str,
 ) -> Component:
 
@@ -47,23 +49,22 @@ def render_panel(
         id="text", children=[text], color="pink", style={"flexGrow": 3}
     )
 
-    places = ["a", "b", "c"]
-    places = "a"
-    place_names = ["a", "b", "c"]
+    selected_places = ""
+    place_names = get_places(place_group)
     select_places = Select(
         id="select_places",
         label="places",
-        value=places,
+        value=selected_places,
         options=place_names,
         # multiple=True,
     )
 
     button = Button(
-        id="button", text="ADD Place to Spectral View"
+        id="button", text="Update"  # "ADD Place to Spectral View"
     )  # , style={"maxWidth": 100})
 
     controls = Box(
-        children=[button],
+        children=[select_places, button],
         style={
             "display": "flex",
             "flexDirection": "row",
@@ -77,7 +78,7 @@ def render_panel(
     places = Component(id="places", children=[])  # [None])
 
     return Box(
-        children=[place_text, plot, controls, places],  # , select_places],
+        children=[place_text, plot, controls, places],
         style={
             "display": "flex",
             "flexDirection": "column",
@@ -94,7 +95,7 @@ def get_wavelength(
     dataset,
     time_label: float,
     placegroup: list[str],
-    places: list,
+    place: list,
 ) -> pd.DataFrame:
 
     result = pd.DataFrame()
@@ -107,76 +108,73 @@ def get_wavelength(
 
     grid_mapping = GridMapping.from_dataset(dataset)
 
-    for place in places:
+    for feature in placegroup[0]["features"]:
+        print("PLACE!!!!!!!!!!!!!!!!!!!")
         print(place)
+        print(feature["id"])
+        # if feature["id"] == place:
+        if feature["properties"]["label"] == place:
+            print("TRUEEEEEEEEEEEEEEEE")
+            placelabel = feature["properties"]["label"]
+            place_geometry = feature["geometry"]
 
-        for feature in placegroup[0]["features"]:
-            if feature["id"] == place:
-                placelabel = feature["properties"]["label"]
-                place_geometry = feature["geometry"]
+            print("placelabel")
+            print(placelabel)
+            print("placegeom")
+            print(place_geometry)
+            place_geometry = normalize_geometry(place_geometry)
+            if place_geometry is not None and not grid_mapping.crs.is_geographic:
 
-                print("placelabel")
-                print(placelabel)
-                print("placegeom")
-                print(place_geometry)
-                place_geometry = normalize_geometry(place_geometry)
-                if place_geometry is not None and not grid_mapping.crs.is_geographic:
+                project = pyproj.Transformer.from_crs(
+                    CRS_CRS84, grid_mapping.crs, always_xy=True
+                ).transform
+                place_geometry = shapely.ops.transform(project, place_geometry)
 
-                    project = pyproj.Transformer.from_crs(
-                        CRS_CRS84, grid_mapping.crs, always_xy=True
-                    ).transform
-                    place_geometry = shapely.ops.transform(project, place_geometry)
+            print(place_geometry)
+            # TODO: Error, find no gridmapping
 
-                print(place_geometry)
-                # TODO: Error, find no gridmapping
+            #  dataset = mask_dataset_by_geometry(dataset, place_geometry)
+            if dataset is None:
+                # TODO: set error message in panel UI
+                print("dataset is None after masking, invalid geometry?")
+                return None
 
-                #  dataset = mask_dataset_by_geometry(dataset, place_geometry)
-                if dataset is None:
-                    # TODO: set error message in panel UI
-                    print("dataset is None after masking, invalid geometry?")
-                    return None
+            print(place_geometry.y)
+            print(place_geometry.x)
+            # TODO before that - use mask_by_geometry or get value_for_point
+            dataset_place = dataset.sel(
+                y=place_geometry.y,
+                x=place_geometry.x,
+                method="nearest",
+            )
 
-                print(place_geometry.y)
-                print(place_geometry.x)
-                # TODO before that - use mask_by_geometry
-                dataset_place = dataset.sel(
-                    y=place_geometry.y,
-                    x=place_geometry.x,
-                    method="nearest",
+            print("get wavelength")
+            variables = []
+            wavelengths = []
+            for var_name, var in dataset_place.items():
+                if "wavelength" in var.attrs:
+                    wavelengths.append(var.attrs["wavelength"])
+                    variables.append(var_name)
+
+            res = []
+            for var in variables:
+                # print(var)
+                value = dataset_place[var].values.item()
+                res.append(
+                    {"places": placelabel, "variable": var, "reflectance": value}
                 )
 
-                print("get wavelength")
-                variables = []
-                wavelengths = []
-                for var_name, var in dataset_place.items():
-                    if "wavelength" in var.attrs:
-                        wavelengths.append(var.attrs["wavelength"])
-                        variables.append(var_name)
+            res = pd.DataFrame(res)
+            res["wavelength"] = wavelengths
 
-                res = []
-                for var in variables:
-                    # print(var)
-                    value = dataset_place[var].values.item()
-                    res.append(
-                        {"places": placelabel, "variable": var, "reflectance": value}
-                    )
-
-                res = pd.DataFrame(res)
-                res["wavelength"] = wavelengths
-                # print(res)
-                # if not source.empty:
-                #  source = pd.DataFrame()
-                #  print("source")
-                #  print(source)
-                # if source is not None:
-                # if not result.empty:
-                result = pd.concat([result, res])
+            result = pd.concat([result, res])
 
     print(result)
     return result
 
 
 # TODO - add selectedDatasetName to Available State Properties
+# TODO - this has to trigger an updated plot if sth. changes
 @panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
@@ -201,8 +199,8 @@ def update_text(
     State("@app", "selectedPlaceGeometry"),
     State("@app", "selectedPlaceGroup"),
     State("@app", "selectedPlaceId"),
-    State("places", "children"),
-    Input("@app", "selectedDatasetId"),
+    State("select_places", "value"),
+    Input("button", "clicked"),
     Output("plot", "chart"),
 )
 def update_plot(
@@ -210,11 +208,10 @@ def update_plot(
     dataset_id: str,
     time_label: float,
     place_geometry: dict[str, Any],
-    placegroup: str,
+    placegroup: list[str],
     placeid: str,
-    places: list,
-    # theme_mode: str,
-    _dataset: bool | None = None,
+    place: list,
+    _clicked: bool | None = None,
 ) -> alt.Chart | None:
 
     print("placeid")
@@ -224,26 +221,18 @@ def update_plot(
     print("place group")
     print(placegroup)
     print("places")
-    print(places)
+    print(place)
 
     if placegroup is None:
         return None
 
-    if places is None:
+    if place is None:
         return None
 
     dataset = get_dataset(ctx, dataset_id)
 
-    source = get_wavelength(dataset, time_label, placegroup, places)
-    # source = pd.DataFrame(
-    #     {
-    #         "wavelength": [1, 2, 3, 4],
-    #         "reflectance": [1, 2, 3, 4],
-    #         "variable": ["b1", "b2", "b3", "b4"],
-    #         "place": ["b", "b", "b", "b"],
-    #     }
-    # )
-    # print(source)
+    source = get_wavelength(dataset, time_label, placegroup, place)
+
     if source is None:
         # TODO: set error message in panel UI
         print("No reflectances found in Variables")
@@ -251,8 +240,8 @@ def update_plot(
 
     chart = (
         alt.Chart(source)
-        .mark_line(point=True)
-        .encode(
+        # .mark_line(point=True)
+        .mark_line().encode(
             x="wavelength:Q",
             y="reflectance:Q",
             color="places:N",
@@ -265,34 +254,13 @@ def update_plot(
     return chart
 
 
-# TODO when a theme is changed, the new plot gets generated for the currently
-# selected place, so the old plot gets lost.
-# It is needed to find a way to save the place name of the plot to create a plot for
-# the same place again.
-# @panel.callback(
-#     State("@app", "themeMode"),
-#     Input("@app", "themeMode"),
-# )
-# def update_theme(
-#     ctx: Context,
-#     theme_mode: str,
-#     _new_theme: bool | None = None,  # trigger, will always be True
-# ) -> None:
-#
-#     if theme_mode == "light":
-#         theme_mode = "default"
-#
-#     if alt.theme.active != theme_mode:
-#         alt.theme.enable(name=theme_mode)
-
-
 @panel.callback(
     State("@app", "themeMode"), Input("@app", "themeMode"), Output("plot", "theme")
 )
 def update_theme(
     ctx: Context,
     theme_mode: str,
-    _new_theme: bool | None = None,  # trigger, will always be True
+    _new_theme: bool | None = None,
 ) -> str:
 
     if theme_mode == "light":
@@ -335,14 +303,14 @@ def update_theme(
 @panel.callback(
     State("@app", "selectedPlaceId"),
     State("places", "children"),
-    Input("button", "clicked"),
+    # Input("button", "clicked"),
     Output("places", "children"),
 )
 def add_place(
     ctx: Context,
     placeid: str,
     places: list,
-    _clicked: bool | None = None,
+    #  _clicked: bool | None = None,
 ) -> list:
 
     print(places)
@@ -352,7 +320,6 @@ def add_place(
         return None
 
     if places is None:
-        print("NONENONENONE")
         places = [placeid]
     else:
         if placeid not in places:
@@ -381,3 +348,21 @@ def add_place(
 #
 #     print(places)
 #     return places
+
+
+def get_places(place_group: list[dict]) -> list[str]:
+    return [feature["properties"]["label"] for feature in place_group[0]["features"]]
+
+
+@panel.callback(
+    State("@app", "selectedPlaceGroup"),
+    Input("@app", "selectedPlaceGroup"),
+    Output("select_places", "options"),
+)
+def update_places(
+    ctx: Context,
+    place_group: str,
+    _new: bool | None = None,
+) -> list[str]:
+
+    return [feature["properties"]["label"] for feature in place_group[0]["features"]]
