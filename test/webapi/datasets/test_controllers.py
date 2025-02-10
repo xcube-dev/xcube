@@ -2,11 +2,12 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-
 import os.path
 import unittest
 from test.webapi.helpers import get_api_ctx
 from typing import Any, Optional
+
+import xarray as xr
 
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
@@ -16,9 +17,11 @@ from xcube.webapi.datasets.controllers import (
     find_dataset_places,
     get_color_bars,
     get_dataset,
+    get_dataset_title_and_description,
     get_datasets,
     get_legend,
     get_time_chunk_size,
+    get_variable_title_and_description,
 )
 
 
@@ -193,6 +196,91 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
         actual_ids = {f["id"] for f in features if "id" in f}
         self.assertEqual(expected_ids, actual_ids)
 
+    def test_dataset_title_and_description(self):
+        dataset = xr.Dataset(
+            attrs={
+                "title": "From title Attr",
+                "name": "From name Attr",
+                "description": "From description Attr",
+                "abstract": "From abstract Attr",
+                "comment": "From comment Attr",
+            }
+        )
+
+        self.assertEqual(
+            ("From Title Conf", "From Description Conf"),
+            get_dataset_title_and_description(
+                dataset,
+                {"Title": "From Title Conf", "Description": "From Description Conf"},
+            ),
+        )
+
+        self.assertEqual(
+            ("From title Attr", "From description Attr"),
+            get_dataset_title_and_description(dataset),
+        )
+
+        del dataset.attrs["title"]
+        del dataset.attrs["description"]
+        self.assertEqual(
+            ("From name Attr", "From abstract Attr"),
+            get_dataset_title_and_description(dataset),
+        )
+
+        del dataset.attrs["name"]
+        del dataset.attrs["abstract"]
+        self.assertEqual(
+            ("", "From comment Attr"),
+            get_dataset_title_and_description(dataset),
+        )
+
+        del dataset.attrs["comment"]
+        self.assertEqual(
+            ("", None),
+            get_dataset_title_and_description(dataset),
+        )
+
+        self.assertEqual(
+            ("From Identifier Conf", None),
+            get_dataset_title_and_description(
+                xr.Dataset(), {"Identifier": "From Identifier Conf"}
+            ),
+        )
+
+    def test_variable_title_and_description(self):
+        variable = xr.DataArray(
+            attrs={
+                "title": "From title Attr",
+                "name": "From name Attr",
+                "long_name": "From long_name Attr",
+                "description": "From description Attr",
+                "abstract": "From abstract Attr",
+                "comment": "From comment Attr",
+            }
+        )
+        self.assertEqual(
+            ("From title Attr", "From description Attr"),
+            get_variable_title_and_description("x", variable),
+        )
+
+        del variable.attrs["title"]
+        del variable.attrs["description"]
+        self.assertEqual(
+            ("From name Attr", "From abstract Attr"),
+            get_variable_title_and_description("x", variable),
+        )
+
+        del variable.attrs["name"]
+        del variable.attrs["abstract"]
+        self.assertEqual(
+            ("From long_name Attr", "From comment Attr"),
+            get_variable_title_and_description("x", variable),
+        )
+
+        del variable.attrs["long_name"]
+        del variable.attrs["comment"]
+        self.assertEqual(("x", None), get_variable_title_and_description("x", variable))
+
 
 class DatasetsAuthControllerTest(DatasetsControllerTestBase):
     @staticmethod
@@ -346,7 +434,6 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
         granted_scopes = {"read:dataset:*", "read:variable:*"}
         response = get_datasets(ctx, granted_scopes=granted_scopes)
         datasets = self.assertDatasetsOk(response)
-        dataset_ids_dict = {ds["id"]: ds for ds in datasets}
         self.assertEqual(
             {
                 "local_base_1w",
@@ -354,17 +441,7 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
                 "remote_base_1w",
                 "remote~OLCI-SNS-RAW-CUBE-2.zarr",
             },
-            set(dataset_ids_dict),
-        )
-        dataset_titles_dict = {ds["title"]: ds for ds in datasets}
-        self.assertEqual(
-            {
-                "local_base_1w",
-                "A local base dataset",
-                "remote_base_1w",
-                "A remote base dataset",
-            },
-            set(dataset_titles_dict),
+            {ds["id"] for ds in datasets},
         )
 
     def test_authorized_access_with_specific_scopes(self):
@@ -372,7 +449,6 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
         granted_scopes = {"read:dataset:remote*", "read:variable:*"}
         response = get_datasets(ctx, granted_scopes=granted_scopes)
         datasets = self.assertDatasetsOk(response)
-        dataset_ids_dict = {ds["id"]: ds for ds in datasets}
         self.assertEqual(
             {
                 # Not selected, because they are substitutes
@@ -381,18 +457,7 @@ class DatasetsAuthControllerTest(DatasetsControllerTestBase):
                 "remote_base_1w",
                 "remote~OLCI-SNS-RAW-CUBE-2.zarr",
             },
-            set(dataset_ids_dict),
-        )
-        dataset_titles_dict = {ds["title"]: ds for ds in datasets}
-        self.assertEqual(
-            {
-                # Not selected, because they are substitutes
-                # 'local_base_1w',
-                # 'A local base dataset',
-                "remote_base_1w",
-                "A remote base dataset",
-            },
-            set(dataset_titles_dict),
+            {ds["id"] for ds in datasets},
         )
 
 

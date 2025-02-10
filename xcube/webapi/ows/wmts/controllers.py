@@ -5,7 +5,7 @@
 import urllib.parse
 import warnings
 from collections.abc import Mapping
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import pyproj
@@ -21,6 +21,10 @@ from xcube.core.tilingscheme import (
     TilingScheme,
 )
 from xcube.webapi.common.xml import Document, Element
+from xcube.webapi.datasets.controllers import (
+    get_dataset_title_and_description,
+    get_variable_title_and_description,
+)
 
 from .context import WmtsContext
 
@@ -154,9 +158,11 @@ def get_capabilities_element(ctx: WmtsContext, base_url: str, tms_id: str) -> El
             "xmlns:ows": "http://www.opengis.net/ows/1.1",
             "xmlns:xlink": "http://www.w3.org/1999/xlink",
             "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "xsi:schemaLocation": "http://www.opengis.net/wmts/1.0"
-            " http://schemas.opengis.net/wmts/1.0.0/"
-            "wmtsGetCapabilities_response.xsd",
+            "xsi:schemaLocation": (
+                "http://www.opengis.net/wmts/1.0"
+                " http://schemas.opengis.net/wmts/1.0.0/"
+                "wmtsGetCapabilities_response.xsd"
+            ),
             "version": WMTS_VERSION,
         },
         elements=[
@@ -217,8 +223,8 @@ def get_dim_elements(
         dim_element = Element(
             "Dimension",
             elements=[
-                Element("ows:Identifier", text=f"{dim_name}"),
-                Element("ows:Title", text=dim_title),
+                Element("ows:Identifier", text=str(dim_name)),
+                Element("ows:Title", text=str(dim_title)),
                 Element("ows:UOM", text=units),
                 Element("Default", text=default),
                 Element("Current", text=current),
@@ -246,16 +252,13 @@ def get_dim_elements(
 def get_ds_theme_element(
     ds_name: str, ds: xr.Dataset, dataset_config: Mapping[str, Any]
 ) -> Element:
-    ds_title = dataset_config.get("Title", ds.attrs.get("title", ds_name))
-    ds_abstract = dataset_config.get(
-        "Abstract", ds.attrs.get("abstract", ds.attrs.get("comment", ""))
-    )
+    ds_title, ds_abstract = get_dataset_title_and_description(ds, dataset_config)
     return Element(
         "Theme",
         elements=[
             Element("ows:Identifier", text=ds_name),
             Element("ows:Title", text=ds_title),
-            Element("ows:Abstract", text=ds_abstract),
+            Element("ows:Abstract", text=ds_abstract or ""),
         ],
     )
 
@@ -268,17 +271,15 @@ def get_var_layer_and_theme_element(
     var_tile_url_templ_pattern: str,
     tms_id: str,
 ) -> tuple[Element, Element]:
+    var_title, var_abstract = get_variable_title_and_description(var_name, var)
     var_id = f"{ds_name}.{var_name}"
-    var_title = (
-        ds_name + "/" + var.attrs.get("title", var.attrs.get("long_name", var_name))
-    )
-    var_abstract = var.attrs.get("comment", var.attrs.get("abstract", ""))
+    var_title = f"{ds_name}/{var_title}"
     var_theme_element = Element(
         "Theme",
         elements=[
             Element("ows:Identifier", text=var_id),
             Element("ows:Title", text=var_title),
-            Element("ows:Abstract", text=var_abstract),
+            Element("ows:Abstract", text=var_abstract or ""),
             Element("LayerRef", text=var_id),
         ],
     )
@@ -290,9 +291,9 @@ def get_var_layer_and_theme_element(
     layer_element = Element(
         "Layer",
         elements=[
-            Element("ows:Identifier", text=f"{ds_name}.{var_name}"),
-            Element("ows:Title", text=f"{var_title}"),
-            Element("ows:Abstract", text=f"{var_abstract}"),
+            Element("ows:Identifier", text=var_id),
+            Element("ows:Title", text=var_title),
+            Element("ows:Abstract", text=var_abstract),
             Element(
                 "ows:WGS84BoundingBox",
                 elements=[
