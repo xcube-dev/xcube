@@ -6,9 +6,6 @@ import shapely
 import shapely.ops
 
 from chartlets import Component, Input, State, Output, Container
-
-# from chartlets.components import Box, Button, Typography, Plot, Select  # VegaChart
-
 from chartlets.components import Box, Button, Typography, Select, VegaChart
 
 from xcube.webapi.viewer.contrib import Panel, get_dataset
@@ -34,17 +31,12 @@ def render_panel(
     theme_mode: str,
 ) -> Component:
 
-    # if theme_mode == "dark":
-    #    alt.theme.enable(name=theme_mode)
-    # else:
-    #    alt.theme.enable(name="default")  # in viewer: light
     if theme_mode == "light":
         theme_mode = "default"
-    # plot = Plot(id="plot", chart=None, style={"flexGrow": 3})  # , theme="dark")
+
     plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme=theme_mode)
 
-    text = f"{dataset_id} " f"/ {time_label[0:-1]}"
-
+    text = f"{dataset_id} " f"/ {time_label[0:-1]}"team
     place_text = Typography(
         id="text", children=[text], color="pink", style={"flexGrow": 3}
     )
@@ -109,12 +101,12 @@ def get_wavelength(
     grid_mapping = GridMapping.from_dataset(dataset)
 
     for feature in placegroup[0]["features"]:
-        print("PLACE!!!!!!!!!!!!!!!!!!!")
+
         print(place)
         print(feature["id"])
         # if feature["id"] == place:
         if feature["properties"]["label"] == place:
-            print("TRUEEEEEEEEEEEEEEEE")
+
             placelabel = feature["properties"]["label"]
             place_geometry = feature["geometry"]
 
@@ -239,9 +231,9 @@ def update_plot(
         return None
 
     chart = (
-        alt.Chart(source)
-        # .mark_line(point=True)
-        .mark_line().encode(
+        alt.Chart(source).mark_line(point=True)
+        # .mark_line()
+        .encode(
             x="wavelength:Q",
             y="reflectance:Q",
             color="places:N",
