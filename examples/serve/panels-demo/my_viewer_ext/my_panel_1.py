@@ -135,7 +135,9 @@ def update_plot(
         density=True,
     )
     # x and y 2D arrays with bin centers
-    x, y = np.meshgrid(np.arange(num_bins), np.arange(num_bins))
+    x_centers = (x_edges[:-1] + x_edges[1:]) / 2
+    y_centers = (y_edges[:-1] + y_edges[1:]) / 2
+    x, y = np.meshgrid(x_centers, y_centers)
     # z = hist2d
     z = np.where(hist2d > 0.0, hist2d, np.nan).T
     source = pd.DataFrame(
@@ -152,14 +154,32 @@ def update_plot(
         .encode(
             x=alt.X(
                 f"{var_1_name}:O",
+                # axis=alt.Axis(values=x_axis),
+                axis=alt.Axis(
+                    labelAngle=45,
+                    tickCount=5,
+                    labelOverlap="greedy",
+                    labelPadding=5,
+                    format=".2f",
+                ),
                 # scale=alt.Scale(bins=x_centers),
+                scale=alt.Scale(nice=True),
             ),
             y=alt.Y(
                 f"{var_2_name}:O",
                 sort="descending",
                 # scale=alt.Scale(bins=y_centers),
+                # axis=alt.Axis(values=y_axis),
+                scale=alt.Scale(nice=True),
+                axis=alt.Axis(
+                    tickCount=5,
+                    labelOverlap="greedy",
+                    labelPadding=5,
+                    format=".2f",
+                ),
             ),
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
+            tooltip=[var_1_name, var_2_name, "z:Q"],
         )
     ).properties(width=360, height=360)
 
