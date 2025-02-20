@@ -148,6 +148,20 @@ def update_plot(
     y_centers = y_edges[0:-1] + np.diff(y_edges) / 2
     # TODO: limit number of ticks on axes to, e.g., 10.
     # TODO: allow chart to be adjusted to available container (<div>) size.
+
+    # Get the tick values
+    x_num_ticks = 8
+    x_tick_values = np.linspace(min(x_centers), max(x_centers), x_num_ticks)
+    x_tick_values = np.array(
+        [min(x_centers, key=lambda x: abs(x - t)) for t in x_tick_values]
+    )
+
+    num_ticks = 8
+    y_tick_values = np.linspace(min(y_centers), max(y_centers), num_ticks)
+    y_tick_values = np.array(
+        [min(y_centers, key=lambda y: abs(y - t)) for t in y_tick_values]
+    )
+
     chart = (
         alt.Chart(source)
         .mark_rect()
@@ -157,10 +171,10 @@ def update_plot(
                 # axis=alt.Axis(values=x_axis),
                 axis=alt.Axis(
                     labelAngle=45,
-                    tickCount=5,
+                    values=x_tick_values,
                     labelOverlap="greedy",
                     labelPadding=5,
-                    format=".2f",
+                    format=".3f",
                 ),
                 # scale=alt.Scale(bins=x_centers),
                 scale=alt.Scale(nice=True),
@@ -172,10 +186,10 @@ def update_plot(
                 # axis=alt.Axis(values=y_axis),
                 scale=alt.Scale(nice=True),
                 axis=alt.Axis(
-                    tickCount=5,
+                    values=y_tick_values,
                     labelOverlap="greedy",
                     labelPadding=5,
-                    format=".2f",
+                    format=".3f",
                 ),
             ),
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
