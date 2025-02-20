@@ -101,4 +101,4 @@ def prepend_sys_path(path: Path | str | None):
     finally:
         if prev_sys_path:
             sys.path = prev_sys_path
-            LOG.info(f"Restored sys.path")
+            LOG.info("Restored sys.path")
