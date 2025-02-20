@@ -1,5 +1,19 @@
 ## Changes in 1.8.3 (in development)
 
+### Enhancements
+
+* xcube Server now can be configured to provide abstracts/descriptions for datasets 
+  so they can be rendered as markdown in xcube Viewer 
+  (https://github.com/xcube-dev/xcube-viewer/issues/454). (#1122)
+  
+  1. New `description` properties have been added to responses from xcube Server for 
+     datasets and variables.
+  2. User can now provide abstracts or descriptions using markdown format for dataset 
+     configurations in xcube Server. A new configuration setting `Description` 
+     now accompanies settings such as `Title`.
+  3. Default values for the `Description` setting are derived from metadata of 
+     datasets and variable CF attributes.
+
 ### Other changes
 
 * Reformatted code base according to the default settings used by 

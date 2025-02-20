@@ -140,6 +140,7 @@ class Viewer:
         dataset: Union[xr.Dataset, MultiLevelDataset],
         ds_id: Optional[str] = None,
         title: Optional[str] = None,
+        description: Optional[str] = None,
         style: Optional[str] = None,
         color_mappings: dict[str, dict[str, Any]] = None,
     ):
@@ -152,6 +153,8 @@ class Viewer:
             ds_id: Optional dataset identifier. If not given, an
                 identifier will be generated and returned.
             title: Optional dataset title. Overrides a title given by
+                dataset metadata.
+            description: Optional dataset description. Overrides a description given by
                 dataset metadata.
             style: Optional name of a style that must exist in the
                 server configuration.
@@ -169,6 +172,7 @@ class Viewer:
             dataset,
             ds_id=ds_id,
             title=title,
+            description=description,
             style=style,
             color_mappings=color_mappings,
         )
