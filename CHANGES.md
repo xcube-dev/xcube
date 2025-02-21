@@ -15,6 +15,11 @@
      datasets and variable CF attributes.
 * Improved axis labeling in 2D histogram visualization in the Panel demo.
 
+* Added support for the xcube Viewer's `Markdown` component so it can be used in 
+  server-side viewer extensions. See new package `xcube.webapi.viewer.components`
+  exporting class `Markdown` which has a single `text` property that takes 
+  the markdown text.
+
 ### Other changes
 
 * Reformatted code base according to the default settings used by 
