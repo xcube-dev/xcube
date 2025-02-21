@@ -21,6 +21,7 @@
   [ruff](https://docs.astral.sh/ruff/). Updated development 
   dependencies accordingly.
 * Updated copyright notices.
+* Ensured xcube can be installed and tested in Python 3.13 environments.
 
 ## Changes in 1.8.2
 
