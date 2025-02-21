@@ -9,7 +9,7 @@ import unittest
 import warnings
 from abc import ABC, abstractmethod
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import fsspec
 import numpy as np
@@ -452,7 +452,7 @@ class FsDataStoresTestMixin(ABC):
                 )
             # if "s3" data store is tested, warnings from other
             # libraries like botocore occur
-            if data_store.protocol is not "s3":
+            if data_store.protocol != "s3":
                 self.assertEqual(1, len(w))
             self.assertEqual(w[0].category, UserWarning)
             self.assertEqual(warning_msg, w[0].message.args[0])
