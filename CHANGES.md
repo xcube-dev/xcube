@@ -14,6 +14,11 @@
   3. Default values for the `Description` setting are derived from metadata of 
      datasets and variable CF attributes.
 
+* Added support the xcube Viewer's `Markdown` component so it can be used in 
+  server-side viewer extensions. See new package `xcube.webapi.viewer.components`
+  exporting class `Markdown` which has a single `text` property that takes 
+  the markdown text.
+
 ### Other changes
 
 * Reformatted code base according to the default settings used by 
