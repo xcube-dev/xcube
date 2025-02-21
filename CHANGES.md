@@ -13,6 +13,7 @@
      now accompanies settings such as `Title`.
   3. Default values for the `Description` setting are derived from metadata of 
      datasets and variable CF attributes.
+* Improved axis labeling in 2D histogram visualization in the Panel demo.
 
 ### Other changes
 
