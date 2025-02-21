@@ -1,4 +1,4 @@
-## Changes in 1.8.3 (in development)
+## Changes in 1.8.3
 
 ### Enhancements
 
@@ -20,6 +20,8 @@
   exporting class `Markdown` which has a single `text` property that takes 
   the markdown text.
 
+* Bundled [xcube Viewer 1.4.2](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.2).
+
 ### Other changes
 
 * Reformatted code base according to the default settings used by 
@@ -28,6 +30,8 @@
   dependencies accordingly.
 * Updated copyright notices.
 * Ensured xcube can be installed and tested in Python 3.13 environments.
+* Added a configuration file `xrlint_config.yaml` for the 
+  [xrlint](https://bcdev.github.io/xrlint/) tool to the project repository.
 
 ## Changes in 1.8.2
 
