@@ -20,6 +20,7 @@ from .datatype import (
     DATASET_TYPE,
     GEO_DATA_FRAME_TYPE,
     MULTI_LEVEL_DATASET_TYPE,
+    VECTOR_DATA_CUBE_TYPE,
     DataType,
     DataTypeLike,
 )

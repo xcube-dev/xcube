@@ -58,3 +58,4 @@ dependencies:
   - requests-mock >=1.8
   - ruff >=0.9
   - werkzeug
+  - xvec
