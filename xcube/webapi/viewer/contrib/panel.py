@@ -12,7 +12,27 @@ class Panel(Contribution):
     Args:
         name: A name that is unique within the extension.
         title: An initial title for the panel.
+        icon: Name of a Material Design icon, see https://fonts.google.com/icons.
+        position: If given, place the panel at the given position.
+        after: If given, place the panel after the given position or name.
+        before: If given, place the panel before the given position or name.
     """
 
-    def __init__(self, name: str, title: str | None = None):
-        super().__init__(name, visible=False, title=title)
+    def __init__(
+        self,
+        name: str,
+        title: str | None = None,
+        icon: str | None = None,
+        position: int | None = None,
+        after: int | str | None = None,
+        before: int | str | None = None,
+    ):
+        super().__init__(
+            name,
+            visible=False,
+            title=title,
+            icon=icon,
+            position=position,
+            after=after,
+            before=before,
+        )
