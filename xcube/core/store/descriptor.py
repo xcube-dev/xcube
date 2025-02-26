@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Tuple, Optional, Dict, Any, Union
-from collections.abc import Sequence, Mapping, Hashable
+from collections.abc import Hashable, Mapping, Sequence
+from typing import Any, Dict, Optional, Tuple, Union
 
 import dask.array
 import geopandas as gpd
@@ -14,29 +14,34 @@ import xarray as xr
 
 from xcube.core.geom import get_dataset_bounds
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.timecoord import get_end_time_from_attrs
-from xcube.core.timecoord import get_start_time_from_attrs
-from xcube.core.timecoord import get_time_range_from_data
-from xcube.core.timecoord import remove_time_part_from_isoformat
-from xcube.util.assertions import assert_given, assert_true
-from xcube.util.assertions import assert_not_none
+from xcube.core.timecoord import (
+    get_end_time_from_attrs,
+    get_start_time_from_attrs,
+    get_time_range_from_data,
+    remove_time_part_from_isoformat,
+)
+from xcube.util.assertions import assert_given, assert_not_none, assert_true
 from xcube.util.ipython import register_json_formatter
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonDateSchema
-from xcube.util.jsonschema import JsonDatetimeSchema
-from xcube.util.jsonschema import JsonComplexSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-from .datatype import ANY_TYPE
-from .datatype import DATASET_TYPE
-from .datatype import DataType
-from .datatype import DataTypeLike
-from .datatype import GEO_DATA_FRAME_TYPE
-from .datatype import MULTI_LEVEL_DATASET_TYPE
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonComplexSchema,
+    JsonDateSchema,
+    JsonDatetimeSchema,
+    JsonIntegerSchema,
+    JsonNumberSchema,
+    JsonObject,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 
+from .datatype import (
+    ANY_TYPE,
+    DATASET_TYPE,
+    GEO_DATA_FRAME_TYPE,
+    MULTI_LEVEL_DATASET_TYPE,
+    DataType,
+    DataTypeLike,
+)
 
 # TODO: IMPORTANT: replace, reuse, or align with
 #   xcube.core.schema.CubeSchema class
@@ -349,8 +354,7 @@ class MultiLevelDatasetDescriptor(DatasetDescriptor):
         super().__init__(data_id=data_id, data_type=data_type, **kwargs)
         assert_true(
             MULTI_LEVEL_DATASET_TYPE.is_super_type_of(data_type),
-            f"illegal data_type,"
-            f" must be compatible with {MULTI_LEVEL_DATASET_TYPE!r}",
+            f"illegal data_type, must be compatible with {MULTI_LEVEL_DATASET_TYPE!r}",
         )
         self.num_levels = num_levels
 
@@ -388,7 +392,7 @@ class GeoDataFrameDescriptor(DataDescriptor):
         super().__init__(data_id=data_id, data_type=data_type, **kwargs)
         assert_true(
             GEO_DATA_FRAME_TYPE.is_super_type_of(data_type),
-            f"illegal data_type," f" must be compatible with {GEO_DATA_FRAME_TYPE!r}",
+            f"illegal data_type, must be compatible with {GEO_DATA_FRAME_TYPE!r}",
         )
         self.feature_schema = feature_schema
 

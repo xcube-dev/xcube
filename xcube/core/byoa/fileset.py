@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,22 +6,22 @@ import fnmatch
 import os.path
 import re
 import zipfile
-from typing import Any, Optional, Union
 from collections.abc import Collection, Iterator
+from typing import Any, Optional, Union
 
 import fsspec
 import fsspec.implementations.zip
 from fsspec.implementations.local import LocalFileSystem
 
 from xcube.core.byoa.constants import TEMP_FILE_PREFIX
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-from xcube.util.temp import new_temp_dir
-from xcube.util.temp import new_temp_file
+from xcube.util.assertions import assert_given, assert_instance
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonObject,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
+from xcube.util.temp import new_temp_dir, new_temp_file
 
 
 class _FileSetDetails:

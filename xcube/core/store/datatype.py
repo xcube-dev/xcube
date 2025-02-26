@@ -1,14 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os
 from abc import ABC, abstractmethod
-
-from typing import Tuple, Generic, TypeVar, Any
-from collections.abc import Sequence, Iterator
-from typing import Type, List
-from typing import Union
+from collections.abc import Iterator, Sequence
+from typing import Any, Generic, List, Tuple, Type, TypeVar, Union
 
 import geopandas
 import xarray

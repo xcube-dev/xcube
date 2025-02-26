@@ -1,22 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import traceback
 
-from xcube.core.normalize import DatasetIsNotACubeError
-from xcube.core.normalize import decode_cube
-from xcube.core.store import DATASET_TYPE
-from xcube.core.store import DataStoreError
-from xcube.core.store import DataStorePool
-from xcube.core.store import get_data_store_instance
-from xcube.core.store import new_data_opener
+from xcube.core.normalize import DatasetIsNotACubeError, decode_cube
+from xcube.core.store import (
+    DATASET_TYPE,
+    DataStoreError,
+    DataStorePool,
+    get_data_store_instance,
+    new_data_opener,
+)
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
-from .transformer import TransformedCube
-from ..config import CubeConfig
-from ..config import InputConfig
+
+from ..config import CubeConfig, InputConfig
 from ..error import CubeGeneratorError
+from .transformer import TransformedCube
 
 # Names of cube configuration parameters that
 # are not shared with open parameters.
@@ -106,7 +107,7 @@ class CubeOpener:
                 break
         if not opener_ids:
             raise CubeGeneratorError(
-                f"Data store {input_config.store_id!r}" f" does not support datasets",
+                f"Data store {input_config.store_id!r} does not support datasets",
                 status_code=400,
             )
         opener_id = opener_ids[0]

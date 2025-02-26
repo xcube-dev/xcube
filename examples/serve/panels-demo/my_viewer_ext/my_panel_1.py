@@ -1,19 +1,22 @@
+#  Copyright (c) 2018-2025 by xcube team and contributors
+#  Permissions are hereby granted under the terms of the MIT License:
+#  https://opensource.org/licenses/MIT.
+
 import altair as alt
 import numpy as np
 import pandas as pd
 import pyproj
 import shapely
+import shapely.geometry
 import shapely.ops
-from chartlets import Component, Input, State, Output
-from chartlets.components import Box, Button, CircularProgress, Plot, Select
+from chartlets import Component, Input, Output, State
+from chartlets.components import Box, Button, CircularProgress, Select, VegaChart
 
 from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
 from xcube.core.gridmapping import GridMapping
-from xcube.webapi.viewer.contrib import Panel
-from xcube.webapi.viewer.contrib import get_dataset
 from xcube.server.api import Context
-
+from xcube.webapi.viewer.contrib import Panel, get_dataset
 
 panel = Panel(__name__, title="2D Histogram")
 
@@ -28,7 +31,7 @@ NUM_BINS_MAX = 64
 def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
-    plot = Plot(id="plot", chart=None, style={"paddingTop": 6})
+    plot = VegaChart(id="plot", chart=None, style={"paddingTop": 6})
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
@@ -104,6 +107,15 @@ def update_plot(
         ).transform
         place_geometry = shapely.ops.transform(project, place_geometry)
 
+    if (
+        place_geometry is None
+        or place_geometry.is_empty
+        or isinstance(place_geometry, shapely.geometry.Point)
+    ):
+        # TODO: set error message in panel UI
+        print("2-D histogram only works for geometries with a non-zero extent.")
+        return
+
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
         # TODO: set error message in panel UI
@@ -123,7 +135,9 @@ def update_plot(
         density=True,
     )
     # x and y 2D arrays with bin centers
-    x, y = np.meshgrid(np.arange(num_bins), np.arange(num_bins))
+    x_centers = (x_edges[:-1] + x_edges[1:]) / 2
+    y_centers = (y_edges[:-1] + y_edges[1:]) / 2
+    x, y = np.meshgrid(x_centers, y_centers)
     # z = hist2d
     z = np.where(hist2d > 0.0, hist2d, np.nan).T
     source = pd.DataFrame(
@@ -134,20 +148,52 @@ def update_plot(
     y_centers = y_edges[0:-1] + np.diff(y_edges) / 2
     # TODO: limit number of ticks on axes to, e.g., 10.
     # TODO: allow chart to be adjusted to available container (<div>) size.
+
+    # Get the tick values
+    x_num_ticks = 8
+    x_tick_values = np.linspace(min(x_centers), max(x_centers), x_num_ticks)
+    x_tick_values = np.array(
+        [min(x_centers, key=lambda x: abs(x - t)) for t in x_tick_values]
+    )
+
+    num_ticks = 8
+    y_tick_values = np.linspace(min(y_centers), max(y_centers), num_ticks)
+    y_tick_values = np.array(
+        [min(y_centers, key=lambda y: abs(y - t)) for t in y_tick_values]
+    )
+
     chart = (
         alt.Chart(source)
         .mark_rect()
         .encode(
             x=alt.X(
                 f"{var_1_name}:O",
+                # axis=alt.Axis(values=x_axis),
+                axis=alt.Axis(
+                    labelAngle=45,
+                    values=x_tick_values,
+                    labelOverlap="greedy",
+                    labelPadding=5,
+                    format=".3f",
+                ),
                 # scale=alt.Scale(bins=x_centers),
+                scale=alt.Scale(nice=True),
             ),
             y=alt.Y(
                 f"{var_2_name}:O",
                 sort="descending",
                 # scale=alt.Scale(bins=y_centers),
+                # axis=alt.Axis(values=y_axis),
+                scale=alt.Scale(nice=True),
+                axis=alt.Axis(
+                    values=y_tick_values,
+                    labelOverlap="greedy",
+                    labelPadding=5,
+                    format=".3f",
+                ),
             ),
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
+            tooltip=[var_1_name, var_2_name, "z:Q"],
         )
     ).properties(width=360, height=360)
 
@@ -194,7 +240,6 @@ def get_var_select_options(
     var_name_1: str | None = None,
     var_name_2: str | None = None,
 ) -> tuple[list, str | None, str | None]:
-
     if dataset is not None:
         var_names = [
             var_name

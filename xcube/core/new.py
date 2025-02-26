@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -105,7 +105,7 @@ def new_cube(
         raise ValueError()
 
     if use_cftime and time_dtype is not None:
-        raise ValueError('If "use_cftime" is True,' ' "time_dtype" must not be set.')
+        raise ValueError('If "use_cftime" is True, "time_dtype" must not be set.')
 
     x_is_lon = x_name == "lon" or x_units == "degrees_east"
     y_is_lat = y_name == "lat" or y_units == "degrees_north"

@@ -1,14 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Dict
-from typing import Union
+from typing import Dict, Union
 
 from xcube.util.config import load_json_or_yaml_config
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import JsonObject, JsonObjectSchema, JsonStringSchema
 
 DEFAULT_ENDPOINT_URL = "https://xcube-gen.brockmann-consult.de/api/v2/"
 
@@ -62,7 +59,7 @@ class ServiceConfig(JsonObject):
         if isinstance(service_config, dict):
             return ServiceConfig.from_dict(service_config)
         raise TypeError(
-            "service_config must be a str, dict, " "or a ServiceConfig instance"
+            "service_config must be a str, dict, or a ServiceConfig instance"
         )
 
     @classmethod

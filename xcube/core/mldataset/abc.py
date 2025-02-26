@@ -1,19 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import math
-from abc import abstractmethod, ABCMeta
-from functools import cached_property
-from typing import Any, Dict, Callable, Tuple
+from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence
+from functools import cached_property
+from typing import Any, Callable, Dict, Tuple
 
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
-from xcube.util.types import ScalarOrPair
-from xcube.util.types import normalize_scalar_or_pair
+from xcube.util.types import ScalarOrPair, normalize_scalar_or_pair
 
 
 class MultiLevelDataset(metaclass=ABCMeta):

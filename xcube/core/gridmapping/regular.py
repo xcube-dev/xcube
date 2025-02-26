@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,13 +9,16 @@ import pyproj
 import xarray as xr
 
 from xcube.util.assertions import assert_true
+
 from .base import GridMapping
-from .helpers import _default_xy_dim_names
-from .helpers import _default_xy_var_names
-from .helpers import _normalize_crs
-from .helpers import _normalize_int_pair
-from .helpers import _normalize_number_pair
-from .helpers import _to_int_or_float
+from .helpers import (
+    _default_xy_dim_names,
+    _default_xy_var_names,
+    _normalize_crs,
+    _normalize_int_pair,
+    _normalize_number_pair,
+    _to_int_or_float,
+)
 
 
 class RegularGridMapping(GridMapping):
@@ -55,7 +58,9 @@ class RegularGridMapping(GridMapping):
         xy_coords = da.concatenate(
             [da.expand_dims(x_coords_2d, 0), da.expand_dims(y_coords_2d, 0)]
         )
-        xy_coords = da.rechunk(xy_coords, chunks=(2, 512, 512))
+        xy_coords = da.rechunk(
+            xy_coords, chunks=(2, xy_coords.chunksize[1], xy_coords.chunksize[2])
+        )
         xy_coords = xr.DataArray(
             xy_coords,
             dims=("coord", self.y_coords.dims[0], self.x_coords.dims[0]),

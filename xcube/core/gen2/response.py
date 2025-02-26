@@ -1,19 +1,20 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 from abc import abstractmethod
-from typing import Dict, Any, Optional, List, TypeVar, Generic, Type
 from collections.abc import Sequence
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from xcube.core.store import DatasetDescriptor
-from xcube.util.assertions import assert_in
-from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObject
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.assertions import assert_in, assert_instance
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonIntegerSchema,
+    JsonObject,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 
 STATUS_IDS = ["ok", "error", "warning"]
 

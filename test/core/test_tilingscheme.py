@@ -1,16 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 
 import unittest
 
-from xcube.core.tilingscheme import EARTH_CIRCUMFERENCE_WGS84
-from xcube.core.tilingscheme import TilingScheme
-from xcube.core.tilingscheme import get_num_levels
-from xcube.core.tilingscheme import get_unit_factor
-from xcube.core.tilingscheme import subdivide_size
 from xcube.constants import CRS84
+from xcube.core.tilingscheme import (
+    EARTH_CIRCUMFERENCE_WGS84,
+    TilingScheme,
+    get_num_levels,
+    get_unit_factor,
+    subdivide_size,
+)
 
 
 class TilingSchemeTest(unittest.TestCase):

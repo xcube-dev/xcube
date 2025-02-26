@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -10,9 +10,7 @@ import numpy as np
 import xarray as xr
 from zarr.storage import MemoryStore
 
-from xcube.core.chunkstore import ChunkStore
-from xcube.core.chunkstore import LoggingStore
-from xcube.core.chunkstore import MutableLoggingStore
+from xcube.core.chunkstore import ChunkStore, LoggingStore, MutableLoggingStore
 
 
 class ChunkStoreTest(unittest.TestCase):
@@ -115,7 +113,7 @@ class LoggingStoreTest(unittest.TestCase):
         self.assertWriteOk(MutableLoggingStore(self.original_store))
 
     def setUp(self) -> None:
-        self.zattrs_value = b''
+        self.zattrs_value = b""
         self.original_store = MemoryStore()
         self.original_store.update({"chl/.zattrs": self.zattrs_value})
 
@@ -133,7 +131,7 @@ class LoggingStoreTest(unittest.TestCase):
         self.assertEqual({"chl/.zattrs"}, set(self.original_store.keys()))
 
     def assertWriteOk(self, logging_store: MutableLoggingStore):
-        zarray_value = b''
+        zarray_value = b""
         logging_store["chl/.zarray"] = zarray_value
         self.assertEqual(
             {"chl/.zattrs", "chl/.zarray"}, set(self.original_store.keys())

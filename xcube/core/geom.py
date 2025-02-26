@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import math
 import warnings
-from typing import Optional, Union, Dict, Tuple, Any, List
-from collections.abc import Sequence, Mapping
+from collections.abc import Mapping, Sequence
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import affine
 import dask.array as da
@@ -13,13 +13,14 @@ import geopandas as gpd
 import numpy as np
 import rasterio.features
 import shapely.geometry
-import shapely.geometry
 import shapely.wkt
 import xarray as xr
 
-from xcube.core.schema import get_dataset_bounds_var_name
-from xcube.core.schema import get_dataset_chunks
-from xcube.core.schema import get_dataset_xy_var_names
+from xcube.core.schema import (
+    get_dataset_bounds_var_name,
+    get_dataset_chunks,
+    get_dataset_xy_var_names,
+)
 from xcube.core.update import update_dataset_spatial_attrs
 from xcube.util.geojson import GeoJSON
 from xcube.util.types import normalize_scalar_or_pair
@@ -154,7 +155,7 @@ def rasterize_features(
         geo_data_frame = gpd.GeoDataFrame.from_features(features)
     for feature_prop_name in feature_props:
         if feature_prop_name not in geo_data_frame:
-            raise ValueError(f"feature property " f"{feature_prop_name!r} not found")
+            raise ValueError(f"feature property {feature_prop_name!r} not found")
 
     # Filter out empty or invalid geometries, remember valid rows
     geometries = []

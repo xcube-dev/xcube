@@ -1,9 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Tuple, List, Union, Dict, Any
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import xarray as xr
@@ -421,9 +421,7 @@ def _get_gcps(
     for j in np.linspace(0, j_size - 1, j_count, dtype=np.int32):
         for i in np.linspace(0, i_size - 1, i_count, dtype=np.int32):
             x, y = float(x_values[j, i]), float(y_values[j, i])
-            gcps.append(
-                gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, f"{i},{j}", str(gcp_id))
-            )
+            gcps.append(gdal.GCP(x, y, 0.0, i + 0.5, j + 0.5, f"{i},{j}", str(gcp_id)))
             gcp_id += 1
     return gcps
 

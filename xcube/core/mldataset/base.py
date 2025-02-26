@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -8,12 +8,14 @@ import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.schema import rechunk_cube
-from xcube.core.subsampling import AggMethods
-from xcube.core.subsampling import get_dataset_agg_methods
-from xcube.core.subsampling import subsample_dataset
+from xcube.core.subsampling import (
+    AggMethods,
+    get_dataset_agg_methods,
+    subsample_dataset,
+)
 from xcube.core.tilingscheme import get_num_levels
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.util.assertions import assert_instance, assert_true
+
 from .lazy import LazyMultiLevelDataset
 
 

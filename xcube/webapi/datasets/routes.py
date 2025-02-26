@@ -1,21 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
+from xcube.server.api import ApiError, ApiHandler
 from xcube.util.assertions import assert_true
 from xcube.util.cmaps import DEFAULT_CMAP_NAME
+
+from ..places import PATH_PARAM_PLACE_GROUP_ID
 from .api import api
 from .context import DatasetsContext
-from .controllers import find_dataset_places
-from .controllers import get_color_bars
-from .controllers import get_dataset
-from .controllers import get_dataset_coordinates
-from .controllers import get_dataset_place_group
-from .controllers import get_datasets
-from .controllers import get_legend
-from ..places import PATH_PARAM_PLACE_GROUP_ID
+from .controllers import (
+    find_dataset_places,
+    get_color_bars,
+    get_dataset,
+    get_dataset_coordinates,
+    get_dataset_place_group,
+    get_datasets,
+    get_legend,
+)
 
 PATH_PARAM_DATASET_ID = {
     "name": "datasetId",
@@ -41,14 +43,14 @@ QUERY_PARAM_CRS = {
 QUERY_PARAM_VMIN = {
     "name": "vmin",
     "in": "query",
-    "description": "Minimum value of variable" " for color mapping",
+    "description": "Minimum value of variable for color mapping",
     "schema": {"type": "number", "default": 0},
 }
 
 QUERY_PARAM_VMAX = {
     "name": "vmax",
     "in": "query",
-    "description": "Maximum value of variable" " for color mapping",
+    "description": "Maximum value of variable for color mapping",
     "schema": {"type": "number", "default": 1},
 }
 
@@ -173,7 +175,7 @@ class PlacesForDatasetHandler(ApiHandler[DatasetsContext]):
     @api.operation(
         operation_id="findPlacesForDataset",
         tags=["places"],
-        summary="Find places in place group for" " bounding box of given dataset.",
+        summary="Find places in place group for bounding box of given dataset.",
         parameters=[PATH_PARAM_PLACE_GROUP_ID, PATH_PARAM_DATASET_ID],
     )
     def get(self, placeGroupId: str, datasetId: str):
@@ -245,7 +247,7 @@ class NewLegendHandler(LegendHandler):
     @api.operation(
         operation_id="getLegendForTiles",
         tags=["tiles"],
-        summary="Get the legend as PNG used for the tiles" " for given variable.",
+        summary="Get the legend as PNG used for the tiles for given variable.",
         parameters=LEGEND_PARAMETERS,
     )
     async def get(self, datasetId: str, varName: str):

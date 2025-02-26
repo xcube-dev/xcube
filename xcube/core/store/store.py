@@ -1,25 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from abc import abstractmethod, ABC
-from typing import Tuple, Any, Optional, List, Type, Dict, Union
-from collections.abc import Iterator, Container
+from abc import ABC, abstractmethod
+from collections.abc import Container, Iterator
+from typing import Any, Optional, Union
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
-from xcube.util.extension import Extension
-from xcube.util.extension import ExtensionPredicate
-from xcube.util.extension import ExtensionRegistry
+from xcube.util.extension import Extension, ExtensionPredicate, ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
-from .accessor import DataOpener
-from .accessor import DataWriter
+
+from .accessor import DataOpener, DataPreloader, DataWriter
 from .assertions import assert_valid_params
 from .datatype import DataTypeLike
 from .descriptor import DataDescriptor
 from .error import DataStoreError
+from .preload import NullPreloadHandle, PreloadHandle
 from .search import DataSearcher
-
 
 #######################################################
 # Data store instantiation and registry query
@@ -70,8 +68,7 @@ def get_data_store_class(
     extension_registry = extension_registry or get_extension_registry()
     if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
         raise DataStoreError(
-            f'Unknown data store "{data_store_id}"'
-            f" (may be due to missing xcube plugin)"
+            f'Unknown data store "{data_store_id}" (may be due to missing xcube plugin)'
         )
     return extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
 
@@ -139,7 +136,7 @@ def list_data_store_ids(detail: bool = False) -> Union[list[str], dict[str, Any]
 #######################################################
 
 
-class DataStore(DataOpener, DataSearcher, ABC):
+class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
     """A data store represents a collection of data resources that
     can be enumerated, queried, and opened in order to obtain
     in-memory representations of the data. The same data resource may be
@@ -196,7 +193,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
 
     @abstractmethod
     def get_data_ids(
-        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+        self,
+        data_type: DataTypeLike = None,
+        include_attrs: Container[str] | bool = False,
     ) -> Union[Iterator[str], Iterator[tuple[str, dict[str, Any]]]]:
         """Get an iterator over the data resource identifiers for the
         given type *data_type*. If *data_type* is omitted, all data
@@ -214,8 +213,12 @@ class DataStore(DataOpener, DataSearcher, ABC):
         Hence, the type of the returned iterator items depends on the
         value of *include_attrs*:
 
-        - If *include_attrs* is None (the default), the method returns
+        - If *include_attrs* is False (the default), the method returns
           an iterator of dataset identifiers *data_id* of type `str`.
+        - If *include_attrs* is True, the method returns an iterator of tuples
+          (*data_id*, *attrs*) of type `Tuple[str, Dict]`, where *attrs*
+          is a dictionary filled with all the attributes available respectively
+          for each *data_id*.
         - If *include_attrs* is a sequence of attribute names, even an
           empty one, the method returns an iterator of tuples
           (*data_id*, *attrs*) of type `Tuple[str, Dict]`, where *attrs*
@@ -251,7 +254,9 @@ class DataStore(DataOpener, DataSearcher, ABC):
         """
 
     def list_data_ids(
-        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+        self,
+        data_type: DataTypeLike = None,
+        include_attrs: Container[str] | bool = False,
     ) -> Union[list[str], list[tuple[str, dict[str, Any]]]]:
         """Convenience version of `get_data_ids()` that returns a list rather
         than an iterator.
@@ -260,11 +265,14 @@ class DataStore(DataOpener, DataSearcher, ABC):
             data_type: If given, only data identifiers that are
                 available as this type are returned. If this is omitted,
                 all available data identifiers are returned.
-            include_attrs: A sequence of names of attributes to be
-                returned for each dataset identifier. If given, the
-                store will attempt to provide the set of requested
+            include_attrs: A boolean or sequence of names of attributes to be
+                returned for each dataset identifier. If a sequence of names of
+                attributes given, the store will attempt to provide the set of requested
                 dataset attributes in addition to the data ids. (added
-                in xcube 0.8.0)
+                in xcube 0.8.0).
+                If True, all the attributes for each dataset identifier will be
+                returned.
+                If False (default), only the data_ids are returned.
 
         Returns:
             A list comprising the identifiers and titles of data
@@ -463,6 +471,50 @@ class DataStore(DataOpener, DataSearcher, ABC):
         Raises:
             DataStoreError: If an error occurs.
         """
+
+    def get_preload_data_params_schema(self) -> JsonObjectSchema:
+        """Get the JSON schema that describes the keyword
+        arguments that can be passed to ``preload_data()``.
+
+        Returns:
+            A ``JsonObjectSchema`` object whose properties describe
+            the parameters of ``preload_data()``.
+        """
+        return JsonObjectSchema(additional_properties=False)
+
+    # noinspection PyMethodMayBeStatic
+    def preload_data(
+        self,
+        *data_ids: str,
+        **preload_params: Any,
+    ) -> PreloadHandle:
+        """Preload the given data items for faster access.
+
+        Warning: This is an experimental and potentially unstable API
+        introduced in xcube 1.8.
+
+        The method may be blocking or non-blocking.
+        Implementations may offer the following keyword arguments
+        in *preload_params*:
+
+        - ``blocking``: whether the preload process is blocking.
+          Should be `True` by default if supported.
+        - ``monitor``: a callback function that serves as a progress monitor.
+          It receives the preload handle and the recent partial state update.
+
+        Args:
+            data_ids: Data identifiers to be preloaded.
+            preload_params: data store specific preload parameters.
+              See method ``get_preload_data_params_schema()`` for information
+              on the possible options.
+
+        Returns:
+            A handle for the preload process. The default implementation
+            returns an empty preload handle.
+        """
+        return NullPreloadHandle()
+
+    # noinspection PyMethodMayBeStatic
 
 
 class MutableDataStore(DataStore, DataWriter, ABC):

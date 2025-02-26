@@ -1,18 +1,19 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Union, Callable, Any, Optional
-from collections.abc import Mapping, Hashable
+from collections.abc import Hashable, Mapping
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import xarray as xr
 from dask import array as da
 
 from xcube.core.gridmapping import GridMapping
+from xcube.core.gridmapping.coords import Coords2DGridMapping
 from xcube.core.gridmapping.helpers import scale_xy_res_and_size
-from .affine import affine_transform_dataset
-from .affine import resample_dataset
+
+from .affine import affine_transform_dataset, resample_dataset
 from .rectify import rectify_dataset
 
 NDImage = Union[np.ndarray, da.Array]
@@ -208,11 +209,37 @@ def resample_in_space(
     # If CRSes are not both geographic and their CRSes are different
     # transform the source_gm so its CRS matches the target CRS:
     transformed_source_gm = source_gm.transform(target_gm.crs, xy_res=target_gm.xy_res)
+    if not isinstance(source_gm, Coords2DGridMapping):
+        source_ds = source_ds.drop_vars(source_gm.xy_dim_names)
+    list_grid_mapping = []
+    for var in source_ds.data_vars:
+        if "grid_mapping" in source_ds[var].attrs:
+            attrs = source_ds[var].attrs
+            list_grid_mapping.append(attrs["grid_mapping"])
+            del attrs["grid_mapping"]
+            source_ds[var] = source_ds[var].assign_attrs(attrs)
+    source_ds = source_ds.drop_vars(list_grid_mapping)
+    if "crs" in source_ds:
+        source_ds = source_ds.drop_vars("crs")
+    if "spatial_ref" in source_ds:
+        source_ds = source_ds.drop_vars("spatial_ref")
+    source_ds = source_ds.copy()
     transformed_x, transformed_y = transformed_source_gm.xy_coords
+    attrs = dict(grid_mapping="spatial_ref")
+    transformed_x.attrs = attrs
+    transformed_y.attrs = attrs
+    source_ds = source_ds.assign_coords(
+        spatial_ref=xr.DataArray(0, attrs=transformed_source_gm.crs.to_cf()),
+        transformed_x=transformed_x,
+        transformed_y=transformed_y,
+    )
     return resample_in_space(
-        source_ds.assign(transformed_x=transformed_x, transformed_y=transformed_y),
+        source_ds,
         source_gm=transformed_source_gm,
         ref_ds=ref_ds,
         target_gm=target_gm,
+        var_configs=var_configs,
+        encode_cf=encode_cf,
         gm_name=gm_name,
+        rectify_kwargs=rectify_kwargs,
     )

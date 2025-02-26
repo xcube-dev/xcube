@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,13 +6,13 @@ import threading
 import time
 import traceback
 from abc import ABC
-from typing import Optional, Any, Tuple, Type, List
 from collections.abc import Sequence
+from typing import Any, List, Optional, Tuple, Type
 
 import dask.callbacks
 import dask.diagnostics
 
-from xcube.util.assertions import assert_true, assert_given
+from xcube.util.assertions import assert_given, assert_true
 
 
 class ProgressState:

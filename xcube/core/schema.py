@@ -1,9 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Tuple, Dict, Optional, Union
-from collections.abc import Sequence, Mapping, Hashable
+from collections.abc import Hashable, Mapping, Sequence
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
@@ -331,7 +331,7 @@ def get_dataset_xy_var_names(
 
     if must_exist:
         raise ValueError(
-            f"{dataset_arg_name}" f" has no valid spatial coordinate variables"
+            f"{dataset_arg_name} has no valid spatial coordinate variables"
         )
 
 

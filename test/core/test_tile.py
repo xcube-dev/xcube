@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -13,15 +13,10 @@ import pyproj
 import pytest
 import xarray as xr
 
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.tile import compute_rgba_tile
-from xcube.core.tile import compute_tiles
-from xcube.core.tile import get_var_valid_range
-from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
-from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
-from xcube.util.cmaps import Colormap
-from xcube.util.cmaps import ColormapProvider
+from xcube.core.mldataset import BaseMultiLevelDataset, MultiLevelDataset
+from xcube.core.tile import compute_rgba_tile, compute_tiles, get_var_valid_range
+from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME, WEB_MERCATOR_CRS_NAME
+from xcube.util.cmaps import Colormap, ColormapProvider
 
 nan = np.nan
 
@@ -394,10 +389,10 @@ class ComputeRgbaTileTest(TileTest, unittest.TestCase):
         ml_ds.set_dataset(
             0,
             ml_ds.get_dataset(0).assign_coords(
-                time=xr.DataArray(np.array(
-                    [np.datetime64("2001-01-01T01:01:01")]
-                ), dims="time")
-            )
+                time=xr.DataArray(
+                    np.array([np.datetime64("2001-01-01T01:01:01")]), dims="time"
+                )
+            ),
         )
         args = [ml_ds, ("var_a", "var_b", "var_c"), 0, 0, 0, CMAP_PROVIDER]
         kwargs = dict(
@@ -416,8 +411,8 @@ class ComputeRgbaTileTest(TileTest, unittest.TestCase):
                 w.message, w.category, w.filename, w.lineno, source=w.source
             )
         assert all(
-            "no explicit representation of timezones available"
-            not in str(w.message) for w in warning_list
+            "no explicit representation of timezones available" not in str(w.message)
+            for w in warning_list
         ), "NumPy timezone warning issued during tile computation"
 
 

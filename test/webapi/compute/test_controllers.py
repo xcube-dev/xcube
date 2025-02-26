@@ -1,13 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 
 import unittest
-from typing import List, Any
+from typing import Any, List
 
-from xcube.webapi.compute.controllers import get_compute_operations
-from xcube.webapi.compute.controllers import get_compute_operation
+from xcube.webapi.compute.controllers import (
+    get_compute_operation,
+    get_compute_operations,
+)
+
 from .test_context import get_compute_ctx
 
 
@@ -38,7 +41,7 @@ class ComputeControllersTest(unittest.TestCase):
 
         self.assertEqual("spatial_subset", op.get("operationId"))
         self.assertEqual(
-            "Create a spatial subset" " from given dataset.", op.get("description")
+            "Create a spatial subset from given dataset.", op.get("description")
         )
         self.assertIn("parametersSchema", op)
 
@@ -65,9 +68,7 @@ class ComputeControllersTest(unittest.TestCase):
                         {"type": "number"},
                     ],
                     "title": "Bounding box",
-                    "description": "Bounding box using the "
-                    "dataset's CRS "
-                    "coordinates",
+                    "description": "Bounding box using the dataset's CRS coordinates",
                 },
             },
             schema.get("properties"),

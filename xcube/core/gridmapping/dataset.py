@@ -1,15 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Union, Tuple
 import warnings
+from typing import Optional, Tuple, Union
 
 import pyproj
 import xarray as xr
 
-from .base import DEFAULT_TOLERANCE
-from .base import GridMapping
+from .base import DEFAULT_TOLERANCE, GridMapping
 from .cfconv import get_dataset_grid_mapping_proxies
 from .coords import new_grid_mapping_from_coords
 from .helpers import _normalize_crs
@@ -23,7 +22,7 @@ def new_grid_mapping_from_dataset(
     prefer_crs: Union[str, pyproj.crs.CRS] = None,
     prefer_is_regular: bool = None,
     emit_warnings: bool = False,
-    tolerance: float = DEFAULT_TOLERANCE
+    tolerance: float = DEFAULT_TOLERANCE,
 ) -> Optional[GridMapping]:
     # Note `crs` is used if CRS is known in advance,
     # so the code forces its use. `prefer_crs` is used if
@@ -59,13 +58,13 @@ def new_grid_mapping_from_dataset(
     if len(grid_mappings) > 1:
         if prefer_crs is not None and prefer_is_regular is not None:
             for gm in grid_mappings:
-                if gm.crs == prefer_crs and gm.is_regular == prefer_is_regular:
+                if gm.crs == prefer_crs and bool(gm.is_regular) == prefer_is_regular:
                     return gm
             for gm in grid_mappings:
                 if (
                     gm.crs.is_geographic
                     and prefer_crs.is_geographic
-                    and gm.is_regular == prefer_is_regular
+                    and bool(gm.is_regular) == prefer_is_regular
                 ):
                     return gm
 
@@ -79,7 +78,7 @@ def new_grid_mapping_from_dataset(
 
         if prefer_is_regular is not None:
             for gm in grid_mappings:
-                if gm.is_regular == prefer_is_regular:
+                if bool(gm.is_regular) == prefer_is_regular:
                     return gm
 
     # Get arbitrary one (here: first)

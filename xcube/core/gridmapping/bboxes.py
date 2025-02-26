@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 from typing import Tuple, Union
@@ -91,7 +91,7 @@ def compute_ij_bboxes(
 
 
 def compute_xy_bbox(
-    xy_coords: Union[xr.DataArray, np.ndarray, da.Array]
+    xy_coords: Union[xr.DataArray, np.ndarray, da.Array],
 ) -> tuple[float, float, float, float]:
     xy_coords = da.asarray(xy_coords)
     result = da.reduction(

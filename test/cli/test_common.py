@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,10 +6,12 @@ import unittest
 
 import click
 
-from xcube.cli.common import assert_positive_int_item
-from xcube.cli.common import handle_cli_exception
-from xcube.cli.common import parse_cli_kwargs
-from xcube.cli.common import parse_cli_sequence
+from xcube.cli.common import (
+    assert_positive_int_item,
+    handle_cli_exception,
+    parse_cli_kwargs,
+    parse_cli_sequence,
+)
 
 
 class ClickUtilTest(unittest.TestCase):

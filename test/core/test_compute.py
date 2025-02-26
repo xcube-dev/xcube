@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -10,9 +10,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.core.chunk import chunk_dataset
-from xcube.core.compute import CubeFuncOutput
-from xcube.core.compute import compute_cube
-from xcube.core.compute import compute_dataset
+from xcube.core.compute import CubeFuncOutput, compute_cube, compute_dataset
 from xcube.core.new import new_cube
 from xcube.core.schema import CubeSchema
 

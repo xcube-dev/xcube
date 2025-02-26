@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -24,6 +24,7 @@ class PlacesRoutesTest(RoutesTestCase):
                         "sourceEncoding": "utf-8",
                         "sourcePaths": [],
                         "title": "Points inside the cube",
+                        "description": None,
                         "type": "FeatureCollection",
                     },
                     {
@@ -34,6 +35,7 @@ class PlacesRoutesTest(RoutesTestCase):
                         "sourceEncoding": "utf-8",
                         "sourcePaths": [],
                         "title": "Points outside the cube",
+                        "description": None,
                         "type": "FeatureCollection",
                     },
                 ]

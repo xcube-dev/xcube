@@ -1,6 +1,82 @@
-## Changes in 1.8.0 (in development)
+## Changes in 1.8.4 (in development)
+
+
+## Changes in 1.8.3
 
 ### Enhancements
+
+* xcube Server now can be configured to provide abstracts/descriptions for datasets 
+  so they can be rendered as markdown in xcube Viewer 
+  (https://github.com/xcube-dev/xcube-viewer/issues/454). (#1122)
+  
+  1. New `description` properties have been added to responses from xcube Server for 
+     datasets and variables.
+  2. User can now provide abstracts or descriptions using markdown format for dataset 
+     configurations in xcube Server. A new configuration setting `Description` 
+     now accompanies settings such as `Title`.
+  3. Default values for the `Description` setting are derived from metadata of 
+     datasets and variable CF attributes.
+* Improved axis labeling in 2D histogram visualization in the Panel demo.
+
+* Added support for the xcube Viewer's `Markdown` component so it can be used in 
+  server-side viewer extensions. See new package `xcube.webapi.viewer.components`
+  exporting class `Markdown` which has a single `text` property that takes 
+  the markdown text.
+
+* Bundled [xcube Viewer 1.4.2](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.2).
+
+### Other changes
+
+* Reformatted code base according to the default settings used by 
+  [isort](https://pycqa.github.io/isort/) and
+  [ruff](https://docs.astral.sh/ruff/). Updated development 
+  dependencies accordingly.
+* Updated copyright notices.
+* Ensured xcube can be installed and tested in Python 3.13 environments.
+* Added a configuration file `xrlint_config.yaml` for the 
+  [xrlint](https://bcdev.github.io/xrlint/) tool to the project repository.
+
+## Changes in 1.8.2
+
+* Bundled xcube Viewer 
+  [1.4.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.1)
+  with fixes regarding the _share_ feature.
+
+* No longer logging a `TypeError` if xcube server's 
+  `GET viewer/ext/contributions` is called without any 
+  viewer extensions configured. (#1116)
+
+## Changes in 1.8.1
+
+### Fixes
+
+* Bug fix in `resample_in_space`: Resolved an issue where the `resample_in_space`
+  function no longer worked with irregular grid mappings, such as Sentinel-3 data,   
+  due to changes introduced in version 1.8.0. (#1114)
+
+  
+## Changes in 1.8.0
+
+### Enhancements
+
+
+* The method `xcube.core.GridMapping.transform` now supports lazy execution. If
+  computations based on actual data are required—such as determining whether the
+  grid mapping is regular or estimating the resolution in the x or y direction—only a
+  single chunk is accessed whenever possible, ensuring faster performance.
+
+* The function `xcube.core.resampling.rectify_dataset` now supports `xarray.Datasets`
+  containing multi-dimensional data variables structured as `var(..., y_dim, x_dim)`.
+  The two spatial dimensions (`y_dim` and `x_dim`) must occupy the last two positions 
+  in the variable's dimensions.
+
+* Added a new _preload API_ to xcube data stores: 
+  - Enhanced the `xcube.core.store.DataStore` class to optionally support
+    preloading of datasets via an API represented by the  
+    new `xcube.core.store.DataPreloader` interface. 
+  - Added handy default implementations `NullPreloadHandle` and `ExecutorPreloadHandle` 
+    to be returned by implementations of the `prepare_data()` method of a 
+    given data store.
 
 * A `xy_res` keyword argument was added to the `transform()` method of
   `xcube.core.gridmapping.GridMapping`, enabling users to set the grid-mapping 
@@ -33,14 +109,23 @@
      # Filesystem-specific storage options   
      # StorageOptions: ...
   ```
+* The `get_data_ids()` method in `DataStore` has an enhanced `include_attrs` parameter. 
+  Previously accepting only `Container[str]`, it now also supports a `bool` value. 
+  Setting `include_attrs` to `True` retrieves all attributes of the data_ids.
+  
+* Updated dependency `urllib3` to be `>=2.0`.
 
 ### Fixes
 
+* The function `xcube.core.resample.resample_in_space()` now supports the parameter
+  `source_ds_subset=True` when calling `rectify_dataset`. This feature enables
+  performing the reprojection exclusively on the spatially congruent subset of 
+  the dataset.
 * The function `xcube.core.resample.resample_in_space()` now always operates
   lazily and therefore supports chunk-wise, parallel processing. (#1082)
-* Bux fix in the `has_data` method of the `"https"` data store
+* Bug fix in the `has_data` method of the `"https"` data store
   (`store = new_data_store("https", ...)`). (#1084) 
-* Bux fix in the `has_data` method of all filesystem-based data store
+* Bug fix in the `has_data` method of all filesystem-based data store
   (`"file", "s3", "https"`). `data_type` can be any of the supported data types,
   e.g. for `.tif` file, `data_type` can be either `dataset` or `mldataset`. (#1084) 
 * The explanation of the parameter `xy_scale` in the method

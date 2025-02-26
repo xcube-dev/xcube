@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -8,27 +8,27 @@ from ...helpers import RoutesTestCase
 class WmtsRoutesTest(RoutesTestCase):
     def test_fetch_wmts_kvp_capabilities(self):
         response = self.fetch(
-            "/wmts/kvp" "?SERVICE=WMTS" "&VERSION=1.0.0" "&REQUEST=GetCapabilities"
+            "/wmts/kvp?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetCapabilities"
         )
         self.assertResponseOK(response)
 
         response = self.fetch(
-            "/wmts/kvp" "?service=WMTS" "&version=1.0.0" "&request=GetCapabilities"
+            "/wmts/kvp?service=WMTS&version=1.0.0&request=GetCapabilities"
         )
         self.assertResponseOK(response)
 
         response = self.fetch(
-            "/wmts/kvp" "?Service=WMTS" "&Version=1.0.0" "&Request=GetCapabilities"
+            "/wmts/kvp?Service=WMTS&Version=1.0.0&Request=GetCapabilities"
         )
         self.assertResponseOK(response)
 
-        response = self.fetch("/wmts/kvp" "?VERSION=1.0.0&REQUEST=GetCapabilities")
+        response = self.fetch("/wmts/kvp?VERSION=1.0.0&REQUEST=GetCapabilities")
         self.assertBadRequestResponse(
             response, expected_message='value for "service" parameter must be "WMTS"'
         )
 
         response = self.fetch(
-            "/wmts/kvp" "?SERVICE=WMS" "VERSION=1.0.0" "&REQUEST=GetCapabilities"
+            "/wmts/kvp?SERVICE=WMSVERSION=1.0.0&REQUEST=GetCapabilities"
         )
         self.assertBadRequestResponse(
             response, expected_message='value for "service" parameter must be "WMTS"'
@@ -174,7 +174,7 @@ class WmtsRoutesTest(RoutesTestCase):
 
     def test_fetch_wmts_tile_with_params(self):
         response = self.fetch(
-            "/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png" "?time=current&cbar=jet"
+            "/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet"
         )
         self.assertResponseOK(response)
 

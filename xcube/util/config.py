@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,8 +9,8 @@ import json
 import os
 import os.path
 import string
-from typing import Any, Dict, Optional, Tuple, List, Type
 from collections.abc import Iterable
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 import fsspec
 import yaml
@@ -166,13 +166,13 @@ def load_json_or_yaml_config(
         raise exception_type(f"YAML in {config_path!r} is invalid: {e}") from e
     except OSError as e:
         raise exception_type(
-            f"Cannot load configuration from" f" {config_path!r}: {e}"
+            f"Cannot load configuration from {config_path!r}: {e}"
         ) from e
     if config_dict is None:
         return {}
     if not isinstance(config_dict, dict):
         raise exception_type(
-            f"Invalid configuration format in" f" {config_path!r}: dictionary expected"
+            f"Invalid configuration format in {config_path!r}: dictionary expected"
         )
     return config_dict
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,9 +6,11 @@ from typing import Union
 
 import xarray as xr
 
-from xcube.core.mldataset import FsMultiLevelDataset
-from xcube.core.mldataset import FsMultiLevelDatasetError
-from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.mldataset import (
+    FsMultiLevelDataset,
+    FsMultiLevelDatasetError,
+    MultiLevelDataset,
+)
 from xcube.core.subsampling import AGG_METHODS
 
 # Note, we need the following reference to register the
@@ -16,18 +18,19 @@ from xcube.core.subsampling import AGG_METHODS
 # noinspection PyUnresolvedReferences
 from xcube.core.zarrstore import ZarrStoreHolder
 from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonComplexSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNullSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-from .dataset import DatasetZarrFsDataAccessor
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonComplexSchema,
+    JsonIntegerSchema,
+    JsonNullSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
+
 from ... import DataStoreError
-from ...datatype import DATASET_TYPE
-from ...datatype import DataType
-from ...datatype import MULTI_LEVEL_DATASET_TYPE
+from ...datatype import DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE, DataType
+from .dataset import DatasetZarrFsDataAccessor
 
 
 class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):

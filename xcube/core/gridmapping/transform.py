@@ -1,21 +1,22 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Union, Tuple
+from typing import Union
 
 import numpy as np
 import pyproj
 import pyproj.transformer as pt
 import xarray as xr
 
-from .base import DEFAULT_TOLERANCE
-from .base import GridMapping
+from .base import DEFAULT_TOLERANCE, GridMapping
 from .coords import new_grid_mapping_from_coords
-from .helpers import _assert_valid_xy_names
-from .helpers import Number
-from .helpers import _normalize_crs
-
+from .helpers import (
+    Number,
+    _assert_valid_xy_names,
+    _normalize_crs,
+    _normalize_number_pair,
+)
 
 # Cannot be used, but should, see TODO in transform_grid_mapping()
 #
@@ -70,6 +71,18 @@ def transform_grid_mapping(
         output_dtypes=[np.float64],
         dask="parallelized",
     )
+    if xy_res is not None:
+        xy_bbox = transformer.transform_bounds(*grid_mapping.xy_bbox, densify_pts=101)
+        x_res, y_res = _normalize_number_pair(xy_res)
+        x_res_05, y_res_05 = x_res / 2, y_res / 2
+        xy_bbox = (
+            xy_bbox[0] - x_res_05,
+            xy_bbox[1] - y_res_05,
+            xy_bbox[2] + x_res_05,
+            xy_bbox[3] + y_res_05,
+        )
+    else:
+        xy_bbox = None
 
     xy_var_names = xy_var_names or ("transformed_x", "transformed_y")
 
@@ -90,6 +103,7 @@ def transform_grid_mapping(
         y_coords=xy_coords[1].rename(xy_var_names[1]),
         crs=target_crs,
         xy_res=xy_res,
+        xy_bbox=xy_bbox,
         tile_size=tile_size,
         tolerance=tolerance,
     )

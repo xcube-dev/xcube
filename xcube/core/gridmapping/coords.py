@@ -1,30 +1,31 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import abc
 import math
-from typing import Tuple, Union, Dict
+from typing import Union
 
 import dask.array as da
 import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from .base import DEFAULT_TOLERANCE
-from .base import GridMapping
-from .helpers import _assert_valid_xy_names
-from .helpers import _default_xy_var_names
-from .helpers import _normalize_crs
-from .helpers import _normalize_int_pair
-from .helpers import _normalize_number_pair
-from .helpers import Number
-from .helpers import _to_int_or_float
-from .helpers import from_lon_360
-from .helpers import round_to_fraction
-from .helpers import to_lon_360
+from xcube.util.assertions import assert_instance, assert_true
+
+from .base import DEFAULT_TOLERANCE, GridMapping
+from .helpers import (
+    Number,
+    _assert_valid_xy_names,
+    _default_xy_var_names,
+    _normalize_crs,
+    _normalize_int_pair,
+    _normalize_number_pair,
+    _to_int_or_float,
+    from_lon_360,
+    round_to_fraction,
+    to_lon_360,
+)
 
 _ER = 6371000
 
@@ -85,6 +86,7 @@ def new_grid_mapping_from_coords(
     crs: Union[str, pyproj.crs.CRS],
     *,
     xy_res: Union[Number, tuple[Number, Number]] = None,
+    xy_bbox: tuple[Number, Number, Number, Number] = None,
     tile_size: Union[int, tuple[int, int]] = None,
     tolerance: float = DEFAULT_TOLERANCE,
 ) -> GridMapping:
@@ -136,14 +138,14 @@ def new_grid_mapping_from_coords(
             x_res = x_diff[0]
             y_res = y_diff[0]
             is_regular = da.allclose(x_diff, x_res, atol=tolerance) and da.allclose(
-                x_diff, y_res, atol=tolerance
+                y_diff, y_res, atol=tolerance
             )
             if is_regular:
-                x_res = round_to_fraction(x_res, 5, 0.25)
-                y_res = round_to_fraction(y_res, 5, 0.25)
+                x_res = round_to_fraction(float(x_res), 5, 0.25)
+                y_res = round_to_fraction(float(y_res), 5, 0.25)
             else:
-                x_res = round_to_fraction(float(np.nanmedian(x_diff)), 2, 0.5)
-                y_res = round_to_fraction(float(np.nanmedian(y_diff)), 2, 0.5)
+                x_res = round_to_fraction(float(np.nanmedian(x_diff, axis=0)), 2, 0.5)
+                y_res = round_to_fraction(float(np.nanmedian(y_diff, axis=0)), 2, 0.5)
 
         if (
             tile_size is None
@@ -161,11 +163,11 @@ def new_grid_mapping_from_coords(
 
         assert_true(
             x_coords.shape == y_coords.shape,
-            "shapes of x_coords and y_coords" " 2D arrays must be equal",
+            "shapes of x_coords and y_coords 2D arrays must be equal",
         )
         assert_true(
             x_coords.dims == y_coords.dims,
-            "dimensions of x_coords and y_coords" " 2D arrays must be equal",
+            "dimensions of x_coords and y_coords 2D arrays must be equal",
         )
 
         y_dim, x_dim = x_coords.dims
@@ -176,10 +178,10 @@ def new_grid_mapping_from_coords(
         x = da.asarray(x_coords)
         y = da.asarray(y_coords)
 
-        x_x_diff = _abs_no_nan(da.diff(x[0, :]))
-        x_y_diff = _abs_no_nan(da.diff(x[:, 0]))
-        y_x_diff = _abs_no_nan(da.diff(y[0, :]))
-        y_y_diff = _abs_no_nan(da.diff(y[:, 0]))
+        x_x_diff = _abs_no_nan(da.diff(x[0, : x.chunksize[1]]))
+        x_y_diff = _abs_no_nan(da.diff(x[: x.chunksize[0], 0]))
+        y_x_diff = _abs_no_nan(da.diff(y[0, : x.chunksize[0]]))
+        y_y_diff = _abs_no_nan(da.diff(y[: x.chunksize[1], 0]))
 
         if not is_lon_360 and crs.is_geographic:
             is_anti_meridian_crossed = da.any(da.max(x_x_diff) > 180) or da.any(
@@ -201,8 +203,8 @@ def new_grid_mapping_from_coords(
         is_regular = (
             da.allclose(x_x_diff, x_res, atol=tolerance)
             and da.allclose(y_y_diff, y_res, atol=tolerance)
-            and da.all(x_y_diff == 0)
-            and da.all(y_x_diff == 0)
+            and da.allclose(x_y_diff, 0, atol=tolerance)
+            and da.allclose(y_x_diff, 0, atol=tolerance)
         )
 
         if not is_regular and xy_res is None:
@@ -276,7 +278,9 @@ def new_grid_mapping_from_coords(
             )
 
         # Guess j axis direction
-        is_j_axis_up = da.all(y_coords[0, :] < y_coords[-1, :]) or None
+        is_j_axis_up = da.all(
+            y_coords[0, : y.chunksize[1]] < y_coords[-1, : y.chunksize[1]]
+        )
 
     assert_true(
         x_res > 0 and y_res > 0,
@@ -285,11 +289,17 @@ def new_grid_mapping_from_coords(
     )
 
     x_res, y_res = _to_int_or_float(x_res), _to_int_or_float(y_res)
-    x_res_05, y_res_05 = x_res / 2, y_res / 2
-    x_min = _to_int_or_float(x_coords.min() - x_res_05)
-    y_min = _to_int_or_float(y_coords.min() - y_res_05)
-    x_max = _to_int_or_float(x_coords.max() + x_res_05)
-    y_max = _to_int_or_float(y_coords.max() + y_res_05)
+    if xy_bbox is None:
+        x_res_05, y_res_05 = x_res / 2, y_res / 2
+        x_min = _to_int_or_float(x_coords[..., 0].min() - x_res_05)
+        x_max = _to_int_or_float(x_coords[..., -1].max() + x_res_05)
+        if is_j_axis_up:
+            y_min = _to_int_or_float(float(y_coords[0, ...].min()) - y_res_05)
+            y_max = _to_int_or_float(float(y_coords[-1, ...].max()) + y_res_05)
+        else:
+            y_min = _to_int_or_float(float(y_coords[-1, ...].min()) - y_res_05)
+            y_max = _to_int_or_float(float(y_coords[0, ...].max()) + y_res_05)
+        xy_bbox = (x_min, y_min, x_max, y_max)
 
     if cls is Coords1DGridMapping and is_regular:
         from .regular import RegularGridMapping
@@ -302,7 +312,7 @@ def new_grid_mapping_from_coords(
         crs=crs,
         size=size,
         tile_size=tile_size,
-        xy_bbox=(x_min, y_min, x_max, y_max),
+        xy_bbox=xy_bbox,
         xy_res=(x_res, y_res),
         xy_var_names=xy_var_names,
         xy_dim_names=(str(x_dim), str(y_dim)),
@@ -313,13 +323,13 @@ def new_grid_mapping_from_coords(
 
 
 def _abs_no_zero(array: Union[xr.DataArray, da.Array, np.ndarray]):
-    array = np.fabs(array)
-    return np.where(np.isclose(array, 0), np.nan, array)
+    array = da.fabs(array)
+    return da.where(da.isclose(array, 0), np.nan, array)
 
 
-def _abs_no_nan(array: Union[xr.DataArray, da.Array, np.ndarray]):
-    array = np.fabs(array)
-    return np.where(np.logical_or(np.isnan(array), np.isclose(array, 0)), 0, array)
+def _abs_no_nan(array: Union[da.Array, np.ndarray]):
+    array = da.fabs(array)
+    return da.where(da.logical_or(da.isnan(array), da.isclose(array, 0)), 0, array)
 
 
 def grid_mapping_to_coords(

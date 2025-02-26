@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -64,9 +64,7 @@ class AuthContextTest(unittest.TestCase):
 
         with pytest.raises(
             ApiError.InvalidServerConfig,
-            match="HTTP status 580:"
-            ' Missing key "Audience" in section'
-            ' "Authentication"',
+            match='HTTP status 580: Missing key "Audience" in section "Authentication"',
         ):
             AuthConfig.from_config(
                 {"Authentication": {"Authority": "https://auth.com"}}

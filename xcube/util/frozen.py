@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
-from abc import abstractmethod, ABC
-from typing import Generic, TypeVar, Tuple, Any, Dict, List
-from collections.abc import Iterable, Sequence, Mapping
+from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any, Dict, Generic, List, Tuple, TypeVar
 
 K = TypeVar("K")
 V = TypeVar("V")

@@ -1,0 +1,4 @@
+- recommended
+- plugins:
+    xcube: xrlint.plugins.xcube
+- xcube/recommended

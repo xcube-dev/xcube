@@ -1,9 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import numpy as np
 import pandas as pd
+import pyproj
 import xarray as xr
 
 
@@ -354,7 +355,6 @@ def create_cci_lccs_class_var(flag_values_as_list=False):
 
 
 class SourceDatasetMixin:
-
     @classmethod
     def new_2x2_dataset_with_irregular_coords(cls):
         lon = np.array([[1.0, 6.0], [0.0, 2.0]])
@@ -367,6 +367,23 @@ class SourceDatasetMixin:
                 rad=xr.DataArray(rad, dims=("y", "x")),
             )
         )
+
+    @classmethod
+    def new_5x5_dataset_regular_utm(cls):
+        x = np.arange(565300.0, 565800.0, 100.0)
+        y = np.arange(5934300.0, 5933800.0, -100.0)
+        spatial_ref = np.array(0)
+        band_1 = np.arange(25).reshape((5, 5))
+        ds = xr.Dataset(
+            dict(
+                band_1=xr.DataArray(
+                    band_1, dims=("y", "x"), attrs=dict(grid_mapping="spatial_ref")
+                )
+            ),
+            coords=dict(x=x, y=y, spatial_ref=spatial_ref),
+        )
+        ds.spatial_ref.attrs = pyproj.CRS.from_epsg("32632").to_cf()
+        return ds
 
     @classmethod
     def new_2x2_dataset_with_irregular_coords_antimeridian(cls):

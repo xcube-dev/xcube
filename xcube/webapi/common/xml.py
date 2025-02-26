@@ -1,12 +1,12 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import abc
-from typing import Optional, Dict, Union, List
 from collections.abc import Sequence
+from typing import Dict, List, Optional, Union
 
-from xcube.util.assertions import assert_given, assert_false
+from xcube.util.assertions import assert_false, assert_given
 
 
 class Node(abc.ABC):

@@ -1,20 +1,22 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import copy
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import fsspec
 
 from xcube.util.assertions import assert_instance
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from ..accessor import DataOpener
-from ..accessor import DataWriter
+from xcube.util.jsonschema import (
+    JsonBooleanSchema,
+    JsonIntegerSchema,
+    JsonNumberSchema,
+    JsonObjectSchema,
+)
+
+from ..accessor import DataOpener, DataWriter
 from ..datatype import DataType
 from ..error import DataStoreError
 
@@ -133,9 +135,9 @@ class FsAccessor:
         for the parameter "storage_options" to given *param_schema*.
         """
         params_schema = copy.deepcopy(params_schema)
-        params_schema.properties[
-            STORAGE_OPTIONS_PARAM_NAME
-        ] = cls.get_storage_options_schema()
+        params_schema.properties[STORAGE_OPTIONS_PARAM_NAME] = (
+            cls.get_storage_options_schema()
+        )
         return params_schema
 
     @classmethod

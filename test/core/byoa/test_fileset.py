@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -38,7 +38,7 @@ class FileSetToLocalTest(unittest.TestCase):
         zip_path = f"{self.test_dir}/modules.zip"
         with zipfile.ZipFile(zip_path, "w") as zf:
             for i in range(3):
-                file_path = f'{(prefix + "/") if prefix else ""}module_{i}.py'
+                file_path = f"{(prefix + '/') if prefix else ''}module_{i}.py"
                 with zf.open(file_path, "w") as file:
                     file.write(b"\n")
         return zip_path

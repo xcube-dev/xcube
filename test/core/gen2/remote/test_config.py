@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -40,12 +40,12 @@ class ServiceConfigTest(unittest.TestCase):
         with open(file_path, "w") as fp:
             json.dump(json_instance, fp)
         try:
-            os.environ[
-                "_TEST_ENDPOINT_URL"
-            ] = "https://stage.xcube-gen.brockmann-consult.de/api/v2"
-            os.environ[
-                "_TEST_ACCESS_TOKEN"
-            ] = "02945ugjhklojg908ijr023jgbpij202jbv00897v0798v65472"
+            os.environ["_TEST_ENDPOINT_URL"] = (
+                "https://stage.xcube-gen.brockmann-consult.de/api/v2"
+            )
+            os.environ["_TEST_ACCESS_TOKEN"] = (
+                "02945ugjhklojg908ijr023jgbpij202jbv00897v0798v65472"
+            )
             service_config = ServiceConfig.from_file(file_path)
             self.assertIsInstance(service_config, ServiceConfig)
             self.assertEqual(

@@ -1,13 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import datetime
 import re
-from typing import Optional
 from collections.abc import Sequence
-from typing import Tuple
-from typing import Union
+from typing import Optional, Tuple, Union
 
 import cftime
 import numpy as np
@@ -146,12 +144,8 @@ def _maybe_return_time_range_from_metadata(
 ) -> tuple[float, float]:
     if maybe_consider_metadata:
         attr_start_time, attr_end_time = get_time_range_from_attrs(dataset)
-        attr_start_time = pd.to_datetime(
-            attr_start_time, utc=True
-        )
-        attr_end_time = pd.to_datetime(
-            attr_end_time, utc=True
-        )
+        attr_start_time = pd.to_datetime(attr_start_time, utc=True)
+        attr_end_time = pd.to_datetime(attr_end_time, utc=True)
         if attr_start_time is not None and attr_end_time is not None:
             try:
                 if attr_start_time < data_start_time and attr_end_time > data_end_time:
@@ -224,9 +218,7 @@ def remove_time_part_from_isoformat(datetime_str: str) -> str:
 
 
 def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
-    date_time = pd.to_datetime(
-        time_str, format=pattern, utc=True
-    )
+    date_time = pd.to_datetime(time_str, format=pattern, utc=True)
     timedelta = date_time - REF_DATETIME
     return (
         timedelta.days
@@ -236,7 +228,7 @@ def to_time_in_days_since_1970(time_str: str, pattern=None) -> float:
 
 
 def from_time_in_days_since_1970(
-    time_value: Union[float, Sequence[float]]
+    time_value: Union[float, Sequence[float]],
 ) -> np.ndarray:
     if isinstance(time_value, int) or isinstance(time_value, float):
         return (

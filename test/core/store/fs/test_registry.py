@@ -1,14 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from abc import ABC, abstractmethod
 import collections.abc
 import os.path
 import shutil
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
 import unittest
 import warnings
+from abc import ABC, abstractmethod
+from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
+from typing import Any, Callable, Optional, Union
 
 import fsspec
 import numpy as np
@@ -16,21 +17,21 @@ import pytest
 import xarray as xr
 
 import xcube.core.mldataset
-from test.s3test import MOTO_SERVER_ENDPOINT_URL
-from test.s3test import S3Test
+from xcube.constants import CRS84
 from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.new import new_cube
-from xcube.core.store import DataDescriptor
-from xcube.core.store import DataStoreError
-from xcube.core.store import DatasetDescriptor
-from xcube.core.store import MultiLevelDatasetDescriptor
-from xcube.core.store import MutableDataStore
+from xcube.core.store import (
+    DataDescriptor,
+    DatasetDescriptor,
+    DataStoreError,
+    MultiLevelDatasetDescriptor,
+    MutableDataStore,
+)
 from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
-from xcube.constants import CRS84
 
 ROOT_DIR = "xcube"
 DATA_PATH = "testing/data"
@@ -451,7 +452,7 @@ class FsDataStoresTestMixin(ABC):
                 )
             # if "s3" data store is tested, warnings from other
             # libraries like botocore occur
-            if data_store.protocol is not "s3":
+            if data_store.protocol != "s3":
                 self.assertEqual(1, len(w))
             self.assertEqual(w[0].category, UserWarning)
             self.assertEqual(warning_msg, w[0].message.args[0])
@@ -473,7 +474,7 @@ class FsDataStoresTestMixin(ABC):
             return
         with pytest.raises(
             DataStoreError,
-            match=f'Data resource "{data_id}"' f" does not exist in store",
+            match=f'Data resource "{data_id}" does not exist in store',
         ):
             data_store.get_data_types_for_data(data_id)
         self.assertEqual(False, data_store.has_data(data_id))

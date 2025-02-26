@@ -1,20 +1,20 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import unittest
+from test.core.diagnosticstore import DiagnosticStore, logging_observer
 
 import numpy as np
 import xarray as xr
 import zarr
 
-from test.core.diagnosticstore import DiagnosticStore, logging_observer
 from xcube.core.chunk import chunk_dataset
 from xcube.core.dsio import rimraf
 from xcube.core.new import new_cube
 from xcube.core.timeslice import (
-    find_time_slice,
     append_time_slice,
+    find_time_slice,
     insert_time_slice,
     replace_time_slice,
 )

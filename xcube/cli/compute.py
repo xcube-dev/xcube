@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -133,8 +133,7 @@ def compute(
     """
     from xcube.cli.common import parse_cli_kwargs
     from xcube.core.compute import compute_cube
-    from xcube.core.dsio import open_cube
-    from xcube.core.dsio import guess_dataset_format, find_dataset_io
+    from xcube.core.dsio import find_dataset_io, guess_dataset_format, open_cube
 
     input_paths = cube
 

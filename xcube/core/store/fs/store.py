@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -8,54 +8,51 @@ import os.path
 import pathlib
 import uuid
 import warnings
+from collections.abc import Container, Iterator, Sequence
 from threading import RLock
-from typing import (
-    Optional,
-    Any,
-    Union,
-    Callable,
-)
-from collections.abc import Iterator, Container, Sequence
+from typing import Any, Callable, Optional, Union
 
 import fsspec
 import geopandas as gpd
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.util.assertions import assert_given
-from xcube.util.assertions import assert_in
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
+from xcube.util.assertions import assert_given, assert_in, assert_instance, assert_true
 from xcube.util.extension import Extension
 from xcube.util.fspath import is_local_fs
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonComplexSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonNullSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
-from .accessor import FsAccessor
-from .accessor import STORAGE_OPTIONS_PARAM_NAME
-from ..accessor import DataOpener
-from ..accessor import DataWriter
-from ..accessor import find_data_opener_extensions
-from ..accessor import find_data_writer_extensions
-from ..accessor import get_data_accessor_predicate
-from ..accessor import new_data_opener
-from ..accessor import new_data_writer
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonComplexSchema,
+    JsonIntegerSchema,
+    JsonNullSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
+
+from ..accessor import (
+    DataOpener,
+    DataWriter,
+    find_data_opener_extensions,
+    find_data_writer_extensions,
+    get_data_accessor_predicate,
+    new_data_opener,
+    new_data_writer,
+)
 from ..assertions import assert_valid_params
-from ..datatype import ANY_TYPE
-from ..datatype import DATASET_TYPE
-from ..datatype import DataType
-from ..datatype import DataTypeLike
-from ..datatype import GEO_DATA_FRAME_TYPE
-from ..datatype import MULTI_LEVEL_DATASET_TYPE
-from ..descriptor import DataDescriptor
-from ..descriptor import new_data_descriptor
+from ..datatype import (
+    ANY_TYPE,
+    DATASET_TYPE,
+    GEO_DATA_FRAME_TYPE,
+    MULTI_LEVEL_DATASET_TYPE,
+    DataType,
+    DataTypeLike,
+)
+from ..descriptor import DataDescriptor, new_data_descriptor
 from ..error import DataStoreError
 from ..search import DefaultSearchMixin
 from ..store import MutableDataStore
+from .accessor import STORAGE_OPTIONS_PARAM_NAME, FsAccessor
 
 _DEFAULT_DATA_TYPE = DATASET_TYPE.alias
 _DEFAULT_FORMAT_ID = "zarr"
@@ -263,11 +260,13 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         return tuple(data_type_aliases)
 
     def get_data_ids(
-        self, data_type: DataTypeLike = None, include_attrs: Container[str] = None
+        self,
+        data_type: DataTypeLike = None,
+        include_attrs: Container[str] | bool = False,
     ) -> _DataIds:
         data_type = DataType.normalize(data_type)
         # TODO: do not ignore names in include_attrs
-        return_tuples = include_attrs is not None
+        return_tuples = include_attrs is not False
         data_ids = self._generate_data_ids("", data_type, return_tuples, 1)
         if self._includes or self._excludes:
             yield from self._filter_data_ids(data_ids, return_tuples)
@@ -383,8 +382,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         # Verify, accessors fulfill their write_data() contract
         assert_true(
             fs_path == written_fs_path,
-            message="FsDataAccessor implementations must "
-            "return the data_id passed in.",
+            message="FsDataAccessor implementations must return the data_id passed in.",
         )
         # Return original data_id (which is a relative path).
         # Note: it would be cleaner to return written_fs_path
@@ -497,7 +495,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         if actual_data_type is None:
             if require:
                 raise DataStoreError(
-                    f"Cannot determine data type of" f" resource {data_id!r}"
+                    f"Cannot determine data type of resource {data_id!r}"
                 )
             return False
         if not data_type.is_super_type_of(actual_data_type):
@@ -553,9 +551,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def _assert_valid_data_id(self, data_id):
         if not self.has_data(data_id):
-            raise DataStoreError(
-                f'Data resource "{data_id}"' f" does not exist in store"
-            )
+            raise DataStoreError(f'Data resource "{data_id}" does not exist in store')
 
     def _convert_data_id_into_fs_path(self, data_id: str) -> str:
         assert_given(data_id, "data_id")

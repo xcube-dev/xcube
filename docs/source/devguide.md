@@ -38,30 +38,50 @@ The current software version is in `xcube/version.py`.
 
 ## Coding Style
 
-We follow [PEP-8](https://www.python.org/dev/peps/pep-0008/), including
+We mainly follow conventions stated in 
+[PEP-8](https://www.python.org/dev/peps/pep-0008/), including
 its recommendation of [PEP-484](https://www.python.org/dev/peps/pep-0484/)
 syntax for type hints.
 
-### Updating code style in the existing codebase
+The code style of xcube equals the default settings 
+of [Black](https://black.readthedocs.io/) 
+which are also largely implemented by [Ruff](https://docs.astral.sh/ruff/). 
 
-A significant portion of the existing codebase does not adhere to our current
-code style guidelines. It is of course a goal to bring these parts into
-conformance with the style guide, but major style changes should not be
-bundled into pull requests focused on other improvements or bug fixes, because
-they obscure the significant code changes and make reviews difficult.
-Large-scale style and formatting updates should instead be made via dedicated
-pull requests.
+Both Black and Ruff are quite un-opinionated regarding the order of imports,
+therefore we use [isort](https://pycqa.github.io/isort/) with default setting 
+to automatically order them (see also section below).
+
+Given what has been stated above, the recommended way to automatically format 
+new xcube code is:
+
+```shell
+isort <path>
+ruff format <path>
+```
+
+### Order of Imports
+
+According to [isort](https://pycqa.github.io/isort/), we group and 
+sort imports statements as follows:
+
+1. Future imports
+1. Python standard library imports, e.g., `os`, `typing`, etc
+1. 3rd-party imports, e.g., `xarray`, `zarr`, etc
+1. 1st-party xcube module imports using absolute paths, 
+   e.g., `from xcube.a.b.c import d`. 
+1. 1st-party xcube module imports from local modules: 
+   Relative imports such as `from .c import d` are ok
+   while `from ..c import d` are not ok.
 
 ### Line length
 
-As recommended in PEP-8, all lines should be limited to a maximum of 79
-characters, including docstrings and comments.
+Unlike recommended in PEP-8, all code lines should not exceed 88 characters, 
+while docstrings and comments should not exceed 78 characters.
 
 ### Quotation marks for string literals
 
-In general, single quotation marks should always be used for string literals.
-Double quotation marks should only be used if there is a compelling reason to
-do so in a particular case.
+Double quotation marks should be used for string literals by default.
+
 
 ## Main Packages
 
@@ -214,7 +234,7 @@ by the class `xcube.core.xarray.DatasetAccessor`. This class is an
 that is used to reflect `xcube.core` functions and make it directly 
 applicable to the `xarray.Dataset` object.
 
-Therefore any xcube API shall be reflected in this extension class.
+Therefore, any xcube API shall be reflected in this extension class.
 
 
 ### Package `xcube.webapi`
