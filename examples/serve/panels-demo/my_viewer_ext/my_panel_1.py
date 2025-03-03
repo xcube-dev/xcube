@@ -18,7 +18,7 @@ from xcube.core.gridmapping import GridMapping
 from xcube.server.api import Context
 from xcube.webapi.viewer.contrib import Panel, get_dataset
 
-panel = Panel(__name__, title="2D Histogram", icon="equalizer")
+panel = Panel(__name__, title="2D Histogram", icon="equalizer", position=2)
 
 
 # Number of bins in x and y directions.
