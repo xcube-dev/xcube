@@ -233,7 +233,12 @@ expected_contributions_result = {
         "panels": [
             {
                 "name": "my_ext.my_panel_a",
-                "initialState": {"visible": False, "title": "Panel A"},
+                "initialState": {
+                    "visible": False,
+                    "title": "Panel A",
+                    "icon": "equalizer",
+                    "position": 2,
+                },
                 "extension": "my_ext",
                 "layout": {
                     "function": {
@@ -299,7 +304,12 @@ expected_contributions_result = {
             },
             {
                 "name": "my_ext.my_panel_b",
-                "initialState": {"visible": False, "title": "Panel B"},
+                "initialState": {
+                    "visible": False,
+                    "title": "Panel B",
+                    "icon": None,
+                    "position": None,
+                },
                 "extension": "my_ext",
                 "layout": {
                     "function": {

@@ -8,7 +8,7 @@ from chartlets.components import Box, Checkbox, Select, Typography
 from xcube.server.api import Context
 from xcube.webapi.viewer.contrib import Panel, get_datasets_ctx
 
-panel = Panel(__name__, title="Panel A")
+panel = Panel(__name__, title="Panel A", position=2, icon="equalizer")
 
 
 COLORS = [(0, "red"), (1, "green"), (2, "blue"), (3, "yellow")]

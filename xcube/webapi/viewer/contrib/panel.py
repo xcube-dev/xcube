@@ -16,7 +16,24 @@ class Panel(Contribution):
     Args:
         name: A name that is unique within the extension.
         title: An initial title for the panel.
+        icon: Name of a [Material Design icon](https://fonts.google.com/icons)
+            to be used for the icon button representing the panel in the
+            viewer's sidebar.
+        position: If given, place the panel's icon button at the given position
+            in the viewer's sidebar.
     """
 
-    def __init__(self, name: str, title: str | None = None):
-        super().__init__(name, visible=False, title=title)
+    def __init__(
+        self,
+        name: str,
+        title: str | None = None,
+        icon: str | None = None,
+        position: int | None = None,
+    ):
+        super().__init__(
+            name,
+            visible=False,
+            title=title,
+            icon=icon,
+            position=position,
+        )
