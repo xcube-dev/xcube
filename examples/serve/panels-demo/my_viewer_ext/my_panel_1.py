@@ -10,13 +10,21 @@ import shapely
 import shapely.geometry
 import shapely.ops
 from chartlets import Component, Input, Output, State
-from chartlets.components import Box, Button, CircularProgress, Select, VegaChart
+from chartlets.components import (
+    Box,
+    CircularProgress,
+    IconButton,
+    Select,
+    VegaChart,
+)
+import xarray as xr
 
 from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.server.api import Context
 from xcube.webapi.viewer.contrib import Panel, get_dataset
+from xcube.webapi.viewer.contrib.helpers import get_dataset_title_and_description
 
 panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=3)
 
@@ -42,10 +50,15 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         id="select_var_2", label="Variable 2", value=var_name_2, options=var_names
     )
 
-    button = Button(id="button", text="Update", style={"maxWidth": 100})
+    add_button = IconButton(
+        id="add_button", tooltip="Add", icon="add_circle", disabled=dataset is None
+    )
+    update_button = IconButton(
+        id="update_button", tooltip="Update", icon="refresh", disabled=dataset is None
+    )
 
     controls = Box(
-        children=[select_var_1, select_var_2, button],
+        children=[select_var_1, select_var_2, add_button, update_button],
         style={
             "display": "flex",
             "flexDirection": "row",
@@ -55,8 +68,14 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         },
     )
 
+    title, description = get_dataset_title_and_description(ctx, dataset_id)
+
     return Box(
-        children=[plot, controls],
+        children=[
+            f"{title or '<Dataset?>'}",
+            controls,
+            plot,
+        ],
         style={
             "display": "flex",
             "flexDirection": "column",
@@ -75,7 +94,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     State("@app", "selectedPlaceGeometry"),
     State("select_var_1"),
     State("select_var_2"),
-    Input("button", "clicked"),
+    Input("update_button", "clicked"),
     Output("plot", "chart"),
 )
 def update_plot(
@@ -203,7 +222,7 @@ def update_plot(
 @panel.callback(
     Input("@app", "selectedDatasetId"),
     Input("@app", "selectedPlaceGeometry"),
-    Output("button", "disabled"),
+    Output("update_button", "disabled"),
 )
 def set_button_disablement(
     _ctx: Context,
@@ -236,7 +255,7 @@ def populate_selects(
 
 
 def get_var_select_options(
-    dataset,
+    dataset: xr.Dataset | None,
     var_name_1: str | None = None,
     var_name_2: str | None = None,
 ) -> tuple[list, str | None, str | None]:
@@ -261,11 +280,11 @@ def get_var_select_options(
 # TODO: Doesn't work. We need to ensure that show_progress() returns
 #   before update_plot()
 # @panel.callback(
-#     Input("button", "clicked"),
-#     Output("button", ""),
+#     Input("update_button", "clicked"),
+#     Output("update_button", ""),
 # )
 def show_progress(
     _ctx: Context,
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> alt.Chart | None:
-    return CircularProgress(id="button", size=28)
+    return CircularProgress(id="update_button", size=28)
