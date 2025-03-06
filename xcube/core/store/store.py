@@ -487,7 +487,7 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         self,
         *data_ids: str,
         **preload_params: Any,
-    ) -> PreloadHandle:
+    ) -> "PreloadDataStore":
         """Preload the given data items for faster access.
 
         Warning: This is an experimental and potentially unstable API
@@ -512,9 +512,10 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
             A handle for the preload process. The default implementation
             returns an empty preload handle.
         """
-        return NullPreloadHandle()
-
-    # noinspection PyMethodMayBeStatic
+        cache_store = new_data_store("file")
+        cache_store.preload_handle = NullPreloadHandle()
+        assert isinstance(cache_store, PreloadDataStore)
+        return cache_store
 
 
 class MutableDataStore(DataStore, DataWriter, ABC):
@@ -690,3 +691,22 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         Raises:
             DataStoreError: If an error occurs.
         """
+
+
+class PreloadDataStore(MutableDataStore):
+    """A preload data store is a multable data store which contains the preload handle.
+
+    Instances of this class are returned by the ``DataStore.preload_data()`` method.
+    """
+
+    @property
+    @abstractmethod
+    def preload_handle(self) -> PreloadHandle:
+        """This field must be defined and set in subclasses."""
+        pass
+
+    @preload_handle.setter
+    @abstractmethod
+    def preload_handle(self, value: PreloadHandle) -> None:
+        """Setter for preload_handle."""
+        pass
