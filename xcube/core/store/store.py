@@ -509,8 +509,8 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
               on the possible options.
 
         Returns:
-            A handle for the preload process. The default implementation
-            returns an empty preload handle.
+            A mutable data store containing the preload handle.
+            The default implementation contains an empty preload handle.
         """
         cache_store = new_data_store("file")
         cache_store.preload_handle = NullPreloadHandle()
