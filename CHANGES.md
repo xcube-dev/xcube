@@ -2,7 +2,7 @@
 
 ### Enhancements
 
-* Extension panels for xcube Viewer of (type `xcube.webapi.viewer.contrib.panel.Panel`)
+* Extension panels for xcube Viewer of type `xcube.webapi.viewer.contrib.panel.Panel`
   now have two more properties:
   - `icon`: name of a [Material Design Icon](https://fonts.google.com/icons) 
      to be used for the icon button that represents the panel 
