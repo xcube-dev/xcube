@@ -28,7 +28,7 @@ def new_data_store(
     data_store_id: str,
     extension_registry: Optional[ExtensionRegistry] = None,
     **data_store_params,
-) -> Union["DataStore", "MutableDataStore"]:
+) -> Union["DataStore", "MutableDataStore", "PreloadDataStore"]:
     """Create a new data store instance for given
     *data_store_id* and *data_store_params*.
 
@@ -691,7 +691,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         """
 
 
-class PreloadDataStore(DataStore):
+class PreloadDataStore(MutableDataStore):
     """A preload data store is a multable data store which contains the preload handle.
 
     Instances of this class are returned by the ``DataStore.preload_data()`` method.
