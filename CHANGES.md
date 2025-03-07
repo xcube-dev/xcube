@@ -10,6 +10,12 @@
   - `position`: to set the position of the respective icon button 
      in the viewer's sidebar.
 
+### Other changes
+* Added a new abstract class `PreloadDataStore` that defines the return type of the
+  `preload_data` method in `xcube.core.store.DataStore`. The `PreloadDataStore` is a
+  mutable data store containing a `preload_handle` field, which holds the handle
+  associated with a preload job.
+
 
 ## Changes in 1.8.3
 

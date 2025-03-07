@@ -218,9 +218,7 @@ def new_cluster(
     cluster_account = (
         account
         if account is not None
-        else account_from_env_var
-        if account_from_env_var is not None
-        else "bc"
+        else account_from_env_var if account_from_env_var is not None else "bc"
     )
 
     if provider == "coiled":

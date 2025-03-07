@@ -75,11 +75,7 @@ class PreloadState:
 
 
 class PreloadHandle(ABC):
-    """A handle for a preload job.
-
-    Instances of this class are returned by the
-    ``DataStore.preload_data()`` method.
-    """
+    """A handle for a preload job."""
 
     @abstractmethod
     def get_state(self, data_id: str) -> PreloadState:
