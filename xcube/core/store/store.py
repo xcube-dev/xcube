@@ -512,10 +512,8 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
             A mutable data store containing the preload handle.
             The default implementation contains an empty preload handle.
         """
-        cache_store = new_data_store("file")
-        cache_store.preload_handle = NullPreloadHandle()
-        assert isinstance(cache_store, PreloadDataStore)
-        return cache_store
+        self.preload_handle = NullPreloadHandle()
+        return self
 
 
 class MutableDataStore(DataStore, DataWriter, ABC):
@@ -693,7 +691,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         """
 
 
-class PreloadDataStore(MutableDataStore):
+class PreloadDataStore(DataStore):
     """A preload data store is a multable data store which contains the preload handle.
 
     Instances of this class are returned by the ``DataStore.preload_data()`` method.
@@ -702,11 +700,8 @@ class PreloadDataStore(MutableDataStore):
     @property
     @abstractmethod
     def preload_handle(self) -> PreloadHandle:
-        """This field must be defined and set in subclasses."""
-        pass
-
-    @preload_handle.setter
-    @abstractmethod
-    def preload_handle(self, value: PreloadHandle) -> None:
-        """Setter for preload_handle."""
+        """The preload handle that can be used to observe the preload progress.
+        Implementors of this interface may use a `ExecutorPreloadHandle` or consider
+        returning a `NullPreloadHandle` if the progress is not observable.
+        """
         pass
