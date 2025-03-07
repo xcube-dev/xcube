@@ -38,6 +38,7 @@ from .search import DataSearcher, DefaultSearchMixin
 from .store import (
     DataStore,
     MutableDataStore,
+    PreloadDataStore,
     find_data_store_extensions,
     get_data_store_class,
     get_data_store_params_schema,
