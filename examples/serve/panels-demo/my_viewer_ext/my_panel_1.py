@@ -56,7 +56,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     )
 
     return Box(
-        children=[plot, controls],
+        children=[controls, plot],
         style={
             "display": "flex",
             "flexDirection": "column",
