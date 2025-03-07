@@ -691,7 +691,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         """
 
 
-class PreloadDataStore(MutableDataStore):
+class PreloadedDataStore(DataStore):
     """A preload data store is a multable data store which contains the preload handle.
 
     Instances of this class are returned by the ``DataStore.preload_data()`` method.
