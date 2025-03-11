@@ -6,7 +6,12 @@
   function no longer worked with irregular grid mappings, such as Sentinel-3 data,   
   due to changes introduced in version 1.8.0. (#1114)
 
-  
+### Other Changes  
+
+* Added demo panel `Spectral View` that creates a plot with the reflectances 
+  for one selected Place (Point) at a selected time for variables that
+  represent wavelengths.
+
 ## Changes in 1.8.0
 
 ### Enhancements

@@ -54,7 +54,7 @@ def render_panel(
         # multiple=True,
     )
 
-    # interesting, when multiple=True
+    # when multiple=True
     variable_names = get_variables(dataset)
     select_variables = ""  # variable_names , when multiple=True
     select_variables = Select(
@@ -65,9 +65,7 @@ def render_panel(
         # multiple=True,
     )
 
-    button = Button(
-        id="button", text="Update"  # "ADD Place to Spectral View"
-    )  # , style={"maxWidth": 100})
+    button = Button(id="button", text="Update")  # , style={"maxWidth": 100})
 
     controls = Box(
         children=[select_places, select_variables, button],
@@ -239,6 +237,8 @@ def update_plot(
             tooltip=["variable", "wavelength", "reflectance"],
         )
     ).properties(width=560, height=260)
+
+    update_last_timelabel(time_label)
 
     return chart
 
