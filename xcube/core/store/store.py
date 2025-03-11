@@ -487,7 +487,7 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         self,
         *data_ids: str,
         **preload_params: Any,
-    ) -> "PreloadDataStore":
+    ) -> "PreloadedDataStore":
         """Preload the given data items for faster access.
 
         Warning: This is an experimental and potentially unstable API
@@ -704,4 +704,3 @@ class PreloadedDataStore(DataStore):
         Implementors of this interface may use a `ExecutorPreloadHandle` or consider
         returning a `NullPreloadHandle` if the progress is not observable.
         """
-        pass
