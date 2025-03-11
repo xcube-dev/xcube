@@ -81,7 +81,7 @@ def render_panel(
         },
     )
 
-    time = Component(id="time", children=[time_label])  # [None])
+    time = Component(id="time", children=[time_label])
 
     return Box(
         children=[place_text, plot, controls, time],
@@ -136,7 +136,7 @@ def get_wavelength(
             .to_dict()["data_vars"]
         )
 
-        variables = list(selected_values.keys())  # List of variable names
+        variables = list(selected_values.keys())
         values = [selected_values[var]["data"] for var in variables]
         wavelengths = [
             dataset_place[var].attrs.get("wavelength", None) for var in variables
@@ -157,7 +157,6 @@ def get_wavelength(
 
 
 # TODO - add selectedDatasetName to Available State Properties
-# TODO - this has to trigger a plot update if sth. changes
 @panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
@@ -231,8 +230,8 @@ def update_plot(
         return None
 
     chart = (
-        alt.Chart(source).mark_line(point=True)
-        # .mark_line()
+        alt.Chart(source)
+        .mark_line(point=True)
         .encode(
             x="wavelength:Q",
             y="reflectance:Q",
@@ -278,7 +277,6 @@ def update_theme(
     State("select_variables", "value"),
     State("time", "children"),
     Input("@app", "selectedTimeLabel"),
-    #  Output("text", "children"),
     Output("plot", "chart"),
 )
 def update_timestep(
@@ -289,14 +287,11 @@ def update_timestep(
     place: list,
     variables: str,
     time: list,
-    _new_time_label: bool | None = None,  # trigger, will always be True
-) -> alt.Chart | None:  # tuple[list, alt.Chart] | None:
-
-    # text = f"{dataset_id} " f"/ {time_label[0:-1]}"
+    _new_time_label: bool | None = None,
+) -> alt.Chart | None:
 
     if time[0] != time_label:
         chart = update_plot(ctx, dataset_id, time_label, placegroup, place, variables)
-        #  update_last_timelabel(time_label)
         return chart
 
 
@@ -314,7 +309,7 @@ def update_places(
     return [feature["properties"]["label"] for feature in place_group[0]["features"]]
 
 
-# TODO implement this more efficient
+# TODO implement this more efficiently
 @panel.callback(
     Output("time", "children"),
 )
