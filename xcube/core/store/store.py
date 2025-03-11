@@ -28,7 +28,7 @@ def new_data_store(
     data_store_id: str,
     extension_registry: Optional[ExtensionRegistry] = None,
     **data_store_params,
-) -> Union["DataStore", "MutableDataStore"]:
+) -> Union["DataStore", "MutableDataStore", "PreloadDataStore"]:
     """Create a new data store instance for given
     *data_store_id* and *data_store_params*.
 
@@ -487,7 +487,7 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         self,
         *data_ids: str,
         **preload_params: Any,
-    ) -> PreloadHandle:
+    ) -> "PreloadedDataStore":
         """Preload the given data items for faster access.
 
         Warning: This is an experimental and potentially unstable API
@@ -509,12 +509,11 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
               on the possible options.
 
         Returns:
-            A handle for the preload process. The default implementation
-            returns an empty preload handle.
+            A mutable data store containing the preload handle.
+            The default implementation contains an empty preload handle.
         """
-        return NullPreloadHandle()
-
-    # noinspection PyMethodMayBeStatic
+        self.preload_handle = NullPreloadHandle()
+        return self
 
 
 class MutableDataStore(DataStore, DataWriter, ABC):
@@ -689,4 +688,19 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         Raises:
             DataStoreError: If an error occurs.
+        """
+
+
+class PreloadedDataStore(DataStore):
+    """A preload data store is a multable data store which contains the preload handle.
+
+    Instances of this class are returned by the ``DataStore.preload_data()`` method.
+    """
+
+    @property
+    @abstractmethod
+    def preload_handle(self) -> PreloadHandle:
+        """The preload handle that can be used to observe the preload progress.
+        Implementors of this interface may use a `ExecutorPreloadHandle` or consider
+        returning a `NullPreloadHandle` if the progress is not observable.
         """

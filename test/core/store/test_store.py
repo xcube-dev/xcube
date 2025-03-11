@@ -7,7 +7,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fsspec.registry import register_implementation
 
-from xcube.core.store import DataStoreError, list_data_store_ids, new_data_store
+from xcube.core.store import (
+    DataStoreError,
+    PreloadedDataStore,
+    list_data_store_ids,
+    new_data_store,
+)
+from xcube.core.store.preload import NullPreloadHandle
 
 
 class ListDataStoreTest(unittest.TestCase):
@@ -83,6 +89,12 @@ class TestBaseFsDataStore(unittest.TestCase):
         res = store.has_data(data_id="test.tif", data_type="geodataframe")
         self.assertEqual(mock_http_fs.exists.call_count, 3)
         self.assertFalse(res)
+
+    def test_preload_data(self):
+        store = new_data_store("file")
+        store_test = store.preload_data()
+        self.assertTrue(hasattr(store_test, "preload_handle"))
+        self.assertIsInstance(store_test.preload_handle, NullPreloadHandle)
 
 
 def test_fsspec_instantiation_error():
