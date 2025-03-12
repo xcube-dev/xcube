@@ -10,6 +10,9 @@
   - `position`: to set the position of the respective icon button 
      in the viewer's sidebar.
 
+### Other changes
+
+* Renamed [xrlint]() config file from `xrlint_config.yaml` to `xrlint-config.yaml`.
 
 ## Changes in 1.8.3
 
