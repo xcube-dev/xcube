@@ -12,6 +12,11 @@
 
 ### Other changes
 
+* Added a new abstract class `PreloadedDataStore` that defines the return type of the
+  `preload_data` method in `xcube.core.store.DataStore`. The `PreloadedDataStore` is a
+  data store containing a `preload_handle` field, which holds the handle
+  associated with a preload job.
+
 * Renamed [xrlint]() config file from `xrlint_config.yaml` to `xrlint-config.yaml`.
 
 ## Changes in 1.8.3
