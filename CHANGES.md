@@ -19,6 +19,8 @@
 
 * Renamed [xrlint]() config file from `xrlint_config.yaml` to `xrlint-config.yaml`.
 
+* The title "Preload Datasets" has been added to the preload visualization table 
+
 ## Changes in 1.8.3
 
 ### Enhancements
