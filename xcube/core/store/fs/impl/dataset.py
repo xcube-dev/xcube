@@ -13,6 +13,7 @@ import xarray as xr
 import zarr
 from rasterio.session import AWSSession
 
+from xcube.core.gridmapping import GridMapping
 # Note, we need the following reference to register the
 # xarray property accessor
 # noinspection PyUnresolvedReferences
@@ -413,7 +414,33 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     def write_data(
         self, data: xr.Dataset, data_id: str, replace=False, **write_params
     ) -> str:
-        raise NotImplementedError("Writing of GeoTIFF not yet supported")
+        assert_instance(data, xr.Dataset, name="data")
+        assert_instance(data_id, str, name="data_id")
+        fs, root, write_params = self.load_fs(write_params)
+
+        gm = GridMapping.from_dataset(data)
+
+        try:
+            with fs.open(data_id, "wb") as fobj:
+                with rasterio.open(
+                    fobj,
+                    "w",
+                    driver="GTiff",
+                    height=gm.height,
+                    width=gm.height,
+                    count=len(data.data_vars) * len(data.time),
+                    dtype=data[list(data.data_vars.keys())[0]].dtype,
+                    crs=data.rio.crs,
+                    transform=data.rio.transform(),
+                ) as dst:
+                    band_index = 1
+                    for var in data.data_vars:
+                        for time in data.time.values:
+                            dst.write(data[var].sel(time=time).values, band_index)
+                            band_index += 1
+        except ValueError as e:
+            raise DataStoreError(f"Failed to write dataset {data_id!r}: {e}") from e
+        return data_id
 
     @classmethod
     def _sanitize_dataset_attrs(cls, dataset):
