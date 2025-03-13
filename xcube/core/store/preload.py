@@ -323,6 +323,9 @@ class ExecutorPreloadHandle(PreloadHandle):
             self.close()
 
 
+_TITLE = "Preload Datasets"
+
+
 class PreloadDisplay(ABC):
     @classmethod
     def create(
@@ -348,10 +351,11 @@ class PreloadDisplay(ABC):
         return self.to_html()
 
     def to_text(self) -> str:
-        return self.tabulate(table_format="simple")
+        return f"{_TITLE}\n" + self.tabulate(table_format="simple")
 
     def to_html(self) -> str:
-        return self.tabulate(table_format="html")
+        title = f"<b style='font-size: 20px;'>{_TITLE}</b>"
+        return title + self.tabulate(table_format="html")
 
     def tabulate(self, table_format: str = "simple") -> str:
         """Generate HTML table from job list."""
