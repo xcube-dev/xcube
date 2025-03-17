@@ -1,10 +1,13 @@
-import pandas as pd
-import geopandas as gpd
+from typing import Any
+
 import altair as alt
+import geopandas as gpd
+import pandas as pd
 import pyproj
 import shapely
 import shapely.ops
 from shapely.geometry import Point
+import xarray as xr
 
 from chartlets import Component, Input, State, Output
 from chartlets.components import Box, Button, Typography, Select, VegaChart
@@ -27,79 +30,60 @@ panel = Panel(__name__, title="Spectral View")
 def render_panel(
     ctx: Context,
     dataset_id: str,
-    time_label: float,
-    place_group: list[str],
+    time_label: str,
+    place_group: list[dict[str, Any]],
     theme_mode: str,
 ) -> Component:
-
-    dataset = get_dataset(ctx, dataset_id)
 
     if theme_mode == "light":
         theme_mode = "default"
 
-    plot = VegaChart(id="plot", chart=None, style={"flexGrow": 3}, theme=theme_mode)
+    plot = VegaChart(id="plot", chart=None, style={"paddingTop": 6}, theme=theme_mode)
 
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
-    place_text = Typography(
-        id="text", children=[text], color="pink", style={"flexGrow": 3}
-    )
+    place_text = Typography(id="text", children=[text])
 
-    selected_places = ""
-    place_names = get_places(place_group)
+    print(place_group)
+    print(type(place_group))
+    place_names = get_places(ctx, place_group)
     select_places = Select(
         id="select_places",
-        label="places",
-        value=selected_places,
+        label="places (points)",
+        value="",
         options=place_names,
-        # multiple=True,
     )
 
-    # when multiple=True
-    variable_names = get_variables(dataset)
-    select_variables = ""  # variable_names , when multiple=True
-    select_variables = Select(
-        id="select_variables",
-        label="variables",
-        value=select_variables,
-        options=variable_names,
-        # multiple=True,
-    )
-
-    button = Button(id="button", text="Update")  # , style={"maxWidth": 100})
+    button = Button(id="button", text="Update", style={"maxWidth": 100})
 
     controls = Box(
-        children=[select_places, select_variables, button],
+        children=[select_places, button],
         style={
             "display": "flex",
             "flexDirection": "row",
             "alignItems": "center",
             "gap": 6,
             "padding": 6,
-            "flexGrow": 0,
         },
     )
 
-    time = Component(id="time", children=[time_label])
-
     return Box(
-        children=[place_text, plot, controls, time],
+        children=[place_text, plot, controls],
         style={
             "display": "flex",
             "flexDirection": "column",
             "alignItems": "center",
             "width": "100%",
             "height": "100%",
-            #    "gap": 6,
-            #    "padding": 6,
+            "gap": 6,
+            "padding": 6,
         },
     )
 
 
 def get_wavelength(
-    dataset,
-    placegroup: gpd.GeoDataFrame,  # list[dict],
+    dataset: xr.Dataset,
+    place_group: gpd.GeoDataFrame,
     places: list,
-    # variables: list, when multiple=True
 ) -> pd.DataFrame:
 
     grid_mapping = GridMapping.from_dataset(dataset)
@@ -109,18 +93,17 @@ def get_wavelength(
         CRS_CRS84, grid_mapping.crs, always_xy=True
     ).transform
 
-    placegroup["geometry"] = placegroup["geometry"].apply(
+    place_group["geometry"] = place_group["geometry"].apply(
         lambda geom: shapely.ops.transform(project, geom)
     )
-    placegroup["x"] = placegroup["geometry"].apply(
+    place_group["x"] = place_group["geometry"].apply(
         lambda geom: geom.x if geom else None
     )
-    placegroup["y"] = placegroup["geometry"].apply(
+    place_group["y"] = place_group["geometry"].apply(
         lambda geom: geom.y if geom else None
     )
 
-    dataset_place = get_cube_values_for_points(dataset, placegroup, include_refs=True)
-    # dataset_place = get_cube_values_for_points(dataset, placegroup, include_refs=True, var_names=variables), when multiple =True
+    dataset_place = get_cube_values_for_points(dataset, place_group, include_refs=True)
 
     result = pd.DataFrame()
 
@@ -164,7 +147,7 @@ def get_wavelength(
 def update_text(
     ctx: Context,
     dataset_id: str,
-    time_label: float,
+    time_label: str,
     _time_label: bool | None = None,
 ) -> list | None:
 
@@ -178,29 +161,27 @@ def update_text(
     State("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGroup"),
     State("select_places", "value"),
-    State("select_variables", "value"),
     Input("button", "clicked"),
     Output("plot", "chart"),
 )
 def update_plot(
     ctx: Context,
     dataset_id: str,
-    time_label: float,
-    placegroup: list[str],
+    time_label: str,
+    place_group: list[dict[str, Any]],
     place: list,
-    variables: list,
     _clicked: bool | None = None,
 ) -> alt.Chart | None:
 
-    if placegroup is None:
+    if not place_group:
         return None
 
-    if place is None:
+    if not place:
         return None
 
     dataset = get_dataset(ctx, dataset_id)
 
-    placegroup = gpd.GeoDataFrame(
+    place_group = gpd.GeoDataFrame(
         [
             {
                 "id": feature["id"],
@@ -213,14 +194,14 @@ def update_plot(
                     feature["geometry"]["coordinates"][1],
                 ),
             }
-            for feature in placegroup[0]["features"]
+            for feature in place_group[0]["features"]
+            if feature.get("geometry", {}).get("type") == "Point"
         ]
     )
 
-    placegroup["time"] = pd.to_datetime(time_label).tz_localize(None)
-    place = [place]  # update, becomes obsolete with multiple select
-    source = get_wavelength(dataset, placegroup, place)
-    # source = get_wavelength(dataset, placegroup, place,variables) # with multiple selection
+    place_group["time"] = pd.to_datetime(time_label).tz_localize(None)
+    place = [place]
+    source = get_wavelength(dataset, place_group, place)
 
     if source is None:
         # TODO: set error message in panel UI
@@ -238,23 +219,34 @@ def update_plot(
         )
     ).properties(width=560, height=260)
 
-    update_last_timelabel(time_label)
-
     return chart
 
 
-def get_places(place_group: list[dict]) -> list[str]:
-    return [feature["properties"]["label"] for feature in place_group[0]["features"]]
+@panel.callback(
+    State("@app", "selectedPlaceGroup"),
+    Input("@app", "selectedPlaceGroup"),
+    Output("select_places", "options"),
+)
+def get_places(
+    ctx: Context,
+    place_group: list[dict[str, Any]],
+    _new_place_group: bool | None = None,
+) -> list[str]:
 
-
-def get_variables(dataset) -> list[str]:
-
-    variables = [var for var in dataset.data_vars if "wavelength" in dataset[var].attrs]
-    return variables
+    if not place_group:
+        return []
+    else:
+        return [
+            feature["properties"]["label"]
+            for feature in place_group[0]["features"]
+            if feature.get("geometry", {}).get("type") == "Point"
+        ]
 
 
 @panel.callback(
-    State("@app", "themeMode"), Input("@app", "themeMode"), Output("plot", "theme")
+    State("@app", "themeMode"),
+    Input("@app", "themeMode"),
+    Output("plot", "theme"),
 )
 def update_theme(
     ctx: Context,
@@ -268,53 +260,22 @@ def update_theme(
     return theme_mode
 
 
-# # TODO - add selectedDatasetName to Available State Properties
+# TODO - add selectedDatasetName to Available State Properties
 @panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGroup"),
     State("select_places", "value"),
-    State("select_variables", "value"),
-    State("time", "children"),
     Input("@app", "selectedTimeLabel"),
     Output("plot", "chart"),
 )
 def update_timestep(
     ctx: Context,
     dataset_id: str,
-    time_label: float,
-    placegroup: str,
+    time_label: str,
+    place_group: list[dict[str, Any]],
     place: list,
-    variables: str,
-    time: list,
     _new_time_label: bool | None = None,
 ) -> alt.Chart | None:
 
-    if time[0] != time_label:
-        chart = update_plot(ctx, dataset_id, time_label, placegroup, place, variables)
-        return chart
-
-
-@panel.callback(
-    State("@app", "selectedPlaceGroup"),
-    Input("@app", "selectedPlaceGroup"),
-    Output("select_places", "options"),
-)
-def update_places(
-    ctx: Context,
-    place_group: str,
-    _new: bool | None = None,
-) -> list[str]:
-
-    return [feature["properties"]["label"] for feature in place_group[0]["features"]]
-
-
-# TODO implement this more efficiently
-@panel.callback(
-    Output("time", "children"),
-)
-def update_last_timelabel(
-    new_timelabel: str,
-) -> list[str]:
-
-    return [new_timelabel]
+    return update_plot(ctx, dataset_id, time_label, place_group, place)
