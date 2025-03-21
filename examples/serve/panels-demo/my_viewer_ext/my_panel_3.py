@@ -43,8 +43,6 @@ def render_panel(
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
     place_text = Typography(id="text", children=[text], align="center")
 
-    print(place_group)
-    print(type(place_group))
     place_names = get_places(ctx, place_group)
     select_places = Select(
         id="select_places",
