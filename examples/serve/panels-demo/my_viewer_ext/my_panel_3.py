@@ -18,7 +18,7 @@ from xcube.constants import CRS_CRS84
 from xcube.core.extract import get_cube_values_for_points
 from xcube.core.gridmapping import GridMapping
 
-panel = Panel(__name__, title="Spectral View")
+panel = Panel(__name__, title="Spectral View", icon="light")
 
 
 @panel.layout(
@@ -41,7 +41,7 @@ def render_panel(
     plot = VegaChart(id="plot", chart=None, style={"paddingTop": 6}, theme=theme_mode)
 
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
-    place_text = Typography(id="text", children=[text])
+    place_text = Typography(id="text", children=[text], align="center")
 
     print(place_group)
     print(type(place_group))
@@ -66,8 +66,21 @@ def render_panel(
         },
     )
 
+    control_bar = Box(
+        children=[place_text, controls],
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "alignItems": "center",
+            "justifyContent": "space-between",
+            "width": "100%",
+            "gap": 6,
+            "padding": 6,
+        },
+    )
+
     return Box(
-        children=[place_text, plot, controls],
+        children=[control_bar, plot],
         style={
             "display": "flex",
             "flexDirection": "column",
