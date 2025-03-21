@@ -1,14 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
 
 from xcube.webapi.ows.stac.config import DEFAULT_COLLECTION_ID
-from ...helpers import RoutesTestCase, get_res_test_dir
-
 from xcube.webapi.ows.stac.routes import PATH_PREFIX
+
+from ...helpers import RoutesTestCase, get_res_test_dir
 
 
 class StacRoutesTest(RoutesTestCase):
@@ -36,7 +36,7 @@ class StacRoutesTest(RoutesTestCase):
         response = self.fetch(PATH_PREFIX + "/collections/datacubes/items")
         self.assertResponseOK(response)
         response = self.fetch(
-            PATH_PREFIX + "/collections/datacubes/items" "?limit=1&cursor=1"
+            PATH_PREFIX + "/collections/datacubes/items?limit=1&cursor=1"
         )
         self.assertResponseOK(response)
         response = self.fetch(PATH_PREFIX + "/collections/datasets")

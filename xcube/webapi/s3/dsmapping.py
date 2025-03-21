@@ -1,16 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
-from typing import Union, Set, Dict
 from collections.abc import Iterator
+from typing import Dict, Set, Union
 
 import xarray as xr
 
 from xcube.core.mldataset import MultiLevelDataset
-from ..datasets.context import DatasetsContext
+
 from ...util.assertions import assert_instance
+from ..datasets.context import DatasetsContext
 
 _LEVELS_EXT = ".levels"
 _ZARR_EXT = ".zarr"

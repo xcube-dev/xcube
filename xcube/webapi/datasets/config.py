@@ -1,19 +1,24 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonComplexSchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.webapi.common.schemas import BOOLEAN_SCHEMA
-from xcube.webapi.common.schemas import CHUNK_SIZE_SCHEMA
-from xcube.webapi.common.schemas import FILE_SYSTEM_SCHEMA
-from xcube.webapi.common.schemas import GEO_BOUNDING_BOX_SCHEMA
-from xcube.webapi.common.schemas import IDENTIFIER_SCHEMA
-from xcube.webapi.common.schemas import PATH_SCHEMA
-from xcube.webapi.common.schemas import STRING_SCHEMA
-from xcube.webapi.common.schemas import URI_SCHEMA
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonComplexSchema,
+    JsonNumberSchema,
+    JsonObjectSchema,
+)
+from xcube.webapi.common.schemas import (
+    BOOLEAN_SCHEMA,
+    CHUNK_SIZE_SCHEMA,
+    FILE_SYSTEM_SCHEMA,
+    GEO_BOUNDING_BOX_SCHEMA,
+    IDENTIFIER_SCHEMA,
+    PATH_SCHEMA,
+    STRING_SCHEMA,
+    URI_SCHEMA,
+)
+
 from ..places.config import PLACE_GROUP_SCHEMA
 
 ATTRIBUTION_SCHEMA = JsonComplexSchema(
@@ -59,6 +64,7 @@ ACCESS_CONTROL_SCHEMA = JsonObjectSchema(
 
 COMMON_DATASET_PROPERTIES = dict(
     Title=STRING_SCHEMA,
+    Description=STRING_SCHEMA,
     GroupTitle=STRING_SCHEMA,
     Tags=JsonArraySchema(items=STRING_SCHEMA),
     Variables=VARIABLES_SCHEMA,

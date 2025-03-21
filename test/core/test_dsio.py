@@ -1,10 +1,12 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os
 import os.path
 import unittest
+from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
+from test.sampledata import new_test_dataset
 from typing import Set
 
 import boto3
@@ -13,8 +15,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
-from test.sampledata import new_test_dataset
 from xcube.core.dsio import (
     CsvDatasetIO,
     DatasetIO,
@@ -22,14 +22,15 @@ from xcube.core.dsio import (
     Netcdf4DatasetIO,
     ZarrDatasetIO,
     find_dataset_io,
-    query_dataset_io,
     get_path_or_s3_store,
-    write_cube,
-    split_s3_url,
-    parse_s3_url_and_kwargs,
     open_cube,
+    open_dataset,
+    parse_s3_url_and_kwargs,
+    query_dataset_io,
+    split_s3_url,
+    write_cube,
+    write_dataset,
 )
-from xcube.core.dsio import open_dataset, write_dataset
 from xcube.core.new import new_cube
 
 TEST_NC_FILE = "test.nc"

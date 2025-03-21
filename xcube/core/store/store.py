@@ -1,28 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
+from collections.abc import Container, Iterator
 from typing import Any, Optional, Union
-from collections.abc import Iterator, Container
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
-from xcube.util.extension import Extension
-from xcube.util.extension import ExtensionPredicate
-from xcube.util.extension import ExtensionRegistry
+from xcube.util.extension import Extension, ExtensionPredicate, ExtensionRegistry
 from xcube.util.jsonschema import JsonObjectSchema
 from xcube.util.plugin import get_extension_registry
-from .accessor import DataOpener
-from .accessor import DataPreloader
-from .accessor import DataWriter
+
+from .accessor import DataOpener, DataPreloader, DataWriter
 from .assertions import assert_valid_params
 from .datatype import DataTypeLike
 from .descriptor import DataDescriptor
 from .error import DataStoreError
-from .preload import PreloadHandle
-from .preload import NullPreloadHandle
+from .preload import NullPreloadHandle, PreloadHandle
 from .search import DataSearcher
-
 
 #######################################################
 # Data store instantiation and registry query
@@ -33,7 +28,7 @@ def new_data_store(
     data_store_id: str,
     extension_registry: Optional[ExtensionRegistry] = None,
     **data_store_params,
-) -> Union["DataStore", "MutableDataStore"]:
+) -> Union["DataStore", "MutableDataStore", "PreloadDataStore"]:
     """Create a new data store instance for given
     *data_store_id* and *data_store_params*.
 
@@ -73,8 +68,7 @@ def get_data_store_class(
     extension_registry = extension_registry or get_extension_registry()
     if not extension_registry.has_extension(EXTENSION_POINT_DATA_STORES, data_store_id):
         raise DataStoreError(
-            f'Unknown data store "{data_store_id}"'
-            f" (may be due to missing xcube plugin)"
+            f'Unknown data store "{data_store_id}" (may be due to missing xcube plugin)'
         )
     return extension_registry.get_component(EXTENSION_POINT_DATA_STORES, data_store_id)
 
@@ -493,7 +487,7 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
         self,
         *data_ids: str,
         **preload_params: Any,
-    ) -> PreloadHandle:
+    ) -> "PreloadedDataStore":
         """Preload the given data items for faster access.
 
         Warning: This is an experimental and potentially unstable API
@@ -515,12 +509,11 @@ class DataStore(DataOpener, DataSearcher, DataPreloader, ABC):
               on the possible options.
 
         Returns:
-            A handle for the preload process. The default implementation
-            returns an empty preload handle.
+            A mutable data store containing the preload handle.
+            The default implementation contains an empty preload handle.
         """
-        return NullPreloadHandle()
-
-    # noinspection PyMethodMayBeStatic
+        self.preload_handle = NullPreloadHandle()
+        return self
 
 
 class MutableDataStore(DataStore, DataWriter, ABC):
@@ -695,4 +688,19 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
         Raises:
             DataStoreError: If an error occurs.
+        """
+
+
+class PreloadedDataStore(DataStore):
+    """A preload data store is a multable data store which contains the preload handle.
+
+    Instances of this class are returned by the ``DataStore.preload_data()`` method.
+    """
+
+    @property
+    @abstractmethod
+    def preload_handle(self) -> PreloadHandle:
+        """The preload handle that can be used to observe the preload progress.
+        Implementors of this interface may use a `ExecutorPreloadHandle` or consider
+        returning a `NullPreloadHandle` if the progress is not observable.
         """

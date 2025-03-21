@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -8,34 +8,36 @@ import functools
 import logging
 import traceback
 import urllib.parse
-from typing import Any, Optional, Union, Callable, Type
-from collections.abc import Sequence, Awaitable, Mapping
+from collections.abc import Awaitable, Mapping, Sequence
+from typing import Any, Callable, Optional, Type, Union
 
 import tornado.escape
 import tornado.httputil
 import tornado.ioloop
 import tornado.web
 
-from xcube.constants import LOG
-from xcube.constants import LOG_LEVEL_DETAIL
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
-from xcube.server.api import ApiRequest
-from xcube.server.api import ApiResponse
-from xcube.server.api import ApiRoute
-from xcube.server.api import ApiStaticRoute
-from xcube.server.api import ArgT
-from xcube.server.api import Context
-from xcube.server.api import JSON
-from xcube.server.api import ReturnT
-from xcube.server.config import get_reverse_url_prefix
-from xcube.server.config import get_url_prefix
+from xcube.constants import LOG, LOG_LEVEL_DETAIL
+from xcube.server.api import (
+    JSON,
+    ApiError,
+    ApiHandler,
+    ApiRequest,
+    ApiResponse,
+    ApiRoute,
+    ApiStaticRoute,
+    ArgT,
+    Context,
+    ReturnT,
+)
+from xcube.server.config import get_reverse_url_prefix, get_url_prefix
 from xcube.server.framework import Framework
 from xcube.util.assertions import assert_true
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import (
+    JsonBooleanSchema,
+    JsonIntegerSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 from xcube.version import version
 
 SERVER_CTX_ATTR_NAME = "__xcube_server_ctx"
@@ -124,16 +126,18 @@ class TornadoFramework(Framework):
         handlers = []
 
         for api_route in api_routes:
-            handlers.append((
-                url_prefix + self.path_to_pattern(api_route.path)
-                + ("/?" if api_route.slash else ""),
-                TornadoRequestHandler,
-                {"api_route": api_route},
-            ))
+            handlers.append(
+                (
+                    url_prefix
+                    + self.path_to_pattern(api_route.path)
+                    + ("/?" if api_route.slash else ""),
+                    TornadoRequestHandler,
+                    {"api_route": api_route},
+                )
+            )
             LOG.log(
                 LOG_LEVEL_DETAIL,
-                f"Added route {api_route.path!r}"
-                f" from API {api_route.api_name!r}",
+                f"Added route {api_route.path!r} from API {api_route.api_name!r}",
             )
 
         if handlers:
@@ -263,8 +267,7 @@ class TornadoFramework(Framework):
                 rest_of_path = path[pos:]
                 if rest_var_seen and rest_of_path:
                     raise ValueError(
-                        "wildcard variable must be last in path,"
-                        f' but path was "{path}"'
+                        f'wildcard variable must be last in path, but path was "{path}"'
                     )
                 reg_expr += rest_of_path
                 rest_var_seen = False
@@ -308,8 +311,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         self.set_header("Access-Control-Allow-Methods", "GET,PUT,DELETE,OPTIONS")
         self.set_header(
             "Access-Control-Allow-Headers",
-            "x-requested-with,access-control-allow-origin,"
-            "authorization,content-type",
+            "x-requested-with,access-control-allow-origin,authorization,content-type",
         )
 
     def write_error(self, status_code: int, **kwargs: Any):
@@ -399,7 +401,7 @@ class TornadoApiRequest(ApiRequest):
                 return [type(v) for v in values]
             except (ValueError, TypeError):
                 raise ApiError.BadRequest(
-                    f"Query parameter {name!r}" f" must have type {type.__name__!r}."
+                    f"Query parameter {name!r} must have type {type.__name__!r}."
                 )
         return values
 

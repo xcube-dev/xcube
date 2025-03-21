@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -10,7 +10,7 @@ import time
 import unittest
 from abc import ABC
 from contextlib import closing
-from typing import Any, IO, Iterable
+from typing import IO, Any, Iterable
 
 import urllib3
 from urllib3.exceptions import MaxRetryError
@@ -18,7 +18,6 @@ from urllib3.exceptions import MaxRetryError
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
 from xcube.util.extension import ExtensionRegistry
-
 
 Body = dict | str | bytes | IO[Any] | Iterable[bytes]
 JsonData = None | bool | int | float | str | list | dict
@@ -190,14 +189,12 @@ class ServerTestCase(unittest.TestCase, ABC):
         if expected_message is not None:
             self.assertIsNotNone(message, msg="error message not available")
             self.assertIsInstance(
-                message, str, msg="error message must be a string," f" was {message!r}"
+                message, str, msg=f"error message must be a string, was {message!r}"
             )
             self.assertIn(expected_message, message)
 
     @classmethod
-    def parse_error_message(
-        cls, response: urllib3.response.HTTPResponse
-    ) -> str | None:
+    def parse_error_message(cls, response: urllib3.response.HTTPResponse) -> str | None:
         """Parse an error message from the given response object."""
         # noinspection PyBroadException
         try:

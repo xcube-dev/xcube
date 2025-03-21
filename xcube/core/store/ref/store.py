@@ -1,11 +1,11 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os
 import warnings
+from collections.abc import Container, Iterator
 from typing import Any, Union
-from collections.abc import Iterator, Container
 
 import fsspec
 import xarray as xr
@@ -13,8 +13,7 @@ import xarray as xr
 from xcube.util.jsonschema import JsonObjectSchema
 
 from ..datatype import DataType, DataTypeLike
-from ..descriptor import DataDescriptor, DatasetDescriptor
-from ..descriptor import new_data_descriptor
+from ..descriptor import DataDescriptor, DatasetDescriptor, new_data_descriptor
 from ..store import DataStore
 from .schema import REF_STORE_SCHEMA
 
@@ -156,8 +155,7 @@ class ReferenceDataStore(DataStore):
                 data_descriptor = DatasetDescriptor.from_dict(data_descriptor)
             elif data_descriptor is not None:
                 raise TypeError(
-                    "value of data_descriptor key"
-                    " in refs item must be a dict or None"
+                    "value of data_descriptor key in refs item must be a dict or None"
                 )
 
             data_id = ref.get("data_id") or None

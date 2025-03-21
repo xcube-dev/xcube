@@ -1,16 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
 import unittest
+from test.sampledata import new_test_dataset
 
 import numpy as np
 
-from test.sampledata import new_test_dataset
-from xcube.core.chunk import chunk_dataset
-from xcube.core.chunk import compute_chunk_slices
-from xcube.core.chunk import get_empty_dataset_chunks
+from xcube.core.chunk import (
+    chunk_dataset,
+    compute_chunk_slices,
+    get_empty_dataset_chunks,
+)
 from xcube.core.new import new_cube
 
 

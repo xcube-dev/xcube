@@ -1,25 +1,31 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import urllib.parse
 import warnings
-from typing import Dict, List, Tuple, Any
 from collections.abc import Mapping
+from typing import Any
 
 import numpy as np
 import pyproj
 import xarray as xr
 
+from xcube.constants import CRS_CRS84
 from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.tilingscheme import EARTH_CIRCUMFERENCE_WGS84
-from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME
-from xcube.core.tilingscheme import TilingScheme
-from xcube.core.tilingscheme import WEB_MERCATOR_CRS_NAME
-from xcube.webapi.common.xml import Document
-from xcube.webapi.common.xml import Element
-from xcube.constants import CRS_CRS84
+from xcube.core.tilingscheme import (
+    EARTH_CIRCUMFERENCE_WGS84,
+    GEOGRAPHIC_CRS_NAME,
+    WEB_MERCATOR_CRS_NAME,
+    TilingScheme,
+)
+from xcube.webapi.common.xml import Document, Element
+from xcube.webapi.datasets.controllers import (
+    get_dataset_title_and_description,
+    get_variable_title_and_description,
+)
+
 from .context import WmtsContext
 
 WMTS_VERSION = "1.0.0"
@@ -41,7 +47,7 @@ _STD_PIXEL_SIZE_IN_METERS = 0.28e-3
 # '/tile/%s/%s/%s/' is the pattern for
 # '/tile/{ds_name}/{var_name}/{tms_id}/'
 _TILE_URL_TEMPLATE = (
-    WMTS_URL_PREFIX + "/tile/%s/%s/%s/" "{TileMatrix}/" "{TileRow}/" "{TileCol}.png"
+    WMTS_URL_PREFIX + "/tile/%s/%s/%s/{TileMatrix}/{TileRow}/{TileCol}.png"
 )
 
 
@@ -93,8 +99,7 @@ def get_capabilities_element(ctx: WmtsContext, base_url: str, tms_id: str) -> El
             crs84_bbox = get_crs84_bbox(grid_mapping)
         except ValueError:
             warnings.warn(
-                f"cannot compute geographical"
-                f" bounds for dataset {ds_name}, ignoring it"
+                f"cannot compute geographical bounds for dataset {ds_name}, ignoring it"
             )
             continue
 
@@ -153,9 +158,11 @@ def get_capabilities_element(ctx: WmtsContext, base_url: str, tms_id: str) -> El
             "xmlns:ows": "http://www.opengis.net/ows/1.1",
             "xmlns:xlink": "http://www.w3.org/1999/xlink",
             "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "xsi:schemaLocation": "http://www.opengis.net/wmts/1.0"
-            " http://schemas.opengis.net/wmts/1.0.0/"
-            "wmtsGetCapabilities_response.xsd",
+            "xsi:schemaLocation": (
+                "http://www.opengis.net/wmts/1.0"
+                " http://schemas.opengis.net/wmts/1.0.0/"
+                "wmtsGetCapabilities_response.xsd"
+            ),
             "version": WMTS_VERSION,
         },
         elements=[
@@ -216,8 +223,8 @@ def get_dim_elements(
         dim_element = Element(
             "Dimension",
             elements=[
-                Element("ows:Identifier", text=f"{dim_name}"),
-                Element("ows:Title", text=dim_title),
+                Element("ows:Identifier", text=str(dim_name)),
+                Element("ows:Title", text=str(dim_title)),
                 Element("ows:UOM", text=units),
                 Element("Default", text=default),
                 Element("Current", text=current),
@@ -245,16 +252,13 @@ def get_dim_elements(
 def get_ds_theme_element(
     ds_name: str, ds: xr.Dataset, dataset_config: Mapping[str, Any]
 ) -> Element:
-    ds_title = dataset_config.get("Title", ds.attrs.get("title", ds_name))
-    ds_abstract = dataset_config.get(
-        "Abstract", ds.attrs.get("abstract", ds.attrs.get("comment", ""))
-    )
+    ds_title, ds_abstract = get_dataset_title_and_description(ds, dataset_config)
     return Element(
         "Theme",
         elements=[
             Element("ows:Identifier", text=ds_name),
             Element("ows:Title", text=ds_title),
-            Element("ows:Abstract", text=ds_abstract),
+            Element("ows:Abstract", text=ds_abstract or ""),
         ],
     )
 
@@ -267,17 +271,15 @@ def get_var_layer_and_theme_element(
     var_tile_url_templ_pattern: str,
     tms_id: str,
 ) -> tuple[Element, Element]:
+    var_title, var_abstract = get_variable_title_and_description(var_name, var)
     var_id = f"{ds_name}.{var_name}"
-    var_title = (
-        ds_name + "/" + var.attrs.get("title", var.attrs.get("long_name", var_name))
-    )
-    var_abstract = var.attrs.get("comment", var.attrs.get("abstract", ""))
+    var_title = f"{ds_name}/{var_title}"
     var_theme_element = Element(
         "Theme",
         elements=[
             Element("ows:Identifier", text=var_id),
             Element("ows:Title", text=var_title),
-            Element("ows:Abstract", text=var_abstract),
+            Element("ows:Abstract", text=var_abstract or ""),
             Element("LayerRef", text=var_id),
         ],
     )
@@ -289,19 +291,19 @@ def get_var_layer_and_theme_element(
     layer_element = Element(
         "Layer",
         elements=[
-            Element("ows:Identifier", text=f"{ds_name}.{var_name}"),
-            Element("ows:Title", text=f"{var_title}"),
-            Element("ows:Abstract", text=f"{var_abstract}"),
+            Element("ows:Identifier", text=var_id),
+            Element("ows:Title", text=var_title),
+            Element("ows:Abstract", text=var_abstract),
             Element(
                 "ows:WGS84BoundingBox",
                 elements=[
                     Element(
                         "ows:LowerCorner",
-                        text=f"{var_geo_bbox[0]}" f" {var_geo_bbox[1]}",
+                        text=f"{var_geo_bbox[0]} {var_geo_bbox[1]}",
                     ),
                     Element(
                         "ows:UpperCorner",
-                        text=f"{var_geo_bbox[2]}" f" {var_geo_bbox[3]}",
+                        text=f"{var_geo_bbox[2]} {var_geo_bbox[3]}",
                     ),
                 ],
             ),
@@ -640,7 +642,7 @@ def get_service_identification_element():
             Element("ows:Title", text="xcube WMTS"),
             Element(
                 "ows:Abstract",
-                text="Web Map Tile Service (WMTS)" " for xcube-conformant data cubes",
+                text="Web Map Tile Service (WMTS) for xcube-conformant data cubes",
             ),
             Element(
                 "ows:Keywords",
@@ -680,7 +682,7 @@ def get_crs84_bbox(grid_mapping: GridMapping) -> tuple[float, float, float, floa
     coords = np.array([np.nanmin(x), np.nanmin(y), np.nanmax(x), np.nanmax(y)])
     if not np.all(np.isfinite(coords)):
         raise ValueError(
-            "grid mapping bbox cannot" " be represented in geographical coordinates"
+            "grid mapping bbox cannot be represented in geographical coordinates"
         )
     # noinspection PyTypeChecker
     return tuple(map(float, coords))

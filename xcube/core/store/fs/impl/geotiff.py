@@ -1,22 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Tuple, Dict, Any
+from typing import Any, Dict, Optional, Tuple
 
 import fsspec
 import rasterio
 import xarray as xr
 
-from xcube.core.mldataset import LazyMultiLevelDataset
-from xcube.core.mldataset import MultiLevelDataset
-from xcube.core.store import DataType
-from xcube.core.store import MULTI_LEVEL_DATASET_TYPE
-from xcube.util.assertions import assert_instance
-from xcube.util.assertions import assert_true
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonNumberSchema
-from xcube.util.jsonschema import JsonObjectSchema
+from xcube.core.mldataset import LazyMultiLevelDataset, MultiLevelDataset
+from xcube.core.store import MULTI_LEVEL_DATASET_TYPE, DataType
+from xcube.util.assertions import assert_instance, assert_true
+from xcube.util.jsonschema import JsonArraySchema, JsonNumberSchema, JsonObjectSchema
+
 from .dataset import DatasetGeoTiffFsDataAccessor
 
 

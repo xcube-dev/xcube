@@ -1,12 +1,14 @@
-from chartlets import Component, Input, State, Output
-from chartlets.components import Box, Select, Checkbox, Typography
+# Copyright (c) 2018-2025 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
 
-from xcube.webapi.viewer.contrib import Panel
-from xcube.webapi.viewer.contrib import get_datasets_ctx
+from chartlets import Component, Input, Output, State
+from chartlets.components import Box, Checkbox, Select, Typography
+
 from xcube.server.api import Context
+from xcube.webapi.viewer.contrib import Panel, get_datasets_ctx
 
-
-panel = Panel(__name__, title="Panel A")
+panel = Panel(__name__, title="Panel A", position=2, icon="equalizer")
 
 
 COLORS = [(0, "red"), (1, "green"), (2, "blue"), (3, "yellow")]
@@ -19,7 +21,6 @@ def render_panel(
     ctx: Context,
     dataset_id: str = "",
 ) -> Component:
-
     opaque = False
     color = 0
 
@@ -78,6 +79,6 @@ def update_info_text(
         f" the color is {COLORS[color][1]} and"
         f" it {'is' if opaque else 'is not'} opaque."
         f" The length of the last info text"
-        f" was {len(info_text or "")}."
+        f" was {len(info_text or '')}."
         f" The number of datasets is {len(ds_configs)}."
     )

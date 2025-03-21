@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,10 +6,9 @@ import json
 import os
 import socket
 import threading
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, Optional, Union
-from collections.abc import Iterable
-from collections.abc import Mapping
 
 import fsspec
 import tornado.ioloop
@@ -20,7 +19,6 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.server import Server
 from xcube.server.webservers.tornado import TornadoFramework
 from xcube.webapi.datasets.context import DatasetsContext
-
 
 # Name of the env var that contains a JupyterLab's base URL.
 # If this env var is set, the following _LAB_INFO_FILE will not be used.
@@ -142,6 +140,7 @@ class Viewer:
         dataset: Union[xr.Dataset, MultiLevelDataset],
         ds_id: Optional[str] = None,
         title: Optional[str] = None,
+        description: Optional[str] = None,
         style: Optional[str] = None,
         color_mappings: dict[str, dict[str, Any]] = None,
     ):
@@ -154,6 +153,8 @@ class Viewer:
             ds_id: Optional dataset identifier. If not given, an
                 identifier will be generated and returned.
             title: Optional dataset title. Overrides a title given by
+                dataset metadata.
+            description: Optional dataset description. Overrides a description given by
                 dataset metadata.
             style: Optional name of a style that must exist in the
                 server configuration.
@@ -171,6 +172,7 @@ class Viewer:
             dataset,
             ds_id=ds_id,
             title=title,
+            description=description,
             style=style,
             color_mappings=color_mappings,
         )

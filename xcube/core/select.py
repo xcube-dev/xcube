@@ -1,11 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Optional, Tuple, Callable, Dict, Any, List
 from collections.abc import Collection, Mapping
-from typing import Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import cftime
 import dask.array as da
@@ -214,9 +213,7 @@ def select_temporal_subset(
         return dataset.sel({time_name or "time": time_slice})
 
 
-_PREDICATE_SIGNATURE = (
-    "predicate(" "slice_array: xr.DataArray, " "slice_info: Dict" ") -> bool"
-)
+_PREDICATE_SIGNATURE = "predicate(slice_array: xr.DataArray, slice_info: Dict) -> bool"
 
 Predicate = Callable[[xr.DataArray, dict[str, Any]], bool]
 
@@ -304,7 +301,7 @@ def select_label_subset(
                 )
     else:
         raise TypeError(
-            f"predicate" f" must be callable with" f" signature {_PREDICATE_SIGNATURE}"
+            f"predicate must be callable with signature {_PREDICATE_SIGNATURE}"
         )
 
     num_labels = dataset.sizes[dim]

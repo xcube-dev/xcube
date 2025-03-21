@@ -1,11 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from collections.abc import MutableMapping
-from typing import Optional, Dict, Any, Union, Set, List, Tuple
-from collections.abc import Hashable
+from collections.abc import Hashable, MutableMapping
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pyproj
@@ -15,6 +14,7 @@ import zarr.convenience
 
 from xcube.core.schema import get_dataset_chunks
 from xcube.util.assertions import assert_instance
+
 from .base import CRS_WGS84
 
 

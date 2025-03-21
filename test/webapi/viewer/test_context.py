@@ -1,24 +1,23 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
 import unittest
-from typing import Optional, Union, Any
 from collections.abc import Mapping, MutableMapping
+from test.s3test import s3_test
+from test.webapi.helpers import get_api_ctx, get_server_config
+from typing import Any, Optional, Union
 
 import fsspec
 from chartlets import ExtensionContext
 
-from test.s3test import s3_test
-from test.webapi.helpers import get_api_ctx
-from test.webapi.helpers import get_server_config
 from xcube.webapi.viewer.context import ViewerContext
 from xcube.webapi.viewer.contrib import Panel
 
 
 def get_viewer_ctx(
-    server_config: Optional[Union[str, Mapping[str, Any]]] = None
+    server_config: Optional[Union[str, Mapping[str, Any]]] = None,
 ) -> ViewerContext:
     return get_api_ctx("viewer", ViewerContext, server_config)
 

@@ -1,9 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import logging
 import math
+
 import pyproj
 
 PLUGIN_ENTRY_POINT_GROUP_NAME = "xcube_plugins"

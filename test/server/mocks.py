@@ -1,29 +1,24 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import (
-    Optional,
-    Tuple,
-    Dict,
-    Any,
-    Union,
-    Callable,
-)
-from collections.abc import Sequence, Awaitable, Mapping
+from collections.abc import Awaitable, Mapping, Sequence
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from tornado import concurrent
 
 from xcube.constants import EXTENSION_POINT_SERVER_APIS
-from xcube.server.api import Api
-from xcube.server.api import ApiContext
-from xcube.server.api import ApiRequest
-from xcube.server.api import ApiResponse
-from xcube.server.api import ApiRoute
-from xcube.server.api import ApiStaticRoute
-from xcube.server.api import Context
-from xcube.server.api import JSON
-from xcube.server.api import ReturnT
+from xcube.server.api import (
+    JSON,
+    Api,
+    ApiContext,
+    ApiRequest,
+    ApiResponse,
+    ApiRoute,
+    ApiStaticRoute,
+    Context,
+    ReturnT,
+)
 from xcube.server.framework import Framework
 from xcube.server.server import Server
 from xcube.util.extension import ExtensionRegistry

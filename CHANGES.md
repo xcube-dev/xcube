@@ -1,3 +1,69 @@
+## Changes in 1.8.4 (in development)
+
+### Enhancements
+
+* Extension panels for xcube Viewer of type `xcube.webapi.viewer.contrib.panel.Panel`
+  now have two more properties:
+  - `icon`: name of a [Material Design Icon](https://fonts.google.com/icons) 
+     to be used for the icon button that represents the panel 
+     in the viewer's sidebar.
+  - `position`: to set the position of the respective icon button 
+     in the viewer's sidebar.
+
+### Other changes
+
+* Added a new abstract class `PreloadedDataStore` that defines the return type of the
+  `preload_data` method in `xcube.core.store.DataStore`. The `PreloadedDataStore` is a
+  data store containing a `preload_handle` field, which holds the handle
+  associated with a preload job.
+
+* Renamed [xrlint]() config file from `xrlint_config.yaml` to `xrlint-config.yaml`.
+
+## Changes in 1.8.3
+
+### Enhancements
+
+* xcube Server now can be configured to provide abstracts/descriptions for datasets 
+  so they can be rendered as markdown in xcube Viewer 
+  (https://github.com/xcube-dev/xcube-viewer/issues/454). (#1122)
+  
+  1. New `description` properties have been added to responses from xcube Server for 
+     datasets and variables.
+  2. User can now provide abstracts or descriptions using markdown format for dataset 
+     configurations in xcube Server. A new configuration setting `Description` 
+     now accompanies settings such as `Title`.
+  3. Default values for the `Description` setting are derived from metadata of 
+     datasets and variable CF attributes.
+* Improved axis labeling in 2D histogram visualization in the Panel demo.
+
+* Added support for the xcube Viewer's `Markdown` component so it can be used in 
+  server-side viewer extensions. See new package `xcube.webapi.viewer.components`
+  exporting class `Markdown` which has a single `text` property that takes 
+  the markdown text.
+
+* Bundled [xcube Viewer 1.4.2](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.2).
+
+### Other changes
+
+* Reformatted code base according to the default settings used by 
+  [isort](https://pycqa.github.io/isort/) and
+  [ruff](https://docs.astral.sh/ruff/). Updated development 
+  dependencies accordingly.
+* Updated copyright notices.
+* Ensured xcube can be installed and tested in Python 3.13 environments.
+* Added a configuration file `xrlint_config.yaml` for the 
+  [xrlint](https://bcdev.github.io/xrlint/) tool to the project repository.
+
+## Changes in 1.8.2
+
+* Bundled xcube Viewer 
+  [1.4.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.1)
+  with fixes regarding the _share_ feature.
+
+* No longer logging a `TypeError` if xcube server's 
+  `GET viewer/ext/contributions` is called without any 
+  viewer extensions configured. (#1116)
+
 ## Changes in 1.8.1
 
 ### Fixes

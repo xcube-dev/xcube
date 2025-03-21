@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,13 +9,16 @@ import pyproj
 import xarray as xr
 
 from xcube.util.assertions import assert_true
+
 from .base import GridMapping
-from .helpers import _default_xy_dim_names
-from .helpers import _default_xy_var_names
-from .helpers import _normalize_crs
-from .helpers import _normalize_int_pair
-from .helpers import _normalize_number_pair
-from .helpers import _to_int_or_float
+from .helpers import (
+    _default_xy_dim_names,
+    _default_xy_var_names,
+    _normalize_crs,
+    _normalize_int_pair,
+    _normalize_number_pair,
+    _to_int_or_float,
+)
 
 
 class RegularGridMapping(GridMapping):

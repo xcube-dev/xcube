@@ -1,26 +1,26 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import concurrent.futures
+import datetime
 import functools
 import importlib
 import inspect
-import concurrent.futures
-import datetime
-from typing import Any, Optional, Callable
 import traceback
+from typing import Any, Callable, Optional
 
 import xarray as xr
 
+from xcube.constants import LOG
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.server.api import Context, ApiError
+from xcube.server.api import ApiError, Context
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.datasets.context import DatasetsContext
 from xcube.webapi.places import PlacesContext
-from xcube.constants import LOG
+
 from .op.info import OpInfo
-from .op.registry import OpRegistry
-from .op.registry import OP_REGISTRY
+from .op.registry import OP_REGISTRY, OpRegistry
 
 # Register default operations:
 importlib.import_module("xcube.webapi.compute.operations")

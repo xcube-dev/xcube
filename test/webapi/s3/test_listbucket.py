@@ -1,16 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os.path
-import os.path
 import unittest
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
 
 from xcube.core.new import new_cube
-from xcube.webapi.s3.listbucket import list_bucket_result_to_xml
-from xcube.webapi.s3.listbucket import list_s3_bucket_v1
-from xcube.webapi.s3.listbucket import list_s3_bucket_v2
+from xcube.webapi.s3.listbucket import (
+    list_bucket_result_to_xml,
+    list_s3_bucket_v1,
+    list_s3_bucket_v2,
+)
 from xcube.webapi.s3.objectstorage import ObjectStorage
 
 
@@ -31,7 +32,6 @@ class S3BucketTest(unittest.TestCase, metaclass=ABCMeta):
 
 
 class ListS3BucketTest(S3BucketTest, metaclass=ABCMeta):
-
     __test__ = False
 
     @abstractmethod
@@ -134,7 +134,7 @@ class ListBucketV1Test(ListS3BucketTest, ListS3BucketV12TestsMixin):
             self.object_storage,
             name="datasets",
             last_modified="2019-06-24T20:43:40.862Z",
-            **kwargs
+            **kwargs,
         )
 
     def test_list_bucket_v1_truncated(self):
@@ -291,7 +291,7 @@ class ListS3BucketV2Test(ListS3BucketTest, ListS3BucketV12TestsMixin):
             self.object_storage,
             name="datasets",
             last_modified="2019-06-24T20:43:40.862Z",
-            **kwargs
+            **kwargs,
         )
 
     def assert_list_bucket_result(

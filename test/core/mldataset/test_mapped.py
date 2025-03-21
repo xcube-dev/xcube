@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -6,8 +6,8 @@ import unittest
 
 import xarray as xr
 
-from xcube.core.mldataset import BaseMultiLevelDataset
-from xcube.core.mldataset import MappedMultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset, MappedMultiLevelDataset
+
 from .helpers import get_test_dataset
 
 

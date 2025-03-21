@@ -1,14 +1,16 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os.path
 import unittest
 
-from xcube.util.temp import new_temp_dir
-from xcube.util.temp import new_temp_file
-from xcube.util.temp import remove_dir_later
-from xcube.util.temp import remove_file_later
+from xcube.util.temp import (
+    new_temp_dir,
+    new_temp_file,
+    remove_dir_later,
+    remove_file_later,
+)
 
 
 class TempTest(unittest.TestCase):

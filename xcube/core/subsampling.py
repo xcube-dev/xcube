@@ -1,18 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import collections.abc
-import dask.array as da
 import fnmatch
-from typing import Optional, Union, List
 from collections.abc import Hashable, Mapping
+from typing import List, Optional, Union
 
+import dask.array as da
 import numpy as np
-from scipy import stats
 import xarray as xr
+from scipy import stats
 
-from xcube.util.assertions import assert_instance, assert_in, assert_true
+from xcube.util.assertions import assert_in, assert_instance, assert_true
 
 AGG_METHODS = "auto", "first", "min", "max", "mean", "median", "mode"
 DEFAULT_INT_AGG_METHOD = "first"
@@ -136,12 +136,12 @@ def _agg_builtin(
 
 
 def _coarsen(var: xr.DataArray, x_name: str, y_name: str, step: int):
-  dim = dict()
-  if x_name in var.dims:
-      dim[x_name] = step
-  if y_name in var.dims:
-      dim[y_name] = step
-  return var.coarsen(dim=dim, boundary="pad", coord_func="min")
+    dim = dict()
+    if x_name in var.dims:
+        dim[x_name] = step
+    if y_name in var.dims:
+        dim[y_name] = step
+    return var.coarsen(dim=dim, boundary="pad", coord_func="min")
 
 
 def _get_drop_axis(var: xr.DataArray, x_name: str, y_name: str, step: int) -> List[int]:
@@ -167,6 +167,7 @@ def _get_drop_axis(var: xr.DataArray, x_name: str, y_name: str, step: int) -> Li
             drop_axis[0] += 1
             drop_axis[1] += 2
     return drop_axis
+
 
 def get_dataset_agg_methods(
     dataset: xr.Dataset,

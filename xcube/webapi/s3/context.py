@@ -1,12 +1,13 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 from xcube.server.api import Context
+from xcube.webapi.common.context import ResourcesContext
+
+from ..datasets.context import DatasetsContext
 from .dsmapping import DatasetsMapping
 from .objectstorage import ObjectStorage
-from ..datasets.context import DatasetsContext
-from xcube.webapi.common.context import ResourcesContext
 
 
 class S3Context(ResourcesContext):

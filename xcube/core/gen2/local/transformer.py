@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -9,9 +9,9 @@ import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.util.progress import observe_progress
-from .helpers import is_empty_cube
-from .helpers import strip_cube
+
 from ..config import CubeConfig
+from .helpers import is_empty_cube, strip_cube
 
 TransformedCube = tuple[xr.Dataset, GridMapping, CubeConfig]
 

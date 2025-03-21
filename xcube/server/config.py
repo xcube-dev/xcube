@@ -1,19 +1,20 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os.path
+from collections.abc import Mapping
 from functools import cache
 from typing import Any, Optional
-from collections.abc import Mapping
 
-from xcube.constants import DEFAULT_SERVER_ADDRESS
-from xcube.constants import DEFAULT_SERVER_PORT
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonIntegerSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.constants import DEFAULT_SERVER_ADDRESS, DEFAULT_SERVER_PORT
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonIntegerSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 
 BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(

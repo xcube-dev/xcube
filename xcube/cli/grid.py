@@ -1,10 +1,10 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import fractions
 import math
-from typing import Tuple, List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import click
 
@@ -411,9 +411,7 @@ def adjust_box(
     reg_width = round((adj_x2 - adj_x1) / float(res))
     reg_height = round((adj_y2 - adj_y1) / float(res))
 
-    orig_coords = (
-        f"(({x1} {y1}," f" {x2} {y1}," f" {x2} {y2}," f" {x1} {y2}," f" {x1} {y1}))"
-    )
+    orig_coords = f"(({x1} {y1}, {x2} {y1}, {x2} {y2}, {x1} {y2}, {x1} {y1}))"
     adj_coords = (
         f"(({adj_x1} {adj_y1},"
         f" {adj_x2} {adj_y1},"

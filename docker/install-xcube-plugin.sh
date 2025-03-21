@@ -1,5 +1,11 @@
 #!/bin/env bash
 
+#
+# Copyright (c) 2018-2025 by xcube team and contributors
+# Permissions are hereby granted under the terms of the MIT License:
+# https://opensource.org/licenses/MIT.
+#
+
 PACKAGE=$1;
 PACKAGE_VERSION=$2;
 INSTALL_MODE=$3

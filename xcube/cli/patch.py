@@ -1,17 +1,17 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Dict, Any
 from collections.abc import MutableMapping
+from typing import Any, Dict
 
 import click
 
 from xcube.cli.common import (
+    cli_option_dry_run,
     cli_option_quiet,
     cli_option_verbosity,
-    cli_option_dry_run,
     configure_cli_output,
 )
 from xcube.constants import LOG
@@ -34,8 +34,7 @@ DELETE_ATTR_VALUE = "__delete__"
     "--options",
     "options_path",
     metavar="OPTIONS",
-    help="Protocol-specific storage options (see fsspec)."
-    " Must be a JSON or YAML file.",
+    help="Protocol-specific storage options (see fsspec). Must be a JSON or YAML file.",
 )
 @cli_option_quiet
 @cli_option_verbosity
@@ -82,17 +81,14 @@ def parse_metadata(metadata):
     for k, v in metadata.items():
         if not isinstance(v, dict):
             raise click.ClickException(
-                f"Invalid metadata format:" f' entry "{k}" is not an object'
+                f'Invalid metadata format: entry "{k}" is not an object'
             )
         parts = k.split("/")
         if parts[-1] != ".zattrs":
-            warnings.warn(
-                f'Ignoring metadata entry "{k}":' f' can only patch "*/.zattrs"'
-            )
+            warnings.warn(f'Ignoring metadata entry "{k}": can only patch "*/.zattrs"')
         elif len(parts) not in (1, 2):
             warnings.warn(
-                f"Ignoring metadata entry {k}:"
-                f' can only patch ".zattrs" of first level'
+                f'Ignoring metadata entry {k}: can only patch ".zattrs" of first level'
             )
         else:
             _metadata[k] = v
@@ -150,7 +146,7 @@ def _patch_dataset(
             if item_name in group:
                 item = group[item_name]
             else:
-                warnings.warn(f"Ignoring metadata entry {k}:" f" not found in dataset")
+                warnings.warn(f"Ignoring metadata entry {k}: not found in dataset")
         if item is not None:
             upd_count = 0
             del_count = 0
@@ -165,11 +161,7 @@ def _patch_dataset(
                         item.attrs[ak] = av
                     upd_count += 1
             if upd_count and del_count:
-                LOG.info(
-                    f"{k}:"
-                    f" {upd_count} attribute(s) updated,"
-                    f" {del_count} deleted"
-                )
+                LOG.info(f"{k}: {upd_count} attribute(s) updated, {del_count} deleted")
             elif upd_count:
                 LOG.info(f"{k}: {upd_count} attribute(s) updated")
             elif del_count:

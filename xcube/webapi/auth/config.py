@@ -1,16 +1,18 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import List, Optional, Any
 from collections.abc import Mapping
+from typing import Any, List, Optional
 
 from xcube.constants import LOG
 from xcube.server.api import ApiError
-from xcube.util.jsonschema import JsonArraySchema
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonObjectSchema
-from xcube.util.jsonschema import JsonStringSchema
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 
 AUTHENTICATION_SCHEMA = JsonObjectSchema(
     properties=dict(

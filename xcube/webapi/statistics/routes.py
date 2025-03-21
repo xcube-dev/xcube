@@ -1,14 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 from xcube.server.api import ApiHandler
+
+from ...util.undefined import UNDEFINED
+from ..datasets.routes import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
 from .api import api
-from ..datasets.routes import PATH_PARAM_DATASET_ID
-from ..datasets.routes import PATH_PARAM_VAR_NAME
 from .context import StatisticsContext
 from .controllers import compute_statistics
-from ...util.undefined import UNDEFINED
 
 QUERY_PARAM_X = {
     "name": "lon",

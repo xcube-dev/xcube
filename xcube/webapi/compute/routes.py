@@ -1,15 +1,14 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import jsonschema
-from xcube.server.api import ApiError
-from xcube.server.api import ApiHandler
+
+from xcube.server.api import ApiError, ApiHandler
+
 from .api import api
-from .context import ComputeContext
-from .controllers import get_compute_operations
-from .controllers import get_compute_operation
-from .context import JOB_STATUSES
+from .context import JOB_STATUSES, ComputeContext
+from .controllers import get_compute_operation, get_compute_operations
 
 OP_SCHEMA = {
     "type": "object",

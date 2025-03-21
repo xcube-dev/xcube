@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -13,15 +13,14 @@ from xcube.core.new import new_cube
 from xcube.core.store.datatype import DataType
 from xcube.core.store.descriptor import (
     DataDescriptor,
-    _attrs_to_json,
+    DatasetDescriptor,
+    GeoDataFrameDescriptor,
     MultiLevelDatasetDescriptor,
+    VariableDescriptor,
+    _attrs_to_json,
+    new_data_descriptor,
 )
-from xcube.core.store.descriptor import DatasetDescriptor
-from xcube.core.store.descriptor import GeoDataFrameDescriptor
-from xcube.core.store.descriptor import VariableDescriptor
-from xcube.core.store.descriptor import new_data_descriptor
-from xcube.util.jsonschema import JsonBooleanSchema
-from xcube.util.jsonschema import JsonObjectSchema
+from xcube.util.jsonschema import JsonBooleanSchema, JsonObjectSchema
 
 
 class NewDataDescriptorTest(unittest.TestCase):

@@ -1,16 +1,15 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import os
 import unittest
-from collections.abc import Iterable
-from collections.abc import Mapping
-from typing import Optional, Any, Union
+from collections.abc import Iterable, Mapping
+from typing import Any, Optional, Union
 
 import pytest
-from xcube.core.mldataset import BaseMultiLevelDataset
 
+from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.new import new_cube
 from xcube.server.api import ApiError
 from xcube.webapi.datasets.context import DatasetsContext
@@ -151,7 +150,7 @@ class ViewerTest(unittest.TestCase):
             self.assertEqual(expected_server_url, viewer.server_url)
 
             expected_viewer_url = (
-                f"{expected_server_url}/viewer/" f"?serverUrl={expected_server_url}"
+                f"{expected_server_url}/viewer/?serverUrl={expected_server_url}"
             )
             self.assertEqual(expected_viewer_url, viewer.viewer_url)
         else:
@@ -194,14 +193,21 @@ class ViewerTest(unittest.TestCase):
             new_cube(variables={"analysed_sst": 282.0}),
             ds_id="my_sst_2",
             title="My SST 2",
+            description="It is test 2",
         )
         self.assertEqual("my_sst_2", ds_id_2)
 
         ds_config_1 = self.viewer.datasets_ctx.get_dataset_config(ds_id_1)
-        self.assertEqual({"Identifier": ds_id_1, "Title": "My SST 1"}, ds_config_1)
+        self.assertEqual(
+            {"Identifier": ds_id_1},
+            ds_config_1,
+        )
 
         ds_config_2 = self.viewer.datasets_ctx.get_dataset_config(ds_id_2)
-        self.assertEqual({"Identifier": ds_id_2, "Title": "My SST 2"}, ds_config_2)
+        self.assertEqual(
+            {"Identifier": ds_id_2, "Title": "My SST 2", "Description": "It is test 2"},
+            ds_config_2,
+        )
 
         self.viewer.remove_dataset(ds_id_1)
         with pytest.raises(ApiError.NotFound):
@@ -219,23 +225,34 @@ class ViewerTest(unittest.TestCase):
             new_cube(variables={"analysed_sst": 280.0}),
             ds_id="mybucket/mysst.levels",
         )
-        ds_id = viewer.add_dataset(ml_ds, title="My SST")
+        ds_id = viewer.add_dataset(ml_ds, title="My SST", description="Test!")
 
         self.assertEqual("mybucket-mysst.levels", ds_id)
 
         ds_config = self.viewer.datasets_ctx.get_dataset_config(ds_id)
-        self.assertEqual({"Identifier": ds_id, "Title": "My SST"}, ds_config)
+        self.assertEqual(
+            {"Identifier": ds_id, "Title": "My SST", "Description": "Test!"}, ds_config
+        )
 
     def test_add_dataset_with_style(self):
         viewer = self.get_viewer(STYLES_CONFIG)
 
         ds_id = viewer.add_dataset(
-            new_cube(variables={"analysed_sst": 280.0}), title="My SST", style="SST"
+            new_cube(variables={"analysed_sst": 280.0}),
+            title="My SST",
+            description="Better use SST",
+            style="SST",
         )
 
         ds_config = self.viewer.datasets_ctx.get_dataset_config(ds_id)
         self.assertEqual(
-            {"Identifier": ds_id, "Title": "My SST", "Style": "SST"}, ds_config
+            {
+                "Identifier": ds_id,
+                "Title": "My SST",
+                "Description": "Better use SST",
+                "Style": "SST",
+            },
+            ds_config,
         )
 
     def test_add_dataset_with_color_mapping(self):
@@ -251,5 +268,10 @@ class ViewerTest(unittest.TestCase):
 
         ds_config = self.viewer.datasets_ctx.get_dataset_config(ds_id)
         self.assertEqual(
-            {"Identifier": ds_id, "Title": "My SST", "Style": ds_id}, ds_config
+            {
+                "Identifier": ds_id,
+                "Title": "My SST",
+                "Style": ds_id,
+            },
+            ds_config,
         )

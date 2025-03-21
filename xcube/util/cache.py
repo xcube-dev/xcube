@@ -1,7 +1,6 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
-
 
 import os
 import os.path
@@ -9,7 +8,6 @@ import sys
 import time
 from abc import ABCMeta, abstractmethod
 from threading import RLock
-
 from typing import Optional
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -441,9 +439,7 @@ def _compute_object_size(obj):
                 else (
                     3
                     if m in ("RGB", "YCbCr", "LAB", "HSV")
-                    else 1.0 / 8.0
-                    if m == "1"
-                    else 1
+                    else 1.0 / 8.0 if m == "1" else 1
                 )
             )
         )

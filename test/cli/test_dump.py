@@ -1,8 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from test.cli.helpers import CliDataTest, TEST_NC_FILE
+from test.cli.helpers import TEST_NC_FILE, CliDataTest
+
 import xarray as xr
 
 

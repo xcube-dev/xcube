@@ -1,12 +1,12 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
 import json
 import os
 import os.path
-
 from test.cli.helpers import CliTest
+
 from xcube.core.dsio import rimraf
 
 result_file = "result.json"
@@ -137,8 +137,7 @@ class Gen2CliTest(CliTest):
         self.assertEqual("error", result_json.get("status"))
         self.assertEqual(500, result_json.get("status_code"))
         self.assertEqual(
-            "inverse_fine_structure_constant must be 137"
-            " or running in wrong universe",
+            "inverse_fine_structure_constant must be 137 or running in wrong universe",
             result_json.get("message"),
         )
         self.assertNotIn("result", result_json)

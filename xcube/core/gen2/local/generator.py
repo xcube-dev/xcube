@@ -1,4 +1,4 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
@@ -10,27 +10,24 @@ from xcube.core.gridmapping import GridMapping
 from xcube.core.store import DataStorePool
 from xcube.util.assertions import assert_instance
 from xcube.util.progress import observe_progress
+
+from .. import CubeConfig
+from ..generator import CubeGenerator
+from ..progress import ApiProgressCallbackObserver
+from ..request import CubeGeneratorRequest, CubeGeneratorRequestLike
+from ..response import CubeGeneratorResult, CubeInfoResult, CubeReference
 from .combiner import CubesCombiner
 from .helpers import is_empty_cube
 from .informant import CubeInformant
+from .mdadjuster import CubeMetadataAdjuster
 from .opener import CubeOpener
 from .rechunker import CubeRechunker
 from .resamplert import CubeResamplerT
 from .resamplerxy import CubeResamplerXY
 from .subsetter import CubeSubsetter
-from .mdadjuster import CubeMetadataAdjuster
-from .transformer import CubeIdentity
-from .transformer import transform_cube
+from .transformer import CubeIdentity, transform_cube
 from .usercode import CubeUserCodeExecutor
 from .writer import CubeWriter
-from .. import CubeConfig
-from ..generator import CubeGenerator
-from ..progress import ApiProgressCallbackObserver
-from ..request import CubeGeneratorRequest
-from ..request import CubeGeneratorRequestLike
-from ..response import CubeGeneratorResult
-from ..response import CubeInfoResult
-from ..response import CubeReference
 
 
 class LocalCubeGenerator(CubeGenerator):
@@ -195,8 +192,7 @@ class LocalCubeGenerator(CubeGenerator):
                 status="ok",
                 status_code=201,
                 result=CubeReference(data_id=data_id),
-                message=f"Cube generated successfully"
-                f" after {total_time:.2f} seconds",
+                message=f"Cube generated successfully after {total_time:.2f} seconds",
             )
         else:
             return CubeGeneratorResult(

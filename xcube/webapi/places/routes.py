@@ -1,8 +1,9 @@
-# Copyright (c) 2018-2024 by xcube team and contributors
+# Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.server.api import ApiHandler, ApiError
+from xcube.server.api import ApiError, ApiHandler
+
 from .api import api
 from .context import PlacesContext
 from .controllers import find_places
@@ -44,7 +45,7 @@ class FindPlacesHandler(ApiHandler):
             {
                 "name": "bbox",
                 "in": "query",
-                "description": "Bounding box string in" " the form x1,y1,x2,y2",
+                "description": "Bounding box string in the form x1,y1,x2,y2",
                 "schema": {"type": "string"},
             },
         ],
@@ -69,7 +70,7 @@ class FindPlacesHandler(ApiHandler):
 
     @api.operation(
         operationId="findPlacesInPlaceGroup",
-        summary="Find places in a given place group" " for a GeoJSON object.",
+        summary="Find places in a given place group for a GeoJSON object.",
         parameters=[PATH_PARAM_PLACE_GROUP_ID],
         description="The request body must be a GeoJSON object.",
     )
