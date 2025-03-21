@@ -223,14 +223,12 @@ def update_plot(
 
 
 @panel.callback(
-    State("@app", "selectedPlaceGroup"),
     Input("@app", "selectedPlaceGroup"),
     Output("select_places", "options"),
 )
 def get_places(
     ctx: Context,
     place_group: list[dict[str, Any]],
-    _new_place_group: bool | None = None,
 ) -> list[str]:
 
     if not place_group:
