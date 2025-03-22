@@ -2,7 +2,7 @@ Viewer:
   Augmentation:
     Path: ""
     Extensions:
-      - my_viewer_ext.ext
+      - demo_panels.ext
   Persistence:
      Path: memory://states
 

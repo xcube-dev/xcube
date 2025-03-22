@@ -1,6 +1,15 @@
-## Changes in 1.8.4 (in development)
+## Changes in 1.9.0
 
 ### Enhancements
+
+* Bundled [xcube Viewer 1.5.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.5.0)
+  with an updated UI/UX regarding side panel management including
+  server-side panel extensions.
+
+* Added a new server-side panel extension to the `examples/serve/panels-demo`
+  for demonstration. It shows spectrum plots for a selected map point.
+
+### Other changes
 
 * Extension panels for xcube Viewer of type `xcube.webapi.viewer.contrib.panel.Panel`
   now have two more properties:
@@ -9,8 +18,6 @@
      in the viewer's sidebar.
   - `position`: to set the position of the respective icon button 
      in the viewer's sidebar.
-
-### Other changes
 
 * Added a new abstract class `PreloadedDataStore` that defines the return type of the
   `preload_data` method in `xcube.core.store.DataStore`. The `PreloadedDataStore` is a
