@@ -18,7 +18,7 @@ from xcube.constants import CRS_CRS84
 from xcube.core.extract import get_cube_values_for_points
 from xcube.core.gridmapping import GridMapping
 
-panel = Panel(__name__, title="Spectral View", icon="light")
+panel = Panel(__name__, title="Spectrum View (Demo)", icon="light", position=4)
 
 
 @panel.layout(
@@ -73,12 +73,16 @@ def render_panel(
             "justifyContent": "space-between",
             "width": "100%",
             "gap": 6,
-            "padding": 6,
         },
     )
 
     return Box(
-        children=[control_bar, plot],
+        children=[
+            "Select a map point from the dropdown and press 'Update' "
+            "to create a spectrum plot for that point and the selected time.",
+            control_bar,
+            plot,
+        ],
         style={
             "display": "flex",
             "flexDirection": "column",
@@ -86,7 +90,6 @@ def render_panel(
             "width": "100%",
             "height": "100%",
             "gap": 6,
-            "padding": 6,
         },
     )
 
@@ -228,7 +231,7 @@ def update_plot(
             color="places:N",
             tooltip=["variable", "wavelength", "reflectance"],
         )
-    ).properties(width=560, height=260)
+    ).properties(width=300, height=200)
 
     return chart
 

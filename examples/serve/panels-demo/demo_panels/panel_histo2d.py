@@ -51,12 +51,17 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
             "flexDirection": "row",
             "alignItems": "center",
             "gap": 6,
-            "padding": 6,
         },
     )
 
     return Box(
-        children=[controls, plot],
+        children=[
+            "Create or select a region shape in the map, then select two "
+            "variables from the dropdowns, and press 'Update' to create "
+            "a 2D histogram plot.",
+            controls,
+            plot
+        ],
         style={
             "display": "flex",
             "flexDirection": "column",
@@ -64,7 +69,6 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
             "width": "100%",
             "height": "100%",
             "gap": 6,
-            "padding": 6,
         },
     )
 
@@ -195,7 +199,7 @@ def update_plot(
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
             tooltip=[var_1_name, var_2_name, "z:Q"],
         )
-    ).properties(width=360, height=360)
+    ).properties(width=300, height=300)
 
     return chart
 

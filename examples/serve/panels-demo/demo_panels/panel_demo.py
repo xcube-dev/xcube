@@ -8,7 +8,7 @@ from chartlets.components import Box, Checkbox, Select, Typography
 from xcube.server.api import Context
 from xcube.webapi.viewer.contrib import Panel, get_datasets_ctx
 
-panel = Panel(__name__, title="Panel B")
+panel = Panel(__name__, title="Demo Panel", position=5)
 
 
 COLORS = [(0, "red"), (1, "green"), (2, "blue"), (3, "yellow")]
@@ -50,7 +50,13 @@ def render_panel(
             "height": "100%",
             "gap": "6px",
         },
-        children=[opaque_checkbox, color_select, info_text],
+        children=[
+            "This panel just demonstrates how server-side extensions work. "
+            "It has no useful functionality.",
+            opaque_checkbox,
+            color_select,
+            info_text
+        ],
     )
 
 

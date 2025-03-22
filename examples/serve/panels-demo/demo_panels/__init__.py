@@ -4,14 +4,11 @@
 
 from chartlets import Extension
 
-from .my_panel_1 import panel as my_panel_1
-
-# from .my_panel_2 import panel as my_panel_2
-
-from .my_panel_3 import panel as my_panel_3
+from .panel_histo2d import panel as histo2d_panel
+from .panel_spectrum import panel as spectrum_panel
+from .panel_demo import panel as demo_panel
 
 ext = Extension(__name__)
-ext.add(my_panel_1)
-# ext.add(my_panel_2)
-
-ext.add(my_panel_3)
+ext.add(histo2d_panel)
+ext.add(spectrum_panel)
+ext.add(demo_panel)
