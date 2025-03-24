@@ -132,13 +132,13 @@ class GeoDataFrameKmlFsDataAccessor(GeoDataFrameFsDataAccessor):
                 del gdf[col]
                 continue
             if col not in ["geometry"]:
+                if pd.api.types.is_datetime64_any_dtype(gdf[col]):
+                    continue
                 try:
                     gdf[col] = pd.to_numeric(gdf[col])
                 except ValueError:
-                    if gdf[col].str.lower().isin(["true", "false"]).all():
-                        gdf[col] = gdf[col].map({"true": True, "false": False})
-                    else:
-                        gdf[col] = gdf[col].astype(str)
+                    if gdf[col].isin(["True", "False"]).all():
+                        gdf[col] = gdf[col].map({"True": True, "False": False})
         return gdf
 
     def write_data(self, data: gpd.GeoDataFrame, data_id: str, **write_params) -> str:
@@ -154,6 +154,8 @@ class GeoDataFrameKmlFsDataAccessor(GeoDataFrameFsDataAccessor):
             _, file_path = new_temp_file()
 
         kml = simplekml.Kml()
+        kml_schema = kml.newschema(name="kmlschema")
+        append_cols = {}
 
         for _, row in data.iterrows():
             geom = row.geometry
@@ -166,14 +168,26 @@ class GeoDataFrameKmlFsDataAccessor(GeoDataFrameFsDataAccessor):
                 entry = kml.newpolygon(outerboundaryis=list(geom.exterior.coords))
             else:
                 continue
-            if geom.geom_type in ["Point", "LineString", "Polygon"]:
-                for col in data.columns:
-                    if col != "geometry":
-                        if isinstance((row[col]), bool):
-                            entry.extendeddata.newdata(col, str(row[col]))
-                        else:
-                            entry.extendeddata.newdata(col, row[col])
+            schema = simplekml.SchemaData("kmlschema")
+            for col in data.columns:
+                if col != "geometry":
+                    schema.newsimpledata(col, str(row[col]))
+                    if col not in append_cols:
+                        dtype_str = str(data[col].dtype)
+                        if dtype_str == "object" or dtype_str == "bool":
+                            dtype_str = "string"
+                        elif dtype_str.startswith("int"):
+                            dtype_str = "int"
+                        elif dtype_str.startswith("float"):
+                            dtype_str = "float"
+                        append_cols[col] = dtype_str
+            entry.extendeddata.schemadata = schema
+
+        for col, typ in append_cols.items():
+            kml_schema.newsimplefield(col, type=typ)
+
         kml.save(file_path)
+
         if not is_local:
             mode = "overwrite" if replace else "create"
             fs.put_file(file_path, data_id, mode=mode)

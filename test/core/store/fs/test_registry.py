@@ -14,6 +14,7 @@ from typing import Any, Callable, Optional, Union
 import fsspec
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 
@@ -72,10 +73,12 @@ def new_cube_data():
 
 
 def new_geodataframe():
+    time_data = pd.date_range(start="2010-01-01T00:00:00", periods=2, freq="D").values
     return gpd.GeoDataFrame(
-        {"placename": ["Place A", "Place B"],
-         "state": ["Active", "Disabled"],
-         "var_x": [10, 20],
+        {"place_name": ["Place A", "Place B"],
+         "is_active": [True, False],
+         "timestamp": time_data,
+         "salinity [‰]": [10, 20],
          "var_y": [0.5, 2.0]},
         geometry=gpd.points_from_xy([8.0, 8.1], [50.0, 50.1]),
         crs="EPSG:4326"
@@ -367,12 +370,17 @@ class FsDataStoresTestMixin(ABC):
             self.assertNotIsInstance(dataset.zarr_store.get(), GenericZarrStore)
 
     def _assert_geodataframe_ok(self, gdf: gpd.GeoDataFrame):
-        self.assertIn("placename", gdf.columns)
-        self.assertIn("var_x", gdf.columns)
+        self.assertIn("place_name", gdf.columns)
+        self.assertIn("is_active", gdf.columns)
+        self.assertIn("salinity [‰]", gdf.columns)
         self.assertIn("var_y", gdf.columns)
         self.assertIn("geometry", gdf.columns)
-        self.assertEqual("int", str(gdf.var_x.dtype)[:3])
+        self.assertIn("timestamp", gdf.columns)
+        self.assertEqual("object", str(gdf.place_name.dtype))
+        self.assertEqual("bool", str(gdf.is_active.dtype))
+        self.assertEqual("int32", gdf["salinity [‰]"].dtype)
         self.assertEqual("float64", str(gdf.var_y.dtype))
+        self.assertTrue(pd.api.types.is_datetime64_any_dtype(gdf.timestamp))
 
     def _assert_multi_level_dataset_format_with_tile_size(
         self, data_store: FsDataStore
