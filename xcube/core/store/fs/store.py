@@ -70,8 +70,9 @@ _FILENAME_EXT_TO_FORMAT = {
     ".tif": "geotiff",
     ".tiff": "geotiff",
     ".geotiff": "geotiff",
-    ".shp": "shapefile",
     ".geojson": "geojson",
+    ".kml": "kml",
+    ".shp": "shapefile",
 }
 
 _FORMAT_TO_DATA_TYPE_ALIASES = {
@@ -80,6 +81,7 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
     "levels": (MULTI_LEVEL_DATASET_TYPE.alias, DATASET_TYPE.alias),
     "geotiff": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias),
     "geojson": (GEO_DATA_FRAME_TYPE.alias,),
+    "kml": (GEO_DATA_FRAME_TYPE.alias,),
     "shapefile": (GEO_DATA_FRAME_TYPE.alias,),
 }
 

@@ -25,6 +25,7 @@ from .impl.fs import (
 )
 from .impl.geodataframe import (
     GeoDataFrameGeoJsonFsDataAccessor,
+    GeoDataFrameKmlFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
 )
 from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
@@ -125,8 +126,9 @@ for cls in (
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetGeoTiffFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
-    GeoDataFrameShapefileFsDataAccessor,
     GeoDataFrameGeoJsonFsDataAccessor,
+    GeoDataFrameKmlFsDataAccessor,
+    GeoDataFrameShapefileFsDataAccessor,
 ):
     register_fs_data_accessor_class(cls)
 
