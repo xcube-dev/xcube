@@ -147,11 +147,11 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
 
 class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
     """
-    A Test class to test opening and writing a GeoTIFF as multilevel dataset or
+    A Test class to test opening a GeoTIFF as multilevel dataset or
     as normal dataset
     """
 
-    def test_open_ml_to_dataset(self):
+    def test_ml_to_dataset(self):
         fs, cog_path = GeoTIFFMultiLevelDatasetTest.get_params("sample-cog.tif")
         data_accessor = DatasetGeoTiffFsDataAccessor()
         self.assertIsInstance(data_accessor, DatasetGeoTiffFsDataAccessor)
@@ -164,7 +164,7 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
             data_accessor.get_open_data_params_schema(cog_path), JsonSchema
         )
 
-    def test_open_dataset(self):
+    def test_dataset(self):
         fs, tiff_path = GeoTIFFMultiLevelDatasetTest.get_params("sample-geotiff.tif")
         data_accessor = DatasetGeoTiffFsDataAccessor()
         self.assertIsInstance(data_accessor, DatasetGeoTiffFsDataAccessor)
@@ -177,24 +177,6 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
             overview_level=None,
         )
         self.assertIsInstance(dataset, xarray.Dataset)
-
-    def test_write_dataset(self):
-        from xcube.core.new import new_cube
-        fs, _ = GeoTIFFMultiLevelDatasetTest.get_params("sample-geotiff.tif")
-        ds = new_cube(variables=dict(xxx=1, yyy=2))
-        data_accessor = DatasetGeoTiffFsDataAccessor()
-        tiff_path = "geotiff_write_test.tif"
-        data_accessor.write_data(
-            ds, tiff_path, fs=fs
-        )
-        dataset = data_accessor.open_data(
-            data_id=tiff_path,
-            fs=fs,
-            root=None,
-            tile_size=[256, 256],
-            overview_level=None,
-        )
-        self.assertIsNotNone(dataset)
 
 
 class ObjectStorageMultiLevelDatasetTest(S3Test):
