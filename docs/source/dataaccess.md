@@ -250,7 +250,7 @@ The following `storage_options` can be used for the `abfs` data store:
 All filesystem data stores can open datasets from various data formats. 
 Datasets in Zarr, GeoTIFF / COG, or NetCDF format will be provided either by
 [xarray.Dataset] or xcube [MultiLevelDataset] instances.
-Datasets stored in GeoJSON or ESRI Shapefile will yield 
+Datasets stored in GeoJSON, KML or ESRI Shapefile will yield 
 [geopandas.GeoDataFrame] instances.
 
 Common parameters for opening [xarray.Dataset] instances:
