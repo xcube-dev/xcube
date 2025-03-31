@@ -149,7 +149,6 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name="data_id")
         fs, root, open_params = self.load_fs(open_params)
-        zarr_store = fs.get_mapper(data_id)
         engine = open_params.pop("engine", "zarr")
         cache_size = open_params.pop("cache_size", None)
         log_access = open_params.pop("log_access", None)
@@ -157,6 +156,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
             "consolidated", fs.exists(f"{data_id}/.zmetadata")
         )
         if engine == "zarr":
+            zarr_store = fs.get_mapper(data_id)
             if isinstance(cache_size, int) and cache_size > 0:
                 zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
             if log_access:
@@ -174,7 +174,9 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
             try:
                 dataset = xr.open_dataset(data_id, engine=engine, **open_params)
             except ValueError as e:
-                raise DataStoreError(f"Failed to open dataset {data_id!r}: {e}") from e
+                raise DataStoreError(
+                    f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
+                ) from e
 
         return dataset
 
