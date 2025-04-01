@@ -60,7 +60,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
             "variables from the dropdowns, and press 'Update' to create "
             "a 2D histogram plot.",
             controls,
-            plot
+            plot,
         ],
         style={
             "display": "flex",
@@ -75,20 +75,20 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
 
 @panel.callback(
     State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGeometry"),
     State("select_var_1"),
     State("select_var_2"),
+    Input("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
 )
 def update_plot(
     ctx: Context,
     dataset_id: str | None = None,
-    time_label: float | None = None,
     place_geometry: str | None = None,
     var_1_name: str | None = None,
     var_2_name: str | None = None,
+    time_label: float | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> alt.Chart | None:
     dataset = get_dataset(ctx, dataset_id)
