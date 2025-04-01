@@ -677,42 +677,44 @@ def get_dataset_bounds(
     is_lon = xy_var_names[0] == "lon"
 
     # Note, x_min > x_max then we intersect with the anti-meridian
+    # We must explicitly cast to float, as coordinates can be uint (EOPF S2)
     x_bnds_name = get_dataset_bounds_var_name(dataset, x_name)
     if x_bnds_name is not None:
         x_bnds_var = dataset[x_bnds_name]
-        x1 = x_bnds_var[0, 0]
-        x2 = x_bnds_var[0, 1]
-        x3 = x_bnds_var[-1, 0]
-        x4 = x_bnds_var[-1, 1]
+        x1 = float(x_bnds_var[0, 0])
+        x2 = float(x_bnds_var[0, 1])
+        x3 = float(x_bnds_var[-1, 0])
+        x4 = float(x_bnds_var[-1, 1])
         x_min = min(x1, x2)
         x_max = max(x3, x4)
     else:
-        x_min = x_var[0]
-        x_max = x_var[-1]
+        x_min = float(x_var[0])
+        x_max = float(x_var[-1])
         delta = (x_max - x_min + (0 if (x_max >= x_min or not is_lon) else 360)) / (
             x_var.size - 1
         )
-        x_min -= 0.5 * delta
-        x_max += 0.5 * delta
+        x_min = x_min - 0.5 * delta
+        x_max = x_max + 0.5 * delta
 
     # Note, x-axis may be inverted
+    # We must explicitly cast to float, as coordinates can be uint (EOPF S2)
     y_bnds_name = get_dataset_bounds_var_name(dataset, y_name)
     if y_bnds_name is not None:
         y_bnds_var = dataset[y_bnds_name]
-        y1 = y_bnds_var[0, 0]
-        y2 = y_bnds_var[0, 1]
-        y3 = y_bnds_var[-1, 0]
-        y4 = y_bnds_var[-1, 1]
+        y1 = float(y_bnds_var[0, 0])
+        y2 = float(y_bnds_var[0, 1])
+        y3 = float(y_bnds_var[-1, 0])
+        y4 = float(y_bnds_var[-1, 1])
         y_min = min(y1, y2, y3, y4)
         y_max = max(y1, y2, y3, y4)
     else:
-        y1 = y_var[0]
-        y2 = y_var[-1]
+        y1 = float(y_var[0])
+        y2 = float(y_var[-1])
         delta = abs(y2 - y1) / (y_var.size - 1)
         y_min = min(y1, y2) - 0.5 * delta
         y_max = max(y1, y2) + 0.5 * delta
 
-    return float(x_min), float(y_min), float(x_max), float(y_max)
+    return x_min, y_min, x_max, y_max
 
 
 def get_box_split_bounds(

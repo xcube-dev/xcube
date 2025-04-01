@@ -5,6 +5,7 @@
 import collections.abc
 import os.path
 import shutil
+import tempfile
 import unittest
 import warnings
 from abc import ABC, abstractmethod
@@ -69,8 +70,8 @@ def new_cube_data():
     return cube.chunk(dict(time=1, y=90, x=180))
 
 
-class NewCubeDataTestMixin(unittest.TestCase):
-    path = f"{DATA_PATH}/data.zarr"
+class DataPackingTest(unittest.TestCase):
+    path = f"{tempfile.gettempdir()}/data.zarr"
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -161,6 +162,13 @@ class FsDataStoresTestMixin(ABC):
             expected_return_type=xr.Dataset,
             expected_descriptor_type=DatasetDescriptor,
             assert_data_ok=self._assert_zarr_store_direct_ok,
+            # Not nice here, but we lack coverage for the case where
+            # the original Zarr store will be wrapped by the
+            # LoggingZarrStore and zarr.LRUStoreCache stores.
+            open_params={
+                "cache_size": 1 << 24,
+                "log_access": True,
+            },
         )
         self._assert_dataset_supported(
             data_store,
