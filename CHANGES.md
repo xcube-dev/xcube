@@ -1,3 +1,9 @@
+## Changes in 1.9.1 (in development)
+
+### Enhancements
+
+* xcube supports reading from and writing to `kml`
+
 ## Changes in 1.9.0
 
 ### Enhancements
