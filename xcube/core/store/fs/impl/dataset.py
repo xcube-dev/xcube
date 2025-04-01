@@ -122,6 +122,9 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             description="If set, the dimension on which the data will be appended.",
             min_length=1,
         ),
+        replace=JsonBooleanSchema(
+            description="If set, an existing dataset will be replaced without warning.",
+        ),
     ),
     additional_properties=False,
 )

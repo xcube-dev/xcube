@@ -81,7 +81,12 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             " written multi-level dataset.",
         )
         schema.properties["num_levels"] = JsonIntegerSchema(
-            description="Maximum number of levels to be written.",
+            description=(
+                "Upper limit for the number of levels to be written."
+                " The actual number may be lower if an additional level would"
+                " result in a tile size below the allowed threshold given"
+                " by the `tile_size` argument, if any."
+            ),
             minimum=1,
             nullable=True,
         )
