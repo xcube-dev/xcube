@@ -1,3 +1,14 @@
+## Changes in 1.9.1 (in development)
+
+### Other changes
+
+* Improved the filesystem data stores (`"file"`, `"s3"`, ...): 
+  - Added parameter `engine` and its schema. It names an xarray backend to be used
+    instead of the automatically detected one.
+  - Added schema for the existing `replace` parameter. 
+  - Updated schema for the `num_levels` parameter which now explains the parameter 
+    in more detail.
+
 ## Changes in 1.9.0
 
 ### Enhancements
