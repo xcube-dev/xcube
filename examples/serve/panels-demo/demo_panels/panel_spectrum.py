@@ -38,7 +38,12 @@ def render_panel(
     if theme_mode == "light":
         theme_mode = "default"
 
-    plot = VegaChart(id="plot", chart=None, style={"paddingTop": 6}, theme=theme_mode)
+    plot = VegaChart(
+        id="plot",
+        chart=None,
+        style={"paddingTop": 6, "width": "100%", "height": "100%"},
+        theme=theme_mode,
+    )
 
     text = f"{dataset_id} " f"/ {time_label[0:-1]}"
     place_text = Typography(id="text", children=[text], align="center")
@@ -231,7 +236,7 @@ def update_plot(
             color="places:N",
             tooltip=["variable", "wavelength", "reflectance"],
         )
-    ).properties(width=300, height=200)
+    ).properties(width="container", height="container")
 
     return chart
 

@@ -10,7 +10,14 @@ import shapely
 import shapely.geometry
 import shapely.ops
 from chartlets import Component, Input, Output, State
-from chartlets.components import Box, Button, CircularProgress, Select, VegaChart
+from chartlets.components import (
+    Box,
+    Button,
+    CircularProgress,
+    Select,
+    VegaChart,
+    Typography,
+)
 
 from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
@@ -31,7 +38,11 @@ NUM_BINS_MAX = 64
 def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
-    plot = VegaChart(id="plot", chart=None, style={"paddingTop": 6})
+    plot = VegaChart(
+        id="plot",
+        chart=None,
+        style={"paddingTop": 6, "width": "100%", "height": "100%"},
+    )
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
@@ -54,6 +65,8 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         },
     )
 
+    error_message = Typography(id="error_message", style={"color": "red"})
+
     return Box(
         children=[
             "Create or select a region shape in the map, then select two "
@@ -61,6 +74,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
             "a 2D histogram plot.",
             controls,
             plot,
+            error_message,
         ],
         style={
             "display": "flex",
@@ -81,6 +95,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     Input("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
+    Output("error_message", "children"),
 )
 def update_plot(
     ctx: Context,
@@ -90,12 +105,11 @@ def update_plot(
     var_2_name: str | None = None,
     time_label: float | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
-) -> alt.Chart | None:
+) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
     if dataset is None or not place_geometry or not var_1_name or not var_2_name:
-        # TODO: set error message in panel UI
         print("panel disabled")
-        return None
+        return None, "Error: Panel disabled"
 
     if "time" in dataset.coords:
         if time_label:
@@ -116,15 +130,16 @@ def update_plot(
         or place_geometry.is_empty
         or isinstance(place_geometry, shapely.geometry.Point)
     ):
-        # TODO: set error message in panel UI
         print("2-D histogram only works for geometries with a non-zero extent.")
-        return
+        return (
+            None,
+            "Error: 2-D histogram only works for geometries with a non-zero extent.",
+        )
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
-        # TODO: set error message in panel UI
         print("dataset is None after masking, invalid geometry?")
-        return None
+        return None, "Error: dataset is None after masking, invalid geometry?"
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
     var_2_data: np.ndarray = dataset[var_2_name].values.ravel()
@@ -147,23 +162,23 @@ def update_plot(
     source = pd.DataFrame(
         {var_1_name: x.ravel(), var_2_name: y.ravel(), "z": z.ravel()}
     )
-    # TODO: use edges or center coordinates as tick labels.
     x_centers = x_edges[0:-1] + np.diff(x_edges) / 2
     y_centers = y_edges[0:-1] + np.diff(y_edges) / 2
-    # TODO: limit number of ticks on axes to, e.g., 10.
     # TODO: allow chart to be adjusted to available container (<div>) size.
 
-    # Get the tick values
+    # Limit number of ticks on axes
     x_num_ticks = 8
+    y_num_ticks = 8
+
+    # Get the tick values using the center values
     x_tick_values = np.linspace(min(x_centers), max(x_centers), x_num_ticks)
     x_tick_values = np.array(
-        [min(x_centers, key=lambda x: abs(x - t)) for t in x_tick_values]
+        [min(x_centers, key=lambda xc: abs(xc - t)) for t in x_tick_values]
     )
 
-    num_ticks = 8
-    y_tick_values = np.linspace(min(y_centers), max(y_centers), num_ticks)
+    y_tick_values = np.linspace(min(y_centers), max(y_centers), y_num_ticks)
     y_tick_values = np.array(
-        [min(y_centers, key=lambda y: abs(y - t)) for t in y_tick_values]
+        [min(y_centers, key=lambda yc: abs(yc - t)) for t in y_tick_values]
     )
 
     chart = (
@@ -199,9 +214,11 @@ def update_plot(
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
             tooltip=[var_1_name, var_2_name, "z:Q"],
         )
-    ).properties(width=300, height=300)
-
-    return chart
+    ).properties(
+        width="container",
+        height="container",
+    )
+    return chart, ""
 
 
 @panel.callback(
