@@ -8,6 +8,8 @@
   - Added schema for the existing `replace` parameter. 
   - Updated schema for the `num_levels` parameter which now explains the parameter 
     in more detail.
+* Introduced a server-side configuration attribute `EntrypointDatasetId` to specify 
+  the initial dataset that should be displayed in the viewer application upon loading. 
 
 ## Changes in 1.9.0
 

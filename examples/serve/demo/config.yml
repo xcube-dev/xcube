@@ -144,6 +144,7 @@ Datasets:
     Style: tif_style
 #    SortValue: 2
 
+# Add the initial dataset that needs to be shown in xcube-viewer upon loading here
 EntrypointDatasetId:
   Identifier: geotiff_local
 
