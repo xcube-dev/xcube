@@ -17,6 +17,7 @@ from xcube.webapi.common.schemas import (
     PATH_SCHEMA,
     STRING_SCHEMA,
     URI_SCHEMA,
+    NUMBER_SCHEMA,
 )
 
 from ..places.config import PLACE_GROUP_SCHEMA
@@ -66,6 +67,7 @@ COMMON_DATASET_PROPERTIES = dict(
     Title=STRING_SCHEMA,
     Description=STRING_SCHEMA,
     GroupTitle=STRING_SCHEMA,
+    SortValue=NUMBER_SCHEMA,
     Tags=JsonArraySchema(items=STRING_SCHEMA),
     Variables=VARIABLES_SCHEMA,
     TimeSeriesDataset=IDENTIFIER_SCHEMA,

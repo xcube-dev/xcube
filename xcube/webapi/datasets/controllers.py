@@ -108,6 +108,10 @@ def get_datasets(
             # Note, dataset_config is validated
             dataset_dict["bbox"] = ds_bbox
 
+        sort_value = dataset_config.get("SortValue")
+        if sort_value:
+            dataset_dict["sortValue"] = sort_value
+
         LOG.info(f"Collected dataset {ds_id}")
         dataset_dicts.append(dataset_dict)
 
