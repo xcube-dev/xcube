@@ -41,7 +41,7 @@ def render_panel(
     plot = VegaChart(
         id="plot",
         chart=None,
-        style={"paddingTop": 6, "width": "100%", "height": "100%"},
+        style={"paddingTop": 6, "width": "100%", "height": 400},
         theme=theme_mode,
     )
 

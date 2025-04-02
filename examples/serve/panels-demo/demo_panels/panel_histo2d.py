@@ -41,7 +41,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     plot = VegaChart(
         id="plot",
         chart=None,
-        style={"paddingTop": 6, "width": "100%", "height": "100%"},
+        style={"paddingTop": 6, "width": "100%", "height": 400},
     )
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
