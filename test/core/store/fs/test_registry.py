@@ -5,11 +5,12 @@
 import collections.abc
 import os.path
 import shutil
+import tempfile
 import unittest
 import warnings
 from abc import ABC, abstractmethod
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
-from typing import Any, Callable, Dict, Optional, Set, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import fsspec
 import numpy as np
@@ -69,8 +70,8 @@ def new_cube_data():
     return cube.chunk(dict(time=1, y=90, x=180))
 
 
-class NewCubeDataTestMixin(unittest.TestCase):
-    path = f"{DATA_PATH}/data.zarr"
+class DataPackingTest(unittest.TestCase):
+    path = f"{tempfile.gettempdir()}/data.zarr"
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -161,6 +162,13 @@ class FsDataStoresTestMixin(ABC):
             expected_return_type=xr.Dataset,
             expected_descriptor_type=DatasetDescriptor,
             assert_data_ok=self._assert_zarr_store_direct_ok,
+            # Not nice here, but we lack coverage for the case where
+            # the original Zarr store will be wrapped by the
+            # LoggingZarrStore and zarr.LRUStoreCache stores.
+            open_params={
+                "cache_size": 1 << 24,
+                "log_access": True,
+            },
         )
         self._assert_dataset_supported(
             data_store,
@@ -452,7 +460,7 @@ class FsDataStoresTestMixin(ABC):
                 )
             # if "s3" data store is tested, warnings from other
             # libraries like botocore occur
-            if data_store.protocol is not "s3":
+            if data_store.protocol != "s3":
                 self.assertEqual(1, len(w))
             self.assertEqual(w[0].category, UserWarning)
             self.assertEqual(warning_msg, w[0].message.args[0])

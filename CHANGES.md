@@ -1,4 +1,65 @@
-## Changes in 1.8.3 (in development)
+## Changes in 1.9.1 (in development)
+
+### Other changes
+
+* Improved the filesystem data stores (`"file"`, `"s3"`, ...): 
+  - Added parameter `engine` and its schema. It names an xarray backend to be used
+    instead of the automatically detected one.
+  - Added schema for the existing `replace` parameter. 
+  - Updated schema for the `num_levels` parameter which now explains the parameter 
+    in more detail.
+
+## Changes in 1.9.0
+
+### Enhancements
+
+* Bundled [xcube Viewer 1.5.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.5.0)
+  with an updated UI/UX regarding side panel management including
+  server-side panel extensions.
+
+* Added a new server-side panel extension to the `examples/serve/panels-demo`
+  for demonstration. It shows spectrum plots for a selected map point.
+
+### Other changes
+
+* Extension panels for xcube Viewer of type `xcube.webapi.viewer.contrib.panel.Panel`
+  now have two more properties:
+  - `icon`: name of a [Material Design Icon](https://fonts.google.com/icons) 
+     to be used for the icon button that represents the panel 
+     in the viewer's sidebar.
+  - `position`: to set the position of the respective icon button 
+     in the viewer's sidebar.
+
+* Added a new abstract class `PreloadedDataStore` that defines the return type of the
+  `preload_data` method in `xcube.core.store.DataStore`. The `PreloadedDataStore` is a
+  data store containing a `preload_handle` field, which holds the handle
+  associated with a preload job.
+
+* Renamed [xrlint]() config file from `xrlint_config.yaml` to `xrlint-config.yaml`.
+
+## Changes in 1.8.3
+
+### Enhancements
+
+* xcube Server now can be configured to provide abstracts/descriptions for datasets 
+  so they can be rendered as markdown in xcube Viewer 
+  (https://github.com/xcube-dev/xcube-viewer/issues/454). (#1122)
+  
+  1. New `description` properties have been added to responses from xcube Server for 
+     datasets and variables.
+  2. User can now provide abstracts or descriptions using markdown format for dataset 
+     configurations in xcube Server. A new configuration setting `Description` 
+     now accompanies settings such as `Title`.
+  3. Default values for the `Description` setting are derived from metadata of 
+     datasets and variable CF attributes.
+* Improved axis labeling in 2D histogram visualization in the Panel demo.
+
+* Added support for the xcube Viewer's `Markdown` component so it can be used in 
+  server-side viewer extensions. See new package `xcube.webapi.viewer.components`
+  exporting class `Markdown` which has a single `text` property that takes 
+  the markdown text.
+
+* Bundled [xcube Viewer 1.4.2](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.4.2).
 
 ### Other changes
 
@@ -7,6 +68,9 @@
   [ruff](https://docs.astral.sh/ruff/). Updated development 
   dependencies accordingly.
 * Updated copyright notices.
+* Ensured xcube can be installed and tested in Python 3.13 environments.
+* Added a configuration file `xrlint_config.yaml` for the 
+  [xrlint](https://bcdev.github.io/xrlint/) tool to the project repository.
 
 ## Changes in 1.8.2
 
@@ -26,7 +90,12 @@
   function no longer worked with irregular grid mappings, such as Sentinel-3 data,   
   due to changes introduced in version 1.8.0. (#1114)
 
-  
+### Other Changes  
+
+* Added demo panel `Spectral View` that creates a plot with the reflectances 
+  for one selected Place (Point) at a selected time for variables that
+  represent wavelengths.
+
 ## Changes in 1.8.0
 
 ### Enhancements

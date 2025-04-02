@@ -170,7 +170,7 @@ class DatasetsContext(ResourcesContext):
 
     def set_ml_dataset(self, ml_dataset: MultiLevelDataset):
         self._set_dataset_entry(
-            (ml_dataset, dict(Identifier=ml_dataset.ds_id, Hidden=True))
+            (ml_dataset, _new_dataset_config(Identifier=ml_dataset.ds_id, Hidden=True))
         )
 
     def add_dataset(
@@ -178,6 +178,7 @@ class DatasetsContext(ResourcesContext):
         dataset: Union[xr.Dataset, MultiLevelDataset],
         ds_id: Optional[str] = None,
         title: Optional[str] = None,
+        description: Optional[str] = None,
         style: Optional[str] = None,
         color_mappings: dict[str, dict[str, Any]] = None,
     ) -> str:
@@ -203,8 +204,8 @@ class DatasetsContext(ResourcesContext):
             if dataset_config["Identifier"] == ds_id:
                 del dataset_configs[index]
                 break
-        dataset_config = dict(
-            Identifier=ds_id, Title=title or dataset.attrs.get("title", ds_id)
+        dataset_config = _new_dataset_config(
+            Identifier=ds_id, Title=title, Description=description
         )
         if style is not None:
             dataset_config.update(dict(Style=style))
@@ -230,12 +231,24 @@ class DatasetsContext(ResourcesContext):
         ml_dataset: MultiLevelDataset,
         ds_id: Optional[str] = None,
         title: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         if ds_id:
             ml_dataset.ds_id = ds_id
         else:
             ds_id = ml_dataset.ds_id
-        self._set_dataset_entry((ml_dataset, dict(Identifier=ds_id, Title=title)))
+        self._set_dataset_entry(
+            (
+                ml_dataset,
+                (
+                    dict(
+                        Identifier=ds_id,
+                        Title=title,
+                        Description=description,
+                    )
+                ),
+            )
+        )
 
     def get_dataset(
         self, ds_id: str, expected_var_names: Collection[str] = None
@@ -386,7 +399,7 @@ class DatasetsContext(ResourcesContext):
             if store_dataset_configs:
                 for store_dataset_config in store_dataset_configs:
                     dataset_id_pattern = store_dataset_config.get("Path", "*")
-                    if _is_wildard(dataset_id_pattern):
+                    if _is_wildcard(dataset_id_pattern):
                         if store_instance_id in DATA_STORE_IDS_WARNING:
                             warnings.warn(
                                 f"The data store with ID '{store_instance_id}' has "
@@ -905,7 +918,7 @@ def _get_common_prefixes(p):
     prefix = os.path.commonprefix(p)
     # ensure prefix does not end with full or partial directory
     # or file name
-    prefix = prefix[: max(_lastindex(prefix, "/"), _lastindex(prefix, "\\"), 0)]
+    prefix = prefix[: max(_last_index(prefix, "/"), _last_index(prefix, "\\"), 0)]
     if _is_not_empty(prefix) or len(p) == 1:
         return [prefix]
     else:
@@ -932,7 +945,7 @@ def _get_selected_dataset_config(
     return dataset_config
 
 
-def _lastindex(prefix, symbol):
+def _last_index(prefix, symbol):
     try:
         return prefix.rindex(symbol)
     except ValueError:
@@ -944,5 +957,9 @@ _MULTI_LEVEL_DATASET_OPENERS = {
 }
 
 
-def _is_wildard(string: str) -> bool:
+def _is_wildcard(string: str) -> bool:
     return "?" in string or "*" in string
+
+
+def _new_dataset_config(**kwargs) -> dict[str, Any]:
+    return {k: v for k, v in kwargs.items() if v is not None}

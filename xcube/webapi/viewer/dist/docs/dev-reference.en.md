@@ -21,11 +21,18 @@ ${extensions}
 
 ## Available State Properties
 
-In the following, xcube Viewer's state properties are listed.
-These properties can be accessed in the input and state channels you pass
-to the `layout()` and `callback()` decorators. To trigger a callback 
-call when a state property changes use the input syntax
-`Input("@app", <property>)`. To just read a property from the state use 
-`State("@app", <property>)`.
+xcube Viewer exposes some of its application state properties to Python 
+extension components, e.g., `panel = Panel(...)`. The current values of state 
+properties can be accessed via `Input` and `State` channels you define for your 
+extension component decorators, i.e., `@panel.layout(...)` and/or `@panel.callback(...)`. 
+
+- To trigger a callback call when a state property changes use the input syntax
+  `Input("@app", "<property>")`. 
+- To just read a property from the state use `State("@app", "<property>")`. This
+  will not trigger a call to your callback.
+
+The following state properties of xcube Viewer's are made available
+to extensions:
+
 
 ${derivedState}

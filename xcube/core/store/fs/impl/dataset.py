@@ -44,6 +44,10 @@ ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             description="Group path. (a.k.a. path in zarr terminology.).",
             min_length=1,
         ),
+        engine=JsonStringSchema(
+            description="xarray backend name.",
+            min_length=1,
+        ),
         chunks=JsonObjectSchema(
             description="Optional chunk sizes along each dimension."
             ' Chunk size values may be None, "auto"'
@@ -118,6 +122,9 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             description="If set, the dimension on which the data will be appended.",
             min_length=1,
         ),
+        replace=JsonBooleanSchema(
+            description="If set, an existing dataset will be replaced without warning.",
+        ),
     ),
     additional_properties=False,
 )
@@ -145,22 +152,35 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name="data_id")
         fs, root, open_params = self.load_fs(open_params)
-        zarr_store = fs.get_mapper(data_id)
+        engine = open_params.pop("engine", "zarr")
         cache_size = open_params.pop("cache_size", None)
-        if isinstance(cache_size, int) and cache_size > 0:
-            zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
         log_access = open_params.pop("log_access", None)
-        if log_access:
-            zarr_store = LoggingZarrStore(zarr_store, name=f"zarr_store({data_id!r})")
         consolidated = open_params.pop(
             "consolidated", fs.exists(f"{data_id}/.zmetadata")
         )
-        try:
-            dataset = xr.open_zarr(zarr_store, consolidated=consolidated, **open_params)
-        except ValueError as e:
-            raise DataStoreError(f"Failed to open dataset {data_id!r}: {e}") from e
+        if engine == "zarr":
+            zarr_store = fs.get_mapper(data_id)
+            if isinstance(cache_size, int) and cache_size > 0:
+                zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
+            if log_access:
+                zarr_store = LoggingZarrStore(
+                    zarr_store, name=f"zarr_store({data_id!r})"
+                )
+            try:
+                dataset = xr.open_zarr(
+                    zarr_store, consolidated=consolidated, **open_params
+                )
+                dataset.zarr_store.set(zarr_store)
+            except ValueError as e:
+                raise DataStoreError(f"Failed to open dataset {data_id!r}: {e}") from e
+        else:
+            try:
+                dataset = xr.open_dataset(data_id, engine=engine, **open_params)
+            except ValueError as e:
+                raise DataStoreError(
+                    f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
+                ) from e
 
-        dataset.zarr_store.set(zarr_store)
         return dataset
 
     # noinspection PyMethodMayBeStatic

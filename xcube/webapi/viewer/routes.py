@@ -48,10 +48,9 @@ def get_local_viewer_path() -> Union[None, str, pathlib.Path]:
     if local_viewer_path:
         return local_viewer_path
     try:
-        with importlib.resources.files(_viewer_module) as path:
-            local_viewer_path = path / _data_dir
-            if (local_viewer_path / _default_filename).is_file():
-                return local_viewer_path
+        local_viewer_path = importlib.resources.files(_viewer_module) / _data_dir
+        if (local_viewer_path / _default_filename).is_file():
+            return str(local_viewer_path)
     except ImportError:
         pass
     LOG.warning(
@@ -72,7 +71,7 @@ class ViewerConfigHandler(ApiHandler[ViewerContext]):
     def get(self, path: Optional[str]):
         config_items = self.ctx.config_items
         if config_items is None:
-            raise ApiError.NotFound(f"xcube viewer has not been been configured")
+            raise ApiError.NotFound("xcube viewer has not been been configured")
         try:
             data = config_items[path]
         except KeyError:

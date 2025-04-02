@@ -1,12 +1,13 @@
 # Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
+
 import fnmatch
 import functools
 import io
 import json
-from collections.abc import Mapping
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from collections.abc import Mapping, Sequence
+from typing import Any, Callable, Optional
 
 import matplotlib.colorbar
 import matplotlib.colors
@@ -31,6 +32,12 @@ from .authutil import (
     check_scopes,
 )
 from .context import DatasetConfig, DatasetsContext
+
+DS_TITLE_ATTR_NAMES = ("title", "name")
+DS_DESCRIPTION_ATTR_NAMES = ("description", "abstract", "comment")
+
+VAR_TITLE_ATTR_NAMES = ("title", "name", "long_name")
+VAR_DESCRIPTION_ATTR_NAMES = ("description", "abstract", "comment")
 
 
 def find_dataset_places(
@@ -86,12 +93,9 @@ def get_datasets(
             LOG.info(f"Rejected dataset {ds_id!r} due to missing permission")
             continue
 
+        ds = ctx.get_dataset(ds_id)
         dataset_dict = dict(id=ds_id)
-
-        _update_dataset_title_properties(dataset_config, dataset_dict)
-        if not details and "title" not in dataset_dict:
-            # "title" property should always be set
-            dataset_dict["title"] = ds_id
+        _update_dataset_desc_properties(ds, dataset_config, dataset_dict)
 
         ds_bbox = dataset_config.get("BoundingBox")
         if ds_bbox is not None:
@@ -111,7 +115,6 @@ def get_datasets(
             ds_id = dataset_dict["id"]
             try:
                 if point:
-                    ds = ctx.get_dataset(ds_id)
                     if "bbox" not in dataset_dict:
                         dataset_dict["bbox"] = list(get_dataset_bounds(ds))
                 if details:
@@ -162,6 +165,8 @@ def get_dataset(
         raise DatasetIsNotACubeError(f"could not open dataset: {e}") from e
 
     ds = ml_ds.get_dataset(0)
+    dataset_dict = dict(id=ds_id)
+    _update_dataset_desc_properties(ds, dataset_config, dataset_dict)
 
     try:
         ts_ds = ctx.get_time_series_dataset(ds_id)
@@ -169,15 +174,6 @@ def get_dataset(
         ts_ds = None
 
     x_name, y_name = ml_ds.grid_mapping.xy_dim_names
-
-    dataset_dict = dict(id=ds_id)
-
-    _update_dataset_title_properties(dataset_config, dataset_dict)
-    if "title" not in dataset_dict:
-        title = ds.attrs.get("title", ds.attrs.get("name"))
-        if not isinstance(title, str) or not title:
-            title = ds_id
-        dataset_dict["title"] = title
 
     crs = ml_ds.grid_mapping.crs
     transformer = pyproj.Transformer.from_crs(crs, CRS_CRS84, always_xy=True)
@@ -220,9 +216,9 @@ def get_dataset(
         spatial_var_names = filter_variable_names(spatial_var_names, var_name_patterns)
         if not spatial_var_names:
             LOG.warning(
-                f"No variable matched any of the patterns given"
-                f' in the "Variables" filter.'
-                f' You may specify a wildcard "*" as last item.'
+                "No variable matched any of the patterns given"
+                ' in the "Variables" filter.'
+                ' You may specify a wildcard "*" as last item.'
             )
 
     for var_name in spatial_var_names:
@@ -235,6 +231,7 @@ def get_dataset(
         ):
             continue
 
+        var_title, var_description = get_variable_title_and_description(var_name, var)
         variable_dict = dict(
             id=f"{ds_id}.{var_name}",
             name=var_name,
@@ -242,9 +239,11 @@ def get_dataset(
             shape=list(var.shape),
             dtype=str(var.dtype),
             units=var.attrs.get("units", ""),
-            title=var.attrs.get("title", var.attrs.get("long_name", var_name)),
+            title=var_title,
             timeChunkSize=get_time_chunk_size(ts_ds, var_name, ds_id),
         )
+        if var_description:
+            variable_dict["description"] = var_description
 
         tile_url = _get_dataset_tile_url2(ctx, ds_id, var_name, base_url)
         # Note that tileUrl is no longer used since xcube viewer v0.13
@@ -323,14 +322,49 @@ def get_dataset(
     return dataset_dict
 
 
-def _update_dataset_title_properties(
-    dataset_config: Mapping[str, Any], dataset_dict: dict[str, Any]
+def get_dataset_title_and_description(
+    dataset: xr.Dataset,
+    dataset_config: Mapping[str, Any] | None = None,
+) -> tuple[str, str | None]:
+    dataset_config = dataset_config or {}
+    ds_title = dataset_config.get(
+        "Title",
+        _get_str_attr(
+            dataset.attrs,
+            DS_TITLE_ATTR_NAMES,
+            dataset_config.get("Identifier"),
+        ),
+    )
+    ds_description = dataset_config.get(
+        "Description",
+        _get_str_attr(dataset.attrs, DS_DESCRIPTION_ATTR_NAMES),
+    )
+    return ds_title or "", ds_description or None
+
+
+def get_variable_title_and_description(
+    var_name: str,
+    var: xr.DataArray,
+) -> tuple[str, str | None]:
+    var_title = _get_str_attr(var.attrs, VAR_TITLE_ATTR_NAMES, var_name)
+    var_description = _get_str_attr(var.attrs, VAR_DESCRIPTION_ATTR_NAMES)
+    return var_title or "", var_description or None
+
+
+def _update_dataset_desc_properties(
+    ds: xr.Dataset, dataset_config: Mapping[str, Any], dataset_dict: dict[str, Any]
 ):
-    for dc_key in ("Title", "GroupTitle", "Tags"):
-        dd_key = dc_key[0].lower() + dc_key[1:]
-        if dc_key in dataset_config:
-            # Note, dataset_config is validated
-            dataset_dict[dd_key] = dataset_config[dc_key]
+    ds_title, ds_description = get_dataset_title_and_description(ds, dataset_config)
+    group_title = dataset_config.get("GroupTitle")
+    tags = dataset_config.get("Tags")
+
+    dataset_dict["title"] = ds_title
+    if ds_description:
+        dataset_dict["description"] = ds_description
+    if group_title:
+        dataset_dict["groupTitle"] = group_title
+    if tags:
+        dataset_dict["tags"] = tags
 
 
 def filter_variable_names(
@@ -635,3 +669,13 @@ def get_legend(
     fig.savefig(buffer, format="png")
 
     return buffer.getvalue()
+
+
+def _get_str_attr(
+    attrs: Mapping[str, Any], keys: Sequence[str], default: Optional[str] = None
+) -> Optional[str]:
+    for k in keys:
+        v = attrs.get(k)
+        if isinstance(v, str) and v.strip():
+            return v
+    return default if isinstance(default, str) else None

@@ -2,7 +2,7 @@ Viewer:
   Augmentation:
     Path: ""
     Extensions:
-      - my_viewer_ext.ext
+      - demo_panels.ext
   Persistence:
      Path: memory://states
 
@@ -19,6 +19,22 @@ DataStores:
       - Path: openSR_nordfriesland_S2L2A_selected_dates_10m-v4.levels
         Identifier: waddensea
         Title: Wadden Sea Nordfriesland
+        Description: >-
+          The [**Wadden Sea**](https://en.wikipedia.org/wiki/Wadden_Sea) 
+          (Dutch: _Waddenzee_ [ˈʋɑdə(n)zeː]; 
+          German: _Wattenmeer_ [ˈvatn̩ˌmeːɐ̯];
+          Low German: _Wattensee_ or _Waddenzee_; 
+          Danish: _Vadehavet_;
+          West Frisian: _Waadsee_; 
+          North Frisian: _di Heef_) 
+          is an [intertidal zone](https://en.wikipedia.org/wiki/Intertidal_zone) 
+          in the southeastern part of the 
+          [North Sea](https://en.wikipedia.org/wiki/North_Sea). 
+          It lies between the coast of northwestern continental Europe and the 
+          range of low-lying Frisian Islands, forming a shallow body of water 
+          with tidal flats and wetlands. It has a high biological diversity 
+          and is an important area for both breeding and migrating birds.
+          ![Wadden Sea](https://upload.wikimedia.org/wikipedia/commons/e/e7/13-09-29-nordfriesisches-wattenmeer-RalfR-19.jpg)
         Style: waddensea
         Augmentation:
           Path: compute_indexes.py
