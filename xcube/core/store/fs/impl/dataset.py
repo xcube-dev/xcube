@@ -96,7 +96,9 @@ ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
         ),
     ),
     required=[],
-    additional_properties=False,
+    # additional_properties=True because we want to allow passing arbitrary
+    # parameters to xarray.open_dataset()
+    additional_properties=True,
 )
 
 ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
@@ -126,7 +128,9 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             description="If set, an existing dataset will be replaced without warning.",
         ),
     ),
-    additional_properties=False,
+    # additional_properties=True because we want to allow passing arbitrary
+    # parameters to xarray.to_zarr()
+    additional_properties=True,
 )
 
 
