@@ -1,5 +1,12 @@
 ## Changes in 1.9.1 (in development)
 
+### Enhancements
+
+* Introduced a server-side configuration attribute `EntrypointDatasetId` to specify 
+  the initial dataset that should be displayed in the viewer application upon loading. 
+* Added support for `SortValue` in the server configuration to define dataset sorting 
+  within groups displayed in the viewer app's dataset selection dropdown.
+
 ### Other changes
 
 * Improved the filesystem data stores (`"file"`, `"s3"`, ...): 
@@ -8,8 +15,6 @@
   - Added schema for the existing `replace` parameter. 
   - Updated schema for the `num_levels` parameter which now explains the parameter 
     in more detail.
-* Introduced a server-side configuration attribute `EntrypointDatasetId` to specify 
-  the initial dataset that should be displayed in the viewer application upon loading. 
 
 ## Changes in 1.9.0
 
