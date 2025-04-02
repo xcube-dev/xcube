@@ -238,6 +238,14 @@ SERVICE_PROVIDER_SCHEMA = JsonObjectSchema(
     additional_properties=True,
 )
 
+ENTRYPOINT_DATASET_ID_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Identifier=IDENTIFIER_SCHEMA,
+    ),
+    required=["Identifier"],
+    additional_properties=False,
+)
+
 CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
         DatasetAttribution=ATTRIBUTION_SCHEMA,
@@ -248,5 +256,8 @@ CONFIG_SCHEMA = JsonObjectSchema(
         Styles=JsonArraySchema(items=STYLE_SCHEMA),
         CustomColorMaps=JsonArraySchema(items=CUSTOM_COLORMAP_SCHEMA),
         ServiceProvider=SERVICE_PROVIDER_SCHEMA,
+        EntrypointDatasetId=ENTRYPOINT_DATASET_ID_SCHEMA,
+        # TODO: Maybe another attribute for sorting boolean
+        # DatasetOrdering:
     )
 )

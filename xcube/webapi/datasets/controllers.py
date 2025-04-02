@@ -77,6 +77,12 @@ def get_datasets(
     LOG.info(f"Collecting datasets for granted scopes {granted_scopes!r}")
 
     dataset_configs = list(ctx.get_dataset_configs())
+    entrypoint_dataset_id_config = ctx.get_entrypoint_dataset_id_config()
+    entrypoint_dataset_id = (
+        entrypoint_dataset_id_config.get("Identifier")
+        if entrypoint_dataset_id_config
+        else None
+    )
 
     dataset_dicts = list()
     for dataset_config in dataset_configs:
@@ -135,7 +141,7 @@ def get_datasets(
     if not dataset_dicts:
         LOG.warning("No datasets provided for current user.")
 
-    return dict(datasets=dataset_dicts)
+    return dict(datasets=dataset_dicts, entrypoint_dataset_id=entrypoint_dataset_id)
 
 
 def get_dataset(

@@ -134,6 +134,7 @@ Datasets:
     FileSystem: file
     Path: sample-cog.tif
     Style: tif_style
+#    SortValue: 1
 
   - Identifier: geotiff_local
     Title: GeoTIFF example
@@ -141,6 +142,10 @@ Datasets:
     FileSystem: file
     Path: sample-geotiff.tif
     Style: tif_style
+#    SortValue: 2
+
+EntrypointDatasetId:
+  Identifier: geotiff_local
 
 PlaceGroups:
   - Identifier: inside-cube
