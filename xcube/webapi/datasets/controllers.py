@@ -141,7 +141,7 @@ def get_datasets(
     if not dataset_dicts:
         LOG.warning("No datasets provided for current user.")
 
-    return dict(datasets=dataset_dicts, entrypoint_dataset_id=entrypoint_dataset_id)
+    return dict(datasets=dataset_dicts, entrypointDatasetId=entrypoint_dataset_id)
 
 
 def get_dataset(
