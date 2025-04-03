@@ -75,7 +75,8 @@ class DatasetsHandler(ApiHandler[DatasetsContext]):
 
     @api.operation(
         operation_id="getDatasets",
-        summary="Get all datasets.",
+        summary="Get all datasets. This endpoint now includes an additional "
+                "field in the response dictionary: `entrypointDatasetId`.",
         parameters=[
             {
                 "name": "details",
