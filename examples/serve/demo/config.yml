@@ -145,8 +145,7 @@ Datasets:
     SortValue: 1
 
 # Add the initial dataset that needs to be shown in xcube-viewer upon loading here
-EntrypointDatasetId:
-  Identifier: geotiff_local
+#EntrypointDatasetId: geotiff_local3
 
 PlaceGroups:
   - Identifier: inside-cube

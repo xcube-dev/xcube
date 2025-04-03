@@ -258,6 +258,6 @@ CONFIG_SCHEMA = JsonObjectSchema(
         Styles=JsonArraySchema(items=STYLE_SCHEMA),
         CustomColorMaps=JsonArraySchema(items=CUSTOM_COLORMAP_SCHEMA),
         ServiceProvider=SERVICE_PROVIDER_SCHEMA,
-        EntrypointDatasetId=ENTRYPOINT_DATASET_ID_SCHEMA,
+        EntrypointDatasetId=IDENTIFIER_SCHEMA,
     )
 )
