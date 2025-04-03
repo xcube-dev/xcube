@@ -41,7 +41,14 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     plot = VegaChart(
         id="plot",
         chart=None,
-        style={"paddingTop": 6, "width": "100%", "height": 400},
+        style={
+            "paddingTop": 6,
+            # Since for dynamic resizing we use `container` as width and height for
+            # this chart during updates, it is necessary that we provide the width
+            # and the height here. This is for its parent div.
+            "width": "100%",
+            "height": 400,
+        },
     )
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
@@ -92,7 +99,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     State("@app", "selectedPlaceGeometry"),
     State("select_var_1"),
     State("select_var_2"),
-    Input("@app", "selectedTimeLabel"),
+    State("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
     Output("error_message", "children"),
@@ -164,7 +171,6 @@ def update_plot(
     )
     x_centers = x_edges[0:-1] + np.diff(x_edges) / 2
     y_centers = y_edges[0:-1] + np.diff(y_edges) / 2
-    # TODO: allow chart to be adjusted to available container (<div>) size.
 
     # Limit number of ticks on axes
     x_num_ticks = 8
@@ -215,6 +221,9 @@ def update_plot(
             tooltip=[var_1_name, var_2_name, "z:Q"],
         )
     ).properties(
+        # allow chart to be adjusted to available container (<div>) size. Make sure
+        # that you add width and height to the style props while defining the Vega
+        # chart plot in render panel method
         width="container",
         height="container",
     )
