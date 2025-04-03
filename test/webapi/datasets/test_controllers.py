@@ -144,6 +144,21 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
             f"{cm.exception}",
         )
 
+    def test_dataset_with_sortvalue(self):
+        response = get_datasets(
+            get_datasets_ctx("config-entrypoint-sortvalue.yml"),
+            details=True,
+            base_url="http://test",
+        )
+        datasets = self.assertDatasetsOk(response, expected_count=2)
+        print(datasets[0].get("id"))
+        for dataset in datasets:
+            self.assertIsInstance(dataset, dict)
+            # The sort value has no relation to the id for deriving its value,
+            # but we need it for the assert.
+            expected_sort_value = 2 if dataset.get("id") == "demo" else 1
+            self.assertEqual(expected_sort_value, dataset.get("sortValue"))
+
     def test_dataset_with_details_and_rgb_schema(self):
         response = get_datasets(
             get_datasets_ctx("config-rgb.yml"), details=True, base_url="http://test"

@@ -17,6 +17,7 @@ from xcube.webapi.common.schemas import (
     PATH_SCHEMA,
     STRING_SCHEMA,
     URI_SCHEMA,
+    NUMBER_SCHEMA,
 )
 
 from ..places.config import PLACE_GROUP_SCHEMA
@@ -66,6 +67,7 @@ COMMON_DATASET_PROPERTIES = dict(
     Title=STRING_SCHEMA,
     Description=STRING_SCHEMA,
     GroupTitle=STRING_SCHEMA,
+    SortValue=NUMBER_SCHEMA,
     Tags=JsonArraySchema(items=STRING_SCHEMA),
     Variables=VARIABLES_SCHEMA,
     TimeSeriesDataset=IDENTIFIER_SCHEMA,
@@ -238,6 +240,14 @@ SERVICE_PROVIDER_SCHEMA = JsonObjectSchema(
     additional_properties=True,
 )
 
+ENTRYPOINT_DATASET_ID_SCHEMA = JsonObjectSchema(
+    properties=dict(
+        Identifier=IDENTIFIER_SCHEMA,
+    ),
+    required=["Identifier"],
+    additional_properties=False,
+)
+
 CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
         DatasetAttribution=ATTRIBUTION_SCHEMA,
@@ -248,5 +258,6 @@ CONFIG_SCHEMA = JsonObjectSchema(
         Styles=JsonArraySchema(items=STYLE_SCHEMA),
         CustomColorMaps=JsonArraySchema(items=CUSTOM_COLORMAP_SCHEMA),
         ServiceProvider=SERVICE_PROVIDER_SCHEMA,
+        EntrypointDatasetId=ENTRYPOINT_DATASET_ID_SCHEMA,
     )
 )

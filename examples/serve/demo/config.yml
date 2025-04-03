@@ -134,6 +134,7 @@ Datasets:
     FileSystem: file
     Path: sample-cog.tif
     Style: tif_style
+    SortValue: 2
 
   - Identifier: geotiff_local
     Title: GeoTIFF example
@@ -141,6 +142,11 @@ Datasets:
     FileSystem: file
     Path: sample-geotiff.tif
     Style: tif_style
+    SortValue: 1
+
+# Add the initial dataset that needs to be shown in xcube-viewer upon loading here
+EntrypointDatasetId:
+  Identifier: geotiff_local
 
 PlaceGroups:
   - Identifier: inside-cube
