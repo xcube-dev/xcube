@@ -44,8 +44,11 @@ def render_panel(
         style={"paddingTop": 6, "width": "100%", "height": 400},
         theme=theme_mode,
     )
-
-    text = f"{dataset_id} " f"/ {time_label[0:-1]}"
+    if time_label:
+        text = f"{dataset_id} " f"/ {time_label[0:-1]}"
+    else:
+        text = f"{dataset_id}"
+    # text = f"{dataset_id} " f"/ {time_label[0:-1]}"
     place_text = Typography(id="text", children=[text], align="center")
 
     place_names = get_places(ctx, place_group)
@@ -170,9 +173,9 @@ def update_text(
     _time_label: bool | None = None,
 ) -> list | None:
 
-    text = f"{dataset_id} " f"/ {time_label[0:-1]}"
-
-    return [text]
+    if time_label:
+        return [f"{dataset_id} " f"/ {time_label[0:-1]}"]
+    return [f"{dataset_id} "]
 
 
 @panel.callback(
