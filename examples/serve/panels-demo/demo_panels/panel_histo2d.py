@@ -118,11 +118,11 @@ def render_panel(
 
 
 @panel.callback(
-    State("@app", "selectedDatasetId"),
+    Input("@app", "selectedDatasetId"),
     State("@app", "selectedPlaceGeometry"),
     State("select_var_1"),
     State("select_var_2"),
-    State("@app", "selectedTimeLabel"),
+    Input("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
     Output("error_message", "children"),
@@ -314,15 +314,15 @@ def get_var_select_options(
 
 @panel.callback(
     State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
-    Input("button", "clicked"),
+    Input("@app", "selectedTimeLabel"),
+    # Input("button", "clicked"),
     Output("text", "children"),
 )
 def update_text(
     ctx: Context,
     dataset_id: str,
     time_label: str | None = None,
-    _clicked: bool | None = None,
+    # _clicked: bool | None = None,
 ) -> list | None:
 
     if time_label:

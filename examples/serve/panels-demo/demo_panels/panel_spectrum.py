@@ -182,7 +182,7 @@ def update_text(
 
 @panel.callback(
     State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
+    Input("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGroup"),
     State("select_places", "value"),
     Input("button", "clicked"),
