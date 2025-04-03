@@ -6,7 +6,7 @@
 import math
 import unittest
 from collections.abc import Mapping
-from typing import List, Optional
+from typing import List, Optional, Any
 
 import fsspec
 import fsspec.core
@@ -43,6 +43,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             tile_size=256,
             use_saved_levels=False,
             base_dataset_path=None,
+            base_dataset_params=None,
             expected_files=[".zlevels", "0.zarr", "1.zarr", "2.zarr", "3.zarr"],
             expected_num_levels=4,
             expected_tile_size=[256, 256],
@@ -57,6 +58,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             tile_size=256,
             use_saved_levels=False,
             base_dataset_path=None,
+            base_dataset_params=None,
             expected_files=[".zlevels", "0.zarr", "1.zarr", "2.zarr", "3.zarr"],
             expected_num_levels=4,
             expected_tile_size=[256, 256],
@@ -72,6 +74,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             tile_size=256,
             use_saved_levels=False,
             base_dataset_path="test.zarr",
+            base_dataset_params=None,
             expected_files=[".zlevels", "0.link", "1.zarr", "2.zarr", "3.zarr"],
             expected_num_levels=4,
             expected_tile_size=[256, 256],
@@ -86,6 +89,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         tile_size: Optional[int],
         use_saved_levels: bool,
         base_dataset_path: Optional[str],
+        base_dataset_params: Optional[dict[str, Any]],
         expected_files: list[str],
         expected_num_levels: int,
         expected_agg_methods: Optional[Mapping[str, AggMethod]],
@@ -103,6 +107,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             tile_size=tile_size,
             use_saved_levels=use_saved_levels,
             base_dataset_path=base_dataset_path,
+            base_dataset_params=base_dataset_params,
         )
         self.assertTrue(fs.isdir(path))
         self.assertEqual(
@@ -116,6 +121,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         self.assertEqual(expected_tile_size, ml_dataset.tile_size)
         self.assertEqual(use_saved_levels, ml_dataset.use_saved_levels)
         self.assertEqual(base_dataset_path, ml_dataset.base_dataset_path)
+        self.assertEqual(base_dataset_params, ml_dataset.base_dataset_params)
         self.assertEqual(None, ml_dataset.cache_size)
         self.assertEqual(num_levels, len(ml_dataset.size_weights))
         self.assertTrue(all(ml_dataset.size_weights > 0.0))

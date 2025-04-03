@@ -99,6 +99,11 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         return spec.get("base_dataset_path")
 
     @cached_property
+    def base_dataset_params(self) -> Optional[dict[str, Any]]:
+        spec = self._levels_spec
+        return spec.get("base_dataset_params")
+
+    @cached_property
     def agg_methods(self) -> Optional[Mapping[str, AggMethod]]:
         spec = self._levels_spec
         return spec.get("agg_methods")
@@ -120,6 +125,9 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
         fs = self._fs
 
+        open_params = dict(self._zarr_kwargs)
+        base_dataset_open_params = None
+
         ds_path = self._get_path(self._path)
         link_path = ds_path / f"{index}.link"
         if fs.isfile(str(link_path)):
@@ -131,9 +139,14 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 level_path, ds_path
             ):
                 level_path = resolve_path(ds_path / level_path)
+            base_dataset_open_params = self.base_dataset_params
         else:
             # Nominal "{index}.zarr" must exist
             level_path = ds_path / f"{index}.zarr"
+
+        if isinstance(base_dataset_open_params, dict):
+            # TODO: complete logic here
+            engine = base_dataset_open_params.pop("engine", "zarr")
 
         level_zarr_store = fs.get_mapper(str(level_path))
 
@@ -235,6 +248,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         tile_size: Optional[ScalarOrPair[int]] = None,
         use_saved_levels: bool = False,
         base_dataset_path: Optional[str] = None,
+        base_dataset_params: Optional[dict[str, Any]] = None,
         agg_methods: Optional[AggMethods] = None,
         **zarr_kwargs,
     ) -> str:
@@ -299,6 +313,8 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 levels_data.update(use_saved_levels=bool(use_saved_levels))
             if base_dataset_path:
                 levels_data.update(base_dataset_path=base_dataset_path)
+            if base_dataset_params is not None:
+                levels_data.update(base_dataset_params=base_dataset_params)
             if tile_size is not None:
                 levels_data.update(tile_size=list(tile_size))
             if hasattr(ml_dataset, "agg_methods"):
