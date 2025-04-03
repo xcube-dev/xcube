@@ -48,7 +48,6 @@ def render_panel(
         text = f"{dataset_id} " f"/ {time_label[0:-1]}"
     else:
         text = f"{dataset_id}"
-    # text = f"{dataset_id} " f"/ {time_label[0:-1]}"
     place_text = Typography(id="text", children=[text], align="center")
 
     place_names = get_places(ctx, place_group)
@@ -84,12 +83,15 @@ def render_panel(
         },
     )
 
+    error_message = Typography(id="error_message", style={"color": "red"})
+
     return Box(
         children=[
             "Select a map point from the dropdown and press 'Update' "
             "to create a spectrum plot for that point and the selected time.",
             control_bar,
             plot,
+            error_message,
         ],
         style={
             "display": "flex",
@@ -185,6 +187,7 @@ def update_text(
     State("select_places", "value"),
     Input("button", "clicked"),
     Output("plot", "chart"),
+    Output("error_message", "children"),
 )
 def update_plot(
     ctx: Context,
@@ -193,13 +196,10 @@ def update_plot(
     place_group: list[dict[str, Any]],
     place: list,
     _clicked: bool | None = None,
-) -> alt.Chart | None:
-
-    if not place_group:
-        return None
-
-    if not place:
-        return None
+) -> tuple[alt.Chart | None, str]:
+    dataset = get_dataset(ctx, dataset_id)
+    if dataset is None or not place_group or not place:
+        return None, "Error: Panel disabled"
 
     dataset = get_dataset(ctx, dataset_id)
 
@@ -226,9 +226,8 @@ def update_plot(
     source = get_wavelength(dataset, place_group, place)
 
     if source is None:
-        # TODO: set error message in panel UI
         print("No reflectances found in Variables")
-        return None
+        return None, "No reflectances found in Variables"
 
     chart = (
         alt.Chart(source)
@@ -241,7 +240,7 @@ def update_plot(
         )
     ).properties(width="container", height="container")
 
-    return chart
+    return chart, ""
 
 
 @panel.callback(
@@ -288,6 +287,7 @@ def update_theme(
     State("select_places", "value"),
     Input("@app", "selectedTimeLabel"),
     Output("plot", "chart"),
+    Output("error_message", "children"),
 )
 def update_timestep(
     ctx: Context,
@@ -296,6 +296,5 @@ def update_timestep(
     place_group: list[dict[str, Any]],
     place: list,
     _new_time_label: bool | None = None,
-) -> alt.Chart | None:
-
+) -> tuple[alt.Chart, str] | None:
     return update_plot(ctx, dataset_id, time_label, place_group, place)
