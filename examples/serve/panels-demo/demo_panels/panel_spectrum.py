@@ -53,9 +53,10 @@ def render_panel(
     place_names = get_places(ctx, place_group)
     select_places = Select(
         id="select_places",
-        label="places (points)",
+        label="Places (points)",
         value="",
         options=place_names,
+        style={"width": "100%"},
     )
 
     button = Button(id="button", text="Update", style={"maxWidth": 100})
@@ -83,15 +84,17 @@ def render_panel(
         },
     )
 
-    error_message = Typography(id="error_message", style={"color": "red"})
+    error_message = Typography(
+        id="error_message", style={"color": "red"}, children=["Error: Panel Disabled"]
+    )
 
     return Box(
         children=[
             "Select a map point from the dropdown and press 'Update' "
             "to create a spectrum plot for that point and the selected time.",
             control_bar,
-            plot,
             error_message,
+            plot,
         ],
         style={
             "display": "flex",
@@ -102,6 +105,31 @@ def render_panel(
             "gap": 6,
         },
     )
+
+
+@panel.callback(
+    State("@app", "selectedPlaceGroup"),
+    Input("@app", "selectedDatasetId"),
+    Input("@app", "selectedPlaceGeometry"),
+    Input("@app", "selectedTimeLabel"),
+    Input("button", "clicked"),
+    Output("error_message", "children"),
+)
+def update_error_message(
+    ctx: Context,
+    place_group: list[dict[str, Any]] | None = None,
+    dataset_id: str | None = None,
+    place_geometry: str | None = None,
+    _time_label: float | None = None,
+    _clicked: bool | None = None,
+) -> str:
+    dataset = get_dataset(ctx, dataset_id)
+    points = get_places(ctx, place_group)
+    print("points", points)
+    if dataset is None or not place_geometry or not points:
+        print("panel disabled")
+        return "Error: Panel disabled"
+    return ""
 
 
 def get_wavelength(
@@ -198,8 +226,6 @@ def update_plot(
     _clicked: bool | None = None,
 ) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
-    if dataset is None or not place_group or not place:
-        return None, "Error: Panel disabled"
 
     dataset = get_dataset(ctx, dataset_id)
 
