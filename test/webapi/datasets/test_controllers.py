@@ -154,7 +154,8 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
         print(datasets[0].get("id"))
         for dataset in datasets:
             self.assertIsInstance(dataset, dict)
-            # The sort value has no relation to the id, but we need it for the assert.
+            # The sort value has no relation to the id for deriving its value,
+            # but we need it for the assert.
             expected_sort_value = 2 if dataset.get("id") == "demo" else 1
             self.assertEqual(expected_sort_value, dataset.get("sortValue"))
 
