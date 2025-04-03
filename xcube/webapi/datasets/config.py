@@ -259,7 +259,5 @@ CONFIG_SCHEMA = JsonObjectSchema(
         CustomColorMaps=JsonArraySchema(items=CUSTOM_COLORMAP_SCHEMA),
         ServiceProvider=SERVICE_PROVIDER_SCHEMA,
         EntrypointDatasetId=ENTRYPOINT_DATASET_ID_SCHEMA,
-        # TODO: Maybe another attribute for sorting boolean
-        # DatasetOrdering:
     )
 )
