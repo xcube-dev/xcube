@@ -84,9 +84,11 @@ class DatasetsContext(ResourcesContext):
         # cache for all dataset configs
         # contains tuples of form (MultiLevelDataset, dataset_config)
         self._dataset_cache = dict()
-        self._data_store_pool, self._dataset_configs, self._entrypoint_dataset_id = (
-            self._process_dataset_configs(self.config, self.base_dir)
-        )
+        (
+            self._data_store_pool,
+            self._dataset_configs,
+            self.entrypoint_dataset_id_config,
+        ) = self._process_dataset_configs(self.config, self.base_dir)
         self._cm_styles, self._colormap_registry = self._get_cm_styles()
 
     def on_dispose(self):
@@ -468,8 +470,8 @@ class DatasetsContext(ResourcesContext):
         return self._dataset_configs
 
     def get_entrypoint_dataset_id_config(self) -> DatasetConfig | None:
-        if self._entrypoint_dataset_id:
-            return self._entrypoint_dataset_id
+        if self.entrypoint_dataset_id_config:
+            return self.entrypoint_dataset_id_config
         return None
 
     def get_data_store_pool(self) -> DataStorePool:
