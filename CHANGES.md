@@ -4,6 +4,7 @@
 
 * Introduced a server-side configuration attribute `EntrypointDatasetId` to specify 
   the initial dataset that should be displayed in the viewer application upon loading. 
+
 * Added support for `SortValue` in the server configuration to define dataset sorting 
   within groups displayed in the viewer app's dataset selection dropdown.
 
