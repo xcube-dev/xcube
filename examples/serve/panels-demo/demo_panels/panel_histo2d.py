@@ -1,6 +1,7 @@
 #  Copyright (c) 2018-2025 by xcube team and contributors
 #  Permissions are hereby granted under the terms of the MIT License:
 #  https://opensource.org/licenses/MIT.
+from typing import Any
 
 import altair as alt
 import numpy as np
@@ -24,6 +25,7 @@ from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.server.api import Context
 from xcube.webapi.viewer.contrib import Panel, get_dataset
+from xcube.webapi.viewer.contrib.helpers import get_place_name
 
 panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=3)
 
@@ -71,7 +73,7 @@ def render_panel(
         id="select_var_2", label="Variable 2", value=var_name_2, options=var_names
     )
 
-    button = Button(id="button", text="Update", style={"maxWidth": 100})
+    button = Button(id="button", text="Update", style={"maxWidth": 100}, disabled=True)
 
     controls = Box(
         children=[select_var_1, select_var_2, button],
@@ -95,7 +97,9 @@ def render_panel(
         },
     )
 
-    error_message = Typography(id="error_message", style={"color": "red"})
+    error_message = Typography(
+        id="error_message", style={"color": "red"}, children=["Error: Panel Disabled"]
+    )
 
     return Box(
         children=[
@@ -103,8 +107,8 @@ def render_panel(
             "variables from the dropdowns, and press 'Update' to create "
             "a 2D histogram plot.",
             control_bar,
-            plot,
             error_message,
+            plot,
         ],
         style={
             "display": "flex",
@@ -119,10 +123,35 @@ def render_panel(
 
 @panel.callback(
     Input("@app", "selectedDatasetId"),
+    Input("@app", "selectedPlaceGeometry"),
+    Input("select_var_1"),
+    Input("select_var_2"),
+    Input("@app", "selectedTimeLabel"),
+    Input("button", "clicked"),
+    Output("error_message", "children"),
+)
+def update_error_message(
+    ctx: Context,
+    dataset_id: str | None = None,
+    place_geometry: str | None = None,
+    var_1_name: str | None = None,
+    var_2_name: str | None = None,
+    _time_label: float | None = None,
+    _clicked: bool | None = None,
+) -> str:
+    dataset = get_dataset(ctx, dataset_id)
+    if dataset is None or not place_geometry or not var_1_name or not var_2_name:
+        print("panel disabled")
+        return "Error: Panel disabled"
+    return ""
+
+
+@panel.callback(
+    State("@app", "selectedDatasetId"),
     State("@app", "selectedPlaceGeometry"),
     State("select_var_1"),
     State("select_var_2"),
-    Input("@app", "selectedTimeLabel"),
+    State("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
     Output("error_message", "children"),
@@ -137,10 +166,6 @@ def update_plot(
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
-    print(place_geometry)
-    if dataset is None or not place_geometry or not var_1_name or not var_2_name:
-        print("panel disabled")
-        return None, "Error: Panel disabled"
 
     if "time" in dataset.coords:
         if time_label:
@@ -314,19 +339,23 @@ def get_var_select_options(
 
 @panel.callback(
     State("@app", "selectedDatasetId"),
-    Input("@app", "selectedTimeLabel"),
-    # Input("button", "clicked"),
+    State("@app", "selectedPlaceId"),
+    State("@app", "selectedPlaceGroup"),
+    State("@app", "selectedTimeLabel"),
+    Input("button", "clicked"),
     Output("text", "children"),
 )
 def update_text(
     ctx: Context,
     dataset_id: str,
+    place_id: str | None = None,
+    place_group: list[dict[str, Any]] | None = None,
     time_label: str | None = None,
-    # _clicked: bool | None = None,
+    _clicked: bool | None = None,
 ) -> list | None:
-
+    place_name = get_place_name(place_id, place_group)
     if time_label:
-        return [f"{dataset_id} " f"/ {time_label[0:-1]}"]
+        return [f"{dataset_id} / {time_label[0:-1]} / {place_name}"]
     return [f"{dataset_id} "]
 
 
