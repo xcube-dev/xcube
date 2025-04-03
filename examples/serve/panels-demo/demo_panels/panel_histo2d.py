@@ -34,8 +34,13 @@ panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=
 NUM_BINS_MAX = 64
 
 
-@panel.layout(State("@app", "selectedDatasetId"))
-def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
+@panel.layout(
+    State("@app", "selectedDatasetId"),
+    State("@app", "selectedTimeLabel"),
+)
+def render_panel(
+    ctx: Context, dataset_id: str | None = None, time_label: str | None = None
+) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
     plot = VegaChart(
@@ -50,6 +55,12 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
             "height": 400,
         },
     )
+
+    if time_label:
+        text = f"{dataset_id} " f"/ {time_label[0:-1]}"
+    else:
+        text = f"{dataset_id}"
+    place_text = Typography(id="text", children=[text], align="center")
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
@@ -72,6 +83,18 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         },
     )
 
+    control_bar = Box(
+        children=[place_text, controls],
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "alignItems": "center",
+            "justifyContent": "space-between",
+            "width": "100%",
+            "gap": 6,
+        },
+    )
+
     error_message = Typography(id="error_message", style={"color": "red"})
 
     return Box(
@@ -79,7 +102,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
             "Create or select a region shape in the map, then select two "
             "variables from the dropdowns, and press 'Update' to create "
             "a 2D histogram plot.",
-            controls,
+            control_bar,
             plot,
             error_message,
         ],
@@ -114,6 +137,7 @@ def update_plot(
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
+    print(place_geometry)
     if dataset is None or not place_geometry or not var_1_name or not var_2_name:
         print("panel disabled")
         return None, "Error: Panel disabled"
@@ -286,6 +310,24 @@ def get_var_select_options(
             var_name_2 = var_names[0]
 
     return var_names, var_name_1, var_name_2
+
+
+@panel.callback(
+    State("@app", "selectedDatasetId"),
+    State("@app", "selectedTimeLabel"),
+    Input("button", "clicked"),
+    Output("text", "children"),
+)
+def update_text(
+    ctx: Context,
+    dataset_id: str,
+    time_label: str | None = None,
+    _clicked: bool | None = None,
+) -> list | None:
+
+    if time_label:
+        return [f"{dataset_id} " f"/ {time_label[0:-1]}"]
+    return [f"{dataset_id} "]
 
 
 # TODO: Doesn't work. We need to ensure that show_progress() returns
