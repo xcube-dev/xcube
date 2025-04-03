@@ -56,7 +56,6 @@ def render_panel(
         label="Places (points)",
         value="",
         options=place_names,
-        style={"width": "100%"},
     )
 
     button = Button(id="button", text="Update", style={"maxWidth": 100})
