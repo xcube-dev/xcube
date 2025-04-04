@@ -188,23 +188,22 @@ def get_wavelength(
     return result
 
 
-# TODO - add selectedDatasetName to Available State Properties
 @panel.callback(
-    State("@app", "selectedDatasetId"),
+    State("@app", "selectedDatasetTitle"),
     State("@app", "selectedTimeLabel"),
     Input("@app", "selectedTimeLabel"),
     Output("text", "children"),
 )
 def update_text(
     ctx: Context,
-    dataset_id: str,
+    dataset_title: str,
     time_label: str,
     _time_label: bool | None = None,
 ) -> list | None:
 
     if time_label:
-        return [f"{dataset_id} " f"/ {time_label[0:-1]}"]
-    return [f"{dataset_id} "]
+        return [f"{dataset_title} " f"/ {time_label[0:-1]}"]
+    return [f"{dataset_title} "]
 
 
 @panel.callback(
@@ -225,8 +224,9 @@ def update_plot(
     _clicked: bool | None = None,
 ) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
-
-    dataset = get_dataset(ctx, dataset_id)
+    if dataset is None or not place_group or not place:
+        print("panel disabled")
+        return None, "Error: Panel disabled"
 
     place_group = gpd.GeoDataFrame(
         [
@@ -304,7 +304,6 @@ def update_theme(
     return theme_mode
 
 
-# TODO - add selectedDatasetName to Available State Properties
 @panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),

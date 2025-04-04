@@ -38,10 +38,14 @@ NUM_BINS_MAX = 64
 
 @panel.layout(
     State("@app", "selectedDatasetId"),
+    State("@app", "selectedDatasetTitle"),
     State("@app", "selectedTimeLabel"),
 )
 def render_panel(
-    ctx: Context, dataset_id: str | None = None, time_label: str | None = None
+    ctx: Context,
+    dataset_id: str | None = None,
+    dataset_title: str | None = None,
+    time_label: str | None = None,
 ) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
@@ -59,9 +63,9 @@ def render_panel(
     )
 
     if time_label:
-        text = f"{dataset_id} " f"/ {time_label[0:-1]}"
+        text = f"{dataset_title} " f"/ {time_label[0:-1]}"
     else:
-        text = f"{dataset_id}"
+        text = f"{dataset_title}"
     place_text = Typography(id="text", children=[text], align="center")
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
@@ -338,7 +342,7 @@ def get_var_select_options(
 
 
 @panel.callback(
-    State("@app", "selectedDatasetId"),
+    State("@app", "selectedDatasetTitle"),
     State("@app", "selectedPlaceId"),
     State("@app", "selectedPlaceGroup"),
     State("@app", "selectedTimeLabel"),
@@ -347,7 +351,7 @@ def get_var_select_options(
 )
 def update_text(
     ctx: Context,
-    dataset_id: str,
+    dataset_title: str,
     place_id: str | None = None,
     place_group: list[dict[str, Any]] | None = None,
     time_label: str | None = None,
@@ -355,8 +359,8 @@ def update_text(
 ) -> list | None:
     place_name = get_place_name(place_id, place_group)
     if time_label:
-        return [f"{dataset_id} / {time_label[0:-1]} / {place_name}"]
-    return [f"{dataset_id} "]
+        return [f"{dataset_title} / {time_label[0:-1]} / {place_name}"]
+    return [f"{dataset_title} "]
 
 
 # TODO: Doesn't work. We need to ensure that show_progress() returns
