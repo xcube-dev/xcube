@@ -145,7 +145,6 @@ def update_error_message(
 ) -> str:
     dataset = get_dataset(ctx, dataset_id)
     if dataset is None or not place_geometry or not var_1_name or not var_2_name:
-        print("panel disabled")
         return "Error: Panel disabled"
     return ""
 
@@ -190,7 +189,6 @@ def update_plot(
         or place_geometry.is_empty
         or isinstance(place_geometry, shapely.geometry.Point)
     ):
-        print("2-D histogram only works for geometries with a non-zero extent.")
         return (
             None,
             "Error: 2-D histogram only works for geometries with a non-zero extent.",
@@ -198,7 +196,6 @@ def update_plot(
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
-        print("dataset is None after masking, invalid geometry?")
         return None, "Error: dataset is None after masking, invalid geometry?"
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()

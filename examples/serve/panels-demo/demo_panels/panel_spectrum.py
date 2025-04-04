@@ -124,9 +124,7 @@ def update_error_message(
 ) -> str:
     dataset = get_dataset(ctx, dataset_id)
     points = get_places(ctx, place_group)
-    print("points", points)
     if dataset is None or not place_geometry or not points:
-        print("panel disabled")
         return "Error: Panel disabled"
     return ""
 
@@ -225,7 +223,6 @@ def update_plot(
 ) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
     if dataset is None or not place_group or not place:
-        print("panel disabled")
         return None, "Error: Panel disabled"
 
     place_group = gpd.GeoDataFrame(
@@ -251,7 +248,6 @@ def update_plot(
     source = get_wavelength(dataset, place_group, place)
 
     if source is None:
-        print("No reflectances found in Variables")
         return None, "No reflectances found in Variables"
 
     chart = (
