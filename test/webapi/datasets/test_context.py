@@ -676,5 +676,5 @@ class MaybeAssignStoreInstanceIdsTest(unittest.TestCase):
 
     def test_entrypoint_dataset_id(self):
         ctx = get_datasets_ctx("config-entrypoint-sortvalue.yml")
-        entrypoint_config = ctx.get_entrypoint_dataset_id_config()
-        self.assertEqual("demo-1w", entrypoint_config.get("Identifier"))
+        entrypoint_config = ctx.get_entrypoint_dataset_id()
+        self.assertEqual("demo-1w", entrypoint_config)
