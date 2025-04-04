@@ -364,7 +364,7 @@ def update_text(
 
 
 # TODO: Doesn't work. We need to ensure that show_progress() returns
-#   before update_plot()
+#   before update_plot(). EDIT: This cannot work in its current form!
 # @panel.callback(
 #     Input("button", "clicked"),
 #     Output("button", ""),
