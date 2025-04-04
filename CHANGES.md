@@ -17,6 +17,9 @@
   - Updated schema for the `num_levels` parameter which now explains the parameter 
     in more detail.
 
+* Improved Extension Demo Panels.
+  See https://github.com/xcube-dev/xcube/issues/1134
+
 ## Changes in 1.9.0
 
 ### Enhancements
