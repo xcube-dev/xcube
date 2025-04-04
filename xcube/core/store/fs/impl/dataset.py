@@ -96,7 +96,9 @@ ZARR_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
         ),
     ),
     required=[],
-    additional_properties=False,
+    # additional_properties=True because we want to allow passing arbitrary
+    # parameters to xarray.open_dataset()
+    additional_properties=True,
 )
 
 ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
@@ -126,7 +128,9 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             description="If set, an existing dataset will be replaced without warning.",
         ),
     ),
-    additional_properties=False,
+    # additional_properties=True because we want to allow passing arbitrary
+    # parameters to xarray.to_zarr()
+    additional_properties=True,
 )
 
 
@@ -158,28 +162,29 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         consolidated = open_params.pop(
             "consolidated", fs.exists(f"{data_id}/.zmetadata")
         )
+        zarr_store = fs.get_mapper(data_id)
+        if isinstance(cache_size, int) and cache_size > 0:
+            zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
+        if log_access:
+            zarr_store = LoggingZarrStore(zarr_store, name=f"zarr_store({data_id!r})")
+        # TODO: test whether we really need to distinguish here as we know
+        #   we are opening a zarr dataset, even without another backend.
         if engine == "zarr":
-            zarr_store = fs.get_mapper(data_id)
-            if isinstance(cache_size, int) and cache_size > 0:
-                zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
-            if log_access:
-                zarr_store = LoggingZarrStore(
-                    zarr_store, name=f"zarr_store({data_id!r})"
-                )
             try:
                 dataset = xr.open_zarr(
                     zarr_store, consolidated=consolidated, **open_params
                 )
-                dataset.zarr_store.set(zarr_store)
             except ValueError as e:
                 raise DataStoreError(f"Failed to open dataset {data_id!r}: {e}") from e
         else:
             try:
-                dataset = xr.open_dataset(data_id, engine=engine, **open_params)
+                dataset = xr.open_dataset(zarr_store, engine=engine, **open_params)
             except ValueError as e:
                 raise DataStoreError(
                     f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
                 ) from e
+
+        dataset.zarr_store.set(zarr_store)
 
         return dataset
 

@@ -69,6 +69,14 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
             " identifier.",
             nullable=True,
         )
+        schema.properties["base_dataset_open_params"] = JsonObjectSchema(
+            description=(
+                "Optional parameters used for opening the base dataset"
+                " at level 0 if `base_dataset_id` is provided."
+            ),
+            additional_properties=True,
+            nullable=True,
+        )
         schema.properties["tile_size"] = JsonComplexSchema(
             one_of=[
                 JsonIntegerSchema(minimum=1),
