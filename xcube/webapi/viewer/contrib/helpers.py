@@ -18,7 +18,6 @@ def get_dataset(ctx: Context, dataset_id: str | None = None) -> xr.Dataset | Non
 
 
 def get_place_name(place_id: str, place_group: list[dict[str, Any]]) -> str | None:
-    print(place_id, place_group)
     if not place_group or not place_id:
         return None
     for place in place_group:
