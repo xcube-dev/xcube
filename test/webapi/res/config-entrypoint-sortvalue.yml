@@ -39,8 +39,7 @@ Datasets:
     Style: default
     SortValue: 1
 
-EntrypointDatasetId:
-  Identifier: demo-1w
+EntrypointDatasetId: demo-1w
 
 PlaceGroups:
   - Identifier: inside-cube
