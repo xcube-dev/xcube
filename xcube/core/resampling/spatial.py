@@ -98,7 +98,8 @@ def resample_in_space(
     the resampling is a direct rectification.
 
     Args:
-        source_ds: The source dataset.
+        source_ds: The source dataset. Must follow the dimension order of the variables:
+            ("time", "latitude", "longitude").
         source_gm: The source grid mapping.
         target_gm: The target grid mapping. Must be regular.
         ref_ds: An optional dataset that provides the
