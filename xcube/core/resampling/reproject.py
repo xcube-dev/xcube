@@ -54,6 +54,31 @@ def reproject_dataset(
             i_max += 1
         scr_ij_bboxes[:, idx_y, idx_x] = [j_min, i_min, j_max, i_max]
 
+    # get largest bbox
+    i_diff = scr_ij_bboxes[2] - scr_ij_bboxes[0]
+    j_diff = scr_ij_bboxes[3] - scr_ij_bboxes[1]
+    i_diff_max = np.max(i_diff)
+    j_diff_max = np.max(j_diff)
+    x_coords = np.zeros((i_diff_max, num_tiles_y, num_tiles_x), dtype=np.float32)
+    y_coords = np.zeros((j_diff_max, num_tiles_y, num_tiles_x), dtype=np.float32)
+    for i in range(num_tiles_x):
+        for j in range(num_tiles_y):
+            scr_ij_bbox = scr_ij_bboxes[:, j, i]
+
+            i_half = (i_diff_max - i_diff[j, i]) // 2
+            i_start = scr_ij_bbox[0] - i_half
+            i_end = i_start + i_diff_max
+            x_coords[:, j, i] = source_gm.x_coords.data[i_start:i_end]
+
+            j_half = (j_diff_max - j_diff[j, i]) // 2
+            j_start = scr_ij_bbox[1] - j_half
+            j_end = j_start + j_diff_max
+            y_coords[:, j, i] = source_gm.y_coords.data[j_start:j_end]
+
+            scr_ij_bboxes[:, j, i] = [i_start, j_start, i_end, j_end]
+    x_coords = da.from_array(x_coords, chunks=(-1, 1, 1))
+    y_coords = da.from_array(y_coords, chunks=(-1, 1, 1))
+
     # get meshed coordinates
     target_x = da.from_array(target_gm.x_coords.values, chunks=target_gm.tile_width)
     target_y = da.from_array(target_gm.y_coords.values, chunks=target_gm.tile_height)
@@ -93,53 +118,45 @@ def reproject_dataset(
         for idx, chunk_size in enumerate(data_array.chunks[0]):
             dim0_start = idx * chunk_size
             dim0_end = (idx + 1) * chunk_size
-            da_slice = data_array[dim0_start:dim0_end, ...]
 
-            def reproject_block(
-                source_xx: np.ndarray,
-                source_yy: np.ndarray,
-                fill_value: int | float,
-                interpolation: int,
-                block_id=None,
-            ):
-                scr_ij_bbox = scr_ij_bboxes[:, block_id[1], block_id[2]]
-                if np.all(scr_ij_bbox == -1):
-                    return np.full(
-                        (da_slice.shape[0], *source_xx.shape),
-                        fill_value,
-                        dtype=data_array.dtype,
-                    )
-                da_clip = da_slice[
-                    :, scr_ij_bbox[1] : scr_ij_bbox[3], scr_ij_bbox[0] : scr_ij_bbox[2]
-                ]
-                x_name, y_name = source_gm.xy_dim_names
-                y = da_clip[y_name].values
-                x = da_clip[x_name].values
-                data = da_clip.values
-
-                ix = (source_xx - x[0]) / source_gm.x_res
-                iy = (source_yy - y[0]) / -source_gm.y_res
-
-                if interpolation == 0:
-                    ix = np.rint(ix).astype(np.int16)
-                    iy = np.rint(iy).astype(np.int16)
-                    data_reprojected = data[:, iy, ix]
-                else:
-                    raise NotImplementedError()
-
-                return data_reprojected
+            # reshape data array slice
+            scr_data = da.zeros(
+                (
+                    dim0_end - dim0_start,
+                    j_diff_max * num_tiles_y,
+                    i_diff_max * num_tiles_x,
+                ),
+                chunks=(-1, j_diff_max, i_diff_max),
+                dtype=data_array.dtype,
+            )
+            for i in range(num_tiles_x):
+                for j in range(num_tiles_y):
+                    scr_ij_bbox = scr_ij_bboxes[:, j, i]
+                    scr_data[
+                        :,
+                        j * j_diff_max : (j + 1) * j_diff_max,
+                        i * i_diff_max : (i + 1) * i_diff_max,
+                    ] = data_array.data[
+                        dim0_start:dim0_end,
+                        scr_ij_bbox[1] : scr_ij_bbox[3],
+                        scr_ij_bbox[0] : scr_ij_bbox[2],
+                    ]
 
             data_reprojected = da.map_blocks(
                 reproject_block,
                 source_xx,
                 source_yy,
+                scr_data,
+                x_coords,
+                y_coords,
                 dtype=data_array.dtype,
                 chunks=(
-                    da_slice.chunks[0][0],
+                    dim0_end - dim0_start,
                     source_yy.chunks[0][0],
                     source_yy.chunks[1][0],
                 ),
-                fill_value=fill_value,
+                scr_x_res=source_gm.x_res,
+                scr_y_res=source_gm.y_res,
                 interpolation=interpolation,
             )
             data_reprojected = data_reprojected[
@@ -151,3 +168,26 @@ def reproject_dataset(
             da.concatenate(slices_reprojected, axis=0),
         )
     return ds_out
+
+
+def reproject_block(
+    source_xx: np.ndarray,
+    source_yy: np.ndarray,
+    scr_data: np.ndarray,
+    x_coord: np.ndarray,
+    y_coord: np.ndarray,
+    scr_x_res: int | float,
+    scr_y_res: int | float,
+    interpolation: int,
+):
+    ix = (source_xx - x_coord[0]) / scr_x_res
+    iy = (source_yy - y_coord[0]) / -scr_y_res
+
+    if interpolation == 0:
+        ix = np.rint(ix).astype(np.int16)
+        iy = np.rint(iy).astype(np.int16)
+        data_reprojected = scr_data[:, iy, ix]
+    else:
+        raise NotImplementedError()
+
+    return data_reprojected
