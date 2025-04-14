@@ -1,20 +1,22 @@
 from xcube.core.store import new_data_store
 from xcube.core.resampling.reproject import reproject_dataset
+from xcube.core.resampling import resample_in_space
 from xcube.core.gridmapping import GridMapping
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pyproj
+import numpy as np
 
 
 store = new_data_store("s3", root="deep-esdl-public")
 mlds_lc = store.open_data("LC-1x2025x2025-2.0.0.levels")
 ds = mlds_lc.base_dataset
 
-ds = ds.sel(time=slice(datetime(2018, 1, 1), datetime(2022, 1, 1)))
+ds = ds.sel(time=slice(datetime(2020, 1, 1), datetime(2022, 1, 1)))
 ds = ds[["lccs_class"]]
 print(ds)
 
-bbox = [-20, 25, 40, 85]
+bbox = [8, 49, 13, 54]
 target_crs = "EPSG:3035"
 t = pyproj.Transformer.from_crs("EPSG:4326", target_crs, always_xy=True)
 target_bbox = t.transform_bounds(*bbox)
@@ -29,14 +31,29 @@ target_gm = GridMapping.regular(
     tile_size=1000,
 )
 
+# ne reproject
 start = datetime.now()
 ds_reproject = reproject_dataset(ds, target_gm=target_gm)
 elapsed = (datetime.now() - start).total_seconds()
 print(f"Computational time reproject_dataset: {elapsed:.2f}sec")
 print(ds_reproject)
 
+# old reproject via resampling in space
+ds_resampling = ds.sel(lon=slice(-5, 25), lat=slice(60, 40))
+print(ds_resampling)
 start = datetime.now()
-ds_reproject.lccs_class.isel(time=-1)[::10, ::10].plot()
+ds_resampling = resample_in_space(ds_resampling, target_gm=target_gm)
+elapsed = (datetime.now() - start).total_seconds()
+print(f"Computational time resample_in_space: {elapsed:.2f}sec")
+print(ds_resampling)
+
+start = datetime.now()
+fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+ds_reproject.lccs_class.isel(time=-1).plot(ax=ax[0])
+ds_resampling.lccs_class.isel(time=-1).plot(ax=ax[1])
+diff = ds_resampling.lccs_class.isel(time=-1) - ds_reproject.lccs_class.isel(time=-1)
+diff = diff.where(diff != 0, np.nan)
+diff.plot(ax=ax[2])
 elapsed = (datetime.now() - start).total_seconds()
 print(f"Computational time plot: {elapsed:.2f}sec")
 plt.show()
