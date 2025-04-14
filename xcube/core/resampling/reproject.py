@@ -109,7 +109,6 @@ def reproject_dataset(
                         fill_value,
                         dtype=data_array.dtype,
                     )
-                print(scr_ij_bbox)
                 da_clip = da_slice[
                     :, scr_ij_bbox[1] : scr_ij_bbox[3], scr_ij_bbox[0] : scr_ij_bbox[2]
                 ]
@@ -117,7 +116,6 @@ def reproject_dataset(
                 y = da_clip[y_name].values
                 x = da_clip[x_name].values
                 data = da_clip.values
-                print(data)
 
                 ix = (source_xx - x[0]) / source_gm.x_res
                 iy = (source_yy - y[0]) / -source_gm.y_res
