@@ -45,6 +45,7 @@ from ..datatype import (
     DATASET_TYPE,
     GEO_DATA_FRAME_TYPE,
     MULTI_LEVEL_DATASET_TYPE,
+    VECTOR_DATA_CUBE_TYPE,
     DataType,
     DataTypeLike,
 )
@@ -443,7 +444,10 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 data_type = accessor_id_parts[0]
                 format_id = accessor_id_parts[1]
         if isinstance(data, xr.Dataset):
-            data_type = DATASET_TYPE.alias
+            if len(data.xvec.geom_coords) > 0:
+                data_type = VECTOR_DATA_CUBE_TYPE.alias
+            else:
+                data_type = DATASET_TYPE.alias
             format_id = format_id or "zarr"
         elif isinstance(data, MultiLevelDataset):
             data_type = MULTI_LEVEL_DATASET_TYPE.alias
