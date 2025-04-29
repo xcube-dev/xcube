@@ -9,10 +9,12 @@
   within groups displayed in the viewer app's dataset selection dropdown.  (#1135)
 
 * Added a new server-side configuration attribute `DatasetGroups` to allow users to define 
-  the display order of dataset groups in the viewer application.
+  the display order of dataset groups in the viewer application. 
+  See: https://github.com/xcube-dev/xcube-viewer/issues/521
 
 * Introduced support for a `Description` field under `DatasetGroups`, shown as a tooltip 
-  when hovering over group titles in the viewer.
+  when hovering over group titles in the viewer. 
+  See: https://github.com/xcube-dev/xcube-viewer/issues/521
 
 ### Other changes
 
