@@ -67,6 +67,7 @@ COMMON_DATASET_PROPERTIES = dict(
     Title=STRING_SCHEMA,
     Description=STRING_SCHEMA,
     GroupTitle=STRING_SCHEMA,
+    GroupId=STRING_SCHEMA,
     SortValue=NUMBER_SCHEMA,
     Tags=JsonArraySchema(items=STRING_SCHEMA),
     Variables=VARIABLES_SCHEMA,
@@ -248,11 +249,18 @@ ENTRYPOINT_DATASET_ID_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
+DATASET_GROUPS_SCHEMA = JsonObjectSchema(
+    properties=dict(Identifier=IDENTIFIER_SCHEMA, Title=STRING_SCHEMA),
+    required=["Identifier"],
+    additional_properties=False,
+)
+
 CONFIG_SCHEMA = JsonObjectSchema(
     properties=dict(
         DatasetAttribution=ATTRIBUTION_SCHEMA,
         AccessControl=ACCESS_CONTROL_SCHEMA,
         DatasetChunkCacheSize=CHUNK_SIZE_SCHEMA,
+        DatasetGroups=JsonArraySchema(items=DATASET_GROUPS_SCHEMA),
         Datasets=JsonArraySchema(items=DATASET_CONFIG_SCHEMA),
         DataStores=JsonArraySchema(items=DATA_STORE_SCHEMA),
         Styles=JsonArraySchema(items=STYLE_SCHEMA),

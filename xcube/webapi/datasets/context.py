@@ -88,6 +88,7 @@ class DatasetsContext(ResourcesContext):
             self._data_store_pool,
             self._dataset_configs,
             self.entrypoint_dataset_id,
+            self._dataset_groups_config,
         ) = self._process_dataset_configs(self.config, self.base_dir)
         self._cm_styles, self._colormap_registry = self._get_cm_styles()
 
@@ -469,6 +470,10 @@ class DatasetsContext(ResourcesContext):
         assert self._dataset_configs is not None
         return self._dataset_configs
 
+    def get_dataset_groups_configs(self) -> list[DatasetConfig]:
+        assert self._dataset_groups_config is not None
+        return self._dataset_groups_config
+
     def get_entrypoint_dataset_id(self) -> str | None:
         if self.entrypoint_dataset_id:
             return self.entrypoint_dataset_id
@@ -481,10 +486,11 @@ class DatasetsContext(ResourcesContext):
     @classmethod
     def _process_dataset_configs(
         cls, config: ServerConfig, base_dir: str
-    ) -> tuple[DataStorePool, list[dict[str, Any]], str]:
+    ) -> tuple[DataStorePool, list[dict[str, Any]], str, list[dict[str, Any]]]:
         data_store_configs = config.get("DataStores", [])
         dataset_configs = config.get("Datasets", [])
         entrypoint_dataset_id = config.get("EntrypointDatasetId", "")
+        dataset_groups_configs = config.get("DatasetGroups", [])
 
         data_store_pool = DataStorePool()
         for data_store_config_dict in data_store_configs:
@@ -504,7 +510,12 @@ class DatasetsContext(ResourcesContext):
         # entries:
         dataset_configs = [dict(c) for c in dataset_configs]
         cls._maybe_assign_store_instance_ids(dataset_configs, data_store_pool, base_dir)
-        return data_store_pool, dataset_configs, entrypoint_dataset_id
+        return (
+            data_store_pool,
+            dataset_configs,
+            entrypoint_dataset_id,
+            dataset_groups_configs,
+        )
 
     def get_rgb_color_mapping(
         self, ds_id: str, norm_range: tuple[float, float] = (0.0, 1.0)
