@@ -132,8 +132,6 @@ def get_datasets(
                 dataset_dict["groupTitle"] = group_info["Title"]
                 if group_info.get("Description"):
                     dataset_dict["groupDescription"] = group_info["Description"]
-            else:
-                dataset_dict["groupOrder"] = None
 
         LOG.info(f"Collected dataset {ds_id}")
         dataset_dicts.append(dataset_dict)
