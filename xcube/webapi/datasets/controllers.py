@@ -82,7 +82,10 @@ def get_datasets(
     dataset_groups = ctx.get_dataset_groups_configs()
 
     group_info_map = {
-        group["Identifier"]: {"GroupOrder": idx, "Title": group["Title"]}
+        group["Identifier"]: {
+            **group,
+            "GroupOrder": idx,
+        }
         for idx, group in enumerate(dataset_groups)
     }
 
@@ -127,6 +130,8 @@ def get_datasets(
                 group_info = group_info_map[group_id]
                 dataset_dict["groupOrder"] = group_info["GroupOrder"]
                 dataset_dict["groupTitle"] = group_info["Title"]
+                if group_info.get("Description"):
+                    dataset_dict["groupDescription"] = group_info["Description"]
             else:
                 dataset_dict["groupOrder"] = None
 

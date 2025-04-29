@@ -250,8 +250,10 @@ ENTRYPOINT_DATASET_ID_SCHEMA = JsonObjectSchema(
 )
 
 DATASET_GROUPS_SCHEMA = JsonObjectSchema(
-    properties=dict(Identifier=IDENTIFIER_SCHEMA, Title=STRING_SCHEMA),
-    required=["Identifier"],
+    properties=dict(
+        Identifier=IDENTIFIER_SCHEMA, Title=STRING_SCHEMA, Description=STRING_SCHEMA
+    ),
+    required=["Identifier", "Title"],
     additional_properties=False,
 )
 

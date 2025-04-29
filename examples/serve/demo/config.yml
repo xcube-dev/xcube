@@ -32,6 +32,7 @@ DatasetAttribution:
 DatasetGroups:
    - Identifier: first_local
      Title: Zarr
+     Description: This is a zarr dataset group description!
 
    - Identifier: second_local
      Title: GeoTIFF
