@@ -8,6 +8,12 @@
 * Added support for `SortValue` in the server configuration to define dataset sorting 
   within groups displayed in the viewer app's dataset selection dropdown.  (#1135)
 
+* Added a new server-side configuration attribute `DatasetGroups` to allow users to define 
+  the display order of dataset groups in the viewer application.
+
+* Introduced support for a `Description` field under `DatasetGroups`, shown as a tooltip 
+  when hovering over group titles in the viewer.
+
 ### Other changes
 
 * Improved the filesystem data stores (`"file"`, `"s3"`, ...): 
