@@ -264,6 +264,7 @@ class ObserveProgressTest(unittest.TestCase):
 
         self.assertEqual(4, len(res.chunks[0]))
         self.assertTrue(len(observer.calls) >= 3)
+        print("observer_calls:", observer.calls)
         self.assertEqual(
             ("begin", [("computing", 0.0, False, None)]), observer.calls[0]
         )
