@@ -21,7 +21,7 @@ ds = ds.sel(time=slice(datetime(2020, 1, 1), datetime(2022, 1, 1)))
 ds = ds[["lccs_class"]]
 print(ds)
 
-bbox = [0, 40, 20, 60]
+bbox = [8, 49, 13, 54]
 target_crs = "EPSG:3035"
 t = pyproj.Transformer.from_crs("EPSG:4326", target_crs, always_xy=True)
 target_bbox = t.transform_bounds(*bbox)
@@ -44,7 +44,7 @@ print(f"Computational time reproject_dataset: {elapsed:.2f}sec")
 print(ds_reproject)
 
 # old reproject via resampling in space
-ds = ds.sel(lon=slice(-10, 20), lat=slice(70, 30))
+ds = ds.sel(lon=slice(0, 20), lat=slice(60, 45))
 print(ds)
 start = datetime.now()
 ds_resampling = resample_in_space(ds, target_gm=target_gm)
@@ -52,13 +52,13 @@ elapsed = (datetime.now() - start).total_seconds()
 print(f"Computational time resample_in_space: {elapsed:.2f}sec")
 print(ds_resampling)
 
-# start = datetime.now()
-# fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-# ds_reproject.lccs_class.isel(time=-1).plot(ax=ax[0])
-# ds_resampling.lccs_class.isel(time=-1).plot(ax=ax[1])
-# diff = ds_resampling.lccs_class.isel(time=-1) - ds_reproject.lccs_class.isel(time=-1)
-# diff = diff.where(diff != 0, np.nan)
-# diff.plot(ax=ax[2])
-# elapsed = (datetime.now() - start).total_seconds()
-# print(f"Computational time plot: {elapsed:.2f}sec")
-# plt.show()
+start = datetime.now()
+fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+ds_reproject.lccs_class.isel(time=-1).plot(ax=ax[0])
+ds_resampling.lccs_class.isel(time=-1).plot(ax=ax[1])
+diff = ds_resampling.lccs_class.isel(time=-1) - ds_reproject.lccs_class.isel(time=-1)
+diff = diff.where(diff != 0, np.nan)
+diff.plot(ax=ax[2])
+elapsed = (datetime.now() - start).total_seconds()
+print(f"Computational time plot: {elapsed:.2f}sec")
+plt.show()
