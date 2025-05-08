@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "long_name": "number of class changes",
+    "valid_max": 100,
+    "valid_min": 0
+}

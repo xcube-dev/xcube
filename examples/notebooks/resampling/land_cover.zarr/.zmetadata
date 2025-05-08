@@ -1,0 +1,475 @@
+{
+    "metadata": {
+        ".zattrs": {
+            "Conventions": "CF-1.6",
+            "TileSize": "2025:2025",
+            "cdm_data_type": "grid",
+            "comment": "",
+            "contact": "https://www.ecmwf.int/en/about/contact-us/get-support",
+            "creation_date": "20181130T095451Z",
+            "creator_email": "landcover-cci@uclouvain.be",
+            "creator_name": "UCLouvain",
+            "creator_url": "http://www.uclouvain.be/",
+            "geospatial_lat_max": "90.0",
+            "geospatial_lat_min": "-90.0",
+            "geospatial_lat_resolution": "0.002778",
+            "geospatial_lat_units": "degrees_north",
+            "geospatial_lon_max": "180",
+            "geospatial_lon_min": "-180",
+            "geospatial_lon_resolution": "0.002778",
+            "geospatial_lon_units": "degrees_east",
+            "history": "amorgos-4,0, lc-sdr-1.0, lc-sr-1.0, lc-classification-1.0,lc-user-tools-3.13,lc-user-tools-4.3",
+            "id": "ESACCI-LC-L4-LCCS-Map-300m-P1Y-1992-v2.0.7cds",
+            "institution": "UCLouvain",
+            "keywords": "land cover classification,satellite,observation",
+            "keywords_vocabulary": "NASA Global Change Master Directory (GCMD) Science Keywords",
+            "license": "ESA CCI Data Policy: free and open access",
+            "naming_authority": "org.esa-cci",
+            "product_version": "2.0.7cds",
+            "project": "Climate Change Initiative - European Space Agency",
+            "references": "http://www.esa-landcover-cci.org/",
+            "source": "MERIS FR L1B version 5.05, MERIS RR L1B version 8.0, SPOT VGT P",
+            "spatial_resolution": "300m",
+            "standard_name_vocabulary": "NetCDF Climate and Forecast (CF) Standard Names version 21",
+            "summary": "This dataset characterizes the land cover of a particular year (see time_coverage). The land cover was derived from the analysis of satellite data time series of the full period.",
+            "time_coverage_duration": "P1Y",
+            "time_coverage_end": "19921231",
+            "time_coverage_resolution": "P1Y",
+            "time_coverage_start": "19920101",
+            "title": "Land Cover Map of ESA CCI brokered by CDS",
+            "tracking_id": "61b96fd7-42c3-4374-9de1-0dc3b0bcae2a",
+            "type": "ESACCI-LC-L4-LCCS-Map-300m-P1Y"
+        },
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "change_count/.zarray": {
+            "chunks": [
+                1,
+                1000,
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "|u1",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                7200,
+                7200
+            ],
+            "zarr_format": 2
+        },
+        "change_count/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "long_name": "number of class changes",
+            "valid_max": 100,
+            "valid_min": 0
+        },
+        "crs/.zarray": {
+            "chunks": [],
+            "compressor": null,
+            "dtype": "<i4",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [],
+            "zarr_format": 2
+        },
+        "crs/.zattrs": {
+            "_ARRAY_DIMENSIONS": [],
+            "i2m": "0.002777777777778,0.0,0.0,-0.002777777777778,-180.0,90.0",
+            "wkt": "GEOGCS[\"WGS 84\", \n  DATUM[\"World Geodetic System 1984\", \n    SPHEROID[\"WGS 84\", 6378137.0, 298.257223563, AUTHORITY[\"EPSG\",\"7030\"]], \n    AUTHORITY[\"EPSG\",\"6326\"]], \n  PRIMEM[\"Greenwich\", 0.0, AUTHORITY[\"EPSG\",\"8901\"]], \n  UNIT[\"degree\", 0.017453292519943295], \n  AXIS[\"Geodetic longitude\", EAST], \n  AXIS[\"Geodetic latitude\", NORTH], \n  AUTHORITY[\"EPSG\",\"4326\"]]"
+        },
+        "current_pixel_state/.zarray": {
+            "chunks": [
+                1,
+                1000,
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "|i1",
+            "fill_value": -1,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                7200,
+                7200
+            ],
+            "zarr_format": 2
+        },
+        "current_pixel_state/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "flag_meanings": "invalid clear_land clear_water clear_snow_ice cloud cloud_shadow",
+            "flag_values": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "long_name": "LC pixel type mask",
+            "standard_name": "land_cover_lccs status_flag",
+            "valid_max": 5,
+            "valid_min": 0
+        },
+        "lat/.zarray": {
+            "chunks": [
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                7200
+            ],
+            "zarr_format": 2
+        },
+        "lat/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat"
+            ],
+            "axis": "Y",
+            "bounds": "lat_bounds",
+            "long_name": "latitude",
+            "standard_name": "latitude",
+            "units": "degrees_north",
+            "valid_max": 90.0,
+            "valid_min": -90.0
+        },
+        "lat_bounds/.zarray": {
+            "chunks": [
+                1000,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                7200,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "lat_bounds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lat",
+                "bounds"
+            ]
+        },
+        "lccs_class/.zarray": {
+            "chunks": [
+                1,
+                1000,
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "|u1",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                7200,
+                7200
+            ],
+            "zarr_format": 2
+        },
+        "lccs_class/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "ancillary_variables": "processed_flag current_pixel_state observation_count change_count",
+            "flag_colors": "#ffff64 #ffff64 #ffff00 #aaf0f0 #dcf064 #c8c864 #006400 #00a000 #00a000 #aac800 #003c00 #003c00 #005000 #285000 #285000 #286400 #788200 #8ca000 #be9600 #966400 #966400 #966400 #ffb432 #ffdcd2 #ffebaf #ffc864 #ffd278 #ffebaf #00785a #009678 #00dc82 #c31400 #fff5d7 #dcdcdc #fff5d7 #0046c8 #ffffff",
+            "flag_meanings": "no_data cropland_rainfed cropland_rainfed_herbaceous_cover cropland_rainfed_tree_or_shrub_cover cropland_irrigated mosaic_cropland mosaic_natural_vegetation tree_broadleaved_evergreen_closed_to_open tree_broadleaved_deciduous_closed_to_open tree_broadleaved_deciduous_closed tree_broadleaved_deciduous_open tree_needleleaved_evergreen_closed_to_open tree_needleleaved_evergreen_closed tree_needleleaved_evergreen_open tree_needleleaved_deciduous_closed_to_open tree_needleleaved_deciduous_closed tree_needleleaved_deciduous_open tree_mixed mosaic_tree_and_shrub mosaic_herbaceous shrubland shrubland_evergreen shrubland_deciduous grassland lichens_and_mosses sparse_vegetation sparse_tree sparse_shrub sparse_herbaceous tree_cover_flooded_fresh_or_brakish_water tree_cover_flooded_saline_water shrub_or_herbaceous_cover_flooded urban bare_areas bare_areas_consolidated bare_areas_unconsolidated water snow_and_ice",
+            "flag_values": [
+                0,
+                10,
+                11,
+                12,
+                20,
+                30,
+                40,
+                50,
+                60,
+                61,
+                62,
+                70,
+                71,
+                72,
+                80,
+                81,
+                82,
+                90,
+                100,
+                110,
+                120,
+                121,
+                122,
+                130,
+                140,
+                150,
+                151,
+                152,
+                153,
+                160,
+                170,
+                180,
+                190,
+                200,
+                201,
+                202,
+                210,
+                220
+            ],
+            "long_name": "Land cover class defined in LCCS",
+            "standard_name": "land_cover_lccs",
+            "valid_max": 220,
+            "valid_min": 1
+        },
+        "lon/.zarray": {
+            "chunks": [
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                7200
+            ],
+            "zarr_format": 2
+        },
+        "lon/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon"
+            ],
+            "axis": "X",
+            "bounds": "lon_bounds",
+            "long_name": "longitude",
+            "standard_name": "longitude",
+            "units": "degrees_east",
+            "valid_max": 180.0,
+            "valid_min": -180.0
+        },
+        "lon_bounds/.zarray": {
+            "chunks": [
+                1000,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                7200,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "lon_bounds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "lon",
+                "bounds"
+            ]
+        },
+        "observation_count/.zarray": {
+            "chunks": [
+                1,
+                1000,
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<u2",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                7200,
+                7200
+            ],
+            "zarr_format": 2
+        },
+        "observation_count/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "long_name": "number of valid observations",
+            "standard_name": "land_cover_lccs number_of_observations",
+            "valid_max": 32767,
+            "valid_min": 0
+        },
+        "processed_flag/.zarray": {
+            "chunks": [
+                1,
+                1000,
+                1000
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "|i1",
+            "fill_value": -1,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                7200,
+                7200
+            ],
+            "zarr_format": 2
+        },
+        "processed_flag/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "lat",
+                "lon"
+            ],
+            "flag_meanings": "not_processed processed",
+            "flag_values": [
+                0,
+                1
+            ],
+            "long_name": "LC map processed area flag",
+            "standard_name": "land_cover_lccs status_flag",
+            "valid_max": 1,
+            "valid_min": 0
+        },
+        "time/.zarray": {
+            "chunks": [
+                1
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3
+            ],
+            "zarr_format": 2
+        },
+        "time/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time"
+            ],
+            "axis": "T",
+            "bounds": "time_bounds",
+            "calendar": "standard",
+            "long_name": "time",
+            "standard_name": "time",
+            "units": "days since 1970-01-01"
+        },
+        "time_bounds/.zarray": {
+            "chunks": [
+                1,
+                2
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                3,
+                2
+            ],
+            "zarr_format": 2
+        },
+        "time_bounds/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "bounds"
+            ],
+            "calendar": "standard",
+            "units": "days since 1970-01-01 00:00:00"
+        }
+    },
+    "zarr_consolidated_format": 1
+}

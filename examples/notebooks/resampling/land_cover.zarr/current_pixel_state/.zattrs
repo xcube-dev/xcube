@@ -1,0 +1,20 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "lat",
+        "lon"
+    ],
+    "flag_meanings": "invalid clear_land clear_water clear_snow_ice cloud cloud_shadow",
+    "flag_values": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+    ],
+    "long_name": "LC pixel type mask",
+    "standard_name": "land_cover_lccs status_flag",
+    "valid_max": 5,
+    "valid_min": 0
+}
