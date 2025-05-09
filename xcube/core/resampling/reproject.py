@@ -3,6 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import math
+from collections.abc import Hashable, Mapping
+from typing import Any, Callable, Optional, Union
 
 import dask.array as da
 import numpy as np
@@ -10,11 +12,14 @@ import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
+from .affine import affine_transform_dataset
 
-FILLVALUE_UINT8 = 255
-FILLVALUE_UINT16 = 65535
-FILLVALUE_INT = -1
-FILLVALUE_FLOAT = np.nan
+_FILLVALUE_UINT8 = 255
+_FILLVALUE_UINT16 = 65535
+_FILLVALUE_INT = -1
+_FILLVALUE_FLOAT = np.nan
+_INTERPOLATIONS = {"nearest": 0, "triangular": 1, "bilinear": 2}
+_SCALE_LIMIT = 0.95  # scale limit to decide with down-scaling is applied
 
 
 def reproject_dataset(
@@ -23,63 +28,69 @@ def reproject_dataset(
     target_gm: GridMapping | None = None,
     ref_ds: xr.Dataset | None = None,
     fill_value: int | float | None = None,
-    interpolation: int = 0,
+    interpolation: str | None = "nearest",
+    var_configs: Mapping[Hashable, Mapping[str, Any]] | None = None,
 ):
-    """This function reprojects a dataset *source_ds*
-    to another projection defined by *target_gm* or derived by *ref_ds*.
-
-    The function expects *source_ds* or the given
-    *source_gm* to have a two-dimensional
-    coordinate variables that provide spatial x,y coordinates
-    for every data variable with the same spatial dimensions.
-
-    For example, a dataset may comprise variables with
-    spatial dimensions ``var(..., y_dim, x_dim)``,
-    then the function expects coordinates to be provided
-    in two forms:
-
-    2. Two-dimensional ``x_var(y_dim, x_dim)``
-       and ``y_var(y_dim, x_dim)`` (coordinate) variables.
-
-    If *target_gm* is given, and it defines a tile size,
-    or *tile_size* is given and the number of tiles is
-    greater than one in the output's x- or y-direction, then the
-    returned dataset will be composed of lazy, chunked dask
-    arrays. Otherwise, the returned dataset will be composed
-    of ordinary numpy arrays.
-
-    Args:
-        source_ds: Source dataset.
-        source_gm: Source dataset grid mapping.
-        target_gm: Optional target geometry. If not given, output
-            geometry will be computed to spatially fit *dataset* and to
-            retain its spatial resolution.
-        ref_ds: An optional dataset that provides the
-            target grid mapping if *target_gm* is not provided.
-            If *ref_ds* is given, its coordinate variables are copied
-            by reference into the returned dataset.
-        fill_value: fill value to be used for exceeding edges; if None, default
-            values are taken defined by the data type. Fill value for float datasets
-            is set to `np.nan`, fill value for uint8 is set to 255, fill value for
-            uint16 is set to 65535, for all remaining integer datasets fill value
-            is set to -1.
-        interpolation: Interpolation method for computing output pixels.
-            If given, must be "nearest", "triangular", or "bilinear".
-            The default is "nearest". The "triangular" interpolation is
-            performed between 3 and "bilinear" between 4 adjacent source
-            pixels. Both are applied only to variables of
-            floating point type. If you need to interpolate between
-            integer data you should cast it to float first.
-
-    Returns:
-        A reprojected dataset, or None if the requested output does not
-        intersect with *dataset*.
     """
-    # TODO: treat 2d and 3d case
-    # TODO: select interpolation based on dtype
-    # TODO: test interpolation
-    # TODO: write tests
-    # TODO: write comments for code understadning
+    Reprojects a dataset to a new coordinate reference system.
+
+    This function reprojects a dataset (`source_ds`) to a target projection defined
+    by `target_gm`, or inferred from a reference dataset (`ref_ds`) if `target_gm`
+    is not provided.
+
+    The input dataset must have two spatial coordinates. The function also
+    supports 3D data cubes, as long as the non-spatial dimension is the first
+    (e.g., variables shaped like ("time", "y", "x")). Any data variable that does not
+    have two spatial coordinates in the last two dimensions will be excluded from
+    the output.
+
+    Using *var_configs*, the resampling of individual variables can be configured.
+    It is only used, if the target grid mapping has a coarser resolution compared to
+    the source grid mapping and some aggregation needs to be applied before
+    reprojection can be applied. If given, *var_configs* must be a mapping from
+    variable names to configuration dictionaries which can have the following
+    properties:
+
+    * ``aggregator`` (str) - An optional aggregating
+        function. It is used for down-sampling only.
+        Examples are ``numpy.nanmean``, ``numpy.nanmin``,
+        ``numpy.nanmax``.
+        Default is ``numpy.nanmean`` for floating point variables,
+        and None (= nearest neighbor) for integer and bool variables.
+    * ``recover_nan`` (bool) - whether a special algorithm
+        shall be used that is able to recover values that would
+        otherwise yield NaN during resampling.
+        Default is False for all variable types since this
+        may require considerable CPU resources on top.
+
+
+    Ars:
+        source_ds: The dataset to reproject.
+        source_gm: Optional. Grid mapping associated with the source dataset.If not
+            given, `source_gm` is derived from `source_ds`.
+        target_gm: Optional. Target grid mapping. Required if `ref_ds` is not provided.
+        ref_ds: Optional. A reference dataset used to derive the target grid mapping.
+        fill_value: Optional. Fill value for areas outside input bounds. If not
+            provided, defaults are chosen based on data type:
+            - float: NaN
+            - uint8: 255
+            - uint16: 65535
+            - other integers: -1
+        interpolation: Optional. Interpolation method to use. Must be one of:
+            "nearest", "triangular", or "bilinear". Defaults to "nearest".
+            "Triangular" uses 3 adjacent pixels, "bilinear" uses 4. These methods
+            apply only to floating-point data. Convert integer data to float if
+            interpolation is needed.
+        downscale_var_configs: Optional resampling configurations
+            for individual variables applied during downscaling.
+
+    Returns: A reprojected dataset.
+
+    """
+
+    # translate interpolation mode
+    interpolation_mode = _INTERPOLATIONS.get(interpolation or "nearest")
+
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
 
@@ -92,7 +103,36 @@ def reproject_dataset(
         target_gm.crs, source_gm.crs, always_xy=True
     )
 
-    # get indices for each box in source dataset
+    # Source has higher resolution than target.
+    # Downscale first, then reproject
+    bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
+    xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
+    yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height
+    x_scale = source_gm.x_res / xres_trans
+    y_scale = source_gm.y_res / yres_trans
+    if x_scale < _SCALE_LIMIT or y_scale < _SCALE_LIMIT:
+        w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
+        downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+        downscale_target_gm = GridMapping.regular(
+            size=downscaled_size,
+            xy_min=(
+                source_gm.xy_bbox[0] - xres_trans / 2,
+                source_gm.xy_bbox[1] - yres_trans / 2,
+            ),
+            xy_res=(xres_trans, yres_trans),
+            crs=source_gm.crs,
+            tile_size=source_gm.tile_size,
+        )
+        source_ds = affine_transform_dataset(
+            source_ds, source_gm, downscale_target_gm, var_configs
+        )
+        source_gm = GridMapping.from_dataset(source_ds)
+
+    # For each bounding box in the target grid mapping:
+    # - determine the indices of the bbox in the source dataset
+    # - extract the corresponding coordinates for each bbox in the source dataset
+    # - compute the pad_width to handle areas requested by target_gm that exceed the
+    #   bounds of source_gm.
     scr_ij_bboxes, x_coords, y_coords, pad_width = _get_scr_bboxes_indices(
         transformer, source_gm, target_gm
     )
@@ -101,20 +141,37 @@ def reproject_dataset(
     source_xx, source_yy = _transform_gridpoints(transformer, target_gm)
 
     # reproject dataset
+    x_name, y_name = source_gm.xy_dim_names
+    coords = source_ds.coords.to_dataset()
+    coords = coords.drop_vars((x_name, y_name))
     x_name, y_name = target_gm.xy_dim_names
+    coords[x_name] = target_gm.x_coords
+    coords[y_name] = target_gm.y_coords
+    coords["spatial_ref"] = xr.DataArray(0, attrs=target_gm.crs.to_cf())
     ds_out = xr.Dataset(
-        coords={
-            "time": source_ds.time,
-            x_name: target_gm.x_coords,
-            y_name: target_gm.y_coords,
-            "spatial_ref": xr.DataArray(0, attrs=target_gm.crs.to_cf()),
-        },
+        coords=coords,
         attrs=source_ds.attrs,
     )
     xy_dims = (source_gm.xy_dim_names[1], source_gm.xy_dim_names[0])
     for var_name, data_array in source_ds.items():
         if data_array.dims[-2:] != xy_dims:
             continue
+
+        # treat 2d arrays as 3d arrays
+        assert len(data_array.dims) in (
+            2,
+            3,
+        ), f"Data variable {var_name} has {len(data_array.dims)} dimensions."
+        data_array_expanded = False
+        if len(data_array.dims) == 2:
+            data_array = data_array.expand_dims({"dummy": 1})
+            data_array_expanded = True
+
+        numpy_array = False
+        if isinstance(data_array.data, np.ndarray):
+            numpy_array = True
+            data_array = data_array.copy(data=da.from_array(data_array.data, chunks={}))
+
         # reorganize data array slice to align with the
         # chunks of source_xx and source_yy
         scr_data = _reorganize_data_array_slice(
@@ -126,6 +183,7 @@ def reproject_dataset(
             fill_value,
         )
         slices_reprojected = []
+        # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
         for idx, chunk_size in enumerate(data_array.chunks[0]):
             dim0_start = idx * chunk_size
             dim0_end = (idx + 1) * chunk_size
@@ -145,16 +203,25 @@ def reproject_dataset(
                 ),
                 scr_x_res=source_gm.x_res,
                 scr_y_res=source_gm.y_res,
-                interpolation=interpolation,
+                interpolation_mode=interpolation_mode,
             )
             data_reprojected = data_reprojected[
                 :, : target_gm.height, : target_gm.width
             ]
             slices_reprojected.append(data_reprojected)
-        ds_out[var_name] = (
-            ("time", y_name, x_name),
-            da.concatenate(slices_reprojected, axis=0),
-        )
+        array_reprojected = da.concatenate(slices_reprojected, axis=0)
+        if numpy_array:
+            array_reprojected = array_reprojected.compute()
+        if data_array_expanded:
+            ds_out[var_name] = (
+                (y_name, x_name),
+                array_reprojected[0, :, :],
+            )
+        else:
+            ds_out[var_name] = (
+                (data_array.dims[0], y_name, x_name),
+                array_reprojected,
+            )
     return ds_out
 
 
@@ -166,17 +233,17 @@ def _reproject_block(
     y_coord: np.ndarray,
     scr_x_res: int | float,
     scr_y_res: int | float,
-    interpolation: int,
-):
+    interpolation_mode: int,
+) -> np.ndarray:
     ix = (source_xx - x_coord[0]) / scr_x_res
     iy = (source_yy - y_coord[0]) / -scr_y_res
 
-    if interpolation == 0:
+    if interpolation_mode == 0:
         # interpolation == "nearest"
         ix = np.rint(ix).astype(np.int16)
         iy = np.rint(iy).astype(np.int16)
         data_reprojected = scr_data[:, iy, ix]
-    elif interpolation == 1:
+    elif interpolation_mode == 1:
         # interpolation == "triangular"
         ix_ceil = np.ceil(ix).astype(np.int16)
         ix_floor = np.floor(ix).astype(np.int16)
@@ -189,21 +256,21 @@ def _reproject_block(
         value_10 = scr_data[:, iy_ceil, ix_floor]
         value_11 = scr_data[:, iy_ceil, ix_ceil]
         mask = diff_ix + diff_iy < 1.0
-        mask = np.repeat(mask[np.newaxis, :, :], scr_data.shape[0], axis=0)
+        mask_3d = np.repeat(mask[np.newaxis, :, :], scr_data.shape[0], axis=0)
         data_reprojected = np.zeros(
             (scr_data.shape[0], iy.shape[0], iy.shape[1]), dtype=scr_data.dtype
         )
         # Closest triangle
-        data_reprojected[mask] = (
-            value_00[mask]
-            + diff_ix[mask] * (value_01[mask] - value_00[mask])
-            + diff_iy[mask] * (value_10[mask] - value_00[mask])
+        data_reprojected[mask_3d] = (
+            value_00[mask_3d]
+            + diff_ix[mask] * (value_01[mask_3d] - value_00[mask_3d])
+            + diff_iy[mask] * (value_10[mask_3d] - value_00[mask_3d])
         )
         # Opposite triangle
-        data_reprojected[~mask] = (
-            value_11[~mask]
-            + (1.0 - diff_ix[~mask]) * (value_10[~mask] - value_11[~mask])
-            + (1.0 - diff_iy[~mask]) * (value_01[~mask] - value_11[~mask])
+        data_reprojected[~mask_3d] = (
+            value_11[~mask_3d]
+            + (1.0 - diff_ix[~mask]) * (value_10[~mask_3d] - value_11[~mask_3d])
+            + (1.0 - diff_iy[~mask]) * (value_01[~mask_3d] - value_11[~mask_3d])
         )
     else:
         # interpolation == "bilinear"
@@ -228,7 +295,7 @@ def _get_scr_bboxes_indices(
     transformer: pyproj.Transformer,
     source_gm: GridMapping,
     target_gm: GridMapping,
-) -> (np.ndarray, da.Array, da.Array):
+) -> (np.ndarray, da.Array, da.Array, tuple[tuple[int]]):
     num_tiles_x = math.ceil(target_gm.width / target_gm.tile_width)
     num_tiles_y = math.ceil(target_gm.height / target_gm.tile_height)
 
@@ -252,8 +319,8 @@ def _get_scr_bboxes_indices(
     # This ensures uniform chunk sizes, which are required for da.map_blocks.
     i_diff = scr_ij_bboxes[2] - scr_ij_bboxes[0]
     j_diff = scr_ij_bboxes[3] - scr_ij_bboxes[1]
-    i_diff_max = np.max(i_diff)
-    j_diff_max = np.max(j_diff)
+    i_diff_max = np.max(i_diff) + 1
+    j_diff_max = np.max(j_diff) + 1
     for i in range(num_tiles_x):
         for j in range(num_tiles_y):
             scr_ij_bbox = scr_ij_bboxes[:, j, i]
@@ -346,13 +413,13 @@ def _get_fill_value(
 ) -> int | float:
     if fill_value is None:
         if data_array.dtype == np.uint8:
-            fill_value = FILLVALUE_UINT8
+            fill_value = _FILLVALUE_UINT8
         elif data_array.dtype == np.uint16:
-            fill_value = FILLVALUE_UINT16
+            fill_value = _FILLVALUE_UINT16
         elif np.issubdtype(data_array.dtype, np.integer):
-            fill_value = FILLVALUE_INT
+            fill_value = _FILLVALUE_INT
         else:
-            fill_value = FILLVALUE_FLOAT
+            fill_value = _FILLVALUE_FLOAT
 
     return fill_value
 
