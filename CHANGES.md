@@ -1,5 +1,8 @@
 ## Changes in 1.9.2 (in development)
 
+### Other changes
+
+* Make test suite compatible with click >=8.2.0 (#1155)
 
 ## Changes in 1.9.1 
 

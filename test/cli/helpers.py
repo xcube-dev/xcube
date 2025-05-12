@@ -19,7 +19,7 @@ TEST_ZARR_DIR = "test.zarr"
 
 class CliTest(unittest.TestCase, metaclass=ABCMeta):
     def invoke_cli(self, args: list[str]):
-        self.runner = click.testing.CliRunner(mix_stderr=False)
+        self.runner = click.testing.CliRunner()
         # noinspection PyTypeChecker
         return self.runner.invoke(cli, args, catch_exceptions=False)
 
