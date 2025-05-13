@@ -4,7 +4,7 @@
 
 import math
 from collections.abc import Hashable, Mapping
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 import dask.array as da
 import numpy as np
@@ -12,6 +12,7 @@ import pyproj
 import xarray as xr
 
 from xcube.core.gridmapping import GridMapping
+from xcube.core.geom import clip_dataset_by_geometry
 from .affine import affine_transform_dataset
 
 _FILLVALUE_UINT8 = 255
@@ -105,28 +106,9 @@ def reproject_dataset(
 
     # Source has higher resolution than target.
     # Downscale first, then reproject
-    bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
-    xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
-    yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height
-    x_scale = source_gm.x_res / xres_trans
-    y_scale = source_gm.y_res / yres_trans
-    if x_scale < _SCALE_LIMIT or y_scale < _SCALE_LIMIT:
-        w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
-        downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
-        downscale_target_gm = GridMapping.regular(
-            size=downscaled_size,
-            xy_min=(
-                source_gm.xy_bbox[0] - xres_trans / 2,
-                source_gm.xy_bbox[1] - yres_trans / 2,
-            ),
-            xy_res=(xres_trans, yres_trans),
-            crs=source_gm.crs,
-            tile_size=source_gm.tile_size,
-        )
-        source_ds = affine_transform_dataset(
-            source_ds, source_gm, downscale_target_gm, var_configs
-        )
-        source_gm = GridMapping.from_dataset(source_ds)
+    source_ds, source_gm = _downscale_source_dataset(
+        source_ds, source_gm, target_gm, transformer, var_configs=var_configs
+    )
 
     # For each bounding box in the target grid mapping:
     # - determine the indices of the bbox in the source dataset
@@ -257,20 +239,22 @@ def _reproject_block(
         value_11 = scr_data[:, iy_ceil, ix_ceil]
         mask = diff_ix + diff_iy < 1.0
         mask_3d = np.repeat(mask[np.newaxis, :, :], scr_data.shape[0], axis=0)
+        diff_ix = np.repeat(diff_ix[np.newaxis, :, :], scr_data.shape[0], axis=0)
+        diff_iy = np.repeat(diff_iy[np.newaxis, :, :], scr_data.shape[0], axis=0)
         data_reprojected = np.zeros(
             (scr_data.shape[0], iy.shape[0], iy.shape[1]), dtype=scr_data.dtype
         )
         # Closest triangle
         data_reprojected[mask_3d] = (
             value_00[mask_3d]
-            + diff_ix[mask] * (value_01[mask_3d] - value_00[mask_3d])
-            + diff_iy[mask] * (value_10[mask_3d] - value_00[mask_3d])
+            + diff_ix[mask_3d] * (value_01[mask_3d] - value_00[mask_3d])
+            + diff_iy[mask_3d] * (value_10[mask_3d] - value_00[mask_3d])
         )
         # Opposite triangle
         data_reprojected[~mask_3d] = (
             value_11[~mask_3d]
-            + (1.0 - diff_ix[~mask]) * (value_10[~mask_3d] - value_11[~mask_3d])
-            + (1.0 - diff_iy[~mask]) * (value_01[~mask_3d] - value_11[~mask_3d])
+            + (1.0 - diff_ix[~mask_3d]) * (value_10[~mask_3d] - value_11[~mask_3d])
+            + (1.0 - diff_iy[~mask_3d]) * (value_01[~mask_3d] - value_11[~mask_3d])
         )
     else:
         # interpolation == "bilinear"
@@ -289,6 +273,41 @@ def _reproject_block(
         data_reprojected = value_u0 + diff_iy * (value_u1 - value_u0)
 
     return data_reprojected
+
+
+def _downscale_source_dataset(
+    source_ds: xr.Dataset,
+    source_gm: GridMapping,
+    target_gm: GridMapping,
+    transformer: pyproj.Transformer,
+    var_configs: Mapping[Hashable, Mapping[str, Any]] | None = None,
+):
+    bbox_trans = transformer.transform_bounds(*target_gm.xy_bbox)
+    xres_trans = (bbox_trans[2] - bbox_trans[0]) / target_gm.width
+    yres_trans = (bbox_trans[3] - bbox_trans[1]) / target_gm.height
+    x_scale = source_gm.x_res / xres_trans
+    y_scale = source_gm.y_res / yres_trans
+    if x_scale < _SCALE_LIMIT or y_scale < _SCALE_LIMIT:
+        # clip source dataset to the transformed bounding box defined by
+        # target grid mapping, so that affine_transform_dataset is not that heavy
+        source_xy_bbox = transformer.transform_bounds(*target_gm.xy_bbox)
+        source_ds = clip_dataset_by_geometry(source_ds, source_xy_bbox)
+        source_gm = GridMapping.from_dataset(source_ds)
+        w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
+        downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
+        downscale_target_gm = GridMapping.regular(
+            size=downscaled_size,
+            xy_min=(source_gm.xy_bbox[0], source_gm.xy_bbox[1]),
+            xy_res=(xres_trans, yres_trans),
+            crs=source_gm.crs,
+            tile_size=source_gm.tile_size,
+        )
+        source_ds = affine_transform_dataset(
+            source_ds, source_gm, downscale_target_gm, var_configs
+        )
+        source_gm = GridMapping.from_dataset(source_ds)
+
+    return source_ds, source_gm
 
 
 def _get_scr_bboxes_indices(
