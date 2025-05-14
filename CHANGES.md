@@ -4,6 +4,13 @@
 * Pinned `tornado >=6.0,<6.5` due to an incompatibility with current 
   xcube server implementation.
 
+### Enhancements
+
+* Added `xcube.core.resampling.reproject_dataset`, a new method for reprojecting 
+  datasets to a different coordinate reference system. It offers improved 
+  computational efficiency and robustness compared to 
+  `xcube.core.resampling.resample_in_space`.
+
 ## Changes in 1.9.1 
 
 ### Enhancements

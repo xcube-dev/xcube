@@ -104,8 +104,7 @@ def reproject_dataset(
         target_gm.crs, source_gm.crs, always_xy=True
     )
 
-    # Source has higher resolution than target.
-    # Downscale first, then reproject
+    # If source has higher resolution than target, downscale first, then reproject
     source_ds, source_gm = _downscale_source_dataset(
         source_ds, source_gm, target_gm, transformer, var_configs=var_configs
     )
@@ -204,6 +203,7 @@ def reproject_dataset(
                 (data_array.dims[0], y_name, x_name),
                 array_reprojected,
             )
+        ds_out[var_name].attrs = data_array.attrs
     return ds_out
 
 
@@ -305,6 +305,11 @@ def _downscale_source_dataset(
         source_ds = affine_transform_dataset(
             source_ds, source_gm, downscale_target_gm, var_configs
         )
+        var_bounds = (
+            source_ds[var_name].attrs.get("bounds")
+            for var_name in source_gm.xy_var_names
+        )
+        source_ds = source_ds.drop_vars(var_bounds)
         source_gm = GridMapping.from_dataset(source_ds)
 
     return source_ds, source_gm
