@@ -129,16 +129,16 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         # test projected CRS finer resolution
         # test if subset calculation works as expected
         target_gm = GridMapping.regular(
-            size=(3, 3), xy_min=(4320020, 3382450), xy_res=120, crs="epsg:3035"
+            size=(3, 3), xy_min=(4320050, 3382500), xy_res=120, crs="epsg:3035"
         )
         target_ds = reproject_dataset(source_ds, target_gm=target_gm)
         np.testing.assert_almost_equal(
             target_ds.band_1.values,
             np.array(
                 [
-                    [6, 7, 8],
-                    [11, 12, 13],
-                    [16, 17, 18],
+                    [0, 1, 2],
+                    [10, 11, 12],
+                    [15, 16, 17],
                 ],
                 dtype=target_ds.band_1.dtype,
             ),
@@ -202,8 +202,8 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
             source_ds, target_gm=target_gm, interpolation="triangular"
         )
         self.assertCountEqual(["temperature"], list(target_ds.data_vars))
-        self.assertEqual(target_ds.temperature.values[0, 0, 0], 6453.585)
-        self.assertEqual(target_ds.temperature.values[0, -1, -1], 3085.944)
+        self.assertEqual(target_ds.temperature.values[0, 0, 0], 6427.7188)
+        self.assertEqual(target_ds.temperature.values[0, -1, -1], 3085.9507)
         self.assertEqual(
             [2, 5, 5],
             [
@@ -217,8 +217,8 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
             source_ds, target_gm=target_gm, interpolation="bilinear"
         )
         self.assertCountEqual(["temperature"], list(target_ds.data_vars))
-        self.assertEqual(target_ds.temperature.values[0, 0, 0], 6453.584742395412)
-        self.assertEqual(target_ds.temperature.values[0, -1, -1], 3085.944063223769)
+        self.assertEqual(target_ds.temperature.values[0, 0, 0], 6427.718652710034)
+        self.assertEqual(target_ds.temperature.values[0, -1, -1], 3085.9507290783004)
         self.assertEqual(
             [2, 5, 5],
             [
