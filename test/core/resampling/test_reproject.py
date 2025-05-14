@@ -6,8 +6,8 @@ import unittest
 from test.sampledata import SourceDatasetMixin
 
 import numpy as np
-import xarray as xr
 import pyproj
+import xarray as xr
 
 from xcube.core.gridmapping import CRS_WGS84, GridMapping
 from xcube.core.resampling import reproject_dataset
