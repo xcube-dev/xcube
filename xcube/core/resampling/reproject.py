@@ -291,8 +291,13 @@ def _downscale_source_dataset(
     if x_scale < _SCALE_LIMIT or y_scale < _SCALE_LIMIT:
         # clip source dataset to the transformed bounding box defined by
         # target grid mapping, so that affine_transform_dataset is not that heavy
-        source_xy_bbox = transformer.transform_bounds(*target_gm.xy_bbox)
-        source_ds = clip_dataset_by_geometry(source_ds, source_xy_bbox)
+        bbox_trans = [
+            bbox_trans[0] - 2 * source_gm.x_res,
+            bbox_trans[1] - 2 * source_gm.y_res,
+            bbox_trans[2] + 2 * source_gm.x_res,
+            bbox_trans[3] + 2 * source_gm.y_res,
+        ]
+        source_ds = clip_dataset_by_geometry(source_ds, bbox_trans)
         source_gm = GridMapping.from_dataset(source_ds)
         w, h = round(x_scale * source_gm.width), round(y_scale * source_gm.height)
         downscaled_size = (w if w >= 2 else 2, h if h >= 2 else 2)
@@ -306,10 +311,11 @@ def _downscale_source_dataset(
         source_ds = affine_transform_dataset(
             source_ds, source_gm, downscale_target_gm, var_configs
         )
-        var_bounds = (
-            source_ds[var_name].attrs.get("bounds")
+        var_bounds = [
+            source_ds[var_name].attrs["bounds"]
             for var_name in source_gm.xy_var_names
-        )
+            if "bounds" in source_ds[var_name].attrs
+        ]
         source_ds = source_ds.drop_vars(var_bounds)
         source_gm = GridMapping.from_dataset(source_ds)
 
