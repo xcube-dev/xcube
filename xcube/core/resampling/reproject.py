@@ -11,8 +11,9 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from xcube.core.gridmapping import GridMapping
 from xcube.core.geom import clip_dataset_by_geometry
+from xcube.core.gridmapping import GridMapping
+
 from .affine import affine_transform_dataset
 
 _FILLVALUE_UINT8 = 255
