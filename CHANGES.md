@@ -4,6 +4,13 @@
 
 * Make test suite compatible with click >=8.2.0 (#1155)
 
+### Enhancements
+
+* Added `xcube.core.resampling.reproject_dataset`, a new method for reprojecting 
+  datasets to a different coordinate reference system. It offers improved 
+  computational efficiency and robustness compared to 
+  `xcube.core.resampling.resample_in_space`.
+
 ## Changes in 1.9.1 
 
 ### Enhancements
