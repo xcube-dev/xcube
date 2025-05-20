@@ -31,7 +31,7 @@ def reproject_dataset(
     ref_ds: xr.Dataset | None = None,
     fill_value: int | float | None = None,
     interpolation: str | None = "nearest",
-    var_configs: Mapping[Hashable, Mapping[str, Any]] | None = None,
+    downscale_var_configs: Mapping[Hashable, Mapping[str, Any]] | None = None,
 ):
     """
     Reprojects a dataset to a new coordinate reference system.
@@ -46,27 +46,7 @@ def reproject_dataset(
     have two spatial coordinates in the last two dimensions will be excluded from
     the output.
 
-    Using *var_configs*, the resampling of individual variables can be configured.
-    It is only used, if the target grid mapping has a coarser resolution compared to
-    the source grid mapping and some aggregation needs to be applied before
-    reprojection can be applied. If given, *var_configs* must be a mapping from
-    variable names to configuration dictionaries which can have the following
-    properties:
-
-    * ``aggregator`` (str) - An optional aggregating
-        function. It is used for down-sampling only.
-        Examples are ``numpy.nanmean``, ``numpy.nanmin``,
-        ``numpy.nanmax``.
-        Default is ``numpy.nanmean`` for floating point variables,
-        and None (= nearest neighbor) for integer and bool variables.
-    * ``recover_nan`` (bool) - whether a special algorithm
-        shall be used that is able to recover values that would
-        otherwise yield NaN during resampling.
-        Default is False for all variable types since this
-        may require considerable CPU resources on top.
-
-
-    Ars:
+    Args:
         source_ds: The dataset to reproject.
         source_gm: Optional. Grid mapping associated with the source dataset.If not
             given, `source_gm` is derived from `source_ds`.
@@ -74,20 +54,48 @@ def reproject_dataset(
         ref_ds: Optional. A reference dataset used to derive the target grid mapping.
         fill_value: Optional. Fill value for areas outside input bounds. If not
             provided, defaults are chosen based on data type:
-            - float: NaN
-            - uint8: 255
-            - uint16: 65535
-            - other integers: -1
+                - float: NaN
+                - uint8: 255
+                - uint16: 65535
+                - other integers: -1
         interpolation: Optional. Interpolation method to use. Must be one of:
             "nearest", "triangular", or "bilinear". Defaults to "nearest".
             "Triangular" uses 3 adjacent pixels, "bilinear" uses 4. These methods
             apply only to floating-point data. Convert integer data to float if
             interpolation is needed.
-        downscale_var_configs: Optional resampling configurations
-            for individual variables applied during downscaling.
+        downscale_var_configs (Optional[Dict[str, Dict]]): Optional resampling
+            configurations for individual variables. Used when the target resolution
+            is coarser than the source. It is a mapping from variable names to
+            configuration dictionaries which can have the following properties:
+               - ``aggregator`` (str) - An optional aggregating
+                    function. It is used for down-sampling only.
+                    Examples are ``numpy.nanmean``, ``numpy.nanmin``,
+                    ``numpy.nanmax``.
+                    Default is ``numpy.nanmean`` for floating point variables,
+                    and None (= nearest neighbor) for integer and bool variables.
+               - ``recover_nan`` (bool) - whether a special algorithm
+                    shall be used that is able to recover values that would
+                    otherwise yield NaN during resampling.
+                    Default is False for all variable types since this
+                    may require considerable CPU resources on top.
 
-    Returns: A reprojected dataset.
+    Returns:
+    The reprojected dataset includes only those variables whose last two dimensions are
+    spatial coordinates. The grid mapping information is stored as a coordinate named
+    `spatial_ref`, which is the default convention in `xarray`.
 
+
+    Notes:
+        This method is a high-performance alternative to `xcube.core.resampling.resample_in_space`
+        for reprojecting datasets to different coordinate reference systems (CRS). It is
+        ideal for reprojection between regular grids. It improves computational efficiency
+        and simplifies the reprojection process.
+
+        The methods `reproject_dataset` and `resample_in_space` produce nearly identical
+        results when reprojecting to a different CRS, with only negligible differences.
+        `resample_in_space` remains available to preserve compatibility with existing
+        services. Once `reproject_dataset` proves stable in production use, it may be
+        integrated into `resample_in_space`.
     """
 
     # translate interpolation mode
@@ -107,7 +115,7 @@ def reproject_dataset(
 
     # If source has higher resolution than target, downscale first, then reproject
     source_ds, source_gm = _downscale_source_dataset(
-        source_ds, source_gm, target_gm, transformer, var_configs=var_configs
+        source_ds, source_gm, target_gm, transformer, var_configs=downscale_var_configs
     )
 
     # For each bounding box in the target grid mapping:

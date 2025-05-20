@@ -6,10 +6,29 @@
 
 ### Enhancements
 
-* Added `xcube.core.resampling.reproject_dataset`, a new method for reprojecting 
-  datasets to a different coordinate reference system. It offers improved 
-  computational efficiency and robustness compared to 
-  `xcube.core.resampling.resample_in_space`.
+* Introduced a more efficient and robust approach for dataset reprojection:
+  
+  * **New method:** Added `xcube.core.resampling.reproject_dataset`, a high-performance 
+    alternative to `xcube.core.resampling.resample_in_space` for reprojecting datasets
+    to different coordinate reference systems (CRS).
+
+  * **Recommended usage:** Ideal for reprojection between regular grids. It improves 
+   computational efficiency and simplifies the reprojection process.
+
+  * **Validation:** The notebook `examples/notebook/resampling/reproject_esa_cci_landcover_new_method.ipynb`
+    shows that `reproject_dataset` and `resample_in_space` produce nearly identical
+    results when reprojecting to a different CRS, with only negligible differences.
+
+  * **Backward compatibility:** `resample_in_space` remains available to preserve
+    compatibility with existing services. Once `reproject_dataset` proves stable in 
+    production use, it may be integrated into `resample_in_space`.
+
+  * **Technical context:** `resample_in_space` currently uses either affine transforms 
+    or the [Spatial Rectification Algorithm](https://xcube.readthedocs.io/en/latest/rectify.html#spatial-rectification-algorithm),
+    which is specialized for non-regular 2D grids (e.g., Sentinel-3). While applicable 
+    to regular grid reprojection, the algorithm is unnecessarily complex for such cases.
+
+
 
 ## Changes in 1.9.1 
 
