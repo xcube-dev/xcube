@@ -39,7 +39,7 @@ dependencies:
   - setuptools >=41.0
   - shapely >=1.6
   - tabulate >=0.9
-  - tornado >=6.0
+  - tornado >=6.0,<6.5
   - urllib3 >=2.0
   - xarray >=2024.7
   - zarr >=2.11,<3  # until we can ensure zarr 3 compatibility; see Issue #1102
