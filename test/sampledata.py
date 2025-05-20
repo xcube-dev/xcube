@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import dask.array as da
 import numpy as np
 import pandas as pd
 import pyproj
@@ -383,6 +384,35 @@ class SourceDatasetMixin:
             coords=dict(x=x, y=y, spatial_ref=spatial_ref),
         )
         ds.spatial_ref.attrs = pyproj.CRS.from_epsg("32632").to_cf()
+        return ds
+
+    @classmethod
+    def new_complex_dataset_for_reproject(cls):
+        nt, nx, ny = 10, 100, 100
+        chunks = {"time": 2, "x": 25, "y": 25}
+
+        # Create coordinate arrays
+        times = pd.date_range("2023-01-01", periods=nt, freq="D")
+        x = np.linspace(3900000, 4500000, nx)
+        y = np.linspace(2600000, 3200000, ny)
+        temp_data = da.from_array(
+            np.arange(nt * nx * ny, dtype=np.float32).reshape(nt, nx, ny),
+            chunks=(chunks["time"], chunks["x"], chunks["y"]),
+        )
+        onedim_data = da.from_array(np.arange(nt), chunks=(chunks["time"]))
+        spatial_ref = np.array(0)
+        ds = xr.Dataset(
+            dict(
+                temperature=xr.DataArray(
+                    temp_data,
+                    dims=("time", "y", "x"),
+                    attrs=dict(grid_mapping="spatial_ref"),
+                ),
+                onedim_data=xr.DataArray(onedim_data, dims=("time")),
+            ),
+            coords=dict(time=times, x=x, y=y, spatial_ref=spatial_ref),
+        )
+        ds.spatial_ref.attrs = pyproj.CRS.from_epsg("3035").to_cf()
         return ds
 
     @classmethod
