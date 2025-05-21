@@ -1,12 +1,23 @@
-## Changes in 1.9.2 (in development)
+## Changes in 1.10.0
+
+### Enhancements
+
+* Bundled [xcube Viewer 1.6.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.6.0)
+  that comes with enhanced layer management.
+
+### Other changes
 
 * Make test suite compatible with click >=8.2.0 (#1155)
+
 * Pinned `tornado >=6.0,<6.5` due to an incompatibility with current 
   xcube server implementation.
 
 ## Changes in 1.9.1 
 
 ### Enhancements
+
+* Bundled [xcube Viewer 1.5.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.5.1)
+  with many fixes.
 
 * Introduced a server-side configuration attribute `EntrypointDatasetId` to specify 
   the initial dataset that should be displayed in the viewer application upon loading. (#1135)
