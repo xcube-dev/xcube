@@ -696,9 +696,9 @@ class PreloadedDataStore(DataStore):
     This class solely acts as a protocol description or marker interface for `DataStore` 
     instances returned from another data store's `preload_data` method.
 
-    This class is not intended to be instantiated or returned directly.
-    It exists solely to indicate that an additional property `preload_handle` is
-    logically associated with the base class.
+    The data stores returned from `preload_data` are not required to directly implement this interface.
+    However, their instances must provide an attribute `preload_handle` of type `PreloadHandle`
+    that is used to represent the pre-loading process and interact with it.
 
     This approach helps make the source code more understandable even though instances
     of this class are not used at runtime. Instead, a different subclass of
