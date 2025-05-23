@@ -693,7 +693,8 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
 class PreloadedDataStore(DataStore):
     """A preload data store is a multable data store which contains the preload handle.
-    This is a marker subclass of `DataStore` used for documentation and clarity.
+    This class solely acts as a protocol description or marker interface for `DataStore` 
+    instances returned from another data store's `preload_data` method.
 
     This class is not intended to be instantiated or returned directly.
     It exists solely to indicate that an additional property `preload_handle` is
