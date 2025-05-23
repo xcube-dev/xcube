@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Container, Iterator
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, TypeAlias
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util.extension import Extension, ExtensionPredicate, ExtensionRegistry
@@ -691,7 +691,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
         """
 
 
-class PreloadedDataStore(DataStore):
+class Preloaded(DataStore):
     """A preload data store is a multable data store which contains the preload handle.
     This class solely acts as a protocol description or marker interface for `DataStore` 
     instances returned from another data store's `preload_data` method.
@@ -715,3 +715,6 @@ class PreloadedDataStore(DataStore):
         Implementors of this interface may use a `ExecutorPreloadHandle` or consider
         returning a `NullPreloadHandle` if the progress is not observable.
         """
+
+
+PreloadedDataStore: TypeAlias = DataStore | Preloaded
