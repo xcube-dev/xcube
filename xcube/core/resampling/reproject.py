@@ -431,6 +431,7 @@ def _transform_gridpoints(
     target_xx, target_yy = da.meshgrid(target_x, target_y)
 
     # get transformed coordinates
+    # noinspection PyShadowingNames
     def transform_block(target_xx: np.ndarray, target_yy: np.ndarray):
         trans_xx, trans_yy = transformer.transform(target_xx, target_yy)
         return np.stack([trans_xx, trans_yy])
