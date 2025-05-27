@@ -60,7 +60,7 @@ def reproject_dataset(
                 - other integers: -1
         interpolation: Optional. Interpolation method to use. Must be one of:
             "nearest", "triangular", or "bilinear". Defaults to "nearest".
-            "Triangular" uses 3 adjacent pixels, "bilinear" uses 4. These methods
+            "triangular" uses 3 adjacent pixels, "bilinear" uses 4. These methods
             apply only to floating-point data. Convert integer data to float if
             interpolation is needed.
         downscale_var_configs (Optional[Dict[str, Dict]]): Optional resampling
