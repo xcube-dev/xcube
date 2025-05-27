@@ -80,9 +80,10 @@ def reproject_dataset(
                     may require considerable CPU resources on top.
 
     Returns:
-    The reprojected dataset includes only those variables whose last two dimensions are
-    spatial coordinates. The grid mapping information is stored as a coordinate named
-    `spatial_ref`, which is the default convention in `xarray`.
+        The reprojected dataset includes only those variables whose last two 
+        dimensions are spatial coordinates. The grid mapping information is 
+        stored as a coordinate named `spatial_ref`, which is the default convention 
+        in `xarray`.
 
 
     Notes:
