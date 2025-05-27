@@ -80,9 +80,9 @@ def reproject_dataset(
                     may require considerable CPU resources on top.
 
     Returns:
-        The reprojected dataset includes only those variables whose last two 
-        dimensions are spatial coordinates. The grid mapping information is 
-        stored as a coordinate named `spatial_ref`, which is the default convention 
+        The reprojected dataset includes only those variables whose last two
+        dimensions are spatial coordinates. The grid mapping information is
+        stored as a coordinate named `spatial_ref`, which is the default convention
         in `xarray`.
 
 
@@ -101,6 +101,11 @@ def reproject_dataset(
 
     # translate interpolation mode
     interpolation_mode = _INTERPOLATIONS.get(interpolation or "nearest")
+    if not isinstance(interpolation_mode, int):
+        raise ValueError(
+            f"invalid interpolation: {interpolation!r}. The argument "
+            "interpolation must be one of 'nearest', 'triangular', or 'bilinear'."
+        )
 
     if source_gm is None:
         source_gm = GridMapping.from_dataset(source_ds)
