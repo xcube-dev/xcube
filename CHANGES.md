@@ -14,6 +14,7 @@
 
   * **Recommended usage:** Ideal for reprojection between regular grids. It improves 
    computational efficiency and simplifies the reprojection process.
+   It is not addressing _rectification_ from irregular to regular grids (e.g., Sentinel-3).
 
   * **Validation:** The notebook `examples/notebook/resampling/reproject_esa_cci_landcover_new_method.ipynb`
     shows that `reproject_dataset` and `resample_in_space` produce nearly identical
