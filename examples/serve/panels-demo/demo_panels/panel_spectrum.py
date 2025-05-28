@@ -84,7 +84,7 @@ def render_panel(
     )
 
     error_message = Typography(
-        id="error_message", style={"color": "red"}, children=["Error: Panel Disabled"]
+        id="error_message", style={"color": "red"}, children=[""]
     )
 
     return Box(
@@ -107,9 +107,8 @@ def render_panel(
 
 
 @panel.callback(
-    State("@app", "selectedPlaceGroup"),
+    Input("@app", "selectedPlaceGroup"),
     Input("@app", "selectedDatasetId"),
-    Input("@app", "selectedPlaceGeometry"),
     Input("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("error_message", "children"),
@@ -118,15 +117,17 @@ def update_error_message(
     ctx: Context,
     place_group: list[dict[str, Any]] | None = None,
     dataset_id: str | None = None,
-    place_geometry: str | None = None,
     _time_label: float | None = None,
     _clicked: bool | None = None,
 ) -> str:
     dataset = get_dataset(ctx, dataset_id)
     points = get_places(ctx, place_group)
-    if dataset is None or not place_geometry or not points:
-        return "Error: Panel disabled"
-    return ""
+    if dataset is None:
+        return "Missing dataset selection"
+    elif not points:
+        return "Missing point selection"
+    else:
+        return ""
 
 
 def get_spectra(
@@ -194,8 +195,8 @@ def get_spectra(
 )
 def update_text(
     ctx: Context,
-    dataset_title: str,
-    time_label: str,
+    dataset_title: str | None = None,
+    time_label: str | None = None,
     _time_label: bool | None = None,
 ) -> list | None:
 
@@ -208,6 +209,7 @@ def update_text(
     State("@app", "selectedDatasetId"),
     Input("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGroup"),
+    State("@app", "selectedPlaceGeometry"),
     State("select_places", "value"),
     Input("button", "clicked"),
     Output("plot", "chart"),
@@ -215,16 +217,20 @@ def update_text(
 )
 def update_plot(
     ctx: Context,
-    dataset_id: str,
-    time_label: str,
-    place_group: list[dict[str, Any]],
-    place: list,
+    dataset_id: str | None = None,
+    time_label: str | None = None,
+    place_group: list[dict[str, Any]] | None = None,
+    place_geometry: str | None = None,
+    place: list | None = None,
     _clicked: bool | None = None,
 ) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
-    if dataset is None or not place_group or not place:
-        return None, "Error: Panel disabled"
-
+    if dataset is None:
+        return None, "Missing dataset selection"
+    elif not place_geometry:
+        return None, "Missing place geometry selection"
+    elif not place:
+        return None, "Missing point value selection from dropdown"
     place_group = gpd.GeoDataFrame(
         [
             {
@@ -245,7 +251,7 @@ def update_plot(
 
     place_group["time"] = pd.to_datetime(time_label).tz_localize(None)
     place = [place]
-    source = get_wavelength(dataset, place_group, place)
+    source = get_spectra(dataset, place_group, place)
 
     if source is None:
         return None, "No reflectances found in Variables"
