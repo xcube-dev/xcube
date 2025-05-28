@@ -1,12 +1,40 @@
-## Changes in 1.9.1 (in development)
+## Changes in 1.10.1 (in development)
+
+
+## Changes in 1.10.0
 
 ### Enhancements
+
+* Bundled [xcube Viewer 1.6.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.6.0)
+  that comes with enhanced layer management.
+
+### Other changes
+
+* Make test suite compatible with click >=8.2.0 (#1155)
+
+* Pinned `tornado >=6.0,<6.5` due to an incompatibility with current 
+  xcube server implementation.
+
+## Changes in 1.9.1 
+
+### Enhancements
+
+* Bundled [xcube Viewer 1.5.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.5.1)
+  with many fixes.
 
 * Introduced a server-side configuration attribute `EntrypointDatasetId` to specify 
   the initial dataset that should be displayed in the viewer application upon loading. (#1135)
 
 * Added support for `SortValue` in the server configuration to define dataset sorting 
   within groups displayed in the viewer app's dataset selection dropdown.  (#1135)
+
+* Added a new server-side configuration attribute `DatasetGroups` to allow users to define 
+  the display order of dataset groups in the viewer application. 
+  See: https://github.com/xcube-dev/xcube-viewer/issues/521
+
+* Introduced support for a `Description` field under `DatasetGroups`, shown as a tooltip 
+  when hovering over group titles in the viewer. 
+  See: https://github.com/xcube-dev/xcube-viewer/issues/521
 
 ### Other changes
 

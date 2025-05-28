@@ -79,6 +79,16 @@ def get_datasets(
     dataset_configs = list(ctx.get_dataset_configs())
     entrypoint_dataset_id = ctx.get_entrypoint_dataset_id()
 
+    dataset_groups = ctx.get_dataset_groups_configs()
+
+    group_info_map = {
+        group["Identifier"]: {
+            **group,
+            "GroupOrder": idx,
+        }
+        for idx, group in enumerate(dataset_groups)
+    }
+
     dataset_dicts = list()
     for dataset_config in dataset_configs:
         ds_id = dataset_config["Identifier"]
@@ -106,6 +116,22 @@ def get_datasets(
         sort_value = dataset_config.get("SortValue")
         if sort_value:
             dataset_dict["sortValue"] = sort_value
+
+        group_id = dataset_config.get("GroupId")
+        if group_id:
+            if dataset_config.get("GroupTitle"):
+                raise ValueError(
+                    "GroupTitle should be provided in Dataset "
+                    "configuration when using DatasetGroups. Please use the Title "
+                    "property in DatasetGroups instead."
+                )
+            dataset_dict["groupId"] = group_id
+            if group_id in group_info_map:
+                group_info = group_info_map[group_id]
+                dataset_dict["groupOrder"] = group_info["GroupOrder"]
+                dataset_dict["groupTitle"] = group_info["Title"]
+                if group_info.get("Description"):
+                    dataset_dict["groupDescription"] = group_info["Description"]
 
         LOG.info(f"Collected dataset {ds_id}")
         dataset_dicts.append(dataset_dict)
