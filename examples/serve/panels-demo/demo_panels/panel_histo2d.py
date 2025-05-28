@@ -25,7 +25,7 @@ from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.server.api import Context
 from xcube.webapi.viewer.contrib import Panel, get_dataset
-from xcube.webapi.viewer.contrib.helpers import get_place_name
+from xcube.webapi.viewer.contrib.helpers import get_place_label
 
 panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=3)
 
@@ -56,7 +56,7 @@ def render_panel(
             "paddingTop": 6,
             # Since for dynamic resizing we use `container` as width and height for
             # this chart during updates, it is necessary that we provide the width
-            # and the height here. This is for its parent div.
+            # and the height here. This is for the `container` div of VegaChart.
             "width": "100%",
             "height": 400,
         },
@@ -102,7 +102,9 @@ def render_panel(
     )
 
     error_message = Typography(
-        id="error_message", style={"color": "red"}, children=["Missing variable selection"]
+        id="error_message",
+        style={"color": "red"},
+        children=[""],
     )
 
     return Box(
@@ -130,7 +132,6 @@ def render_panel(
     Input("@app", "selectedPlaceGeometry"),
     Input("select_var_1"),
     Input("select_var_2"),
-    Input("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("error_message", "children"),
 )
@@ -140,13 +141,17 @@ def update_error_message(
     place_geometry: str | None = None,
     var_1_name: str | None = None,
     var_2_name: str | None = None,
-    _time_label: float | None = None,
     _clicked: bool | None = None,
 ) -> str:
     dataset = get_dataset(ctx, dataset_id)
-    if dataset is None or not place_geometry or not var_1_name or not var_2_name:
-        return "Error: Panel disabled"
-    return ""
+    if dataset is None:
+        return "Missing dataset selection"
+    elif not place_geometry:
+        return "Missing place geometry selection"
+    elif not var_1_name or not var_2_name:
+        return "Missing variable selection"
+    else:
+        return ""
 
 
 @panel.callback(
@@ -168,6 +173,7 @@ def update_plot(
     time_label: float | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> tuple[alt.Chart | None, str]:
+
     dataset = get_dataset(ctx, dataset_id)
 
     if "time" in dataset.coords:
@@ -191,7 +197,7 @@ def update_plot(
     ):
         return (
             None,
-            "Selected geometry must cover and area.",
+            "Selected geometry must cover an area.",
         )
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
@@ -354,7 +360,7 @@ def update_text(
     time_label: str | None = None,
     _clicked: bool | None = None,
 ) -> list | None:
-    place_name = get_place_name(place_id, place_group)
+    place_name = get_place_label(place_id, place_group)
     if time_label:
         return [f"{dataset_title} / {time_label[0:-1]} / {place_name}"]
     return [f"{dataset_title} "]
