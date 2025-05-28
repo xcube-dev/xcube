@@ -45,7 +45,7 @@ def render_panel(
         theme=theme_mode,
     )
     if time_label:
-        text = f"{dataset_id} " f"/ {time_label[0:-1]}"
+        text = f"{dataset_id} / {time_label[0:-1]}"
     else:
         text = f"{dataset_id}"
     place_text = Typography(id="text", children=[text], align="center")
@@ -129,7 +129,7 @@ def update_error_message(
     return ""
 
 
-def get_wavelength(
+def get_spectra(
     dataset: xr.Dataset,
     place_group: gpd.GeoDataFrame,
     places: list,
