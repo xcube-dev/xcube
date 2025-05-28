@@ -63,7 +63,7 @@ def render_panel(
     )
 
     if time_label:
-        text = f"{dataset_title} " f"/ {time_label[0:-1]}"
+        text = f"{dataset_title} / {time_label[0:-1]}"
     else:
         text = f"{dataset_title}"
     place_text = Typography(id="text", children=[text], align="center")
@@ -102,7 +102,7 @@ def render_panel(
     )
 
     error_message = Typography(
-        id="error_message", style={"color": "red"}, children=["Error: Panel Disabled"]
+        id="error_message", style={"color": "red"}, children=["Missing variable selection"]
     )
 
     return Box(
@@ -191,12 +191,12 @@ def update_plot(
     ):
         return (
             None,
-            "Error: 2-D histogram only works for geometries with a non-zero extent.",
+            "Selected geometry must cover and area.",
         )
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
-        return None, "Error: dataset is None after masking, invalid geometry?"
+        return None, "Selected geometry produces empty subset"
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
     var_2_data: np.ndarray = dataset[var_2_name].values.ravel()
