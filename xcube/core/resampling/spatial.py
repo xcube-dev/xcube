@@ -121,6 +121,19 @@ def resample_in_space(
 
     Returns: The spatially resampled dataset, or None if the requested
         output area does not intersect with *dataset*.
+
+    Notes:
+        The method `xcube.core.resampling.reproject_dataset` is a high-performance
+        alternative to `xcube.core.resampling.resample_in_space` for reprojecting
+        datasets to different coordinate reference systems (CRS). It is ideal for
+        reprojection between regular grids. It improves computational efficiency
+        and simplifies the reprojection process.
+
+        The methods `reproject_dataset` and `resample_in_space` produce nearly identical
+        results when reprojecting to a different CRS, with only negligible differences.
+        `resample_in_space` remains available to preserve compatibility with existing
+        services. Once `reproject_dataset` proves stable in production use, it may be
+        integrated into `resample_in_space`.
     """
     if source_gm is None:
         # No source grid mapping given, so do derive it from dataset.

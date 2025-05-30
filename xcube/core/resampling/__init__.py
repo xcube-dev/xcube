@@ -5,5 +5,6 @@
 from .affine import affine_transform_dataset, resample_ndimage
 from .cf import encode_grid_mapping
 from .rectify import rectify_dataset
+from .reproject import reproject_dataset
 from .spatial import resample_in_space
 from .temporal import resample_in_time

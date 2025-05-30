@@ -158,12 +158,18 @@ def resample_dataset(
                 aggregator = np.nanmean
                 # forman: changed default from True to False (v1.6, 2024-06-05)
                 recover_nan = False
+            if hasattr(var.data, "chunksize"):
+                chunksize = list(var.data.chunksize)
+                chunksize[-2] = tile_height
+                chunksize[-1] = tile_width
+            else:
+                chunksize = (tile_height, tile_width)
             var_data = resample_ndimage(
                 var.data,
                 scale=(j_scale, i_scale),
                 offset=(j_off, i_off),
                 shape=(height, width),
-                chunks=(tile_height, tile_width),
+                chunks=chunksize,
                 spline_order=var_config.get("spline_order", spline_order),
                 aggregator=var_config.get("aggregator", aggregator),
                 recover_nan=var_config.get("recover_nan", recover_nan),
