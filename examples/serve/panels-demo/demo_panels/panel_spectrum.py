@@ -106,30 +106,6 @@ def render_panel(
     )
 
 
-@panel.callback(
-    Input("@app", "selectedPlaceGroup"),
-    Input("@app", "selectedDatasetId"),
-    Input("@app", "selectedTimeLabel"),
-    Input("button", "clicked"),
-    Output("error_message", "children"),
-)
-def update_error_message(
-    ctx: Context,
-    place_group: list[dict[str, Any]] | None = None,
-    dataset_id: str | None = None,
-    _time_label: float | None = None,
-    _clicked: bool | None = None,
-) -> str:
-    dataset = get_dataset(ctx, dataset_id)
-    points = get_places(ctx, place_group)
-    if dataset is None:
-        return "Missing dataset selection"
-    elif not points:
-        return "Missing point selection"
-    else:
-        return ""
-
-
 def get_spectra(
     dataset: xr.Dataset,
     place_group: gpd.GeoDataFrame,
@@ -189,7 +165,6 @@ def get_spectra(
 
 @panel.callback(
     State("@app", "selectedDatasetTitle"),
-    State("@app", "selectedTimeLabel"),
     Input("@app", "selectedTimeLabel"),
     Output("text", "children"),
 )
@@ -197,7 +172,6 @@ def update_text(
     ctx: Context,
     dataset_title: str | None = None,
     time_label: str | None = None,
-    _time_label: bool | None = None,
 ) -> list | None:
 
     if time_label:
@@ -209,7 +183,6 @@ def update_text(
     State("@app", "selectedDatasetId"),
     Input("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGroup"),
-    State("@app", "selectedPlaceGeometry"),
     State("select_places", "value"),
     Input("button", "clicked"),
     Output("plot", "chart"),
@@ -220,17 +193,22 @@ def update_plot(
     dataset_id: str | None = None,
     time_label: str | None = None,
     place_group: list[dict[str, Any]] | None = None,
-    place_geometry: str | None = None,
     place: list | None = None,
     _clicked: bool | None = None,
 ) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
+    has_point = any(
+        feature.get("geometry", {}).get("type") == "Point"
+        for collection in place_group
+        for feature in collection.get("features", [])
+    )
     if dataset is None:
         return None, "Missing dataset selection"
-    elif not place_geometry:
-        return None, "Missing place geometry selection"
+    elif not place_group or not has_point:
+        return None, "Missing point selection"
     elif not place:
-        return None, "Missing point value selection from dropdown"
+        return None, "Missing point selection from dropdown"
+
     place_group = gpd.GeoDataFrame(
         [
             {
@@ -304,23 +282,3 @@ def update_theme(
         theme_mode = "default"
 
     return theme_mode
-
-
-@panel.callback(
-    State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
-    State("@app", "selectedPlaceGroup"),
-    State("select_places", "value"),
-    Input("@app", "selectedTimeLabel"),
-    Output("plot", "chart"),
-    Output("error_message", "children"),
-)
-def update_timestep(
-    ctx: Context,
-    dataset_id: str,
-    time_label: str,
-    place_group: list[dict[str, Any]],
-    place: list,
-    _new_time_label: bool | None = None,
-) -> tuple[alt.Chart, str] | None:
-    return update_plot(ctx, dataset_id, time_label, place_group, place)

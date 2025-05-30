@@ -128,33 +128,6 @@ def render_panel(
 
 
 @panel.callback(
-    Input("@app", "selectedDatasetId"),
-    Input("@app", "selectedPlaceGeometry"),
-    Input("select_var_1"),
-    Input("select_var_2"),
-    Input("button", "clicked"),
-    Output("error_message", "children"),
-)
-def update_error_message(
-    ctx: Context,
-    dataset_id: str | None = None,
-    place_geometry: str | None = None,
-    var_1_name: str | None = None,
-    var_2_name: str | None = None,
-    _clicked: bool | None = None,
-) -> str:
-    dataset = get_dataset(ctx, dataset_id)
-    if dataset is None:
-        return "Missing dataset selection"
-    elif not place_geometry:
-        return "Missing place geometry selection"
-    elif not var_1_name or not var_2_name:
-        return "Missing variable selection"
-    else:
-        return ""
-
-
-@panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedPlaceGeometry"),
     State("select_var_1"),
@@ -190,11 +163,7 @@ def update_plot(
         ).transform
         place_geometry = shapely.ops.transform(project, place_geometry)
 
-    if (
-        place_geometry is None
-        or place_geometry.is_empty
-        or isinstance(place_geometry, shapely.geometry.Point)
-    ):
+    if place_geometry is None or isinstance(place_geometry, shapely.geometry.Point):
         return (
             None,
             "Selected geometry must cover an area.",
@@ -377,3 +346,30 @@ def show_progress(
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> alt.Chart | None:
     return CircularProgress(id="button", size=28)
+
+
+@panel.callback(
+    Input("@app", "selectedDatasetId"),
+    Input("@app", "selectedPlaceGeometry"),
+    State("select_var_1"),
+    State("select_var_2"),
+    Input("button", "clicked"),
+    Output("error_message", "children"),
+)
+def update_error_message(
+    ctx: Context,
+    dataset_id: str | None = None,
+    place_geometry: str | None = None,
+    var_1_name: str | None = None,
+    var_2_name: str | None = None,
+    _clicked: bool | None = None,
+) -> str:
+    dataset = get_dataset(ctx, dataset_id)
+    if dataset is None:
+        return "Missing dataset selection"
+    elif not place_geometry:
+        return "Missing place geometry selection"
+    elif not var_1_name or not var_2_name:
+        return "Missing variable selection"
+    else:
+        return ""
