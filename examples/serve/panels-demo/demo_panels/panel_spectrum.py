@@ -38,15 +38,22 @@ def render_panel(
     if theme_mode == "light":
         theme_mode = "default"
 
-    plot = VegaChart(id="plot", chart=None, style={"paddingTop": 6}, theme=theme_mode)
-
-    text = f"{dataset_id} " f"/ {time_label[0:-1]}"
+    plot = VegaChart(
+        id="plot",
+        chart=None,
+        style={"paddingTop": 6, "width": "100%", "height": 400},
+        theme=theme_mode,
+    )
+    if time_label:
+        text = f"{dataset_id} / {time_label[0:-1]}"
+    else:
+        text = f"{dataset_id}"
     place_text = Typography(id="text", children=[text], align="center")
 
     place_names = get_places(ctx, place_group)
     select_places = Select(
         id="select_places",
-        label="places (points)",
+        label="Places (points)",
         value="",
         options=place_names,
     )
@@ -76,11 +83,16 @@ def render_panel(
         },
     )
 
+    error_message = Typography(
+        id="error_message", style={"color": "red"}, children=[""]
+    )
+
     return Box(
         children=[
             "Select a map point from the dropdown and press 'Update' "
             "to create a spectrum plot for that point and the selected time.",
             control_bar,
+            error_message,
             plot,
         ],
         style={
@@ -94,7 +106,7 @@ def render_panel(
     )
 
 
-def get_wavelength(
+def get_spectra(
     dataset: xr.Dataset,
     place_group: gpd.GeoDataFrame,
     places: list,
@@ -151,49 +163,51 @@ def get_wavelength(
     return result
 
 
-# TODO - add selectedDatasetName to Available State Properties
 @panel.callback(
-    State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
+    State("@app", "selectedDatasetTitle"),
     Input("@app", "selectedTimeLabel"),
     Output("text", "children"),
 )
 def update_text(
     ctx: Context,
-    dataset_id: str,
-    time_label: str,
-    _time_label: bool | None = None,
+    dataset_title: str | None = None,
+    time_label: str | None = None,
 ) -> list | None:
 
-    text = f"{dataset_id} " f"/ {time_label[0:-1]}"
-
-    return [text]
+    if time_label:
+        return [f"{dataset_title} " f"/ {time_label[0:-1]}"]
+    return [f"{dataset_title} "]
 
 
 @panel.callback(
     State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
+    Input("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGroup"),
     State("select_places", "value"),
     Input("button", "clicked"),
     Output("plot", "chart"),
+    Output("error_message", "children"),
 )
 def update_plot(
     ctx: Context,
-    dataset_id: str,
-    time_label: str,
-    place_group: list[dict[str, Any]],
-    place: list,
+    dataset_id: str | None = None,
+    time_label: str | None = None,
+    place_group: list[dict[str, Any]] | None = None,
+    place: list | None = None,
     _clicked: bool | None = None,
-) -> alt.Chart | None:
-
-    if not place_group:
-        return None
-
-    if not place:
-        return None
-
+) -> tuple[alt.Chart | None, str]:
     dataset = get_dataset(ctx, dataset_id)
+    has_point = any(
+        feature.get("geometry", {}).get("type") == "Point"
+        for collection in place_group
+        for feature in collection.get("features", [])
+    )
+    if dataset is None:
+        return None, "Missing dataset selection"
+    elif not place_group or not has_point:
+        return None, "Missing point selection"
+    elif not place:
+        return None, "Missing point selection from dropdown"
 
     place_group = gpd.GeoDataFrame(
         [
@@ -215,12 +229,10 @@ def update_plot(
 
     place_group["time"] = pd.to_datetime(time_label).tz_localize(None)
     place = [place]
-    source = get_wavelength(dataset, place_group, place)
+    source = get_spectra(dataset, place_group, place)
 
     if source is None:
-        # TODO: set error message in panel UI
-        print("No reflectances found in Variables")
-        return None
+        return None, "No reflectances found in Variables"
 
     chart = (
         alt.Chart(source)
@@ -231,9 +243,9 @@ def update_plot(
             color="places:N",
             tooltip=["variable", "wavelength", "reflectance"],
         )
-    ).properties(width=300, height=200)
+    ).properties(width="container", height="container")
 
-    return chart
+    return chart, ""
 
 
 @panel.callback(
@@ -270,24 +282,3 @@ def update_theme(
         theme_mode = "default"
 
     return theme_mode
-
-
-# TODO - add selectedDatasetName to Available State Properties
-@panel.callback(
-    State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
-    State("@app", "selectedPlaceGroup"),
-    State("select_places", "value"),
-    Input("@app", "selectedTimeLabel"),
-    Output("plot", "chart"),
-)
-def update_timestep(
-    ctx: Context,
-    dataset_id: str,
-    time_label: str,
-    place_group: list[dict[str, Any]],
-    place: list,
-    _new_time_label: bool | None = None,
-) -> alt.Chart | None:
-
-    return update_plot(ctx, dataset_id, time_label, place_group, place)
