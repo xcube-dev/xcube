@@ -305,7 +305,10 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         else:
             num_levels_max = min(num_levels, ml_dataset.num_levels)
 
-        with fs.open(str(data_path / ".zlevels"), mode="w") as fp:
+        with fs.open(str(data_path / ".zgroup"), mode="wt") as fp:
+            json.dump({"zarr_format": 2}, fp, indent=2)
+
+        with fs.open(str(data_path / ".zlevels"), mode="wt") as fp:
             levels_data: dict[str, Any] = dict(
                 version=LEVELS_FORMAT_VERSION, num_levels=num_levels_max
             )
