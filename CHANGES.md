@@ -1,20 +1,5 @@
 ## Changes in 1.10.1 (in development)
 
-
-## Changes in 1.10.0
-
-### Enhancements
-
-* Bundled [xcube Viewer 1.6.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.6.0)
-  that comes with enhanced layer management.
-
-### Other changes
-
-* Make test suite compatible with click >=8.2.0 (#1155)
-
-* Pinned `tornado >=6.0,<6.5` due to an incompatibility with current 
-  xcube server implementation.
-
 ### Enhancements
 
 * Introduced a more efficient and robust approach for dataset reprojection:
@@ -40,6 +25,20 @@
     which is specialized for non-regular 2D grids (e.g., Sentinel-3). While applicable 
     to regular grid reprojection, the algorithm is unnecessarily complex for such cases.
 
+
+## Changes in 1.10.0
+
+### Enhancements
+
+* Bundled [xcube Viewer 1.6.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.6.0)
+  that comes with enhanced layer management.
+
+### Other changes
+
+* Make test suite compatible with click >=8.2.0 (#1155)
+
+* Pinned `tornado >=6.0,<6.5` due to an incompatibility with current 
+  xcube server implementation.
 
 
 ## Changes in 1.9.1 
