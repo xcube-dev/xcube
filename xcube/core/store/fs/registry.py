@@ -32,6 +32,10 @@ from .impl.mldataset import (
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
 )
+from .impl.vectordatacube import (
+    VectorDataCubeNetcdfFsDataAccessor,
+    VectorDataCubeZarrFsDataAccessor
+)
 from .store import FsDataStore
 
 ############################################
@@ -127,6 +131,8 @@ for cls in (
     MultiLevelDatasetLevelsFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
     GeoDataFrameGeoJsonFsDataAccessor,
+    VectorDataCubeNetcdfFsDataAccessor,
+    VectorDataCubeZarrFsDataAccessor
 ):
     register_fs_data_accessor_class(cls)
 

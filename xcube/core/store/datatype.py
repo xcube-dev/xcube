@@ -195,6 +195,12 @@ GEO_DATA_FRAME_ITERATOR_TYPE = DataType(
     ["gdfiter", "DataIterator[geopandas.GeoDataFrame]"],
 )
 
+VECTOR_DATA_CUBE_TYPE = DataType(xarray.Dataset, ["vectordatacube", "xarray.Dataset"])
+
+VECTOR_DATA_CUBE_ITERATOR_TYPE = DataType(
+    DataIterator,  # Unfortunately we cannot use DataIterator[xarray.Dataset]
+    ["vdciter", "DataIterator[xarray.Dataset]"],
+)
 
 def register_default_data_types():
     for data_type in [
@@ -205,6 +211,8 @@ def register_default_data_types():
         MULTI_LEVEL_DATASET_ITERATOR_TYPE,
         GEO_DATA_FRAME_TYPE,
         GEO_DATA_FRAME_ITERATOR_TYPE,
+        VECTOR_DATA_CUBE_TYPE,
+        VECTOR_DATA_CUBE_ITERATOR_TYPE,
     ]:
         DataType.register_data_type(data_type)
 

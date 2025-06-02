@@ -9,6 +9,8 @@ from functools import cached_property
 from typing import Any, Callable, Dict, Tuple
 
 import xarray as xr
+import xvec
+from jinja2.lexer import TOKEN_DOT
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.tilingscheme import TilingScheme
@@ -147,3 +149,28 @@ class MultiLevelDataset(metaclass=ABCMeta):
             if x_res > given_x_res and y_res > given_y_res:
                 return max(0, level - 1)
         return self.num_levels - 1
+
+
+class VectorDataCube(xr.Dataset):
+
+    def __init__(
+        self, geometry_column: str = "geometry", crs = None, *args, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        # TODO add check that dataset qualifies as vector data cube
+        # self.assign_coords(
+        #     dict(
+        #         geometry_column=self.get(geometry_column)
+        #     )
+        # )
+        # {geometry_column= self[geometry_name]})
+        # self.xvec.set_geom_indexes(geometry_column, crs=crs)
+        # self.xvec.encode_cf()
+
+    @classmethod
+    def from_dataset(cls, dataset):
+        return cls(
+            data_vars=dataset.data_vars,
+            coords=dataset.coords,
+            attrs=dataset.attrs
+        )
