@@ -66,7 +66,7 @@ def render_panel(
         text = f"{dataset_title} / {time_label[0:-1]}"
     else:
         text = f"{dataset_title}"
-    place_text = Typography(id="text", children=[text], align="center")
+    place_text = Typography(id="text", children=[text], align="left")
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
@@ -113,8 +113,8 @@ def render_panel(
             "variables from the dropdowns, and press 'Update' to create "
             "a 2D histogram plot.",
             control_bar,
-            error_message,
             plot,
+            error_message,
         ],
         style={
             "display": "flex",

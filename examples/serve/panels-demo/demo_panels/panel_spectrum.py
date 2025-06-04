@@ -48,20 +48,33 @@ def render_panel(
         text = f"{dataset_id} / {time_label[0:-1]}"
     else:
         text = f"{dataset_id}"
-    place_text = Typography(id="text", children=[text], align="center")
+    place_text = Typography(id="text", children=[text], align="left")
 
-    place_names = get_places(ctx, place_group)
-    select_places = Select(
-        id="select_places",
-        label="Places (points)",
-        value="",
-        options=place_names,
-    )
+    # Ideas
+    # 1. Adding radio-button for two modes:
+    #    update mode - reactive to changes to dataset/places/time/variables
+    #    active mode -
 
-    button = Button(id="button", text="Update", style={"maxWidth": 100})
+    # How should spectrum viewer behave?
+    # It should be reactive to changes to dataset/places/times
+    # How to freeze the current spectrum?
+    # We add a button to add it permanently to the graph and then when a new point is
+    # selected it becomes reactive again.
+
+    # Second mode - Just change for time but new line in graph for a new point
+
+    # First version: Reactive to time and place changes
+    # Add button: Would add the  spectrum view of current time and place to the graph
+    # with legend place/time (static)
+    # Delete button: Would delete the last one the spectrum views in the plot
+    # Move the text align to left
+
+    # Make line chart and bar chart
+
+    add_button = Button(id="add_button", text="Add", style={"maxWidth": 100})
 
     controls = Box(
-        children=[select_places, button],
+        children=[add_button],
         style={
             "display": "flex",
             "flexDirection": "row",
@@ -182,9 +195,10 @@ def update_text(
 @panel.callback(
     State("@app", "selectedDatasetId"),
     Input("@app", "selectedTimeLabel"),
+    Input("@app", "selectedPlaceGeometry"),
     State("@app", "selectedPlaceGroup"),
-    State("select_places", "value"),
-    Input("button", "clicked"),
+    Input("add_button", "clicked"),
+    Input("plot", "chart"),
     Output("plot", "chart"),
     Output("error_message", "children"),
 )
@@ -192,10 +206,13 @@ def update_plot(
     ctx: Context,
     dataset_id: str | None = None,
     time_label: str | None = None,
+    place_geo: dict[str, Any] | None = None,
     place_group: list[dict[str, Any]] | None = None,
-    place: list | None = None,
     _clicked: bool | None = None,
+    chart=None,
 ) -> tuple[alt.Chart | None, str]:
+    print("clicked", _clicked)
+    print("chart", chart)
     dataset = get_dataset(ctx, dataset_id)
     has_point = any(
         feature.get("geometry", {}).get("type") == "Point"
@@ -206,37 +223,39 @@ def update_plot(
         return None, "Missing dataset selection"
     elif not place_group or not has_point:
         return None, "Missing point selection"
-    elif not place:
-        return None, "Missing point selection from dropdown"
 
-    place_group = gpd.GeoDataFrame(
-        [
-            {
-                "id": feature["id"],
-                "name": feature["properties"]["label"],
-                "color": feature["properties"]["color"],
-                "x": feature["geometry"]["coordinates"][0],
-                "y": feature["geometry"]["coordinates"][1],
-                "geometry": Point(
-                    feature["geometry"]["coordinates"][0],
-                    feature["geometry"]["coordinates"][1],
-                ),
-            }
-            for feature in place_group[0]["features"]
-            if feature.get("geometry", {}).get("type") == "Point"
-        ]
-    )
+    label = find_selected_point_label(place_group, place_geo)
+
+    if label is None:
+        return None, "There is no label for the selected point"
+
+    if place_geo.get("type") == "Point":
+        place_group = gpd.GeoDataFrame(
+            [
+                {
+                    "name": label,
+                    "x": place_geo["coordinates"][0],
+                    "y": place_geo["coordinates"][1],
+                    "geometry": Point(
+                        place_geo["coordinates"][0],
+                        place_geo["coordinates"][1],
+                    ),
+                }
+            ]
+        )
+    else:
+        return None, "Selected geometry must be a point"
 
     place_group["time"] = pd.to_datetime(time_label).tz_localize(None)
-    place = [place]
-    source = get_spectra(dataset, place_group, place)
+    places_select = [label]
+    source = get_spectra(dataset, place_group, places_select)
 
     if source is None:
         return None, "No reflectances found in Variables"
 
     chart = (
         alt.Chart(source)
-        .mark_line(point=True)
+        .mark_bar(point=True)
         .encode(
             x="wavelength:Q",
             y="reflectance:Q",
@@ -249,36 +268,28 @@ def update_plot(
 
 
 @panel.callback(
-    Input("@app", "selectedPlaceGroup"),
-    Output("select_places", "options"),
+    Input("@app", "selectedPlaceGeometry"),
+    Output("add_button", "disabled"),
 )
-def get_places(
-    ctx: Context,
-    place_group: list[dict[str, Any]],
-) -> list[str]:
-
-    if not place_group:
-        return []
-    else:
-        return [
-            feature["properties"]["label"]
-            for feature in place_group[0]["features"]
-            if feature.get("geometry", {}).get("type") == "Point"
-        ]
+def set_button_disablement(
+    _ctx: Context,
+    place_geometry: str | None = None,
+) -> bool:
+    print("in set_button_disablement", place_geometry)
+    return not place_geometry
 
 
-@panel.callback(
-    State("@app", "themeMode"),
-    Input("@app", "themeMode"),
-    Output("plot", "theme"),
-)
-def update_theme(
-    ctx: Context,
-    theme_mode: str,
-    _new_theme: bool | None = None,
-) -> str:
+def find_selected_point_label(features_data, target_point):
+    for feature_collection in features_data:
+        for feature in feature_collection.get("features", []):
+            geometry = feature.get("geometry", {})
+            coordinates = geometry.get("coordinates", [])
+            geo_type = geometry.get("type", "")
 
-    if theme_mode == "light":
-        theme_mode = "default"
+            if (
+                coordinates == target_point["coordinates"]
+                and geo_type == target_point["type"]
+            ):
+                return feature.get("properties", {}).get("label", None)
 
-    return theme_mode
+    return None
