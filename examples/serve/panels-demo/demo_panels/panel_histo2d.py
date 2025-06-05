@@ -127,6 +127,9 @@ def render_panel(
     )
 
 
+error_message = ""
+
+
 @panel.callback(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedPlaceGeometry"),
@@ -135,7 +138,6 @@ def render_panel(
     State("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
-    Output("error_message", "children"),
 )
 def update_plot(
     ctx: Context,
@@ -145,8 +147,8 @@ def update_plot(
     var_2_name: str | None = None,
     time_label: float | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
-) -> tuple[alt.Chart | None, str]:
-
+) -> alt.Chart | None:
+    global error_message
     dataset = get_dataset(ctx, dataset_id)
 
     if "time" in dataset.coords:
@@ -164,14 +166,13 @@ def update_plot(
         place_geometry = shapely.ops.transform(project, place_geometry)
 
     if place_geometry is None or isinstance(place_geometry, shapely.geometry.Point):
-        return (
-            None,
-            "Selected geometry must cover an area.",
-        )
+        error_message = "Selected geometry must cover an area."
+        return None
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
-        return None, "Selected geometry produces empty subset"
+        error_message = "Selected geometry produces empty subset"
+        return None
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
     var_2_data: np.ndarray = dataset[var_2_name].values.ravel()
@@ -252,7 +253,8 @@ def update_plot(
         width="container",
         height="container",
     )
-    return chart, ""
+    error_message = ""
+    return chart
 
 
 @panel.callback(
@@ -351,6 +353,7 @@ def show_progress(
 @panel.callback(
     Input("@app", "selectedDatasetId"),
     Input("@app", "selectedPlaceGeometry"),
+    Input("@app", "selectedTimeLabel"),
     State("select_var_1"),
     State("select_var_2"),
     Input("button", "clicked"),
@@ -360,16 +363,20 @@ def update_error_message(
     ctx: Context,
     dataset_id: str | None = None,
     place_geometry: str | None = None,
+    _time_label: str | None = None,
     var_1_name: str | None = None,
     var_2_name: str | None = None,
     _clicked: bool | None = None,
 ) -> str:
-    dataset = get_dataset(ctx, dataset_id)
-    if dataset is None:
-        return "Missing dataset selection"
-    elif not place_geometry:
-        return "Missing place geometry selection"
+    global error_message
+
+    if dataset_id is None:
+        error_message = "Missing dataset selection"
+
+    if not place_geometry:
+        error_message = "Missing place geometry selection"
+
     elif not var_1_name or not var_2_name:
-        return "Missing variable selection"
-    else:
-        return ""
+        error_message = "Missing variable selection"
+
+    return error_message

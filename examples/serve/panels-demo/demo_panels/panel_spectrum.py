@@ -1,3 +1,4 @@
+import math
 from typing import Any
 
 import altair as alt
@@ -10,7 +11,14 @@ from shapely.geometry import Point
 import xarray as xr
 
 from chartlets import Component, Input, State, Output
-from chartlets.components import Box, Button, Typography, Select, VegaChart
+from chartlets.components import (
+    Box,
+    Button,
+    Typography,
+    VegaChart,
+    Radio,
+    RadioGroup,
+)
 
 from xcube.webapi.viewer.contrib import Panel, get_dataset
 from xcube.server.api import Context
@@ -19,6 +27,43 @@ from xcube.core.extract import get_cube_values_for_points
 from xcube.core.gridmapping import GridMapping
 
 panel = Panel(__name__, title="Spectrum View (Demo)", icon="light", position=4)
+
+
+class DataManager:
+    def __init__(self):
+        self.all_data = pd.DataFrame(
+            columns=["places", "variable", "reflectance", "wavelength"]
+        )
+        self.added_places_stack = []
+
+    def add_place_data(self, new_data: pd.DataFrame):
+        if self._is_duplicate(new_data):
+            print("Duplicate data detected. Not adding.")
+            print("self.all_data", self.all_data["places"].unique())
+            print("new_data", new_data["places"].unique())
+            return
+
+        place_names = new_data["places"].unique()
+        self.all_data = pd.concat([self.all_data, new_data], ignore_index=True)
+        self.added_places_stack.append(place_names)
+
+    def remove_last_added_place(self):
+        if self.added_places_stack:
+            last_places = self.added_places_stack.pop()
+            self.all_data = self.all_data[~self.all_data["places"].isin(last_places)]
+
+    def _is_duplicate(self, new_data: pd.DataFrame) -> bool:
+        merged = new_data.merge(self.all_data, how="left", indicator=True)
+        return (merged["_merge"] == "both").all()
+
+    def delete_all_data(self):
+        self.all_data = pd.DataFrame(
+            columns=["places", "variable", "reflectance", "wavelength"]
+        )
+        self.added_places_stack = []
+
+
+manager = DataManager()
 
 
 @panel.layout(
@@ -50,6 +95,15 @@ def render_panel(
         text = f"{dataset_id}"
     place_text = Typography(id="text", children=[text], align="left")
 
+    active_radio = Radio(id="active_radio", value="active", label="Active Mode")
+    save_radio = Radio(id="save_radio", value="save", label="Save Mode")
+
+    exploration_radio_group = RadioGroup(
+        id="exploration_radio_group",
+        children=[active_radio, save_radio],
+        label="Exploration Mode",
+    )
+
     # Ideas
     # 1. Adding radio-button for two modes:
     #    update mode - reactive to changes to dataset/places/time/variables
@@ -74,7 +128,7 @@ def render_panel(
     add_button = Button(id="add_button", text="Add", style={"maxWidth": 100})
 
     controls = Box(
-        children=[add_button],
+        children=[exploration_radio_group, add_button],
         style={
             "display": "flex",
             "flexDirection": "row",
@@ -158,6 +212,12 @@ def get_spectra(
 
         variables = list(selected_values.keys())
         values = [selected_values[var]["data"] for var in variables]
+        print("reflectance values::", values)
+        cleaned_values = [
+            0 if isinstance(x, float) and math.isnan(x) else x for x in values
+        ]
+        print("reflectance values after::", cleaned_values)
+
         wavelengths = [
             dataset_place[var].attrs.get("wavelength", None) for var in variables
         ]
@@ -165,7 +225,7 @@ def get_spectra(
         res = {
             "places": place,
             "variable": variables,
-            "reflectance": values,
+            "reflectance": cleaned_values,
             "wavelength": wavelengths,
         }
 
@@ -197,6 +257,7 @@ def update_text(
     Input("@app", "selectedTimeLabel"),
     Input("@app", "selectedPlaceGeometry"),
     State("@app", "selectedPlaceGroup"),
+    State("exploration_radio_group", "value"),
     Input("add_button", "clicked"),
     Input("plot", "chart"),
     Output("plot", "chart"),
@@ -208,11 +269,13 @@ def update_plot(
     time_label: str | None = None,
     place_geo: dict[str, Any] | None = None,
     place_group: list[dict[str, Any]] | None = None,
+    exploration_radio_group: bool | None = None,
     _clicked: bool | None = None,
-    chart=None,
+    previous_chart: bool | None = None,
 ) -> tuple[alt.Chart | None, str]:
-    print("clicked", _clicked)
-    print("chart", chart)
+    print("exploration_radio_group", exploration_radio_group)
+    if exploration_radio_group is None:
+        return None, "Missing exploration mode choice"
     dataset = get_dataset(ctx, dataset_id)
     has_point = any(
         feature.get("geometry", {}).get("type") == "Point"
@@ -228,7 +291,7 @@ def update_plot(
 
     if label is None:
         return None, "There is no label for the selected point"
-
+    print("place_geo", place_geo)
     if place_geo.get("type") == "Point":
         place_group = gpd.GeoDataFrame(
             [
@@ -253,30 +316,54 @@ def update_plot(
     if source is None:
         return None, "No reflectances found in Variables"
 
-    chart = (
-        alt.Chart(source)
-        .mark_bar(point=True)
-        .encode(
-            x="wavelength:Q",
-            y="reflectance:Q",
-            color="places:N",
-            tooltip=["variable", "wavelength", "reflectance"],
-        )
-    ).properties(width="container", height="container")
+    if previous_chart is None:
+        manager.delete_all_data()
+
+    if exploration_radio_group == "active":
+        manager.remove_last_added_place()
+        manager.add_place_data(source)
+        chart = (
+            alt.Chart(manager.all_data)
+            .mark_bar()
+            .encode(
+                x="wavelength:N",
+                y="reflectance:Q",
+                xOffset="places:N",
+                color="places:N",
+                tooltip=["variable", "wavelength", "reflectance"],
+            )
+        ).properties(width="container", height="container")
+    else:
+        manager.add_place_data(source)
+        print("in save else case::", manager.all_data["places"].unique())
+        chart = (
+            alt.Chart(manager.all_data)
+            .mark_bar()
+            .encode(
+                x="wavelength:N",
+                y="reflectance:Q",
+                xOffset="places:N",
+                color="places:N",
+                tooltip=["variable", "wavelength", "reflectance"],
+            )
+        ).properties(width="container", height="container")
+        print("chart should be ready", chart)
 
     return chart, ""
 
 
 @panel.callback(
     Input("@app", "selectedPlaceGeometry"),
+    Input("exploration_radio_group", "value"),
     Output("add_button", "disabled"),
 )
 def set_button_disablement(
     _ctx: Context,
     place_geometry: str | None = None,
+    exploration_radio_group: str | None = None,
 ) -> bool:
     print("in set_button_disablement", place_geometry)
-    return not place_geometry
+    return not place_geometry and exploration_radio_group != "save"
 
 
 def find_selected_point_label(features_data, target_point):
