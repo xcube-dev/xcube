@@ -370,13 +370,14 @@ def update_error_message(
 ) -> str:
     global error_message
 
-    if dataset_id is None:
-        error_message = "Missing dataset selection"
+    if error_message == "":
+        if dataset_id is None:
+            error_message = "Missing dataset selection"
 
-    if not place_geometry:
-        error_message = "Missing place geometry selection"
+        if not place_geometry:
+            error_message = "Missing place geometry selection"
 
-    elif not var_1_name or not var_2_name:
-        error_message = "Missing variable selection"
+        elif not var_1_name or not var_2_name:
+            error_message = "Missing variable selection"
 
     return error_message
