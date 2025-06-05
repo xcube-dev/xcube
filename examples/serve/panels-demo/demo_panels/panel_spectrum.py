@@ -38,9 +38,6 @@ class DataManager:
 
     def add_place_data(self, new_data: pd.DataFrame):
         if self._is_duplicate(new_data):
-            print("Duplicate data detected. Not adding.")
-            print("self.all_data", self.all_data["places"].unique())
-            print("new_data", new_data["places"].unique())
             return
 
         place_names = new_data["places"].unique()
@@ -64,19 +61,18 @@ class DataManager:
 
 
 manager = DataManager()
+previous_mode = ""
 
 
 @panel.layout(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
-    State("@app", "selectedPlaceGroup"),
     State("@app", "themeMode"),
 )
 def render_panel(
     ctx: Context,
     dataset_id: str,
     time_label: str,
-    place_group: list[dict[str, Any]],
     theme_mode: str,
 ) -> Component:
 
@@ -125,10 +121,12 @@ def render_panel(
 
     # Make line chart and bar chart
 
-    add_button = Button(id="add_button", text="Add", style={"maxWidth": 100})
+    delete_button = Button(
+        id="delete_button", text="Delete last point", style={"maxWidth": 100}
+    )
 
     controls = Box(
-        children=[exploration_radio_group, add_button],
+        children=[exploration_radio_group, delete_button],
         style={
             "display": "flex",
             "flexDirection": "row",
@@ -181,7 +179,6 @@ def get_spectra(
 
     grid_mapping = GridMapping.from_dataset(dataset)
 
-    # if place_geometry is not None and not grid_mapping.crs.is_geographic:
     project = pyproj.Transformer.from_crs(
         CRS_CRS84, grid_mapping.crs, always_xy=True
     ).transform
@@ -212,11 +209,9 @@ def get_spectra(
 
         variables = list(selected_values.keys())
         values = [selected_values[var]["data"] for var in variables]
-        print("reflectance values::", values)
         cleaned_values = [
             0 if isinstance(x, float) and math.isnan(x) else x for x in values
         ]
-        print("reflectance values after::", cleaned_values)
 
         wavelengths = [
             dataset_place[var].attrs.get("wavelength", None) for var in variables
@@ -258,7 +253,7 @@ def update_text(
     Input("@app", "selectedPlaceGeometry"),
     State("@app", "selectedPlaceGroup"),
     State("exploration_radio_group", "value"),
-    Input("add_button", "clicked"),
+    # Input("add_button", "clicked"),
     Input("plot", "chart"),
     Output("plot", "chart"),
     Output("error_message", "children"),
@@ -270,10 +265,11 @@ def update_plot(
     place_geo: dict[str, Any] | None = None,
     place_group: list[dict[str, Any]] | None = None,
     exploration_radio_group: bool | None = None,
-    _clicked: bool | None = None,
+    # _clicked: bool | None = None,
     previous_chart: bool | None = None,
 ) -> tuple[alt.Chart | None, str]:
-    print("exploration_radio_group", exploration_radio_group)
+    global manager, previous_mode
+    # print("clicked::", _clicked)
     if exploration_radio_group is None:
         return None, "Missing exploration mode choice"
     dataset = get_dataset(ctx, dataset_id)
@@ -291,9 +287,8 @@ def update_plot(
 
     if label is None:
         return None, "There is no label for the selected point"
-    print("place_geo", place_geo)
     if place_geo.get("type") == "Point":
-        place_group = gpd.GeoDataFrame(
+        place_group_geodf = gpd.GeoDataFrame(
             [
                 {
                     "name": label,
@@ -309,18 +304,26 @@ def update_plot(
     else:
         return None, "Selected geometry must be a point"
 
-    place_group["time"] = pd.to_datetime(time_label).tz_localize(None)
+    place_group_geodf["time"] = pd.to_datetime(time_label).tz_localize(None)
     places_select = [label]
-    source = get_spectra(dataset, place_group, places_select)
+    source = get_spectra(dataset, place_group_geodf, places_select)
 
     if source is None:
         return None, "No reflectances found in Variables"
-
     if previous_chart is None:
         manager.delete_all_data()
 
+    # Delete points that are removed by the user from the viewer:
+    valid_labels = {
+        feature["properties"]["label"]
+        for item in place_group
+        for feature in item.get("features", [])
+    }
+    manager.all_data = manager.all_data[manager.all_data["places"].isin(valid_labels)]
+
     if exploration_radio_group == "active":
-        manager.remove_last_added_place()
+        if previous_mode != "save":
+            manager.remove_last_added_place()
         manager.add_place_data(source)
         chart = (
             alt.Chart(manager.all_data)
@@ -335,7 +338,6 @@ def update_plot(
         ).properties(width="container", height="container")
     else:
         manager.add_place_data(source)
-        print("in save else case::", manager.all_data["places"].unique())
         chart = (
             alt.Chart(manager.all_data)
             .mark_bar()
@@ -347,22 +349,43 @@ def update_plot(
                 tooltip=["variable", "wavelength", "reflectance"],
             )
         ).properties(width="container", height="container")
-        print("chart should be ready", chart)
-
+    previous_mode = exploration_radio_group
     return chart, ""
+
+
+@panel.callback(
+    Input("delete_button", "clicked"),
+    Output("plot", "chart"),
+)
+def delete_places(
+    ctx: Context,
+    _clicked: bool | None = None,
+) -> alt.Chart:
+    global manager
+    manager.remove_last_added_place()
+    return (
+        alt.Chart(manager.all_data)
+        .mark_bar()
+        .encode(
+            x="wavelength:N",
+            y="reflectance:Q",
+            xOffset="places:N",
+            color="places:N",
+            tooltip=["variable", "wavelength", "reflectance"],
+        )
+    ).properties(width="container", height="container")
 
 
 @panel.callback(
     Input("@app", "selectedPlaceGeometry"),
     Input("exploration_radio_group", "value"),
-    Output("add_button", "disabled"),
+    Output("delete_button", "disabled"),
 )
 def set_button_disablement(
     _ctx: Context,
     place_geometry: str | None = None,
     exploration_radio_group: str | None = None,
 ) -> bool:
-    print("in set_button_disablement", place_geometry)
     return not place_geometry and exploration_radio_group != "save"
 
 
