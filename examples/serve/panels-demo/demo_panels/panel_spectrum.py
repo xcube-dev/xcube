@@ -1,5 +1,4 @@
 import math
-import json
 from typing import Any
 
 import altair as alt
@@ -14,7 +13,6 @@ import xarray as xr
 from chartlets import Component, Input, State, Output
 from chartlets.components import (
     Box,
-    Button,
     Typography,
     VegaChart,
     Radio,
@@ -28,6 +26,8 @@ from xcube.core.extract import get_cube_values_for_points
 from xcube.core.gridmapping import GridMapping
 
 panel = Panel(__name__, title="Spectrum View (Demo)", icon="light", position=4)
+
+THROTTLE_TOTAL_SPECTRUM_PLOTS = 10
 
 
 @panel.layout(
@@ -56,53 +56,24 @@ def render_panel(
         text = f"{dataset_id}"
     place_text = Typography(id="text", children=[text], align="left")
 
-    active_radio = Radio(id="active_radio", value="active", label="Active Mode")
-    save_radio = Radio(id="save_radio", value="save", label="Save Mode")
+    update_radio = Radio(id="update_radio", value="update", label="Update")
+    add_radio = Radio(id="add_radio", value="add", label="Add")
 
     exploration_radio_group = RadioGroup(
         id="exploration_radio_group",
-        children=[active_radio, save_radio],
+        children=[update_radio, add_radio],
         label="Exploration Mode",
-    )
-
-    # Ideas
-    # 1. Adding radio-button for two modes:
-    #    update mode - reactive to changes to dataset/places/time/variables
-    #    active mode -
-
-    # How should spectrum viewer behave?
-    # It should be reactive to changes to dataset/places/times
-    # How to freeze the current spectrum?
-    # We add a button to add it permanently to the graph and then when a new point is
-    # selected it becomes reactive again.
-
-    # Second mode - Just change for time but new line in graph for a new point
-
-    # First version: Reactive to time and place changes
-    # Add button: Would add the  spectrum view of current time and place to the graph
-    # with legend place/time (static)
-    # Delete button: Would delete the last one the spectrum views in the plot
-    # Move the text align to left
-
-    # Make line chart and bar chart
-
-    delete_button = Button(
-        id="delete_button", text="Delete last point", style={"maxWidth": 100}
-    )
-
-    controls = Box(
-        children=[exploration_radio_group, delete_button],
         style={
             "display": "flex",
             "flexDirection": "row",
-            "alignItems": "center",
-            "gap": 6,
-            "padding": 6,
         },
+        tooltip="'Update': Clear the chart but the current selection if any. "
+        "'Add': Current spectrum is added and new point selections will be "
+        "added as new spectra",
     )
 
     control_bar = Box(
-        children=[place_text, controls],
+        children=[place_text, exploration_radio_group],
         style={
             "display": "flex",
             "flexDirection": "row",
@@ -117,24 +88,23 @@ def render_panel(
         id="error_message", style={"color": "red"}, children=[""]
     )
 
-    places_stack_storage = Typography(
-        id="places_stack_storage",
-        children=["[]"],
-        style={"display": "none"},
+    note = Typography(
+        id="note",
+        children=["NOTE: You can only add a maximum of 10 spectrum plots at a time"],
     )
 
     return Box(
         children=[
             "Choose an exploration mode and create/select points to view the Spectrum data.",
+            note,
             control_bar,
             error_message,
             plot,
-            places_stack_storage,
         ],
         style={
             "display": "flex",
             "flexDirection": "column",
-            "alignItems": "center",
+            "alignItems": "left",
             "width": "100%",
             "height": "100%",
             "gap": 6,
@@ -220,12 +190,14 @@ def update_text(
     Input("@app", "selectedTimeLabel"),
     Input("@app", "selectedPlaceGeometry"),
     State("@app", "selectedPlaceGroup"),
-    State("exploration_radio_group", "value"),
+    Input("exploration_radio_group", "value"),
     State("plot", "chart"),
-    State("places_stack_storage", "children"),
+    State("@container", "spectrum_list"),
+    State("@container", "previous_mode"),
     Output("plot", "chart"),
     Output("error_message", "children"),
-    Output("places_stack_storage", "children"),
+    Output("@container", "spectrum_list"),
+    Output("@container", "previous_mode"),
 )
 def update_plot(
     ctx: Context,
@@ -235,19 +207,12 @@ def update_plot(
     place_group: list[dict[str, Any]] | None = None,
     exploration_radio_group: str | None = None,
     current_chart: alt.Chart | None = None,
-    places_stack_json: list | None = None,
-) -> tuple[alt.Chart | None, str, list]:
-    import json
-
-    places_stack = []
-    if places_stack_json and len(places_stack_json) > 0:
-        try:
-            places_stack = json.loads(places_stack_json[0])
-        except (json.JSONDecodeError, IndexError):
-            places_stack = []
-
+    spectrum_list: list[str] | None = None,
+    previous_mode: str | None = None,
+) -> tuple[alt.Chart | None, str, list, str]:
+    print("spectrum list", spectrum_list)
     if exploration_radio_group is None:
-        return None, "Missing exploration mode choice", [json.dumps(places_stack)]
+        return None, "Missing exploration mode choice", spectrum_list, previous_mode
 
     dataset = get_dataset(ctx, dataset_id)
     has_point = any(
@@ -257,9 +222,9 @@ def update_plot(
     )
 
     if dataset is None:
-        return None, "Missing dataset selection", [json.dumps(places_stack)]
+        return None, "Missing dataset selection", spectrum_list, previous_mode
     elif not place_group or not has_point:
-        return None, "Missing point selection", [json.dumps(places_stack)]
+        return None, "Missing point selection", spectrum_list, previous_mode
 
     label = find_selected_point_label(place_group, place_geo)
 
@@ -267,7 +232,8 @@ def update_plot(
         return (
             None,
             "There is no label for the selected point",
-            [json.dumps(places_stack)],
+            spectrum_list,
+            previous_mode,
         )
 
     if place_geo.get("type") == "Point":
@@ -285,14 +251,16 @@ def update_plot(
             ]
         )
     else:
-        return None, "Selected geometry must be a point", [json.dumps(places_stack)]
+        return None, "Selected geometry must be a point", spectrum_list, previous_mode
 
     place_group_geodf["time"] = pd.to_datetime(time_label).tz_localize(None)
     places_select = [label]
     new_spectrum_data = get_spectra(dataset, place_group_geodf, places_select)
 
     if new_spectrum_data is None or new_spectrum_data.empty:
-        return None, "No reflectances found in Variables", [json.dumps(places_stack)]
+        return None, "No reflectances found in Variables", spectrum_list, previous_mode
+
+    new_spectrum_data["legend"] = new_spectrum_data["places"] + ": " + time_label
 
     existing_data = extract_data_from_chart(current_chart)
 
@@ -304,63 +272,41 @@ def update_plot(
     }
     existing_data = filter_data_by_valid_labels(existing_data, valid_labels)
 
-    if exploration_radio_group == "active":
-        if places_stack:
-            existing_data, places_stack = remove_last_added_place(
-                existing_data, places_stack
+    if exploration_radio_group == "update":
+        if previous_mode == "add":
+            existing_data = pd.DataFrame()
+        else:
+            existing_data, spectrum_list = remove_last_added_place(
+                existing_data, spectrum_list
             )
 
         updated_data = add_place_data_to_existing(existing_data, new_spectrum_data)
-        places_stack.append([label])
+        if spectrum_list is None:
+            spectrum_list = []
+        spectrum_list.append(label)
     else:
         updated_data = add_place_data_to_existing(existing_data, new_spectrum_data)
-        places_stack.append([label])
+
+    # Vega Altair doesn’t support xOffset with x:Q, so we manually shift each bar
+    # slightly
+    unique_groups = sorted(updated_data["legend"].unique())
+    n_groups = len(unique_groups)
+    group_offset_map = {
+        group: i - (n_groups - 1) / 2 for i, group in enumerate(unique_groups)
+    }
+
+    bar_spacing = 3
+    updated_data["x_offset"] = updated_data.apply(
+        lambda row: row["wavelength"] + group_offset_map[row["legend"]] * bar_spacing,
+        axis=1,
+    )
 
     new_chart = create_chart_from_data(updated_data)
-
-    return new_chart, "", [json.dumps(places_stack)]
-
-
-@panel.callback(
-    Input("delete_button", "clicked"),
-    State("plot", "chart"),
-    State("places_stack_storage", "children"),
-    Output("plot", "chart"),
-    Output("places_stack_storage", "children"),
-)
-def delete_places(
-    ctx: Context,
-    _clicked: bool | None = None,
-    current_chart: alt.Chart | None = None,
-    places_stack_json: list | None = None,
-) -> tuple[alt.Chart, list]:
-    places_stack = []
-    if places_stack_json and len(places_stack_json) > 0:
-        try:
-            places_stack = json.loads(places_stack_json[0])
-        except (json.JSONDecodeError, IndexError):
-            places_stack = []
-
-    current_data = extract_data_from_chart(current_chart)
-    updated_data, updated_stack = remove_last_added_place(current_data, places_stack)
-    new_chart = create_chart_from_data(updated_data)
-    return new_chart, [json.dumps(updated_stack)]
+    previous_mode = exploration_radio_group
+    return new_chart, "", spectrum_list, previous_mode
 
 
-@panel.callback(
-    Input("@app", "selectedPlaceGeometry"),
-    Input("exploration_radio_group", "value"),
-    Output("delete_button", "disabled"),
-)
-def set_button_disablement(
-    _ctx: Context,
-    place_geometry: str | None = None,
-    exploration_radio_group: str | None = None,
-) -> bool:
-    return not place_geometry and exploration_radio_group != "save"
-
-
-def find_selected_point_label(features_data, target_point):
+def find_selected_point_label(features_data, target_point) -> str | None:
     for feature_collection in features_data:
         for feature in feature_collection.get("features", []):
             geometry = feature.get("geometry", {})
@@ -399,21 +345,21 @@ def create_chart_from_data(data: pd.DataFrame) -> alt.Chart:
                 x="wavelength:N",
                 y="reflectance:Q",
                 xOffset="places:N",
-                color="places:N",
-                tooltip=["variable", "wavelength", "reflectance"],
+                color="legend:N",
+                tooltip=["places", "variable", "wavelength", "reflectance"],
             )
             .properties(width="container", height="container")
         )
 
     return (
         alt.Chart(data)
-        .mark_bar()
+        .mark_bar(size=2)
         .encode(
-            x="wavelength:N",
-            y="reflectance:Q",
-            xOffset="places:N",
-            color="places:N",
-            tooltip=["variable", "wavelength", "reflectance"],
+            x=alt.X("x_offset:Q", title="Wavelength"),
+            y=alt.Y("reflectance:Q", title="Reflectance"),
+            xOffset="legend:N",
+            color="legend:N",
+            tooltip=["places", "variable", "wavelength", "reflectance"],
         )
     ).properties(width="container", height="container")
 
@@ -424,6 +370,9 @@ def add_place_data_to_existing(
     if new_data.empty:
         return existing_data
 
+    if existing_data.empty:
+        return new_data
+
     # This is to check if the new_data already exists in the existing_data to avoid
     # duplication
     if not existing_data.empty:
@@ -432,18 +381,27 @@ def add_place_data_to_existing(
             return existing_data
 
     combined_data = pd.concat([existing_data, new_data], ignore_index=True)
-    return combined_data
+
+    # Throttling to last 10 spectrum views
+    final_df = combined_data[
+        combined_data["places"].isin(
+            combined_data.drop_duplicates("places", keep="last").tail(
+                THROTTLE_TOTAL_SPECTRUM_PLOTS
+            )["places"]
+        )
+    ]
+    return final_df
 
 
 def remove_last_added_place(
-    data: pd.DataFrame, places_stack: list
+    data: pd.DataFrame, spectrum_list: list
 ) -> tuple[pd.DataFrame, list]:
-    if not places_stack or data.empty:
-        return data, places_stack
+    if not spectrum_list or data.empty:
+        return data, spectrum_list
 
-    last_places = places_stack.pop()
-    filtered_data = data[~data["places"].isin(last_places)]
-    return filtered_data, places_stack
+    last_places = spectrum_list.pop()
+    filtered_data = data[~data["places"].isin([last_places])]
+    return filtered_data, spectrum_list
 
 
 def filter_data_by_valid_labels(data: pd.DataFrame, valid_labels: set) -> pd.DataFrame:
