@@ -12,12 +12,21 @@
 [Sentinel Hub]: https://www.sentinel-hub.com/
 [Copernicus Marine Service]: https://marine.copernicus.eu/
 [Copernicus Climate Data Store]: https://cds.climate.copernicus.eu/
+[ESA Soil Moisture and Ocean Salinity]: https://earth.esa.int/eogateway/missions/smos
+[Zenodo]: https://zenodo.org/
+[SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
+[Copernicus Land Monitoring Service]: https://land.copernicus.eu/en
+[Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
 
 [xcube-cci]: https://github.com/dcs4cop/xcube-cci
 [xcube-cds]: https://github.com/dcs4cop/xcube-cds
+[xcube-clms]: https://github.com/xcube-dev/xcube-clms
 [xcube-cmems]: https://github.com/dcs4cop/xcube-cmems
+[xcube-gedi]: https://github.com/xcube-dev/xcube-gedi
 [xcube-sh]: https://github.com/dcs4cop/xcube-sh
 [xcube-smos]: https://github.com/dcs4cop/xcube-smos
+[xcube-stac]: https://github.com/xcube-dev/xcube-stac
+[xcube-zenodo]: https://github.com/xcube-dev/xcube-zenodo
 
 [API reference]: https://xcube.readthedocs.io/en/latest/api.html#data-store-framework
 [DataStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataStore
@@ -191,6 +200,8 @@ For every data store we also provide a dedicated example Notebook that
 demonstrates its specific usage in 
 [examples/notebooks/datastores](https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/datastores).
 
+Use the function `list_data_store_ids()` to list all available datastores.
+
 ### Filesystem-based data stores
 
 The following filesystem-based data stores are available in xcube:
@@ -198,7 +209,10 @@ The following filesystem-based data stores are available in xcube:
 * `"file"` for the local filesystem;
 * `"s3"` for AWS S3 compatible object storage; 
 * `"abfs"` for Azure blob storage;
-* `"memory"` for mimicking an in-memory filesystem. 
+* `"memory"` for mimicking an in-memory filesystem;
+* `"https"` for https protocols;
+* `"ftp"` for FTP server;
+* `"reference"` for read-only `fsspec` reference file systems.
 
 All filesystem-based data store have the following parameters:
 
@@ -246,6 +260,13 @@ The following `storage_options` can be used for the `abfs` data store:
 * `account_name: str` - Azure storage account name.
 * `account_key: str` - Azure storage account key.
 * `connection_string: str` - Connection string for Azure blob storage.
+
+The following `storage_options` can be used for the `ftp` data store:
+
+* `host` - The remote server name/ip to connect to
+* `port` - FTP Port to connect with, min.: 0, max.: 65535,`default`: 21
+* `username` - If authenticating, the user's identifier
+* `password` - User's password on the server, if using
 
 All filesystem data stores can open datasets from various data formats. 
 Datasets in Zarr, GeoTIFF / COG, or NetCDF format will be provided either by
@@ -319,14 +340,15 @@ It has no dedicated data store parameters.
 Its common dataset open parameters for opening [xarray.Dataset] instances are
 the same as for the filesystem-based data stores described above.
 
-### ESA SMOS
+### ESA SMOS `smos`
 
-A data store for ESA SMOS data is currently under development 
-and will be released soon.
+The data store `smos` provides datasets of the [ESA Soil Moisture and Ocean Salinity]
+mission.
 
-This data store is provided by the xcube plugin [xcube-smos].
-Once available, you will be able to install it using 
+This data store is provided by the xcube plugin [xcube-smos]. You can install it using
 `conda install -c conda-forge xcube-smos`.
+
+
 
 ### Copernicus Climate Data Store `cds`
 
@@ -422,6 +444,80 @@ Common parameters for opening [xarray.Dataset] instances:
 * `extra_search_params: dict` - Extra search parameters passed to a 
   catalogue query.
 * `max_cache_size: int` - Maximum chunk cache size in bytes.
+
+
+### Copernicus Land Monitoring Service `clms`
+
+The data store `cds` provides datasets of the [Copernicus Land Monitoring Service].
+
+This data store is provided by the xcube plugin [xcube-clms]. You can install it using `conda install -c conda-forge xcube-clms`.
+
+Data store parameters:
+
+* `credentials`: CLMS API credentials that can be obtained following the steps outlined
+   [here](https://eea.github.io/clms-api-docs/authentication.html). Required are
+   `client_id`, `user_id`, `token_uri`, and `private_key`.
+* `cache_store_id` - Store ID of cache data store. Defaults to `file`.
+* `cache_store_params` - Store parameters of a filesystem-based data store implemented in xcube.
+
+Common parameters for opening [xarray.Dataset] instances:
+
+TODO
+
+### Zenodo `zenodo`
+
+The data store `zenodo` provides access to datasets published on [Zenodo].
+
+This data store is provided by the xcube plugin [xcube-zenodo]. 
+You can install it using `conda install -c conda-forge xcube-zenodo`.
+
+Data store parameters:
+
+* `root` - Zenodo record ID. The record ID can be found in the url. Required.
+* `cache_store_id` - Store ID of cache data store. Defaults to `file`.
+* `cache_store_params` - Store parameters of a filesystem-based data store implemented in xcube.
+
+Common parameters for opening [xarray.Dataset] instances:
+
+TODO
+
+### SpatioTemporal Asset Catalogs `stac`
+
+The data store `cds` provides datasets of the [SpatioTemporal Asset Catalogs].
+
+This data store is provided by the xcube plugin [xcube-stac]. 
+You can install it using `conda install -c conda-forge xcube-stac.`
+
+Data store parameters:
+
+- `data_id`: The unique identifier for the data to open.
+- `opener_id`: Optional identifier specifying which data opener to use.
+- `data_type`: Optional data type to influence how the dataset is opened.
+- `**open_params`: Additional opening parameters.
+
+Common parameters for opening [xarray.Dataset] instances or  [MultiLevelDataset]:
+
+TODO
+
++ Preload Data !!
+
+
+### Global Ecosystem Dynamics Investigation `gedi`
+
+A data store for [Global Ecosystem Dynamics Investigation] (GEDI) data is currently 
+under development and will be released soon.
+
+This data store is provided by the xcube plugin [xcube-gedi]. Once available, you will 
+be able to install it using `conda install -c conda-forge xcube-gedi`.
+
+
+### EOPF Sample Service 
+
+A data store for EOPF Sample Service is currently under development and will be released
+soon.
+
+
+
 
 
 ## Developing new data stores
