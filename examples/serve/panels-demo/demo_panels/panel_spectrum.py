@@ -27,7 +27,7 @@ from xcube.core.gridmapping import GridMapping
 
 panel = Panel(__name__, title="Spectrum View (Demo)", icon="light", position=4)
 
-THROTTLE_TOTAL_SPECTRUM_PLOTS = 10
+_THROTTLE_TOTAL_SPECTRUM_PLOTS = 10
 
 
 @panel.layout(
@@ -190,10 +190,10 @@ def update_text(
     Input("@app", "selectedTimeLabel"),
     Input("@app", "selectedPlaceGeometry"),
     State("@app", "selectedPlaceGroup"),
-    Input("exploration_radio_group", "value"),
-    State("plot", "chart"),
     State("@container", "spectrum_list"),
     State("@container", "previous_mode"),
+    Input("exploration_radio_group", "value"),
+    State("plot", "chart"),
     Output("plot", "chart"),
     Output("error_message", "children"),
     Output("@container", "spectrum_list"),
@@ -205,12 +205,11 @@ def update_plot(
     time_label: str | None = None,
     place_geo: dict[str, Any] | None = None,
     place_group: list[dict[str, Any]] | None = None,
-    exploration_radio_group: str | None = None,
-    current_chart: alt.Chart | None = None,
     spectrum_list: list[str] | None = None,
     previous_mode: str | None = None,
+    exploration_radio_group: str | None = None,
+    current_chart: alt.Chart | None = None,
 ) -> tuple[alt.Chart | None, str, list, str]:
-    print("spectrum list", spectrum_list)
     if exploration_radio_group is None:
         return None, "Missing exploration mode choice", spectrum_list, previous_mode
 
@@ -306,7 +305,9 @@ def update_plot(
     return new_chart, "", spectrum_list, previous_mode
 
 
-def find_selected_point_label(features_data, target_point) -> str | None:
+def find_selected_point_label(
+    features_data: list[dict[str, Any]], target_point: dict[str, Any]
+) -> str | None:
     for feature_collection in features_data:
         for feature in feature_collection.get("features", []):
             geometry = feature.get("geometry", {})
@@ -386,7 +387,7 @@ def add_place_data_to_existing(
     final_df = combined_data[
         combined_data["places"].isin(
             combined_data.drop_duplicates("places", keep="last").tail(
-                THROTTLE_TOTAL_SPECTRUM_PLOTS
+                _THROTTLE_TOTAL_SPECTRUM_PLOTS
             )["places"]
         )
     ]
