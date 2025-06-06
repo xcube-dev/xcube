@@ -17,6 +17,7 @@
 [SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
 [Copernicus Land Monitoring Service]: https://land.copernicus.eu/en
 [Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
+[Open Data Portal]: https://climate.esa.int/en/data/#/dashboard
 
 [xcube-cci]: https://github.com/dcs4cop/xcube-cci
 [xcube-cds]: https://github.com/dcs4cop/xcube-cds
@@ -340,15 +341,63 @@ It has no dedicated data store parameters.
 Its common dataset open parameters for opening [xarray.Dataset] instances are
 the same as for the filesystem-based data stores described above.
 
+### ESA Climate Data Centre `esa-cci-kc`
+
+The data store `esa-cci-kc` accesses datasets that are offered by the [Open Data Portal]
+via the references format.
+
+Data store parameters:
+* `refs: list` - List of references to use for this instance. Items can be:
+    * A path or URL to a reference JSON file, or
+    * A dictionary with:
+        * `ref_path: str` - Path or URL to the reference file. Required.
+        * `data_id: str` - Optional identifier for the referenced data.
+        * `data_descriptor: dict` - Optional metadata or descriptor. Can contain arbitrary fields.
+* `target_protocol: str` - Protocol used to load reference files. If not provided, derived from the given path.
+* `target_options: dict` - Additional filesystem options for loading the reference files.
+* `remote_protocol: str` - Protocol of the filesystem used to access referenced data. Derived from the first reference with a protocol, if not given.
+* `remote_options: dict` - Additional filesystem options for accessing the referenced data.
+* `max_gap: int` - Maximum byte-range gap allowed when merging concurrent requests. See `max_block`.
+* `max_block: int` - Max size of merged byte ranges. Default: 256MB. Set `0` to merge only touching ranges. Negative disables merging.
+* `cache_size: int` - Maximum LRU cache size. Controls how many references (based on `record_size`) can be held in memory. Used for lazy loading.
+* `use_listings_cache: bool` - Whether to use a cache for listings.
+* `listings_expiry_time: float` - Expiry time (in seconds) for cached listings.
+* `max_paths: int` - Maximum number of paths to consider.
+* `skip_instance_cache: bool` - Skip using an internal cache per instance.
+* `asynchronous: bool` - Enable asynchronous I/O.
+
+Its common dataset open parameters for opening [xarray.Dataset] instances are
+the same as for the filesystem-based data stores described above.
+
+
 ### ESA SMOS `smos`
 
-The data store `smos` provides datasets of the [ESA Soil Moisture and Ocean Salinity]
+The data store `smos` provides L2C datasets of the [ESA Soil Moisture and Ocean Salinity]
 mission.
 
 This data store is provided by the xcube plugin [xcube-smos]. You can install it using
 `conda install -c conda-forge xcube-smos`.
 
+Data store parameters:
+* `source_path: str` - Path or URL into SMOS archive filesystem.
+* `source_protocol: str`: Protocol name for the SMOS archive filesystem.
+* `source_storage_options: dict`: Storage options for the SMOS archive filesystem. See 
+   fsspec documentation for specific filesystems.
+* `cache_path: str`: Path to local cache directory. Must be given, if file caching 
+  is desired. 
+* `xarray_kwargs: dict`: Extra keyword arguments accepted by `xarray.open_dataset`.
+  See xarray documentation for allowed keywords.
+* `extra_source_storage_options`: Extra keyword arguments that override settings in
+  *source_storage_options*.
 
+Common parameters for opening [xarray.Dataset] instances:
+
+* `time_range: (str, str)` - Time range given as pair of start and stop dates. Dates 
+  must be given using format 'YYYY-MM-DD'. Start and stop are inclusive.. Required.
+* `bbox: (float, float, float, float)` - Bounding box in geographical
+  coordinates.
+* `res_level: int` - Spatial resolution level in the range 0 to 4. Zero refers to 
+  the max. resolution of 0.0439453125 degrees.
 
 ### Copernicus Climate Data Store `cds`
 
@@ -450,19 +499,44 @@ Common parameters for opening [xarray.Dataset] instances:
 
 The data store `cds` provides datasets of the [Copernicus Land Monitoring Service].
 
-This data store is provided by the xcube plugin [xcube-clms]. You can install it using `conda install -c conda-forge xcube-clms`.
+This data store is provided by the xcube plugin [xcube-clms]. 
+You can install it using `conda install -c conda-forge xcube-clms`.
 
 Data store parameters:
 
-* `credentials`: CLMS API credentials that can be obtained following the steps outlined
-   [here](https://eea.github.io/clms-api-docs/authentication.html). Required are
-   `client_id`, `user_id`, `token_uri`, and `private_key`.
-* `cache_store_id` - Store ID of cache data store. Defaults to `file`.
-* `cache_store_params` - Store parameters of a filesystem-based data store implemented in xcube.
+* `credentials: dict`: CLMS API credentials that can be obtained following the steps outlined
+   [here](https://eea.github.io/clms-api-docs/authentication.html). 
+    These are the credentials parameters:
+
+  * `client_id: str` - Required.
+  * `issued: str`
+  * `private_key: str` - Required.
+  * `key_id: str`
+  * `title: str`
+  * `token_uri: str` - Required.
+  * `user_id: str` - Required.
+
+* `cache_store_id: str` - Store ID of cache data store. Defaults to `file`.
+* `cache_store_params: dict` - Store parameters of a filesystem-based data store implemented in xcube.
+
+Before opening a specific dataset from CLMS preload the data before opening (recommended).
+The preloading allows you to create data requests, with undetermined time to wait in the
+queue for the request to be processed, followed by downloading zip files, unzipping them,
+extracting them in a cache and processing them which can be then finally opened using a
+cache data store.
+The preload parameters are:
+* `blocking: bool` - Switch to make the preloading process blocking or non-blocking.
+  If True, the preloading process blocks the script. Defaults to `true`.
+* `silent: bool` - Silence the output of Preload API. If True, no preload state
+  output is given. Defaults to `false`.
+* `cleanup: bool` - Option to cleanup the download directory before and after the
+  preload job and to cleanup the cache directory when preload_handle.close() is called.
+  Defaults to `true`.
+
 
 Common parameters for opening [xarray.Dataset] instances:
 
-TODO
+
 
 ### Zenodo `zenodo`
 
@@ -473,34 +547,82 @@ You can install it using `conda install -c conda-forge xcube-zenodo`.
 
 Data store parameters:
 
-* `root` - Zenodo record ID. The record ID can be found in the url. Required.
-* `cache_store_id` - Store ID of cache data store. Defaults to `file`.
-* `cache_store_params` - Store parameters of a filesystem-based data store implemented in xcube.
+* `root: str` - Zenodo record ID. The record ID can be found in the url. Required.
+* `cache_store_id: str` - Store ID of cache data store. Defaults to `file`.
+* `cache_store_params: dict` - Store parameters of a filesystem-based data store implemented
+   in xcube. Defaults to: `{"root":"zenodo_cache","max_depth":10}`.
 
-Common parameters for opening [xarray.Dataset] instances:
+Before opening a specific dataset in .zip format preload the data before opening.
+The preload parameters are:
+* `blocking: bool` - Switch to make the preloading process blocking or non-blocking.
+  If True, the preloading process blocks the script. Defaults to `true`.
+* `silent: bool` - Switch to visualize the preloading process. If False, the 
+  preloading progress will be visualized in a table. If True, the visualization will 
+  be suppressed. Defaults to `true`.
 
-TODO
+There are no common parameters for opening datasets with the `xcube-zenodo` store.
+As the datasets uploaded on Zenodo are varying across a wide spectrum of datatypes 
+no specific opening parameters can be named here. `xcube-zenodo` delegates to the
+general xcube Data Opener which offers a variety of open parameters depending on the
+datatype of the dataset.
 
-### SpatioTemporal Asset Catalogs `stac`
+Use the following function to access the parameters fitting for the dataset of interest:
 
-The data store `cds` provides datasets of the [SpatioTemporal Asset Catalogs].
+```python
+open_schema = store.get_open_data_params_schema("data_id")
+```
+
+### SpatioTemporal Asset Catalogs `stac`, `stac-xcube`, `stac-cse`
+
+The data stores `stac`, `stac-xcube`, and `stac-cse` provide datasets of 
+the [SpatioTemporal Asset Catalogs].
+
+`stac` - general store that connects to a user-defined STAC API. 
+`stac-xcube` - connects to STAC catalogs published on a `xcube` Server.
+`stac-cse` - provides direct access to Sentinel data using the CSDE STAC API.
 
 This data store is provided by the xcube plugin [xcube-stac]. 
 You can install it using `conda install -c conda-forge xcube-stac.`
 
-Data store parameters:
+General Data store parameters:
 
-- `data_id`: The unique identifier for the data to open.
-- `opener_id`: Optional identifier specifying which data opener to use.
-- `data_type`: Optional data type to influence how the dataset is opened.
-- `**open_params`: Additional opening parameters.
+* `stack_mode: bool` - Stacking of STAC items is applied. If True,
+  'odc-stac' is used as a default backend. Defaults to `false`.
+* `anon: bool` - Connect to AWS S3 anonymously.
+* `key: str` - AWS access key ID.
+* `secret: str` - AWS secret access key.
+* `token: str` - Session token. 
+* `use_ssl: bool` - Use SSL in connections to S3. Defaults to `true`.
+* `requester_pays: bool` - Support of "RequesterPays" buckets. Defaults to `false`.
+* `s3_additional_kwargs: dict` - Parameters used when calling S3 API methods
+  (e.g., `ServerSideEncryption`).
+* `client_kwargs: dict` - Parameters passed to the underlying botocore client.
+    * `endpoint_url: str` - Alternative endpoint URL.
+    * `profile_name: str` - AWS configuration profile name.
+    * `region_name: str` - AWS storage region name.
+* `use_listings_cache: bool` - Whether to use a listings cache.
+* `listings_expiry_time: float` - Expiry time (in seconds) for cached listings.
+* `max_paths: int` - Maximum number of paths to consider when accessing S3 objects.
+* `skip_instance_cache: bool` - Skip using an instance-level cache for S3 clients.
+* `asynchronous: bool` - Enable asynchronous I/O for data access.
 
-Common parameters for opening [xarray.Dataset] instances or  [MultiLevelDataset]:
+Additional data store parameters for `stac`  and `xcube-stac`:
+* `url: str` - URL to STAC catalog. Required.
 
-TODO
+Additional data store parameters for `stac-cdse`:
+* `creodias_vm: bool` - xcube-stac is used on a Creodias VM. Defaults to `false`.
 
-+ Preload Data !!
+There are no common parameters for opening datasets with the three stores.
+As the available datasets are varying across a wide spectrum of datatypes
+no specific opening parameters can be named here. The stores delegate to the
+general xcube Data Opener which offers a variety of parameters depending on the
+datatype of the dataset.
 
+Use the following function to access the parameters fitting for the dataset of interest:
+
+```python
+open_schema = store.get_open_data_params_schema("data_id")
+```
 
 ### Global Ecosystem Dynamics Investigation `gedi`
 
@@ -515,9 +637,6 @@ be able to install it using `conda install -c conda-forge xcube-gedi`.
 
 A data store for EOPF Sample Service is currently under development and will be released
 soon.
-
-
-
 
 
 ## Developing new data stores
