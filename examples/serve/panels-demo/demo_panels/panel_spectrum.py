@@ -1,4 +1,5 @@
 import math
+import json
 from typing import Any
 
 import altair as alt
@@ -29,41 +30,6 @@ from xcube.core.gridmapping import GridMapping
 panel = Panel(__name__, title="Spectrum View (Demo)", icon="light", position=4)
 
 
-class DataManager:
-    def __init__(self):
-        self.all_data = pd.DataFrame(
-            columns=["places", "variable", "reflectance", "wavelength"]
-        )
-        self.added_places_stack = []
-
-    def add_place_data(self, new_data: pd.DataFrame):
-        if self._is_duplicate(new_data):
-            return
-
-        place_names = new_data["places"].unique()
-        self.all_data = pd.concat([self.all_data, new_data], ignore_index=True)
-        self.added_places_stack.append(place_names)
-
-    def remove_last_added_place(self):
-        if self.added_places_stack:
-            last_places = self.added_places_stack.pop()
-            self.all_data = self.all_data[~self.all_data["places"].isin(last_places)]
-
-    def _is_duplicate(self, new_data: pd.DataFrame) -> bool:
-        merged = new_data.merge(self.all_data, how="left", indicator=True)
-        return (merged["_merge"] == "both").all()
-
-    def delete_all_data(self):
-        self.all_data = pd.DataFrame(
-            columns=["places", "variable", "reflectance", "wavelength"]
-        )
-        self.added_places_stack = []
-
-
-manager = DataManager()
-previous_mode = ""
-
-
 @panel.layout(
     State("@app", "selectedDatasetId"),
     State("@app", "selectedTimeLabel"),
@@ -75,7 +41,6 @@ def render_panel(
     time_label: str,
     theme_mode: str,
 ) -> Component:
-
     if theme_mode == "light":
         theme_mode = "default"
 
@@ -152,13 +117,19 @@ def render_panel(
         id="error_message", style={"color": "red"}, children=[""]
     )
 
+    places_stack_storage = Typography(
+        id="places_stack_storage",
+        children=["[]"],
+        style={"display": "none"},
+    )
+
     return Box(
         children=[
-            "Select a map point from the dropdown and press 'Update' "
-            "to create a spectrum plot for that point and the selected time.",
+            "Choose an exploration mode and create/select points to view the Spectrum data.",
             control_bar,
             error_message,
             plot,
+            places_stack_storage,
         ],
         style={
             "display": "flex",
@@ -176,7 +147,6 @@ def get_spectra(
     place_group: gpd.GeoDataFrame,
     places: list,
 ) -> pd.DataFrame:
-
     grid_mapping = GridMapping.from_dataset(dataset)
 
     project = pyproj.Transformer.from_crs(
@@ -198,7 +168,6 @@ def get_spectra(
     result = pd.DataFrame()
 
     for place in places:
-
         i = (dataset_place.name_ref == place).argmax().item()
         selected_values = (
             dataset_place.drop_vars("geometry_ref")
@@ -241,9 +210,8 @@ def update_text(
     dataset_title: str | None = None,
     time_label: str | None = None,
 ) -> list | None:
-
     if time_label:
-        return [f"{dataset_title} " f"/ {time_label[0:-1]}"]
+        return [f"{dataset_title} / {time_label[0:-1]}"]
     return [f"{dataset_title} "]
 
 
@@ -253,10 +221,11 @@ def update_text(
     Input("@app", "selectedPlaceGeometry"),
     State("@app", "selectedPlaceGroup"),
     State("exploration_radio_group", "value"),
-    # Input("add_button", "clicked"),
-    Input("plot", "chart"),
+    State("plot", "chart"),
+    State("places_stack_storage", "children"),
     Output("plot", "chart"),
     Output("error_message", "children"),
+    Output("places_stack_storage", "children"),
 )
 def update_plot(
     ctx: Context,
@@ -264,29 +233,43 @@ def update_plot(
     time_label: str | None = None,
     place_geo: dict[str, Any] | None = None,
     place_group: list[dict[str, Any]] | None = None,
-    exploration_radio_group: bool | None = None,
-    # _clicked: bool | None = None,
-    previous_chart: bool | None = None,
-) -> tuple[alt.Chart | None, str]:
-    global manager, previous_mode
-    # print("clicked::", _clicked)
+    exploration_radio_group: str | None = None,
+    current_chart: alt.Chart | None = None,
+    places_stack_json: list | None = None,
+) -> tuple[alt.Chart | None, str, list]:
+    import json
+
+    places_stack = []
+    if places_stack_json and len(places_stack_json) > 0:
+        try:
+            places_stack = json.loads(places_stack_json[0])
+        except (json.JSONDecodeError, IndexError):
+            places_stack = []
+
     if exploration_radio_group is None:
-        return None, "Missing exploration mode choice"
+        return None, "Missing exploration mode choice", [json.dumps(places_stack)]
+
     dataset = get_dataset(ctx, dataset_id)
     has_point = any(
         feature.get("geometry", {}).get("type") == "Point"
         for collection in place_group
         for feature in collection.get("features", [])
     )
+
     if dataset is None:
-        return None, "Missing dataset selection"
+        return None, "Missing dataset selection", [json.dumps(places_stack)]
     elif not place_group or not has_point:
-        return None, "Missing point selection"
+        return None, "Missing point selection", [json.dumps(places_stack)]
 
     label = find_selected_point_label(place_group, place_geo)
 
     if label is None:
-        return None, "There is no label for the selected point"
+        return (
+            None,
+            "There is no label for the selected point",
+            [json.dumps(places_stack)],
+        )
+
     if place_geo.get("type") == "Point":
         place_group_geodf = gpd.GeoDataFrame(
             [
@@ -302,78 +285,66 @@ def update_plot(
             ]
         )
     else:
-        return None, "Selected geometry must be a point"
+        return None, "Selected geometry must be a point", [json.dumps(places_stack)]
 
     place_group_geodf["time"] = pd.to_datetime(time_label).tz_localize(None)
     places_select = [label]
-    source = get_spectra(dataset, place_group_geodf, places_select)
+    new_spectrum_data = get_spectra(dataset, place_group_geodf, places_select)
 
-    if source is None:
-        return None, "No reflectances found in Variables"
-    if previous_chart is None:
-        manager.delete_all_data()
+    if new_spectrum_data is None or new_spectrum_data.empty:
+        return None, "No reflectances found in Variables", [json.dumps(places_stack)]
 
-    # Delete points that are removed by the user from the viewer:
+    existing_data = extract_data_from_chart(current_chart)
+
+    # Filter points in case the user deletes them.
     valid_labels = {
         feature["properties"]["label"]
         for item in place_group
         for feature in item.get("features", [])
     }
-    manager.all_data = manager.all_data[manager.all_data["places"].isin(valid_labels)]
+    existing_data = filter_data_by_valid_labels(existing_data, valid_labels)
 
     if exploration_radio_group == "active":
-        if previous_mode != "save":
-            manager.remove_last_added_place()
-        manager.add_place_data(source)
-        chart = (
-            alt.Chart(manager.all_data)
-            .mark_bar()
-            .encode(
-                x="wavelength:N",
-                y="reflectance:Q",
-                xOffset="places:N",
-                color="places:N",
-                tooltip=["variable", "wavelength", "reflectance"],
+        if places_stack:
+            existing_data, places_stack = remove_last_added_place(
+                existing_data, places_stack
             )
-        ).properties(width="container", height="container")
+
+        updated_data = add_place_data_to_existing(existing_data, new_spectrum_data)
+        places_stack.append([label])
     else:
-        manager.add_place_data(source)
-        chart = (
-            alt.Chart(manager.all_data)
-            .mark_bar()
-            .encode(
-                x="wavelength:N",
-                y="reflectance:Q",
-                xOffset="places:N",
-                color="places:N",
-                tooltip=["variable", "wavelength", "reflectance"],
-            )
-        ).properties(width="container", height="container")
-    previous_mode = exploration_radio_group
-    return chart, ""
+        updated_data = add_place_data_to_existing(existing_data, new_spectrum_data)
+        places_stack.append([label])
+
+    new_chart = create_chart_from_data(updated_data)
+
+    return new_chart, "", [json.dumps(places_stack)]
 
 
 @panel.callback(
     Input("delete_button", "clicked"),
+    State("plot", "chart"),
+    State("places_stack_storage", "children"),
     Output("plot", "chart"),
+    Output("places_stack_storage", "children"),
 )
 def delete_places(
     ctx: Context,
     _clicked: bool | None = None,
-) -> alt.Chart:
-    global manager
-    manager.remove_last_added_place()
-    return (
-        alt.Chart(manager.all_data)
-        .mark_bar()
-        .encode(
-            x="wavelength:N",
-            y="reflectance:Q",
-            xOffset="places:N",
-            color="places:N",
-            tooltip=["variable", "wavelength", "reflectance"],
-        )
-    ).properties(width="container", height="container")
+    current_chart: alt.Chart | None = None,
+    places_stack_json: list | None = None,
+) -> tuple[alt.Chart, list]:
+    places_stack = []
+    if places_stack_json and len(places_stack_json) > 0:
+        try:
+            places_stack = json.loads(places_stack_json[0])
+        except (json.JSONDecodeError, IndexError):
+            places_stack = []
+
+    current_data = extract_data_from_chart(current_chart)
+    updated_data, updated_stack = remove_last_added_place(current_data, places_stack)
+    new_chart = create_chart_from_data(updated_data)
+    return new_chart, [json.dumps(updated_stack)]
 
 
 @panel.callback(
@@ -403,3 +374,79 @@ def find_selected_point_label(features_data, target_point):
                 return feature.get("properties", {}).get("label", None)
 
     return None
+
+
+def extract_data_from_chart(chart: alt.Chart) -> pd.DataFrame:
+    if chart is None:
+        return pd.DataFrame(columns=["places", "variable", "reflectance", "wavelength"])
+
+    if chart.get("datasets", {}) != {}:
+        return pd.DataFrame(list(chart.get("datasets").values())[0])
+
+    return pd.DataFrame(columns=["places", "variable", "reflectance", "wavelength"])
+
+
+def create_chart_from_data(data: pd.DataFrame) -> alt.Chart:
+    if data.empty:
+        return (
+            alt.Chart(
+                pd.DataFrame(
+                    columns=["places", "variable", "reflectance", "wavelength"]
+                )
+            )
+            .mark_bar()
+            .encode(
+                x="wavelength:N",
+                y="reflectance:Q",
+                xOffset="places:N",
+                color="places:N",
+                tooltip=["variable", "wavelength", "reflectance"],
+            )
+            .properties(width="container", height="container")
+        )
+
+    return (
+        alt.Chart(data)
+        .mark_bar()
+        .encode(
+            x="wavelength:N",
+            y="reflectance:Q",
+            xOffset="places:N",
+            color="places:N",
+            tooltip=["variable", "wavelength", "reflectance"],
+        )
+    ).properties(width="container", height="container")
+
+
+def add_place_data_to_existing(
+    existing_data: pd.DataFrame, new_data: pd.DataFrame
+) -> pd.DataFrame:
+    if new_data.empty:
+        return existing_data
+
+    # This is to check if the new_data already exists in the existing_data to avoid
+    # duplication
+    if not existing_data.empty:
+        merged = new_data.merge(existing_data, how="left", indicator=True)
+        if (merged["_merge"] == "both").all():
+            return existing_data
+
+    combined_data = pd.concat([existing_data, new_data], ignore_index=True)
+    return combined_data
+
+
+def remove_last_added_place(
+    data: pd.DataFrame, places_stack: list
+) -> tuple[pd.DataFrame, list]:
+    if not places_stack or data.empty:
+        return data, places_stack
+
+    last_places = places_stack.pop()
+    filtered_data = data[~data["places"].isin(last_places)]
+    return filtered_data, places_stack
+
+
+def filter_data_by_valid_labels(data: pd.DataFrame, valid_labels: set) -> pd.DataFrame:
+    if data.empty:
+        return data
+    return data[data["places"].isin(valid_labels)]
