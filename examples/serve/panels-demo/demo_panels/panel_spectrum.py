@@ -90,12 +90,17 @@ def render_panel(
 
     note = Typography(
         id="note",
-        children=["NOTE: You can only add a maximum of 10 spectrum plots at a time"],
+        children=[
+            "NOTE: Only add a maximum of 10 spectrum plots at a time as older "
+            "ones are removed. When switching from 'Add' to 'Update' mode, "
+            "the existing bar plots will be cleared if any."
+        ],
     )
 
     return Box(
         children=[
-            "Choose an exploration mode and create/select points to view the Spectrum data.",
+            "Choose an exploration mode and select points to visualize their spectral "
+            "reflectance across available wavelengths in this highly dynamic Spectrum View.",
             note,
             control_bar,
             error_message,
@@ -221,16 +226,16 @@ def update_plot(
     )
 
     if dataset is None:
-        return None, "Missing dataset selection", spectrum_list, previous_mode
+        return None, "Missing dataset selection", spectrum_list, exploration_radio_group
     elif not place_group or not has_point:
-        return None, "Missing point selection", spectrum_list, previous_mode
+        return None, "Missing point selection", spectrum_list, exploration_radio_group
 
     label = find_selected_point_label(place_group, place_geo)
 
     if label is None:
         return (
             None,
-            "There is no label for the selected point",
+            "There is no label for the selected point or no point is selected",
             spectrum_list,
             previous_mode,
         )
@@ -259,7 +264,7 @@ def update_plot(
     if new_spectrum_data is None or new_spectrum_data.empty:
         return None, "No reflectances found in Variables", spectrum_list, previous_mode
 
-    new_spectrum_data["legend"] = new_spectrum_data["places"] + ": " + time_label
+    new_spectrum_data["Legend"] = new_spectrum_data["places"] + ": " + time_label
 
     existing_data = extract_data_from_chart(current_chart)
 
@@ -288,7 +293,7 @@ def update_plot(
 
     # Vega Altair doesn’t support xOffset with x:Q, so we manually shift each bar
     # slightly
-    unique_groups = sorted(updated_data["legend"].unique())
+    unique_groups = sorted(updated_data["Legend"].unique())
     n_groups = len(unique_groups)
     group_offset_map = {
         group: i - (n_groups - 1) / 2 for i, group in enumerate(unique_groups)
@@ -296,28 +301,28 @@ def update_plot(
 
     bar_spacing = 3
     updated_data["x_offset"] = updated_data.apply(
-        lambda row: row["wavelength"] + group_offset_map[row["legend"]] * bar_spacing,
+        lambda row: row["wavelength"] + group_offset_map[row["Legend"]] * bar_spacing,
         axis=1,
     )
 
     new_chart = create_chart_from_data(updated_data)
-    previous_mode = exploration_radio_group
-    return new_chart, "", spectrum_list, previous_mode
+    return new_chart, "", spectrum_list, exploration_radio_group
 
 
 def find_selected_point_label(
     features_data: list[dict[str, Any]], target_point: dict[str, Any]
 ) -> str | None:
+    if target_point is None:
+        return None
     for feature_collection in features_data:
         for feature in feature_collection.get("features", []):
             geometry = feature.get("geometry", {})
             coordinates = geometry.get("coordinates", [])
             geo_type = geometry.get("type", "")
 
-            if (
-                coordinates == target_point["coordinates"]
-                and geo_type == target_point["type"]
-            ):
+            if coordinates == target_point.get(
+                "coordinates", []
+            ) and geo_type == target_point.get("type", ""):
                 return feature.get("properties", {}).get("label", None)
 
     return None
@@ -346,7 +351,7 @@ def create_chart_from_data(data: pd.DataFrame) -> alt.Chart:
                 x="wavelength:N",
                 y="reflectance:Q",
                 xOffset="places:N",
-                color="legend:N",
+                color="Legend:N",
                 tooltip=["places", "variable", "wavelength", "reflectance"],
             )
             .properties(width="container", height="container")
@@ -358,8 +363,8 @@ def create_chart_from_data(data: pd.DataFrame) -> alt.Chart:
         .encode(
             x=alt.X("x_offset:Q", title="Wavelength"),
             y=alt.Y("reflectance:Q", title="Reflectance"),
-            xOffset="legend:N",
-            color="legend:N",
+            xOffset="Legend:N",
+            color="Legend:N",
             tooltip=["places", "variable", "wavelength", "reflectance"],
         )
     ).properties(width="container", height="container")

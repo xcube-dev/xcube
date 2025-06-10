@@ -119,7 +119,7 @@ def render_panel(
         style={
             "display": "flex",
             "flexDirection": "column",
-            "alignItems": "center",
+            "alignItems": "left",
             "width": "100%",
             "height": "100%",
             "gap": 6,
