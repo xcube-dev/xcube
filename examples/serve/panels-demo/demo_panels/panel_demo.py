@@ -30,6 +30,14 @@ def render_panel(
         label="Opaque",
     )
 
+    # Will render the firstrow from viewer
+    # first_row = FirstRow(id="firstrow", required=[dataset_title, time_label],
+    #                      hostComponent= True)
+
+    # Will render the firstrow as a box with typography from chartlets
+    # first_row = FirstRow(id="firstrow", required=[dataset_title, time_label],
+    #                      hostComponent=False)
+
     color_select = Select(
         id="color",
         value=color,
@@ -55,7 +63,7 @@ def render_panel(
             "It has no useful functionality.",
             opaque_checkbox,
             color_select,
-            info_text
+            info_text,
         ],
     )
 
