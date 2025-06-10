@@ -201,7 +201,7 @@ For every data store we also provide a dedicated example Notebook that
 demonstrates its specific usage in 
 [examples/notebooks/datastores](https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/datastores).
 
-Use the function `list_data_store_ids()` to list all available datastores.
+Use `list_data_store_ids()` to list all available data stores.
 
 ### Filesystem-based data stores
 
@@ -225,6 +225,24 @@ All filesystem-based data store have the following parameters:
 * `excludes: list[str]` - A list of paths to exclude from the store. 
   May contain wildcards `*` and `?`. Defaults to `UNDEFINED`.
 * `storage_options: dict[str, any]` - Filesystem-specific options.
+
+The `reference` store has the following additional parameters:
+* `refs: list` - List of references to use for this instance. Items can be:
+    * A path or URL to a reference JSON file, or
+    * A dictionary with:
+        * `ref_path: str` - Path or URL to the reference file. Required.
+        * `data_id: str` - Optional identifier for the referenced data.
+        * `data_descriptor: dict` - Optional metadata or descriptor.
+* `target_protocol: str` - Target Protocol. If not provided,
+  derived from the given path.
+* `target_options: str` - Additional options for loadings reference files. Derived from 
+   the first reference with a protocol, if not given.
+* `remote_protocol: str` - Protocol of the filesystem on which the references 
+   will be evaluated.
+* `remote_options: str` - Additional options for loadings reference files.
+* `max_gap: int` - Max byte-range gap allowed when merging concurrent requests.
+* `max_block: int` - Max size of merged byte ranges.
+* `cache_size: int` - Max size of LRU cache.
 
 The parameter `storage_options` is filesystem-specific. Valid 
 `storage_options` for all filesystem data stores are: 
@@ -264,10 +282,10 @@ The following `storage_options` can be used for the `abfs` data store:
 
 The following `storage_options` can be used for the `ftp` data store:
 
-* `host` - The remote server name/ip to connect to
-* `port` - FTP Port to connect with, min.: 0, max.: 65535,`default`: 21
-* `username` - If authenticating, the user's identifier
-* `password` - User's password on the server, if using
+* `host` - Remote server name/ip 
+* `port` - FTP Port, min.: 0, max.: 65535,`default`: 21
+* `username` - User's identifier, if using
+* `password` - User's password, if using
 
 All filesystem data stores can open datasets from various data formats. 
 Datasets in Zarr, GeoTIFF / COG, or NetCDF format will be provided either by
@@ -346,28 +364,7 @@ the same as for the filesystem-based data stores described above.
 The data store `esa-cci-kc` accesses datasets that are offered by the [Open Data Portal]
 via the references format.
 
-Data store parameters:
-* `refs: list` - List of references to use for this instance. Items can be:
-    * A path or URL to a reference JSON file, or
-    * A dictionary with:
-        * `ref_path: str` - Path or URL to the reference file. Required.
-        * `data_id: str` - Optional identifier for the referenced data.
-        * `data_descriptor: dict` - Optional metadata or descriptor.
-* `target_protocol: str` - Protocol used to load reference files. If not provided, 
-   derived from the given path.
-* `target_options: dict` - Additional filesystem options for loading the reference files.
-* `remote_protocol: str` - Protocol of the filesystem used to access referenced data. 
-   Derived from the first reference with a protocol, if not given.
-* `remote_options: dict` - Additional filesystem options for accessing the referenced data.
-* `max_gap: int` - Max byte-range gap allowed when merging concurrent requests. See `max_block`.
-* `max_block: int` - Max size of merged byte ranges. Defaults to `256MB`. Set `0` to merge 
-   only touching ranges. Negative disables merging.
-* `cache_size: int` - Max LRU cache size.
-* `use_listings_cache: bool` - Whether to use a cache for listings.
-* `listings_expiry_time: float` - Expiry time (in seconds) for cached listings.
-* `max_paths: int` - Max number of paths to consider.
-* `skip_instance_cache: bool` - Skip using an internal cache per instance.
-* `asynchronous: bool` - Enable asynchronous I/O.
+Data store parameters are the same as for the filesystem-based `reference` store.
 
 Its common dataset open parameters for opening [xarray.Dataset] instances are
 the same as for the filesystem-based data stores described above.
@@ -399,7 +396,7 @@ Common parameters for opening [xarray.Dataset] instances:
 * `bbox: (float, float, float, float)` - Bounding box in geographical
   coordinates.
 * `res_level: int` - Spatial resolution level in the range 0 to 4. Zero refers to 
-  the max. resolution of 0.0439453125 degrees.
+  the max resolution of 0.0439453125 degrees.
 
 ### Copernicus Climate Data Store `cds`
 
@@ -537,10 +534,8 @@ The preload parameters are:
   preload job and the cache directory when preload_handle.close() is called.
   Defaults to `True`.
 
-
 Its common dataset open parameters for opening [xarray.Dataset] instances are the same 
 as for the filesystem-based data stores described above.
-
 
 ### Zenodo `zenodo`
 
@@ -551,12 +546,17 @@ You can install it using `conda install -c conda-forge xcube-zenodo`.
 
 Data store parameters:
 
-* `root: str` - Zenodo record ID. The record ID can be found in the url. Required.
+* `root: str` - Zenodo record ID. Required.
 * `cache_store_id: str` - Store ID of cache data store. Defaults to `file`.
-* `cache_store_params: dict` - Store parameters of a filesystem-based data store implemented
-   in xcube. Defaults to: `{"root":"zenodo_cache","max_depth":10}`.
+* `cache_store_params: dict` - Store parameters of a filesystem-based data store.
+   Defaults to: `{"root":"zenodo_cache","max_depth":10}`.
 
-Before opening a specific dataset in .zip format preload the data before opening.
+Before opening a specific dataset in .zip format, it's recommended to preload the data first.
+Preloading lets you create data requests ahead of time, which may sit in a queue before
+being processed. Once processed, the data is downloaded as zip files, unzipped,
+extracted to a cache, and prepared for use. After this, it can be accessed through the
+cache data store.
+
 The preload parameters are:
 * `blocking: bool` - Switch to make the preloading process blocking or non-blocking.
   If True, the preloading process blocks the script. Defaults to `True`.
@@ -576,14 +576,14 @@ Use the following function to access the parameters fitting for the dataset of i
 open_schema = store.get_open_data_params_schema("data_id")
 ```
 
-### SpatioTemporal Asset Catalogs `stac`, `stac-xcube`, `stac-cse`
+### SpatioTemporal Asset Catalogs `stac`, `stac-xcube`, `stac-cdse`
 
-The data stores `stac`, `stac-xcube`, and `stac-cse` provide datasets of 
+The data stores `stac`, `stac-xcube`, and `stac-cdse` provide datasets of 
 the [SpatioTemporal Asset Catalogs].
 
-`stac` - general store that connects to a user-defined STAC API. 
-`stac-xcube` - connects to STAC catalogs published on a `xcube` Server.
-`stac-cse` - provides direct access to Sentinel data using the CSDE STAC API.
+`stac` - General store that connects to a user-defined STAC API. 
+`stac-xcube` - Connects to STAC catalogs published on a `xcube` Server.
+`stac-cse` - Provides direct access to Sentinel data using the CSDE STAC API.
 
 This data store is provided by the xcube plugin [xcube-stac]. 
 You can install it using `conda install -c conda-forge xcube-stac.`
@@ -591,13 +591,13 @@ You can install it using `conda install -c conda-forge xcube-stac.`
 General Data store parameters:
 
 * `stack_mode: bool` - Stacking of STAC items is applied. If True,
-  'odc-stac' is used as a default backend. Defaults to `false`.
+  'odc-stac' is used as a default backend. Defaults to `False`.
 * `anon: bool` - Connect to AWS S3 anonymously.
 * `key: str` - AWS access key ID.
 * `secret: str` - AWS secret access key.
 * `token: str` - Session token. 
-* `use_ssl: bool` - Use SSL in connections to S3. Defaults to `true`.
-* `requester_pays: bool` - Support of "RequesterPays" buckets. Defaults to `false`.
+* `use_ssl: bool` - Use SSL in connections to S3. Defaults to `True`.
+* `requester_pays: bool` - Support of "RequesterPays" buckets. Defaults to `False`.
 * `s3_additional_kwargs: dict` - Parameters used when calling S3 API methods
   (e.g., `ServerSideEncryption`).
 * `client_kwargs: dict` - Parameters passed to the underlying botocore client.
@@ -614,7 +614,7 @@ Additional data store parameters for `stac`  and `xcube-stac`:
 * `url: str` - URL to STAC catalog. Required.
 
 Additional data store parameters for `stac-cdse`:
-* `creodias_vm: bool` - xcube-stac is used on a Creodias VM. Defaults to `false`.
+* `creodias_vm: bool` - xcube-stac is used on a Creodias VM. Defaults to `False`.
 
 There are no common parameters for opening datasets with the three stores.
 As the available datasets are varying across a wide spectrum of datatypes
