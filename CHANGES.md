@@ -1,3 +1,6 @@
+## Changes in 1.11.1 (in development)
+
+
 ## Changes in 1.11.0
 
 This release is fully dedicated to a more efficient and robust approach 
