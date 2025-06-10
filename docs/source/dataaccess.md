@@ -352,17 +352,20 @@ Data store parameters:
     * A dictionary with:
         * `ref_path: str` - Path or URL to the reference file. Required.
         * `data_id: str` - Optional identifier for the referenced data.
-        * `data_descriptor: dict` - Optional metadata or descriptor. Can contain arbitrary fields.
-* `target_protocol: str` - Protocol used to load reference files. If not provided, derived from the given path.
+        * `data_descriptor: dict` - Optional metadata or descriptor.
+* `target_protocol: str` - Protocol used to load reference files. If not provided, 
+   derived from the given path.
 * `target_options: dict` - Additional filesystem options for loading the reference files.
-* `remote_protocol: str` - Protocol of the filesystem used to access referenced data. Derived from the first reference with a protocol, if not given.
+* `remote_protocol: str` - Protocol of the filesystem used to access referenced data. 
+   Derived from the first reference with a protocol, if not given.
 * `remote_options: dict` - Additional filesystem options for accessing the referenced data.
-* `max_gap: int` - Maximum byte-range gap allowed when merging concurrent requests. See `max_block`.
-* `max_block: int` - Max size of merged byte ranges. Default: 256MB. Set `0` to merge only touching ranges. Negative disables merging.
-* `cache_size: int` - Maximum LRU cache size. Controls how many references (based on `record_size`) can be held in memory. Used for lazy loading.
+* `max_gap: int` - Max byte-range gap allowed when merging concurrent requests. See `max_block`.
+* `max_block: int` - Max size of merged byte ranges. Defaults to `256MB`. Set `0` to merge 
+   only touching ranges. Negative disables merging.
+* `cache_size: int` - Max LRU cache size.
 * `use_listings_cache: bool` - Whether to use a cache for listings.
 * `listings_expiry_time: float` - Expiry time (in seconds) for cached listings.
-* `max_paths: int` - Maximum number of paths to consider.
+* `max_paths: int` - Max number of paths to consider.
 * `skip_instance_cache: bool` - Skip using an internal cache per instance.
 * `asynchronous: bool` - Enable asynchronous I/O.
 
@@ -386,14 +389,13 @@ Data store parameters:
 * `cache_path: str`: Path to local cache directory. Must be given, if file caching 
   is desired. 
 * `xarray_kwargs: dict`: Extra keyword arguments accepted by `xarray.open_dataset`.
-  See xarray documentation for allowed keywords.
 * `extra_source_storage_options`: Extra keyword arguments that override settings in
   *source_storage_options*.
 
 Common parameters for opening [xarray.Dataset] instances:
 
-* `time_range: (str, str)` - Time range given as pair of start and stop dates. Dates 
-  must be given using format 'YYYY-MM-DD'. Start and stop are inclusive.. Required.
+* `time_range: (str, str)` - Time range given as pair of start and stop dates. 
+  Format: `YYYY-MM-DD`. Required.
 * `bbox: (float, float, float, float)` - Bounding box in geographical
   coordinates.
 * `res_level: int` - Spatial resolution level in the range 0 to 4. Zero refers to 
@@ -517,25 +519,27 @@ Data store parameters:
   * `user_id: str` - Required.
 
 * `cache_store_id: str` - Store ID of cache data store. Defaults to `file`.
-* `cache_store_params: dict` - Store parameters of a filesystem-based data store implemented in xcube.
+* `cache_store_params: dict` - Store parameters of a filesystem-based data 
+  store.
 
-Before opening a specific dataset from CLMS preload the data before opening (recommended).
-The preloading allows you to create data requests, with undetermined time to wait in the
-queue for the request to be processed, followed by downloading zip files, unzipping them,
-extracting them in a cache and processing them which can be then finally opened using a
+Before opening a specific dataset from CLMS, it's recommended to preload the data first.
+Preloading lets you create data requests ahead of time, which may sit in a queue before 
+being processed. Once processed, the data is downloaded as zip files, unzipped, 
+extracted to a cache, and prepared for use. After this, it can be accessed through the 
 cache data store.
+
 The preload parameters are:
 * `blocking: bool` - Switch to make the preloading process blocking or non-blocking.
-  If True, the preloading process blocks the script. Defaults to `true`.
+  If True, the preloading process blocks the script. Defaults to `True`.
 * `silent: bool` - Silence the output of Preload API. If True, no preload state
-  output is given. Defaults to `false`.
-* `cleanup: bool` - Option to cleanup the download directory before and after the
-  preload job and to cleanup the cache directory when preload_handle.close() is called.
-  Defaults to `true`.
+  output is given. Defaults to `False`.
+* `cleanup: bool` - Cleanup the download directory before and after the
+  preload job and the cache directory when preload_handle.close() is called.
+  Defaults to `True`.
 
 
-Common parameters for opening [xarray.Dataset] instances:
-
+Its common dataset open parameters for opening [xarray.Dataset] instances are the same 
+as for the filesystem-based data stores described above.
 
 
 ### Zenodo `zenodo`
@@ -555,10 +559,10 @@ Data store parameters:
 Before opening a specific dataset in .zip format preload the data before opening.
 The preload parameters are:
 * `blocking: bool` - Switch to make the preloading process blocking or non-blocking.
-  If True, the preloading process blocks the script. Defaults to `true`.
+  If True, the preloading process blocks the script. Defaults to `True`.
 * `silent: bool` - Switch to visualize the preloading process. If False, the 
   preloading progress will be visualized in a table. If True, the visualization will 
-  be suppressed. Defaults to `true`.
+  be suppressed. Defaults to `True`.
 
 There are no common parameters for opening datasets with the `xcube-zenodo` store.
 As the datasets uploaded on Zenodo are varying across a wide spectrum of datatypes 
