@@ -496,7 +496,7 @@ Common parameters for opening [xarray.Dataset] instances:
 
 ### Copernicus Land Monitoring Service `clms`
 
-The data store `cds` provides datasets of the [Copernicus Land Monitoring Service].
+The data store `clms` provides datasets of the [Copernicus Land Monitoring Service].
 
 This data store is provided by the xcube plugin [xcube-clms]. 
 You can install it using `conda install -c conda-forge xcube-clms`.
