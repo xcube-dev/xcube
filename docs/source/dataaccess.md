@@ -201,7 +201,7 @@ For every data store we also provide a dedicated example Notebook that
 demonstrates its specific usage in 
 [examples/notebooks/datastores](https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/datastores).
 
-Use `list_data_store_ids()` to list all available data stores.
+Use `list_data_store_ids()` to list all available data stores:
 
 ```python
 from xcube.core.store import list_data_store_ids
@@ -289,7 +289,7 @@ The following `storage_options` can be used for the `abfs` data store:
 The following `storage_options` can be used for the `ftp` data store:
 
 * `host` - Remote server name/ip 
-* `port` - FTP Port, min.: 0, max.: 65535,`default`: 21
+* `port` - FTP Port, min: 0, max: 65535,`default`: 21
 * `username` - User's identifier, if using
 * `password` - User's password, if using
 
@@ -496,13 +496,13 @@ Common parameters for opening [xarray.Dataset] instances:
 * `res_level: int` - Spatial resolution level in the range 0 to 4. Zero refers to
   the max resolution of 0.0439453125 degrees.
 
-### Global Ecosystem Dynamics Investigation `gedi`
+### Global Ecosystem Dynamics Investigation `gedidb`
 
 A data store for [Global Ecosystem Dynamics Investigation] (GEDI) data is currently
 under development and will be released soon.
 
-This data store is provided by the xcube plugin [xcube-gedi]. Once available, you will
-be able to install it using `conda install -c conda-forge xcube-gedi`.
+This data store is provided by the xcube plugin [xcube-gedidb]. Once available, you will
+be able to install it using `conda install -c conda-forge xcube-gedidb`.
 
 ### Sentinel Hub API 
 
@@ -557,7 +557,7 @@ Common parameters for opening [xarray.Dataset] instances:
 
 ### SpatioTemporal Asset Catalogs `stac`, `stac-xcube`, `stac-cdse`
 
-The data stores `stac`, `stac-xcube`, and `stac-cdse` provide datasets of
+The data stores `stac`, `stac-xcube`, and `stac-cdse` provide access to datasets of
 the [SpatioTemporal Asset Catalogs].
 
 The three data stores are provided by the xcube plugin [xcube-stac].
@@ -568,7 +568,7 @@ You can install it using `conda install -c conda-forge xcube-stac.`
 The data store `stac` provides datasets from a user-defined STAC API.
 
 The general parameters for the data store are the same as those used for `https`
-and `s3` stores. The STAC collection of interest determines whether data is accessed
+and `s3` stores. The STAC catalog of interest determines whether data is accessed
 via `https` or `s3`. Specific parameters for this store are:
 * `url: str` - URL to STAC catalog. Required.
 * `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
@@ -578,7 +578,7 @@ via `https` or `s3`. Specific parameters for this store are:
 The data store `stac-xcube` connects to STAC catalogs published on a `xcube` Server.
 
 The general parameters for the data store are the same as those used for `https`
-and `s3` stores. The STAC collection of interest determines whether data is accessed
+and `s3` stores. The STAC catalog of interest determines whether data is accessed
 via `https` or `s3`. Specific parameters for this store are:
 * `url: str` - URL to STAC catalog. Required.
 * `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
@@ -589,7 +589,7 @@ The data store `stac-cdse` provides direct access to Sentinel data using the
 CSDE STAC API.
 
 The general parameters for the data store are the same as those used for `https`
-and `s3` stores. The STAC collection of interest determines whether data is accessed
+and `s3` stores. The STAC catalog of interest determines whether data is accessed
 via `https` or `s3`. Specific parameters for this store are:
 * `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
   format. Defaults to `False`.
