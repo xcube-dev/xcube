@@ -590,8 +590,7 @@ You can install it using `conda install -c conda-forge xcube-stac.`
 
 General Data store parameters:
 
-* `stack_mode: bool` - Stacking of STAC items is applied. If True,
-  'odc-stac' is used as a default backend. Defaults to `False`.
+* `stack_mode: bool` - Stacking of STAC items is applied. Defaults to `False`.
 * `anon: bool` - Connect to AWS S3 anonymously.
 * `key: str` - AWS access key ID.
 * `secret: str` - AWS secret access key.
