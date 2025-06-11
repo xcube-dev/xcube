@@ -588,32 +588,16 @@ the [SpatioTemporal Asset Catalogs].
 This data store is provided by the xcube plugin [xcube-stac]. 
 You can install it using `conda install -c conda-forge xcube-stac.`
 
-General Data store parameters:
+The general parameters for the data store are the same as those used for `https` 
+and `s3` stores. The STAC collection of interest determines whether data is accessed 
+via `https` or `s3`.
 
-* `stack_mode: bool` - Stacking of STAC items is applied. Defaults to `False`.
-* `anon: bool` - Connect to AWS S3 anonymously.
-* `key: str` - AWS access key ID.
-* `secret: str` - AWS secret access key.
-* `token: str` - Session token. 
-* `use_ssl: bool` - Use SSL in connections to S3. Defaults to `True`.
-* `requester_pays: bool` - Support of "RequesterPays" buckets. Defaults to `False`.
-* `s3_additional_kwargs: dict` - Parameters used when calling S3 API methods
-  (e.g., `ServerSideEncryption`).
-* `client_kwargs: dict` - Parameters passed to the underlying botocore client.
-    * `endpoint_url: str` - Alternative endpoint URL.
-    * `profile_name: str` - AWS configuration profile name.
-    * `region_name: str` - AWS storage region name.
-* `use_listings_cache: bool` - Whether to use a listings cache.
-* `listings_expiry_time: float` - Expiry time (in seconds) for cached listings.
-* `max_paths: int` - Maximum number of paths to consider when accessing S3 objects.
-* `skip_instance_cache: bool` - Skip using an instance-level cache for S3 clients.
-* `asynchronous: bool` - Enable asynchronous I/O for data access.
+Specific parameters are:
+* `url: str` - URL to STAC catalog. Required for `stac`  and `xcube-stac`
+* `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready 
+   format. Defaults to `False`.
 
-Additional data store parameters for `stac`  and `xcube-stac`:
-* `url: str` - URL to STAC catalog. Required.
 
-Additional data store parameters for `stac-cdse`:
-* `creodias_vm: bool` - xcube-stac is used on a Creodias VM. Defaults to `False`.
 
 There are no common parameters for opening datasets with the three stores.
 As the available datasets are varying across a wide spectrum of datatypes
