@@ -551,7 +551,7 @@ Data store parameters:
 * `cache_store_params: dict` - Store parameters of a filesystem-based data store.
    Defaults to: `{"root":"zenodo_cache","max_depth":10}`.
 
-Before opening a specific dataset in .zip format, it's recommended to preload the data first.
+Before opening a specific dataset in .zip format, it's required to preload the data first.
 Preloading lets you create data requests ahead of time, which may sit in a queue before
 being processed. Once processed, the data is downloaded as zip files, unzipped,
 extracted to a cache, and prepared for use. After this, it can be accessed through the
