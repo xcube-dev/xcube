@@ -203,6 +203,11 @@ demonstrates its specific usage in
 
 Use `list_data_store_ids()` to list all available data stores.
 
+```python
+from xcube.core.store import list_data_store_ids
+
+list_data_store_ids()
+
 ### Filesystem-based data stores
 
 The following filesystem-based data stores are available in xcube:
@@ -235,9 +240,9 @@ The `reference` store has the following additional parameters:
         * `data_descriptor: dict` - Optional metadata or descriptor.
 * `target_protocol: str` - Target Protocol. If not provided,
   derived from the given path.
-* `target_options: str` - Additional options for loadings reference files. Derived from 
+* `target_options: str` - Additional options for loading reference files. 
+* `remote_protocol: str` - Protocol of the filesystem on which the references. Derived from 
    the first reference with a protocol, if not given.
-* `remote_protocol: str` - Protocol of the filesystem on which the references 
    will be evaluated.
 * `remote_options: str` - Additional options for loadings reference files.
 * `max_gap: int` - Max byte-range gap allowed when merging concurrent requests.
@@ -382,12 +387,11 @@ Data store parameters:
 * `source_path: str` - Path or URL into SMOS archive filesystem.
 * `source_protocol: str`: Protocol name for the SMOS archive filesystem.
 * `source_storage_options: dict`: Storage options for the SMOS archive filesystem. See 
-   fsspec documentation for specific filesystems.
+   fsspec documentation for specific filesystems. Any option can be overriden by
+   passing it as additional data store parameter.
 * `cache_path: str`: Path to local cache directory. Must be given, if file caching 
   is desired. 
 * `xarray_kwargs: dict`: Extra keyword arguments accepted by `xarray.open_dataset`.
-* `extra_source_storage_options`: Extra keyword arguments that override settings in
-  *source_storage_options*.
 
 Common parameters for opening [xarray.Dataset] instances:
 
