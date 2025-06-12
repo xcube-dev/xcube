@@ -23,7 +23,7 @@
 [xcube-cds]: https://github.com/dcs4cop/xcube-cds
 [xcube-clms]: https://github.com/xcube-dev/xcube-clms
 [xcube-cmems]: https://github.com/dcs4cop/xcube-cmems
-[xcube-gedi]: https://github.com/xcube-dev/xcube-gedi
+[xcube-gedidb]: https://github.com/xcube-dev/xcube-gedidb
 [xcube-sh]: https://github.com/dcs4cop/xcube-sh
 [xcube-smos]: https://github.com/dcs4cop/xcube-smos
 [xcube-stac]: https://github.com/xcube-dev/xcube-stac
@@ -201,7 +201,8 @@ For every data store we also provide a dedicated example Notebook that
 demonstrates its specific usage in 
 [examples/notebooks/datastores](https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/datastores).
 
-Use `list_data_store_ids()` to list all available data stores:
+Use `list_data_store_ids()` to list all data stores available in your current Python environment.
+The output depends on the installed xcube plugins. 
 
 ```python
 from xcube.core.store import list_data_store_ids
@@ -414,10 +415,10 @@ as for the filesystem-based data stores described above.
 
 ### EOPF Sample Service
 
-A data store for EOPF Sample Service is currently under development and will be released
+A data store for [EOPF Sentinel Zarr Samples](https://zarr.eopf.copernicus.eu/) is currently under development and will be released
 soon.
 
-### ESA Climate Data Centre `cciodp`, `ccizar`, `esa-cci-kc`
+### ESA Climate Data Centre `cciodp`, `ccizarr`, `esa-cci-kc`
 
 Three data stores are provided by the xcube plugin [xcube-cci].
 You can install it using `conda install -c conda-forge xcube-cci`.
