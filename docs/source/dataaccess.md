@@ -421,7 +421,7 @@ soon.
 ### ESA Climate Data Centre `cciodp`, `ccizarr`, `esa-cci-kc`
 
 Three data stores are provided by the xcube plugin [xcube-cci].
-You can install it using `conda install -c conda-forge xcube-cci`.
+You can install the plugin using `conda install -c conda-forge xcube-cci`.
 
 #### `cciodp`
 
@@ -568,32 +568,34 @@ You can install it using `conda install -c conda-forge xcube-stac.`
 #### `stac`
 The data store `stac` provides datasets from a user-defined STAC API.
 
-The general parameters for the data store are the same as those used for `https`
-and `s3` stores. The STAC catalog of interest determines whether data is accessed
-via `https` or `s3`. Specific parameters for this store are:
+Specific parameters for this store are:
 * `url: str` - URL to STAC catalog. Required.
 * `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
   format. Defaults to `False`.
+* `**store_params`: Store parameters to configure the store used to access the data, 
+  which are the same as those used for `https` and `s3` stores. The hrefs in the 
+  STAC assets determines whether data is accessed via `https` or `s3`. 
 
 #### `stac-xcube`
 The data store `stac-xcube` connects to STAC catalogs published on a `xcube` Server.
 
-The general parameters for the data store are the same as those used for `https`
-and `s3` stores. The STAC catalog of interest determines whether data is accessed
-via `https` or `s3`. Specific parameters for this store are:
+Specific parameters for this store are:
 * `url: str` - URL to STAC catalog. Required.
 * `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
   format. Defaults to `False`.
+* `**store_params`: Store parameters to configure the `s3` store used to access 
+  the data. 
 
 #### `stac-cdse`
-The data store `stac-cdse` provides direct access to Sentinel data using the 
+The data store `stac-cdse` provides direct access datasets published by the 
 CSDE STAC API.
 
-The general parameters for the data store are the same as those used for `https`
-and `s3` stores. The STAC catalog of interest determines whether data is accessed
-via `https` or `s3`. Specific parameters for this store are:
 * `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
   format. Defaults to `False`.
+* `key: str`- S3 key credential for CDSE data access
+* `secret: str`- S3 secret credential for CDSE data access
+In order to access [EO data via S3 from CDSE](https://documentation.dataspace.copernicus.eu/APIs/S3.html)
+one needs to [generate S3 credentials](https://documentation.dataspace.copernicus.eu/APIs/S3.html#generate-secrets).
 
 
 There are no common parameters for opening datasets with the three stores.
