@@ -1,5 +1,11 @@
 ## Changes in 1.11.1 (in development)
 
+### Other change
+
+* Added the following data stores to `Access Data` page in documentation: 
+  `https`, `ftp`, `reference`, `smos`, `stac`, `stac-cdse`, `stac-xcube`, `gedidb`,
+  `eopf-zarr`, `esa-cci-kc`.
+
 
 ## Changes in 1.11.0
 

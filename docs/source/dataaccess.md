@@ -8,16 +8,29 @@
 [JSON Object Schema]: https://json-schema.org/understanding-json-schema/reference/object.html
 [setuptools entry point]: https://setuptools.pypa.io/en/latest/userguide/entry_point.html
 
-[ESA Climate Data Centre]: https://climate.esa.int/en/odp/
-[Sentinel Hub]: https://www.sentinel-hub.com/
+[CDSE STAC API]: https://browser.stac.dataspace.copernicus.eu
 [Copernicus Marine Service]: https://marine.copernicus.eu/
 [Copernicus Climate Data Store]: https://cds.climate.copernicus.eu/
+[Copernicus Land Monitoring Service]: https://land.copernicus.eu/en
+[EOPF Sentinel Zarr Samples]: https://zarr.eopf.copernicus.eu/
+[ESA Climate Data Centre]: https://climate.esa.int/en/odp/
+[ESA Soil Moisture and Ocean Salinity]: https://earth.esa.int/eogateway/missions/smos
+[Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
+[gedidb]: https://gedidb.readthedocs.io/en/latest/
+[Open Data Portal]: https://climate.esa.int/en/data/#/dashboard
+[SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
+[Sentinel Hub]: https://www.sentinel-hub.com/
+[Zenodo]: https://zenodo.org/
 
 [xcube-cci]: https://github.com/dcs4cop/xcube-cci
 [xcube-cds]: https://github.com/dcs4cop/xcube-cds
+[xcube-clms]: https://github.com/xcube-dev/xcube-clms
 [xcube-cmems]: https://github.com/dcs4cop/xcube-cmems
+[xcube-gedidb]: https://github.com/xcube-dev/xcube-gedidb
 [xcube-sh]: https://github.com/dcs4cop/xcube-sh
 [xcube-smos]: https://github.com/dcs4cop/xcube-smos
+[xcube-stac]: https://github.com/xcube-dev/xcube-stac
+[xcube-zenodo]: https://github.com/xcube-dev/xcube-zenodo
 
 [API reference]: https://xcube.readthedocs.io/en/latest/api.html#data-store-framework
 [DataStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataStore
@@ -28,6 +41,7 @@
 [DatasetDescriptor]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DatasetDescriptor
 [GenericZarrStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.zarrstore.GenericZarrStore
 [MultiLevelDataset]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.mldataset.MultiLevelDataset
+[Server]: https://xcube.readthedocs.io/en/latest/cli/xcube_serve.html
 
 # Data Access
 
@@ -191,6 +205,15 @@ For every data store we also provide a dedicated example Notebook that
 demonstrates its specific usage in 
 [examples/notebooks/datastores](https://github.com/dcs4cop/xcube/tree/main/examples/notebooks/datastores).
 
+Use `list_data_store_ids()` to list all data stores available in your current Python environment.
+The output depends on the installed xcube plugins. 
+
+```python
+from xcube.core.store import list_data_store_ids
+
+list_data_store_ids()
+```
+
 ### Filesystem-based data stores
 
 The following filesystem-based data stores are available in xcube:
@@ -198,7 +221,10 @@ The following filesystem-based data stores are available in xcube:
 * `"file"` for the local filesystem;
 * `"s3"` for AWS S3 compatible object storage; 
 * `"abfs"` for Azure blob storage;
-* `"memory"` for mimicking an in-memory filesystem. 
+* `"memory"` for mimicking an in-memory filesystem;
+* `"https"` for https protocols;
+* `"ftp"` for FTP server;
+* `"reference"` for read-only `fsspec` reference file systems.
 
 All filesystem-based data store have the following parameters:
 
@@ -210,6 +236,24 @@ All filesystem-based data store have the following parameters:
 * `excludes: list[str]` - A list of paths to exclude from the store. 
   May contain wildcards `*` and `?`. Defaults to `UNDEFINED`.
 * `storage_options: dict[str, any]` - Filesystem-specific options.
+
+The `reference` store has the following additional parameters:
+* `refs: list` - List of references to use for this instance. Items can be:
+    * A path or URL to a reference JSON file, or
+    * A dictionary with:
+        * `ref_path: str` - Path or URL to the reference file. Required.
+        * `data_id: str` - Optional identifier for the referenced data.
+        * `data_descriptor: dict` - Optional metadata or descriptor.
+* `target_protocol: str` - Target Protocol. If not provided,
+  derived from the given path.
+* `target_options: str` - Additional options for loading reference files. 
+* `remote_protocol: str` - Protocol of the filesystem on which the references. Derived from 
+   the first reference with a protocol, if not given.
+   will be evaluated.
+* `remote_options: str` - Additional options for loadings reference files.
+* `max_gap: int` - Max byte-range gap allowed when merging concurrent requests.
+* `max_block: int` - Max size of merged byte ranges.
+* `cache_size: int` - Max size of LRU cache.
 
 The parameter `storage_options` is filesystem-specific. Valid 
 `storage_options` for all filesystem data stores are: 
@@ -247,6 +291,13 @@ The following `storage_options` can be used for the `abfs` data store:
 * `account_key: str` - Azure storage account key.
 * `connection_string: str` - Connection string for Azure blob storage.
 
+The following `storage_options` can be used for the `ftp` data store:
+
+* `host` - Remote server name/ip 
+* `port` - FTP Port, min: 0, max: 65535,`default`: 21
+* `username` - User's identifier, if using
+* `password` - User's password, if using
+
 All filesystem data stores can open datasets from various data formats. 
 Datasets in Zarr, GeoTIFF / COG, or NetCDF format will be provided either by
 [xarray.Dataset] or xcube [MultiLevelDataset] instances.
@@ -278,55 +329,6 @@ Common parameters for opening [xarray.Dataset] instances:
   consolidated metadata capability. Only works for stores that have already 
   been consolidated. Defaults to `False`.
 * `log_access: bool` - Defaults to `False`.
-
-### ESA Climate Data Centre `cciodp`
-
-The data store `cciodp` provides the datasets of 
-the [ESA Climate Data Centre]. 
-
-This data store is provided by the xcube plugin [xcube-cci].
-You can install it using `conda install -c conda-forge xcube-cci`.
-
-Data store parameters:
-
-* `endpoint_url: str` - Defaults to 
-  `'https://archive.opensearch.ceda.ac.uk/opensearch/request'`.
-* `endpoint_description_url: str` - Defaults to 
-  `'https://archive.opensearch.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'`.
-* `enable_warnings: bool` - Whether to output warnings. Defaults to `False`.
-* `num_retries: int` - Number of retries when requesting data fails. 
-  Defaults to `200`.
-* `retry_backoff_max: int` - Defaults to `40`.
-* `retry_backoff_base: float` - Defaults to `1.001`.
-
-Common parameters for opening [xarray.Dataset] instances:
-
-* `variable_names: list[str]` - List of variable names. Defaults to all.
-* `bbox: (float, float, float, float)` - Bounding box in geographical 
-  coordinates. 
-* `time_range: (str, str)` - Time range.
-* `normalize_data: bool` - Whether to normalize and sanitize the data. 
-  Defaults to `True`.
-
-### ESA Climate Data Centre `ccizarr`
-
-A subset of the datasets of the `cciodp` store have been made available 
-using the Zarr format using the data store `ccizarr`. It provides 
-much better data access performance. 
-
-It has no dedicated data store parameters.
-
-Its common dataset open parameters for opening [xarray.Dataset] instances are
-the same as for the filesystem-based data stores described above.
-
-### ESA SMOS
-
-A data store for ESA SMOS data is currently under development 
-and will be released soon.
-
-This data store is provided by the xcube plugin [xcube-smos].
-Once available, you will be able to install it using 
-`conda install -c conda-forge xcube-smos`.
 
 ### Copernicus Climate Data Store `cds`
 
@@ -371,6 +373,187 @@ Common parameters for opening [xarray.Dataset] instances:
 
 * `variable_names: list[str]` - List of variable names.
 * `time_range: [str, str]` - Time range.
+
+### Copernicus Land Monitoring Service `clms`
+
+The data store `clms` provides datasets of the [Copernicus Land Monitoring Service].
+
+This data store is provided by the xcube plugin [xcube-clms].
+You can install it using `conda install -c conda-forge xcube-clms`.
+
+Data store parameters:
+
+* `credentials: dict`: CLMS API credentials that can be obtained following the steps outlined
+  [here](https://eea.github.io/clms-api-docs/authentication.html).
+  These are the credentials parameters:
+
+    * `client_id: str` - Required.
+    * `issued: str`
+    * `private_key: str` - Required.
+    * `key_id: str`
+    * `title: str`
+    * `token_uri: str` - Required.
+    * `user_id: str` - Required.
+
+* `cache_store_id: str` - Store ID of cache data store. Defaults to `file`.
+* `cache_store_params: dict` - Store parameters of a filesystem-based data
+  store.
+
+Before opening a specific dataset from CLMS, it's required to preload the data first.
+Preloading lets you create data requests ahead of time, which may sit in a queue before
+being processed. Once processed, the data is downloaded as zip files, unzipped,
+extracted to a cache, and prepared for use. After this, it can be accessed through the
+cache data store.
+
+The preload parameters are:
+* `blocking: bool` - Switch to make the preloading process blocking or non-blocking.
+  If True, the preloading process blocks the script. Defaults to `True`.
+* `silent: bool` - Silence the output of Preload API. If True, no preload state
+  output is given. Defaults to `False`.
+* `cleanup: bool` - Cleanup the download directory before and after the
+  preload job and the cache directory when preload_handle.close() is called.
+  Defaults to `True`.
+
+Its common dataset open parameters for opening [xarray.Dataset] instances are the same
+as for the filesystem-based data stores described above.
+
+### EOPF Sample Service `eopf-zarr`
+
+The data store `eopf-zarr` provides access to the [EOPF Sentinel Zarr Samples] as an
+analysis-ready datacube (ARDC).
+
+This data store is provided by the xcube plugin `xcube-eopf`.
+You can install it using `conda install -c conda-forge xcube-eopf`.
+
+No data store parameters needed.
+
+Common parameters for opening [xarray.Dataset] instances:
+
+* `bbox: ?[float|int, float|int, float|int, float|int]?`- Bounding box 
+   ["west", "south", "est", "north"] in CRS coordinates. 
+* `time_range: [str, str]` - Temporal extent ["YYYY-MM-DD", "YYYY-MM-DD"]. 
+* `spatial_res: int|float` - Spatial resolution in meter of degree (depending on the CRS). 
+* `crs: str` - Coordinate reference system (e.g. `"EPSG:4326"`). 
+* `variables: ?str | list[str]?` - Variables to include in the dataset. Can be a name 
+   or regex pattern or iterable of the latter. 
+* `query: Any (not specified)` - Additional query options for filtering STAC Items by 
+   properties. See [STAC Query Extension](https://github.com/stac-api-extensions/query) 
+   for details.
+
+### ESA Climate Data Centre (ESA CCI) `cciodp`, `ccizarr`, `esa-cci-kc`
+
+Three data stores are provided by the xcube plugin [xcube-cci].
+You can install the plugin using `conda install -c conda-forge xcube-cci`.
+
+#### `cciodp`
+
+The data store `cciodp` provides the datasets of
+the [ESA Climate Data Centre].
+
+Data store parameters:
+
+* `endpoint_url: str` - Defaults to
+  `'https://archive.opensearch.ceda.ac.uk/opensearch/request'`.
+* `endpoint_description_url: str` - Defaults to
+  `'https://archive.opensearch.ceda.ac.uk/opensearch/description.xml?parentIdentifier=cci'`.
+* `enable_warnings: bool` - Whether to output warnings. Defaults to `False`.
+* `num_retries: int` - Number of retries when requesting data fails.
+  Defaults to `200`.
+* `retry_backoff_max: int` - Defaults to `40`.
+* `retry_backoff_base: float` - Defaults to `1.001`.
+
+Common parameters for opening [xarray.Dataset] instances:
+
+* `variable_names: list[str]` - List of variable names. Defaults to all.
+* `bbox: (float, float, float, float)` - Bounding box in geographical
+  coordinates.
+* `time_range: (str, str)` - Time range.
+* `normalize_data: bool` - Whether to normalize and sanitize the data.
+  Defaults to `True`.
+
+#### `ccizarr`
+
+A subset of the datasets of the `cciodp` store have been made available
+using the Zarr format using the data store `ccizarr`. It provides
+much better data access performance.
+
+It has no dedicated data store parameters.
+
+Its common dataset open parameters for opening [xarray.Dataset] instances are
+the same as for the filesystem-based data stores described above.
+
+#### `esa-cci-kc`
+
+The data store `esa-cci-kc` accesses datasets that are offered by the [Open Data Portal]
+via the references format.
+
+Data store parameters are the same as for the filesystem-based `reference` store.
+
+Its common dataset open parameters for opening [xarray.Dataset] instances are
+the same as for the filesystem-based data stores described above.
+
+### ESA SMOS `smos`
+
+The data store `smos` provides L2C datasets of the [ESA Soil Moisture and Ocean Salinity]
+mission.
+
+This data store is provided by the xcube plugin [xcube-smos]. You can install it using
+`conda install -c conda-forge xcube-smos`.
+
+Data store parameters:
+* `source_path: str` - Path or URL into SMOS archive filesystem.
+* `source_protocol: str`: Protocol name for the SMOS archive filesystem.
+* `source_storage_options: dict`: Storage options for the SMOS archive filesystem. See
+  fsspec documentation for specific filesystems. Any option can be overriden by
+  passing it as additional data store parameter.
+* `cache_path: str`: Path to local cache directory. Must be given, if file caching
+  is desired.
+* `xarray_kwargs: dict`: Extra keyword arguments accepted by `xarray.open_dataset`.
+
+Common parameters for opening [xarray.Dataset] instances:
+
+* `time_range: (str, str)` - Time range given as pair of start and stop dates.
+  Format: `YYYY-MM-DD`. Required.
+* `bbox: (float, float, float, float)` - Bounding box in geographical
+  coordinates.
+* `res_level: int` - Spatial resolution level in the range 0 to 4. Zero refers to
+  the max resolution of 0.0439453125 degrees.
+
+### Global Ecosystem Dynamics Investigation `gedidb`
+
+The data store `gedidb` provides access to [Global Ecosystem Dynamics Investigation] 
+(GEDI) data. The store is developed using the API from [gedidb] which is licensed under
+[European Union Public License 1.2](https://github.com/simonbesnard1/gedidb/blob/main/LICENSE).
+
+This data store is provided by the xcube plugin [xcube-gedidb]. Due to the 
+unavailability of `gedidb` as a conda package, `xcube-gedidb` is packaged via PyPi. 
+To install it, please make sure you have an activated conda environment created from the 
+[environment.yml](https://github.com/xcube-dev/xcube-gedidb/blob/main/environment.yml), 
+and then do `pip install xcube-gedi`.
+
+It has no dedicated data store parameters.
+
+This data store can be requested to open the datasets in one of two ways:
+
+- request all available data within a **bounding box** by specifying a `bbox` in 
+  the `open_data` method.
+- request all available data around a given **point** by specifying a `point` in 
+  the `open_data` method.
+
+Parameters for opening [xarray.Dataset] instances:
+
+Either  
+* `bbox: (float, float, float, float)` - A bounding box in the form of 
+  `(xmin, ymin, xmax, ymax)`. Required.
+
+Or  
+* `point: (float, float)` - Reference point for nearest query. Required
+* `num_shots: int` - Number of shots to retrieve. Defaults to `10`.
+* `radius: float` - Radius in degrees around the point Defaults to`0.1`.
+
+Common:  
+* `time_range: (str, str)` - Time range. Required.
+* `variables: list[str]` - List of variables to retrieve from the database.
 
 ### Sentinel Hub API 
 
@@ -423,6 +606,106 @@ Common parameters for opening [xarray.Dataset] instances:
   catalogue query.
 * `max_cache_size: int` - Maximum chunk cache size in bytes.
 
+### SpatioTemporal Asset Catalogs `stac`, `stac-xcube`, `stac-cdse`
+
+The data stores `stac`, `stac-xcube`, and `stac-cdse` provide access to datasets of
+the [SpatioTemporal Asset Catalogs].
+
+The three data stores are provided by the xcube plugin [xcube-stac].
+You can install it using `conda install -c conda-forge xcube-stac.`
+
+
+#### `stac`
+The data store `stac` provides datasets from a user-defined STAC API.
+
+Specific parameters for this store are:
+* `url: str` - URL to STAC catalog. Required.
+* `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
+  format. Defaults to `False`.
+* `**store_params`: Store parameters to configure the store used to access the data, 
+  which are the same as those used for `https` and `s3` stores. The hrefs in the 
+  STAC assets determines whether data is accessed via `https` or `s3`. 
+
+#### `stac-xcube`
+The data store `stac-xcube` connects to STAC catalogs published on a xcube [Server].
+
+Specific parameters for this store are:
+* `url: str` - URL to STAC catalog. Required.
+* `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
+  format. Defaults to `False`.
+* `**store_params`: Store parameters to configure the `s3` store used to access 
+  the data. 
+
+#### `stac-cdse`
+The data store `stac-cdse` provides direct access datasets published by the 
+[CDSE STAC API].
+
+* `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
+  format. Defaults to `False`. Available for `data_id="sentinel-2-l2"`, which allows to 
+  build 3D spatiotemporal data cubes from multiple Sentinel-2 Level-2A tiles. 
+  Commen opening parameter:
+
+  * `float, float, float, float)` - Bounding box ["west", "south", "est", "north"] 
+    in CRS coordinates. 
+  * `time_range: [str, str]`: Temporal extent ["YYYY-MM-DD", "YYYY-MM-DD"]. 
+  * `spatial_res: int | float` - Spatial resolution in meter of degree (depending on the CRS). 
+  * `crs: str` - Coordinate reference system (e.g. `"EPSG:4326"`).
+
+* `key: str`- S3 key credential for CDSE data access
+* `secret: str`- S3 secret credential for CDSE data access. In order to access [EO data via S3 from CDSE](https://documentation.dataspace.copernicus.eu/APIs/S3.html)
+one needs to [generate S3 credentials](https://documentation.dataspace.copernicus.eu/APIs/S3.html#generate-secrets).
+
+
+There are no common parameters for opening datasets with the three stores.
+As the available datasets are varying across a wide spectrum of datatypes
+no specific opening parameters can be named here. The stores delegate to the
+general xcube DataOpener which offers a variety of parameters depending on the
+datatype of the dataset.
+
+Use the following function to access the parameters fitting for the dataset of interest:
+
+```python
+open_schema = store.get_open_data_params_schema("data_id")
+```
+
+### Zenodo `zenodo`
+
+The data store `zenodo` provides access to datasets published on [Zenodo].
+
+This data store is provided by the xcube plugin [xcube-zenodo]. 
+You can install it using `conda install -c conda-forge xcube-zenodo`.
+
+Data store parameters:
+
+* `root: str` - Zenodo record ID. Required.
+* `cache_store_id: str` - Store ID of cache data store. Defaults to `file`.
+* `cache_store_params: dict` - Store parameters of a filesystem-based data store.
+   Defaults to: `{"root":"zenodo_cache","max_depth":10}`.
+
+Before opening a specific dataset in .zip format, it's required to preload the data first.
+Preloading lets you create data requests ahead of time, which may sit in a queue before
+being processed. Once processed, the data is downloaded as zip files, unzipped,
+extracted to a cache, and prepared for use. After this, it can be accessed through the
+cache data store.
+
+The preload parameters are:
+* `blocking: bool` - Switch to make the preloading process blocking or non-blocking.
+  If True, the preloading process blocks the script. Defaults to `True`.
+* `silent: bool` - Switch to visualize the preloading process. If False, the 
+  preloading progress will be visualized in a table. If True, the visualization will 
+  be suppressed. Defaults to `True`.
+
+There are no common parameters for opening datasets with the `xcube-zenodo` store.
+As the datasets uploaded on Zenodo are varying across a wide spectrum of datatypes 
+no specific opening parameters can be named here. `xcube-zenodo` delegates to the
+general xcube DataOpener which offers a variety of open parameters depending on the
+datatype of the dataset.
+
+Use the following function to access the parameters fitting for the dataset of interest:
+
+```python
+open_schema = store.get_open_data_params_schema("data_id")
+```
 
 ## Developing new data stores
 
