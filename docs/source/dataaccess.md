@@ -16,6 +16,7 @@
 [ESA Climate Data Centre]: https://climate.esa.int/en/odp/
 [ESA Soil Moisture and Ocean Salinity]: https://earth.esa.int/eogateway/missions/smos
 [Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
+[gedidb]: https://gedidb.readthedocs.io/en/latest/
 [Open Data Portal]: https://climate.esa.int/en/data/#/dashboard
 [SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
 [Sentinel Hub]: https://www.sentinel-hub.com/
@@ -520,11 +521,39 @@ Common parameters for opening [xarray.Dataset] instances:
 
 ### Global Ecosystem Dynamics Investigation `gedidb`
 
-A data store for [Global Ecosystem Dynamics Investigation] (GEDI) data is currently
-under development and will be released soon.
+The data store `gedidb` provides access to [Global Ecosystem Dynamics Investigation] 
+(GEDI) data. The store is developed using the API from [gedidb] which is licensed under
+[European Union Public License 1.2](https://github.com/simonbesnard1/gedidb/blob/main/LICENSE).
 
-This data store is provided by the xcube plugin [xcube-gedidb]. Once available, you will
-be able to install it using `conda install -c conda-forge xcube-gedidb`.
+This data store is provided by the xcube plugin [xcube-gedidb]. Due to the 
+unavailability of `gedidb` as a conda package, `xcube-gedidb` is packaged via PyPi. 
+To install it, please make sure you have an activated conda environment created from the 
+[environment.yml](https://github.com/xcube-dev/xcube-gedidb/blob/main/environment.yml), 
+and then do `pip install xcube-gedi`.
+
+It has no dedicated data store parameters.
+
+This data store can be requested to open the datasets in one of two ways:
+
+- request all available data within a **bounding box** by specifying a `bbox` in 
+  the `open_data` method.
+- request all available data around a given **point** by specifying a `point` in 
+  the `open_data` method.
+
+Parameters for opening [xarray.Dataset] instances:
+
+Either  
+* `bbox: (float, float, float, float)` - A bounding box in the form of 
+  `(xmin, ymin, xmax, ymax)`. Required.
+
+Or  
+* `point: (float, float)` - Reference point for nearest query. Required
+* `num_shots: int` - Number of shots to retrieve. Defaults to `10`.
+* `radius: float` - Radius in degrees around the point Defaults to`0.1`.
+
+Common:  
+* `time_range: (str, str)` - Time range. Required.
+* `variables: list[str]` - List of variables to retrieve from the database.
 
 ### Sentinel Hub API 
 
@@ -677,7 +706,6 @@ Use the following function to access the parameters fitting for the dataset of i
 ```python
 open_schema = store.get_open_data_params_schema("data_id")
 ```
-
 
 ## Developing new data stores
 
