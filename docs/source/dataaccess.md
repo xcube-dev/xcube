@@ -8,16 +8,18 @@
 [JSON Object Schema]: https://json-schema.org/understanding-json-schema/reference/object.html
 [setuptools entry point]: https://setuptools.pypa.io/en/latest/userguide/entry_point.html
 
-[ESA Climate Data Centre]: https://climate.esa.int/en/odp/
-[Sentinel Hub]: https://www.sentinel-hub.com/
+[CDSE STAC API]: https://browser.stac.dataspace.copernicus.eu
 [Copernicus Marine Service]: https://marine.copernicus.eu/
 [Copernicus Climate Data Store]: https://cds.climate.copernicus.eu/
-[ESA Soil Moisture and Ocean Salinity]: https://earth.esa.int/eogateway/missions/smos
-[Zenodo]: https://zenodo.org/
-[SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
 [Copernicus Land Monitoring Service]: https://land.copernicus.eu/en
+[EOPF Sentinel Zarr Samples]: https://zarr.eopf.copernicus.eu/
+[ESA Climate Data Centre]: https://climate.esa.int/en/odp/
+[ESA Soil Moisture and Ocean Salinity]: https://earth.esa.int/eogateway/missions/smos
 [Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
 [Open Data Portal]: https://climate.esa.int/en/data/#/dashboard
+[SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
+[Sentinel Hub]: https://www.sentinel-hub.com/
+[Zenodo]: https://zenodo.org/
 
 [xcube-cci]: https://github.com/dcs4cop/xcube-cci
 [xcube-cds]: https://github.com/dcs4cop/xcube-cds
@@ -38,6 +40,7 @@
 [DatasetDescriptor]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DatasetDescriptor
 [GenericZarrStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.zarrstore.GenericZarrStore
 [MultiLevelDataset]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.mldataset.MultiLevelDataset
+[Server]: https://xcube.readthedocs.io/en/latest/cli/xcube_serve.html
 
 # Data Access
 
@@ -413,12 +416,30 @@ The preload parameters are:
 Its common dataset open parameters for opening [xarray.Dataset] instances are the same
 as for the filesystem-based data stores described above.
 
-### EOPF Sample Service
+### EOPF Sample Service `eopf-zarr`
 
-A data store for [EOPF Sentinel Zarr Samples](https://zarr.eopf.copernicus.eu/) is currently under development and will be released
-soon.
+The data store `eopf-zarr` provides access to the [EOPF Sentinel Zarr Samples] as an
+analysis-ready datacube (ARDC).
 
-### ESA Climate Data Centre `cciodp`, `ccizarr`, `esa-cci-kc`
+This data store is provided by the xcube plugin `xcube-eopf`.
+You can install it using `conda install -c conda-forge xcube-eopf`.
+
+No data store parameters needed.
+
+Common parameters for opening [xarray.Dataset] instances:
+
+* `bbox: ?[float|int, float|int, float|int, float|int]?`- Bounding box 
+   ["west", "south", "est", "north"] in CRS coordinates. 
+* `time_range: [str, str]` - Temporal extent ["YYYY-MM-DD", "YYYY-MM-DD"]. 
+* `spatial_res: int|float` - Spatial resolution in meter of degree (depending on the CRS). 
+* `crs: str` - Coordinate reference system (e.g. `"EPSG:4326"`). 
+* `variables: ?str | list[str]?` - Variables to include in the dataset. Can be a name 
+   or regex pattern or iterable of the latter. 
+* `query: Any (not specified)` - Additional query options for filtering STAC Items by 
+   properties. See [STAC Query Extension](https://github.com/stac-api-extensions/query) 
+   for details.
+
+### ESA Climate Data Centre (ESA CCI) `cciodp`, `ccizarr`, `esa-cci-kc`
 
 Three data stores are provided by the xcube plugin [xcube-cci].
 You can install the plugin using `conda install -c conda-forge xcube-cci`.
@@ -577,7 +598,7 @@ Specific parameters for this store are:
   STAC assets determines whether data is accessed via `https` or `s3`. 
 
 #### `stac-xcube`
-The data store `stac-xcube` connects to STAC catalogs published on a `xcube` Server.
+The data store `stac-xcube` connects to STAC catalogs published on a xcube [Server].
 
 Specific parameters for this store are:
 * `url: str` - URL to STAC catalog. Required.
@@ -588,20 +609,28 @@ Specific parameters for this store are:
 
 #### `stac-cdse`
 The data store `stac-cdse` provides direct access datasets published by the 
-CSDE STAC API.
+[CDSE STAC API].
 
 * `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
-  format. Defaults to `False`.
+  format. Defaults to `False`. Available for `data_id="sentinel-2-l2"`, which allows to 
+  build 3D spatiotemporal data cubes from multiple Sentinel-2 Level-2A tiles. 
+  Commen opening parameter:
+
+  * `float, float, float, float)` - Bounding box ["west", "south", "est", "north"] 
+    in CRS coordinates. 
+  * `time_range: [str, str]`: Temporal extent ["YYYY-MM-DD", "YYYY-MM-DD"]. 
+  * `spatial_res: int | float` - Spatial resolution in meter of degree (depending on the CRS). 
+  * `crs: str` - Coordinate reference system (e.g. `"EPSG:4326"`).
+
 * `key: str`- S3 key credential for CDSE data access
-* `secret: str`- S3 secret credential for CDSE data access
-In order to access [EO data via S3 from CDSE](https://documentation.dataspace.copernicus.eu/APIs/S3.html)
+* `secret: str`- S3 secret credential for CDSE data access. In order to access [EO data via S3 from CDSE](https://documentation.dataspace.copernicus.eu/APIs/S3.html)
 one needs to [generate S3 credentials](https://documentation.dataspace.copernicus.eu/APIs/S3.html#generate-secrets).
 
 
 There are no common parameters for opening datasets with the three stores.
 As the available datasets are varying across a wide spectrum of datatypes
 no specific opening parameters can be named here. The stores delegate to the
-general xcube Data Opener which offers a variety of parameters depending on the
+general xcube DataOpener which offers a variety of parameters depending on the
 datatype of the dataset.
 
 Use the following function to access the parameters fitting for the dataset of interest:
@@ -640,7 +669,7 @@ The preload parameters are:
 There are no common parameters for opening datasets with the `xcube-zenodo` store.
 As the datasets uploaded on Zenodo are varying across a wide spectrum of datatypes 
 no specific opening parameters can be named here. `xcube-zenodo` delegates to the
-general xcube Data Opener which offers a variety of open parameters depending on the
+general xcube DataOpener which offers a variety of open parameters depending on the
 datatype of the dataset.
 
 Use the following function to access the parameters fitting for the dataset of interest:
