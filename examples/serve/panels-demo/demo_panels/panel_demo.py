@@ -50,6 +50,15 @@ def render_panel(
         id="info_text", children=update_info_text(ctx, dataset_id, opaque, color)
     )
 
+    instructions = Typography(
+        id="instructions",
+        children=[
+            "This panel just demonstrates how server-side extensions work. "
+            "It has no useful functionality.",
+        ],
+        variant="body2",
+    )
+
     return Box(
         style={
             "display": "flex",
@@ -59,8 +68,7 @@ def render_panel(
             "gap": "6px",
         },
         children=[
-            "This panel just demonstrates how server-side extensions work. "
-            "It has no useful functionality.",
+            instructions,
             opaque_checkbox,
             color_select,
             info_text,

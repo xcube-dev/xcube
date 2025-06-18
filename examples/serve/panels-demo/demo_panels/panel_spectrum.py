@@ -19,6 +19,7 @@ from chartlets.components import (
     RadioGroup,
 )
 
+from xcube.webapi.viewer.components import Markdown
 from xcube.webapi.viewer.contrib import Panel, get_dataset
 from xcube.server.api import Context
 from xcube.constants import CRS_CRS84
@@ -61,15 +62,14 @@ def render_panel(
 
     exploration_radio_group = RadioGroup(
         id="exploration_radio_group",
-        children=[update_radio, add_radio],
+        children=[add_radio, update_radio],
         label="Exploration Mode",
         style={
             "display": "flex",
             "flexDirection": "row",
         },
-        tooltip="'Update': Clear the chart but the current selection if any. "
-        "'Add': Current spectrum is added and new point selections will be "
-        "added as new spectra",
+        tooltip="Add: Current spectrum is added and new point selections will be "
+        "added as new spectra. 'Update': Clear the chart but the current selection if any. ",
     )
 
     control_bar = Box(
@@ -88,19 +88,28 @@ def render_panel(
         id="error_message", style={"color": "red"}, children=[""]
     )
 
+    instructions = Typography(
+        id="instructions",
+        children=[
+            "Choose an exploration mode and select points to visualize their spectral "
+            "reflectance across available wavelengths in this highly dynamic Spectrum View.",
+        ],
+        variant="body2",
+    )
+    note_text = Markdown(
+        text="**NOTE**: Only 10 spectrum plots can be added at a time as older "
+        "ones are removed. When switching from **Add** to **Update** "
+        "mode, the existing bar plots will be cleared if any."
+    )
     note = Typography(
         id="note",
-        children=[
-            "NOTE: Only add a maximum of 10 spectrum plots at a time as older "
-            "ones are removed. When switching from 'Add' to 'Update' mode, "
-            "the existing bar plots will be cleared if any."
-        ],
+        children=[note_text],
+        variant="body2",
     )
 
     return Box(
         children=[
-            "Choose an exploration mode and select points to visualize their spectral "
-            "reflectance across available wavelengths in this highly dynamic Spectrum View.",
+            instructions,
             note,
             control_bar,
             error_message,
@@ -354,6 +363,7 @@ def create_chart_from_data(data: pd.DataFrame) -> alt.Chart:
                 color="Legend:N",
                 tooltip=["places", "variable", "wavelength", "reflectance"],
             )
+            .configure_legend(orient="bottom", columns=2)
             .properties(width="container", height="container")
         )
 
@@ -367,7 +377,9 @@ def create_chart_from_data(data: pd.DataFrame) -> alt.Chart:
             color="Legend:N",
             tooltip=["places", "variable", "wavelength", "reflectance"],
         )
-    ).properties(width="container", height="container")
+        .configure_legend(orient="bottom", columns=2)
+        .properties(width="container", height="container")
+    )
 
 
 def add_place_data_to_existing(

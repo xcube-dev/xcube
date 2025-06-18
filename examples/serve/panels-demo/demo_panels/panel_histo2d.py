@@ -24,6 +24,7 @@ from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.server.api import Context
+from xcube.webapi.viewer.components import Markdown
 from xcube.webapi.viewer.contrib import Panel, get_dataset
 from xcube.webapi.viewer.contrib.helpers import get_place_label
 
@@ -107,11 +108,21 @@ def render_panel(
         children=[""],
     )
 
+    instructions_text = Markdown(
+        text="Create or select a region shape in the map, then select two "
+        "variables from the dropdowns, and press **Update** to create "
+        "a 2D histogram plot.",
+    )
+
+    instructions = Typography(
+        id="instructions",
+        children=[instructions_text],
+        variant="body2",
+    )
+
     return Box(
         children=[
-            "Create or select a region shape in the map, then select two "
-            "variables from the dropdowns, and press 'Update' to create "
-            "a 2D histogram plot.",
+            instructions,
             control_bar,
             plot,
             error_message,
