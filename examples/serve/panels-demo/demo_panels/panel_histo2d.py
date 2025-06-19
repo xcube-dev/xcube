@@ -1,6 +1,7 @@
 #  Copyright (c) 2018-2025 by xcube team and contributors
 #  Permissions are hereby granted under the terms of the MIT License:
 #  https://opensource.org/licenses/MIT.
+from typing import Any
 
 import altair as alt
 import numpy as np
@@ -10,13 +11,22 @@ import shapely
 import shapely.geometry
 import shapely.ops
 from chartlets import Component, Input, Output, State
-from chartlets.components import Box, Button, CircularProgress, Select, VegaChart
+from chartlets.components import (
+    Box,
+    Button,
+    CircularProgress,
+    Select,
+    VegaChart,
+    Typography,
+)
 
 from xcube.constants import CRS_CRS84
 from xcube.core.geom import mask_dataset_by_geometry, normalize_geometry
 from xcube.core.gridmapping import GridMapping
 from xcube.server.api import Context
+from xcube.webapi.viewer.components import Markdown
 from xcube.webapi.viewer.contrib import Panel, get_dataset
+from xcube.webapi.viewer.contrib.helpers import get_place_label
 
 panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=3)
 
@@ -27,11 +37,37 @@ panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=
 NUM_BINS_MAX = 64
 
 
-@panel.layout(State("@app", "selectedDatasetId"))
-def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
+@panel.layout(
+    State("@app", "selectedDatasetId"),
+    State("@app", "selectedDatasetTitle"),
+    State("@app", "selectedTimeLabel"),
+)
+def render_panel(
+    ctx: Context,
+    dataset_id: str | None = None,
+    dataset_title: str | None = None,
+    time_label: str | None = None,
+) -> Component:
     dataset = get_dataset(ctx, dataset_id)
 
-    plot = VegaChart(id="plot", chart=None, style={"paddingTop": 6})
+    plot = VegaChart(
+        id="plot",
+        chart=None,
+        style={
+            "paddingTop": 6,
+            # Since for dynamic resizing we use `container` as width and height for
+            # this chart during updates, it is necessary that we provide the width
+            # and the height here. This is for the `container` div of VegaChart.
+            "width": "100%",
+            "height": 400,
+        },
+    )
+
+    if time_label:
+        text = f"{dataset_title} / {time_label[0:-1]}"
+    else:
+        text = f"{dataset_title}"
+    place_text = Typography(id="text", children=[text], align="left")
 
     var_names, var_name_1, var_name_2 = get_var_select_options(dataset)
 
@@ -42,7 +78,7 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         id="select_var_2", label="Variable 2", value=var_name_2, options=var_names
     )
 
-    button = Button(id="button", text="Update", style={"maxWidth": 100})
+    button = Button(id="button", text="Update", style={"maxWidth": 100}, disabled=True)
 
     controls = Box(
         children=[select_var_1, select_var_2, button],
@@ -54,18 +90,47 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
         },
     )
 
+    control_bar = Box(
+        children=[place_text, controls],
+        style={
+            "display": "flex",
+            "flexDirection": "row",
+            "alignItems": "center",
+            "justifyContent": "space-between",
+            "width": "100%",
+            "gap": 6,
+        },
+    )
+
+    error_message = Typography(
+        id="error_message",
+        style={"color": "red"},
+        children=[""],
+    )
+
+    instructions_text = Markdown(
+        text="Create or select a region shape in the map, then select two "
+        "variables from the dropdowns, and press **Update** to create "
+        "a 2D histogram plot.",
+    )
+
+    instructions = Typography(
+        id="instructions",
+        children=[instructions_text],
+        variant="body2",
+    )
+
     return Box(
         children=[
-            "Create or select a region shape in the map, then select two "
-            "variables from the dropdowns, and press 'Update' to create "
-            "a 2D histogram plot.",
-            controls,
-            plot
+            instructions,
+            control_bar,
+            plot,
+            error_message,
         ],
         style={
             "display": "flex",
             "flexDirection": "column",
-            "alignItems": "center",
+            "alignItems": "left",
             "width": "100%",
             "height": "100%",
             "gap": 6,
@@ -73,29 +138,29 @@ def render_panel(ctx: Context, dataset_id: str | None = None) -> Component:
     )
 
 
+error_message = ""
+
+
 @panel.callback(
     State("@app", "selectedDatasetId"),
-    State("@app", "selectedTimeLabel"),
     State("@app", "selectedPlaceGeometry"),
     State("select_var_1"),
     State("select_var_2"),
+    State("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
 )
 def update_plot(
     ctx: Context,
     dataset_id: str | None = None,
-    time_label: float | None = None,
     place_geometry: str | None = None,
     var_1_name: str | None = None,
     var_2_name: str | None = None,
+    time_label: float | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> alt.Chart | None:
+    global error_message
     dataset = get_dataset(ctx, dataset_id)
-    if dataset is None or not place_geometry or not var_1_name or not var_2_name:
-        # TODO: set error message in panel UI
-        print("panel disabled")
-        return None
 
     if "time" in dataset.coords:
         if time_label:
@@ -111,19 +176,13 @@ def update_plot(
         ).transform
         place_geometry = shapely.ops.transform(project, place_geometry)
 
-    if (
-        place_geometry is None
-        or place_geometry.is_empty
-        or isinstance(place_geometry, shapely.geometry.Point)
-    ):
-        # TODO: set error message in panel UI
-        print("2-D histogram only works for geometries with a non-zero extent.")
-        return
+    if place_geometry is None or isinstance(place_geometry, shapely.geometry.Point):
+        error_message = "Selected geometry must cover an area."
+        return None
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
-        # TODO: set error message in panel UI
-        print("dataset is None after masking, invalid geometry?")
+        error_message = "Selected geometry produces empty subset"
         return None
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
@@ -147,23 +206,22 @@ def update_plot(
     source = pd.DataFrame(
         {var_1_name: x.ravel(), var_2_name: y.ravel(), "z": z.ravel()}
     )
-    # TODO: use edges or center coordinates as tick labels.
     x_centers = x_edges[0:-1] + np.diff(x_edges) / 2
     y_centers = y_edges[0:-1] + np.diff(y_edges) / 2
-    # TODO: limit number of ticks on axes to, e.g., 10.
-    # TODO: allow chart to be adjusted to available container (<div>) size.
 
-    # Get the tick values
+    # Limit number of ticks on axes
     x_num_ticks = 8
+    y_num_ticks = 8
+
+    # Get the tick values using the center values
     x_tick_values = np.linspace(min(x_centers), max(x_centers), x_num_ticks)
     x_tick_values = np.array(
-        [min(x_centers, key=lambda x: abs(x - t)) for t in x_tick_values]
+        [min(x_centers, key=lambda xc: abs(xc - t)) for t in x_tick_values]
     )
 
-    num_ticks = 8
-    y_tick_values = np.linspace(min(y_centers), max(y_centers), num_ticks)
+    y_tick_values = np.linspace(min(y_centers), max(y_centers), y_num_ticks)
     y_tick_values = np.array(
-        [min(y_centers, key=lambda y: abs(y - t)) for t in y_tick_values]
+        [min(y_centers, key=lambda yc: abs(yc - t)) for t in y_tick_values]
     )
 
     chart = (
@@ -199,8 +257,14 @@ def update_plot(
             color=alt.Color("z:Q", scale=alt.Scale(scheme="viridis"), title="Density"),
             tooltip=[var_1_name, var_2_name, "z:Q"],
         )
-    ).properties(width=300, height=300)
-
+    ).properties(
+        # allow chart to be adjusted to available container (<div>) size. Make sure
+        # that you add width and height to the style props while defining the Vega
+        # chart plot in render panel method
+        width="container",
+        height="container",
+    )
+    error_message = ""
     return chart
 
 
@@ -262,8 +326,30 @@ def get_var_select_options(
     return var_names, var_name_1, var_name_2
 
 
+@panel.callback(
+    State("@app", "selectedDatasetTitle"),
+    State("@app", "selectedPlaceId"),
+    State("@app", "selectedPlaceGroup"),
+    State("@app", "selectedTimeLabel"),
+    Input("button", "clicked"),
+    Output("text", "children"),
+)
+def update_text(
+    ctx: Context,
+    dataset_title: str,
+    place_id: str | None = None,
+    place_group: list[dict[str, Any]] | None = None,
+    time_label: str | None = None,
+    _clicked: bool | None = None,
+) -> list | None:
+    place_name = get_place_label(place_id, place_group)
+    if time_label:
+        return [f"{dataset_title} / {time_label[0:-1]} / {place_name}"]
+    return [f"{dataset_title} "]
+
+
 # TODO: Doesn't work. We need to ensure that show_progress() returns
-#   before update_plot()
+#   before update_plot(). EDIT: This cannot work in its current form!
 # @panel.callback(
 #     Input("button", "clicked"),
 #     Output("button", ""),
@@ -273,3 +359,36 @@ def show_progress(
     _clicked: bool | None = None,  # trigger, will always be True
 ) -> alt.Chart | None:
     return CircularProgress(id="button", size=28)
+
+
+@panel.callback(
+    Input("@app", "selectedDatasetId"),
+    Input("@app", "selectedPlaceGeometry"),
+    Input("@app", "selectedTimeLabel"),
+    State("select_var_1"),
+    State("select_var_2"),
+    Input("button", "clicked"),
+    Output("error_message", "children"),
+)
+def update_error_message(
+    ctx: Context,
+    dataset_id: str | None = None,
+    place_geometry: str | None = None,
+    _time_label: str | None = None,
+    var_1_name: str | None = None,
+    var_2_name: str | None = None,
+    _clicked: bool | None = None,
+) -> str:
+    global error_message
+
+    if error_message == "":
+        if dataset_id is None:
+            error_message = "Missing dataset selection"
+
+        if not place_geometry:
+            error_message = "Missing place geometry selection"
+
+        elif not var_1_name or not var_2_name:
+            error_message = "Missing variable selection"
+
+    return error_message

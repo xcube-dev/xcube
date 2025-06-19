@@ -30,6 +30,14 @@ def render_panel(
         label="Opaque",
     )
 
+    # Will render the firstrow from viewer
+    # first_row = FirstRow(id="firstrow", required=[dataset_title, time_label],
+    #                      hostComponent= True)
+
+    # Will render the firstrow as a box with typography from chartlets
+    # first_row = FirstRow(id="firstrow", required=[dataset_title, time_label],
+    #                      hostComponent=False)
+
     color_select = Select(
         id="color",
         value=color,
@@ -42,6 +50,15 @@ def render_panel(
         id="info_text", children=update_info_text(ctx, dataset_id, opaque, color)
     )
 
+    instructions = Typography(
+        id="instructions",
+        children=[
+            "This panel just demonstrates how server-side extensions work. "
+            "It has no useful functionality.",
+        ],
+        variant="body2",
+    )
+
     return Box(
         style={
             "display": "flex",
@@ -51,11 +68,10 @@ def render_panel(
             "gap": "6px",
         },
         children=[
-            "This panel just demonstrates how server-side extensions work. "
-            "It has no useful functionality.",
+            instructions,
             opaque_checkbox,
             color_select,
-            info_text
+            info_text,
         ],
     )
 

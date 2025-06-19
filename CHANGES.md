@@ -80,6 +80,12 @@ for dataset reprojection:
   - Updated schema for the `num_levels` parameter which now explains the parameter 
     in more detail.
 
+* Improved the demos for the xcube Viewer server-side extensions in various ways (#1134):
+  - enhanced user input validation
+  - added error message label
+  - fixed bugs in code
+  - improved UI styles and general UX
+
 ## Changes in 1.9.0
 
 ### Enhancements
