@@ -1,13 +1,15 @@
 .. _`xcube viewer demo`: https://bc-viewer.brockmann-consult.de/
-.. _`xcube-viewer`: https://github.com/dcs4cop/xcube-viewer
-.. _`README`: https://github.com/dcs4cop/xcube-viewer/blob/master/README.md
+.. _`xcube-viewer`: https://github.com/xcube-dev/xcube-viewer
+.. _`README`: https://github.com/xcube-dev/xcube-viewer/blob/main/README.md
 .. _`Euro Data Cube`: https://edc-viewer.brockmann-consult.de/
+.. _`documentation`: https://xcube-dev.github.io/xcube-viewer/
 
 ==========
 Viewer App
 ==========
 
 The xcube viewer app is a simple, single-page web application to be used with the xcube server.
+For detailed information visit the `documentation`_.
 
 Demo
 ====
