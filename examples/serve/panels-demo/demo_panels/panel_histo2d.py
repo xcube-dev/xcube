@@ -28,7 +28,7 @@ from xcube.webapi.viewer.components import Markdown
 from xcube.webapi.viewer.contrib import Panel, get_dataset
 from xcube.webapi.viewer.contrib.helpers import get_place_label
 
-panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=3)
+panel = Panel(__name__, title="2D Histogram (Demo)", icon="equalizer", position=4)
 
 
 # Number of bins in x and y directions.
@@ -108,16 +108,19 @@ def render_panel(
         children=[""],
     )
 
-    instructions_text = Markdown(
-        text="Create or select a region shape in the map, then select two "
-        "variables from the dropdowns, and press **Update** to create "
-        "a 2D histogram plot.",
-    )
-
     instructions = Typography(
         id="instructions",
-        children=[instructions_text],
-        variant="body2",
+        children=[
+            Markdown(
+                text=(
+                    "Create or select a region shape in the map, then select "
+                    "two variables from the dropdowns, and press **Update** "
+                    "to create a 2D histogram plot."
+                ),
+            )
+        ],
+        variant="caption",
+        color="textSecondary",
     )
 
     return Box(

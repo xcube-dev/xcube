@@ -26,7 +26,7 @@ from xcube.constants import CRS_CRS84
 from xcube.core.extract import get_cube_values_for_points
 from xcube.core.gridmapping import GridMapping
 
-panel = Panel(__name__, title="Spectrum View (Demo)", icon="light", position=4)
+panel = Panel(__name__, title="Spectrum View (Demo)", icon="sunny", position=5)
 
 _THROTTLE_TOTAL_SPECTRUM_PLOTS = 10
 
@@ -68,8 +68,11 @@ def render_panel(
             "display": "flex",
             "flexDirection": "row",
         },
-        tooltip="Add: Current spectrum is added and new point selections will be "
-        "added as new spectra. 'Update': Clear the chart but the current selection if any. ",
+        tooltip=(
+            "Add: Current spectrum is added and new point selections will be "
+            "added as new spectra. Update: Clear the chart but the current "
+            "selection if any. "
+        ),
     )
 
     control_bar = Box(
@@ -91,26 +94,24 @@ def render_panel(
     instructions = Typography(
         id="instructions",
         children=[
-            "Choose an exploration mode and select points to visualize their spectral "
-            "reflectance across available wavelengths in this highly dynamic Spectrum View.",
+            "Choose an exploration mode and select points to visualize "
+            "their spectral reflectance across available wavelengths in "
+            "this highly dynamic Spectrum View.",
+            Markdown(
+                text=(
+                    "_Note: Only 10 spectra can be added at a time as older "
+                    "ones are removed. When switching from **Add** to **Update** "
+                    "mode, the existing bar plots will be cleared if any._"
+                )
+            ),
         ],
-        variant="body2",
-    )
-    note_text = Markdown(
-        text="**NOTE**: Only 10 spectrum plots can be added at a time as older "
-        "ones are removed. When switching from **Add** to **Update** "
-        "mode, the existing bar plots will be cleared if any."
-    )
-    note = Typography(
-        id="note",
-        children=[note_text],
-        variant="body2",
+        variant="caption",
+        color="textSecondary",
     )
 
     return Box(
         children=[
             instructions,
-            note,
             control_bar,
             error_message,
             plot,
