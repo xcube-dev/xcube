@@ -1,3 +1,6 @@
+## Changes in 1.11.2 (in development)
+
+
 ## Changes in 1.11.1
 
 * Improved the demos for the xcube Viewer server-side extensions in various ways (#1134):
