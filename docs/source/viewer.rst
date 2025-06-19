@@ -1,19 +1,21 @@
-.. _`xcube viewer demo`: https://bc-viewer.brockmann-consult.de/
-.. _`xcube-viewer`: https://github.com/dcs4cop/xcube-viewer
-.. _`README`: https://github.com/dcs4cop/xcube-viewer/blob/master/README.md
+.. _`xcube Viewer demo`: https://bc-viewer.brockmann-consult.de/
+.. _`xcube-viewer`: https://github.com/xcube-dev/xcube-viewer
+.. _`README`: https://github.com/xcube-dev/xcube-viewer/blob/main/README.md
 .. _`Euro Data Cube`: https://edc-viewer.brockmann-consult.de/
+.. _`documentation`: https://xcube-dev.github.io/xcube-viewer/
 
 ==========
 Viewer App
 ==========
 
-The xcube viewer app is a simple, single-page web application to be used with the xcube server.
+The xcube Viewer app is a simple, single-page web application to be used with the xcube Server.
+For detailed information visit the `documentation`_.
 
 Demo
 ====
 
-To test the viewer app, you can use the `xcube viewer demo`_. This is our Brockmann Consult Demo xcube viewer.
-Via the viewer's settings it is possible to change the xcube server url which is used for displaying data.
+To test the viewer app, you can use the `xcube Viewer demo`_. This is our Brockmann Consult Demo xcube Viewer.
+Via the viewer's settings it is possible to change the xcube Server url which is used for displaying data.
 To do so open the viewer's settings panels, select "Server". A "Select Server" panel is opened, click the "+"
 button to add a new server. Here is demo server that you may add for testing:
 
@@ -24,7 +26,7 @@ button to add a new server. Here is demo server that you may add for testing:
 Functionality
 =============
 
-The xcube viewer functionality is described exemplary using the `xcube viewer demo`_.
+The xcube Viewer functionality is described exemplary using the `xcube Viewer demo`_.
 The viewer visualizes data from the xcube datasets on top of a basemap.
 For zooming use the buttons in the top right corner of the map window or the zooming function of your
 computer mouse. A scale for the map is located in the lower right corner and in the
@@ -33,7 +35,7 @@ upper left corner a corresponding legend to the mapped data of the data cube is 
 .. image:: _static/images/viewer/screenshot_overview.png
   :width: 800
 
-A xcube viewer may hold several xcube datasets which you can select via the drop-down menu `Dataset`.
+A xcube Viewer may hold several xcube datasets which you can select via the drop-down menu `Dataset`.
 The viewed area automatically adjusts to a selected xcube dataset, meaning that if a newly selected
 dataset is located in a different region, the correct region is displayed on the map.
 
@@ -131,7 +133,7 @@ hide lower values and it is possible to adjust the opacity.
 .. image:: _static/images/viewer/screenshot_colormap.png
   :width: 800
 
-The xcube viewer app is constantly evolving and enhancements are added, therefore please be aware that the above
+The xcube Viewer app is constantly evolving and enhancements are added, therefore please be aware that the above
 described features may not always be completely up-to-date.
 
 Build and Deploy

@@ -6,6 +6,7 @@
   `https`, `ftp`, `reference`, `smos`, `stac`, `stac-cdse`, `stac-xcube`, `gedidb`,
   `eopf-zarr`, `esa-cci-kc`.
 
+* Added link of xcube viewer documentation to `Viewer App` page in documentation.
 
 ## Changes in 1.11.0
 
