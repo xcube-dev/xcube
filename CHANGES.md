@@ -1,12 +1,19 @@
-## Changes in 1.11.1 (in development)
+## Changes in 1.11.1
 
-### Other change
+* Improved the demos for the xcube Viewer server-side extensions in various ways (#1134):
+  - enhanced user input validation
+  - added error message label
+  - fixed bugs in code
+  - improved UI styles and general UX
 
 * Added the following data stores to `Access Data` page in documentation: 
   `https`, `ftp`, `reference`, `smos`, `stac`, `stac-cdse`, `stac-xcube`, `gedidb`,
   `eopf-zarr`, `esa-cci-kc`.
 
 * Added link of xcube viewer documentation to `Viewer App` page in documentation.
+
+* Bundled [xcube Viewer 1.6.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.6.1)
+
 
 ## Changes in 1.11.0
 
@@ -79,12 +86,6 @@ for dataset reprojection:
   - Added schema for the existing `replace` parameter. 
   - Updated schema for the `num_levels` parameter which now explains the parameter 
     in more detail.
-
-* Improved the demos for the xcube Viewer server-side extensions in various ways (#1134):
-  - enhanced user input validation
-  - added error message label
-  - fixed bugs in code
-  - improved UI styles and general UX
 
 ## Changes in 1.9.0
 
