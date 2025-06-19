@@ -180,9 +180,10 @@ def reproject_dataset(
         )
         slices_reprojected = []
         # calculate reprojection of each chunk along the 1st (non-spatial) dimension.
-        for idx, chunk_size in enumerate(data_array.chunks[0]):
-            dim0_start = idx * chunk_size
-            dim0_end = (idx + 1) * chunk_size
+        dim0_end = 0
+        for chunk_size in data_array.chunks[0]:
+            dim0_start = dim0_end
+            dim0_end = dim0_start + chunk_size
 
             data_reprojected = da.map_blocks(
                 _reproject_block,
@@ -323,7 +324,7 @@ def _downscale_source_dataset(
             tile_size=source_gm.tile_size,
         )
         source_ds = affine_transform_dataset(
-            source_ds, source_gm, downscale_target_gm, var_configs
+            source_ds, source_gm, downscale_target_gm, var_configs=var_configs
         )
         var_bounds = [
             source_ds[var_name].attrs["bounds"]
