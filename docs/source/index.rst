@@ -35,7 +35,7 @@ cubes from EO data.
    Dataset Convention <cubespec>
    Multi-Resolution Datasets <mldatasets>
    Data Store Conventions <storeconv>
-   Spatial Rectification <rectify>
+   Spatial Resampling <rectify>
    Developer Guide <devguide>
 
 
