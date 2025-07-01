@@ -31,76 +31,17 @@ def resample_in_space(
     source_gm: Optional[GridMapping] = None,
     target_gm: Optional[GridMapping] = None,
     ref_ds: Optional[xr.Dataset] = None,
-    var_configs: Optional[Mapping[Hashable, Mapping[str, Any]]] = None,
-    encode_cf: bool = True,
-    gm_name: Optional[str] = None,
-    rectify_kwargs: Optional[dict] = None,
+    spline_orders: Optional[int | Mapping[type | str, int]] = None,
+    agg_methods: Optional[str | Mapping[type | str, str]] = None,
+    recover_nan: Optional[bool | Mapping[type | str, bool]] = False,
 ):
     """
     Resample a dataset *source_ds* in the spatial dimensions.
 
-    If the source grid mapping *source_gm* is not given,
-    it is derived from *dataset*:
-    ``source_gm = GridMapping.from_dataset(source_ds)``.
-
-    If the target grid mapping *target_gm* is not given,
-    it is derived from *source_gm* as
-    ``target_gm = source_gm.to_regular()``,
-    or if target dataset *ref_ds* is given as
-    ``target_gm = GridMapping.from_dataset(ref_ds)``.
-
-    New in 1.6: If *ref_ds* is given, its coordinate
-    variables are copied by reference into the returned
-    dataset.
-
-    If *source_gm* is almost equal to *target_gm*, this
-    function is a no-op and *dataset* is returned unchanged.
-
-    Otherwise, the function computes a spatially
-    resampled version of *dataset* and returns it.
-
-    Using *var_configs*, the resampling of individual
-    variables can be configured. If given, *var_configs*
-    must be a mapping from variable names to configuration
-    dictionaries which can have the following properties:
-
-    * ``spline_order`` (int) - The order of spline polynomials
-        used for interpolating. It is used for up-sampling only.
-        Possible values are 0 to 5.
-        Default is 1 (bi-linear) for floating point variables,
-        and 0 (= nearest neighbor) for integer and bool variables.
-    * ``aggregator`` (str) - An optional aggregating
-        function. It is used for down-sampling only.
-        Examples are ``numpy.nanmean``, ``numpy.nanmin``,
-        ``numpy.nanmax``.
-        Default is ``numpy.nanmean`` for floating point variables,
-        and None (= nearest neighbor) for integer and bool variables.
-    * ``recover_nan`` (bool) - whether a special algorithm
-        shall be used that is able to recover values that would
-        otherwise yield NaN during resampling.
-        Default is False for all variable types since this
-        may require considerable CPU resources on top.
-
-    Note that *var_configs* is only used if the resampling involves
-    an affine transformation. This is true if the CRS of
-    *source_gm* and CRS of *target_gm* are equal and one of two
-    cases is given:
-
-    1. *source_gm* is regular.
-       In this case the resampling is the affine transformation.
-       and the result is returned directly.
-    2. *source_gm* is not regular and has a lower resolution
-       than *target_cm*.
-       In this case *dataset* is down-sampled first using an affine
-       transformation. Then the result is rectified.
-
-    In all other cases, no affine transformation is applied and
-    the resampling is a direct rectification.
-
     Args:
-        source_ds: The source dataset. Data variables must have 
-            dimensions in the following order: optional `time` followed
-            by the y-dimension (e.g., `y` or `lat`) followed by the 
+        source_ds: The source dataset. Data variables must have
+            dimensions in the following order: optional 3rd dimension followed
+            by the y-dimension (e.g., `y` or `lat`) followed by the
             x-dimension (e.g., `x` or `lon`).
         source_gm: The source grid mapping.
         target_gm: The target grid mapping. Must be regular.
@@ -108,32 +49,40 @@ def resample_in_space(
             target grid mapping if *target_gm* is not provided.
             If *ref_ds* is given, its coordinate variables are copied
             by reference into the returned dataset.
-        var_configs: Optional resampling configurations
-            for individual variables.
-        encode_cf: Whether to encode the target grid mapping
-            into the resampled dataset in a CF-compliant way.
-            Defaults to ``True``.
-        gm_name: Name for the grid mapping variable.
-            Defaults to "crs". Used only if *encode_cf* is ``True``.
-        rectify_kwargs: Keyword arguments passed func:`rectify_dataset`
-            should a rectification be required.
+        spline_orders: Spline orders to be used for upsampling
+            spatial data variables. It can be a single spline order
+            for all variables or a dictionary that maps a variable name or a data dtype
+            to the spline order. A spline order is given by one of `0`
+            (nearest neighbor), `1` (linear), `2` (bi-linear), or `3` (cubic).
+            The default is `3` fo floating point datasets and `0` for integer datasets.
+        agg_methods: Aggregation methods to be used for downsampling
+            spatial data variables. It can be a single aggregation method for all
+            variables or a dictionary that maps a variable name or a data dtype to the
+            aggregation method. The aggregation method is a function like `np.sum`,
+            `np.mean` which is propagated to [`dask.array.coarsen`](https://docs.dask.org/en/stable/generated/dask.array.coarsen.html).
+        recover_nan: If true, whether a special algorithm shall be used that is able
+            to recover values that would otherwise yield NaN during resampling. Default
+            is False for all variable types since this may require considerable CPU
+            resources on top. It can be a single aggregation method for all
+            variables or a dictionary that maps a variable name or a data dtype to a
+            boolean.
 
-
-    Returns: The spatially resampled dataset, or None if the requested
-        output area does not intersect with *dataset*.
+    Returns:
+        The spatially resampled dataset, or None if the requested output area does
+        not intersect with *dataset*.
 
     Notes:
-        The method `xcube.core.resampling.reproject_dataset` is a high-performance
-        alternative to `xcube.core.resampling.resample_in_space` for reprojecting
-        datasets to different coordinate reference systems (CRS). It is ideal for
-        reprojection between regular grids. It improves computational efficiency
-        and simplifies the reprojection process.
-
-        The methods `reproject_dataset` and `resample_in_space` produce nearly identical
-        results when reprojecting to a different CRS, with only negligible differences.
-        `resample_in_space` remains available to preserve compatibility with existing
-        services. Once `reproject_dataset` proves stable in production use, it may be
-        integrated into `resample_in_space`.
+        - If the source grid mapping *source_gm* is not given, it is derived from *dataset*:
+          `source_gm = GridMapping.from_dataset(source_ds)`.
+        - If the target grid mapping *target_gm* is not given, it is derived from
+          *ref_ds* as `target_gm = GridMapping.from_dataset(ref_ds)`; if *ref_ds* is
+          not given, *target_gm* is derived from *source_gm* as
+          `target_gm = source_gm.to_regular()`.
+        - New in 1.6: If *ref_ds* is given, its coordinate variables are copied by
+          reference into the returned dataset.
+        - If *source_gm* is almost equal to *target_gm*, this function is a no-op
+          and *dataset* is returned unchanged.
+        - further information is given in the [xcube documentation](https://xcube.readthedocs.io/en/latest/rectify.html)
     """
     if source_gm is None:
         # No source grid mapping given, so do derive it from dataset.
@@ -149,9 +98,6 @@ def resample_in_space(
 
     if source_gm.is_close(target_gm):
         # If source and target grid mappings are almost equal.
-        # NOTE: Actually we should only return input here if
-        # encode_cf == False and gm_name is None and target_ds is None.
-        # Otherwise, create a copy and apply encoding and coords copy.
         return source_ds
 
     # target_gm must be regular

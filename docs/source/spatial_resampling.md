@@ -1,7 +1,36 @@
-# Spatial Rectification Algorithm
+# Spatial Resampling Algorithms
 
-This chapter describes the algorithm used in the function [`rectify_dataset()`](api.html#xcube.core.resampling.rectify_dataset) 
-of module `xcube.core.resampling`. The function geometrically transforms 
+This chapter describes the algorithms used in the functions 
+[`resampling_in_space()`](api.html#xcube.core.resampling.resampling_in_space) 
+of module `xcube.core.resampling`. Depending on the grid-mapping of the input dataset 
+and the desired target grid-mapping, three different algorithms are performed: 
+
+1. affine transformation: if the CRS of the source and target is the same, only a 
+   resampling via an affine transfomration is applied using 
+   [`dask_image.ndinterp.affine_transform`](https://image.dask.org/en/latest/dask_image.ndinterp.html);
+   up-sampling (finer resolution) is governed by the spline-order, down-sampling
+   (coarser resolution) is governed by the aggregation methods. 
+2. reprojection: if the CRS of the source and target are different and both source dataset
+   and target gridmapping are regular, then reprojection can be applied. 
+3. rectification: if the source data set is given by a 2d spatial irregular gridmapping
+   and the target girdmapping shall be regular.
+
+## Spatial Reprojection Algorithm
+
+The `reproject_dataset` function reprojects a spatial dataset from its original 
+coordinate reference system (CRS) to a new CRS, assuming that both the source and 
+target grid mappings are regular grids. The performance is lazy and thus can be applied
+to large chunked datasets. 
+
+This method uses spatial interpolation techniques and can handle data with one 
+additional leading dimension, such as time or bands.
+
+
+
+
+## Spatial Rectification Algorithm
+
+The function geometrically transforms 
 spatial [data variables](https://docs.xarray.dev/en/stable/user-guide/terminology.html#term-Variable) 
 of a given [dataset](https://docs.xarray.dev/en/stable/user-guide/terminology.html#term-Dataset) 
 from an irregular source 
@@ -9,7 +38,7 @@ from an irregular source
 into new data variables for a given regular target grid mapping and returns 
 them as a new dataset. 
 
-## Problem Description
+### Problem Description
 
 The following figure shows a Sentinel-3 OLCI Level-1b scene in its original 
 satellite perspective. In addition to the measured reflectances, the data 
@@ -42,7 +71,7 @@ is shown here:
 ![OLCI L1C Output](rectify/olci-output.png)
 
 
-## Algorithm Description
+### Algorithm Description
 
 The input to the rectification algorithm is satellite imagery in satellite 
 viewing perspective. In addition, two images – one for each spatial 
@@ -148,7 +177,7 @@ with
 *VA = V1 + u (V2 − V1)*  
 *VB = V3 + u (V4 − V3)*  
 
-## Remarks
+### Remarks
 
 **(1)** The target pixel size should be less or equal the source 
 pixel size, so that triangle patches in the source refer to multiple pixels 
