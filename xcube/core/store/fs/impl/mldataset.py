@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Union
+from typing import List, Union
 
 import xarray as xr
 
@@ -43,6 +43,10 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
     @classmethod
     def get_format_id(cls) -> str:
         return "levels"
+
+    @classmethod
+    def get_format_extensions(cls) -> List[str]:
+        return [".levels"]
 
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
         assert_instance(data_id, str, name="data_id")

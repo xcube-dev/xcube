@@ -4,7 +4,7 @@
 
 import copy
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, List, Optional
 
 import fsspec
 
@@ -178,6 +178,13 @@ class FsDataAccessor(DataOpener, DataWriter, FsAccessor, ABC):
     def get_format_id(cls) -> str:
         """Get the format identifier,
         for example "zarr" or "geojson".
+        """
+
+    @classmethod
+    @abstractmethod
+    def get_format_extensions(cls) -> List [str]:
+        """Get the possible filename extensions for the format,
+        for example "tif" or "geotiff".
         """
 
     def get_delete_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:

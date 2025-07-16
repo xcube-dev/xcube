@@ -7,6 +7,8 @@ from abc import abstractmethod
 import geopandas as gpd
 import pandas as pd
 
+from typing import List
+
 from xcube.util.assertions import assert_instance
 from xcube.util.fspath import is_local_fs
 from xcube.util.jsonschema import JsonObjectSchema
@@ -80,6 +82,10 @@ class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor):
         return "shapefile"
 
     @classmethod
+    def get_format_extensions(cls) -> List[str]:
+        return [".shp"]
+
+    @classmethod
     def get_driver_name(cls) -> str:
         return "ESRI Shapefile"
 
@@ -90,6 +96,10 @@ class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor):
     @classmethod
     def get_format_id(cls) -> str:
         return "geojson"
+
+    @classmethod
+    def get_format_extensions(cls) -> List[str]:
+        return [".geojson"]
 
     @classmethod
     def get_driver_name(cls) -> str:
