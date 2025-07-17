@@ -2,6 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+from typing import List
+
 from xcube.constants import (
     EXTENSION_POINT_CLI_COMMANDS,
     EXTENSION_POINT_DATA_OPENERS,
@@ -90,22 +92,29 @@ _FS_STORAGE_ITEMS = (
 )
 
 _FS_DATA_ACCESSOR_ITEMS = (
-    ("dataset", "netcdf", "xarray.Dataset in NetCDF format"),
-    ("dataset", "zarr", "xarray.Dataset in Zarr format"),
-    ("dataset", "levels", "xarray.Dataset in leveled Zarr format"),
+    ("dataset", "netcdf", "xarray.Dataset in NetCDF format", [".nc"]),
+    ("dataset", "zarr", "xarray.Dataset in Zarr format", [".zarr"]),
+    ("dataset", "levels", "xarray.Dataset in leveled Zarr format", [".levels"]),
     (
         "mldataset",
         "levels",
         "xcube.core.mldataset.MultiLevelDataset in leveled Zarr format",
+        [".levels"]
     ),
-    ("dataset", "geotiff", "xarray.Dataset in GeoTIFF or COG format"),
+    (
+        "dataset",
+        "geotiff",
+        "xarray.Dataset in GeoTIFF or COG format",
+        [".tif", ".tiff", ".geotiff"]
+    ),
     (
         "mldataset",
         "geotiff",
         "xcube.core.mldataset.MultiLevelDataset in GeoTIFF or COG format",
+        [".tif", ".tiff", ".geotiff"]
     ),
-    ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format"),
-    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format"),
+    ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format", [".shp"]),
+    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format", [".geojson"]),
 )
 
 _FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
@@ -142,7 +151,8 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
 
     # noinspection PyShadowingNames
     def _add_fs_data_accessor_ext(
-        point: str, ext_type: str, protocol: str, data_type: str, format_id: str
+        point: str, ext_type: str, protocol: str, data_type: str, format_id: str,
+        file_extensions: List[str]
     ):
         factory_args = (protocol, data_type, format_id)
         loader = extension.import_component(factory, call_args=factory_args)
@@ -153,16 +163,17 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
             description=f"Data {ext_type} for"
             f" a {data_accessor_description}"
             f" in {storage_description}",
+            extensions=file_extensions
         )
 
     for protocol, storage_description in _FS_STORAGE_ITEMS:
-        for data_type, format_id, data_accessor_description in _FS_DATA_OPENER_ITEMS:
+        for data_type, format_id, data_accessor_description, file_extensions in _FS_DATA_OPENER_ITEMS:
             _add_fs_data_accessor_ext(
-                EXTENSION_POINT_DATA_OPENERS, "opener", protocol, data_type, format_id
+                EXTENSION_POINT_DATA_OPENERS, "opener", protocol, data_type, format_id, file_extensions
             )
-        for data_type, format_id, data_accessor_description in _FS_DATA_WRITER_ITEMS:
+        for data_type, format_id, data_accessor_description, file_extensions in _FS_DATA_WRITER_ITEMS:
             _add_fs_data_accessor_ext(
-                EXTENSION_POINT_DATA_WRITERS, "writer", protocol, data_type, format_id
+                EXTENSION_POINT_DATA_WRITERS, "writer", protocol, data_type, format_id, file_extensions
             )
 
 
