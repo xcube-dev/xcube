@@ -459,20 +459,19 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         format_to_data_type_aliases = {}
         predicate = get_data_accessor_predicate(storage_id=protocol)
         for ext in find_extensions(predicate):
-            format = ext.name.split(":")[1]
+            data_type = ext.name.split(":")[0]
+            frmat = ext.name.split(":")[1]
             extensions = ext.metadata.get("extensions")
-            data_type = ext.metadata.get("data_type")
-            if extensions is None or data_type is None:
+            if extensions is None:
                 c = ext.component
                 if isinstance(ext.component, Callable):
                     c = c()
                 if isinstance(c, FsDataAccessor):
-                    extensions = c.get_format_extensions()
-                    data_type = c.get_data_type()
+                    extensions = c.get_file_extensions()
             for extension in extensions:
-                filename_ext_to_format[extension] = format
-            format_to_data_type_aliases[format] = (
-                format_to_data_type_aliases.get(format, ()) + (data_type.alias, )
+                filename_ext_to_format[extension] = frmat
+            format_to_data_type_aliases[frmat] = (
+                format_to_data_type_aliases.get(frmat, ()) + (data_type, )
             )
         return filename_ext_to_format, format_to_data_type_aliases
 
