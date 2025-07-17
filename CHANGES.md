@@ -1,5 +1,10 @@
 ## Changes in 1.11.2 (in development)
 
+### Other changes
+
+* Added two new versions of the xcube logo, one for dark and one for light themes,
+  and replaced the logo in the documentation with the light logo.
+  
 
 ## Changes in 1.11.1
 
