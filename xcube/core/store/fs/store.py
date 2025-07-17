@@ -576,13 +576,11 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     def _assert_data_specified(self, data_id, data_type: DataTypeLike):
         self._is_data_specified(data_id, data_type, require=True)
 
-    @classmethod
-    def _ensure_valid_data_id(cls, writer_id: str, data_id: str = None) -> str:
+    def _ensure_valid_data_id(self, writer_id: str, data_id: str = None) -> str:
         format_id = writer_id.split(":")[1]
         first_ext = None
-        # TODO improve this to consider the protocol
-        filename_ext_to_format, _ = (
-            cls._set_infos_from_extensions(find_data_writer_extensions)
+        filename_ext_to_format, _ = self._set_infos_from_extensions(
+            find_data_writer_extensions, self.protocol
         )
         for known_ext, known_format_id in filename_ext_to_format.items():
             # Note, there may be multiple common file extensions
