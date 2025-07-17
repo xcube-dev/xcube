@@ -182,7 +182,7 @@ class FsDataAccessor(DataOpener, DataWriter, FsAccessor, ABC):
 
     @classmethod
     @abstractmethod
-    def get_format_extensions(cls) -> List [str]:
+    def get_file_extensions(cls) -> List [str]:
         """Get the possible filename extensions for the format,
         for example "tif" or "geotiff".
         """

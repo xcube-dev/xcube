@@ -82,7 +82,7 @@ class GeoDataFrameShapefileFsDataAccessor(GeoDataFrameFsDataAccessor):
         return "shapefile"
 
     @classmethod
-    def get_format_extensions(cls) -> List[str]:
+    def get_file_extensions(cls) -> List[str]:
         return [".shp"]
 
     @classmethod
@@ -98,7 +98,7 @@ class GeoDataFrameGeoJsonFsDataAccessor(GeoDataFrameFsDataAccessor):
         return "geojson"
 
     @classmethod
-    def get_format_extensions(cls) -> List[str]:
+    def get_file_extensions(cls) -> List[str]:
         return [".geojson"]
 
     @classmethod

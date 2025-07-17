@@ -45,7 +45,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         return "levels"
 
     @classmethod
-    def get_format_extensions(cls) -> List[str]:
+    def get_file_extensions(cls) -> List[str]:
         return [".levels"]
 
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
