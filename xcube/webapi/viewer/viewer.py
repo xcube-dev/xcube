@@ -202,7 +202,7 @@ class Viewer:
             from IPython.core.display import HTML
 
             return HTML(
-                f'<iframe src="{self._viewer_url}&compact=1"'
+                f'<iframe src="{self._viewer_url}&compact=0"'
                 f' width="{width}"'
                 f' height="{height}"'
                 f"/>"
