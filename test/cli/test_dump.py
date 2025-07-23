@@ -16,7 +16,7 @@ class DumpTest(CliDataTest):
         # Use a regex to accommodate the differing output formats produced by
         # xarray 2023.8.0 and 2024.2.0.
         output_regex = r"""<xarray.Dataset>( Size: 8MB)?
-Dimensions:        \(lon: 360, lat: 180, time: 5, bnds: 2\)
+Dimensions:\s+\((?=.*lon: 360)(?=.*lat: 180)(?=.*time: 5)(?=.*bnds: 2).*?\)
 Coordinates:
   \* lon            \(lon\) float64 (3kB )?-179\.5 -178\.5 -177\.5 \.\.\. 177\.5 178\.5 179\.5
   \* lat            \(lat\) float64 (1kB )?-89\.5 -88\.5 -87\.5 -86\.5 \.\.\. (86\.5 )?87\.5 88\.5 89\.5
