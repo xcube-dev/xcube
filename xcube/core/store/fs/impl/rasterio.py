@@ -79,11 +79,14 @@ MULTI_LEVEL_RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 class RasterioMultiLevelDataset(LazyMultiLevelDataset):
     """A multi-level dataset for accessing files using rasterio.
 
-    Args:
-        data_id: data identifier
-        items: list of items to be stacked
-        open_params: opening parameters of odc.stack.load
+    @param fs: abstract file system
+    @param root: An optional root pointing to where the data is located
+    @param data_id: the data id
+    @param open_params: Any additional parameters to be considered when opening the
+        data, e.g., band_as_variable, which, if True, will load bands in a raster
+        to separate variables.
     """
+
     def __init__(
         self,
         fs: fsspec.AbstractFileSystem,
@@ -178,8 +181,7 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     @classmethod
     def open_dataset_with_rioxarray(
-        cls, file_path, overview_level, tile_size,
-        band_as_variable
+        cls, file_path, overview_level, tile_size, band_as_variable
     ) -> rioxarray.raster_array:
         return rioxarray.open_rasterio(
             file_path,
@@ -196,7 +198,7 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
         tile_size: tuple[int, int],
         *,
         overview_level: Optional[int] = None,
-        band_as_variable: Optional[bool] = None,
+        band_as_variable: Optional[bool] = True,
     ) -> xr.Dataset:
         """
         A method to open a dataset using rioxarray, returns xarray.Dataset
