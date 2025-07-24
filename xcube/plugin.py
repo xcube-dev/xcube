@@ -92,29 +92,34 @@ _FS_STORAGE_ITEMS = (
 )
 
 _FS_DATA_ACCESSOR_ITEMS = (
-    ("dataset", "netcdf", "xarray.Dataset in NetCDF format", [".nc"]),
-    ("dataset", "zarr", "xarray.Dataset in Zarr format", [".zarr"]),
-    ("dataset", "levels", "xarray.Dataset in leveled Zarr format", [".levels"]),
+    ("dataset", "netcdf", "xarray.Dataset in NetCDF format", [".nc"], True),
+    ("dataset", "zarr", "xarray.Dataset in Zarr format", [".zarr"], True),
+    ("dataset", "levels", "xarray.Dataset in leveled Zarr format", [".levels"], False),
     (
         "mldataset",
         "levels",
         "xcube.core.mldataset.MultiLevelDataset in leveled Zarr format",
-        [".levels"]
+        [".levels"],
+        True
     ),
     (
         "dataset",
         "geotiff",
         "xarray.Dataset in GeoTIFF or COG format",
-        [".tif", ".tiff", ".geotiff"]
+        [".tif", ".tiff", ".geotiff"],
+        False
     ),
     (
         "mldataset",
         "geotiff",
         "xcube.core.mldataset.MultiLevelDataset in GeoTIFF or COG format",
-        [".tif", ".tiff", ".geotiff"]
+        [".tif", ".tiff", ".geotiff"],
+        True
     ),
-    ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format", [".shp"]),
-    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format", [".geojson"]),
+    ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format",
+     [".shp"], True),
+    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format",
+     [".geojson"], True),
 )
 
 _FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
@@ -152,7 +157,7 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
     # noinspection PyShadowingNames
     def _add_fs_data_accessor_ext(
         point: str, ext_type: str, protocol: str, data_type: str, format_id: str,
-        file_extensions: List[str]
+        file_extensions: List[str], preferred: bool
     ):
         factory_args = (protocol, data_type, format_id)
         loader = extension.import_component(factory, call_args=factory_args)
@@ -163,17 +168,22 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
             description=f"Data {ext_type} for"
             f" a {data_accessor_description}"
             f" in {storage_description}",
-            extensions=file_extensions
+            extensions=file_extensions,
+            preferred=preferred
         )
 
     for protocol, storage_description in _FS_STORAGE_ITEMS:
-        for data_type, format_id, data_accessor_description, file_extensions in _FS_DATA_OPENER_ITEMS:
+        for (data_type, format_id, data_accessor_description,
+             file_extensions, preferred) in _FS_DATA_OPENER_ITEMS:
             _add_fs_data_accessor_ext(
-                EXTENSION_POINT_DATA_OPENERS, "opener", protocol, data_type, format_id, file_extensions
+                EXTENSION_POINT_DATA_OPENERS, "opener", protocol, data_type,
+                format_id, file_extensions, preferred
             )
-        for data_type, format_id, data_accessor_description, file_extensions in _FS_DATA_WRITER_ITEMS:
+        for (data_type, format_id, data_accessor_description,
+             file_extensions, preferred) in _FS_DATA_WRITER_ITEMS:
             _add_fs_data_accessor_ext(
-                EXTENSION_POINT_DATA_WRITERS, "writer", protocol, data_type, format_id, file_extensions
+                EXTENSION_POINT_DATA_WRITERS, "writer", protocol, data_type,
+                format_id, file_extensions, preferred
             )
 
 
