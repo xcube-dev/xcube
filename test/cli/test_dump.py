@@ -14,7 +14,7 @@ class DumpTest(CliDataTest):
             result = self.invoke_cli(["dump", TEST_NC_FILE])
 
         # Use a regex to accommodate the differing output formats produced by
-        # xarray 2023.8.0 and 2024.2.0.
+        # various xarray versions.
         output_regex = r"""<xarray.Dataset>( Size: 8MB)?
 Dimensions:\s+\((?=.*lon: 360)(?=.*lat: 180)(?=.*time: 5)(?=.*bnds: 2).*?\)
 Coordinates:
