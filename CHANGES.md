@@ -1,4 +1,9 @@
-## Changes in 1.11.2 (in development)
+## Changes in 1.12.0 (in development)
+
+### Enhancements
+* Add function to list file extensions recognized by FS stores (#726)
+* Added function `get_filename_extensions` to FsDataStores to allow 
+  retrieving mappings of filename extensions to opener and writer ids.  
 
 ### Other changes
 
