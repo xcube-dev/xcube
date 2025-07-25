@@ -410,9 +410,9 @@ class DatasetsContext(ResourcesContext):
                                 "datasets may cause a long setup time of the server."
                             )
                         data_store = data_store_pool.get_store(store_instance_id)
-                        store_dataset_ids = itertools.chain(
-                            data_store.get_data_ids(data_type=DATASET_TYPE),
-                            data_store.get_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE),
+                        store_dataset_ids = set(
+                            data_store.list_data_ids(data_type=DATASET_TYPE) +
+                            data_store.list_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE)
                         )
                         for store_dataset_id in store_dataset_ids:
                             if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
