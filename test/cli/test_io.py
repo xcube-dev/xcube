@@ -71,6 +71,7 @@ class IOStoreTest(CliTest):
                 "                           cube.nc  <no title>\n"
                 "                    sample-cog.tif  <no title>\n"
                 "                sample-geotiff.tif  <no title>\n"
+                "                        sample.jp2  <no title>\n"
                 "6 data resources found.\n"
             ),
             result.stdout,

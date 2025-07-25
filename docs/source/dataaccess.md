@@ -299,8 +299,8 @@ The following `storage_options` can be used for the `ftp` data store:
 * `password` - User's password, if using
 
 All filesystem data stores can open datasets from various data formats. 
-Datasets in Zarr, GeoTIFF / COG, or NetCDF format will be provided either by
-[xarray.Dataset] or xcube [MultiLevelDataset] instances.
+Datasets in Zarr, GeoTIFF / COG, JPEG 2000, or NetCDF format will be provided 
+either by [xarray.Dataset] or xcube [MultiLevelDataset] instances.
 Datasets stored in GeoJSON or ESRI Shapefile will yield 
 [geopandas.GeoDataFrame] instances.
 
