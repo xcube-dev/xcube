@@ -87,11 +87,10 @@ _FS_STORAGE_ITEMS = (
     ("ftp", "FTP filesystem"),
     ("https", "HTTPS filesystem"),
     ("memory", "in-memory filesystem"),
-    ("reference", "reference filesystem"),
     ("s3", "AWS S3 compatible object storage"),
 )
 
-_FS_DATA_ACCESSOR_ITEMS = (
+_FS_DATA_WRITER_ITEMS = (
     ("dataset", "netcdf", "xarray.Dataset in NetCDF format", [".nc"], True),
     ("dataset", "zarr", "xarray.Dataset in Zarr format", [".zarr"], True),
     ("dataset", "levels", "xarray.Dataset in leveled Zarr format", [".levels"], False),
@@ -102,6 +101,13 @@ _FS_DATA_ACCESSOR_ITEMS = (
         [".levels"],
         True
     ),
+    ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format",
+     [".shp"], True),
+    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format",
+     [".geojson"], True),
+)
+
+_FS_DATA_OPENER_ITEMS = _FS_DATA_WRITER_ITEMS + (
     (
         "dataset",
         "geotiff",
@@ -115,15 +121,8 @@ _FS_DATA_ACCESSOR_ITEMS = (
         "xcube.core.mldataset.MultiLevelDataset in GeoTIFF or COG format",
         [".tif", ".tiff", ".geotiff"],
         True
-    ),
-    ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format",
-     [".shp"], True),
-    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format",
-     [".geojson"], True),
+    )
 )
-
-_FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
-_FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
 
 
 def _register_data_stores(ext_registry: extension.ExtensionRegistry):
@@ -185,6 +184,14 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
                 EXTENSION_POINT_DATA_WRITERS, "writer", protocol, data_type,
                 format_id, file_extensions, preferred
             )
+    ref_ds_cls = "xcube.core.store.ref.store:ReferenceDataStore"
+    ref_ds_cls_loader = extension.import_component(ref_ds_cls)
+    ext_registry.add_extension(
+        point=EXTENSION_POINT_DATA_OPENERS,
+        loader=ref_ds_cls_loader,
+        name="dataset:zarr:reference",
+        description=f"Data opener for  an xarray.Dataset a reference file system"
+    )
 
 
 def _register_cli_commands(ext_registry: extension.ExtensionRegistry):
