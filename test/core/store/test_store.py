@@ -55,7 +55,8 @@ class TestBaseFsDataStore(unittest.TestCase):
     def test_get_data_opener_ids(self):
         store = new_data_store("file")
         self.assertEqual(
-            ("dataset:geotiff:file",), store.get_data_opener_ids(data_id="test.geotiff")
+            ("mldataset:geotiff:file", "dataset:geotiff:file",),
+            store.get_data_opener_ids(data_id="test.geotiff")
         )
         self.assertEqual(
             ("mldataset:geotiff:file",),

@@ -729,7 +729,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         assert_given(data_id, "data_id")
         ext = self._get_filename_ext(data_id)
         if data_type:
-            data_type_aliases = DataType.normalize(data_type).aliases
+            data_type_aliases = [DataType.normalize(data_type).alias]
         else:
             data_type_aliases = None
         format_id = filename_ext_to_format.get(ext.lower())
