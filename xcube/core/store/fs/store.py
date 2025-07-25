@@ -10,7 +10,7 @@ import uuid
 import warnings
 from collections.abc import Container, Iterator, Sequence
 from threading import RLock
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union, Mapping
 
 import fsspec
 import geopandas as gpd
@@ -907,3 +907,51 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
                 for data_type in types_tuple
             }
         )
+
+    @classmethod
+    def get_filename_extensions(
+        cls, accessor_type: Literal["openers", "writers"] = "openers"
+    ) -> Mapping[str, List[str]]:
+        """Returns a mapping from filename extensions to lists of
+        data accessor ids that open data from this format.
+
+        The method either returns mappings to data opener ids
+        or to data writer ids, depending on the setting of accessor type.
+
+        Args:
+            accessor_type: Either "openers" or "writers",
+                indicates whether mappings of file extensions
+                to data openers or writers shall be returned.
+                Default is "openers"
+
+        Returns:
+            A mapping from filename extensions to lists of data accessor ids
+        """
+        if accessor_type == "openers":
+            find_extensions = find_data_opener_extensions
+        elif accessor_type == "writers":
+            find_extensions = find_data_writer_extensions
+        else:
+            raise DataStoreError(
+                f"Invalid accessor type. "
+                f"Must be 'openers' or 'writers', was '{accessor_type}'"
+            )
+        filename_extensions = {}
+        filename_ext_to_format, format_to_data_type_aliases = (
+            cls._set_infos_from_extensions(
+                find_extensions, cls.get_protocol()
+            )
+        )
+        for filename_ext, frmat in filename_ext_to_format.items():
+            data_type_aliases = format_to_data_type_aliases.get(frmat, [])
+            for data_type_alias in data_type_aliases:
+                predicate = get_data_accessor_predicate(
+                    data_type_alias, frmat, cls.get_protocol()
+                )
+                extensions = find_extensions(predicate)
+                ext_names = [ext.name for ext in extensions]
+                if filename_ext in filename_extensions:
+                    filename_extensions[filename_ext] += ext_names
+                else:
+                    filename_extensions[filename_ext] = ext_names
+        return filename_extensions
