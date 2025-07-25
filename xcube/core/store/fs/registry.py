@@ -3,13 +3,14 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Any, Callable, List, Literal, Mapping, Optional
 
 import fsspec
 
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
 from .accessor import FsAccessor, FsDataAccessor
+from ..accessor import find_data_opener_extensions, find_data_writer_extensions
 from .impl.dataset import (
     DatasetGeoTiffFsDataAccessor,
     DatasetNetcdfFsDataAccessor,
@@ -247,3 +248,42 @@ def new_fs_data_store(
     }
     assert_valid_params(store_params, name="store_params", schema=store_params_schema)
     return fs_data_store_class(**store_params)
+
+
+def get_filename_extensions(
+    accessor_type: Literal["openers", "writers"] = "openers"
+) -> Mapping[str, List[str]]:
+    """Returns a mapping from filename extensions to lists of
+    data accessor ids that open data from this format.
+
+    The method either returns mappings to data opener ids
+    or to data writer ids, depending on the setting of accessor type.
+
+    Args:
+        accessor_type: Either "openers" or "writers",
+            indicates whether mappings of file extensions
+            to data openers or writers shall be returned.
+            Default is "openers"
+
+    Returns:
+        A mapping from filename extensions to lists of data accessor ids
+    """
+    if accessor_type == "openers":
+        find_extensions = find_data_opener_extensions
+    elif accessor_type == "writers":
+        find_extensions = find_data_writer_extensions
+    else:
+        raise DataStoreError(
+            f"Invalid accessor type. "
+            f"Must be 'openers' or 'writers', was '{accessor_type}'"
+        )
+    filename_extensions = {}
+    for ext in find_extensions():
+        print(ext.name)
+        file_extensions = ext.metadata.get("extensions", [])
+        for file_extension in file_extensions:
+            if file_extension in filename_extensions:
+                filename_extensions[file_extension] += [ext.name]
+            else:
+                filename_extensions[file_extension] = [ext.name]
+    return filename_extensions

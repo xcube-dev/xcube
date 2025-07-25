@@ -30,6 +30,7 @@ from xcube.core.store import (
     MutableDataStore,
 )
 from xcube.core.store.fs.registry import new_fs_data_store
+from xcube.core.store.fs.registry import get_filename_extensions
 from xcube.core.store.fs.store import FsDataStore
 from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
@@ -517,3 +518,41 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
         return new_fs_data_store(
             "s3", root=root, max_depth=3, storage_options=storage_options
         )
+
+class GetFilenameExtensionsTest(unittest.TestCase):
+
+    def test_get_filename_extensions_openers(self):
+        opener_extensions = get_filename_extensions("openers")
+        self.assertIn(".nc", list(opener_extensions.keys()))
+        self.assertIn(".zarr", list(opener_extensions.keys()))
+        self.assertIn(".levels", list(opener_extensions.keys()))
+        self.assertIn(".shp", list(opener_extensions.keys()))
+        self.assertIn(".geojson", list(opener_extensions.keys()))
+        self.assertIn(".tif", list(opener_extensions.keys()))
+        self.assertIn(".tiff", list(opener_extensions.keys()))
+        self.assertIn(".geotiff", list(opener_extensions.keys()))
+        self.assertTrue(len(opener_extensions[".nc"]) >= 6)
+        self.assertTrue(len(opener_extensions[".zarr"]) >= 6)
+        self.assertTrue(len(opener_extensions[".levels"]) >= 12)
+        self.assertTrue(len(opener_extensions[".shp"]) >= 6)
+        self.assertTrue(len(opener_extensions[".geojson"]) >= 6)
+        self.assertTrue(len(opener_extensions[".tif"]) >= 12)
+        self.assertTrue(len(opener_extensions[".tiff"]) >= 12)
+        self.assertTrue(len(opener_extensions[".geotiff"]) >= 12)
+
+    def test_get_filename_extensions_writers(self):
+        writer_extensions = get_filename_extensions("writers")
+        self.assertIn(".nc", list(writer_extensions.keys()))
+        self.assertIn(".zarr", list(writer_extensions.keys()))
+        self.assertIn(".levels", list(writer_extensions.keys()))
+        self.assertIn(".shp", list(writer_extensions.keys()))
+        self.assertIn(".geojson", list(writer_extensions.keys()))
+        self.assertTrue(len(writer_extensions[".nc"]) >= 6)
+        self.assertTrue(len(writer_extensions[".zarr"]) >= 6)
+        self.assertTrue(len(writer_extensions[".levels"]) >= 12)
+        self.assertTrue(len(writer_extensions[".shp"]) >= 6)
+        self.assertTrue(len(writer_extensions[".geojson"]) >= 6)
+
+    def test_get_filename_extensions_invalid(self):
+        with self.assertRaises(DataStoreError):
+            get_filename_extensions("rgth")
