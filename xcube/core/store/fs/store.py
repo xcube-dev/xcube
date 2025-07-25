@@ -469,13 +469,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         for ext in find_extensions(predicate):
             data_type = ext.name.split(":")[0]
             frmat = ext.name.split(":")[1]
-            extensions = ext.metadata.get("extensions")
-            if extensions is None:
-                c = ext.component
-                if isinstance(ext.component, Callable):
-                    c = c()
-                if isinstance(c, FsDataAccessor):
-                    extensions = c.get_file_extensions()
+            extensions = ext.metadata.get("extensions", [])
             for extension in extensions:
                 filename_ext_to_format[extension] = frmat
             if ext.metadata.get("preferred", False):
