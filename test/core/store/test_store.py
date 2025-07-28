@@ -14,6 +14,7 @@ from xcube.core.store import (
     list_data_store_ids,
     new_data_store,
 )
+from xcube.core.store.fs.store import BaseFsDataStore
 from xcube.core.store.preload import NullPreloadHandle
 
 
@@ -52,6 +53,13 @@ class ListDataStoreTest(unittest.TestCase):
 
 
 class TestBaseFsDataStore(unittest.TestCase):
+
+    def test_get_data_types(self):
+        self.assertEqual(
+            {"dataset", "geodataframe", "mldataset"},
+            set(BaseFsDataStore.get_data_types())
+        )
+
     def test_get_data_opener_ids(self):
         store = new_data_store("file")
         self.assertEqual(
@@ -136,6 +144,14 @@ class FsDataStoreTest(unittest.TestCase):
 
     def test_get_filename_extensions_s3_writers(self):
         self.assert_accessors("s3", "writers")
+
+    def test_get_filename_extensions_unknown_accessor_type(self):
+        with self.assertRaises(DataStoreError) as dse:
+            self.assert_accessors("s3", "modifiers")
+        self.assertEqual(
+            "Invalid accessor type. Must be 'openers' or 'writers', was 'modifiers'",
+            f"{dse.exception}"
+        )
 
     def assert_accessors(
         self, protocol: str, accessor_type: Literal["openers", "writers"]

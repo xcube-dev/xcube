@@ -113,7 +113,7 @@ class DataPackingTest(unittest.TestCase):
 # noinspection PyUnresolvedReferences,PyPep8Naming
 class FsDataStoresTestMixin(ABC):
     @abstractmethod
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         pass
 
     @classmethod
@@ -137,6 +137,28 @@ class FsDataStoresTestMixin(ABC):
             # print(f'{fs.protocol}: writing {file_path}')
             with fs.open(file_path, "w") as fp:
                 fp.write("\n")
+
+    def test_no_write_to_read_only(self):
+        data_store = self.create_data_store(read_only=True)
+        data = new_cube_data()
+        with self.assertRaises(DataStoreError) as dse:
+            data_store.write_data(data)
+        self.assertEqual("Data store is read-only.", f"{dse.exception}")
+
+    def test_no_delete_on_read_only(self):
+        data_store = self.create_data_store(read_only=True)
+        with self.assertRaises(DataStoreError) as dse:
+            data_store.delete_data("the_data_id_does_not_even_matter.nc")
+        self.assertEqual("Data store is read-only.", f"{dse.exception}")
+
+    def test_cannot_open_unknown_format(self):
+        data_store = self.create_data_store()
+        with self.assertRaises(DataStoreError) as dse:
+            data_store.open_data("unknown.format")
+        self.assertEqual(
+            "Cannot determine data type for data resource 'unknown.format'",
+            f"{dse.exception}"
+        )
 
     def test_mldataset_levels(self):
         data_store = self.create_data_store()
@@ -492,21 +514,21 @@ class FsDataStoresTestMixin(ABC):
 
 
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         root = os.path.join(new_temp_dir(prefix="xcube"), ROOT_DIR)
         self.prepare_fs(fsspec.filesystem("file"), root)
-        return new_fs_data_store("file", root=root, max_depth=3)
+        return new_fs_data_store("file", root=root, max_depth=3, read_only=read_only)
 
 
 class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         root = ROOT_DIR
         self.prepare_fs(fsspec.filesystem("memory"), root)
-        return new_fs_data_store("memory", root=root, max_depth=3)
+        return new_fs_data_store("memory", root=root, max_depth=3, read_only=read_only)
 
 
 class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         root = ROOT_DIR
         storage_options = dict(
             anon=False,
@@ -516,7 +538,8 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
         )
         self.prepare_fs(fsspec.filesystem("s3", **storage_options), root)
         return new_fs_data_store(
-            "s3", root=root, max_depth=3, storage_options=storage_options
+            "s3", root=root, max_depth=3, storage_options=storage_options,
+            read_only=read_only
         )
 
 class GetFilenameExtensionsTest(unittest.TestCase):
