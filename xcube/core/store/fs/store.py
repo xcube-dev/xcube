@@ -221,7 +221,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def get_data_types_for_data(self, data_id: str) -> tuple[str, ...]:
         self._assert_valid_data_id(data_id)
-        all_opener_id_parts = self._guess_all_opener_id_parts(data_id)
+        all_opener_id_parts = self._guess_all_opener_id_parts(data_id, require=False)
         data_type_aliases = [dta for dta, format_id, protocol in all_opener_id_parts]
         return tuple(data_type_aliases)
 
@@ -251,7 +251,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         self, data_id: str, data_type: DataTypeLike = None
     ) -> DataDescriptor:
         self._assert_valid_data_id(data_id)
-        self._assert_data_specified(data_id, data_type)
         # TODO: optimize me, self.open_data() may be very slow!
         #   For Zarr, try using self.fs to load metadata only
         #   rather than instantiating xr.Dataset instances which
@@ -284,8 +283,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 )
             return results
         storage_id = self.protocol
-        if data_type == ANY_TYPE:
-            data_type = None
         return tuple(
             ext.name
             for ext in find_data_opener_extensions(
@@ -545,17 +542,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 return None
         return new_data_writer(writer_id)
 
-    def _is_data_specified(
-        self, data_id: str, data_type: DataTypeLike, require: bool = False
-    ) -> bool:
-        if not self._is_data_type_available(data_id, data_type):
-            if require:
-                raise DataStoreError(
-                    f"Cannot determine data type of resource {data_id!r}"
-                )
-            return False
-        return True
-
     def _is_data_type_available(self, data_id: str, data_type: DataTypeLike) -> bool:
         ext = self._get_filename_ext(data_id)
         format_id = self._get_filename_ext_to_format_openers().get(ext.lower())
@@ -567,9 +553,6 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             data_type.is_super_type_of(avail_data_type)
             for avail_data_type in avail_data_types
         )
-
-    def _assert_data_specified(self, data_id, data_type: DataTypeLike):
-        self._is_data_specified(data_id, data_type, require=True)
 
     def _ensure_valid_data_id(self, writer_id: str, data_id: str = None) -> str:
         format_id = writer_id.split(":")[1]
@@ -786,7 +769,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 file_path = file_path[len(self.root) + 2 :]
             if not file_path:
                 continue
-            if self._is_data_specified(file_path, data_type):
+            if self._is_data_type_available(file_path, data_type):
                 yield (file_path, {}) if return_tuples else file_path
             elif file_info.get("type") == "directory" and (
                 self._max_depth is None or current_depth < self._max_depth
