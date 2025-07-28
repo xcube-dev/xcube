@@ -72,7 +72,7 @@ class IOStoreTest(CliTest):
                 "                    sample-cog.tif  <no title>\n"
                 "                sample-geotiff.tif  <no title>\n"
                 "                        sample.jp2  <no title>\n"
-                "6 data resources found.\n"
+                "7 data resources found.\n"
             ),
             result.stdout,
         )
