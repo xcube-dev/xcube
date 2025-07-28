@@ -28,9 +28,9 @@ from .impl.geodataframe import (
 )
 from .impl.rasterio import (
     DatasetGeoTiffFsDataAccessor,
-    DatasetJp2FsDataAccessor,
+    DatasetJpeg2000FsDataAccessor,
     MultiLevelDatasetGeoTiffFsDataAccessor,
-    MultiLevelDatasetJp2FsDataAccessor
+    MultiLevelDatasetJpeg2000FsDataAccessor
 )
 
 from .impl.mldataset import (
@@ -127,10 +127,10 @@ for cls in (
     DatasetZarrFsDataAccessor,
     DatasetNetcdfFsDataAccessor,
     DatasetGeoTiffFsDataAccessor,
-    DatasetJp2FsDataAccessor,
+    DatasetJpeg2000FsDataAccessor,
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetGeoTiffFsDataAccessor,
-    MultiLevelDatasetJp2FsDataAccessor,
+    MultiLevelDatasetJpeg2000FsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
     GeoDataFrameGeoJsonFsDataAccessor,

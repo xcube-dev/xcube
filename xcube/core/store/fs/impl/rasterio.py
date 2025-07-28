@@ -30,11 +30,10 @@ import rioxarray
 import xarray as xr
 from xcube.core.mldataset import LazyMultiLevelDataset
 from xcube.core.mldataset import MultiLevelDataset
-from xcube.util.assertions import assert_instance, assert_true
+from xcube.util.assertions import assert_instance
 from xcube.util.jsonencoder import to_json_value
 from xcube.util.jsonschema import (
     JsonArraySchema,
-    JsonBooleanSchema,
     JsonIntegerSchema,
     JsonNumberSchema,
     JsonObjectSchema
@@ -57,7 +56,6 @@ RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             nullable=True,
             description="JPEG 2000 overview level. 0 is the first overview.",
         ),
-        band_as_variable=JsonBooleanSchema(default=True)
     ),
     additional_properties=False,
 )
@@ -71,7 +69,6 @@ MULTI_LEVEL_RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             ),
             default=[512, 512],
         ),
-        band_as_variable=JsonBooleanSchema(default=True)
     ),
     additional_properties=False,
 )
@@ -82,9 +79,7 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
     @param fs: abstract file system
     @param root: An optional root pointing to where the data is located
     @param data_id: the data id
-    @param open_params: Any additional parameters to be considered when opening the
-        data, e.g., band_as_variable, which, if True, will load bands in a raster
-        to separate variables.
+    @param open_params: Any additional parameters to be considered when opening the data
     """
 
     def __init__(
@@ -108,23 +103,19 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_num_levels_lazily(self) -> int:
         self._file_url = self._get_file_url()
-        if isinstance(self._fs, fsspec.AbstractFileSystem):
-            with DatasetJp2FsDataAccessor.create_env_session(self._fs) as env:
-                env.__enter__()
-                overviews = self._get_overview_count()
-        else:
-            assert_true(self._fs is None, message="invalid type for fs")
+        with DatasetJpeg2000FsDataAccessor.create_env_session(self._fs) as env:
+            env.__enter__()
+            overviews = self._get_overview_count()
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (512, 512))
         self._file_url = self._get_file_url()
-        return DatasetJp2FsDataAccessor.open_dataset(
+        return DatasetJpeg2000FsDataAccessor.open_dataset(
             self._fs,
             self._file_url,
             tile_size,
-            overview_level=index - 1 if index > 0 else None,
-            band_as_variable=self._open_params.get("band_as_variable", True)
+            overview_level=index - 1 if index > 0 else None
         )
 
     def _get_file_url(self):
@@ -156,11 +147,9 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
             file_path = protocol + "://" + data_id
         tile_size = open_params.get("tile_size", (512, 512))
         overview_level = open_params.get("overview_level", None)
-        band_as_variable = open_params.get("band_as_variable", True)
         return self.open_dataset(
             fs, file_path, tile_size,
-            overview_level=overview_level,
-            band_as_variable=band_as_variable
+            overview_level=overview_level
         )
 
     @classmethod
@@ -181,13 +170,13 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
 
     @classmethod
     def open_dataset_with_rioxarray(
-        cls, file_path, overview_level, tile_size, band_as_variable
+        cls, file_path, overview_level, tile_size
     ) -> rioxarray.raster_array:
         return rioxarray.open_rasterio(
             file_path,
             overview_level=overview_level,
             chunks=dict(zip(("x", "y"), tile_size)),
-            band_as_variable=band_as_variable
+            band_as_variable=True
         )
 
     @classmethod
@@ -197,8 +186,7 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
         file_path: str,
         tile_size: tuple[int, int],
         *,
-        overview_level: Optional[int] = None,
-        band_as_variable: Optional[bool] = True,
+        overview_level: Optional[int] = None
     ) -> xr.Dataset:
         """
         A method to open a dataset using rioxarray, returns xarray.Dataset
@@ -211,26 +199,12 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
         @type overview_level: int
         @param tile_size: tile size as tuple.
         @type tile_size: tuple
-        @param band_as_variable: If True, will load bands in a raster
-            to separate variables.
-        @type bands_as_variable
         """
 
-        if isinstance(fs, fsspec.AbstractFileSystem):
-            with cls.create_env_session(fs):
-                dataset = cls.open_dataset_with_rioxarray(
-                    file_path, overview_level, tile_size,
-                    band_as_variable
-                )
-        else:
-            assert_true(fs is None, message="invalid type for fs")
-        arrays = {}
-        if isinstance(dataset, xr.DataArray):
-            if dataset.ndim != 2:
-                raise RuntimeError(f"Invalid number of dimensions, was {dataset.ndim}")
-            name = f"{dataset.name or 'band'}"
-            arrays[name] = dataset
-            dataset = xr.Dataset(arrays, attrs=dict(source=file_path))
+        with cls.create_env_session(fs):
+            dataset = cls.open_dataset_with_rioxarray(
+                file_path, overview_level, tile_size
+            )
         if "spatial_ref" in dataset.coords:
             for data_var in dataset.data_vars.values():
                 data_var.attrs["grid_mapping"] = "spatial_ref"
@@ -256,7 +230,7 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
             var.attrs.update(to_json_value(var.attrs))
 
 
-class DatasetJp2FsDataAccessor(DatasetRasterIoFsDataAccessor):
+class DatasetJpeg2000FsDataAccessor(DatasetRasterIoFsDataAccessor):
     """
     Opener/writer extension name: 'dataset:jpeg2000:<protocol>'.
     """
@@ -293,8 +267,8 @@ class MultiLevelDatasetRasterioFsDataAccessor(DatasetFsDataAccessor):
 
 
 # noinspection PyAbstractClass
-class MultiLevelDatasetJp2FsDataAccessor(
-    MultiLevelDatasetRasterioFsDataAccessor, DatasetJp2FsDataAccessor
+class MultiLevelDatasetJpeg2000FsDataAccessor(
+    MultiLevelDatasetRasterioFsDataAccessor, DatasetJpeg2000FsDataAccessor
 ):
     """
     Opener/writer extension name: "mldataset:jpeg2000:<protocol>"
