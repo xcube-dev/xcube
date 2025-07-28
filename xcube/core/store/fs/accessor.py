@@ -180,13 +180,6 @@ class FsDataAccessor(DataOpener, DataWriter, FsAccessor, ABC):
         for example "zarr" or "geojson".
         """
 
-    @classmethod
-    @abstractmethod
-    def get_file_extensions(cls) -> List [str]:
-        """Get the possible filename extensions for the format,
-        for example "tif" or "geotiff".
-        """
-
     def get_delete_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return JsonObjectSchema(
             properties=dict(

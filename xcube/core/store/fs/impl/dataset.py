@@ -149,10 +149,6 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
     def get_format_id(cls) -> str:
         return "zarr"
 
-    @classmethod
-    def get_file_extensions(cls) -> List[str]:
-        return [".zarr"]
-
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return self.add_storage_options_to_params_schema(ZARR_OPEN_DATA_PARAMS_SCHEMA)
@@ -246,10 +242,6 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
     def get_format_id(cls) -> str:
         return "netcdf"
 
-    @classmethod
-    def get_file_extensions(cls) -> List[str]:
-        return [".nc"]
-
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return self.add_storage_options_to_params_schema(NETCDF_OPEN_DATA_PARAMS_SCHEMA)
 
@@ -330,10 +322,6 @@ class DatasetGeoTiffFsDataAccessor(DatasetFsDataAccessor):
     @classmethod
     def get_format_id(cls) -> str:
         return "geotiff"
-
-    @classmethod
-    def get_file_extensions(cls) -> List[str]:
-        return ["geotiff", ".tiff", ".tif"]
 
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return GEOTIFF_OPEN_DATA_PARAMS_SCHEMA
