@@ -522,15 +522,12 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         self,
         opener_id: str = None,
         data_id: str = None,
-        data_type: DataTypeLike = None,
-        require: bool = True,
-    ) -> Optional[DataOpener]:
+        data_type: DataTypeLike = None
+    ) -> DataOpener:
         if not opener_id:
             opener_id = self._find_opener_id(
-                data_id=data_id, data_type=data_type, require=require
+                data_id=data_id, data_type=data_type, require=True
             )
-            if opener_id is None:
-                return None
         return new_data_opener(opener_id)
 
     def _find_writer(self, writer_id: str = None, data_id: str = None) -> DataWriter:
