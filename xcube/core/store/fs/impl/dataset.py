@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import ABC
-from typing import Optional, Tuple
+from typing import List, Optional
 
 import fsspec
 import rasterio
