@@ -469,7 +469,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             extensions = ext.metadata.get("extensions", [])
             for extension in extensions:
                 filename_ext_to_format[extension] = frmat
-            if ext.metadata.get("suitability", "primary"):
+            if ext.metadata.get("suitability", "primary") == "primary":
                 format_to_data_type_aliases[frmat] = (
                     (data_type, ) + format_to_data_type_aliases.get(frmat, ())
                 )
