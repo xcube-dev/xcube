@@ -25,7 +25,7 @@ In xcube, multi-resolution datasets are represented by the abstract class
 `xcube.core.mldataset.MultiLevelDataset`. The xcube data store framework
 refers to this datatype using the alias `mldataset`. The corresponding
 default data format is the xcube _Levels_ format, named `levels`.
-xcube also supports the Cloud Optimized GeoTIFF (COG) format 
+xcube also supports the Cloud Optimized GeoTIFF (COG) and the JPEG 2000 format 
 for reading multi-resolution datasets.
 
 The xcube Levels Format

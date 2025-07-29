@@ -11,7 +11,6 @@ from ..assertions import assert_valid_params
 from ..error import DataStoreError
 from .accessor import FsAccessor, FsDataAccessor
 from .impl.dataset import (
-    DatasetGeoTiffFsDataAccessor,
     DatasetNetcdfFsDataAccessor,
     DatasetZarrFsDataAccessor,
 )
@@ -27,7 +26,13 @@ from .impl.geodataframe import (
     GeoDataFrameGeoJsonFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
 )
-from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
+from .impl.rasterio import (
+    DatasetGeoTiffFsDataAccessor,
+    DatasetJpeg2000FsDataAccessor,
+    MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetJpeg2000FsDataAccessor
+)
+
 from .impl.mldataset import (
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
@@ -122,8 +127,10 @@ for cls in (
     DatasetZarrFsDataAccessor,
     DatasetNetcdfFsDataAccessor,
     DatasetGeoTiffFsDataAccessor,
+    DatasetJpeg2000FsDataAccessor,
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetJpeg2000FsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
     GeoDataFrameGeoJsonFsDataAccessor,
