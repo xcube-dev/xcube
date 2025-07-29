@@ -533,13 +533,9 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 return None
         return new_data_opener(opener_id)
 
-    def _find_writer(
-        self, writer_id: str = None, data_id: str = None, require: bool = True
-    ) -> Optional[DataWriter]:
+    def _find_writer(self, writer_id: str = None, data_id: str = None) -> DataWriter:
         if not writer_id:
-            writer_id = self._find_writer_id(data_id=data_id, require=require)
-            if writer_id is None:
-                return None
+            writer_id = self._find_writer_id(data_id=data_id, require=True)
         return new_data_writer(writer_id)
 
     def _is_data_type_available(self, data_id: str, data_type: DataTypeLike) -> bool:
