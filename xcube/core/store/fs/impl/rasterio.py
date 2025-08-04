@@ -39,8 +39,8 @@ from xcube.util.jsonschema import (
     JsonObjectSchema
 )
 
-from .dataset import DatasetFsDataAccessor
-from ...datatype import MULTI_LEVEL_DATASET_TYPE, DataType
+from ..accessor import DataOpener, FsAccessor
+from ...datatype import DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE, DataType
 
 RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -127,7 +127,11 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
         return protocol + "://" + self._path
 
 
-class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
+class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
+
+    @classmethod
+    def get_data_type(cls) -> DataType:
+        return DATASET_TYPE
 
     def get_open_data_params_schema(self, data_id: str = None) -> JsonObjectSchema:
         return RASTERIO_OPEN_DATA_PARAMS_SCHEMA
@@ -210,14 +214,6 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
         cls._sanitize_dataset_attrs(dataset)
 
         return dataset
-
-    def get_write_data_params_schema(self) -> JsonObjectSchema:
-        raise NotImplementedError("Writing not yet supported")
-
-    def write_data(
-        self, data: xr.Dataset, data_id: str, replace=False, **write_params
-    ) -> str:
-        raise NotImplementedError("Writing not yet supported")
 
     @classmethod
     def _sanitize_dataset_attrs(cls, dataset):
