@@ -56,7 +56,6 @@ class RioXarrayTest(unittest.TestCase):
         rio_accessor = array.rio
         self.assertIsInstance(rio_accessor, rioxarray.raster_array.RasterArray)
         manager = rio_accessor._manager
-        print(manager)
         self.assertIsInstance(manager, xr.backends.CachingFileManager)
         rio_dataset = manager.acquire(needs_lock=False)
         self.assertIsInstance(rio_dataset, rio.DatasetReader)
