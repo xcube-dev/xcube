@@ -46,10 +46,10 @@ RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
         tile_size=JsonArraySchema(
             items=(
-                JsonNumberSchema(minimum=256, default=512),
-                JsonNumberSchema(minimum=256, default=512),
+                JsonNumberSchema(minimum=512, default=1024),
+                JsonNumberSchema(minimum=512, default=1024),
             ),
-            default=[512, 512],
+            default=[1024, 1024],
         ),
         overview_level=JsonIntegerSchema(
             default=None,
@@ -64,10 +64,10 @@ MULTI_LEVEL_RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
         tile_size=JsonArraySchema(
             items=(
-                JsonNumberSchema(minimum=256, default=512),
-                JsonNumberSchema(minimum=256, default=512),
+                JsonNumberSchema(minimum=512, default=1024),
+                JsonNumberSchema(minimum=512, default=1024),
             ),
-            default=[512, 512],
+            default=[1024, 1024],
         ),
     ),
     additional_properties=False,
@@ -109,7 +109,7 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) -> xr.Dataset:
-        tile_size = self._open_params.get("tile_size", (512, 512))
+        tile_size = self._open_params.get("tile_size", (1024, 1024))
         self._file_url = self._get_file_url()
         return DatasetJpeg2000FsDataAccessor.open_dataset(
             self._fs,
@@ -141,7 +141,7 @@ class DatasetRasterIoFsDataAccessor(DatasetFsDataAccessor, ABC):
             file_path = protocol + "://" + root + fs.sep +  data_id
         else:
             file_path = protocol + "://" + data_id
-        tile_size = open_params.get("tile_size", (512, 512))
+        tile_size = open_params.get("tile_size", (1024, 1024))
         overview_level = open_params.get("overview_level", None)
         return self.open_dataset(
             fs, file_path, tile_size,
