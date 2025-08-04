@@ -106,12 +106,8 @@ _FS_DATA_ACCESSOR_ITEMS = (
     ),
     ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format"),
     ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format"),
-    ("dataset", "jpeg2000", "xarray.Dataset in JPEG 2000 format"),
-    (
-        "mldataset",
-        "jpeg2000",
-        "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format",
-    ),
+    ("dataset", "j2k", "xarray.Dataset in JPEG 2000 format"),
+    ("mldataset", "j2k", "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format")
 )
 
 _FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS

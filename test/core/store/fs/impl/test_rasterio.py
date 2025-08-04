@@ -15,10 +15,10 @@ import xarray as xr
 
 from xcube.core.new import new_cube
 from xcube.core.store.fs.impl.rasterio import DatasetGeoTiffFsDataAccessor
-from xcube.core.store.fs.impl.rasterio import DatasetJpeg2000FsDataAccessor
+from xcube.core.store.fs.impl.rasterio import DatasetJ2kFsDataAccessor
 from xcube.core.store.fs.impl.rasterio import RasterioMultiLevelDataset
 from xcube.core.store.fs.impl.rasterio import MultiLevelDatasetGeoTiffFsDataAccessor
-from xcube.core.store.fs.impl.rasterio import MultiLevelDatasetJpeg2000FsDataAccessor
+from xcube.core.store.fs.impl.rasterio import MultiLevelDatasetJ2kFsDataAccessor
 
 
 from xcube.util.jsonschema import JsonSchema
@@ -154,14 +154,14 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         self.assertEqual((1387, 1491), dataset.band_1.shape)
 
 
-class MultiLevelDatasetJpeg2000FsDataAccessorTest(unittest.TestCase):
+class MultiLevelDatasetJ2kFsDataAccessorTest(unittest.TestCase):
     """
     A class to test JPEG 2000 for multilevel dataset opener
     """
 
     def test_read(self):
         fs, file_path = RasterIoMultiLevelDatasetTest.get_params(_JPEG2000_TEST_FILE)
-        data_opener = MultiLevelDatasetJpeg2000FsDataAccessor()
+        data_opener = MultiLevelDatasetJ2kFsDataAccessor()
 
         ml_dataset = data_opener.open_data(
             file_path, fs=fs, root=None, tile_size=[512, 512]
@@ -176,7 +176,7 @@ class MultiLevelDatasetJpeg2000FsDataAccessorTest(unittest.TestCase):
         fs, file_path = RasterIoMultiLevelDatasetTest.get_params(
             _JPEG2000_SINGLE_BAND_TEST_FILE, False
         )
-        data_opener = MultiLevelDatasetJpeg2000FsDataAccessor()
+        data_opener = MultiLevelDatasetJ2kFsDataAccessor()
 
         ml_dataset = data_opener.open_data(
             _JPEG2000_SINGLE_BAND_TEST_FILE, fs=fs, root=file_path, tile_size=[512, 512]
@@ -234,7 +234,7 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
             data_accessor.write_data(cube, "new_cube")
         self.assertEqual("Writing not yet supported", f"{nie.exception}")
 
-class DatasetJpeg2000FsDataAccessorTest(unittest.TestCase):
+class DatasetJ2kFsDataAccessorTest(unittest.TestCase):
     """
     A Test class to test opening a JPEG 2000 as multilevel dataset or
     as normal dataset
@@ -242,9 +242,9 @@ class DatasetJpeg2000FsDataAccessorTest(unittest.TestCase):
 
     def test_ml_to_dataset(self):
         fs, file_path = RasterIoMultiLevelDatasetTest.get_params(_JPEG2000_TEST_FILE)
-        data_accessor = DatasetJpeg2000FsDataAccessor()
-        self.assertIsInstance(data_accessor, DatasetJpeg2000FsDataAccessor)
-        self.assertEqual("jpeg2000", data_accessor.get_format_id())
+        data_accessor = DatasetJ2kFsDataAccessor()
+        self.assertIsInstance(data_accessor, DatasetJ2kFsDataAccessor)
+        self.assertEqual("j2k", data_accessor.get_format_id())
         dataset = data_accessor.open_data(
             data_id=file_path, overview_level=1, fs=fs, root=None, tile_size=[512, 512]
         )
@@ -255,9 +255,9 @@ class DatasetJpeg2000FsDataAccessorTest(unittest.TestCase):
 
     def test_dataset(self):
         fs, file_path = RasterIoMultiLevelDatasetTest.get_params(_JPEG2000_TEST_FILE)
-        data_accessor = DatasetJpeg2000FsDataAccessor()
-        self.assertIsInstance(data_accessor, DatasetJpeg2000FsDataAccessor)
-        self.assertEqual("jpeg2000", data_accessor.get_format_id())
+        data_accessor = DatasetJ2kFsDataAccessor()
+        self.assertIsInstance(data_accessor, DatasetJ2kFsDataAccessor)
+        self.assertEqual("j2k", data_accessor.get_format_id())
         dataset = data_accessor.open_data(
             data_id=file_path,
             fs=fs,
@@ -271,9 +271,9 @@ class DatasetJpeg2000FsDataAccessorTest(unittest.TestCase):
         fs, file_path = RasterIoMultiLevelDatasetTest.get_params(
             _JPEG2000_SINGLE_BAND_TEST_FILE, False
         )
-        data_accessor = DatasetJpeg2000FsDataAccessor()
-        self.assertIsInstance(data_accessor, DatasetJpeg2000FsDataAccessor)
-        self.assertEqual("jpeg2000", data_accessor.get_format_id())
+        data_accessor = DatasetJ2kFsDataAccessor()
+        self.assertIsInstance(data_accessor, DatasetJ2kFsDataAccessor)
+        self.assertEqual("j2k", data_accessor.get_format_id())
         dataset = data_accessor.open_data(
             data_id=_JPEG2000_SINGLE_BAND_TEST_FILE,
             fs=fs,
@@ -284,13 +284,13 @@ class DatasetJpeg2000FsDataAccessorTest(unittest.TestCase):
         self.assertIsInstance(dataset, xarray.Dataset)
 
     def test_get_write_data_params_schema(self):
-        data_accessor = DatasetJpeg2000FsDataAccessor()
+        data_accessor = DatasetJ2kFsDataAccessor()
         with self.assertRaises(NotImplementedError) as nie:
             data_accessor.get_write_data_params_schema()
         self.assertEqual("Writing not yet supported", f"{nie.exception}")
 
     def test_write_data(self):
-        data_accessor = DatasetJpeg2000FsDataAccessor()
+        data_accessor = DatasetJ2kFsDataAccessor()
         cube = new_cube()
         with self.assertRaises(NotImplementedError) as nie:
             data_accessor.write_data(cube, "new_cube")
@@ -328,7 +328,7 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
         self.assertEqual(3, ml_dataset.num_levels)
         self.assertEqual((1387, 1491), ml_dataset.get_dataset(0).band_1.shape)
         dataset_path = f"xcube-examples/{_JPEG2000_TEST_FILE}"
-        data_accessor = DatasetJpeg2000FsDataAccessor()
+        data_accessor = DatasetJ2kFsDataAccessor()
         dataset = data_accessor.open_data(
             data_id=dataset_path,
             fs=self._s3,

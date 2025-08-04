@@ -103,7 +103,7 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_num_levels_lazily(self) -> int:
         self._file_url = self._get_file_url()
-        with DatasetJpeg2000FsDataAccessor.create_env_session(self._fs) as env:
+        with DatasetJ2kFsDataAccessor.create_env_session(self._fs) as env:
             env.__enter__()
             overviews = self._get_overview_count()
         return len(overviews) + 1
@@ -111,7 +111,7 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
     def _get_dataset_lazily(self, index: int, parameters) -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (1024, 1024))
         self._file_url = self._get_file_url()
-        return DatasetJpeg2000FsDataAccessor.open_dataset(
+        return DatasetJ2kFsDataAccessor.open_dataset(
             self._fs,
             self._file_url,
             tile_size,
@@ -222,14 +222,14 @@ class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
             var.attrs.update(to_json_value(var.attrs))
 
 
-class DatasetJpeg2000FsDataAccessor(DatasetRasterIoFsDataAccessor):
+class DatasetJ2kFsDataAccessor(DatasetRasterIoFsDataAccessor):
     """
-    Opener/writer extension name: 'dataset:jpeg2000:<protocol>'.
+    Opener/writer extension name: 'dataset:j2k:<protocol>'.
     """
 
     @classmethod
     def get_format_id(cls) -> str:
-        return "jpeg2000"
+        return "j2k"
 
 
 class DatasetGeoTiffFsDataAccessor(DatasetRasterIoFsDataAccessor):
@@ -243,7 +243,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetRasterIoFsDataAccessor):
 
 
 # noinspection PyAbstractClass
-class MultiLevelDatasetRasterioFsDataAccessor(DatasetFsDataAccessor):
+class MultiLevelDatasetRasterioFsDataAccessor(DataOpener, FsAccessor, ABC):
 
     @classmethod
     def get_data_type(cls) -> DataType:
@@ -259,11 +259,11 @@ class MultiLevelDatasetRasterioFsDataAccessor(DatasetFsDataAccessor):
 
 
 # noinspection PyAbstractClass
-class MultiLevelDatasetJpeg2000FsDataAccessor(
-    MultiLevelDatasetRasterioFsDataAccessor, DatasetJpeg2000FsDataAccessor
+class MultiLevelDatasetJ2kFsDataAccessor(
+    MultiLevelDatasetRasterioFsDataAccessor, DatasetJ2kFsDataAccessor
 ):
     """
-    Opener/writer extension name: "mldataset:jpeg2000:<protocol>"
+    Opener/writer extension name: "mldataset:j2k:<protocol>"
     """
 
 # noinspection PyAbstractClass
