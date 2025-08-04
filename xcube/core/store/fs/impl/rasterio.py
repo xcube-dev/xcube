@@ -162,6 +162,7 @@ class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
                 aws_access_key_id=fs.key,
                 aws_session_token=fs.token,
                 region_name=fs.client_kwargs.get("region_name", "eu-central-1"),
+                endpoint_url=fs.client_kwargs.get("endpoint_url", None),
             )
             return rasterio.env.Env(
                 session=aws_session, aws_no_sign_request=aws_unsigned, AWS_VIRTUAL_HOSTING=False
