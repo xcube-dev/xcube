@@ -2,10 +2,12 @@
 
 ### Enhancements
 
-* support reading JPEG2000 files as datasets or multi-level datasets from file
+* The file data stores (e.g., `store = new_data_store("file")`) now support 
+  reading JPEG2000 files as datasets or multi-level datasets from file
   systems. Openers and writers are available as `dataset:jpeg2000:<protocol>` or
   `mldataset:jpeg2000:<protocol>`, where protocol is the respective file system. 
-  These openers and writers are available to any file system data store.
+  These openers and writers are available to any file system data store, 
+  e.g., `"file"`, `"s3"`.
 
 ### Other changes
 
