@@ -13,7 +13,6 @@ import s3fs
 import xarray
 import xarray as xr
 
-from xcube.core.new import new_cube
 from xcube.core.store.fs.impl.rasterio import DatasetGeoTiffFsDataAccessor
 from xcube.core.store.fs.impl.rasterio import DatasetJ2kFsDataAccessor
 from xcube.core.store.fs.impl.rasterio import RasterioMultiLevelDataset
@@ -221,19 +220,6 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         )
         self.assertIsInstance(dataset, xarray.Dataset)
 
-    def test_get_write_data_params_schema(self):
-        data_accessor = DatasetGeoTiffFsDataAccessor()
-        with self.assertRaises(NotImplementedError) as nie:
-            data_accessor.get_write_data_params_schema()
-        self.assertEqual("Writing not yet supported", f"{nie.exception}")
-
-    def test_write_data(self):
-        data_accessor = DatasetGeoTiffFsDataAccessor()
-        cube = new_cube()
-        with self.assertRaises(NotImplementedError) as nie:
-            data_accessor.write_data(cube, "new_cube")
-        self.assertEqual("Writing not yet supported", f"{nie.exception}")
-
 class DatasetJ2kFsDataAccessorTest(unittest.TestCase):
     """
     A Test class to test opening a JPEG 2000 as multilevel dataset or
@@ -282,19 +268,6 @@ class DatasetJ2kFsDataAccessorTest(unittest.TestCase):
             overview_level=None,
         )
         self.assertIsInstance(dataset, xarray.Dataset)
-
-    def test_get_write_data_params_schema(self):
-        data_accessor = DatasetJ2kFsDataAccessor()
-        with self.assertRaises(NotImplementedError) as nie:
-            data_accessor.get_write_data_params_schema()
-        self.assertEqual("Writing not yet supported", f"{nie.exception}")
-
-    def test_write_data(self):
-        data_accessor = DatasetJ2kFsDataAccessor()
-        cube = new_cube()
-        with self.assertRaises(NotImplementedError) as nie:
-            data_accessor.write_data(cube, "new_cube")
-        self.assertEqual("Writing not yet supported", f"{nie.exception}")
 
 
 class ObjectStorageMultiLevelDatasetTest(S3Test):
