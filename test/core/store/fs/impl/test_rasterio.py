@@ -14,11 +14,13 @@ import s3fs
 import xarray
 import xarray as xr
 
-from xcube.core.store.fs.impl.rasterio import (DatasetGeoTiffFsDataAccessor,
-                                               DatasetJ2kFsDataAccessor,
-                                               MultiLevelDatasetGeoTiffFsDataAccessor,
-                                               MultiLevelDatasetJ2kFsDataAccessor,
-                                               RasterioMultiLevelDataset)
+from xcube.core.store.fs.impl.rasterio import (
+    DatasetGeoTiffFsDataAccessor,
+    DatasetJ2kFsDataAccessor,
+    MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetJ2kFsDataAccessor,
+    RasterioMultiLevelDataset,
+)
 from xcube.util.jsonschema import JsonSchema
 
 _COG_TEST_FILE = "sample-cog.tif"
@@ -91,7 +93,7 @@ class RasterIoMultiLevelDatasetTest(unittest.TestCase):
             "..",
             "examples",
             "serve",
-            "demo"
+            "demo",
         )
         if attach_filename:
             file_path = os.path.join(file_path, file_name)
@@ -226,6 +228,7 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
             overview_level=None,
         )
         self.assertIsInstance(dataset, xarray.Dataset)
+
 
 class DatasetJ2kFsDataAccessorTest(unittest.TestCase):
     """

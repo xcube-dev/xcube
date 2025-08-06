@@ -20,16 +20,34 @@ from xcube.core.mldataset import MultiLevelDataset
 from xcube.util.assertions import assert_given, assert_in, assert_instance, assert_true
 from xcube.util.extension import Extension
 from xcube.util.fspath import is_local_fs
-from xcube.util.jsonschema import (JsonArraySchema, JsonBooleanSchema,
-                                   JsonComplexSchema, JsonIntegerSchema, JsonNullSchema,
-                                   JsonObjectSchema, JsonStringSchema)
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonBooleanSchema,
+    JsonComplexSchema,
+    JsonIntegerSchema,
+    JsonNullSchema,
+    JsonObjectSchema,
+    JsonStringSchema,
+)
 
-from ..accessor import (DataOpener, DataWriter, find_data_opener_extensions,
-                        find_data_writer_extensions, get_data_accessor_predicate,
-                        new_data_opener, new_data_writer)
+from ..accessor import (
+    DataOpener,
+    DataWriter,
+    find_data_opener_extensions,
+    find_data_writer_extensions,
+    get_data_accessor_predicate,
+    new_data_opener,
+    new_data_writer,
+)
 from ..assertions import assert_valid_params
-from ..datatype import (ANY_TYPE, DATASET_TYPE, GEO_DATA_FRAME_TYPE,
-                        MULTI_LEVEL_DATASET_TYPE, DataType, DataTypeLike)
+from ..datatype import (
+    ANY_TYPE,
+    DATASET_TYPE,
+    GEO_DATA_FRAME_TYPE,
+    MULTI_LEVEL_DATASET_TYPE,
+    DataType,
+    DataTypeLike,
+)
 from ..descriptor import DataDescriptor, new_data_descriptor
 from ..error import DataStoreError
 from ..search import DefaultSearchMixin
@@ -54,7 +72,7 @@ _FILENAME_EXT_TO_FORMAT = {
     ".geotiff": "geotiff",
     ".shp": "shapefile",
     ".geojson": "geojson",
-    ".jp2": "j2k"
+    ".jp2": "j2k",
 }
 
 _FORMAT_TO_DATA_TYPE_ALIASES = {
@@ -64,7 +82,7 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
     "geotiff": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias),
     "geojson": (GEO_DATA_FRAME_TYPE.alias,),
     "shapefile": (GEO_DATA_FRAME_TYPE.alias,),
-    "j2k": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias)
+    "j2k": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias),
 }
 
 _DATA_TYPES = tuple(

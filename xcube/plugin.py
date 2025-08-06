@@ -2,13 +2,20 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.constants import (EXTENSION_POINT_CLI_COMMANDS, EXTENSION_POINT_DATA_OPENERS,
-                             EXTENSION_POINT_DATA_STORES, EXTENSION_POINT_DATA_WRITERS,
-                             EXTENSION_POINT_DATASET_IOS,
-                             EXTENSION_POINT_INPUT_PROCESSORS,
-                             EXTENSION_POINT_SERVER_APIS,
-                             EXTENSION_POINT_SERVER_FRAMEWORKS, FORMAT_NAME_CSV,
-                             FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR)
+from xcube.constants import (
+    EXTENSION_POINT_CLI_COMMANDS,
+    EXTENSION_POINT_DATA_OPENERS,
+    EXTENSION_POINT_DATA_STORES,
+    EXTENSION_POINT_DATA_WRITERS,
+    EXTENSION_POINT_DATASET_IOS,
+    EXTENSION_POINT_INPUT_PROCESSORS,
+    EXTENSION_POINT_SERVER_APIS,
+    EXTENSION_POINT_SERVER_FRAMEWORKS,
+    FORMAT_NAME_CSV,
+    FORMAT_NAME_MEM,
+    FORMAT_NAME_NETCDF4,
+    FORMAT_NAME_ZARR,
+)
 from xcube.util import extension
 
 
@@ -100,7 +107,7 @@ _FS_DATA_ACCESSOR_ITEMS = (
     ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format"),
     ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format"),
     ("dataset", "j2k", "xarray.Dataset in JPEG 2000 format"),
-    ("mldataset", "j2k", "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format")
+    ("mldataset", "j2k", "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format"),
 )
 
 _FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS

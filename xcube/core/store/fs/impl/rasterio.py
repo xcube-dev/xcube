@@ -33,8 +33,12 @@ from rasterio.session import AWSSession
 from xcube.core.mldataset import LazyMultiLevelDataset, MultiLevelDataset
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonencoder import to_json_value
-from xcube.util.jsonschema import (JsonArraySchema, JsonIntegerSchema, JsonNumberSchema,
-                                   JsonObjectSchema)
+from xcube.util.jsonschema import (
+    JsonArraySchema,
+    JsonIntegerSchema,
+    JsonNumberSchema,
+    JsonObjectSchema,
+)
 
 from ...datatype import DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE, DataType
 from ...error import DataStoreError
@@ -73,7 +77,6 @@ MULTI_LEVEL_RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 
 
 class RasterIoAccessor:
-
     def __init__(self, fs):
         if isinstance(fs, s3fs.S3FileSystem):
             aws_unsigned = bool(fs.anon)
@@ -86,7 +89,9 @@ class RasterIoAccessor:
                 endpoint_url=fs.client_kwargs.get("endpoint_url", None),
             )
             self.env = rasterio.env.Env(
-                session=aws_session, aws_no_sign_request=aws_unsigned, AWS_VIRTUAL_HOSTING=False
+                session=aws_session,
+                aws_no_sign_request=aws_unsigned,
+                AWS_VIRTUAL_HOSTING=False,
             )
             self.env = self.env.__enter__()
         self.env = rasterio.env.NullContextManager()
@@ -105,7 +110,7 @@ class RasterIoAccessor:
             file_path,
             overview_level=overview_level,
             chunks=dict(zip(("x", "y"), tile_size)),
-            band_as_variable=True
+            band_as_variable=True,
         )
 
     def open_dataset(
@@ -113,7 +118,7 @@ class RasterIoAccessor:
         file_path: str,
         tile_size: tuple[int, int],
         *,
-        overview_level: Optional[int] = None
+        overview_level: Optional[int] = None,
     ) -> xr.Dataset:
         """
         A method to open a dataset using rioxarray, returns xarray.Dataset
@@ -127,9 +132,7 @@ class RasterIoAccessor:
         @param tile_size: tile size as tuple.
         @type tile_size: tuple
         """
-        dataset = self.open_dataset_with_rioxarray(
-            file_path, overview_level, tile_size
-        )
+        dataset = self.open_dataset_with_rioxarray(file_path, overview_level, tile_size)
         if "spatial_ref" in dataset.coords:
             for data_var in dataset.data_vars.values():
                 data_var.attrs["grid_mapping"] = "spatial_ref"
@@ -179,22 +182,21 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
         tile_size = self._open_params.get("tile_size", (1024, 1024))
         self._file_url = self._get_file_url()
         return self._rio_accessor.open_dataset(
-            self._file_url,
-            tile_size,
-            overview_level=index - 1 if index > 0 else None
+            self._file_url, tile_size, overview_level=index - 1 if index > 0 else None
         )
 
     def _get_file_url(self):
-        protocol = self._fs.protocol \
-            if isinstance(self._fs.protocol, str) \
+        protocol = (
+            self._fs.protocol
+            if isinstance(self._fs.protocol, str)
             else self._fs.protocol[0]
+        )
         if self._root:
             return protocol + "://" + self._root + self._fs.sep + self._path
         return protocol + "://" + self._path
 
 
 class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
-
     def __init__(self):
         # required to keep accessors alive and therefore sessions open
         self._rio_accessors = {}
@@ -212,7 +214,7 @@ class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
 
         protocol = fs.protocol if isinstance(fs.protocol, str) else fs.protocol[0]
         if root is not None:
-            file_path = protocol + "://" + root + fs.sep +  data_id
+            file_path = protocol + "://" + root + fs.sep + data_id
         else:
             file_path = protocol + "://" + data_id
         tile_size = open_params.get("tile_size", (1024, 1024))
@@ -221,9 +223,7 @@ class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
             self._rio_accessors[fs] = RasterIoAccessor(fs)
         rio_accessor = self._rio_accessors[fs]
         return rio_accessor.open_dataset(
-            file_path,
-            tile_size,
-            overview_level=overview_level
+            file_path, tile_size, overview_level=overview_level
         )
 
 
@@ -258,7 +258,6 @@ class DatasetGeoTiffFsDataAccessor(DatasetRasterIoFsDataAccessor):
 
 # noinspection PyAbstractClass
 class MultiLevelDatasetRasterioFsDataAccessor(DataOpener, FsAccessor, ABC):
-
     @classmethod
     def get_data_type(cls) -> DataType:
         return MULTI_LEVEL_DATASET_TYPE
@@ -279,6 +278,7 @@ class MultiLevelDatasetJ2kFsDataAccessor(
     """
     Opener/writer extension name: "mldataset:j2k:<protocol>"
     """
+
 
 # noinspection PyAbstractClass
 class MultiLevelDatasetGeoTiffFsDataAccessor(
