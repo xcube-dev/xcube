@@ -7,8 +7,6 @@ from abc import abstractmethod
 import geopandas as gpd
 import pandas as pd
 
-from typing import List
-
 from xcube.util.assertions import assert_instance
 from xcube.util.fspath import is_local_fs
 from xcube.util.jsonschema import JsonObjectSchema

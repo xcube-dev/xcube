@@ -4,7 +4,7 @@
 
 import copy
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import fsspec
 

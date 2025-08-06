@@ -2,8 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from collections.abc import Sequence
-from typing import Any, Callable, List, Literal, Mapping, Optional
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal, Optional
 
 import fsspec
 
@@ -252,7 +252,7 @@ def new_fs_data_store(
 
 def get_filename_extensions(
     accessor_type: Literal["openers", "writers"] = "openers"
-) -> Mapping[str, List[str]]:
+) -> Mapping[str, list[str]]:
     """Returns a mapping from filename extensions to lists of
     data accessor ids that open data from this format.
 

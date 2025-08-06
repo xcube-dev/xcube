@@ -2,8 +2,6 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import List
-
 from xcube.constants import (
     EXTENSION_POINT_CLI_COMMANDS,
     EXTENSION_POINT_DATA_OPENERS,
@@ -153,7 +151,7 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
     # noinspection PyShadowingNames
     def _add_fs_data_accessor_ext(
         point: str, ext_type: str, protocol: str, data_type: str, format_id: str,
-        file_extensions: List[str]
+        file_extensions: list[str]
     ):
         factory_args = (protocol, data_type, format_id)
         loader = extension.import_component(factory, call_args=factory_args)

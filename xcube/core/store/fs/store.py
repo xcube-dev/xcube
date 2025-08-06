@@ -10,7 +10,7 @@ import uuid
 import warnings
 from collections.abc import Container, Iterator, Sequence
 from threading import RLock
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union, Mapping
+from typing import Any, Callable, Literal, Optional, Tuple, Union, Mapping
 
 import fsspec
 import geopandas as gpd
@@ -459,7 +459,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     @classmethod
     def _set_infos_from_extensions(cls, find_extensions, protocol=None) -> (
-        Tuple)[Dict, Dict]:
+        Tuple)[dict, dict]:
         filename_ext_to_format = {}
         format_to_data_type_aliases = {}
         predicate = get_data_accessor_predicate(storage_id=protocol)
@@ -673,7 +673,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
 
     def _guess_all_opener_id_parts(
         self, data_id: str, data_type: DataTypeLike = None, require=True
-    ) -> List[tuple[str, str, str]]:
+    ) -> list[tuple[str, str, str]]:
         return self._guess_all_accessor_id_parts(
             self._get_filename_ext_to_format_openers(),
             self._get_format_to_data_type_aliases_openers(),
@@ -701,7 +701,7 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
     def _guess_all_accessor_id_parts(
         self, filename_ext_to_format, format_to_data_type_alias,
         data_id: str, data_type: DataTypeLike = None, require=True
-    ) -> List[tuple[str, str, str]]:
+    ) -> list[tuple[str, str, str]]:
         assert_given(data_id, "data_id")
         ext = self._get_filename_ext(data_id)
         if data_type:
@@ -881,7 +881,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
     @classmethod
     def get_filename_extensions(
         cls, accessor_type: Literal["openers", "writers"] = "openers"
-    ) -> Mapping[str, List[str]]:
+    ) -> Mapping[str, list[str]]:
         """Returns a mapping from filename extensions to lists of
         data accessor ids that open data from this format.
 
