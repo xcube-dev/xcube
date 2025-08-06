@@ -42,7 +42,7 @@ from xcube.util.jsonschema import (
 
 from ...datatype import DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE, DataType
 from ...error import DataStoreError
-from ..accessor import DataOpener, FsAccessor
+from ..accessor import FsDataAccessor
 
 RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -196,7 +196,7 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
         return protocol + "://" + self._path
 
 
-class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
+class DatasetRasterIoFsDataAccessor(FsDataAccessor, ABC):
     def __init__(self):
         # required to keep accessors alive and therefore sessions open
         self._rio_accessors = {}
@@ -225,6 +225,14 @@ class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
         return rio_accessor.open_dataset(
             file_path, tile_size, overview_level=overview_level
         )
+
+    def get_write_data_params_schema(self) -> JsonObjectSchema:
+        raise NotImplementedError("Writing not yet supported")
+
+    def write_data(
+        self, data: xr.Dataset, data_id: str, replace=False, **write_params
+    ) -> str:
+        raise NotImplementedError("Writing not yet supported")
 
 
 class DatasetJ2kFsDataAccessor(DatasetRasterIoFsDataAccessor):
@@ -257,7 +265,7 @@ class DatasetGeoTiffFsDataAccessor(DatasetRasterIoFsDataAccessor):
 
 
 # noinspection PyAbstractClass
-class MultiLevelDatasetRasterioFsDataAccessor(DataOpener, FsAccessor, ABC):
+class MultiLevelDatasetRasterioFsDataAccessor(FsDataAccessor, ABC):
     @classmethod
     def get_data_type(cls) -> DataType:
         return MULTI_LEVEL_DATASET_TYPE
