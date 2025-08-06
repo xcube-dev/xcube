@@ -1,8 +1,8 @@
 # Copyright (c) 2018-2025 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
-from typing import Literal
 import unittest
+from typing import Literal
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -53,18 +53,20 @@ class ListDataStoreTest(unittest.TestCase):
 
 
 class TestBaseFsDataStore(unittest.TestCase):
-
     def test_get_data_types(self):
         self.assertEqual(
             {"dataset", "geodataframe", "mldataset"},
-            set(BaseFsDataStore.get_data_types())
+            set(BaseFsDataStore.get_data_types()),
         )
 
     def test_get_data_opener_ids(self):
         store = new_data_store("file")
         self.assertEqual(
-            ("mldataset:geotiff:file", "dataset:geotiff:file",),
-            store.get_data_opener_ids(data_id="test.geotiff")
+            (
+                "mldataset:geotiff:file",
+                "dataset:geotiff:file",
+            ),
+            store.get_data_opener_ids(data_id="test.geotiff"),
         )
         self.assertEqual(
             ("mldataset:geotiff:file",),
@@ -108,7 +110,6 @@ class TestBaseFsDataStore(unittest.TestCase):
 
 
 class FsDataStoreTest(unittest.TestCase):
-
     def test_get_filename_extensions_abfs_openers(self):
         self.assert_accessors("abfs", "openers")
 
@@ -150,7 +151,7 @@ class FsDataStoreTest(unittest.TestCase):
             self.assert_accessors("s3", "modifiers")
         self.assertEqual(
             "Invalid accessor type. Must be 'openers' or 'writers', was 'modifiers'",
-            f"{dse.exception}"
+            f"{dse.exception}",
         )
 
     def assert_accessors(
@@ -159,21 +160,26 @@ class FsDataStoreTest(unittest.TestCase):
         store_cls = get_data_store_class(protocol)
         accessors = store_cls.get_filename_extensions(accessor_type)
         expected_accessors = {
-            '.geojson': [f'geodataframe:geojson:{protocol}'],
-            '.levels': [f'mldataset:levels:{protocol}',
-                        f'dataset:levels:{protocol}'],
-            '.nc': [f'dataset:netcdf:{protocol}'],
-            '.shp': [f'geodataframe:shapefile:{protocol}'],
-            '.zarr': [f'dataset:zarr:{protocol}']
+            ".geojson": [f"geodataframe:geojson:{protocol}"],
+            ".levels": [f"mldataset:levels:{protocol}", f"dataset:levels:{protocol}"],
+            ".nc": [f"dataset:netcdf:{protocol}"],
+            ".shp": [f"geodataframe:shapefile:{protocol}"],
+            ".zarr": [f"dataset:zarr:{protocol}"],
         }
         if accessor_type == "openers":
             geotiff_openers = {
-                '.geotiff': [f'mldataset:geotiff:{protocol}',
-                             f'dataset:geotiff:{protocol}'],
-                '.tif': [f'mldataset:geotiff:{protocol}',
-                         f'dataset:geotiff:{protocol}'],
-                '.tiff': [f'mldataset:geotiff:{protocol}',
-                      f'dataset:geotiff:{protocol}'],
+                ".geotiff": [
+                    f"mldataset:geotiff:{protocol}",
+                    f"dataset:geotiff:{protocol}",
+                ],
+                ".tif": [
+                    f"mldataset:geotiff:{protocol}",
+                    f"dataset:geotiff:{protocol}",
+                ],
+                ".tiff": [
+                    f"mldataset:geotiff:{protocol}",
+                    f"dataset:geotiff:{protocol}",
+                ],
             }
             expected_accessors.update(geotiff_openers)
         self.assertEqual(accessors, expected_accessors)

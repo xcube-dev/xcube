@@ -7,10 +7,10 @@ from typing import Any, Literal, Optional
 
 import fsspec
 
+from ..accessor import find_data_opener_extensions, find_data_writer_extensions
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
 from .accessor import FsAccessor, FsDataAccessor
-from ..accessor import find_data_opener_extensions, find_data_writer_extensions
 from .impl.dataset import (
     DatasetGeoTiffFsDataAccessor,
     DatasetNetcdfFsDataAccessor,
@@ -251,7 +251,7 @@ def new_fs_data_store(
 
 
 def get_filename_extensions(
-    accessor_type: Literal["openers", "writers"] = "openers"
+    accessor_type: Literal["openers", "writers"] = "openers",
 ) -> Mapping[str, list[str]]:
     """Returns a mapping from filename extensions to lists of
     data accessor ids that open data from this format.

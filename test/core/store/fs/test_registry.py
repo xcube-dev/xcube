@@ -29,8 +29,7 @@ from xcube.core.store import (
     MultiLevelDatasetDescriptor,
     MutableDataStore,
 )
-from xcube.core.store.fs.registry import new_fs_data_store
-from xcube.core.store.fs.registry import get_filename_extensions
+from xcube.core.store.fs.registry import get_filename_extensions, new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
@@ -157,7 +156,7 @@ class FsDataStoresTestMixin(ABC):
             data_store.open_data("unknown.format")
         self.assertEqual(
             "Cannot determine data type for data resource 'unknown.format'",
-            f"{dse.exception}"
+            f"{dse.exception}",
         )
 
     def test_mldataset_levels(self):
@@ -538,12 +537,15 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
         )
         self.prepare_fs(fsspec.filesystem("s3", **storage_options), root)
         return new_fs_data_store(
-            "s3", root=root, max_depth=3, storage_options=storage_options,
-            read_only=read_only
+            "s3",
+            root=root,
+            max_depth=3,
+            storage_options=storage_options,
+            read_only=read_only,
         )
 
-class GetFilenameExtensionsTest(unittest.TestCase):
 
+class GetFilenameExtensionsTest(unittest.TestCase):
     def test_get_filename_extensions_openers(self):
         opener_extensions = get_filename_extensions("openers")
         self.assertIn(".nc", list(opener_extensions.keys()))

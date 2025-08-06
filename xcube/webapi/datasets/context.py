@@ -4,7 +4,6 @@
 
 
 import fnmatch
-import itertools
 import os
 import os.path
 import warnings
@@ -27,7 +26,6 @@ from xcube.core.mldataset import (
 )
 from xcube.core.store import (
     DATASET_TYPE,
-    MULTI_LEVEL_DATASET_TYPE,
     DatasetDescriptor,
     DataStoreConfig,
     DataStorePool,
