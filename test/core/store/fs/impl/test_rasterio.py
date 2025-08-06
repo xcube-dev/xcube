@@ -14,15 +14,12 @@ import s3fs
 import xarray
 import xarray as xr
 
-from xcube.core.store.fs.impl.rasterio import DatasetGeoTiffFsDataAccessor
-from xcube.core.store.fs.impl.rasterio import DatasetJ2kFsDataAccessor
-from xcube.core.store.fs.impl.rasterio import RasterioMultiLevelDataset
-from xcube.core.store.fs.impl.rasterio import MultiLevelDatasetGeoTiffFsDataAccessor
-from xcube.core.store.fs.impl.rasterio import MultiLevelDatasetJ2kFsDataAccessor
-
-
+from xcube.core.store.fs.impl.rasterio import (DatasetGeoTiffFsDataAccessor,
+                                               DatasetJ2kFsDataAccessor,
+                                               MultiLevelDatasetGeoTiffFsDataAccessor,
+                                               MultiLevelDatasetJ2kFsDataAccessor,
+                                               RasterioMultiLevelDataset)
 from xcube.util.jsonschema import JsonSchema
-
 
 _COG_TEST_FILE = "sample-cog.tif"
 _JPEG2000_TEST_FILE = "sample.jp2"

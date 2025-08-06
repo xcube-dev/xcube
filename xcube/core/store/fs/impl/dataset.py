@@ -14,13 +14,9 @@ import zarr
 from xcube.core.zarrstore import LoggingZarrStore, ZarrStoreHolder
 from xcube.util.assertions import assert_instance, assert_true
 from xcube.util.fspath import is_https_fs, is_local_fs
-from xcube.util.jsonschema import (
-    JsonArraySchema,
-    JsonBooleanSchema,
-    JsonIntegerSchema,
-    JsonObjectSchema,
-    JsonStringSchema,
-)
+from xcube.util.jsonschema import (JsonArraySchema, JsonBooleanSchema,
+                                   JsonIntegerSchema, JsonObjectSchema,
+                                   JsonStringSchema)
 from xcube.util.temp import new_temp_file
 
 from ...datatype import DATASET_TYPE, DataType

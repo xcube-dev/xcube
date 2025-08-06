@@ -25,24 +25,20 @@ import dask
 import fsspec
 import rasterio
 import rasterio.session
-from rasterio.session import AWSSession
-import s3fs
 import rioxarray
+import s3fs
 import xarray as xr
-from xcube.core.mldataset import LazyMultiLevelDataset
-from xcube.core.mldataset import MultiLevelDataset
+from rasterio.session import AWSSession
+
+from xcube.core.mldataset import LazyMultiLevelDataset, MultiLevelDataset
 from xcube.util.assertions import assert_instance
 from xcube.util.jsonencoder import to_json_value
-from xcube.util.jsonschema import (
-    JsonArraySchema,
-    JsonIntegerSchema,
-    JsonNumberSchema,
-    JsonObjectSchema
-)
+from xcube.util.jsonschema import (JsonArraySchema, JsonIntegerSchema, JsonNumberSchema,
+                                   JsonObjectSchema)
 
-from ..accessor import DataOpener, FsAccessor
 from ...datatype import DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE, DataType
 from ...error import DataStoreError
+from ..accessor import DataOpener, FsAccessor
 
 RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(

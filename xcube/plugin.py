@@ -2,20 +2,13 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.constants import (
-    EXTENSION_POINT_CLI_COMMANDS,
-    EXTENSION_POINT_DATA_OPENERS,
-    EXTENSION_POINT_DATA_STORES,
-    EXTENSION_POINT_DATA_WRITERS,
-    EXTENSION_POINT_DATASET_IOS,
-    EXTENSION_POINT_INPUT_PROCESSORS,
-    EXTENSION_POINT_SERVER_APIS,
-    EXTENSION_POINT_SERVER_FRAMEWORKS,
-    FORMAT_NAME_CSV,
-    FORMAT_NAME_MEM,
-    FORMAT_NAME_NETCDF4,
-    FORMAT_NAME_ZARR,
-)
+from xcube.constants import (EXTENSION_POINT_CLI_COMMANDS, EXTENSION_POINT_DATA_OPENERS,
+                             EXTENSION_POINT_DATA_STORES, EXTENSION_POINT_DATA_WRITERS,
+                             EXTENSION_POINT_DATASET_IOS,
+                             EXTENSION_POINT_INPUT_PROCESSORS,
+                             EXTENSION_POINT_SERVER_APIS,
+                             EXTENSION_POINT_SERVER_FRAMEWORKS, FORMAT_NAME_CSV,
+                             FORMAT_NAME_MEM, FORMAT_NAME_NETCDF4, FORMAT_NAME_ZARR)
 from xcube.util import extension
 
 
