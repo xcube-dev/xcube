@@ -72,7 +72,7 @@ _FILENAME_EXT_TO_FORMAT = {
     ".geotiff": "geotiff",
     ".shp": "shapefile",
     ".geojson": "geojson",
-    ".jp2": "jpeg2000"
+    ".jp2": "j2k"
 }
 
 _FORMAT_TO_DATA_TYPE_ALIASES = {
@@ -82,7 +82,7 @@ _FORMAT_TO_DATA_TYPE_ALIASES = {
     "geotiff": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias),
     "geojson": (GEO_DATA_FRAME_TYPE.alias,),
     "shapefile": (GEO_DATA_FRAME_TYPE.alias,),
-    "jpeg2000": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias)
+    "j2k": (DATASET_TYPE.alias, MULTI_LEVEL_DATASET_TYPE.alias)
 }
 
 _DATA_TYPES = tuple(
