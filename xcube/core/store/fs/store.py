@@ -465,17 +465,17 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         predicate = get_data_accessor_predicate(storage_id=protocol)
         for ext in find_extensions(predicate):
             data_type = ext.name.split(":")[0]
-            frmat = ext.name.split(":")[1]
+            fmt = ext.name.split(":")[1]
             extensions = ext.metadata.get("extensions", [])
             for extension in extensions:
-                filename_ext_to_format[extension] = frmat
+                filename_ext_to_format[extension] = fmt
             if ext.metadata.get("suitability", "primary") == "primary":
-                format_to_data_type_aliases[frmat] = (
-                    (data_type, ) + format_to_data_type_aliases.get(frmat, ())
+                format_to_data_type_aliases[fmt] = (
+                    (data_type, ) + format_to_data_type_aliases.get(fmt, ())
                 )
             else:
-                format_to_data_type_aliases[frmat] = (
-                    format_to_data_type_aliases.get(frmat, ()) + (data_type, )
+                format_to_data_type_aliases[fmt] = (
+                    format_to_data_type_aliases.get(fmt, ()) + (data_type, )
                 )
         return filename_ext_to_format, format_to_data_type_aliases
 
@@ -912,11 +912,11 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
                 find_extensions, cls.get_protocol()
             )
         )
-        for filename_ext, frmat in filename_ext_to_format.items():
-            data_type_aliases = format_to_data_type_aliases.get(frmat, [])
+        for filename_ext, fmt in filename_ext_to_format.items():
+            data_type_aliases = format_to_data_type_aliases.get(fmt, [])
             for data_type_alias in data_type_aliases:
                 predicate = get_data_accessor_predicate(
-                    data_type_alias, frmat, cls.get_protocol()
+                    data_type_alias, fmt, cls.get_protocol()
                 )
                 extensions = find_extensions(predicate)
                 ext_names = [ext.name for ext in extensions]
