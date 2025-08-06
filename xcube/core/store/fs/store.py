@@ -212,11 +212,11 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             find_data_opener_extensions
         )
         return tuple(
-            {
+            sorted({
                 data_type
                 for types_tuple in format_to_data_type_aliases.values()
                 for data_type in types_tuple
-            }
+            })
         )
 
     def get_data_types_for_data(self, data_id: str) -> tuple[str, ...]:

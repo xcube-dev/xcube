@@ -1,9 +1,10 @@
 ## Changes in 1.12.0 (in development)
 
 ### Enhancements
-* Add function to list file extensions recognized by FS stores (#726)
-* Added function `get_filename_extensions` to FsDataStores to allow 
-  retrieving mappings of filename extensions to opener and writer ids.  
+* Added function `get_filename_extensions()` to data store framework: 
+  `from xcube.core.store import get_filename_extensions`.
+  It allows for retrieving mappings of recognized filename extensions to 
+  respective data openers and writers.  (#726)
 
 ### Other changes
 
