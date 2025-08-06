@@ -21,6 +21,7 @@
 from abc import ABC
 from typing import Any, Optional
 
+import dask
 import fsspec
 import rasterio
 import rasterio.session
@@ -41,6 +42,7 @@ from xcube.util.jsonschema import (
 
 from ..accessor import DataOpener, FsAccessor
 from ...datatype import DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE, DataType
+from ...error import DataStoreError
 
 RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
@@ -73,6 +75,82 @@ MULTI_LEVEL_RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     additional_properties=False,
 )
 
+
+class RasterIoAccessor:
+
+    def __init__(self, fs):
+        if isinstance(fs, s3fs.S3FileSystem):
+            aws_unsigned = bool(fs.anon)
+            aws_session = AWSSession(
+                aws_unsigned=aws_unsigned,
+                aws_secret_access_key=fs.secret,
+                aws_access_key_id=fs.key,
+                aws_session_token=fs.token,
+                region_name=fs.client_kwargs.get("region_name", "eu-central-1"),
+                endpoint_url=fs.client_kwargs.get("endpoint_url", None),
+            )
+            self.env = rasterio.env.Env(
+                session=aws_session, aws_no_sign_request=aws_unsigned, AWS_VIRTUAL_HOSTING=False
+            )
+            self.env = self.env.__enter__()
+        self.env = rasterio.env.NullContextManager()
+
+    # noinspection PyMethodMayBeStatic
+    def get_overview_count(self, file_url):
+        with rasterio.open(file_url) as rio_dataset:
+            overviews = rio_dataset.overviews(1)
+        return overviews
+
+    # noinspection PyMethodMayBeStatic
+    def open_dataset_with_rioxarray(
+        self, file_path, overview_level, tile_size
+    ) -> rioxarray.raster_array:
+        return rioxarray.open_rasterio(
+            file_path,
+            overview_level=overview_level,
+            chunks=dict(zip(("x", "y"), tile_size)),
+            band_as_variable=True
+        )
+
+    def open_dataset(
+        self,
+        file_path: str,
+        tile_size: tuple[int, int],
+        *,
+        overview_level: Optional[int] = None
+    ) -> xr.Dataset:
+        """
+        A method to open a dataset using rioxarray, returns xarray.Dataset
+        @param fs: abstract file system
+        @type fs: fsspec.AbstractFileSystem object.
+        @param file_path: path to the file
+        @type file_path: str
+        @param overview_level: the overview level of GeoTIFF, 0 is the first
+               overview and None means full resolution.
+        @type overview_level: int
+        @param tile_size: tile size as tuple.
+        @type tile_size: tuple
+        """
+        dataset = self.open_dataset_with_rioxarray(
+            file_path, overview_level, tile_size
+        )
+        if "spatial_ref" in dataset.coords:
+            for data_var in dataset.data_vars.values():
+                data_var.attrs["grid_mapping"] = "spatial_ref"
+        # rioxarray may return non-JSON-serializable metadata
+        # attribute values.
+        # We have seen _FillValue of type np.uint8
+        self._sanitize_dataset_attrs(dataset)
+
+        return dataset
+
+    @classmethod
+    def _sanitize_dataset_attrs(cls, dataset):
+        dataset.attrs.update(to_json_value(dataset.attrs))
+        for var in dataset.variables.values():
+            var.attrs.update(to_json_value(var.attrs))
+
+
 class RasterioMultiLevelDataset(LazyMultiLevelDataset):
     """A multi-level dataset for accessing files using rasterio.
 
@@ -94,25 +172,17 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
         self._root = root
         self._path = data_id
         self._open_params = open_params
-        self._file_url = None
-
-    def _get_overview_count(self):
-        with rasterio.open(self._file_url) as rio_dataset:
-            overviews = rio_dataset.overviews(1)
-        return overviews
+        self._file_url = self._get_file_url()
+        self._rio_accessor = RasterIoAccessor(self._fs)
 
     def _get_num_levels_lazily(self) -> int:
-        self._file_url = self._get_file_url()
-        with DatasetJ2kFsDataAccessor.create_env_session(self._fs) as env:
-            env.__enter__()
-            overviews = self._get_overview_count()
+        overviews = self._rio_accessor.get_overview_count(self._file_url)
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (1024, 1024))
         self._file_url = self._get_file_url()
-        return DatasetJ2kFsDataAccessor.open_dataset(
-            self._fs,
+        return self._rio_accessor.open_dataset(
             self._file_url,
             tile_size,
             overview_level=index - 1 if index > 0 else None
@@ -128,6 +198,10 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
 
 
 class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
+
+    def __init__(self):
+        # required to keep accessors alive and therefore sessions open
+        self._rio_accessors = {}
 
     @classmethod
     def get_data_type(cls) -> DataType:
@@ -147,86 +221,29 @@ class DatasetRasterIoFsDataAccessor(DataOpener, FsAccessor, ABC):
             file_path = protocol + "://" + data_id
         tile_size = open_params.get("tile_size", (1024, 1024))
         overview_level = open_params.get("overview_level", None)
-        return self.open_dataset(
-            fs, file_path, tile_size,
+        if fs not in self._rio_accessors.keys():
+            self._rio_accessors[fs] = RasterIoAccessor(fs)
+        rio_accessor = self._rio_accessors[fs]
+        return rio_accessor.open_dataset(
+            file_path,
+            tile_size,
             overview_level=overview_level
         )
-
-    @classmethod
-    def create_env_session(cls, fs):
-        if isinstance(fs, s3fs.S3FileSystem):
-            aws_unsigned = bool(fs.anon)
-            aws_session = AWSSession(
-                aws_unsigned=aws_unsigned,
-                aws_secret_access_key=fs.secret,
-                aws_access_key_id=fs.key,
-                aws_session_token=fs.token,
-                region_name=fs.client_kwargs.get("region_name", "eu-central-1"),
-                endpoint_url=fs.client_kwargs.get("endpoint_url", None),
-            )
-            return rasterio.env.Env(
-                session=aws_session, aws_no_sign_request=aws_unsigned, AWS_VIRTUAL_HOSTING=False
-            )
-        return rasterio.env.NullContextManager()
-
-    @classmethod
-    def open_dataset_with_rioxarray(
-        cls, file_path, overview_level, tile_size
-    ) -> rioxarray.raster_array:
-        return rioxarray.open_rasterio(
-            file_path,
-            overview_level=overview_level,
-            chunks=dict(zip(("x", "y"), tile_size)),
-            band_as_variable=True
-        )
-
-    @classmethod
-    def open_dataset(
-        cls,
-        fs,
-        file_path: str,
-        tile_size: tuple[int, int],
-        *,
-        overview_level: Optional[int] = None
-    ) -> xr.Dataset:
-        """
-        A method to open a dataset using rioxarray, returns xarray.Dataset
-        @param fs: abstract file system
-        @type fs: fsspec.AbstractFileSystem object.
-        @param file_path: path to the file
-        @type file_path: str
-        @param overview_level: the overview level of GeoTIFF, 0 is the first
-               overview and None means full resolution.
-        @type overview_level: int
-        @param tile_size: tile size as tuple.
-        @type tile_size: tuple
-        """
-
-        with cls.create_env_session(fs):
-            dataset = cls.open_dataset_with_rioxarray(
-                file_path, overview_level, tile_size
-            )
-        if "spatial_ref" in dataset.coords:
-            for data_var in dataset.data_vars.values():
-                data_var.attrs["grid_mapping"] = "spatial_ref"
-        # rioxarray may return non-JSON-serializable metadata
-        # attribute values.
-        # We have seen _FillValue of type np.uint8
-        cls._sanitize_dataset_attrs(dataset)
-
-        return dataset
-
-    @classmethod
-    def _sanitize_dataset_attrs(cls, dataset):
-        dataset.attrs.update(to_json_value(dataset.attrs))
-        for var in dataset.variables.values():
-            var.attrs.update(to_json_value(var.attrs))
 
 
 class DatasetJ2kFsDataAccessor(DatasetRasterIoFsDataAccessor):
     """
     Opener/writer extension name: 'dataset:j2k:<protocol>'.
     """
+
+    def __init__(self):
+        if dask.config.get("scheduler", "") != "single-threaded":
+            raise DataStoreError(
+                "For opening JPEG 2000 please set the scheduler in your "
+                "dask configuration to 'single-threaded', e.g., by executing "
+                "dask.config.set(scheduler='single-threaded')"
+            )
+        super().__init__()
 
     @classmethod
     def get_format_id(cls) -> str:

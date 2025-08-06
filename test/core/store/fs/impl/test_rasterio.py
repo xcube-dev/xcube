@@ -6,6 +6,7 @@ import os.path
 import unittest
 from test.s3test import S3Test
 
+import dask
 import fsspec
 import rasterio as rio
 import rioxarray
@@ -158,6 +159,15 @@ class MultiLevelDatasetJ2kFsDataAccessorTest(unittest.TestCase):
     A class to test JPEG 2000 for multilevel dataset opener
     """
 
+    def setUp(self) -> None:
+        region_name = "eu-central-1"
+        self._s3 = s3fs.S3FileSystem(region_name=region_name, anon=True)
+        self._dask_scheduler = dask.config.get("scheduler", None)
+        dask.config.set(scheduler="single-threaded")
+
+    def tearDown(self):
+        dask.config.set(scheduler=self._dask_scheduler)
+
     def test_read(self):
         fs, file_path = RasterIoMultiLevelDatasetTest.get_params(_JPEG2000_TEST_FILE)
         data_opener = MultiLevelDatasetJ2kFsDataAccessor()
@@ -226,6 +236,15 @@ class DatasetJ2kFsDataAccessorTest(unittest.TestCase):
     as normal dataset
     """
 
+    def setUp(self) -> None:
+        region_name = "eu-central-1"
+        self._s3 = s3fs.S3FileSystem(region_name=region_name, anon=True)
+        self._dask_scheduler = dask.config.get("scheduler", None)
+        dask.config.set(scheduler="single-threaded")
+
+    def tearDown(self):
+        dask.config.set(scheduler=self._dask_scheduler)
+
     def test_ml_to_dataset(self):
         fs, file_path = RasterIoMultiLevelDatasetTest.get_params(_JPEG2000_TEST_FILE)
         data_accessor = DatasetJ2kFsDataAccessor()
@@ -278,6 +297,11 @@ class ObjectStorageMultiLevelDatasetTest(S3Test):
     def setUp(self) -> None:
         region_name = "eu-central-1"
         self._s3 = s3fs.S3FileSystem(region_name=region_name, anon=True)
+        self._dask_scheduler = dask.config.get("scheduler", None)
+        dask.config.set(scheduler="single-threaded")
+
+    def tearDown(self):
+        dask.config.set(scheduler=self._dask_scheduler)
 
     def test_s3_fs_tif(self):
         data_id = f"xcube-examples/{_COG_TEST_FILE}"
