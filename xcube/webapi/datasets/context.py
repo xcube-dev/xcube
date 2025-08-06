@@ -389,15 +389,6 @@ class DatasetsContext(ResourcesContext):
         for store_instance_id in data_store_pool.store_instance_ids:
             LOG.info(f"Scanning store {store_instance_id!r}")
             data_store_config = data_store_pool.get_store_config(store_instance_id)
-
-            # Note by forman: This iterator chaining is inefficient.
-            # Preferably, we should offer
-            #
-            # store_dataset_ids = data_store.get_data_ids(
-            #     data_type=(DATASET_TYPE, MULTI_LEVEL_DATASET_TYPE)
-            # )
-            #
-
             store_dataset_configs: list[ServerConfig] = data_store_config.user_data
             if store_dataset_configs:
                 for store_dataset_config in store_dataset_configs:
@@ -410,9 +401,8 @@ class DatasetsContext(ResourcesContext):
                                 "datasets may cause a long setup time of the server."
                             )
                         data_store = data_store_pool.get_store(store_instance_id)
-                        store_dataset_ids = set(
-                            data_store.list_data_ids(data_type=DATASET_TYPE) +
-                            data_store.list_data_ids(data_type=MULTI_LEVEL_DATASET_TYPE)
+                        store_dataset_ids = data_store.get_data_ids(
+                            data_type=DATASET_TYPE
                         )
                         for store_dataset_id in store_dataset_ids:
                             if fnmatch.fnmatch(store_dataset_id, dataset_id_pattern):
