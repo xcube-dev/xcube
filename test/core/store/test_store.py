@@ -167,7 +167,7 @@ class FsDataStoreTest(unittest.TestCase):
             ".zarr": [f"dataset:zarr:{protocol}"],
         }
         if accessor_type == "openers":
-            geotiff_openers = {
+            rasterio_openers = {
                 ".geotiff": [
                     f"mldataset:geotiff:{protocol}",
                     f"dataset:geotiff:{protocol}",
@@ -180,8 +180,16 @@ class FsDataStoreTest(unittest.TestCase):
                     f"mldataset:geotiff:{protocol}",
                     f"dataset:geotiff:{protocol}",
                 ],
+                ".j2k": [
+                    f"mldataset:j2k:{protocol}",
+                    f"dataset:j2k:{protocol}",
+                ],
+                ".jp2": [
+                    f"mldataset:j2k:{protocol}",
+                    f"dataset:j2k:{protocol}",
+                ],
             }
-            expected_accessors.update(geotiff_openers)
+            expected_accessors.update(rasterio_openers)
         self.assertEqual(accessors, expected_accessors)
 
 
