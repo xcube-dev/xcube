@@ -121,16 +121,16 @@ class RasterIoAccessor:
         overview_level: Optional[int] = None,
     ) -> xr.Dataset:
         """
-        A method to open a dataset using rioxarray, returns xarray.Dataset
-        @param fs: abstract file system
-        @type fs: fsspec.AbstractFileSystem object.
-        @param file_path: path to the file
-        @type file_path: str
-        @param overview_level: the overview level of GeoTIFF, 0 is the first
-               overview and None means full resolution.
-        @type overview_level: int
-        @param tile_size: tile size as tuple.
-        @type tile_size: tuple
+        A method to open a dataset using rioxarray, returns xarray.Dataset.
+
+        Args:
+            file_path: path to the file
+            tile_size: tile size as tuple.
+            overview_level: the overview level of GeoTIFF,
+                0 is the first overview and None means full resolution.
+
+        Returns:
+            The opened data as xarray.Dataset
         """
         dataset = self.open_dataset_with_rioxarray(file_path, overview_level, tile_size)
         if "spatial_ref" in dataset.coords:
@@ -153,10 +153,10 @@ class RasterIoAccessor:
 class RasterioMultiLevelDataset(LazyMultiLevelDataset):
     """A multi-level dataset for accessing files using rasterio.
 
-    @param fs: abstract file system
-    @param root: An optional root pointing to where the data is located
-    @param data_id: the data id
-    @param open_params: Any additional parameters to be considered when opening the data
+        fs: abstract file system
+        root: An optional root pointing to where the data is located
+        data_id: the data id
+        open_params: Any additional parameters to be considered when opening the data
     """
 
     def __init__(
