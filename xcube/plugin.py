@@ -120,10 +120,13 @@ _FS_DATA_OPENER_ITEMS = _FS_DATA_WRITER_ITEMS + (
         "xcube.core.mldataset.MultiLevelDataset in GeoTIFF or COG format",
         [".tif", ".tiff", ".geotiff"],
     ),
-    ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format"),
-    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format"),
-    ("dataset", "j2k", "xarray.Dataset in JPEG 2000 format"),
-    ("mldataset", "j2k", "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format"),
+    ("dataset", "j2k", "xarray.Dataset in JPEG 2000 format", [".jp2", ".j2k"]),
+    (
+        "mldataset",
+        "j2k",
+        "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format",
+        [".jp2", ".j2k"]
+    ),
 )
 
 
