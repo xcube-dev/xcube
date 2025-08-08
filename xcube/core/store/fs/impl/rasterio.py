@@ -264,7 +264,6 @@ class DatasetGeoTiffFsDataAccessor(DatasetRasterIoFsDataAccessor):
         return "geotiff"
 
 
-# noinspection PyAbstractClass
 class MultiLevelDatasetRasterioFsDataAccessor(FsDataAccessor, ABC):
     @classmethod
     def get_data_type(cls) -> DataType:
@@ -279,7 +278,6 @@ class MultiLevelDatasetRasterioFsDataAccessor(FsDataAccessor, ABC):
         return RasterioMultiLevelDataset(fs, root, data_id, **open_params)
 
 
-# noinspection PyAbstractClass
 class MultiLevelDatasetJ2kFsDataAccessor(
     MultiLevelDatasetRasterioFsDataAccessor, DatasetJ2kFsDataAccessor
 ):
@@ -288,7 +286,6 @@ class MultiLevelDatasetJ2kFsDataAccessor(
     """
 
 
-# noinspection PyAbstractClass
 class MultiLevelDatasetGeoTiffFsDataAccessor(
     MultiLevelDatasetRasterioFsDataAccessor, DatasetGeoTiffFsDataAccessor
 ):
