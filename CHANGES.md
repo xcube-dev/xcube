@@ -1,4 +1,10 @@
-## Changes in 1.11.2 (in development)
+## Changes in 1.12.0 (in development)
+
+### Enhancements
+* Added function `get_filename_extensions()` to data store framework: 
+  `from xcube.core.store import get_filename_extensions`.
+  It allows for retrieving mappings of recognized filename extensions to 
+  respective data openers and writers.  (#726)
 
 ### Other changes
 
