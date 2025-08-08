@@ -29,7 +29,7 @@ from xcube.core.store import (
     MultiLevelDatasetDescriptor,
     MutableDataStore,
 )
-from xcube.core.store.fs.registry import new_fs_data_store
+from xcube.core.store.fs.registry import get_filename_extensions, new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
 from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
@@ -112,7 +112,7 @@ class DataPackingTest(unittest.TestCase):
 # noinspection PyUnresolvedReferences,PyPep8Naming
 class FsDataStoresTestMixin(ABC):
     @abstractmethod
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         pass
 
     @classmethod
@@ -136,6 +136,28 @@ class FsDataStoresTestMixin(ABC):
             # print(f'{fs.protocol}: writing {file_path}')
             with fs.open(file_path, "w") as fp:
                 fp.write("\n")
+
+    def test_no_write_to_read_only(self):
+        data_store = self.create_data_store(read_only=True)
+        data = new_cube_data()
+        with self.assertRaises(DataStoreError) as dse:
+            data_store.write_data(data)
+        self.assertEqual("Data store is read-only.", f"{dse.exception}")
+
+    def test_no_delete_on_read_only(self):
+        data_store = self.create_data_store(read_only=True)
+        with self.assertRaises(DataStoreError) as dse:
+            data_store.delete_data("the_data_id_does_not_even_matter.nc")
+        self.assertEqual("Data store is read-only.", f"{dse.exception}")
+
+    def test_cannot_open_unknown_format(self):
+        data_store = self.create_data_store()
+        with self.assertRaises(DataStoreError) as dse:
+            data_store.open_data("unknown.format")
+        self.assertEqual(
+            "Cannot determine data type for data resource 'unknown.format'",
+            f"{dse.exception}",
+        )
 
     def test_mldataset_levels(self):
         data_store = self.create_data_store()
@@ -491,21 +513,21 @@ class FsDataStoresTestMixin(ABC):
 
 
 class FileFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         root = os.path.join(new_temp_dir(prefix="xcube"), ROOT_DIR)
         self.prepare_fs(fsspec.filesystem("file"), root)
-        return new_fs_data_store("file", root=root, max_depth=3)
+        return new_fs_data_store("file", root=root, max_depth=3, read_only=read_only)
 
 
 class MemoryFsDataStoresTest(FsDataStoresTestMixin, unittest.TestCase):
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         root = ROOT_DIR
         self.prepare_fs(fsspec.filesystem("memory"), root)
-        return new_fs_data_store("memory", root=root, max_depth=3)
+        return new_fs_data_store("memory", root=root, max_depth=3, read_only=read_only)
 
 
 class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
-    def create_data_store(self) -> FsDataStore:
+    def create_data_store(self, read_only=False) -> FsDataStore:
         root = ROOT_DIR
         storage_options = dict(
             anon=False,
@@ -515,5 +537,47 @@ class S3FsDataStoresTest(FsDataStoresTestMixin, S3Test):
         )
         self.prepare_fs(fsspec.filesystem("s3", **storage_options), root)
         return new_fs_data_store(
-            "s3", root=root, max_depth=3, storage_options=storage_options
+            "s3",
+            root=root,
+            max_depth=3,
+            storage_options=storage_options,
+            read_only=read_only,
         )
+
+
+class GetFilenameExtensionsTest(unittest.TestCase):
+    def test_get_filename_extensions_openers(self):
+        opener_extensions = get_filename_extensions("openers")
+        self.assertIn(".nc", list(opener_extensions.keys()))
+        self.assertIn(".zarr", list(opener_extensions.keys()))
+        self.assertIn(".levels", list(opener_extensions.keys()))
+        self.assertIn(".shp", list(opener_extensions.keys()))
+        self.assertIn(".geojson", list(opener_extensions.keys()))
+        self.assertIn(".tif", list(opener_extensions.keys()))
+        self.assertIn(".tiff", list(opener_extensions.keys()))
+        self.assertIn(".geotiff", list(opener_extensions.keys()))
+        self.assertTrue(len(opener_extensions[".nc"]) >= 6)
+        self.assertTrue(len(opener_extensions[".zarr"]) >= 6)
+        self.assertTrue(len(opener_extensions[".levels"]) >= 12)
+        self.assertTrue(len(opener_extensions[".shp"]) >= 6)
+        self.assertTrue(len(opener_extensions[".geojson"]) >= 6)
+        self.assertTrue(len(opener_extensions[".tif"]) >= 12)
+        self.assertTrue(len(opener_extensions[".tiff"]) >= 12)
+        self.assertTrue(len(opener_extensions[".geotiff"]) >= 12)
+
+    def test_get_filename_extensions_writers(self):
+        writer_extensions = get_filename_extensions("writers")
+        self.assertIn(".nc", list(writer_extensions.keys()))
+        self.assertIn(".zarr", list(writer_extensions.keys()))
+        self.assertIn(".levels", list(writer_extensions.keys()))
+        self.assertIn(".shp", list(writer_extensions.keys()))
+        self.assertIn(".geojson", list(writer_extensions.keys()))
+        self.assertTrue(len(writer_extensions[".nc"]) >= 6)
+        self.assertTrue(len(writer_extensions[".zarr"]) >= 6)
+        self.assertTrue(len(writer_extensions[".levels"]) >= 12)
+        self.assertTrue(len(writer_extensions[".shp"]) >= 6)
+        self.assertTrue(len(writer_extensions[".geojson"]) >= 6)
+
+    def test_get_filename_extensions_invalid(self):
+        with self.assertRaises(DataStoreError):
+            get_filename_extensions("rgth")

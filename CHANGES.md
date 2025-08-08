@@ -1,7 +1,10 @@
 ## Changes in 1.12.0 (in development)
 
 ### Enhancements
-
+* Added function `get_filename_extensions()` to data store framework: 
+  `from xcube.core.store import get_filename_extensions`.
+  It allows for retrieving mappings of recognized filename extensions to 
+  respective data openers and writers.  (#726)
 * The file data stores (e.g., `store = new_data_store("file")`) now support 
   reading JPEG2000 files as datasets or multi-level datasets from file
   systems. Openers and writers are available as `dataset:jpeg2000:<protocol>` or

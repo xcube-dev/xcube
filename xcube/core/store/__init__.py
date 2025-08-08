@@ -32,7 +32,7 @@ from .descriptor import (
     new_data_descriptor,
 )
 from .error import DataStoreError
-from .fs.registry import new_fs_data_store
+from .fs.registry import get_filename_extensions, new_fs_data_store
 from .preload import PreloadHandle, PreloadState, PreloadStatus
 from .search import DataSearcher, DefaultSearchMixin
 from .store import (

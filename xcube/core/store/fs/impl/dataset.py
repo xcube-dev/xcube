@@ -3,6 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import ABC
+from typing import Optional
 
 import xarray as xr
 import zarr

@@ -85,33 +85,46 @@ _FS_STORAGE_ITEMS = (
     ("ftp", "FTP filesystem"),
     ("https", "HTTPS filesystem"),
     ("memory", "in-memory filesystem"),
-    ("reference", "reference filesystem"),
     ("s3", "AWS S3 compatible object storage"),
 )
 
-_FS_DATA_ACCESSOR_ITEMS = (
-    ("dataset", "netcdf", "xarray.Dataset in NetCDF format"),
-    ("dataset", "zarr", "xarray.Dataset in Zarr format"),
-    ("dataset", "levels", "xarray.Dataset in leveled Zarr format"),
+_FS_DATA_WRITER_ITEMS = (
+    ("dataset", "netcdf", "xarray.Dataset in NetCDF format", [".nc"]),
+    ("dataset", "zarr", "xarray.Dataset in Zarr format", [".zarr"]),
+    ("dataset", "levels", "xarray.Dataset in leveled Zarr format", [".levels"]),
     (
         "mldataset",
         "levels",
         "xcube.core.mldataset.MultiLevelDataset in leveled Zarr format",
+        [".levels"],
     ),
-    ("dataset", "geotiff", "xarray.Dataset in GeoTIFF or COG format"),
+    (
+        "geodataframe",
+        "shapefile",
+        "gpd.GeoDataFrame in ESRI Shapefile format",
+        [".shp"],
+    ),
+    ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format", [".geojson"]),
+)
+
+_FS_DATA_OPENER_ITEMS = _FS_DATA_WRITER_ITEMS + (
+    (
+        "dataset",
+        "geotiff",
+        "xarray.Dataset in GeoTIFF or COG format",
+        [".tif", ".tiff", ".geotiff"],
+    ),
     (
         "mldataset",
         "geotiff",
         "xcube.core.mldataset.MultiLevelDataset in GeoTIFF or COG format",
+        [".tif", ".tiff", ".geotiff"],
     ),
     ("geodataframe", "shapefile", "gpd.GeoDataFrame in ESRI Shapefile format"),
     ("geodataframe", "geojson", "gpd.GeoDataFrame in GeoJSON format"),
     ("dataset", "j2k", "xarray.Dataset in JPEG 2000 format"),
     ("mldataset", "j2k", "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format"),
 )
-
-_FS_DATA_OPENER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
-_FS_DATA_WRITER_ITEMS = _FS_DATA_ACCESSOR_ITEMS
 
 
 def _register_data_stores(ext_registry: extension.ExtensionRegistry):
@@ -144,7 +157,12 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
 
     # noinspection PyShadowingNames
     def _add_fs_data_accessor_ext(
-        point: str, ext_type: str, protocol: str, data_type: str, format_id: str
+        point: str,
+        ext_type: str,
+        protocol: str,
+        data_type: str,
+        format_id: str,
+        file_extensions: list[str],
     ):
         factory_args = (protocol, data_type, format_id)
         loader = extension.import_component(factory, call_args=factory_args)
@@ -155,17 +173,46 @@ def _register_data_accessors(ext_registry: extension.ExtensionRegistry):
             description=f"Data {ext_type} for"
             f" a {data_accessor_description}"
             f" in {storage_description}",
+            extensions=file_extensions,
         )
 
     for protocol, storage_description in _FS_STORAGE_ITEMS:
-        for data_type, format_id, data_accessor_description in _FS_DATA_OPENER_ITEMS:
+        for (
+            data_type,
+            format_id,
+            data_accessor_description,
+            file_extensions,
+        ) in _FS_DATA_OPENER_ITEMS:
             _add_fs_data_accessor_ext(
-                EXTENSION_POINT_DATA_OPENERS, "opener", protocol, data_type, format_id
+                EXTENSION_POINT_DATA_OPENERS,
+                "opener",
+                protocol,
+                data_type,
+                format_id,
+                file_extensions,
             )
-        for data_type, format_id, data_accessor_description in _FS_DATA_WRITER_ITEMS:
+        for (
+            data_type,
+            format_id,
+            data_accessor_description,
+            file_extensions,
+        ) in _FS_DATA_WRITER_ITEMS:
             _add_fs_data_accessor_ext(
-                EXTENSION_POINT_DATA_WRITERS, "writer", protocol, data_type, format_id
+                EXTENSION_POINT_DATA_WRITERS,
+                "writer",
+                protocol,
+                data_type,
+                format_id,
+                file_extensions,
             )
+    ref_ds_cls = "xcube.core.store.ref.store:ReferenceDataStore"
+    ref_ds_cls_loader = extension.import_component(ref_ds_cls)
+    ext_registry.add_extension(
+        point=EXTENSION_POINT_DATA_OPENERS,
+        loader=ref_ds_cls_loader,
+        name="dataset:zarr:reference",
+        description="Data opener for an xarray.Dataset a reference file system",
+    )
 
 
 def _register_cli_commands(ext_registry: extension.ExtensionRegistry):

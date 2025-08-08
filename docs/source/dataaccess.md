@@ -798,6 +798,7 @@ def init_plugin(ext_registry: extension.ExtensionRegistry):
             '{your_package}.opener:{YourOpenerClass}'),
         point=EXTENSION_POINT_DATA_OPENERS, 
         name="{your_opener_id}",
-        description='{your opener description}'
+        description="{your opener description}",
+        filename_extensions=[".j2k", ".zarr"],  # adjust or leave empty
     )
 ```
