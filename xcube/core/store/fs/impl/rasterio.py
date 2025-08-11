@@ -79,6 +79,8 @@ MULTI_LEVEL_RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
 class RasterIoAccessor:
     def __init__(self, fs):
         if isinstance(fs, s3fs.S3FileSystem):
+            endpoint_url = fs.client_kwargs.get("endpoint_url")
+            endpoint_url = endpoint_url.split("://", 2)[-1] if endpoint_url else None
             aws_unsigned = bool(fs.anon)
             aws_session = AWSSession(
                 aws_unsigned=aws_unsigned,
@@ -86,7 +88,7 @@ class RasterIoAccessor:
                 aws_access_key_id=fs.key,
                 aws_session_token=fs.token,
                 region_name=fs.client_kwargs.get("region_name", "eu-central-1"),
-                endpoint_url=fs.client_kwargs.get("endpoint_url", None),
+                endpoint_url=endpoint_url,
             )
             self.env = rasterio.env.Env(
                 session=aws_session,
@@ -94,6 +96,7 @@ class RasterIoAccessor:
                 AWS_VIRTUAL_HOSTING=False,
             )
             self.env = self.env.__enter__()
+            return
         self.env = rasterio.env.NullContextManager()
 
     # noinspection PyMethodMayBeStatic
