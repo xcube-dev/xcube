@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import dask
 import json
 import os.path
 from test.cli.helpers import CliTest
@@ -71,7 +72,9 @@ class IOStoreTest(CliTest):
                 "                           cube.nc  <no title>\n"
                 "                    sample-cog.tif  <no title>\n"
                 "                sample-geotiff.tif  <no title>\n"
-                "6 data resources found.\n"
+                "                     sample-sb.jp2  <no title>\n"
+                "                        sample.jp2  <no title>\n"
+                "8 data resources found.\n"
             ),
             result.stdout,
         )
@@ -143,11 +146,14 @@ class IODumpTest(CliTest):
             yaml.dump(cls.STORE_CONF, fp)
         with open("store-conf.json", "w") as fp:
             json.dump(cls.STORE_CONF, fp)
+        cls._dask_scheduler = dask.config.get("scheduler", None)
+        dask.config.set(scheduler="single-threaded")
 
     @classmethod
     def tearDownClass(cls) -> None:
         rimraf("store-conf.json")
         rimraf("store-conf.yml")
+        dask.config.set(scheduler=cls._dask_scheduler)
 
     def tearDown(self) -> None:
         rimraf("store-dump.json")

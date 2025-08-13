@@ -11,11 +11,7 @@ from ..accessor import find_data_opener_extensions, find_data_writer_extensions
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
 from .accessor import FsAccessor, FsDataAccessor
-from .impl.dataset import (
-    DatasetGeoTiffFsDataAccessor,
-    DatasetNetcdfFsDataAccessor,
-    DatasetZarrFsDataAccessor,
-)
+from .impl.dataset import DatasetNetcdfFsDataAccessor, DatasetZarrFsDataAccessor
 from .impl.fs import (
     AzureFsAccessor,
     FileFsAccessor,
@@ -28,10 +24,15 @@ from .impl.geodataframe import (
     GeoDataFrameGeoJsonFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
 )
-from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
 from .impl.mldataset import (
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
+)
+from .impl.rasterio import (
+    DatasetGeoTiffFsDataAccessor,
+    DatasetJ2kFsDataAccessor,
+    MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetJ2kFsDataAccessor,
 )
 from .store import FsDataStore
 
@@ -123,8 +124,10 @@ for cls in (
     DatasetZarrFsDataAccessor,
     DatasetNetcdfFsDataAccessor,
     DatasetGeoTiffFsDataAccessor,
+    DatasetJ2kFsDataAccessor,
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetJ2kFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
     GeoDataFrameGeoJsonFsDataAccessor,
