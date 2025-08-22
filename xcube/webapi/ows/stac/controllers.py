@@ -900,7 +900,7 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
                 "root": "datasets",
                 "storage_options": {
                     "anon": True,
-                    "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
+                    "client_kwargs": {"endpoint_url": f"{base_url}/s3"},
                 },
             },
             "xcube:open_data_params": {"data_id": f"{dataset_id}.zarr"},
@@ -924,7 +924,7 @@ def _get_assets(ctx: DatasetsContext, base_url: str, dataset_id: str):
                 "root": "pyramids",
                 "storage_options": {
                     "anon": True,
-                    "client_kwargs": {"endpoint_url": "http://localhost:8080/s3"},
+                    "client_kwargs": {"endpoint_url": f"{base_url}/s3"},
                 },
             },
             "xcube:open_data_params": {"data_id": f"{dataset_id}.levels"},
