@@ -75,6 +75,18 @@ has been made part of the levels format:
     - 2.zarr/
 ```
 
+Starting with xcube 1.9.1, multi-level datasets are regular Zarr groups (so they
+be opened using `xarray.open_datatree()`).
+
+```text
+- test_pyramid.levels/
+    - .zgroup
+    - .zlevels
+    - 0.zarr/
+    - 1.zarr/
+    - 2.zarr/
+```
+
 If present, it is a text file comprising a JSON object with the following 
 properties:
 
@@ -148,7 +160,6 @@ To be discussed
 * Do not write `0.link` file. Instead, provide in `.zlevels` where to find 
   each level.
 * No longer use `.zarr` extension for levels. Just use the index as name.
-* Make top-level directory a Zarr group (`.zgroup`), so the multi-level 
-  dataset can be opened as a group using the `zarr` package.
-
+* Now that datasets are Zarr groups it would be more intuitive to use
+  `.zattrs` instead of `.zlevels`.
 
