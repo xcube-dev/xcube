@@ -18,6 +18,7 @@
 [Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
 [gedidb]: https://gedidb.readthedocs.io/en/latest/
 [Open Data Portal]: https://climate.esa.int/en/data/#/dashboard
+[Planetary Computer STAC API](https://planetarycomputer.microsoft.com/dataset)
 [SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
 [Sentinel Hub]: https://www.sentinel-hub.com/
 [Zenodo]: https://zenodo.org/
@@ -606,22 +607,21 @@ Common parameters for opening [xarray.Dataset] instances:
   catalogue query.
 * `max_cache_size: int` - Maximum chunk cache size in bytes.
 
-### SpatioTemporal Asset Catalogs `stac`, `stac-xcube`, `stac-cdse`
+### SpatioTemporal Asset Catalogs
 
-The data stores `stac`, `stac-xcube`, and `stac-cdse` provide access to datasets of
-the [SpatioTemporal Asset Catalogs].
+Several data stores provide access to datasets from different 
+[SpatioTemporal Asset Catalogs].
 
-The three data stores are provided by the xcube plugin [xcube-stac].
-You can install it using `conda install -c conda-forge xcube-stac.`
+The xcube plugin [xcube-stac]. You can install it using `conda install -c conda-forge xcube-stac.`
 
 
 #### `stac`
-The data store `stac` provides datasets from a user-defined STAC API.
+The `stac` data store retrieves datasets from a user-defined STAC API. It provides
+access to items within a STAC catalog and exposes the data sources referenced by each
+STAC item as an `xr.Dataset`.
 
 Specific parameters for this store are:
 * `url: str` - URL to STAC catalog. Required.
-* `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
-  format. Defaults to `False`.
 * `**store_params`: Store parameters to configure the store used to access the data, 
   which are the same as those used for `https` and `s3` stores. The hrefs in the 
   STAC assets determines whether data is accessed via `https` or `s3`. 
@@ -631,42 +631,60 @@ The data store `stac-xcube` connects to STAC catalogs published on a xcube [Serv
 
 Specific parameters for this store are:
 * `url: str` - URL to STAC catalog. Required.
-* `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
-  format. Defaults to `False`.
 * `**store_params`: Store parameters to configure the `s3` store used to access 
   the data. 
 
-#### `stac-cdse`
-The data store `stac-cdse` provides direct access datasets published by the 
-[CDSE STAC API].
+#### `stac-cdse` and `stac-cdse-ardc`
 
-* `stack_mode: bool` - Stacking of STAC items. Transforms data into analysis-ready
-  format. Defaults to `False`. Available for `data_id="sentinel-2-l2"`, which allows to 
-  build 3D spatiotemporal data cubes from multiple Sentinel-2 Level-2A tiles. 
-  Commen opening parameter:
+The `stac-cdse` and `stac-cdse-ardc` data stores provide direct access to datasets
+published by the [CDSE STAC API].
 
-  * `float, float, float, float)` - Bounding box ["west", "south", "est", "north"] 
-    in CRS coordinates. 
-  * `time_range: [str, str]`: Temporal extent ["YYYY-MM-DD", "YYYY-MM-DD"]. 
-  * `spatial_res: int | float` - Spatial resolution in meter of degree (depending on the CRS). 
-  * `crs: str` - Coordinate reference system (e.g. `"EPSG:4326"`).
-
+To [access EO data via S3 from CDSE](https://documentation.dataspace.copernicus.eu/APIs/S3.html),
+you must [generate S3 credentials](https://documentation.dataspace.copernicus.eu/APIs/S3.html#generate-secrets).
+These credentials are required during store initialization:
 * `key: str`- S3 key credential for CDSE data access
-* `secret: str`- S3 secret credential for CDSE data access. In order to access [EO data via S3 from CDSE](https://documentation.dataspace.copernicus.eu/APIs/S3.html)
-one needs to [generate S3 credentials](https://documentation.dataspace.copernicus.eu/APIs/S3.html#generate-secrets).
+* `secret: str`- S3 secret credential for CDSE data access.
+
+Differences between the two stores:
+* `"stac-cdse"`: Generates a unified dataset from a single CDSE STAC item 
+  (observational tile) with tailored data processing. Only items from the 
+  collections listed below are supported.
+* `"stac-cdse-ardc"`: Generates **3D spatiotemporal analysis-ready data cubes 
+  (ARDCs)** from multiple STAC items for the supported CDSE collections listed below.
 
 
-There are no common parameters for opening datasets with the three stores.
-As the available datasets are varying across a wide spectrum of datatypes
-no specific opening parameters can be named here. The stores delegate to the
-general xcube DataOpener which offers a variety of parameters depending on the
-datatype of the dataset.
+Supported CDSE STAC collections:
+* [`sentinel-2-l1c`](https://browser.stac.dataspace.copernicus.eu/collections/sentinel-2-l1c)
+* [`sentinel-2-l2a`](https://browser.stac.dataspace.copernicus.eu/collections/sentinel-2-l2a)
+* [`sentinel-3-syn-2-syn-ntc`](https://browser.stac.dataspace.copernicus.eu/collections/sentinel-3-syn-2-syn-ntc)
 
-Use the following function to access the parameters fitting for the dataset of interest:
 
-```python
-open_schema = store.get_open_data_params_schema("data_id")
-```
+#### `stac-pc` and `stac-pc-ardc`
+
+The `stac-pc` and `stac-pc-ardc` stores function similarly to `stac-cdse` and
+`stac-cdse-ardc`, but provide direct access to datasets published by the
+[Planetary Computer STAC API].
+
+No parameters are required for initialization.
+
+Currently supported collections:
+
+* [`sentinel-2-l2a`](https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a)
+
+
+> **Note**
+> 
+> There are no common parameters for opening datasets with the stac data stores.
+> As the available datasets are varying across a wide spectrum of datatypes
+> no specific opening parameters can be named here. The stores delegate to the
+> general xcube DataOpener which offers a variety of parameters depending on the
+> datatype of the dataset.
+>
+> Use the following function to access the parameters fitting for the dataset of interest:
+>
+> ```python
+> open_schema = store.get_open_data_params_schema("data_id")
+> ```
 
 ### Zenodo `zenodo`
 
