@@ -17,6 +17,8 @@
 * Added two new versions of the xcube logo, one for dark and one for light themes,
   and replaced the logo in the documentation with the light logo.
   
+* Disabled `compact` mode for JupyterLab Viewer integration. (#1173)
+
 
 ## Changes in 1.11.1
 
