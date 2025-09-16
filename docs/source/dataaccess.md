@@ -612,7 +612,7 @@ Common parameters for opening [xarray.Dataset] instances:
 Several data stores provide access to datasets from different 
 [SpatioTemporal Asset Catalogs].
 
-The xcube plugin [xcube-stac]. You can install it using `conda install -c conda-forge xcube-stac.`
+These stores are provided by the xcube plugin [xcube-stac]. You can install it using `conda install -c conda-forge xcube-stac.`
 
 
 #### `stac`
