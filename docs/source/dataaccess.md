@@ -18,7 +18,7 @@
 [Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
 [gedidb]: https://gedidb.readthedocs.io/en/latest/
 [Open Data Portal]: https://climate.esa.int/en/data/#/dashboard
-[Planetary Computer STAC API](https://planetarycomputer.microsoft.com/dataset)
+[Planetary Computer STAC API]: https://planetarycomputer.microsoft.com/dataset
 [SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
 [Sentinel Hub]: https://www.sentinel-hub.com/
 [Zenodo]: https://zenodo.org/
