@@ -646,7 +646,7 @@ These credentials are required during store initialization:
 * `secret: str`- S3 secret credential for CDSE data access.
 
 Differences between the two stores:
-* `"stac-cdse"`: Generates a unified dataset from a single CDSE STAC item 
+* `stac-cdse`: Generates a unified dataset from a single CDSE STAC item 
   (observational tile) with tailored data processing. Only items from the 
   collections listed below are supported.
 * `"stac-cdse-ardc"`: Generates **3D spatiotemporal analysis-ready data cubes 
