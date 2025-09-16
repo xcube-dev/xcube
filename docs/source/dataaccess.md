@@ -649,7 +649,7 @@ Differences between the two stores:
 * `stac-cdse`: Generates a unified dataset from a single CDSE STAC item 
   (observational tile) with tailored data processing. Only items from the 
   collections listed below are supported.
-* `"stac-cdse-ardc"`: Generates **3D spatiotemporal analysis-ready data cubes 
+* `stac-cdse-ardc`: Generates **3D spatiotemporal analysis-ready data cubes 
   (ARDCs)** from multiple STAC items for the supported CDSE collections listed below.
 
 
