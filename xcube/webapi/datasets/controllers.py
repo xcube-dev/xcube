@@ -224,6 +224,8 @@ def get_dataset(
     dataset_dict["bbox"] = list(ds_bbox)
     dataset_dict["geometry"] = get_bbox_geometry(dataset_bounds, transformer)
     dataset_dict["spatialRef"] = crs.to_string()
+    dataset_dict["resolutions"] = list(ml_ds.avg_resolutions)
+    dataset_dict["spatialUnits"] = ml_ds.grid_mapping.spatial_unit_name
 
     variable_dicts = []
     dim_names = set()
