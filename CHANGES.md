@@ -5,7 +5,14 @@
 * Added two new versions of the xcube logo, one for dark and one for light themes,
   and replaced the logo in the documentation with the light logo.
   
+### Enhancements
+* `xcube serve` now provides new metadata details of a multilevel dataset:
+  - The spatial unit of the dataset is now given by property `spatialUnits` 
+  - The resolutions are now given by property `resolutions` and provide 
+    the average x,y resolutions for each level of the dataset given in 
+	the spatial units of the dataset's CRS.
 
+  
 ## Changes in 1.11.1
 
 * Improved the demos for the xcube Viewer server-side extensions in various ways (#1134):
