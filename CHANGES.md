@@ -1,18 +1,32 @@
-## Changes in 1.11.2 (in development)
+## Changes in 1.12.0 (in development)
+
+### Enhancements
+* Added function `get_filename_extensions()` to data store framework: 
+  `from xcube.core.store import get_filename_extensions`.
+  It allows for retrieving mappings of recognized filename extensions to 
+  respective data openers and writers.  (#726)
+* The file data stores (e.g., `store = new_data_store("file")`) now support 
+  reading JPEG2000 files as datasets or multi-level datasets from file
+  systems. Openers and writers are available as `dataset:jpeg2000:<protocol>` or
+  `mldataset:jpeg2000:<protocol>`, where protocol is the respective file system. 
+  These openers and writers are available to any file system data store, 
+  e.g., `"file"`, `"s3"`.
+
+* `xcube serve` now provides new metadata details of a multilevel dataset:
+    - The spatial unit of the dataset is now given by property `spatialUnits`
+    - The resolutions are now given by property `resolutions` and provide
+      the average x,y resolutions for each level of the dataset given in
+      the spatial units of the dataset's CRS.
+
 
 ### Other changes
 
 * Added two new versions of the xcube logo, one for dark and one for light themes,
   and replaced the logo in the documentation with the light logo.
   
-### Enhancements
-* `xcube serve` now provides new metadata details of a multilevel dataset:
-  - The spatial unit of the dataset is now given by property `spatialUnits` 
-  - The resolutions are now given by property `resolutions` and provide 
-    the average x,y resolutions for each level of the dataset given in 
-	the spatial units of the dataset's CRS.
+* Disabled `compact` mode for JupyterLab Viewer integration. (#1173)
 
-  
+
 ## Changes in 1.11.1
 
 * Improved the demos for the xcube Viewer server-side extensions in various ways (#1134):

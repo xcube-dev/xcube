@@ -2,19 +2,16 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from collections.abc import Sequence
-from typing import Any, Optional
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal, Optional
 
 import fsspec
 
+from ..accessor import find_data_opener_extensions, find_data_writer_extensions
 from ..assertions import assert_valid_params
 from ..error import DataStoreError
 from .accessor import FsAccessor, FsDataAccessor
-from .impl.dataset import (
-    DatasetGeoTiffFsDataAccessor,
-    DatasetNetcdfFsDataAccessor,
-    DatasetZarrFsDataAccessor,
-)
+from .impl.dataset import DatasetNetcdfFsDataAccessor, DatasetZarrFsDataAccessor
 from .impl.fs import (
     AzureFsAccessor,
     FileFsAccessor,
@@ -27,10 +24,15 @@ from .impl.geodataframe import (
     GeoDataFrameGeoJsonFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
 )
-from .impl.geotiff import MultiLevelDatasetGeoTiffFsDataAccessor
 from .impl.mldataset import (
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
+)
+from .impl.rasterio import (
+    DatasetGeoTiffFsDataAccessor,
+    DatasetJ2kFsDataAccessor,
+    MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetJ2kFsDataAccessor,
 )
 from .store import FsDataStore
 
@@ -122,8 +124,10 @@ for cls in (
     DatasetZarrFsDataAccessor,
     DatasetNetcdfFsDataAccessor,
     DatasetGeoTiffFsDataAccessor,
+    DatasetJ2kFsDataAccessor,
     DatasetLevelsFsDataAccessor,
     MultiLevelDatasetGeoTiffFsDataAccessor,
+    MultiLevelDatasetJ2kFsDataAccessor,
     MultiLevelDatasetLevelsFsDataAccessor,
     GeoDataFrameShapefileFsDataAccessor,
     GeoDataFrameGeoJsonFsDataAccessor,
@@ -247,3 +251,42 @@ def new_fs_data_store(
     }
     assert_valid_params(store_params, name="store_params", schema=store_params_schema)
     return fs_data_store_class(**store_params)
+
+
+def get_filename_extensions(
+    accessor_type: Literal["openers", "writers"] = "openers",
+) -> Mapping[str, list[str]]:
+    """Returns a mapping from filename extensions to lists of
+    data accessor ids that open data from this format.
+
+    The method either returns mappings to data opener ids
+    or to data writer ids, depending on the setting of accessor type.
+
+    Args:
+        accessor_type: Either "openers" or "writers",
+            indicates whether mappings of file extensions
+            to data openers or writers shall be returned.
+            Default is "openers"
+
+    Returns:
+        A mapping from filename extensions to lists of data accessor ids
+    """
+    if accessor_type == "openers":
+        find_extensions = find_data_opener_extensions
+    elif accessor_type == "writers":
+        find_extensions = find_data_writer_extensions
+    else:
+        raise DataStoreError(
+            f"Invalid accessor type. "
+            f"Must be 'openers' or 'writers', was '{accessor_type}'"
+        )
+    filename_extensions = {}
+    for ext in find_extensions():
+        print(ext.name)
+        file_extensions = ext.metadata.get("extensions", [])
+        for file_extension in file_extensions:
+            if file_extension in filename_extensions:
+                filename_extensions[file_extension] += [ext.name]
+            else:
+                filename_extensions[file_extension] = [ext.name]
+    return filename_extensions
