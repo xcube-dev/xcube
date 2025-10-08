@@ -16,6 +16,11 @@
 
 * Added two new versions of the xcube logo, one for dark and one for light themes,
   and replaced the logo in the documentation with the light logo.
+
+### Fixes
+
+* Fix STAC item asset endpoint_url (was incorrectly set to http://localhost:8080/s3; 
+  now correctly parsed from the base URL). (#1178)
   
 * Disabled `compact` mode for JupyterLab Viewer integration. (#1173)
 
