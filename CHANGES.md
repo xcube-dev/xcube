@@ -11,8 +11,9 @@
   `mldataset:jpeg2000:<protocol>`, where protocol is the respective file system. 
   These openers and writers are available to any file system data store, 
   e.g., `"file"`, `"s3"`.
-* The class `ExecutorPreloadHandle` is enhanced by propagating `preload_params`
-  to the `preload_data` method. (#1184)
+* Enhanced `ExecutorPreloadHandle` to propagate `preload_params` to the `preload_data`
+  method, and renamed the `PreloadStatus` argument `stopped` to `completed`. (#1184)
+
 
 ### Other changes
 
