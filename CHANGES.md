@@ -13,6 +13,10 @@
   e.g., `"file"`, `"s3"`.
 * Enhanced `ExecutorPreloadHandle` to propagate `preload_params` to the `preload_data`
   method, and renamed the `PreloadStatus` argument `stopped` to `completed`. (#1184)
+* Delegation of the visualization of the preload handle changed: If code runs as
+  script, the class `PreloadDisplay` is used which visualizes the progress of the
+  preload as a plain text; if the code is run in a Jupyter notebook cell, the class
+  `IPyPreloadDisplay` and the progress of the preload is shown as a HTML table. (#1184)
 
 
 ### Other changes
