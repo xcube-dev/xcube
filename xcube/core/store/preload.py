@@ -20,7 +20,7 @@ class PreloadStatus(Enum):
 
     waiting = "waiting"
     started = "started"
-    stopped = "stopped"
+    completed = "completed"
     cancelled = "cancelled"
     failed = "failed"
 
@@ -195,10 +195,13 @@ class ExecutorPreloadHandle(PreloadHandle):
     def __init__(
         self,
         data_ids: tuple[str, ...],
-        preload_data: Callable[[PreloadHandle, str], None] | None = None,
+        preload_data: (
+            Callable[[PreloadHandle, str, dict[str, Any]], None] | None
+        ) = None,
         executor: Executor | None = None,
         blocking: bool = True,
         silent: bool = False,
+        **preload_params,
     ):
         self._preload_data = preload_data
         self._executor = executor or ThreadPoolExecutor()
@@ -211,7 +214,9 @@ class ExecutorPreloadHandle(PreloadHandle):
         self._lock = threading.Lock()
         self._futures: dict[str, Future[str]] = {}
         for data_id in data_ids:
-            future: Future[str] = self._executor.submit(self._run_preload_data, data_id)
+            future: Future[str] = self._executor.submit(
+                self._run_preload_data, data_id, **preload_params
+            )
             future.add_done_callback(self._handle_preload_data_done)
             self._futures[data_id] = future
 
@@ -240,7 +245,7 @@ class ExecutorPreloadHandle(PreloadHandle):
             event.status is not None
             and event.status != state.status
             and state.status
-            in (PreloadStatus.stopped, PreloadStatus.cancelled, PreloadStatus.failed)
+            in (PreloadStatus.completed, PreloadStatus.cancelled, PreloadStatus.failed)
         ):
             # Status cannot be changed
             return
@@ -249,7 +254,7 @@ class ExecutorPreloadHandle(PreloadHandle):
             if not self._silent:
                 self._display.update()
 
-    def preload_data(self, data_id: str):
+    def preload_data(self, data_id: str, **preload_params):
         """Preload the data resource given by *data_id*.
 
         Concurrently executes the *preload_data* passed to the constructor,
@@ -259,13 +264,14 @@ class ExecutorPreloadHandle(PreloadHandle):
 
         Args:
            data_id: The data identifier of the data resource to be preloaded.
+           preload_params: Specific parameters for the preloading workflow.
         """
         if self._preload_data is not None:
-            self._preload_data(self, data_id)
+            self._preload_data(self, data_id, **preload_params)
 
-    def _run_preload_data(self, data_id: str) -> str:
+    def _run_preload_data(self, data_id: str, **preload_params) -> str:
         self.notify(PreloadState(data_id, status=PreloadStatus.started))
-        self.preload_data(data_id)
+        self.preload_data(data_id, **preload_params)
         return data_id
 
     def _handle_preload_data_done(self, f: Future[str]):
@@ -278,7 +284,7 @@ class ExecutorPreloadHandle(PreloadHandle):
         try:
             _value = f.result()
             # No exceptions, notify everything seems ok
-            self.notify(PreloadState(data_id, status=PreloadStatus.stopped))
+            self.notify(PreloadState(data_id, status=PreloadStatus.completed))
         except CancelledError as e:
             # Raised if future has been cancelled
             # while executing `_run_preload_data`
@@ -324,21 +330,23 @@ class ExecutorPreloadHandle(PreloadHandle):
 
 
 class PreloadDisplay(ABC):
+
     @classmethod
     def create(
         cls, states: list[PreloadState], silent: bool | None = None
     ) -> "PreloadDisplay":
         try:
-            # noinspection PyUnresolvedReferences
             from IPython.display import display
+            from IPython import get_ipython
 
-            if display is not None:
-                try:
-                    return IPyWidgetsPreloadDisplay(states)
-                except ImportError:
-                    return IPyPreloadDisplay(states)
-        except ImportError:
+            # Only use IPyGeneratorDisplay if we are actually inside a notebook
+            shell = get_ipython().__class__.__name__
+            if shell == "ZMQInteractiveShell":
+                return IPyPreloadDisplay(states)
+        except (ImportError, NameError, AttributeError):
             pass
+
+        # Default fallback: text-based display
         return PreloadDisplay(states)
 
     def __init__(self, states: list[PreloadState]):
@@ -408,29 +416,6 @@ class IPyPreloadDisplay(PreloadDisplay):
     def log(self, message: str):
         """Log a message to the output widget."""
         self._ipy_display.display(message)
-
-
-class IPyWidgetsPreloadDisplay(IPyPreloadDisplay):
-    def __init__(self, states: list[PreloadState]):
-        super().__init__(states)
-        import ipywidgets
-
-        self._state_table = ipywidgets.HTML(self.to_html())
-        self._output = ipywidgets.Output()  # not used yet
-        self._container = ipywidgets.VBox([self._state_table, self._output])
-
-    def show(self):
-        """Display the widget container."""
-        self._ipy_display.display(self._container)
-
-    def update(self):
-        """Update the display."""
-        self._state_table.value = self.to_html()
-
-    def log(self, message: str):
-        """Log a message to the output widget."""
-        with self._output:
-            print(message)
 
 
 def _to_dict(obj: object):
