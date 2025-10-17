@@ -418,29 +418,6 @@ class IPyPreloadDisplay(PreloadDisplay):
         self._ipy_display.display(message)
 
 
-class IPyWidgetsPreloadDisplay(IPyPreloadDisplay):
-    def __init__(self, states: list[PreloadState]):
-        super().__init__(states)
-        import ipywidgets
-
-        self._state_table = ipywidgets.HTML(self.to_html())
-        self._output = ipywidgets.Output()  # not used yet
-        self._container = ipywidgets.VBox([self._state_table, self._output])
-
-    def show(self):
-        """Display the widget container."""
-        self._ipy_display.display(self._container)
-
-    def update(self):
-        """Update the display."""
-        self._state_table.value = self.to_html()
-
-    def log(self, message: str):
-        """Log a message to the output widget."""
-        with self._output:
-            print(message)
-
-
 def _to_dict(obj: object):
     return {
         k: v
