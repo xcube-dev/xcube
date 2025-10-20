@@ -362,6 +362,12 @@
         ]
       },
       "spatialRef": "EPSG:4326",
+      "resolutions": [
+        0.0025,
+        0.005,
+        0.01
+      ],
+      "spatialUnits": "degree",
       "variables": [
         {
           "id": "demo-1w.conc_chl",
