@@ -1,4 +1,4 @@
-## Changes in 1.12.0 (in development)
+## Changes in 1.12.0
 
 ### Enhancements
 * Added function `get_filename_extensions()` to data store framework: 
