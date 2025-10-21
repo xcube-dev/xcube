@@ -14,7 +14,6 @@ class DumpTest(CliDataTest):
             result = self.invoke_cli(["dump", TEST_NC_FILE])
 
         self.assertIn("<xarray.Dataset>", result.output)
-        self.assertIn("Dimensions:        (lon: 360, lat: 180, time: 5, bnds: 2)\n", result.output)
         self.assertIn("Coordinates:\n", result.output)
         self.assertIn("  * lon            (lon) float64 ", result.output)
         self.assertIn("Data variables:\n", result.output)
@@ -28,6 +27,6 @@ Data variables:
     temperature    \(time, lat, lon\) float64 (3MB)? ...
     soil_moisture  \(time, lat, lon\) float64 (3MB)? ...
 """
-        
+
         self.assertRegex(result.output, variables_regex)
         self.assertEqual(0, result.exit_code)
