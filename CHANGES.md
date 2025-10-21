@@ -19,6 +19,13 @@
   `IPyPreloadDisplay` and the progress of the preload is shown as a HTML table. (#1184)
 
 
+* `xcube serve` now provides new metadata details of a multilevel dataset:
+    - The spatial unit of the dataset is now given by property `spatialUnits`
+    - The resolutions are now given by property `resolutions` and provide
+      the average x,y resolutions for each level of the dataset given in
+      the spatial units of the dataset's CRS.
+
+
 ### Other changes
 
 * Added two new versions of the xcube logo, one for dark and one for light themes,

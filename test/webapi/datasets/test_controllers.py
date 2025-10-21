@@ -71,6 +71,8 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
             self.assertIsInstance(dataset.get("bbox"), (tuple, list))
             self.assertIsInstance(dataset.get("geometry"), dict)
             self.assertIsInstance(dataset.get("spatialRef"), str)
+            self.assertIsInstance(dataset.get("resolutions"), (tuple, list))
+            self.assertIsInstance(dataset.get("spatialUnits"), str)
             self.assertNotIn("rgbSchema", dataset)
             if dataset["id"] == "demo":
                 demo_dataset = dataset
