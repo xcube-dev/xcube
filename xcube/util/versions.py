@@ -7,6 +7,7 @@ from typing import Dict, List
 
 DEFAULT_DEPENDENCY_NAMES = [
     "affine",
+    "chartlets",
     "click",
     "cmocean",
     "dask",
