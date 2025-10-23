@@ -1,10 +1,10 @@
-## Changes in 1.12.0 (in development)
+## Changes in 1.12.0
 
 ### Enhancements
 * Added function `get_filename_extensions()` to data store framework: 
   `from xcube.core.store import get_filename_extensions`.
   It allows for retrieving mappings of recognized filename extensions to 
-  respective data openers and writers.  (#726)
+  respective data openers and writers. (#726)
 * The file data stores (e.g., `store = new_data_store("file")`) now support 
   reading JPEG2000 files as datasets or multi-level datasets from file
   systems. Openers and writers are available as `dataset:jpeg2000:<protocol>` or
@@ -17,25 +17,19 @@
   script, the class `PreloadDisplay` is used which visualizes the progress of the
   preload as a plain text; if the code is run in a Jupyter notebook cell, the class
   `IPyPreloadDisplay` and the progress of the preload is shown as a HTML table. (#1184)
-
-
 * `xcube serve` now provides new metadata details of a multilevel dataset:
     - The spatial unit of the dataset is now given by property `spatialUnits`
     - The resolutions are now given by property `resolutions` and provide
       the average x,y resolutions for each level of the dataset given in
       the spatial units of the dataset's CRS.
 
-
 ### Other changes
-
 * Added two new versions of the xcube logo, one for dark and one for light themes,
   and replaced the logo in the documentation with the light logo.
 
 ### Fixes
-
 * Fix STAC item asset endpoint_url (was incorrectly set to http://localhost:8080/s3; 
   now correctly parsed from the base URL). (#1178)
-  
 * Disabled `compact` mode for JupyterLab Viewer integration. (#1173)
 
 
