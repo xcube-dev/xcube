@@ -1,3 +1,10 @@
+## Changes in 1.12.1 (under development)
+
+### Fixes
+* Fixed duplicate rendering of the `preload_data` table in the data store framework.
+  The table now updates in place instead of clearing all Jupyter cell output.
+
+
 ## Changes in 1.12.0
 
 ### Enhancements
