@@ -221,8 +221,6 @@ class ExecutorPreloadHandle(PreloadHandle):
             self._futures[data_id] = future
 
         if blocking:
-            if not self._silent:
-                self._display.show()
             self._executor.shutdown(wait=True)
 
     def get_state(self, data_id: str) -> PreloadState:
@@ -403,15 +401,22 @@ class IPyPreloadDisplay(PreloadDisplay):
         from IPython import display
 
         self._ipy_display = display
+        self._html_display = None
 
     def show(self):
         """Display the widget container."""
-        self._ipy_display.display(self.to_html())
+        self._html_display = self._ipy_display.display(self.to_html(), display_id=True)
 
     def update(self):
         """Update the display."""
-        self._ipy_display.clear_output(wait=True)
-        self._ipy_display.display(self.to_html())
+        if self._html_display is None:
+            self._html_display = self._ipy_display.display(
+                self.to_html(), display_id=True
+            )
+        else:
+            self._ipy_display.update_display(
+                self.to_html(), display_id=self._html_display.display_id
+            )
 
     def log(self, message: str):
         """Log a message to the output widget."""
