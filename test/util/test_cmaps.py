@@ -208,15 +208,11 @@ class ColormapRegistryTest(TestCase):
         self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
         self.assertEqual("viridis", colormap.cm_name)
         self.assertEqual(
-            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA"
-            "xWXB3AAAAxElEQVR4nI2TQZLEIAwDW+Jr84T5/1"
-            "PCHGzAkGRrDynZbclwIPro25FARg7FQhLYkBr9m"
-            "o/M9Fb/9K6vH32ddwnMHz3g5GKx9A2+dPirl91j"
-            "7pmpOvqqT36OM54z//XfGO/zVff3OXfv2w42Vnr"
-            "O+V6rME3NGYPlU9v0qAFP3vOZ9MlcPJVZHXP0ya"
-            "zrgQVvr31kGis76qYLc6guWuaWrh3hjf3Bw7d45"
-            "mqdO+rexrhLz7NHDS1/mwY0KWthKRQnN0Y0mR+s"
-            "DYkJKNzLygAAAABJRU5ErkJggg==",
+            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAAwUlEQVR4nI1T2w3DIAy8M6"
+            "t1hO4/SonwAxsSoqqK7u2fpPzw20ECFFAMIQSHJwLNRFxnHpvZrf3ZzadvuuZdNV40tK/"
+            "+4OF5L/zE6Ncu1o7e3zYTc3PHp37i2+bf/s3DOU/ezznu3dMNLF7R2POVs3ic6BnC809tw"
+            "Y3rqwu/+2cyMHR2qqcPNu2e8Pfgmd+O2jYNuQ3eRoYNx9Z3iXnDunbffOul77vK/Ua9a9"
+            "xR98GB5n+bppzOCSENIe6PH9EouACsDYkJOqoM1AAAAABJRU5ErkJggg==",
             colormap.cmap_png_base64,
         )
 
@@ -250,16 +246,12 @@ class ColormapRegistryTest(TestCase):
         self.assertEqual("Ocean", colormap.cat_name)
         self.assertEqual("thermal", colormap.cm_name)
         self.assertEqual(
-            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAA"
-            "xWXB3AAAAz0lEQVR4nHWSyZUEIQxDv0woHULnn1"
-            "p5DiWDgekDz7IkxKrx+aYIUA0BgapvmhiT06zDW"
-            "nED2SvrW2UQzRMMgh3HhQ+UTlfgXXhAiKsKCCUB"
-            "SGktkUp/OR0eTY+r++6vbLV15LV/6rDnXf62Bn1"
-            "fbd9n/jXvrOVrZ7xqOyfZcnvfc08+fWeVdXLPxX"
-            "V+9no2Xdr1u09QongWVqJYmHjPRucjfcENz4rn4"
-            "cs2Fnv9yb2PlPUwUxfZdELNs3CuRzP2vBDpj/sf"
-            "nzNneXL2TFz8H4K3dTwq9eoAAAAAAElFTkSuQmC"
-            "C",
+            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAAzklEQVR4nH1SWx"
+            "IDIQhL8Cg9Qu9/taUjD0Vp++GEPGClluP1VkIA5iEAAZMXjxhL40LXuLRhOLOuXYgBKZ"
+            "lZC85aWn1VGtM5md0iDiBEQ9uIapwTzVNb1X3XeGW4MoHBaz5nu16zf3zzyryWL9/I+1"
+            "w9bX7ruzFzZceGZU/rq/OT17n6FfesW3uaVvXF+Rw+efqdKzBRnl0b3zXEd/OcFsRZL/"
+            "TfJP5glnFMHvhT80fSfJjlE1p84yuza92PFnX0WSayX3TTroydvE/JzewHgrd1PCuMz"
+            "AkAAAAASUVORK5CYII=",
             colormap.cmap_png_base64,
         )
 
@@ -342,13 +334,11 @@ class ColormapTest(TestCase):
         self.assertIsInstance(base64, str)
         self.assertIs(base64, self.colormap.cmap_png_base64)
         self.assertEqual(
-            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAA"
-            "u0lEQVR4nJWMwQEDIAwCScbqDB26e7VCHxpN1D76gsARezxf"
-            "MjOYO9y7xm3j9nxfWYMnb27Hxuc29/EfV255LN5s45F2GL9R"
-            "d4bJHd5QuJqhZpuvmbZep0fOB490I35osdD1nrt8X7yHB88+"
-            "cg0v/tDuEZkqAyUFS2YSkLSw4pFBhDHYlYHxZ/m9E8/s6Eho"
-            "KKSeT6b2U6m5FysXe01OkPYsdX94tpr3e2RNYPCNvWuJawJJ"
-            "6C3wo7u+hS8PX1PsPRnqDgAAAABJRU5ErkJggg==",
+            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAAwklEQVR4nJWNwRHDMAgED"
+            "5WVGlJ0+krMZYRAAkt55OHh2FtkeTxfFBFIa2htzNjF95b3oytoKdt+uzF/6+N9HL2Vs"
+            "fzuFB/pbnDr851gelu2m+VVhspuuTLeeu4ZmbuPtHvuznSN7fu8y/shW2+f7n1weqb+mC"
+            "MjGKuD6O0dLay7SLO4NiszV8NdDM7Mm33tqDvbOlXQJ8jBp1P7OdU997MX98Ht8/8ulr"
+            "o/sl6Vj93ZRWj4l47O+8javTehH57nm/gCD19T7PVeadMAAAAASUVORK5CYII=",
             base64,
         )
 

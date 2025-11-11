@@ -250,7 +250,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
         if is_local_fs(fs):
             file_path = data_id
         elif is_https_fs(fs):
-            file_path = f"{fs.protocol}://{data_id}#mode=bytes"
+            file_path = f"https://{data_id}#mode=bytes"
         else:
             _, file_path = new_temp_file(suffix=".nc")
             fs.get_file(data_id, file_path)
