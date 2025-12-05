@@ -1,5 +1,11 @@
 ## Changes in 1.12.1 (under development)
 
+### Enhancements
+* Bundled [xcube Viewer 1.7.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.0)
+  that comes with, e.g., a progress bar for tile loading, a zoom information box, 
+  an About window, a ‘copy screenshot to clipboard’ feature and a new styling of the map
+  buttons.
+
 ### Fixes
 * Fixed duplicate rendering of the `preload_data` table in the data store framework.
   The table now updates in place instead of clearing the entire Jupyter cell output.
