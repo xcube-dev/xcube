@@ -1,7 +1,7 @@
-## Changes in 1.12.1 (under development)
+## Changes in 1.13.0
 
 ### Enhancements
-* Bundled [xcube Viewer 1.7.0](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.0)
+* Bundled [xcube Viewer 1.7.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.1)
   that comes with, e.g., a progress bar for tile loading, a zoom information box, 
   an About window, a ‘copy screenshot to clipboard’ feature and a new styling of the map
   buttons.
