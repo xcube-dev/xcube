@@ -462,17 +462,21 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
 
 * Cd into viewer project directory (`.../xcube-viewer/.`).
 * Remove the `-dev` suffix from `version` property in `package.json`.
-* Remove the `-dev` suffix from `version` constant in `src/config.ts`.
+* Remove the `-dev` suffix from `version` constant in `src/version.ts`.
+* Remove the `-dev` suffix from `version` text in `src/resources/about/about.[xx].md`.
 * Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
   from the last version headline.
 * Build the app and test the build using a local http-server, e.g.:
 
+```
+    $ npm run build
     $ npm install -g http-server
     $ cd build 
     $ http-server -p 3000 -c-1
+```
 
 * Push changes to either main or a new maintenance branch (see above).
-* Goto [xcube-viewer/releases](https://github.com/dcs4cop/xcube-viewer/releases) 
+* Goto [xcube-viewer/releases](https://github.com/xcube-dev/xcube-viewer/releases) 
   and press button "Draft a new Release".
   - Tag version is: `v${version}` (with a "v" prefix).
   - Release title is: `${version}`. 
@@ -480,8 +484,9 @@ test viewer with latest xcube Web API. Then release a new xcube viewer.
   - Press "Publish release" button.
 * After the release on GitHub, if the branch was `main`, 
   create a new maintenance branch (see above).
-* Increase `version` property and `version` constant in `package.json` and `src/config.ts` 
-  and append `-dev.0` suffix to version name so it is SemVer compatible.
+* Increase `version` property and `version` constant in `package.json`, `src/version.ts`
+  and `src/resources/about/about.[xx].md` and append `-dev.0` suffix to version name so 
+  it is SemVer compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)` to it.
 * Push changes to either main or a new maintenance branch (see above).
 * Deploy builds of `main` branches to related web content providers.
