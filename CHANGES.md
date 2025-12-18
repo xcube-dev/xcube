@@ -2,7 +2,7 @@
 
 * Use `chunks="auto"` by default in `rioxarray.open_rasterio` within
   `xcube.core.store.fs.impl.rasterio` when reading GeoTIFF and JPEG2000 files.
-  This enables efficient, storage-aware data access withoutforcing explicit
+  This enables efficient, storage-aware data access without forcing explicit
   rechunking.
 * Added the optional argument `band_as_variable`, which allows to preserve the
   original dataset structure as returned by `rioxarray`, rather than splitting
