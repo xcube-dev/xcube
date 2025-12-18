@@ -153,6 +153,19 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         dataset = ml_dataset.get_dataset(0)
         self.assertEqual((1387, 1491), dataset.band_1.shape)
 
+    def test_read_geotiff_single_dataarray(self):
+        fs, tiff_path = RasterIoMultiLevelDatasetTest.get_params(_GEOTIFF_TEST_FILE)
+        data_opener = MultiLevelDatasetGeoTiffFsDataAccessor()
+
+        ml_dataset = data_opener.open_data(
+            tiff_path, fs=fs, root=None, tile_size=[512, 512], band_as_variable=False
+        )
+        self.assertIsInstance(ml_dataset, RasterioMultiLevelDataset)
+
+        self.assertEqual(1, ml_dataset.num_levels)
+        dataset = ml_dataset.get_dataset(0)
+        self.assertEqual((3, 1387, 1491), dataset.data.shape)
+
 
 class MultiLevelDatasetJ2kFsDataAccessorTest(unittest.TestCase):
     """
@@ -242,6 +255,7 @@ class DatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         with self.assertRaises(NotImplementedError) as nie:
             data_accessor.write_data(cube, "new_cube")
         self.assertEqual("Writing not yet supported", f"{nie.exception}")
+
 
 class DatasetJ2kFsDataAccessorTest(unittest.TestCase):
     """

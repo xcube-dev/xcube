@@ -35,6 +35,7 @@ from xcube.util.assertions import assert_instance
 from xcube.util.jsonencoder import to_json_value
 from xcube.util.jsonschema import (
     JsonArraySchema,
+    JsonBooleanSchema,
     JsonIntegerSchema,
     JsonNumberSchema,
     JsonObjectSchema,
@@ -53,6 +54,15 @@ RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             ),
             default=[1024, 1024],
         ),
+        band_as_variable=JsonBooleanSchema(
+            title="Present raster bands as seperate data variables",
+            description=(
+                "If `True` (default), raster bands are exposed as separate data "
+                "variables. If `False`, the original data structure returned by "
+                "rioxarray is preserved."
+            ),
+            default=True,
+        ),
         overview_level=JsonIntegerSchema(
             default=None,
             nullable=True,
@@ -70,6 +80,15 @@ MULTI_LEVEL_RASTERIO_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
                 JsonNumberSchema(minimum=512, default=1024),
             ),
             default=[1024, 1024],
+        ),
+        band_as_variable=JsonBooleanSchema(
+            title="Present raster bands as seperate data variables",
+            description=(
+                "If `True` (default), raster bands are exposed as separate data "
+                "variables. If `False`, the original data structure returned by "
+                "rioxarray is preserved."
+            ),
+            default=True,
         ),
     ),
     additional_properties=False,
@@ -111,39 +130,63 @@ class RasterIoAccessor:
         file_path: str,
         overview_level: int,
         tile_size: tuple[int, int] | None = None,
+        band_as_variable: bool = True,
     ) -> rioxarray.raster_array:
         if tile_size is not None:
             chunks = dict(zip(("x", "y"), tile_size))
         else:
             chunks = "auto"
 
-        return rioxarray.open_rasterio(
+        array = rioxarray.open_rasterio(
             file_path,
             overview_level=overview_level,
             chunks=chunks,
-            band_as_variable=True,
+            band_as_variable=band_as_variable,
         )
+        if band_as_variable:
+            dataset = array
+        else:
+            dataset = xr.Dataset()
+            dataset["data"] = array
+            dataset = dataset.squeeze(drop=True)
+        return dataset
 
     def open_dataset(
         self,
         file_path: str,
-        tile_size: tuple[int, int],
         *,
         overview_level: Optional[int] = None,
+        tile_size: tuple[int, int] | None = None,
+        band_as_variable: Optional[bool] = True,
     ) -> xr.Dataset:
         """
-        A method to open a dataset using rioxarray, returns xarray.Dataset.
+        Open a raster dataset using rioxarray.
+
+        This method reads a raster file (such as GeoTIFF or JPEG2000) via
+        rioxarray and returns it as an xarray.Dataset. Optional parameters
+        allow selecting an overview level, controlling chunking, and
+        configuring how raster bands are represented.
 
         Args:
-            file_path: path to the file
-            tile_size: tile size as tuple.
-            overview_level: the overview level of GeoTIFF,
-                0 is the first overview and None means full resolution.
+            file_path: Path to the raster file.
+            overview_level: Overview level to read from the raster.
+                `0` refers to the first overview; `None` (default)
+                reads the full-resolution data.
+            tile_size: Optional tile size used for chunking, given as
+                `(y, x)`.
+            band_as_variable: If `True` (default), raster bands are exposed as
+                separate data variables. If `False`, the
+                original data structure returned by rioxarray is preserved.
 
         Returns:
-            The opened data as xarray.Dataset
+            The opened raster dataset as an xarray.Dataset
         """
-        dataset = self.open_dataset_with_rioxarray(file_path, overview_level, tile_size)
+        dataset = self.open_dataset_with_rioxarray(
+            file_path,
+            overview_level,
+            tile_size=tile_size,
+            band_as_variable=band_as_variable,
+        )
         if "spatial_ref" in dataset.coords:
             for data_var in dataset.data_vars.values():
                 data_var.attrs["grid_mapping"] = "spatial_ref"
@@ -191,9 +234,13 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
 
     def _get_dataset_lazily(self, index: int, parameters) -> xr.Dataset:
         tile_size = self._open_params.get("tile_size", (1024, 1024))
+        tile_size = self._open_params.get("tile_size", (1024, 1024))
         self._file_url = self._get_file_url()
         return self._rio_accessor.open_dataset(
-            self._file_url, tile_size, overview_level=index - 1 if index > 0 else None
+            self._file_url,
+            overview_level=index - 1 if index > 0 else None,
+            tile_size=self._open_params.get("tile_size"),
+            band_as_variable=self._open_params.get("band_as_variable", True),
         )
 
     def _get_file_url(self):
@@ -228,13 +275,14 @@ class DatasetRasterIoFsDataAccessor(FsDataAccessor, ABC):
             file_path = protocol + "://" + root + fs.sep + data_id
         else:
             file_path = protocol + "://" + data_id
-        tile_size = open_params.get("tile_size", (1024, 1024))
-        overview_level = open_params.get("overview_level", None)
         if fs not in self._rio_accessors.keys():
             self._rio_accessors[fs] = RasterIoAccessor(fs)
         rio_accessor = self._rio_accessors[fs]
         return rio_accessor.open_dataset(
-            file_path, tile_size, overview_level=overview_level
+            file_path,
+            overview_level=open_params.get("overview_level"),
+            tile_size=open_params.get("tile_size"),
+            band_as_variable=open_params.get("band_as_variable", True),
         )
 
     def get_write_data_params_schema(self) -> JsonObjectSchema:
