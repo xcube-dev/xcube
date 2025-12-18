@@ -162,18 +162,13 @@ class RasterIoAccessor:
         """
         Open a raster dataset using rioxarray.
 
-        This method reads a raster file (such as GeoTIFF or JPEG2000) via
-        rioxarray and returns it as an xarray.Dataset. Optional parameters
-        allow selecting an overview level, controlling chunking, and
-        configuring how raster bands are represented.
-
         Args:
             file_path: Path to the raster file.
             overview_level: Overview level to read from the raster.
                 `0` refers to the first overview; `None` (default)
                 reads the full-resolution data.
             tile_size: Optional tile size used for chunking, given as
-                `(y, x)`.
+                `(x, y)`.
             band_as_variable: If `True` (default), raster bands are exposed as
                 separate data variables. If `False`, the
                 original data structure returned by rioxarray is preserved.
@@ -233,8 +228,6 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
         return len(overviews) + 1
 
     def _get_dataset_lazily(self, index: int, parameters) -> xr.Dataset:
-        tile_size = self._open_params.get("tile_size", (1024, 1024))
-        tile_size = self._open_params.get("tile_size", (1024, 1024))
         self._file_url = self._get_file_url()
         return self._rio_accessor.open_dataset(
             self._file_url,
