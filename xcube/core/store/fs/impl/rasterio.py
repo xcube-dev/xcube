@@ -107,12 +107,20 @@ class RasterIoAccessor:
 
     # noinspection PyMethodMayBeStatic
     def open_dataset_with_rioxarray(
-        self, file_path, overview_level, tile_size
+        self,
+        file_path: str,
+        overview_level: int,
+        tile_size: tuple[int, int] | None = None,
     ) -> rioxarray.raster_array:
+        if tile_size is not None:
+            chunks = dict(zip(("x", "y"), tile_size))
+        else:
+            chunks = "auto"
+
         return rioxarray.open_rasterio(
             file_path,
             overview_level=overview_level,
-            chunks=dict(zip(("x", "y"), tile_size)),
+            chunks=chunks,
             band_as_variable=True,
         )
 
@@ -156,10 +164,10 @@ class RasterIoAccessor:
 class RasterioMultiLevelDataset(LazyMultiLevelDataset):
     """A multi-level dataset for accessing files using rasterio.
 
-        fs: abstract file system
-        root: An optional root pointing to where the data is located
-        data_id: the data id
-        open_params: Any additional parameters to be considered when opening the data
+    fs: abstract file system
+    root: An optional root pointing to where the data is located
+    data_id: the data id
+    open_params: Any additional parameters to be considered when opening the data
     """
 
     def __init__(

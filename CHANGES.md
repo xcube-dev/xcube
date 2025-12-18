@@ -1,3 +1,11 @@
+## Changes in 1.13.1 (under development)
+
+* Use `chunks="auto"` by default in `rioxarray.open_rasterio` within
+  `xcube.core.store.fs.impl.rasterio` when reading GeoTIFF and JPEG2000 files.
+  This enables efficient, storage-aware data access without forcing explicit
+  rechunking.
+
+
 ## Changes in 1.13.0
 
 ### Enhancements
