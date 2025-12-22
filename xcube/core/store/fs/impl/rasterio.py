@@ -147,7 +147,8 @@ class RasterIoAccessor:
             dataset = array
         else:
             dataset = xr.Dataset()
-            dataset["data"] = array
+            name = array.name or "data"
+            dataset[name] = array
             dataset = dataset.squeeze(drop=True)
         return dataset
 
