@@ -7,7 +7,7 @@
 * Added the optional argument `band_as_variable`, which allows to preserve the
   original dataset structure as returned by `rioxarray`, rather than splitting
   raster bands into separate data variables. This improves data access patterns and
-  avoids unnecessary transformations. Defaults are set to `False`.
+  avoids unnecessary transformations. Defaults are set to `True`.
 
 
 ## Changes in 1.13.0
