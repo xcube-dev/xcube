@@ -165,6 +165,7 @@ class MultiLevelDatasetGeoTiffFsDataAccessorTest(unittest.TestCase):
         self.assertEqual(1, ml_dataset.num_levels)
         dataset = ml_dataset.get_dataset(0)
         self.assertEqual((3, 1387, 1491), dataset.data.shape)
+        self.assertEqual(((3,), (512, 512, 363), (512, 512, 467)), dataset.data.chunks)
 
 
 class MultiLevelDatasetJ2kFsDataAccessorTest(unittest.TestCase):
