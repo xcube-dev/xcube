@@ -140,6 +140,10 @@ for dataset reprojection:
 
 ### Other changes
 
+* Multi-level datasets (`.levels`) are now regular Zarr groups.
+  We now also write a `.zgroup` file into the root of the dataset folder,
+  so multi-level datasets can now be opened using `xr.open_datatree()`. (#1123)
+
 * Improved the filesystem data stores (`"file"`, `"s3"`, ...): 
   - Added parameter `engine` and its schema. It names an xarray backend to be used
     instead of the automatically detected one.
