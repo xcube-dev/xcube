@@ -1,13 +1,15 @@
 ## Changes in 1.13.1 (under development)
 
-* Use `chunks="auto"` by default in `rioxarray.open_rasterio` within
-  `xcube.core.store.fs.impl.rasterio` when reading GeoTIFF and JPEG2000 files.
-  This enables efficient, storage-aware data access without forcing explicit
-  rechunking.
-* Added the optional argument `band_as_variable`, which allows to preserve the
-  original dataset structure as returned by `rioxarray`, rather than splitting
-  raster bands into separate data variables. This improves data access patterns and
-  avoids unnecessary transformations. Defaults are set to `True`.
+* Expanded support for keyword arguments of `rioxarray.open_rasterio` when opening
+  raster files via `xcube.core.store.DataStore.open_data()`.
+  * `rioxarray.open_rasterio` is now called with `chunks="auto"` by default in
+    `xcube.core.store.fs.impl.rasterio` when reading GeoTIFF and JPEG2000 files.
+    This enables more efficient, storage-aware chunking without requiring users to
+    rechunk data manually.
+  * Added the optional argument `band_as_variable`. When set to `True` (default),
+    the original dataset structure returned by `rioxarray` is preserved instead of
+    splitting raster bands into separate data variables. This improves data access
+    patterns and avoids unnecessary transformations.
 
 
 ## Changes in 1.13.0
