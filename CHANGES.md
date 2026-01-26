@@ -10,7 +10,7 @@
     the original dataset structure returned by `rioxarray` is preserved instead of
     splitting raster bands into separate data variables. This improves data access
     patterns and avoids unnecessary transformations.
-
+* Require dask >=2024.8 (#1196)
 
 ## Changes in 1.13.0
 
