@@ -27,7 +27,7 @@ dependencies:
   - numba >=0.52
   - numcodecs >=0.12.1
   - numpy >=1.16
-  - pandas >=1.3
+  - pandas >=1.3,<3
   - pillow >=6.0
   - pyjwt >=1.7
   - pyproj >=3.0
