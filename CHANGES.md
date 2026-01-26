@@ -8,6 +8,8 @@
   original dataset structure as returned by `rioxarray`, rather than splitting
   raster bands into separate data variables. This improves data access patterns and
   avoids unnecessary transformations. Defaults are set to `True`.
+* Added a file `llms.txt` to xcube's source root to help LLMs pick up relevant 
+  project infos. 
 
 
 ## Changes in 1.13.0
