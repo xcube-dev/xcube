@@ -10,6 +10,7 @@ dependencies:
   - cftime >=1.6.3
   - click >=8.2.0
   - cmocean >=2.0
+  - cryptography
   - dask >=2024.8  # avoid numpy 2 incompatibility; see Issue #1196
   - dask-image >=0.6
   - deprecated >=1.2
