@@ -1,5 +1,6 @@
 ## Changes in 1.13.1 (under development)
 
+### Enhancements
 * Expanded support for keyword arguments of `rioxarray.open_rasterio` when opening
   raster files via `xcube.core.store.DataStore.open_data()`.
   * `rioxarray.open_rasterio` is now called with `chunks="auto"` by default in
@@ -11,6 +12,9 @@
     splitting raster bands into separate data variables. This improves data access
     patterns and avoids unnecessary transformations.
 * Require dask >=2024.8 (#1196)
+
+### Fixes
+* Avoid authentication error due to missing cryptography package (#1191)
 
 ## Changes in 1.13.0
 
