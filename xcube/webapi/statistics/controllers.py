@@ -33,12 +33,13 @@ def compute_statistics(
     var_name: str,
     geometry: Union[dict[str, Any], tuple[float, float]],
     time_label: str,
+    depth_label: float,
     trace_perf: bool = False,
 ):
     measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
     with measure_time("Computing statistics"):
         return _compute_statistics(
-            ctx, ds_id, var_name, time_label, geometry, DEFAULT_BIN_COUNT
+            ctx, ds_id, var_name, time_label, depth_label, geometry, DEFAULT_BIN_COUNT
         )
 
 
@@ -47,12 +48,32 @@ def _compute_statistics(
     ds_id: str,
     var_name_or_assign: str,
     time_label: str,
+    depth_label: float,
     geometry: Union[dict[str, Any], tuple[float, float]],
     bin_count: int,
 ):
     ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
+
+    #TODO: check in variable
+    dataset_contains_depth = "depth" in dataset
+
+    if dataset_contains_depth:
+        if depth_label is not None:
+            try:
+                depth = np.array(depth_label, dtype=dataset.depth.dtype)
+                dataset = dataset.sel(depth=depth, method="nearest")
+            except (TypeError, ValueError) as e:
+                raise ApiError.BadRequest("Invalid query parameter 'depth'") from e
+        else:
+            raise ApiError.BadRequest("Missing query parameter 'depth'")
+    elif depth_label is not None:
+        raise ApiError.BadRequest(
+            "Query parameter 'depth' must not be given"
+            " since dataset does not contain a 'depth' dimension"
+        )
+
 
     dataset_contains_time = "time" in dataset
 

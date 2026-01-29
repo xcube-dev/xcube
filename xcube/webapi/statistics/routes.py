@@ -34,6 +34,14 @@ QUERY_PARAM_TIME = {
     "schema": {"type": "string", "format": "datetime"},
 }
 
+QUERY_PARAM_DEPTH = {
+    "name": "depth",
+    "in": "query",
+    "description": 'Depth in m"',
+    "required": False,
+    "schema": {"type": "float"},
+}
+
 
 # noinspection PyPep8Naming
 @api.route("/statistics/{datasetId}/{varName}")
@@ -49,12 +57,14 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             QUERY_PARAM_X,
             QUERY_PARAM_Y,
             QUERY_PARAM_TIME,
+            QUERY_PARAM_DEPTH,
         ],
     )
     async def get(self, datasetId: str, varName: str):
         lon = self.request.get_query_arg("lon", type=float, default=UNDEFINED)
         lat = self.request.get_query_arg("lat", type=float, default=UNDEFINED)
         time = self.request.get_query_arg("time", type=str, default=None)
+        depth = self.request.get_query_arg("depth", type=float, default=None)
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
         )
@@ -66,6 +76,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             varName,
             (lon, lat),
             time,
+            depth,
             trace_perf,
         )
         await self.response.finish({"result": result})
@@ -90,6 +101,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
     )
     async def post(self, datasetId: str, varName: str):
         time = self.request.get_query_arg("time", type=str, default=None)
+        depth = self.request.get_query_arg("depth", type=float, default=None)
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
         )
@@ -101,6 +113,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             varName,
             self.request.json,
             time,
+            depth,
             trace_perf,
         )
         await self.response.finish({"result": result})

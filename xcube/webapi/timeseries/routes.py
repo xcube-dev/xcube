@@ -46,6 +46,12 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
                 "schema": {"type": "string", "format": "datetime"},
             },
             {
+                "name": "depth",
+                "in": "query",
+                "description": "Depth in m",
+                "schema": {"type": "float"},
+            },
+            {
                 "name": "tolerance",
                 "in": "query",
                 "description": "Time tolerance in seconds that"
@@ -77,6 +83,9 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
         end_date = self.request.get_query_arg(
             "endDate", type=pd.Timestamp, default=None
         )
+        depth_label = self.request.get_query_arg(
+            "depth", type=float, default=None
+        )
         tolerance = self.request.get_query_arg("tolerance", type=float, default=1.0)
         max_valids = self.request.get_query_arg("maxValids", type=int, default=None)
         result = await self.ctx.run_in_executor(
@@ -89,6 +98,7 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
             agg_methods,
             start_date,
             end_date,
+            depth_label,
             tolerance,
             max_valids,
         )
