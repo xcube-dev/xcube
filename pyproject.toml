@@ -24,7 +24,7 @@ dependencies = [
   "click>=8.0",
   "cmocean>=2.0",
   "chartlets>=0.1.3",
-  "cryptography",
+  "cryptography",  # pyjwt optional dependency; see PR #1199
   "dask>=2021.6",
   "dask-image>=0.6",
   "deprecated>=1.2",
@@ -43,7 +43,7 @@ dependencies = [
   "numpy>=1.16",
   "pandas>=1.3,<3",
   "pillow>=6.0",
-  "pyjwt>=1.7",
+  "pyjwt>=2.5",
   "pyproj>=3.0",
   "pyyaml>=5.4",
   "rasterio>=1.2",
