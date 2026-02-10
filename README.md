@@ -1,4 +1,4 @@
-[![Build Status](https://ci.appveyor.com/api/projects/status/h4m43pwga7pjoftl/branch/main?svg=true)](https://ci.appveyor.com/project/bcdev/xcube)
+[![Build Status](https://github.com/xcube-dev/xcube/actions/workflows/xcube_workflow.yaml/badge.svg?branch=main)](https://github.com/xcube-dev/xcube/actions/workflows/xcube_workflow.yaml)
 [![codecov](https://codecov.io/gh/xcube-dev/xcube/branch/main/graph/badge.svg)](https://codecov.io/gh/xcube-dev/xcube)
 [![Documentation Status](https://readthedocs.org/projects/xcube/badge/?version=latest)](https://xcube.readthedocs.io/en/latest/?badge=latest)
 [![PyPI Version](https://img.shields.io/pypi/v/xcube-core)](https://pypi.org/project/xcube-core/)
