@@ -2,11 +2,14 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import json
 import os
 from unittest import TestCase
+import numpy.testing as nt
 
+import base64
+from io import BytesIO
 import matplotlib.colors
+from PIL import Image
 import numpy as np
 
 from xcube.util.cmaps import (
@@ -207,14 +210,15 @@ class ColormapRegistryTest(TestCase):
         colormap = self.registry.colormaps.get("viridis")
         self.assertEqual("Perceptually Uniform Sequential", colormap.cat_name)
         self.assertEqual("viridis", colormap.cm_name)
-        self.assertEqual(
-            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAAwUlEQVR4nI1T2w3DIAy8M6"
-            "t1hO4/SonwAxsSoqqK7u2fpPzw20ECFFAMIQSHJwLNRFxnHpvZrf3ZzadvuuZdNV40tK/"
-            "+4OF5L/zE6Ncu1o7e3zYTc3PHp37i2+bf/s3DOU/ezznu3dMNLF7R2POVs3ic6BnC809tw"
-            "Y3rqwu/+2cyMHR2qqcPNu2e8Pfgmd+O2jYNuQ3eRoYNx9Z3iXnDunbffOul77vK/Ua9a9"
-            "xR98GB5n+bppzOCSENIe6PH9EouACsDYkJOqoM1AAAAABJRU5ErkJggg==",
-            colormap.cmap_png_base64,
-        )
+
+        cmap_base64 = colormap.cmap_png_base64
+        image_bytes = base64.b64decode(cmap_base64)
+        image = Image.open(BytesIO(image_bytes))
+        cmap = np.asarray(image)
+        self.assertEqual((1, 256, 4), cmap.shape)
+        nt.assert_array_equal(cmap[0][0], np.array([68, 1, 84, 255]))
+        nt.assert_array_equal(cmap[0][128], np.array([32, 144, 140, 255]))
+        nt.assert_array_equal(cmap[0][-1], np.array([253, 231, 36, 255]))
 
     def test_to_json(self):
         obj = self.registry.to_json()
@@ -245,15 +249,15 @@ class ColormapRegistryTest(TestCase):
         self.assertIsInstance(colormap, Colormap)
         self.assertEqual("Ocean", colormap.cat_name)
         self.assertEqual("thermal", colormap.cm_name)
-        self.assertEqual(
-            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAAzklEQVR4nH1SWx"
-            "IDIQhL8Cg9Qu9/taUjD0Vp++GEPGClluP1VkIA5iEAAZMXjxhL40LXuLRhOLOuXYgBKZ"
-            "lZC85aWn1VGtM5md0iDiBEQ9uIapwTzVNb1X3XeGW4MoHBaz5nu16zf3zzyryWL9/I+1"
-            "w9bX7ruzFzZceGZU/rq/OT17n6FfesW3uaVvXF+Rw+efqdKzBRnl0b3zXEd/OcFsRZL/"
-            "TfJP5glnFMHvhT80fSfJjlE1p84yuza92PFnX0WSayX3TTroydvE/JzewHgrd1PCuMz"
-            "AkAAAAASUVORK5CYII=",
-            colormap.cmap_png_base64,
-        )
+
+        cmap_base64 = colormap.cmap_png_base64
+        image_bytes = base64.b64decode(cmap_base64)
+        image = Image.open(BytesIO(image_bytes))
+        cmap = np.asarray(image)
+        self.assertEqual((1, 256, 4), cmap.shape)
+        nt.assert_array_equal(cmap[0][0], np.array([3, 35, 51, 255]))
+        nt.assert_array_equal(cmap[0][128], np.array([176, 95, 129, 255]))
+        nt.assert_array_equal(cmap[0][-1], np.array([231, 250, 90, 255]))
 
     def test_load_snap_cpd_colormap(self):
         cmap_name = os.path.join(os.path.dirname(__file__), "chl_DeM2_200.cpd")
@@ -330,17 +334,17 @@ class ColormapTest(TestCase):
         self.assertEqual("coolwarm_r_alpha", cmap.name)
 
     def test_cmap_png_base64(self):
-        base64 = self.colormap.cmap_png_base64
-        self.assertIsInstance(base64, str)
-        self.assertIs(base64, self.colormap.cmap_png_base64)
-        self.assertEqual(
-            "iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAAAwklEQVR4nJWNwRHDMAgED"
-            "5WVGlJ0+krMZYRAAkt55OHh2FtkeTxfFBFIa2htzNjF95b3oytoKdt+uzF/6+N9HL2Vs"
-            "fzuFB/pbnDr851gelu2m+VVhspuuTLeeu4ZmbuPtHvuznSN7fu8y/shW2+f7n1weqb+mC"
-            "MjGKuD6O0dLay7SLO4NiszV8NdDM7Mm33tqDvbOlXQJ8jBp1P7OdU997MX98Ht8/8ulr"
-            "o/sl6Vj93ZRWj4l47O+8javTehH57nm/gCD19T7PVeadMAAAAASUVORK5CYII=",
-            base64,
-        )
+        cmap_base64 = self.colormap.cmap_png_base64
+        self.assertIsInstance(cmap_base64, str)
+        self.assertIs(cmap_base64, self.colormap.cmap_png_base64)
+
+        image_bytes = base64.b64decode(cmap_base64)
+        image = Image.open(BytesIO(image_bytes))
+        cmap = np.asarray(image)
+        self.assertEqual((1, 256, 4), cmap.shape)
+        nt.assert_array_equal(cmap[0][0], np.array([58, 76, 192, 255]))
+        nt.assert_array_equal(cmap[0][128], np.array([221, 220, 219, 255]))
+        nt.assert_array_equal(cmap[0][-1], np.array([179, 3, 38, 255]))
 
 
 class ColormapParseTest(TestCase):
