@@ -1,4 +1,4 @@
-## Changes in 1.13.1 (under development)
+## Changes in 1.13.1
 
 ### Enhancements
 * Expanded support for keyword arguments of `rioxarray.open_rasterio` when opening
