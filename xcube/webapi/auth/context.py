@@ -112,11 +112,11 @@ class AuthContext(ApiContext):
         # Get JSON Web Token (JWK) Keys
         jwks = self.jwks
 
-        # Find access_token_kid in JWKS to obtain rsa_key
-        rsa_key = None
+        # Find access_token_kid in JWKS to obtain algorithm_key
+        algorithm_key = None
         for key in jwks["keys"]:
             if key["kid"] == access_token_kid:
-                rsa_key = {
+                algorithm_key = {
                     "kty": key["kty"],
                     "kid": key["kid"],
                     "use": key["use"],
@@ -124,16 +124,19 @@ class AuthContext(ApiContext):
                     "e": key["e"],
                 }
                 break
-        if rsa_key is None:
+        if algorithm_key is None:
             raise ApiError.BadRequest(
                 "Invalid header. Unable to find appropriate key in JWKS."
             )
+
+        alg = unverified_header["alg"]
+        algorithm = jwt.get_algorithm_by_name(alg)
 
         # Now we are ready to decode the access token
         try:
             id_token = jwt.decode(
                 access_token,
-                jwt.algorithms.RSAAlgorithm.from_jwk(rsa_key),
+                algorithm.from_jwk(algorithm_key),
                 issuer=auth_config.authority,
                 audience=auth_config.audience,
                 algorithms=auth_config.algorithms,

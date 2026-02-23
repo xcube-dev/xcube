@@ -17,6 +17,7 @@
 [ESA Soil Moisture and Ocean Salinity]: https://earth.esa.int/eogateway/missions/smos
 [Global Ecosystem Dynamics Investigation]: https://gedi.umd.edu/
 [gedidb]: https://gedidb.readthedocs.io/en/latest/
+[ICOS Data Portal]: https://data.icos-cp.eu/portal/
 [Open Data Portal]: https://climate.esa.int/en/data/#/dashboard
 [Planetary Computer STAC API]: https://planetarycomputer.microsoft.com/dataset
 [SpatioTemporal Asset Catalogs]: https://stacspec.org/en/
@@ -28,6 +29,7 @@
 [xcube-clms]: https://github.com/xcube-dev/xcube-clms
 [xcube-cmems]: https://github.com/dcs4cop/xcube-cmems
 [xcube-gedidb]: https://github.com/xcube-dev/xcube-gedidb
+[xcube-icosdp]: https://github.com/xcube-dev/xcube-icosdp
 [xcube-sh]: https://github.com/dcs4cop/xcube-sh
 [xcube-smos]: https://github.com/dcs4cop/xcube-smos
 [xcube-stac]: https://github.com/xcube-dev/xcube-stac
@@ -555,6 +557,47 @@ Or
 Common:  
 * `time_range: (str, str)` - Time range. Required.
 * `variables: list[str]` - List of variables to retrieve from the database.
+
+### ICOS Data Portal `icosdp`
+
+The data store `icosdp` provides datasets of the [ICOS Data Portal].
+
+This data store is provided by the xcube plugin [xcube-icosdp].
+You can install it using `pip install xcube-icosdp`.
+
+The plugin currently supports the **FLUXCOM-X-BASE** products for carbon and water fluxes.
+To improve usability, the data is available through:
+
+* Native resolution via cloud-optimized access (spatial/temporal subsetting) via `open_data`
+* Pre-computed spatial & temporal aggregations via `preload_data`
+
+Data store parameters:
+
+* `email: str` - E-mail used when signing in at https://cpauth.icos-cp.eu/login/. 
+   This is only needed if the aggregated datasets want to be accessed via `preload_data`.
+* `password: str` - Password used when signing in at https://cpauth.icos-cp.eu/login/. 
+   This is only needed if the aggregated datasets want to be accessed via `preload_data`.
+* `cache_store_id: str` - The cache data store is a filesystem-based data store 
+   implemented in xcube, which is used to store the preloaded data.
+* `cache_store_params: dict` - The available parameters can be viewed using 
+  `get_data_store_params_schema(cache_store_id)`.
+
+Common parameters for opening [xarray.Dataset] instances:
+
+* `flatten_time: bool` - If enabled, combines the 'time' and 'hour' dimensions into a 
+  single datetime axis.
+
+Common parameters for preloading [xarray.Dataset] instances:
+
+* `agg_mode: str` - Four aggregation modes are published in the 
+  [ICOS FLUXCOM-X-BASE collection](https://meta.icos-cp.eu/collections/vvQKmP2OJRY-B-vIl-YXIHFs"). 
+  One of `"050_monthly"`, `"025_monthlycycle"`, `"025_daily"`, `"005_monthly"`.
+* `flatten_time: bool` - If enabled, combines the 'time' and 'hour' dimensions into a 
+  single datetime axis. This option is available only when `agg_mode='025_monthlycycle'`.
+* `target_format: str` - Format of the preloaded dataset in the cache. 
+  One of `"zarr"` or `"netcdf"`.
+* `chunks: tuple[int]` - Chunk sizes for each dimension of the preloaded datasets; 
+   an iterable with length same as number of dimensions.
 
 ### Sentinel Hub API 
 
