@@ -1,0 +1,39 @@
+# llms.txt — xcube project summary
+
+# About
+# xcube is a Python toolkit for generating and exploiting geospatial data cubes
+# powered by xarray, dask, and zarr.
+# Docs: https://xcube.readthedocs.io/ :contentReference[oaicite:1]{index=1}
+
+## Highest-level overview
+docs/overview.md
+README.md
+CHANGES.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+
+## Core code & API
+xcube/core/        # core API functions
+xcube/cli/         # CLI entry points
+xcube/webapi/      # web API + server endpoints
+xcube/util/        # helpers & utilities
+pyproject.toml
+
+## Data specs & models
+docs/source/cubespec.md  # dataset conventions & CF conventions use :contentReference[oaicite:2]{index=2}
+
+## Examples & demos
+examples/serve/demo/README.md  # server demo usage :contentReference[oaicite:3]{index=3}
+examples/serve/demo/*
+
+## Tests
+test/
+
+## Development
+docs/source/devguide.md  # coding style + contribution rules :contentReference[oaicite:4]{index=4}
+
+## What to ignore (for LLM focus)
+.github/
+docker/
+scripts/
+*.yml
