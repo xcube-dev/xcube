@@ -18,7 +18,7 @@
 ### Other changes
 * Require dask >=2024.8 (#1196)
 
-* For Read the Docs, use Ubuntu 24.04 and Python miniforge3-25.11 (#1205)
+* For Read the Docs, use Ubuntu 24.04 and Python mambaforge-23.11 (#1205)
 
 ## Changes in 1.13.0
 
