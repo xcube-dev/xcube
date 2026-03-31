@@ -1,3 +1,11 @@
+## Changes in 1.13.2
+
+### Enhancements
+* Bundled [xcube Viewer 1.7.2](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.2)
+  that comes with, e.g., several bug fixes including issues with the time series legend,
+  the zoom information box, persisted states, and the progress bar, as well as updated 
+  dependencies such as `chartlets ^0.2.0`.
+
 ## Changes in 1.13.1
 
 ### Enhancements
