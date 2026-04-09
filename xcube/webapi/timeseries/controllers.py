@@ -37,7 +37,7 @@ def get_time_series(
     agg_methods: Union[str, Sequence[str]] = None,
     start_date: Optional[np.datetime64] = None,
     end_date: Optional[np.datetime64] = None,
-    depth_label: Optional[float] = None,
+    dimensions: dict[str, Any] = None,
     tolerance: Optional[float] = 1.0,
     max_valids: Optional[int] = None,
     incl_ancillary_vars: bool = False,
@@ -71,7 +71,7 @@ def get_time_series(
             cover a spatial area.
         start_date: An optional start date.
         end_date: An optional end date.
-        depth_label: An optional depth label.
+        dimensions: Values of non-spatial dimensions (e.g. time, depth).
         tolerance: Time tolerance in seconds that expands the given time
             range. Defaults to one second.
         max_valids: Optional number of valid points. If it is None
@@ -103,26 +103,23 @@ def get_time_series(
         var_name=var_name if "=" not in var_name else None,
     )
 
-    #TODO: check in variable
-    dataset_contains_depth = "depth" in dataset
+    if dimensions:
+        for dim_name, dim_value in dimensions.items():
 
-    if dataset_contains_depth:
-        if depth_label is not None:
+            # check if variable has this dimension
+            if dim_name not in dataset[var_name].coords:
+                raise ApiError.BadRequest(
+                    f"Query parameter '{dim_name}' must not be given "
+                    f"since variable does not contain a '{dim_name}' dimension"
+                )
+
             try:
-                depth = np.array(depth_label, dtype=dataset.depth.dtype)
-                dataset = dataset.sel(depth=depth, method="nearest")
-            except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest("Invalid query parameter 'depth'") from e
-        else:
-            raise ApiError.BadRequest("Missing query parameter 'depth'")
-    elif depth_label is not None:
-        raise ApiError.BadRequest(
-            "Query parameter 'depth' must not be given"
-            " since dataset does not contain a 'depth' dimension"
-        )
+                dataset = dataset.sel({dim_name: dim_value}, method="nearest")
 
-    #dataset = dataset.sel(depth=0.5016462206840515, method="nearest")
-    #LOG.debug(dataset)
+            except (TypeError, ValueError) as e:
+                raise ApiError.BadRequest(
+                    f"Invalid query parameter '{dim_name}'"
+                ) from e
 
     geo_json_geometries, is_collection = _to_geo_json_geometries(geo_json)
     geometries = _to_shapely_geometries(geo_json_geometries)

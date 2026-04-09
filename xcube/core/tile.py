@@ -622,7 +622,7 @@ def _get_variable(
             )
         variable = dataset[var_name]
 
-    non_spatial_labels = _get_non_spatial_labels(
+    non_spatial_labels = get_non_spatial_labels(
         dataset, variable, non_spatial_labels, logger
     )
     if non_spatial_labels:
@@ -670,11 +670,11 @@ class TransparentRgbaTilePool:
 TransparentRgbaTilePool.INSTANCE = TransparentRgbaTilePool()
 
 
-def _get_non_spatial_labels(
+def get_non_spatial_labels(
     dataset: xr.Dataset,
     variable: xr.DataArray,
     labels: Optional[dict[str, Any]],
-    logger: logging.Logger,
+    logger: logging.Logger = None,
 ) -> dict[Hashable, Any]:
     labels = labels if labels is not None else {}
 

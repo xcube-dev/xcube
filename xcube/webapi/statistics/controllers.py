@@ -32,14 +32,13 @@ def compute_statistics(
     ds_id: str,
     var_name: str,
     geometry: Union[dict[str, Any], tuple[float, float]],
-    time_label: str,
-    depth_label: float,
+    non_spatial_dimensions: dict[str, Any]=None,
     trace_perf: bool = False,
 ):
     measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
     with measure_time("Computing statistics"):
         return _compute_statistics(
-            ctx, ds_id, var_name, time_label, depth_label, geometry, DEFAULT_BIN_COUNT
+            ctx, ds_id, var_name, geometry, DEFAULT_BIN_COUNT, non_spatial_dimensions
         )
 
 
@@ -47,50 +46,30 @@ def _compute_statistics(
     ctx: StatisticsContext,
     ds_id: str,
     var_name_or_assign: str,
-    time_label: str,
-    depth_label: float,
     geometry: Union[dict[str, Any], tuple[float, float]],
     bin_count: int,
+    dimensions: dict[str, Any] = None,
 ):
     ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
 
-    #TODO: check in variable
-    dataset_contains_depth = "depth" in dataset
+    if dimensions:
+        for dim_name, dim_value in dimensions.items():
 
-    if dataset_contains_depth:
-        if depth_label is not None:
+            if dim_name not in dataset[var_name_or_assign].coords:
+                raise ApiError.BadRequest(
+                    f"Query parameter '{dim_name}' must not be given "
+                    f"since dataset does not contain a '{dim_name}' dimension"
+                )
+
             try:
-                depth = np.array(depth_label, dtype=dataset.depth.dtype)
-                dataset = dataset.sel(depth=depth, method="nearest")
+                dataset = dataset.sel({dim_name: dim_value}, method="nearest")
+
             except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest("Invalid query parameter 'depth'") from e
-        else:
-            raise ApiError.BadRequest("Missing query parameter 'depth'")
-    elif depth_label is not None:
-        raise ApiError.BadRequest(
-            "Query parameter 'depth' must not be given"
-            " since dataset does not contain a 'depth' dimension"
-        )
-
-
-    dataset_contains_time = "time" in dataset
-
-    if dataset_contains_time:
-        if time_label is not None:
-            try:
-                time = np.array(time_label, dtype=dataset.time.dtype)
-                dataset = dataset.sel(time=time, method="nearest")
-            except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest("Invalid query parameter 'time'") from e
-        else:
-            raise ApiError.BadRequest("Missing query parameter 'time'")
-    elif time_label is not None:
-        raise ApiError.BadRequest(
-            "Query parameter 'time' must not be given"
-            " since dataset does not contain a 'time' dimension"
-        )
+                raise ApiError.BadRequest(
+                    f"Invalid query parameter '{dim_name}'"
+                ) from e
 
     if isinstance(geometry, tuple):
         compact_mode = True

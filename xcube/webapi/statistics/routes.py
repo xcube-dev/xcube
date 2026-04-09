@@ -3,6 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from xcube.server.api import ApiHandler
+from xcube.core.tile import get_non_spatial_labels
 
 from ...util.undefined import UNDEFINED
 from ..datasets.routes import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
@@ -34,15 +35,6 @@ QUERY_PARAM_TIME = {
     "schema": {"type": "string", "format": "datetime"},
 }
 
-QUERY_PARAM_DEPTH = {
-    "name": "depth",
-    "in": "query",
-    "description": 'Depth in m"',
-    "required": False,
-    "schema": {"type": "float"},
-}
-
-
 # noinspection PyPep8Naming
 @api.route("/statistics/{datasetId}/{varName}")
 class StatisticsHandler(ApiHandler[StatisticsContext]):
@@ -56,15 +48,14 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             PATH_PARAM_VAR_NAME,
             QUERY_PARAM_X,
             QUERY_PARAM_Y,
-            QUERY_PARAM_TIME,
-            QUERY_PARAM_DEPTH,
+            QUERY_PARAM_TIME
         ],
     )
     async def get(self, datasetId: str, varName: str):
         lon = self.request.get_query_arg("lon", type=float, default=UNDEFINED)
         lat = self.request.get_query_arg("lat", type=float, default=UNDEFINED)
-        time = self.request.get_query_arg("time", type=str, default=None)
-        depth = self.request.get_query_arg("depth", type=float, default=None)
+        dimensions = _get_non_spatial_dimensions(self.ctx, self.request, datasetId, varName)
+
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
         )
@@ -75,8 +66,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             datasetId,
             varName,
             (lon, lat),
-            time,
-            depth,
+            dimensions,
             trace_perf,
         )
         await self.response.finish({"result": result})
@@ -100,8 +90,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
         ],
     )
     async def post(self, datasetId: str, varName: str):
-        time = self.request.get_query_arg("time", type=str, default=None)
-        depth = self.request.get_query_arg("depth", type=float, default=None)
+        dimensions = _get_non_spatial_dimensions(self.ctx, self.request, datasetId, varName)
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
         )
@@ -112,8 +101,22 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             datasetId,
             varName,
             self.request.json,
-            time,
-            depth,
+            dimensions,
             trace_perf,
         )
         await self.response.finish({"result": result})
+
+def _get_non_spatial_dimensions(ctx, request, ds_id, var):
+    ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
+    ds = ml_dataset.get_dataset(0)
+
+    variable_dims = set(ds[var].dims)
+    dimensions={}
+    for dim in variable_dims:
+        value = request.get_query_arg(dim, type=str, default=None)
+        dimensions[dim] = value
+
+    labels = get_non_spatial_labels(ds, ds[var], labels=dimensions)
+
+
+    return labels
