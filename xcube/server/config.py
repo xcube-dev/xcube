@@ -22,6 +22,7 @@ BASE_SERVER_CONFIG_SCHEMA = JsonObjectSchema(
         address=JsonStringSchema(
             title="Server address.", default=DEFAULT_SERVER_ADDRESS
         ),
+        allowed_origins=JsonArraySchema(),
         base_dir=JsonStringSchema(
             title="Base directory used to resolve relative local paths."
             " Can be a local filesystem path or an absolute URL.",
