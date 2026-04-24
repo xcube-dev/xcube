@@ -13,8 +13,8 @@
 #  Audience: avl-xc-api
 
 DatasetAttribution:
-    - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
-    - "© by EU H2020 CyanoAlert project"
+  - "© by Brockmann Consult GmbH 2020, contains modified Copernicus Data 2019, processed by ESA"
+  - "© by EU H2020 CyanoAlert project"
 
 #DatasetChunkCacheSize: 100M
 
@@ -34,254 +34,254 @@ allowed_origins:
 #     Path: memory://states
 
 DatasetGroups:
-    -   Identifier: first_local
-        Title: Zarr
-        Description: This is a zarr dataset group description!
+   - Identifier: first_local
+     Title: Zarr
+     Description: This is a zarr dataset group description!
 
-    -   Identifier: second_local
-        Title: GeoTIFF
+   - Identifier: second_local
+     Title: GeoTIFF
 
 Datasets:
-    # The first dataset "./cube-1-250-250.levels" is a tile-optimized
-    # pyramid version of "./cube-1-250-250.zarr". To create such pyramids
-    # run following command in this directory:
-    #
-    # $ xcube level ./cube-1-250-250.zarr
-    #
-    -   Identifier: local
-        Title: Local OLCI L2C cube for region SNS
-        GroupId: first_local
-        BoundingBox: [ 0.0, 50, 5.0, 52.5 ]
-        FileSystem: file
-        Path: cube-1-250-250.levels
-        Style: default
-        TimeSeriesDataset: local_ts
-        Variables:
-            - "conc_chl"
-            - "chl_category"
-            - "conc_tsm"
-            - "chl_tsm_sum"
-            - "kd489"
-            - "*"
-        Augmentation:
-            Path: compute_extra_vars.py
-            Function: compute_variables
-            InputParameters:
-                factor_chl: 0.2
-                factor_tsm: 0.7
-        PlaceGroups:
-            -   PlaceGroupRef: inside-cube
-            -   PlaceGroupRef: outside-cube
-        AccessControl:
-            # Due to this it will only appear for unauthorized clients
-            IsSubstitute: true
+  # The first dataset "./cube-1-250-250.levels" is a tile-optimized
+  # pyramid version of "./cube-1-250-250.zarr". To create such pyramids
+  # run following command in this directory:
+  #
+  # $ xcube level ./cube-1-250-250.zarr
+  #
+  - Identifier: local
+    Title: Local OLCI L2C cube for region SNS
+    GroupId: first_local
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: file
+    Path: cube-1-250-250.levels
+    Style: default
+    TimeSeriesDataset: local_ts
+    Variables:
+      - "conc_chl"
+      - "chl_category"
+      - "conc_tsm"
+      - "chl_tsm_sum"
+      - "kd489"
+      - "*"
+    Augmentation:
+      Path: compute_extra_vars.py
+      Function: compute_variables
+      InputParameters:
+        factor_chl: 0.2
+        factor_tsm: 0.7
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
+    AccessControl:
+      # Due to this it will only appear for unauthorized clients
+      IsSubstitute: true
 
-    # Will not appear at all, because it is a "hidden" resource
-    -   Identifier: local_ts
-        Title: "'local' optimized for time-series"
-        GroupId: first_local
-        BoundingBox: [ 0.0, 50, 5.0, 52.5 ]
-        FileSystem: file
-        Path: cube-5-100-200.zarr
-        Hidden: true
-        Style: default
+  # Will not appear at all, because it is a "hidden" resource
+  - Identifier: local_ts
+    Title: "'local' optimized for time-series"
+    GroupId: first_local
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: file
+    Path: cube-5-100-200.zarr
+    Hidden: true
+    Style: default
 
-    #  # Will only appear for bearer tokens with "read:datasets" scope
-    #  - Identifier: remote
-    #    Title: Remote OLCI L2C cube for region SNS
-    #    BoundingBox: [0.0, 50, 5.0, 52.5]
-    #    FileSystem: s3
-    #    Endpoint: "https://s3.eu-central-1.amazonaws.com"
-    #    Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
-    #    Region: "eu-central-1"
-    #    Anonymous: true
-    #    Style: default
-    #    ChunkCacheSize: 250M
-    #    PlaceGroups:
-    #      - PlaceGroupRef: inside-cube
-    #      - PlaceGroupRef: outside-cube
-    #    AccessControl:
-    #      RequiredScopes:
-    #        - read:datasets
+#  # Will only appear for bearer tokens with "read:datasets" scope
+#  - Identifier: remote
+#    Title: Remote OLCI L2C cube for region SNS
+#    BoundingBox: [0.0, 50, 5.0, 52.5]
+#    FileSystem: s3
+#    Endpoint: "https://s3.eu-central-1.amazonaws.com"
+#    Path: "xcube-examples/OLCI-SNS-RAW-CUBE-2.zarr"
+#    Region: "eu-central-1"
+#    Anonymous: true
+#    Style: default
+#    ChunkCacheSize: 250M
+#    PlaceGroups:
+#      - PlaceGroupRef: inside-cube
+#      - PlaceGroupRef: outside-cube
+#    AccessControl:
+#      RequiredScopes:
+#        - read:datasets
 
 
-    # Will only appear for unauthorized clients
-    -   Identifier: local_1w
-        Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
-        GroupId: first_local
-        BoundingBox: [ 0.0, 50, 5.0, 52.5 ]
-        FileSystem: memory
-        Path: resample_in_time.py
-        Function: compute_dataset
-        InputDatasets: [ local ]
-        InputParameters:
-            period: 1W
-            incl_stdev: True
-        Style: default
-        PlaceGroups:
-            -   PlaceGroupRef: inside-cube
-            -   PlaceGroupRef: outside-cube
-        AccessControl:
-            IsSubstitute: True
+  # Will only appear for unauthorized clients
+  - Identifier: local_1w
+    Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
+    GroupId: first_local
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: memory
+    Path: resample_in_time.py
+    Function: compute_dataset
+    InputDatasets: [local]
+    InputParameters:
+      period: 1W
+      incl_stdev: True
+    Style: default
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
+    AccessControl:
+      IsSubstitute: True
 
-    #  # Will only appear for bearer tokens with "read:datasets" scope
-    #  - Identifier: remote_1w
-    #    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
-    #    BoundingBox: [0.0, 50, 5.0, 52.5]
-    #    FileSystem: memory
-    #    Path: "resample_in_time.py"
-    #    Function: "compute_dataset"
-    #    InputDatasets: ["remote"]
-    #    InputParameters:
-    #      period: "1W"
-    #      incl_stdev: True
-    #    Style: default
-    #    PlaceGroups:
-    #      - PlaceGroupRef: inside-cube
-    #      - PlaceGroupRef: outside-cube
-    #    AccessControl:
-    #      RequiredScopes:
-    #        - read:datasets
+#  # Will only appear for bearer tokens with "read:datasets" scope
+#  - Identifier: remote_1w
+#    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
+#    BoundingBox: [0.0, 50, 5.0, 52.5]
+#    FileSystem: memory
+#    Path: "resample_in_time.py"
+#    Function: "compute_dataset"
+#    InputDatasets: ["remote"]
+#    InputParameters:
+#      period: "1W"
+#      incl_stdev: True
+#    Style: default
+#    PlaceGroups:
+#      - PlaceGroupRef: inside-cube
+#      - PlaceGroupRef: outside-cube
+#    AccessControl:
+#      RequiredScopes:
+#        - read:datasets
 
-    -   Identifier: cog_local
-        Title: COG example
-        #    If you do not provide a GroupId, this group will be then displayed after the
-        #    groups order in DatasetGroups.  Try changing the order
-        #    of the groups in DatasetGroups to see the changes in viewer.
-        #    If you comment out GroupId here, you will get the
-        #    same behaviour because currently it is in second position.
-        GroupId: second_local
-        #    GroupTitle: GeoTIFF - This should not be there if GroupId is used. Use Title from
-        #    DatasetGroups instead. If you do not want to use DatasetGroups for this group, you
-        #    can use GroupTitle to add a title to your group, but keep in mind, it will be
-        #    sorted after the groups in DatasetGroups. This allows backward-compatibility.
-        FileSystem: file
-        Path: sample-cog.tif
-        Style: tif_style
-        SortValue: 2
+  - Identifier: cog_local
+    Title: COG example
+#    If you do not provide a GroupId, this group will be then displayed after the
+#    groups order in DatasetGroups.  Try changing the order
+#    of the groups in DatasetGroups to see the changes in viewer.
+#    If you comment out GroupId here, you will get the
+#    same behaviour because currently it is in second position.
+    GroupId: second_local
+#    GroupTitle: GeoTIFF - This should not be there if GroupId is used. Use Title from
+#    DatasetGroups instead. If you do not want to use DatasetGroups for this group, you
+#    can use GroupTitle to add a title to your group, but keep in mind, it will be
+#    sorted after the groups in DatasetGroups. This allows backward-compatibility.
+    FileSystem: file
+    Path: sample-cog.tif
+    Style: tif_style
+    SortValue: 2
 
-    -   Identifier: geotiff_local
-        Title: GeoTIFF example
-        GroupId: second_local
-        FileSystem: file
-        Path: sample-geotiff.tif
-        Style: tif_style
-        SortValue: 1
+  - Identifier: geotiff_local
+    Title: GeoTIFF example
+    GroupId: second_local
+    FileSystem: file
+    Path: sample-geotiff.tif
+    Style: tif_style
+    SortValue: 1
 
 # Add the initial dataset that needs to be shown in xcube-viewer upon loading here
 EntrypointDatasetId: geotiff_local
 
 PlaceGroups:
-    -   Identifier: inside-cube
-        Title: Places inside the cube
-        Path: places/inside-cube.geojson
-        Join:
-            Property: ID
-            Path: places/inside-cube-media.geojson
-        PropertyMapping:
-            image: ${resolve_config_path("images/inside-cube/${image}")}
-    -   Identifier: outside-cube
-        Title: Places outside the cube
-        Path: places/outside-cube.geojson
-        PropertyMapping:
-            image: ${resolve_config_path("images/outside-cube/${ID}.jpg")}
+  - Identifier: inside-cube
+    Title: Places inside the cube
+    Path: places/inside-cube.geojson
+    Join:
+      Property: ID
+      Path: places/inside-cube-media.geojson
+    PropertyMapping:
+      image: ${resolve_config_path("images/inside-cube/${image}")}
+  - Identifier: outside-cube
+    Title: Places outside the cube
+    Path: places/outside-cube.geojson
+    PropertyMapping:
+      image: ${resolve_config_path("images/outside-cube/${ID}.jpg")}
 
 Styles:
-    -   Identifier: default
-        ColorMappings:
-            conc_chl:
-                ColorBar: my_cmap
-                ValueRange: [ 0., 20. ] # this value range overwrites the range defined in CustomColorMaps
-            chl_category:
-                ColorBar: cmap_bloom_risk
-            conc_tsm:
-                ColorFile: cc_tsm.cpd
-            kd489:
-                ValueRange: [ 0., 6. ]
-            rgb:
-                Red:
-                    Variable: conc_chl
-                    ValueRange: [ 0., 24. ]
-                Green:
-                    Variable: conc_tsm
-                    ValueRange: [ 0., 100. ]
-                Blue:
-                    Variable: kd489
-                    ValueRange: [ 0., 6. ]
-    -   Identifier: tif_style
-        ColorMappings:
-            band_1:
-                ColorBar: bone
-                ValueRange: [ 0., 255. ]
-            band_2:
-                ColorBar: bone
-                ValueRange: [ 0., 255. ]
-            band_3:
-                ColorBar: bone
-                ValueRange: [ 0., 255. ]
-            rgb:
-                Red:
-                    Variable: band_1
-                    ValueRange: [ 0., 255. ]
-                Green:
-                    Variable: band_2
-                    ValueRange: [ 0., 255. ]
-                Blue:
-                    Variable: band_3
-                    ValueRange: [ 0., 255. ]
+  - Identifier: default
+    ColorMappings:
+      conc_chl:
+        ColorBar: my_cmap
+        ValueRange: [0., 20.] # this value range overwrites the range defined in CustomColorMaps
+      chl_category:
+        ColorBar: cmap_bloom_risk
+      conc_tsm:
+        ColorFile: cc_tsm.cpd
+      kd489:
+        ValueRange: [0., 6.]
+      rgb:
+        Red:
+          Variable: conc_chl
+          ValueRange: [0., 24.]
+        Green:
+          Variable: conc_tsm
+          ValueRange: [0., 100.]
+        Blue:
+          Variable: kd489
+          ValueRange: [0., 6.]
+  - Identifier: tif_style
+    ColorMappings:
+      band_1:
+        ColorBar: bone
+        ValueRange: [ 0., 255. ]
+      band_2:
+        ColorBar: bone
+        ValueRange: [ 0., 255. ]
+      band_3:
+        ColorBar: bone
+        ValueRange: [ 0., 255. ]
+      rgb:
+        Red:
+          Variable: band_1
+          ValueRange: [ 0., 255. ]
+        Green:
+          Variable: band_2
+          ValueRange: [ 0., 255. ]
+        Blue:
+          Variable: band_3
+          ValueRange: [ 0., 255. ]
 
 CustomColorMaps:
-    -   Identifier: my_cmap
-        Type: continuous # or categorical, stepwise
-        Colors:
-            -   Value: 0
-                Color: red
-                Label: low
-            -   Value: 12
-                Color: "#0000FF"
-                Label: medium
-            -   Value: 18
-                Color: [ 0, 255, 0 ]
-                Label: mediumhigh
-            -   Value: 24
-                Color: [ 0, 1, 0, 0.3 ]
-                Label: high
-    -   Identifier: cmap_bloom_risk
-        Type: categorical
-        Colors:
-            - [ 0, [ 0, 255, 0., 0.5 ] ]
-            - [ 1, orange ]
-            - [ 2, [ 1, 0, 0 ] ]
-    -   Identifier: s2_l2_scl
-        Type: categorical
-        Colors:
-            - [ 0, [ 255, 0, 0 ], no data ]
-            - [ 1, yellow,  defective ]
-            - [ 2, black,   dark area pixels ]
-            - [ 3, gray,    cloud shadows ]
-            - [ 4, [ 0, 1, 0 ],   vegetation ]
-            - [ 5, tan,     bare soils ]
-            - [ 6, blue,    water ]
-            - [ 7, "#aaaabb", clouds low prob ]
-            - [ 8, "#bbbbcc", clouds medium prob ]
-            - [ 9, "#ccccdd", clouds high prob ]
-            - [ 10, "#ddddee", cirrus ]
-            - [ 11, "#ffffff", snow or ice ]
+  - Identifier: my_cmap
+    Type: continuous # or categorical, stepwise
+    Colors:
+      - Value: 0
+        Color: red
+        Label: low
+      - Value: 12
+        Color: "#0000FF"
+        Label: medium
+      - Value: 18
+        Color: [0, 255, 0]
+        Label: mediumhigh
+      - Value: 24
+        Color: [0, 1, 0, 0.3]
+        Label: high
+  - Identifier: cmap_bloom_risk
+    Type: categorical
+    Colors:
+      - [ 0, [0, 255, 0., 0.5]]
+      - [ 1, orange]
+      - [ 2, [1, 0, 0]]
+  - Identifier: s2_l2_scl
+    Type: categorical
+    Colors:
+      - [ 0, [255, 0, 0], no data]
+      - [ 1, yellow,  defective]
+      - [ 2, black,   dark area pixels]
+      - [ 3, gray,    cloud shadows]
+      - [ 4, [0, 1, 0],   vegetation]
+      - [ 5, tan,     bare soils]
+      - [ 6, blue,    water]
+      - [ 7, "#aaaabb", clouds low prob ]
+      - [ 8, "#bbbbcc", clouds medium prob]
+      - [ 9, "#ccccdd", clouds high prob]
+      - [10, "#ddddee", cirrus]
+      - [11, "#ffffff", snow or ice]
 
 ServiceProvider:
-    ProviderName: Brockmann Consult GmbH
-    ProviderSite: https://www.brockmann-consult.de
-    ServiceContact:
-        IndividualName: Norman Fomferra
-        PositionName: Senior Software Engineer
-        ContactInfo:
-            Phone:
-                Voice: +49 40 696 389 300
-                Facsimile: +49 40 696 389 399
-            Address:
-                DeliveryPoint: Chrysanderstr. 1
-                City: Hamburg
-                AdministrativeArea: Hamburg
-                PostalCode: 21029
-                Country: Germany
-                ElectronicMailAddress: info@brockmann-consult.de
+  ProviderName: Brockmann Consult GmbH
+  ProviderSite: https://www.brockmann-consult.de
+  ServiceContact:
+    IndividualName: Norman Fomferra
+    PositionName: Senior Software Engineer
+    ContactInfo:
+      Phone:
+        Voice: +49 40 696 389 300
+        Facsimile: +49 40 696 389 399
+      Address:
+        DeliveryPoint: Chrysanderstr. 1
+        City: Hamburg
+        AdministrativeArea: Hamburg
+        PostalCode: 21029
+        Country: Germany
+        ElectronicMailAddress: info@brockmann-consult.de
