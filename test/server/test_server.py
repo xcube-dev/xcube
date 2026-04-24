@@ -141,6 +141,7 @@ class ServerTest(unittest.TestCase):
                     "default": "0.0.0.0",
                     "title": "Server address.",
                 },
+                "allowed_origins": {"type": "array"},
                 "port": {
                     "type": "integer",
                     "title": "Server port.",
