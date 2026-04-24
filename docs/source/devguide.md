@@ -275,7 +275,7 @@ Make sure your change
 1. Clone the GitHub repository to your local machine, if you haven't
    already done so.
 1. Check out the `main` branch and make sure it's up to date (`git pull`).
-1. Create a development branch named `"<developer>-<issue>-<title>"` 
+1. Create a development branch named `"<developer>/<issue>-<title>"` 
    (see [below](#development-branches)).
 1. Develop, having in mind the checklists and implementation hints
    above.
@@ -339,11 +339,13 @@ and add the `.dev<n>` suffix.
 
 ### Development Branches
 
-Development branches should be named `<developer>-<issue>-<title>` where
+Development branches should be named `<developer>/<issue>-<title>` where
 * `<developer>` is the github name of the code author
 * `<issue>` is the number of the issue in the github issue tracker that is
   targeted by the work on this branch
 * `<title>` is either the name of the issue or an abbreviated version of it
+
+This naming has the effect that in IDEs the branches will be grouped by developers.
 
 ## Release Process
 

@@ -236,7 +236,9 @@ respect to ``base_dir`` and to normalize it. For example
 Viewer Configuration [optional]
 -------------------------------
 
-### Viewer Branding
+Viewer Branding
+~~~~~~~~~~~~~~~
+
 
 The xcube server endpoint ``/viewer/config/{*path}`` allows
 for configuring the viewer accessible via endpoint ``/viewer``.
@@ -255,15 +257,16 @@ must be an absolute filesystem path or a S3 path as in the example above.
 It points to a directory that is expected to contain the the viewer configuration file `config.json` 
 among other configuration resources, such as custom ``favicon.ico`` or ``logo.png``.
 The file ``config.json`` should conform to the
-[configuration JSON Schema](https://github.com/dcs4cop/xcube-viewer/blob/main/src/resources/config.schema.json).
+`configuration JSON Schema <https://github.com/dcs4cop/xcube-viewer/blob/main/src/resources/config.schema.json>`_.
 All its values are optional, if not provided, 
-[default values](https://github.com/dcs4cop/xcube-viewer/blob/main/src/resources/config.json)
+`default values <https://github.com/dcs4cop/xcube-viewer/blob/main/src/resources/config.json>`_
 are used instead. 
 
 .. _datasets:
 
 
-### Viewer State Persistence
+Viewer State Persistence
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 The xcube server endpoint ``/viewer/state`` allows for persisting viewer state
 if configured via the ``Viewer/Persistence`` setting. It requires a ``Path``

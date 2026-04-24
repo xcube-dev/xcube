@@ -10,6 +10,7 @@
 .. _`Zarr format`: https://zarr.readthedocs.io/en/stable/spec/v2.html
 .. _`Sentinel Hub`: https://www.sentinel-hub.com/
 .. _`Chunking and Performance`: http://xarray.pydata.org/en/stable/dask.html#chunking-and-performance
+.. _Brockmann Consult GmbH: https://www.brockmann-consult.de
 
 ========
 Overview
@@ -17,8 +18,7 @@ Overview
 
 *xcube* is an open-source Python package and toolkit that has been developed to provide Earth observation (EO) data in an
 analysis-ready form to users. xcube achieves this by carefully converting EO data sources into self-contained *data cubes*
-that can be published in the cloud. The Python package is expanded and maintained by
-[Brockmann Consult GmbH](https://www.brockmann-consult.de)
+that can be published in the cloud. The Python package is expanded and maintained by `Brockmann Consult GmbH`_.
 
 Data Cube
 =========
