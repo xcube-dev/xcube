@@ -8,7 +8,7 @@
 
 ### Fixes
 
-* Closed security vulnerability related to URL construction (#1203).
+* Closed security vulnerability in xcube-server related to URL construction (#1203).
 
 ## Changes in 1.13.1
 
