@@ -141,7 +141,11 @@ class ServerTest(unittest.TestCase):
                     "default": "0.0.0.0",
                     "title": "Server address.",
                 },
-                "allowed_origins": {"type": "array"},
+                "allowed_hosts": {
+                    "type": "array",
+                    "title": "List of hosts allowed for URL construction. "
+                    "If not set, all hosts are allowed.",
+                },
                 "port": {
                     "type": "integer",
                     "title": "Server port.",

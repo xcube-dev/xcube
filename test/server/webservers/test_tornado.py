@@ -436,13 +436,12 @@ class TornadoRequestHandlerTest(unittest.TestCase):
 
         import asyncio
 
+        context._config = {}
+
+        self.assertFalse("allowed_hosts" in context._config)
         asyncio.run(make_not_validated_request())
 
-        context._config = {
-            "allowed_origins": [
-                "localhost:8080",
-            ]
-        }
+        context._config["allowed_hosts"] = "localhost:8080"
 
         asyncio.run(make_valid_request())
         asyncio.run(make_invalid_request())
