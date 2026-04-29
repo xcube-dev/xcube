@@ -6,6 +6,9 @@
   the zoom information box, persisted states, and the progress bar, as well as updated 
   dependencies such as `chartlets ^0.2.0`.
 
+### Fixes
+* Adapted to xarray version 2026.04.0 (#1211)
+
 ## Changes in 1.13.1
 
 ### Enhancements

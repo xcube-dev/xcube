@@ -466,7 +466,7 @@ def _normalize_series(
         if isinstance(points, pd.DataFrame):
             points = xr.Dataset.from_dataframe(points)
         elif not isinstance(points, xr.DataArray):
-            points = xr.Dataset(points)
+            points = points.copy(deep=True)
 
     return points, num_points
 
