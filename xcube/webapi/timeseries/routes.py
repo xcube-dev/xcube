@@ -5,12 +5,18 @@
 import pandas as pd
 
 from xcube.server.api import ApiHandler
-from xcube.core.tile import get_non_spatial_labels
 
 from ..datasets import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
+
 from .api import api
 from .context import TimeSeriesContext
 from .controllers import get_time_series
+import logging
+from collections.abc import Hashable
+from typing import Any
+from xcube.core.tile import get_non_spatial_labels
+
+_logger = logging.getLogger(__name__)
 
 
 # noinspection PyPep8Naming
@@ -78,9 +84,12 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
         end_date = self.request.get_query_arg(
             "endDate", type=pd.Timestamp, default=None
         )
-
-        dimensions = _get_non_spatial_dimensions(self.ctx, self.request, datasetId ,varName)
-        dimensions = {k: v for k, v in dimensions.items() if k != 'time'}
+        non_spatial_dimensions = get_non_spatial_dimensions(
+            self.ctx, self.request, datasetId, varName
+        )
+        non_spatial_dimensions = {
+            k: v for k, v in non_spatial_dimensions.items() if k != "time"
+        }
 
         tolerance = self.request.get_query_arg("tolerance", type=float, default=1.0)
         max_valids = self.request.get_query_arg("maxValids", type=int, default=None)
@@ -94,23 +103,29 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
             agg_methods,
             start_date,
             end_date,
-            dimensions,
+            non_spatial_dimensions,
             tolerance,
             max_valids,
         )
         self.response.set_header("Content-Type", "application/json")
         await self.response.finish(dict(result=result))
 
-def _get_non_spatial_dimensions(ctx, request, ds_id, var):
-    ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
-    ds = ml_dataset.get_dataset(0)
 
-    variable_dims = set(ds[var].dims)
-    dimensions={}
+def get_non_spatial_dimensions(ctx, request, ds_id, var) -> dict[Hashable, Any]:
+    try:
+        ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
+        ds = ml_dataset.get_dataset(0)
+        variable = ds[var]
+    except KeyError as e:
+        _logger.error(f"Failed to retrieve dataset '{ds_id}' or variable '{var}': {e}")
+        raise
+
+    variable_dims = variable.dims
+    dimensions = {}
     for dim in variable_dims:
-        value = request.get_query_arg(dim, type=str, default=None)
-        dimensions[dim] = value
+        value = request.get_query_arg(str(dim), type=str, default=None)
+        if value is not None:
+            dimensions[str(dim)] = value
 
-    labels = get_non_spatial_labels(ds, ds[var], labels=dimensions)
-
+    labels = get_non_spatial_labels(ds, variable, labels=dimensions, logger=_logger)
     return labels

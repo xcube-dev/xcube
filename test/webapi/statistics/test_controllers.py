@@ -28,7 +28,7 @@ class StatisticsControllerTest(unittest.TestCase):
             "demo",
             "conc_tsm",
             {"type": "Point", "coordinates": [lon, lat]},
-            time,
+            {"time": time},
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(
@@ -48,7 +48,54 @@ class StatisticsControllerTest(unittest.TestCase):
             "demo",
             "conc_tsm",
             (lon, lat),
-            time,
+            {"time": time},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual(
+            {"value": expected_value},
+            result,
+        )
+
+        lon = 1.262
+        lat = 50.243
+        time = "2017-01-16 10:09:21"
+        depth = 0
+
+        ctx = get_statistics_ctx()
+
+        dataset = ctx.datasets_ctx.get_dataset("demo-multidimensional")
+        expected_value = float(
+            dataset["conc_chl"]
+            .sel(lon=lon, lat=lat, time=time, depth=depth, method="nearest")
+            .values
+        )
+
+        result = compute_statistics(
+            ctx,
+            "demo-multidimensional",
+            "conc_chl",
+            {"type": "Point", "coordinates": [lon, lat]},
+            {"time": time, "depth": depth},
+        )
+        self.assertIsInstance(result, dict)
+        self.assertEqual(
+            {
+                "count": 1,
+                "minimum": expected_value,
+                "maximum": expected_value,
+                "mean": expected_value,
+                "deviation": 0.0,
+            },
+            result,
+        )
+
+        # Compact point mode
+        result = compute_statistics(
+            ctx,
+            "demo-multidimensional",
+            "conc_chl",
+            (lon, lat),
+            {"time": time, "depth": depth},
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(
@@ -68,7 +115,7 @@ class StatisticsControllerTest(unittest.TestCase):
             "demo",
             "conc_tsm",
             {"type": "Point", "coordinates": [lon, lat]},
-            time,
+            {"time": time},
         )
         self.assertIsInstance(result, dict)
         self.assertEqual({"count": 0}, result)
@@ -79,7 +126,7 @@ class StatisticsControllerTest(unittest.TestCase):
             "demo",
             "conc_tsm",
             (lon, lat),
-            time,
+            {"time": time},
         )
         self.assertIsInstance(result, dict)
         self.assertEqual({}, result)
@@ -108,7 +155,7 @@ class StatisticsControllerTest(unittest.TestCase):
                     ]
                 ],
             },
-            time,
+            {"time": time},
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(380, result.get("count"))
@@ -147,7 +194,7 @@ class StatisticsControllerTest(unittest.TestCase):
                     ]
                 ],
             },
-            time,
+            {"time": time},
         )
         self.assertIsInstance(result, dict)
         self.assertEqual(380, result.get("count"))
@@ -186,7 +233,7 @@ class StatisticsControllerTest(unittest.TestCase):
                     ]
                 ],
             },
-            time,
+            {"time": time},
         )
         self.assertIsInstance(result, dict)
         self.assertEqual({"count": 0}, result)

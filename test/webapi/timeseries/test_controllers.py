@@ -46,6 +46,25 @@ class TimeSeriesControllerTest(unittest.TestCase, AlmostEqualDeepMixin):
         ]
         self.assertAlmostEqualDeep(expected_result, actual_result)
 
+        actual_result = get_time_series(
+            ctx,
+            "demo-multidimensional",
+            "conc_chl",
+            dict(type="Point", coordinates=[2.1, 51.4]),
+            start_date=np.datetime64("2017-01-15"),
+            end_date=np.datetime64("2017-01-29"),
+            non_spatial_dimensions={"depth": 10},
+        )
+
+        expected_result = [
+            {"mean": 0.07436655163764953, "time": "2017-01-16T10:09:22Z"},
+            {"mean": None, "time": "2017-01-25T09:35:51Z"},
+            {"mean": None, "time": "2017-01-26T10:50:17Z"},
+            {"mean": 1.5146712303161622, "time": "2017-01-28T09:58:11Z"},
+        ]
+
+        self.assertAlmostEqualDeep(expected_result, actual_result)
+
     def test_get_time_series_with_tolerance(self):
         ctx = get_timeseries_ctx()
         actual_result = get_time_series(

@@ -32,7 +32,7 @@ def compute_statistics(
     ds_id: str,
     var_name: str,
     geometry: Union[dict[str, Any], tuple[float, float]],
-    non_spatial_dimensions: dict[str, Any]=None,
+    non_spatial_dimensions: dict[str, Any] = None,
     trace_perf: bool = False,
 ):
     measure_time = measure_time_cm(logger=LOG, disabled=not trace_perf)
@@ -48,21 +48,19 @@ def _compute_statistics(
     var_name_or_assign: str,
     geometry: Union[dict[str, Any], tuple[float, float]],
     bin_count: int,
-    dimensions: dict[str, Any] = None,
+    non_spatial_dimensions: dict[str, Any] = None,
 ):
     ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
 
-    if dimensions:
-        for dim_name, dim_value in dimensions.items():
+    dataset_contains_time = "time" in dataset
+    if dataset_contains_time:
+        if non_spatial_dimensions["time"] is None:
+            raise ApiError.BadRequest("Missing query parameter 'time'")
 
-            if dim_name not in dataset[var_name_or_assign].coords:
-                raise ApiError.BadRequest(
-                    f"Query parameter '{dim_name}' must not be given "
-                    f"since dataset does not contain a '{dim_name}' dimension"
-                )
-
+    if non_spatial_dimensions:
+        for dim_name, dim_value in non_spatial_dimensions.items():
             try:
                 dataset = dataset.sel({dim_name: dim_value}, method="nearest")
 

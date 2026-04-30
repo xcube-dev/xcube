@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import pandas as pd
 import numpy as np
 import xarray as xr
 
@@ -62,3 +63,31 @@ def broken_ml_dataset_factory_1():
 def broken_ml_dataset_factory_2(ml_dataset: MultiLevelDataset):
     """Example for a custom, broken MultiLevelDataset class."""
     return xr.Dataset()
+
+
+def simulate_multidimensional_dataset(ds, variables, depths, factor):
+    dim_name = "depth"
+
+    depth_coord = xr.DataArray(depths, dims=(dim_name,), coords={dim_name: depths})
+    depth_factors = xr.DataArray(
+        [factor**i for i in range(len(depths))],
+        dims=(dim_name,),
+        coords={dim_name: depths},
+    )
+
+    data_vars = {}
+
+    for name in variables:
+        data = ds[name]
+
+        if dim_name in data.dims:
+            data_vars[name] = data
+            continue
+
+        data_expanded = data.expand_dims({dim_name: depths})
+        data_scaled = data_expanded * depth_factors
+
+        data_scaled.attrs.update(data.attrs)
+        data_vars[name] = data_scaled
+
+    return xr.Dataset(data_vars, coords={dim_name: depth_coord})

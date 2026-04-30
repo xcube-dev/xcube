@@ -44,6 +44,22 @@ Datasets:
     Path: ../../../examples/serve/demo/sample-cog.tif
     Style: tif_style
 
+  - Identifier: demo-multidimensional
+    Title: Demonstration Multidimensional Cube
+    GroupTitle: Multidimensional Demo
+    Tags: ["demo", "computed"]
+    FileSystem: memory
+    Path: script.py
+    Variables:
+      - "conc_chl"
+    Function: simulate_multidimensional_dataset
+    InputDatasets: ["demo"]
+    InputParameters:
+      variables: ["conc_chl"]
+      depths: [0.0, 10.0, 20.0]
+      factor: 0.2
+    Style: default
+
 PlaceGroups:
   - Identifier: inside-cube
     Title: Points inside the cube

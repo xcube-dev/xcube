@@ -3,13 +3,19 @@
 # https://opensource.org/licenses/MIT.
 
 from xcube.server.api import ApiHandler
-from xcube.core.tile import get_non_spatial_labels
+from xcube.util.undefined import UNDEFINED
 
-from ...util.undefined import UNDEFINED
 from ..datasets.routes import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
+
 from .api import api
 from .context import StatisticsContext
 from .controllers import compute_statistics
+import logging
+from collections.abc import Hashable
+from typing import Any
+from xcube.core.tile import get_non_spatial_labels
+
+_logger = logging.getLogger(__name__)
 
 QUERY_PARAM_X = {
     "name": "lon",
@@ -35,6 +41,7 @@ QUERY_PARAM_TIME = {
     "schema": {"type": "string", "format": "datetime"},
 }
 
+
 # noinspection PyPep8Naming
 @api.route("/statistics/{datasetId}/{varName}")
 class StatisticsHandler(ApiHandler[StatisticsContext]):
@@ -48,13 +55,15 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             PATH_PARAM_VAR_NAME,
             QUERY_PARAM_X,
             QUERY_PARAM_Y,
-            QUERY_PARAM_TIME
+            QUERY_PARAM_TIME,
         ],
     )
     async def get(self, datasetId: str, varName: str):
         lon = self.request.get_query_arg("lon", type=float, default=UNDEFINED)
         lat = self.request.get_query_arg("lat", type=float, default=UNDEFINED)
-        dimensions = _get_non_spatial_dimensions(self.ctx, self.request, datasetId, varName)
+        non_spatial_dimensions = get_non_spatial_dimensions(
+            self.ctx, self.request, datasetId, varName
+        )
 
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
@@ -66,7 +75,7 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             datasetId,
             varName,
             (lon, lat),
-            dimensions,
+            non_spatial_dimensions,
             trace_perf,
         )
         await self.response.finish({"result": result})
@@ -90,7 +99,9 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
         ],
     )
     async def post(self, datasetId: str, varName: str):
-        dimensions = _get_non_spatial_dimensions(self.ctx, self.request, datasetId, varName)
+        non_spatial_dimensions = get_non_spatial_dimensions(
+            self.ctx, self.request, datasetId, varName
+        )
         trace_perf = self.request.get_query_arg(
             "debug", default=self.ctx.datasets_ctx.trace_perf
         )
@@ -101,22 +112,28 @@ class StatisticsHandler(ApiHandler[StatisticsContext]):
             datasetId,
             varName,
             self.request.json,
-            dimensions,
+            non_spatial_dimensions,
             trace_perf,
         )
         await self.response.finish({"result": result})
 
-def _get_non_spatial_dimensions(ctx, request, ds_id, var):
-    ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
-    ds = ml_dataset.get_dataset(0)
 
-    variable_dims = set(ds[var].dims)
-    dimensions={}
+def get_non_spatial_dimensions(ctx, request, ds_id, var) -> dict[Hashable, Any]:
+
+    try:
+        ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
+        ds = ml_dataset.get_dataset(0)
+        variable = ds[var]
+    except KeyError as e:
+        _logger.error(f"Failed to retrieve dataset '{ds_id}' or variable '{var}': {e}")
+        raise
+
+    variable_dims = variable.dims
+    dimensions = {}
     for dim in variable_dims:
-        value = request.get_query_arg(dim, type=str, default=None)
-        dimensions[dim] = value
+        value = request.get_query_arg(str(dim), type=str, default=None)
+        if value is not None:
+            dimensions[str(dim)] = value
 
-    labels = get_non_spatial_labels(ds, ds[var], labels=dimensions)
-
-
+    labels = get_non_spatial_labels(ds, variable, labels=dimensions, logger=_logger)
     return labels
