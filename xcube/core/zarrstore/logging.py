@@ -2,74 +2,86 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+from collections.abc import AsyncIterator, Iterable
+import zarr.abc.store
+import zarr.core.buffer
 
-import collections.abc
-from collections.abc import Iterable, Iterator, KeysView
-from logging import Logger
-from typing import Optional
-
-import zarr.storage
-
-from xcube.constants import LOG
-from xcube.util.assertions import assert_instance
 from xcube.util.perf import measure_time_cm
 
 
-class LoggingZarrStore(zarr.storage.BaseStore):
+class LoggingZarrStore(zarr.abc.store.Store):
     """A Zarr Store that logs all method calls on another store *other*
     including execution time.
     """
 
-    def __init__(
-        self,
-        other: collections.abc.MutableMapping,
-        logger: Logger = LOG,
-        name: Optional[str] = None,
-    ):
-        assert_instance(other, collections.abc.MutableMapping)
+    def __init__(self, other: zarr.abc.store.Store, logger=print, name="store"):
+        super().__init__(read_only=getattr(other, "read_only", True))
         self._other = other
-        self._measure_time = measure_time_cm(logger=logger)
+        self._log = logger
         self._name = name or "chunk_store"
-        if hasattr(other, "listdir"):
-            setattr(self, "listdir", self.__listdir)
-        if hasattr(other, "getsize"):
-            setattr(self, "getsize", self.__getsize)
+        self._measure_time = measure_time_cm(logger=logger)
 
-    def __listdir(self, key: str) -> Iterable[str]:
-        with self._measure_time(f"{self._name}.listdir({key!r})"):
-            # noinspection PyUnresolvedReferences
-            return self._other.listdir(key)
+    def __eq__(self, other: object) -> bool:
+        with self._measure_time(f"{self._name}.__eq__()"):
+            if not isinstance(other, LoggingZarrStore):
+                return False
+            return self._other == other._other
 
-    def __getsize(self, key: str) -> int:
-        with self._measure_time(f"{self._name}.getsize({key!r})"):
-            # noinspection PyUnresolvedReferences
-            return self._other.getsize(key)
+    async def get(
+        self,
+        key: str,
+        prototype: zarr.core.buffer.BufferPrototype,
+        byte_range: zarr.abc.store.ByteRequest | None = None,
+    ) -> zarr.core.buffer.Buffer | None:
+        with self._measure_time(f"{self._name}.get({key!r}, {prototype!r}, {byte_range!r})"):
+            return await self._other.get(key, prototype, byte_range=byte_range)
 
-    def keys(self) -> KeysView[str]:
-        with self._measure_time(f"{self._name}.keys()"):
-            # noinspection PyTypeChecker
-            return self._other.keys()
+    async def get_partial_values(
+        self,
+        prototype: zarr.core.buffer.BufferPrototype,
+        key_ranges: Iterable[tuple[str, tuple[int | None, int | None] | None]],
+    ) -> list[zarr.core.buffer.Buffer | None]:
+        with self._measure_time(f"{self._name}.get_partial_values({prototype!r}, {key_ranges!r})"):
+            return await self._other.get_partial_values(prototype, key_ranges)
 
-    def __iter__(self) -> Iterator[str]:
-        with self._measure_time(f"{self._name}.__iter__()"):
-            return self._other.__iter__()
+    async def exists(self, key: str) -> bool:
+        with self._measure_time(f"{self._name}.exists({key!r})"):
+            return await self._other.exists(key)
 
-    def __len__(self) -> int:
-        with self._measure_time(f"{self._name}.__len__()"):
-            return self._other.__len__()
+    @property
+    def supports_writes(self) -> bool:
+        with self._measure_time(f"{self._name}.supports_writes()"):
+            return self._other.supports_writes
 
-    def __contains__(self, key) -> bool:
-        with self._measure_time(f"{self._name}.__contains__({key!r})"):
-            return self._other.__contains__(key)
+    async def set(self, key: str, value: zarr.core.buffer.Buffer) -> None:
+        with self._measure_time(f"{self._name}.set({key!r}, {value!r})"):
+            return await self._other.set(key, value)
 
-    def __getitem__(self, key: str) -> bytes:
-        with self._measure_time(f"{self._name}.__getitem__({key!r})"):
-            return self._other.__getitem__(key)
+    @property
+    def supports_deletes(self) -> bool:
+        with self._measure_time(f"{self._name}.supports_deletes()"):
+            return self._other.supports_deletes
 
-    def __setitem__(self, key: str, value: bytes) -> None:
-        with self._measure_time(f"{self._name}.__setitem__({key!r}, <value>)"):
-            return self._other.__setitem__(key, value)
+    async def delete(self, key: str) -> None:
+        with self._measure_time(f"{self._name}.delete({key!r})"):
+            return await self._other.delete(key)
 
-    def __delitem__(self, key: str) -> None:
-        with self._measure_time(f"{self._name}.__delitem__({key!r})"):
-            return self._other.__delitem__(key)
+    @property
+    def supports_listing(self) -> bool:
+        with self._measure_time(f"{self._name}.supports_listing()"):
+            return self._other.supports_listing
+
+    async def list(self) -> AsyncIterator[str]:
+        with self._measure_time(f"{self._name}.list()"):
+            async for k in self._other.list():
+                yield k
+
+    async def list_prefix(self, prefix: str) -> AsyncIterator[str]:
+        with self._measure_time(f"{self._name}.list_prefix({prefix!r})"):
+            async for k in self._other.list_prefix(prefix):
+                yield k
+
+    async def list_dir(self, prefix: str) -> AsyncIterator[str]:
+        with self._measure_time(f"{self._name}.list_dir({prefix!r})"):
+            async for k in self._other.list_dir(prefix):
+                yield k

@@ -5,6 +5,7 @@ dependencies:
   # Python
   - python >=3.10
   # Required
+  - anyio
   - affine >=2.2
   - botocore >=1.34.51
   - cftime >=1.6.3

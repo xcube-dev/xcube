@@ -2,17 +2,14 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import collections.abc
 import warnings
-from collections.abc import Iterator
-from typing import List
+from collections.abc import AsyncIterator, Iterable
 
-import zarr.storage
-
-from xcube.util.assertions import assert_instance, assert_true
+import zarr.abc.store
+import zarr.core.buffer
 
 
-class CachedZarrStore(zarr.storage.Store):
+class CachedZarrStore(zarr.abc.store.Store):
     """A read-only Zarr store that is faster than
     *store* because it uses a writable *cache* store.
 
@@ -28,83 +25,104 @@ class CachedZarrStore(zarr.storage.Store):
             *store*.
     """
 
-    _readable = True  # Because the base class is readable
-    _listable = True  # Because the base class is listable
-    _writeable = False  # Because this is not yet supported
-    _erasable = False  # Because this is not yet supported
-
     def __init__(
         self,
-        store: collections.abc.MutableMapping,
-        cache: collections.abc.MutableMapping,
+        store: zarr.abc.store.Store,
+        cache: zarr.abc.store.Store,
     ):
-        assert_instance(store, collections.abc.MutableMapping, name="store")
-        assert_instance(cache, collections.abc.MutableMapping, name="cache")
-        if not isinstance(store, zarr.storage.BaseStore):
-            store = zarr.storage.KVStore(store)
-        if not isinstance(cache, zarr.storage.BaseStore):
-            cache = zarr.storage.KVStore(cache)
-        assert_true(store.is_readable(), message="store must be readable")
-        assert_true(cache.is_readable(), message="cache must be readable")
-        assert_true(cache.is_writeable(), message="cache must be writable")
+        super().__init__(read_only=True)
+
+        if not isinstance(store, zarr.abc.store.Store):
+            raise TypeError("store must implement zarr v3 Store")
+        if not isinstance(cache, zarr.abc.store.Store):
+            raise TypeError("cache must implement zarr v3 Store")
+
         self._store = store
         self._cache = cache
-        self._implement_op("listdir")
-        self._implement_op("getsize")
 
     @property
-    def store(self) -> zarr.storage.BaseStore:
+    def store(self) -> zarr.abc.store.Store:
         return self._store
 
     @property
-    def cache(self) -> zarr.storage.BaseStore:
+    def cache(self) -> zarr.abc.store.Store:
         return self._cache
 
-    def _implement_op(self, op: str):
-        if hasattr(self._store, op):
-            assert hasattr(self, "_" + op)
-            setattr(self, op, getattr(self, "_" + op))
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CachedZarrStore):
+            return False
+        return self._store == other._store and self._cache == other._cache
 
-    def _listdir(self, path: str = "") -> list[str]:
-        # noinspection PyUnresolvedReferences
-        return self._store.listdir(path=path)
+    async def get(
+        self,
+        key: str,
+        prototype: zarr.core.buffer.BufferPrototype,
+        byte_range: zarr.abc.store.ByteRequest | None = None,
+    ) -> zarr.core.buffer.Buffer | None:
+        # Try cache first
+        if await self._cache.exists(key):
+            return await self._cache.get(key, prototype, byte_range=byte_range)
 
-    def _getsize(self, path: str) -> None:
-        # noinspection PyBroadException
-        try:
-            # noinspection PyUnresolvedReferences
-            size = self._cache.getsize(path)
-        except BaseException:
-            size = -1
-        if size < 0:
-            # noinspection PyUnresolvedReferences
-            size = self._store.getsize(path)
-        return size
+        # Fallback to slow store
+        value = await self._store.get(key, prototype, byte_range=byte_range)
 
-    def __len__(self) -> int:
-        return len(self._store)
+        # Populate cache (only for full reads)
+        if value is not None and byte_range is None:
+            try:
+                await self._cache.set(key, value)
+            except Exception as e:
+                warnings.warn(f"cache write failed for key {key!r}: {e}")
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self._store)
-
-    def __contains__(self, key: str):
-        return key in self._store
-
-    def __getitem__(self, key: str) -> bytes:
-        try:
-            return self._cache[key]
-        except KeyError:
-            pass
-        value = self._store[key]
-        # noinspection PyBroadException
-        try:
-            self._cache[key] = value
-        except BaseException as e:
-            warnings.warn(f"cache write failed for key {key!r}: {e}")
         return value
 
-    def __setitem__(self, key: str, value: bytes) -> None:
-        raise NotImplementedError()
+    async def get_partial_values(
+        self,
+        prototype: zarr.core.buffer.BufferPrototype,
+        key_ranges: Iterable[tuple[str, tuple[int | None, int | None] | None]],
+    ) -> list[zarr.core.buffer.Buffer | None]:
+        results: list[zarr.core.buffer.Buffer | None] = []
+        for key, byte_range in key_ranges:
+            value = await self.get(key, prototype, byte_range=byte_range)
+            results.append(value)
+        return results
 
-    def __delitem__(self, key: str) -> None:
-        raise NotImplementedError()
+    async def exists(self, key: str) -> bool:
+        return await self._store.exists(key)
+
+    @property
+    def supports_writes(self) -> bool:
+        return False
+
+    async def set(self, key: str, value: zarr.core.buffer.Buffer) -> None:
+        raise NotImplementedError("Read-only store")
+
+    @property
+    def supports_deletes(self) -> bool:
+        return False
+
+    async def delete(self, key: str) -> None:
+        raise NotImplementedError("Read-only store")
+
+    @property
+    def supports_listing(self) -> bool:
+        return self._store.supports_listing
+
+    async def list(self) -> AsyncIterator[str]:
+        if not self._store.supports_listing:
+            raise NotImplementedError("Underlying store does not support listing")
+        async for key in self._store.list():
+            yield key
+
+    async def list_prefix(self, prefix: str) -> AsyncIterator[str]:
+        if not self._store.supports_listing:
+            raise NotImplementedError("Underlying store does not support list_prefix")
+
+        async for key in self._store.list_prefix(prefix):
+            yield key
+
+    async def list_dir(self, prefix: str) -> AsyncIterator[str]:
+        if not self._store.supports_listing:
+            raise NotImplementedError("Underlying store does not support listing")
+
+        async for key in self._store.list_dir(prefix):
+            yield key

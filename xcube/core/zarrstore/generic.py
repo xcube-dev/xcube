@@ -2,29 +2,26 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import collections.abc
+import anyio
 import inspect
 import itertools
 import json
 import math
-import threading
-import warnings
-from collections.abc import Iterator, Sequence
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import AsyncIterator, Iterable, Iterator, Sequence
+from typing import Any, Callable, Optional, Union, Literal
 
 import numcodecs.abc
 import numpy as np
 import xarray as xr
 import zarr.storage
-
-from xcube.util.assertions import assert_instance, assert_true
+import zarr.abc.store
+import zarr.core.buffer
 
 GetData = Callable[[tuple[int]], Union[bytes, np.ndarray]]
-
 OnClose = Callable[[dict[str, Any]], None]
 
 
-class GenericArray(dict[str, any]):
+class GenericArray(dict[str, Any]):
     """Represent a generic array in the ``GenericZarrStore`` as
     dictionary of properties.
 
@@ -112,7 +109,7 @@ class GenericArray(dict[str, any]):
 
     def __init__(
         self,
-        array: Optional[dict[str, any]] = None,
+        array: Optional[dict[str, Any]] = None,
         name: Optional[str] = None,
         get_data: Optional[GetData] = None,
         get_data_params: Optional[dict[str, Any]] = None,
@@ -305,7 +302,7 @@ class GenericArray(dict[str, any]):
 GenericArrayLike = Union[GenericArray, dict[str, Any]]
 
 
-class GenericZarrStore(zarr.storage.Store):
+class GenericZarrStore(zarr.abc.store.Store):
     """A Zarr store that maintains generic arrays in a flat, top-level
     hierarchy. The root of the store is a Zarr group
     conforming to the Zarr spec v2.
@@ -338,12 +335,119 @@ class GenericZarrStore(zarr.storage.Store):
         attrs: Optional[dict[str, Any]] = None,
         array_defaults: Optional[GenericArrayLike] = None,
     ):
+        super().__init__()
         self._attrs = dict(attrs) if attrs is not None else {}
         self._array_defaults = array_defaults
         self._dim_sizes: dict[str, int] = {}
         self._arrays: dict[str, GenericArray] = {}
         for array in arrays:
             self.add_array(array)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, GenericZarrStore):
+            return False
+        return (
+            self._arrays == other._arrays and
+            self._dim_sizes == other._dim_sizes and
+            self._attrs == other._attrs and
+            self._array_defaults == other._array_defaults
+        )
+
+    async def get(
+        self,
+        key: str,
+        prototype: zarr.core.buffer.BufferPrototype,
+        byte_range: zarr.abc.store.ByteRequest | None = None,
+    ) -> zarr.core.buffer.Buffer | None:
+        value = await anyio.to_thread.run_sync(self._get_item, key)
+        if value is None:
+            return None
+        # No partial read supported
+        return self._to_buffer(value, prototype)
+
+    async def get_partial_values(
+        self,
+        prototype: zarr.core.buffer.BufferPrototype,
+        key_ranges: Iterable[tuple[str, tuple[int | None, int | None] | None]],
+    ) -> list[zarr.core.buffer.Buffer | None]:
+        results: list[zarr.core.buffer.Buffer | None] = []
+        for key, byte_range in key_ranges:
+            value = await self.get(key, prototype, byte_range=byte_range)
+            results.append(value)
+        return results
+
+    async def exists(self, key: str) -> bool:
+        try:
+            value = await anyio.to_thread.run_sync(self._get_item, key)
+            return value is not None
+        except KeyError:
+            return False
+
+    @property
+    def supports_writes(self) -> bool:
+        return False
+
+    async def set(self, key: str, value: zarr.core.buffer.Buffer) -> None:
+        raise NotImplementedError("Read-only store")
+
+    @property
+    def supports_deletes(self) -> bool:
+        return True
+
+    async def delete(self, key: str) -> None:
+        if key not in self._arrays:
+            raise ValueError(f"{key}: can only remove existing arrays")
+        array = self._arrays.pop(key)
+        dims = array["dims"]
+        for i, dim_name in enumerate(dims):
+            dim_used = False
+            for array_name, array in self._arrays.items():
+                if dim_name in array["dims"]:
+                    dim_used = True
+                    break
+            if not dim_used:
+                del self._dim_sizes[dim_name]
+
+    @property
+    def supports_listing(self) -> bool:
+        return True
+
+    def _iter_all_keys(self) -> Iterator[str]:
+        yield ".zgroup"
+        yield ".zattrs"
+        yield ".zmetadata"
+
+        for name, array in self._arrays.items():
+            yield f"{name}/.zarray"
+            yield f"{name}/.zattrs"
+            yield from get_chunk_keys(name, array["num_chunks"])
+
+    async def list(self) -> AsyncIterator[str]:
+        for key in self._iter_all_keys():
+            yield key
+
+    async def list_prefix(self, prefix: str) -> AsyncIterator[str]:
+        for key in self._iter_all_keys():
+            if key.startswith(prefix):
+                yield key
+
+    async def list_dir(self, prefix: str) -> AsyncIterator[str]:
+        seen = set()
+
+        for key in self._iter_all_keys():
+            if not key.startswith(prefix):
+                continue
+
+            rest = key[len(prefix):].lstrip("/")
+
+            # keep only immediate children
+            first = rest.split("/", 1)[0]
+
+            result = prefix + first if prefix else first
+
+            if result not in seen:
+                seen.add(result)
+                yield result
 
     def add_array(
         self, array: Optional[GenericArrayLike] = None, **array_kwargs
@@ -374,7 +478,7 @@ class GenericZarrStore(zarr.storage.Store):
             if old_dim_size is None:
                 self._dim_sizes[name] = dim_size
             elif old_dim_size != dim_size:
-                # Dimensions must have same lengths for all arrays
+                # Dimensions must have the same length for all arrays
                 # in this store
                 raise ValueError(
                     f"array {name!r}"
@@ -385,71 +489,27 @@ class GenericZarrStore(zarr.storage.Store):
 
         self._arrays[name] = effective_array
 
-    ##########################################################################
-    # Zarr Store implementation
-    ##########################################################################
-
-    def is_writeable(self) -> bool:
-        """Return False, because arrays in this store are generative."""
-        return False
-
-    def listdir(self, path: str = "") -> list[str]:
-        """List a store path.
-
-        Args:
-            path: The path.
-
-        Returns: List of sorted directory entries.
-        """
-        if path == "":
-            return sorted([".zmetadata", ".zgroup", ".zattrs", *self._arrays.keys()])
-        elif "/" not in path:
-            return sorted(self._get_array_keys(path))
-        raise ValueError(f"{path} is not a directory")
-
-    def rmdir(self, path: str = "") -> None:
-        """The general form removes store paths.
-        This implementation can remove entire arrays only.
-
-        Args:
-            path: The array's name.
-        """
-        if path not in self._arrays:
-            raise ValueError(f"{path}: can only remove existing arrays")
-        array = self._arrays.pop(path)
-        dims = array["dims"]
-        for i, dim_name in enumerate(dims):
-            dim_used = False
-            for array_name, array in self._arrays.items():
-                if dim_name in array["dims"]:
-                    dim_used = True
-                    break
-            if not dim_used:
-                del self._dim_sizes[dim_name]
-
-    def rename(self, src_path: str, dst_path: str) -> None:
+    def rename(self, old_key: str, new_key: str) -> None:
         """The general form renames store paths.
         This implementation can rename arrays only.
 
         Args:
-            src_path: Source array name.
-            dst_path: Target array name.
+            old_key: Source array name.
+            new_key: Target array name.
         """
-        array = self._arrays.get(src_path)
+        array = self._arrays.get(old_key)
         if array is None:
+            raise ValueError(f"can only rename arrays, but {old_key!r} is not an array")
+        if new_key in self._arrays:
             raise ValueError(
-                f"can only rename arrays, but {src_path!r} is not an array"
+                f"cannot rename array {old_key!r} into"
+                f" {new_key!r} because it already exists"
             )
-        if dst_path in self._arrays:
-            raise ValueError(
-                f"cannot rename array {src_path!r} into"
-                f" {dst_path!r} because it already exists"
-            )
-        if "/" in dst_path:
-            raise ValueError(f"cannot rename array {src_path!r} into {dst_path!r}")
-        array["name"] = dst_path
-        self._arrays[dst_path] = array
-        del self._arrays[src_path]
+        if "/" in new_key:
+            raise ValueError(f"cannot rename array {old_key!r} into {new_key!r}")
+        array["name"] = new_key
+        self._arrays[new_key] = array
+        del self._arrays[old_key]
 
     def close(self) -> None:
         """Calls the "on_close" handlers, if any, of arrays."""
@@ -457,61 +517,6 @@ class GenericZarrStore(zarr.storage.Store):
             on_close = array.get("on_close")
             if on_close is not None:
                 on_close(array)
-
-    # Note, getsize is not implemented by intention as it requires
-    # actual computation of arrays.
-    #
-    # def getsize(self, key: str) -> int:
-    #    pass
-
-    ##########################################################################
-    # MutableMapping implementation
-    ##########################################################################
-
-    def __iter__(self) -> Iterator[str]:
-        """Get an iterator of all keys in this store."""
-        yield ".zmetadata"
-        yield ".zgroup"
-        yield ".zattrs"
-        for array_name in self._arrays.keys():
-            yield from self._get_array_keys(array_name)
-
-    def __len__(self) -> int:
-        return sum(1 for _ in iter(self))
-
-    def __contains__(self, key: str) -> bool:
-        if key in (".zmetadata", ".zgroup", ".zattrs"):
-            return True
-        try:
-            array_name, value_id = self._parse_array_key(key)
-        except KeyError:
-            return False
-        if value_id in (".zarray", ".zattrs"):
-            return True
-        try:
-            self._get_array_chunk_index(array_name, value_id)
-            return True
-        except KeyError:
-            return False
-
-    def __getitem__(self, key: str) -> Union[bytes, np.ndarray]:
-        item = self._get_item(key)
-        if isinstance(item, dict):
-            return dict_to_bytes(item)
-        elif isinstance(item, str):
-            return str_to_bytes(item)
-        return item
-
-    def __setitem__(self, key: str, value: bytes) -> None:
-        class_name = self.__module__ + "." + self.__class__.__name__
-        raise TypeError(f"{class_name} is read-only")
-
-    def __delitem__(self, key: str) -> None:
-        self.rmdir(key)
-
-    ########################################################################
-    # Utilities
-    ##########################################################################
 
     @classmethod
     def from_dataset(
@@ -562,9 +567,6 @@ class GenericZarrStore(zarr.storage.Store):
         attrs = {str(k): v for k, v in dataset.attrs.items()}
         return GenericZarrStore(*arrays, attrs=attrs, array_defaults=array_defaults)
 
-    ########################################################################
-    # Helpers
-    ##########################################################################
 
     def _get_item(self, key: str) -> Union[dict, str, bytes]:
         if key == ".zmetadata":
@@ -584,6 +586,28 @@ class GenericZarrStore(zarr.storage.Store):
 
         chunk_index = self._get_array_chunk_index(array_name, value_id)
         return self._get_array_data_item(array, chunk_index)
+
+    @staticmethod
+    def _to_buffer(
+        value: Union[dict, str, bytes],
+        prototype: zarr.core.buffer.BufferPrototype
+    ) -> zarr.core.buffer.Buffer:
+        if isinstance(value, zarr.core.buffer.Buffer):
+            return value
+
+        if isinstance(value, (bytes, bytearray, memoryview)):
+            return prototype.buffer.from_bytes(value)
+
+        if isinstance(value, dict):
+            return prototype.buffer.from_bytes(json.dumps(value).encode())
+
+        if isinstance(value, np.ndarray):
+            return prototype.buffer.from_bytes(value.tobytes())
+
+        if isinstance(value, str):
+            return prototype.buffer.from_bytes(value.encode())
+
+        raise TypeError(f"Unsupported type: {type(value)}")
 
     def _get_metadata_item(self):
         metadata = {
@@ -646,7 +670,7 @@ class GenericZarrStore(zarr.storage.Store):
 
     # noinspection PyMethodMayBeStatic
     def _get_array_data_item(
-        self, array: dict[str, Any], chunk_index: tuple[int]
+        self, array: dict[str, Any], chunk_index: tuple[int, ...]
     ) -> Union[bytes, np.ndarray]:
         # Note, here array is expected to be "finalized",
         # that is, validated and normalized
@@ -733,7 +757,7 @@ class GenericZarrStore(zarr.storage.Store):
             raise KeyError(key)
         return array_name, value_id
 
-    def _get_array_chunk_index(self, array_name: str, index_id: str) -> tuple[int]:
+    def _get_array_chunk_index(self, array_name: str, index_id: str) -> tuple[int, ...]:
         try:
             chunk_index = tuple(map(int, index_id.split(".")))
         except (ValueError, TypeError):
@@ -809,11 +833,11 @@ def str_to_bytes(s: str) -> bytes:
 
 def ndarray_to_bytes(
     data: np.ndarray,
-    order: Optional[str] = None,
+    order: Literal["K", "A", "C", "F"]  = None,
     filters: Optional[Sequence[Any]] = None,
     compressor: Optional[numcodecs.abc.Codec] = None,
 ) -> bytes:
-    data = data.tobytes(order=order or "C")
+    data = data.tobytes(order=order)
     if filters:
         for f in filters:
             data = f.encode(data)
