@@ -7,10 +7,10 @@ import warnings
 from collections.abc import Sequence
 from typing import AbstractSet, Any, Callable, Dict, Tuple, Union
 
+import dask.array as da
 import numpy as np
 import xarray as xr
 
-from xcube.core.chunkstore import ChunkStore
 from xcube.core.schema import CubeSchema
 from xcube.core.verify import assert_cube
 
@@ -336,30 +336,43 @@ def _inspect_cube_func(cube_func: CubeFunc, input_var_names: Sequence[str] = Non
     return has_input_params, has_dim_coords, has_dim_ranges
 
 
+
 def _gen_index_var(cube_schema: CubeSchema):
     dims = cube_schema.dims
     shape = cube_schema.shape
     chunks = cube_schema.chunks
+    ndim = len(dims)
 
-    # noinspection PyUnusedLocal
-    def get_chunk(cube_store: ChunkStore, name: str, index: tuple[int, ...]) -> bytes:
-        data = np.zeros(cube_store.chunks, dtype=np.uint64)
-        data_view = data.ravel()
-        if data_view.base is not data:
-            raise ValueError("view expected")
-        if data_view.size < cube_store.ndim * 2:
-            raise ValueError("size too small")
-        for i in range(cube_store.ndim):
-            j1 = cube_store.chunks[i] * index[i]
-            j2 = j1 + cube_store.chunks[i]
-            data_view[2 * i] = j1
-            data_view[2 * i + 1] = j2
-        return data.tobytes()
+    def make_chunk(block, block_info=None):
+        """Create one chunk filled with chunk index metadata."""
+        info = block_info[None]
+        chunk_shape = info["chunk-shape"]
+        chunk_location = info["chunk-location"]
+        data = np.zeros(chunk_shape, dtype=np.uint64)
+        flat = data.ravel()
 
-    store = ChunkStore(dims, shape, chunks)
-    store.add_lazy_array("__index_var__", "<u8", get_chunk=get_chunk)
+        if flat.size < ndim * 2:
+            raise ValueError("chunk size too small")
 
-    dataset = xr.open_zarr(store)
-    index_var = dataset.__index_var__
-    index_var = index_var.assign_coords(**cube_schema.coords)
+        for i in range(ndim):
+            start = chunks[i][0] * chunk_location[i]
+            end = start + chunk_shape[i]
+            flat[2 * i] = start
+            flat[2 * i + 1] = end
+
+        return data
+
+    template = da.empty(shape, chunks=chunks, dtype=np.uint64)
+    index_data = da.map_blocks(
+        make_chunk,
+        template,
+        dtype=np.uint64,
+    )
+    index_var = xr.DataArray(
+        index_data,
+        dims=dims,
+        coords=cube_schema.coords,
+        name="__index_var__",
+    )
+
     return index_var
