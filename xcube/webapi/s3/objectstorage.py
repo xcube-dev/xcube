@@ -4,10 +4,9 @@
 
 import collections.abc
 from collections.abc import Iterator, Mapping
-from typing import Tuple, Union
+from typing import Tuple, Union, MutableMapping
 
 import xarray as xr
-import zarr.storage
 
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import ApiError
@@ -71,7 +70,7 @@ class ObjectStorage(collections.abc.Mapping):
             )
         return value
 
-    def _parse_key(self, key: str) -> tuple[zarr.storage.BaseStore, str]:
+    def _parse_key(self, key: str) -> tuple[MutableMapping, str]:
         """Parses a given *key* which is expected to have format
         "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
         "{dataset_id}/{*path}" for other datasets.

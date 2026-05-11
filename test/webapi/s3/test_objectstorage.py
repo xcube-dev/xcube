@@ -8,7 +8,7 @@ from xcube.core.mldataset import BaseMultiLevelDataset
 from xcube.core.new import new_cube
 
 # noinspection PyUnresolvedReferences
-from xcube.core.zarrstore import ZarrStoreHolder
+# from xcube.core.zarrstore import ZarrStoreHolder
 from xcube.webapi.s3.objectstorage import ObjectStorage
 
 
