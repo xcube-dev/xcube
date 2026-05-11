@@ -5,6 +5,11 @@
   that comes with, e.g., several bug fixes including issues with the time series legend,
   the zoom information box, persisted states, and the progress bar, as well as updated 
   dependencies such as `chartlets ^0.2.0`.
+* WebAPI now supports statistics and time series for dataset variables with
+  additional non-spatial dimensions beyond `time`, `lat`, and `lon` (e.g. `depth`).
+  Dimension values can be passed as query parameters; if omitted, a value is selected
+  automatically. As part of this, `xcube.core.tile.get_non_spatial_labels` has been
+  made a public function. (#1213)
 
 ## Changes in 1.13.1
 
