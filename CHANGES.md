@@ -11,6 +11,9 @@
   automatically. As part of this, `xcube.core.tile.get_non_spatial_labels` has been
   made a public function. (#1213)
 
+### Fixes
+* Adapted to xarray version 2026.04.0 (#1211)
+
 ## Changes in 1.13.1
 
 ### Enhancements
