@@ -42,7 +42,7 @@ class DatasetsControllerTestBase(unittest.TestCase):
 class DatasetsControllerTest(DatasetsControllerTestBase):
     def test_datasets(self):
         response = get_datasets(get_datasets_ctx())
-        datasets = self.assertDatasetsOk(response, expected_count=2)
+        datasets = self.assertDatasetsOk(response, expected_count=3)
         for dataset in datasets:
             self.assertIsInstance(dataset, dict)
             self.assertIn("id", dataset)
@@ -55,7 +55,7 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
         response = get_datasets(
             get_datasets_ctx(), details=True, base_url="http://test"
         )
-        datasets = self.assertDatasetsOk(response, expected_count=2)
+        datasets = self.assertDatasetsOk(response, expected_count=3)
 
         demo_dataset = None
         demo_1w_dataset = None
@@ -97,7 +97,7 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
         response = get_datasets(
             get_datasets_ctx(), point=(1.7, 51.2), base_url="http://test"
         )
-        datasets = self.assertDatasetsOk(response, expected_count=2)
+        datasets = self.assertDatasetsOk(response, expected_count=3)
         dataset = datasets[0]
         self.assertIsInstance(dataset, dict)
         self.assertIn("id", dataset)
@@ -114,7 +114,7 @@ class DatasetsControllerTest(DatasetsControllerTestBase):
         response = get_datasets(
             get_datasets_ctx(), point=(1.7, 51.2), details=True, base_url="http://test"
         )
-        datasets = self.assertDatasetsOk(response, expected_count=2)
+        datasets = self.assertDatasetsOk(response, expected_count=3)
         dataset = datasets[0]
         self.assertIsInstance(dataset, dict)
         self.assertIn("id", dataset)

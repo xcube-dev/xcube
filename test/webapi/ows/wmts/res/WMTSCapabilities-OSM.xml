@@ -493,6 +493,45 @@
         <Value>2017-02-05T00:00:00.000000000</Value>
       </Dimension>
     </Layer>
+    <Layer>
+      <ows:Identifier>demo-multidimensional.conc_chl</ows:Identifier>
+      <ows:Title>demo-multidimensional/Chlorophyll concentration</ows:Title>
+      <ows:Abstract/>
+      <ows:WGS84BoundingBox>
+        <ows:LowerCorner>0 50</ows:LowerCorner>
+        <ows:UpperCorner>5 52.5</ows:UpperCorner>
+      </ows:WGS84BoundingBox>
+      <Style isDefault="true">
+        <ows:Identifier>Default</ows:Identifier>
+      </Style>
+      <Format>image/png</Format>
+      <TileMatrixSetLink>
+        <TileMatrixSet>WorldWebMercatorQuad</TileMatrixSet>
+      </TileMatrixSetLink>
+      <ResourceURL format="image/png" resourceType="tile" template="http://bibo/wmts/1.0.0/tile/demo-multidimensional/conc_chl/WorldWebMercatorQuad/{TileMatrix}/{TileRow}/{TileCol}.png"/>
+      <Dimension>
+        <ows:Identifier>depth</ows:Identifier>
+        <ows:Title>depth</ows:Title>
+        <ows:UOM/>
+        <Default>0</Default>
+        <Current>false</Current>
+        <Value>0.0</Value>
+        <Value>10.0</Value>
+        <Value>20.0</Value>
+      </Dimension>
+      <Dimension>
+        <ows:Identifier>time</ows:Identifier>
+        <ows:Title>time</ows:Title>
+        <ows:UOM>ISO8601</ows:UOM>
+        <Default>current</Default>
+        <Current>true</Current>
+        <Value>2017-01-16T10:09:21.834255872</Value>
+        <Value>2017-01-25T09:35:51.060063488</Value>
+        <Value>2017-01-26T10:50:16.686192896</Value>
+        <Value>2017-01-28T09:58:11.350386176</Value>
+        <Value>2017-01-30T10:46:33.836892416</Value>
+      </Dimension>
+    </Layer>
     <TileMatrixSet>
       <ows:Identifier>WorldWebMercatorQuad</ows:Identifier>
       <ows:Title>Google Maps Compatible for the World</ows:Title>
@@ -630,6 +669,17 @@
         <ows:Title>demo-1w/Classification and quality flags</ows:Title>
         <ows:Abstract/>
         <LayerRef>demo-1w.quality_flags_stdev</LayerRef>
+      </Theme>
+    </Theme>
+    <Theme>
+      <ows:Identifier>demo-multidimensional</ows:Identifier>
+      <ows:Title>Demonstration Multidimensional Cube</ows:Title>
+      <ows:Abstract/>
+      <Theme>
+        <ows:Identifier>demo-multidimensional.conc_chl</ows:Identifier>
+        <ows:Title>demo-multidimensional/Chlorophyll concentration</ows:Title>
+        <ows:Abstract/>
+        <LayerRef>demo-multidimensional.conc_chl</LayerRef>
       </Theme>
     </Theme>
   </Themes>

@@ -136,7 +136,7 @@ EXPECTED_DATASETS_COLLECTION = {
             "title": f'Feature for the dataset "{dsid}"',
             "type": "application/geo+json",
         }
-        for dsid in ["demo", "demo-1w"]
+        for dsid in ["demo", "demo-1w", "demo-multidimensional"]
     ],
     "providers": [],
     "stac_version": STAC_VERSION,
@@ -234,7 +234,7 @@ class StacControllersTest(unittest.TestCase):
 
         features = result["features"]
         self.assertIsInstance(features, list)
-        self.assertEqual(2, len(features))
+        self.assertEqual(3, len(features))
 
         for feature in features:
             self.assertIsInstance(feature, dict)
@@ -245,7 +245,7 @@ class StacControllersTest(unittest.TestCase):
             self.assertIsInstance(feature.get("geometry"), dict)
             self.assertIsInstance(feature.get("assets"), dict)
             self.assertIsInstance(feature.get("id"), str)
-            self.assertIn(feature["id"], {"demo", "demo-1w"})
+            self.assertIn(feature["id"], {"demo", "demo-1w","demo-multidimensional"})
             # TODO (forman): add more assertions
             # import pprint
             # pprint.pprint(feature)
@@ -300,7 +300,7 @@ class StacControllersTest(unittest.TestCase):
         )
         self.assertEqual(EXPECTED_DATASETS_COLLECTION, result["collections"][0])
         self.assertEqual(
-            ["datacubes", "demo", "demo-1w"],
+            ["datacubes", "demo", "demo-1w", "demo-multidimensional"],
             [collection["id"] for collection in result["collections"]],
         )
 
