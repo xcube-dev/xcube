@@ -112,13 +112,9 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
 
 
 def get_non_spatial_dimensions(ctx, request, ds_id, var) -> dict[Hashable, Any]:
-    try:
-        ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
-        ds = ml_dataset.get_dataset(0)
-        variable = ds[var]
-    except KeyError as e:
-        _logger.error(f"Failed to retrieve dataset '{ds_id}' or variable '{var}': {e}")
-        raise
+    ml_dataset = ctx.datasets_ctx.get_ml_dataset(ds_id)
+    ds = ml_dataset.get_dataset(0)
+    variable = ds[var]
 
     variable_dims = variable.dims
     dimensions = {}

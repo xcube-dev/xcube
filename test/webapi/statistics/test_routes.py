@@ -192,7 +192,7 @@ class StatisticsRoutesTest(RoutesTestCase):
         self,
     ):
         response = self.fetch(
-            "/statistics/demo-multidimensional/conc_chl?lon=1.262&lat=50.243&type=Point&depth=0",
+            "/statistics/demo-multidimensional/conc_chl?lon=1.262&lat=50.243&type=Point",
             method="GET",
         )
         self.assertResponseOK(response)

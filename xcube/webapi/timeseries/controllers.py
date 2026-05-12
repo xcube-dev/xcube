@@ -104,19 +104,7 @@ def get_time_series(
 
     if non_spatial_dimensions:
         for dim_name, dim_value in non_spatial_dimensions.items():
-            if dim_name not in dataset[var_name].coords:
-                raise ApiError.BadRequest(
-                    f"Query parameter '{dim_name}' must not be given "
-                    f"since variable does not contain a '{dim_name}' dimension"
-                )
-
-            try:
-                dataset = dataset.sel({dim_name: dim_value}, method="nearest")
-
-            except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest(
-                    f"Invalid query parameter '{dim_name}'"
-                ) from e
+            dataset = dataset.sel({dim_name: dim_value}, method="nearest")
 
     geo_json_geometries, is_collection = _to_geo_json_geometries(geo_json)
     geometries = _to_shapely_geometries(geo_json_geometries)

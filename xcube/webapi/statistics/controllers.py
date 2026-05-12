@@ -54,20 +54,9 @@ def _compute_statistics(
     dataset = ml_dataset.get_dataset(0)
     grid_mapping = ml_dataset.grid_mapping
 
-    dataset_contains_time = "time" in dataset
-    if dataset_contains_time:
-        if non_spatial_dimensions["time"] is None:
-            raise ApiError.BadRequest("Missing query parameter 'time'")
-
     if non_spatial_dimensions:
         for dim_name, dim_value in non_spatial_dimensions.items():
-            try:
-                dataset = dataset.sel({dim_name: dim_value}, method="nearest")
-
-            except (TypeError, ValueError) as e:
-                raise ApiError.BadRequest(
-                    f"Invalid query parameter '{dim_name}'"
-                ) from e
+            dataset = dataset.sel({dim_name: dim_value}, method="nearest")
 
     if isinstance(geometry, tuple):
         compact_mode = True
