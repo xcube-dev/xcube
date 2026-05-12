@@ -289,7 +289,7 @@ class DefaultProcessTest(unittest.TestCase):
                 time_coverage_end="2017-01-03T12:00:00.000000000",
             ),
         )
-        self.assertTrue(os.path.exists(os.path.join("l2c.zarr", ".zmetadata")))
+        self.assertTrue(os.path.exists(os.path.join("l2c.zarr", "zarr.json")))
 
     def test_input_txt(self):
         f = open(
@@ -312,7 +312,7 @@ class DefaultProcessTest(unittest.TestCase):
                 time_coverage_end="2017-01-03T12:00:00.000000000",
             ),
         )
-        self.assertTrue(os.path.exists(os.path.join("l2c.zarr", ".zmetadata")))
+        self.assertTrue(os.path.exists(os.path.join("l2c.zarr", "zarr.json")))
 
     def test_process_chunked_zarr(self):
         status, output = gen_cube_wrapper(
@@ -720,12 +720,16 @@ class DefaultProcessTest(unittest.TestCase):
             ds_default_compressor.analysed_sst.values, ds_compressed.analysed_sst.values
         )
         self.assertEqual(
-            "Blosc(cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0)",
-            str(ds_default_compressor.analysed_sst.encoding["compressor"]),
+            "(ZstdCodec(level=0, checksum=False),)",
+            str(ds_default_compressor.analysed_sst.encoding["compressors"]),
         )
         self.assertEqual(
-            "Blosc(cname='zstd', clevel=1, shuffle=BITSHUFFLE, blocksize=0)",
-            str(ds_compressed.analysed_sst.encoding["compressor"]),
+            (
+                "(BloscCodec(_tunable_attrs=set(), typesize=8, cname=<BloscCname.zstd: "
+                "'zstd'>, clevel=1, shuffle=<BloscShuffle.bitshuffle: 'bitshuffle'>, "
+                "blocksize=0),)"
+            ),
+            str(ds_compressed.analysed_sst.encoding["compressors"]),
         )
 
     def assert_cube_ok(

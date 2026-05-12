@@ -99,7 +99,7 @@ class DatasetGridMappingTest(unittest.TestCase):
             "examples",
             "notebooks",
             "inputdata",
-            "S3-OLCI-L2A.zarr.zip",
+            "S3-OLCI-L2A.zarr",
         )
 
         dataset = xr.open_zarr(olci_l2_path, consolidated=False)

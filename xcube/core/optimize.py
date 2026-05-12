@@ -46,9 +46,11 @@ def optimize_dataset(
             variables.
         exception_type: Type of exception to be used on value errors.
     """
-
-    if not os.path.isfile(os.path.join(input_path, ".zgroup")):
-        raise exception_type("Input path must point to ZARR dataset directory.")
+    if not (
+        os.path.isfile(os.path.join(input_path, ".zgroup"))
+        or os.path.isfile(os.path.join(input_path, "zarr.json"))
+    ):
+        raise ValueError(f"{input_path!r} is not a valid Zarr directory")
 
     input_path = os.path.abspath(os.path.normpath(input_path))
 
@@ -76,4 +78,4 @@ def optimize_dataset(
             var_names = tuple(unchunk_coords)
         unchunk_dataset(output_path, var_names=var_names, coords_only=True)
 
-    zarr.convenience.consolidate_metadata(output_path)
+    zarr.consolidate_metadata(output_path)

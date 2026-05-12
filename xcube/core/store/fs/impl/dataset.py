@@ -3,15 +3,17 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import ABC
-from typing import Optional
+
 
 import xarray as xr
-import zarr
+import posixpath
+from fsspec import AbstractFileSystem
+from fsspec.asyn import AsyncFileSystem
+from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
+import zarr.storage
 
 # Note, we need the following reference to register the
 # xarray property accessor
-# noinspection PyUnresolvedReferences
-# from xcube.core.zarrstore import LoggingZarrStore
 from xcube.util.assertions import assert_instance
 from xcube.util.fspath import is_https_fs, is_local_fs
 from xcube.util.jsonschema import (
@@ -138,6 +140,8 @@ class DatasetFsDataAccessor(FsDataAccessor, ABC):
 class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
     """Opener/writer extension name: 'dataset:zarr:<protocol>'."""
 
+    zarr_store = None
+
     @classmethod
     def get_format_id(cls) -> str:
         return "zarr"
@@ -155,7 +159,8 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         consolidated = open_params.pop(
             "consolidated", fs.exists(f"{data_id}/.zmetadata")
         )
-        zarr_store = fs.get_mapper(data_id)
+
+        zarr_store = self.get_zarr_store(data_id, fs, root)
         # if isinstance(cache_size, int) and cache_size > 0:
         #     zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
         # if log_access:
@@ -177,7 +182,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
                     f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
                 ) from e
 
-        dataset.zarr_store.set(zarr_store)
+        # dataset.zarr_store.set(zarr_store)
 
         return dataset
 
@@ -191,8 +196,8 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         assert_instance(data, xr.Dataset, name="data")
         assert_instance(data_id, str, name="data_id")
         fs, root, write_params = self.load_fs(write_params)
-        zarr_store = fs.get_mapper(data_id, create=True)
-        log_access = write_params.pop("log_access", None)
+        zarr_store = self.get_zarr_store(data_id, fs, root)
+        # log_access = write_params.pop("log_access", None)
         # if log_access:
         #     zarr_store = LoggingZarrStore(zarr_store, name=f"zarr_store({data_id!r})")
         consolidated = write_params.pop("consolidated", True)
@@ -211,6 +216,30 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         fs, root, delete_params = self.load_fs(delete_params)
         delete_params.pop("recursive", None)
         fs.delete(data_id, recursive=True, **delete_params)
+
+    def get_zarr_store(
+        self,
+        data_id: str,
+        fs: AbstractFileSystem | AsyncFileSystem,
+        root: str | None = None,
+    ) -> zarr.storage.StoreLike:
+
+        if self.zarr_store is not None:
+            return self.zarr_store
+
+        if "local" in fs.protocol:
+            if root:
+                data_id = posixpath.join(root, data_id)
+            self.zarr_store = zarr.storage.LocalStore(data_id)
+        elif fs.protocol == "memory":
+            self.zarr_store = zarr.storage.MemoryStore()
+        elif fs.protocol == "ftp":
+            fs_async = AsyncFileSystemWrapper(fs)
+            self.zarr_store = zarr.storage.FsspecStore(fs_async, path=data_id)
+        else:
+            self.zarr_store = zarr.storage.FsspecStore(fs, path=data_id)
+
+        return self.zarr_store
 
 
 NETCDF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(

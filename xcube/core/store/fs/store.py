@@ -212,11 +212,13 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             find_data_opener_extensions
         )
         return tuple(
-            sorted({
-                data_type
-                for types_tuple in format_to_data_type_aliases.values()
-                for data_type in types_tuple
-            })
+            sorted(
+                {
+                    data_type
+                    for types_tuple in format_to_data_type_aliases.values()
+                    for data_type in types_tuple
+                }
+            )
         )
 
     def get_data_types_for_data(self, data_id: str) -> tuple[str, ...]:
@@ -320,8 +322,8 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         )
         open_params_schema = self._get_open_data_params_schema(opener, data_id)
         assert_valid_params(open_params, name="open_params", schema=open_params_schema)
-        fs_path = self._convert_data_id_into_fs_path(data_id)
-        return opener.open_data(fs_path, fs=self.fs, **open_params)
+        # fs_path = self._convert_data_id_into_fs_path(data_id)
+        return opener.open_data(data_id, fs=self.fs, **open_params)
 
     def get_data_writer_ids(self, data_type: str = None) -> tuple[str, ...]:
         data_type = DataType.normalize(data_type)
@@ -356,14 +358,14 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
             write_params, name="write_params", schema=write_params_schema
         )
         data_id = self._ensure_valid_data_id(writer_id, data_id=data_id)
-        fs_path = self._convert_data_id_into_fs_path(data_id)
+        # fs_path = self._convert_data_id_into_fs_path(data_id)
         self.fs.makedirs(self.root, exist_ok=True)
-        written_fs_path = writer.write_data(
-            data, fs_path, replace=replace, fs=self.fs, root=self.root, **write_params
+        written_data_id = writer.write_data(
+            data, data_id, replace=replace, fs=self.fs, root=self.root, **write_params
         )
         # Verify, accessors fulfill their write_data() contract
         assert_true(
-            fs_path == written_fs_path,
+            data_id == written_data_id,
             message="FsDataAccessor implementations must return the data_id passed in.",
         )
         # Return original data_id (which is a relative path).

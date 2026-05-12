@@ -45,28 +45,12 @@ class ZarrStoreHolder:
         self._zarr_store: Optional[collections.abc.MutableMapping] = None
         self._lock = threading.RLock()
 
-    def get(self) -> collections.abc.MutableMapping:
+    def get(self) -> collections.abc.MutableMapping | None:
         """Get the Zarr store of a dataset.
-        If no Zarr store has been set, the method will use
-        ``GenericZarrStore.from_dataset()`` to create and set
-        one.
 
         Returns:
             The Zarr store.
         """
-        if self._zarr_store is None:
-            # Double-checked locking pattern
-            with self._lock:
-                if self._zarr_store is None:
-                    from xcube.core.zarrstore import GenericZarrStore
-
-                    self._zarr_store = GenericZarrStore.from_dataset(self._dataset)
-                    source = self._dataset.encoding.get("source", "?")
-                    LOG.warning(
-                        f"dataset {source!r} is assigned a"
-                        f" GenericZarrStore which may introduce"
-                        f" performance penalties"
-                    )
         return self._zarr_store
 
     def set(self, zarr_store: collections.abc.MutableMapping) -> None:

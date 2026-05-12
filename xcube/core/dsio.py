@@ -7,14 +7,14 @@ import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable, Mapping
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import botocore.exceptions
 import pandas as pd
 import s3fs
 import urllib3.util
 import xarray as xr
-import zarr
+import zarr.codecs
 from deprecated import deprecated
 
 from xcube.constants import (
@@ -481,10 +481,11 @@ class ZarrDatasetIO(DatasetIO):
                 s3_client_kwargs=s3_client_kwargs,
                 mode="r",
             )
-            if max_cache_size is not None and max_cache_size > 0:
-                path_or_store = zarr.LRUStoreCache(
-                    path_or_store, max_size=max_cache_size
-                )
+            # caching is no longer a store concern; it is handled by async IO layers
+            # if max_cache_size is not None and max_cache_size > 0:
+            #     path_or_store = zarr.LRUStoreCache(
+            #         path_or_store, max_size=max_cache_size
+            #     )
         return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
 
     def write(
@@ -542,14 +543,24 @@ class ZarrDatasetIO(DatasetIO):
                     encoding[var_name] = dict(packing[var_name])
 
         if compressor:
-            compressor = zarr.Blosc(**compressor)
+            # fix shuffle int -> enum string
+            shuffle_map = {
+                0: "none",
+                1: "shuffle",
+                2: "bitshuffle",
+            }
+            if "shuffle" in compressor and isinstance(compressor["shuffle"], int):
+                compressor["shuffle"] = shuffle_map.get(compressor["shuffle"], "shuffle")
+            compressor = zarr.codecs.BloscCodec(**compressor)
 
             if encoding:
-                for var_name in encoding.keys():
-                    encoding[var_name].update(compressor=compressor)
+                for var_name in encoding:
+                    encoding[var_name].update(
+                        compressors=(compressor,)
+                    )
             else:
                 encoding = {
-                    var_name: dict(compressor=compressor)
+                    var_name: {"compressors": (compressor,)}
                     for var_name in dataset.data_vars
                 }
         return encoding

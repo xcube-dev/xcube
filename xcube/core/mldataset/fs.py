@@ -16,10 +16,15 @@ import fsspec.core
 import numpy as np
 import xarray as xr
 import zarr
+import posixpath
+from fsspec import AbstractFileSystem
+from fsspec.asyn import AsyncFileSystem
+from fsspec.implementations.asyn_wrapper import AsyncFileSystemWrapper
+import zarr.storage
 
-# noinspection PyUnresolvedReferences
 from xcube.core.gridmapping import GridMapping
 from xcube.core.subsampling import AggMethod, AggMethods
+
 from xcube.util.assertions import assert_instance
 from xcube.util.fspath import get_fs_path_class, resolve_path
 from xcube.util.types import ScalarOrPair, normalize_scalar_or_pair
@@ -147,22 +152,28 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             # TODO: complete logic here
             engine = base_dataset_open_params.pop("engine", "zarr")
 
-        level_zarr_store = fs.get_mapper(str(level_path))
+        level_zarr_store = self.get_zarr_store(str(level_path), fs, None)
 
-        consolidated = (
-            self._consolidate
-            if self._consolidate is not None
-            else (".zmetadata" in level_zarr_store)
-        )
+        async def compute_consolidated(
+            level_zarr_store: zarr.storage.StoreLike,
+        ) -> bool:
+            if self._consolidate is not None:
+                return self._consolidate
+            try:
+                return await level_zarr_store.get(".zmetadata") is not None
+            except Exception:
+                return False
 
-        if isinstance(cache_size, int) and cache_size >= self._MIN_CACHE_SIZE:
-            # compute cache size for level weighted by
-            # size in pixels for each level
-            cache_size = math.ceil(self.size_weights[index] * cache_size)
-            if cache_size >= self._MIN_CACHE_SIZE:
-                level_zarr_store = zarr.LRUStoreCache(
-                    level_zarr_store, max_size=cache_size
-                )
+        consolidated = compute_consolidated(level_zarr_store)
+
+        # if isinstance(cache_size, int) and cache_size >= self._MIN_CACHE_SIZE:
+        #     # compute cache size for level weighted by
+        #     # size in pixels for each level
+        #     cache_size = math.ceil(self.size_weights[index] * cache_size)
+        #     if cache_size >= self._MIN_CACHE_SIZE:
+        #         level_zarr_store = zarr.LRUStoreCache(
+        #             level_zarr_store, max_size=cache_size
+        #         )
 
         try:
             level_dataset = xr.open_zarr(
@@ -173,7 +184,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 f"Failed to open dataset {level_path!r}: {e}"
             ) from e
 
-        level_dataset.zarr_store.set(level_zarr_store)
+        # level_dataset.zarr_store.set(level_zarr_store)
         return level_dataset
 
     @staticmethod
@@ -346,7 +357,8 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             else:
                 # Write level "{index}.zarr"
                 level_path = data_path / f"{index}.zarr"
-                level_zarr_store = fs.get_mapper(str(level_path), create=True)
+                level_zarr_store = cls.get_zarr_store(str(level_path), fs, None)
+
                 try:
                     level_dataset.to_zarr(
                         level_zarr_store,
@@ -360,13 +372,31 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                         f"Failed to write dataset {path}: {e}"
                     ) from e
                 if use_saved_levels:
-                    level_dataset = xr.open_zarr(
-                        level_zarr_store, consolidated=consolidated
-                    )
-                    level_dataset.zarr_store.set(level_zarr_store)
+                    level_dataset = xr.open_zarr(level_path, consolidated=consolidated)
+                    level_dataset.zarr_store.set(str(level_path))
                     ml_dataset.set_dataset(index, level_dataset)
 
         return path
+
+    @staticmethod
+    def get_zarr_store(
+        data_id: str,
+        fs: AbstractFileSystem | AsyncFileSystem,
+        root: str | None = None,
+    ) -> zarr.storage.StoreLike:
+        path = data_id
+
+        if root:
+            path = posixpath.join(root, data_id)
+
+        if "local" in fs.protocol:
+            return zarr.storage.LocalStore(path)
+        if fs.protocol == "memory":
+            return zarr.storage.MemoryStore()
+        if fs.protocol == "ftp":
+            fs_async = AsyncFileSystemWrapper(fs)
+            return zarr.storage.FsspecStore(fs_async, path=data_id)
+        return zarr.storage.FsspecStore(fs, path=data_id)
 
 
 class FsMultiLevelDatasetError(ValueError):

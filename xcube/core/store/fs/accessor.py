@@ -118,6 +118,7 @@ class FsAccessor:
                 fsspec.filesystem(
                     protocol,
                     use_listings_cache=use_listings_cache,
+                    asynchronous=True,
                     **(storage_options or {}),
                 ),
                 root,

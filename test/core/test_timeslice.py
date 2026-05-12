@@ -123,7 +123,7 @@ class TimeSliceTest(unittest.TestCase):
         )
         np.testing.assert_equal(cube.time.values, expected)
 
-        insert_time_slice(self.CUBE_PATH, 5, self.make_slice("2019-01-06T02:00:00"))
+        insert_time_slice(self.CUBE_PATH, 10, self.make_slice("2019-01-06T02:00:00"))
 
         cube = xr.open_zarr(self.CUBE_PATH)
         expected = np.array(

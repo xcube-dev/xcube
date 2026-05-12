@@ -23,18 +23,36 @@ class PruneTest(CliTest):
 
 class PruneDataTest(CliTest):
     TEST_CUBE = "test.zarr"
+    TEST_CUBE_V3 = "test_v3.zarr"
 
     def setUp(self) -> None:
         rimraf(self.TEST_CUBE)
+        rimraf(self.TEST_CUBE_V3)
         cube = new_cube(
             time_periods=3, variables=dict(precipitation=np.nan, temperature=np.nan)
         ).chunk(dict(time=1, lat=90, lon=90))
         fv_encoding = dict(_FillValue=None)
         encoding = dict(precipitation=fv_encoding, temperature=fv_encoding)
-        cube.to_zarr(self.TEST_CUBE, encoding=encoding)
+
+        # Zarr v2 cube
+        cube.to_zarr(
+            self.TEST_CUBE,
+            encoding=encoding,
+            zarr_version=2,
+        )
+
+        # Zarr v3 cube
+        cube = cube.drop_encoding()
+        cube.to_zarr(
+            self.TEST_CUBE_V3,
+            encoding=encoding,
+            zarr_version=3,
+            consolidated=False,
+        )
 
     def tearDown(self) -> None:
         rimraf(self.TEST_CUBE)
+        rimraf(self.TEST_CUBE_V3)
 
     def test_dry_run(self):
         result = self.invoke_cli(["prune", self.TEST_CUBE, "-vv", "--dry-run"])
@@ -184,3 +202,21 @@ class PruneDataTest(CliTest):
                         f"Failed to delete block file {block_file}: "
                     )
                 )
+
+    def test_zarr3_noop(self):
+        result = self.invoke_cli(["prune", self.TEST_CUBE_V3, "-vv"])
+
+        self.assertEqual(0, result.exit_code)
+
+        self.assertEqual(
+            (
+                "Dataset uses Zarr format 3. "
+                "Empty chunks are not stored, pruning is unnecessary. "
+                "Nothing to do.\n"
+            ),
+            result.stderr,
+        )
+        ds = xr.open_zarr(self.TEST_CUBE_V3)
+        assert_cube(ds)
+        self.assertIn("precipitation", ds)
+        self.assertIn("temperature", ds)
