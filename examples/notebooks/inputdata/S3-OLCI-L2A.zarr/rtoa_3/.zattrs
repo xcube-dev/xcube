@@ -1,0 +1,12 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "y",
+        "x"
+    ],
+    "bandwidth": 10.0,
+    "coordinates": "lat lon",
+    "long_name": "Top-of-atmosphere reflectance",
+    "spectral_band_index": 2.0,
+    "units": "1",
+    "wavelength": 442.5
+}

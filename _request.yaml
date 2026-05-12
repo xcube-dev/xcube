@@ -1,0 +1,39 @@
+callback_config:
+  access_token: dfsvdfsv
+  api_uri: https://xcube-gen.test/api/v1/jobs/tomtom/iamajob/callback
+cube_config:
+  bbox:
+  - 12.2
+  - 52.1
+  - 13.9
+  - 54.8
+  chunks:
+    lat: 90
+    lon: 90
+    time: null
+  crs: WGS84
+  metadata:
+    title: A S2L2A subset
+  spatial_res: 0.05
+  time_period: 4D
+  time_range:
+  - '2010-01-01'
+  - null
+  variable_metadata:
+    B01:
+      long_name: Band 1
+    B02:
+      long_name: Band 2
+    B03:
+      long_name: Band 3
+  variable_names:
+  - B01
+  - B02
+  - B03
+input_config:
+  data_id: S2L2A.zarr
+  store_id: memory
+output_config:
+  data_id: CHL.zarr
+  replace: true
+  store_id: memory

@@ -5,7 +5,6 @@
 import json
 import os.path
 from collections.abc import Sequence
-from typing import List
 
 import numpy as np
 import xarray as xr
@@ -23,8 +22,10 @@ def unchunk_dataset(
         coords_only: Un-chunk coordinate variables only.
     """
 
-    is_zarr = os.path.isfile(os.path.join(dataset_path, ".zgroup"))
-    if not is_zarr:
+    if not (
+        os.path.isfile(os.path.join(dataset_path, ".zgroup"))
+        or os.path.isfile(os.path.join(dataset_path, "zarr.json"))
+    ):
         raise ValueError(f"{dataset_path!r} is not a valid Zarr directory")
 
     with xr.open_zarr(dataset_path) as dataset:
@@ -50,31 +51,42 @@ def unchunk_dataset(
 
 
 def _unchunk_vars(dataset_path: str, var_names: list[str]):
+    root = zarr.open_group(dataset_path, mode="a")
+
     for var_name in var_names:
-        var_path = os.path.join(dataset_path, var_name)
+        arr = root[var_name]
 
-        # Optimization: if "shape" and "chunks" are equal in ${var}/.zarray, we are done
-        var_array_info_path = os.path.join(var_path, ".zarray")
-        with open(var_array_info_path) as fp:
-            var_array_info = json.load(fp)
-            if var_array_info.get("shape") == var_array_info.get("chunks"):
-                continue
+        # already unchunked
+        if tuple(arr.shape) == tuple(arr.chunks):
+            continue
 
-        # Open array and remove chunks from the data
-        var_array = zarr.convenience.open_array(var_path, "r+")
-        if var_array.shape != var_array.chunks:
-            # TODO (forman): Fully loading data is inefficient and dangerous for large arrays.
-            #                Instead save unchunked to temp and replace existing chunked array dir with temp.
-            # Fully load data and attrs so we no longer depend on files
-            data = np.array(var_array)
-            attributes = var_array.attrs.asdict()
-            # Save array data
-            zarr.convenience.save_array(
-                var_path, data, chunks=False, fill_value=var_array.fill_value
-            )
-            # zarr.convenience.save_array() does not seem save user attributes (file ".zattrs" not written),
-            # therefore we must modify attrs explicitly:
-            var_array = zarr.convenience.open_array(var_path, "r+")
-            var_array.attrs.update(attributes)
+        # fully load data
+        data = np.asarray(arr)
+
+        # preserve metadata
+        attrs = dict(arr.attrs)
+        fill_value = arr.fill_value
+
+        # Zarr v3 metadata
+        dimension_names = getattr(arr.metadata, "dimension_names", None)
+        compressors = getattr(arr.metadata, "compressors", None)
+        filters = getattr(arr.metadata, "filters", None)
+
+        # remove old array completely
+        del root[var_name]
+
+        # recreate as single chunk
+        new_arr = root.create_array(
+            name=var_name,
+            data=data,
+            chunks=data.shape,
+            fill_value=fill_value,
+            dimension_names=dimension_names,
+            compressors=compressors,
+            filters=filters,
+        )
+
+        # restore attrs
+        new_arr.attrs.update(attrs)
 
     zarr.consolidate_metadata(dataset_path)

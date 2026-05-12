@@ -34,7 +34,6 @@ class OptimizeDataTest(CliDataTest):
         self.assertEqual(0, result.exit_code)
 
         expected_files = set(INPUT_CUBE_FILE_SET)
-        expected_files.add(".zmetadata")
         self.assertEqual(
             expected_files, list_file_set(OUTPUT_CUBE_OPTIMIZED_DEFAULT_PATH)
         )
@@ -46,11 +45,10 @@ class OptimizeDataTest(CliDataTest):
         self.assertEqual(0, result.exit_code)
 
         expected_files = set(INPUT_CUBE_FILE_SET)
-        expected_files.add(".zmetadata")
-        expected_files.remove("time/1")
-        expected_files.remove("time/2")
-        expected_files.remove("time_bnds/1.0")
-        expected_files.remove("time_bnds/2.0")
+        expected_files.remove("time/c/1")
+        expected_files.remove("time/c/2")
+        expected_files.remove("time_bnds/c/1/0")
+        expected_files.remove("time_bnds/c/2/0")
         self.assertEqual(expected_files, list_file_set(OUTPUT_CUBE_OPTIMIZED_USER_PATH))
 
     def test_in_place(self):
@@ -58,11 +56,10 @@ class OptimizeDataTest(CliDataTest):
         self.assertEqual(0, result.exit_code)
 
         expected_files = set(INPUT_CUBE_FILE_SET)
-        expected_files.add(".zmetadata")
-        expected_files.remove("time/1")
-        expected_files.remove("time/2")
-        expected_files.remove("time_bnds/1.0")
-        expected_files.remove("time_bnds/2.0")
+        expected_files.remove("time/c/1")
+        expected_files.remove("time/c/2")
+        expected_files.remove("time_bnds/c/1/0")
+        expected_files.remove("time_bnds/c/2/0")
         self.assertEqual(expected_files, list_file_set(INPUT_CUBE_PATH))
 
 

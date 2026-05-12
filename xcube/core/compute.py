@@ -355,7 +355,7 @@ def _gen_index_var(cube_schema: CubeSchema):
             raise ValueError("chunk size too small")
 
         for i in range(ndim):
-            start = chunks[i][0] * chunk_location[i]
+            start = chunks[i] * chunk_location[i]
             end = start + chunk_shape[i]
             flat[2 * i] = start
             flat[2 * i + 1] = end

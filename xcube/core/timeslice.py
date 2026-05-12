@@ -2,6 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import shutil
+import os
 import tempfile
 from collections.abc import MutableMapping
 from typing import Dict, Tuple, Union
@@ -11,7 +13,6 @@ import xarray as xr
 import zarr
 
 from xcube.core.chunk import chunk_dataset
-from xcube.core.unchunk import unchunk_dataset
 
 DEFAULT_TIME_EPS = np.array(1000 * 1000, dtype="timedelta64[ns]")
 
@@ -74,21 +75,20 @@ def append_time_slice(
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name="zarr")
 
-    # Unfortunately time_slice.to_zarr(store, mode='a', append_dim='time') will replace global attributes of store
-    # with attributes of time_slice (xarray bug?), which are usually empty in our case.
-    # Hence, we must save our old attributes in a copy of time_slice.
     ds = zarr.open_group(store, mode="r")
+
     time_slice = time_slice.copy()
     time_slice.attrs.update(ds.attrs)
-    if "coordinates" in time_slice.attrs:
-        # Remove 'coordinates', otherwise we get
-        # ValueError: cannot serialize coordinates because the global attribute 'coordinates' already exists
-        # from next time_slice.to_zarr(...) call.
-        time_slice.attrs.pop("coordinates")
 
-    time_slice.to_zarr(store, mode="a", append_dim="time", consolidated=True)
+    # remove legacy attribute conflict
+    time_slice.attrs.pop("coordinates", None)
 
-    unchunk_dataset(store, coords_only=True)
+    time_slice.to_zarr(
+        store,
+        mode="a",
+        append_dim="time",
+        consolidated=True,
+    )
 
 
 def insert_time_slice(
@@ -145,49 +145,32 @@ def update_time_slice(
         mode: Update mode, 'insert' or 'replace'
         chunk_sizes: desired chunk sizes
     """
-
     if mode not in ("insert", "replace"):
         raise ValueError(f"illegal mode value: {mode!r}")
 
     insert_mode = mode == "insert"
 
-    time_var_names = []
-    encoding = {}
-    with xr.open_zarr(store) as cube:
-        for var_name in cube.variables:
-            var = cube[var_name]
-            if var.ndim >= 1 and "time" in var.dims:
-                if var.dims[0] != "time":
-                    raise ValueError(
-                        f"dimension 'time' of variable {var_name!r} must be first dimension"
-                    )
-                time_var_names.append(var_name)
-                enc = dict(cube[var_name].encoding)
-                # xarray 0.17+ supports engine preferred chunks if exposed by the backend
-                # zarr does that, but when we use the new 'preferred_chunks' when writing to zarr
-                # it raises and says, 'preferred_chunks' is an unsupported encoding
-                if "preferred_chunks" in enc:
-                    del enc["preferred_chunks"]
-                encoding[var_name] = enc
-
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name="zarr")
-    temp_dir = tempfile.TemporaryDirectory(prefix="xcube-time-slice-", suffix=".zarr")
-    time_slice.to_zarr(temp_dir.name, encoding=encoding)
-    slice_root_group = zarr.open(temp_dir.name, mode="r")
-    slice_arrays = dict(slice_root_group.arrays())
 
-    cube_root_group = zarr.open(store, mode="r+")
-    for var_name, var_array in cube_root_group.arrays():
-        if var_name in time_var_names:
-            slice_array = slice_arrays[var_name]
-            if insert_mode:
-                # Add one empty time step
-                empty = zarr.creation.empty(slice_array.shape, dtype=var_array.dtype)
-                var_array.append(empty, axis=0)
-                # Shift contents
-                var_array[insert_index + 1 :, ...] = var_array[insert_index:-1, ...]
-            # Replace slice
-            var_array[insert_index, ...] = slice_array[0]
+    cube = xr.open_zarr(store)
 
-    unchunk_dataset(store, coords_only=True)
+    # --- split dataset into before / after ---
+    if insert_mode:
+        before = cube.isel(time=slice(0, insert_index))
+        after = cube.isel(time=slice(insert_index, None))
+        new_ds = xr.concat([before, time_slice, after], dim="time")
+    else:
+        before = cube.isel(time=slice(0, insert_index))
+        after = cube.isel(time=slice(insert_index + 1, None))
+        new_ds = xr.concat([before, time_slice, after], dim="time")
+    new_ds = xr.unify_chunks(new_ds)[0]
+
+    # preserve global attrs
+    new_ds.attrs.update(cube.attrs)
+
+    tmp = tempfile.mkdtemp(prefix="xcube-timeslice-")
+    new_ds.to_zarr(tmp, mode="w", consolidated=True)
+    if os.path.isdir(store):
+        shutil.rmtree(store)
+    shutil.move(tmp, store)

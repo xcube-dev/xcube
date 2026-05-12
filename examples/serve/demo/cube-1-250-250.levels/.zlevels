@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "num_levels": 3,
+  "use_saved_levels": false,
+  "agg_methods": {
+    "c2rcc_flags": "mean",
+    "conc_chl": "mean",
+    "conc_tsm": "mean",
+    "kd489": "mean",
+    "quality_flags": "mean"
+  }
+}

@@ -25,41 +25,31 @@ OUTPUT_CUBE_PATH = "test_opt.zarr"
 OUTPUT_CUBE_PATTERN = "{input}_opt.zarr"
 
 INPUT_CUBE_FILE_SET = {
-    ".zattrs",
-    ".zgroup",
-    ".zmetadata",
-    "A/.zarray",
-    "A/.zattrs",
-    "A/0.0.0",
-    "A/1.0.0",
-    "A/2.0.0",
-    "B/.zarray",
-    "B/.zattrs",
-    "B/0.0.0",
-    "B/1.0.0",
-    "B/2.0.0",
-    "lat/.zarray",
-    "lat/.zattrs",
-    "lat/0",
-    "lat_bnds/.zarray",
-    "lat_bnds/.zattrs",
-    "lat_bnds/0.0",
-    "lon/.zarray",
-    "lon/.zattrs",
-    "lon/0",
-    "lon_bnds/.zarray",
-    "lon_bnds/.zattrs",
-    "lon_bnds/0.0",
-    "time/.zarray",
-    "time/.zattrs",
-    "time/0",
-    "time/1",
-    "time/2",
-    "time_bnds/.zarray",
-    "time_bnds/.zattrs",
-    "time_bnds/0.0",
-    "time_bnds/1.0",
-    "time_bnds/2.0",
+    "A/c/0/0/0",
+    "A/c/1/0/0",
+    "A/c/2/0/0",
+    "A/zarr.json",
+    "B/c/0/0/0",
+    "B/c/1/0/0",
+    "B/c/2/0/0",
+    "B/zarr.json",
+    "lat/c/0",
+    "lat/zarr.json",
+    "lat_bnds/c/0/0",
+    "lat_bnds/zarr.json",
+    "lon/c/0",
+    "lon/zarr.json",
+    "lon_bnds/c/0/0",
+    "lon_bnds/zarr.json",
+    "time/c/0",
+    "time/c/1",
+    "time/c/2",
+    "time/zarr.json",
+    "time_bnds/c/0/0",
+    "time_bnds/c/1/0",
+    "time_bnds/c/2/0",
+    "time_bnds/zarr.json",
+    "zarr.json",
 }
 
 
@@ -194,21 +184,18 @@ class OptimizeDatasetTest(unittest.TestCase):
     ):
         self.assertTrue(os.path.isdir(cube_path))
         expected_files = set(INPUT_CUBE_FILE_SET)
-        expected_files.add(".zmetadata")
         if cons_time:
-            expected_files.remove("time/1")
-            expected_files.remove("time/2")
+            expected_files.remove("time/c/1")
+            expected_files.remove("time/c/2")
         if cons_time_bnds:
-            expected_files.remove("time_bnds/1.0")
-            expected_files.remove("time_bnds/2.0")
+            expected_files.remove("time_bnds/c/1/0")
+            expected_files.remove("time_bnds/c/2/0")
         self.assertEqual(expected_files, list_file_set(cube_path))
 
     def test_failures(self):
-        with self.assertRaises(RuntimeError) as cm:
-            optimize_dataset("pippo", in_place=True, exception_type=RuntimeError)
-        self.assertEqual(
-            "Input path must point to ZARR dataset directory.", f"{cm.exception}"
-        )
+        with self.assertRaises(ValueError) as cm:
+            optimize_dataset("pippo", in_place=True)
+        self.assertIn("'pippo' is not a valid Zarr directory", str(cm.exception))
 
         with self.assertRaises(RuntimeError) as cm:
             optimize_dataset(INPUT_CUBE_PATH, exception_type=RuntimeError)
