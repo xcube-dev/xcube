@@ -6,7 +6,7 @@ import io
 import logging
 import math
 import warnings
-from collections.abc import Hashable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
 from typing import Any, Optional, Union
 
 import matplotlib.colors
@@ -622,7 +622,7 @@ def _get_variable(
             )
         variable = dataset[var_name]
 
-    non_spatial_labels = _get_non_spatial_labels(
+    non_spatial_labels = get_non_spatial_labels(
         dataset, variable, non_spatial_labels, logger
     )
     if non_spatial_labels:
@@ -670,18 +670,25 @@ class TransparentRgbaTilePool:
 TransparentRgbaTilePool.INSTANCE = TransparentRgbaTilePool()
 
 
-def _get_non_spatial_labels(
+def get_non_spatial_labels(
     dataset: xr.Dataset,
     variable: xr.DataArray,
     labels: Optional[dict[str, Any]],
-    logger: logging.Logger,
+    logger: logging.Logger = None,
+    excluded_dims: Iterable[str] | None = None
 ) -> dict[Hashable, Any]:
     labels = labels if labels is not None else {}
+    excluded_dims = excluded_dims or []
 
     new_labels = {}
     # assuming last two dims are spatial: [..., y, x]
+    # and ignore specified dims to keep the log clean (see
+    # xcube.webapi.timeseries.routes.get_non_spatial_dimensions)
     assert variable.ndim >= 2
-    non_spatial_dims = variable.dims[0:-2]
+    non_spatial_dims = [
+        dim for dim in variable.dims[0:-2]
+        if dim not in excluded_dims
+    ]
     if not non_spatial_dims:
         #  Ignore any extra labels passed.
         return new_labels
@@ -697,6 +704,7 @@ def _get_non_spatial_labels(
         dim_name = str(dim)
 
         label = labels.get(dim_name)
+
         if label is None:
             if logger:
                 logger.debug(

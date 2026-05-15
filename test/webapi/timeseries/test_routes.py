@@ -117,3 +117,19 @@ class TimeSeriesRoutesTest(RoutesTestCase):
             "Query parameter 'tolerance' must have type 'float'."
             ")",
         )
+
+    def test_fetch_timeseries_non_spatial_dimensions(self):
+        response = self.fetch(
+            "/timeseries/demo-multidimensional/conc_chl?depth=10",
+            method="POST",
+            body='{"type":"Point","coordinates":[1.262, 50.243]}',
+        )
+        self.assertResponseOK(response)
+
+    def test_fetch_timeseries_with_non_spatial_dimension_missing_in_request(self):
+        response = self.fetch(
+            "/timeseries/demo-multidimensional/conc_chl",
+            method="POST",
+            body='{"type":"Point","coordinates":[1.262, 50.243]}',
+        )
+        self.assertResponseOK(response)

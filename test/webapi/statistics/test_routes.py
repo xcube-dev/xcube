@@ -42,13 +42,28 @@ class StatisticsRoutesTest(RoutesTestCase):
         assert round(parsed_data["result"]["mean"], 3) == 102.0
         assert round(parsed_data["result"]["deviation"], 3) == 0.0
 
+        response = self.fetch(
+            "/statistics/demo-multidimensional/conc_chl?time=2017-01-30+10:46:34&depth=10",
+            method="POST",
+            body='{"type": "Point", "coordinates": [1.262, 50.243]}',
+        )
+
+        self.assertResponseOK(response)
+        decoded_data = response.data.decode("utf-8")
+        parsed_data = json.loads(decoded_data)
+        assert parsed_data["result"]["count"] == 1
+        assert round(parsed_data["result"]["minimum"], 3) == 1.835
+        assert round(parsed_data["result"]["maximum"], 3) == 1.835
+        assert round(parsed_data["result"]["mean"], 3) == 1.835
+        assert round(parsed_data["result"]["deviation"], 3) == 0.0
+
     def test_fetch_post_statistics_missing_time_with_time_dimension_dataset(self):
         response = self.fetch(
             "/statistics/demo/conc_chl",
             method="POST",
             body='{"type": "Point", "coordinates": [1.768, 51.465]}',
         )
-        self.assertBadRequestResponse(response, "Missing query parameter 'time'")
+        self.assertResponseOK(response)
 
     def test_fetch_post_statistics_missing_time_without_time_dimension_dataset(self):
         response = self.fetch(
@@ -64,11 +79,7 @@ class StatisticsRoutesTest(RoutesTestCase):
             method="POST",
             body='{"type": "Point", "coordinates": [-105.591, 35.751]}',
         )
-        self.assertBadRequestResponse(
-            response,
-            "Query parameter 'time' must not be given since "
-            "dataset does not contain a 'time' dimension",
-        )
+        self.assertResponseOK(response)
 
     def test_fetch_post_statistics_invalid_geometry(self):
         response = self.fetch(
@@ -83,6 +94,24 @@ class StatisticsRoutesTest(RoutesTestCase):
             body="[1.768]",
         )
         self.assertBadRequestResponse(response, "Invalid GeoJSON geometry encountered")
+
+    def test_fetch_post_statistics_missing_non_spatial_dimensions_with_multidimensional_dataset(
+        self,
+    ):
+        response = self.fetch(
+            "/statistics/demo-multidimensional/conc_chl",
+            method="POST",
+            body='{"type": "Point", "coordinates": [1.262, 50.243]}',
+        )
+
+        self.assertResponseOK(response)
+        decoded_data = response.data.decode("utf-8")
+        parsed_data = json.loads(decoded_data)
+        assert parsed_data["result"]["count"] == 1
+        assert round(parsed_data["result"]["minimum"], 3) == 1.002
+        assert round(parsed_data["result"]["maximum"], 3) == 1.002
+        assert round(parsed_data["result"]["mean"], 3) == 1.002
+        assert round(parsed_data["result"]["deviation"], 3) == 0.0
 
     def test_crs_conversion_post_statistics_with_coordinates_outside_bounds(self):
         response = self.fetch(
@@ -114,7 +143,7 @@ class StatisticsRoutesTest(RoutesTestCase):
         response = self.fetch(
             "/statistics/demo/conc_chl?lon=1.786&lat=51.465", method="GET"
         )
-        self.assertBadRequestResponse(response, "Missing query parameter 'time'")
+        self.assertResponseOK(response)
 
     def test_fetch_get_statistics_missing_time_without_time_dimension_dataset(self):
         response = self.fetch(
@@ -129,11 +158,7 @@ class StatisticsRoutesTest(RoutesTestCase):
             "type=Point&time=2017-01-16+10:09:21",
             method="GET",
         )
-        self.assertBadRequestResponse(
-            response,
-            "Query parameter 'time' must not be given since "
-            "dataset does not contain a 'time' dimension",
-        )
+        self.assertResponseOK(response)
 
     def test_fetch_get_statistics(self):
         response = self.fetch(
@@ -153,6 +178,27 @@ class StatisticsRoutesTest(RoutesTestCase):
         decoded_data = response.data.decode("utf-8")
         parsed_data = json.loads(decoded_data)
         assert round(parsed_data["result"]["value"], 3) == 102.0
+
+        response = self.fetch(
+            "/statistics/demo-multidimensional/conc_chl?time=2017-01-16+10:09:21&lon=1.262&lat=50.243&type=Point&depth=0",
+            method="GET",
+        )
+        self.assertResponseOK(response)
+        decoded_data = response.data.decode("utf-8")
+        parsed_data = json.loads(decoded_data)
+        assert round(parsed_data["result"]["value"], 3) == 1.002
+
+    def test_fetch_get_statistics_missing_non_spatial_dimensions_with_multidimensional_dataset(
+        self,
+    ):
+        response = self.fetch(
+            "/statistics/demo-multidimensional/conc_chl?lon=1.262&lat=50.243&type=Point",
+            method="GET",
+        )
+        self.assertResponseOK(response)
+        decoded_data = response.data.decode("utf-8")
+        parsed_data = json.loads(decoded_data)
+        assert round(parsed_data["result"]["value"], 3) == 1.002
 
     def test_crs_conversion_get_statistics_with_coordinates_outside_bounds(self):
         response = self.fetch(
