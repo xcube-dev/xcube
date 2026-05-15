@@ -6,7 +6,7 @@ import io
 import logging
 import math
 import warnings
-from collections.abc import Hashable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
 from typing import Any, Optional, Union
 
 import matplotlib.colors
@@ -675,10 +675,10 @@ def get_non_spatial_labels(
     variable: xr.DataArray,
     labels: Optional[dict[str, Any]],
     logger: logging.Logger = None,
-    ignore: Optional[list[str]] = None,
+    excluded_dims: Iterable[str] | None = None
 ) -> dict[Hashable, Any]:
     labels = labels if labels is not None else {}
-    ignore = ignore or []
+    excluded_dims = excluded_dims or []
 
     new_labels = {}
     # assuming last two dims are spatial: [..., y, x]
@@ -687,7 +687,7 @@ def get_non_spatial_labels(
     assert variable.ndim >= 2
     non_spatial_dims = [
         dim for dim in variable.dims[0:-2]
-        if dim not in ignore
+        if dim not in excluded_dims
     ]
     if not non_spatial_dims:
         #  Ignore any extra labels passed.

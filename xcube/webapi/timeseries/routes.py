@@ -87,9 +87,6 @@ class TimeseriesHandler(ApiHandler[TimeSeriesContext]):
         non_spatial_dimensions = get_non_spatial_dimensions(
             self.ctx, self.request, datasetId, varName
         )
-        non_spatial_dimensions = {
-            k: v for k, v in non_spatial_dimensions.items() if k != "time"
-        }
 
         tolerance = self.request.get_query_arg("tolerance", type=float, default=1.0)
         max_valids = self.request.get_query_arg("maxValids", type=int, default=None)
@@ -123,5 +120,5 @@ def get_non_spatial_dimensions(ctx, request, ds_id, var) -> dict[Hashable, Any]:
         if value is not None:
             dimensions[str(dim)] = value
 
-    labels = get_non_spatial_labels(ds, variable, labels=dimensions, logger=_logger, ignore=["time"])
+    labels = get_non_spatial_labels(ds, variable, labels=dimensions, logger=_logger, excluded_dims=["time"])
     return labels
