@@ -123,5 +123,5 @@ def get_non_spatial_dimensions(ctx, request, ds_id, var) -> dict[Hashable, Any]:
         if value is not None:
             dimensions[str(dim)] = value
 
-    labels = get_non_spatial_labels(ds, variable, labels=dimensions, logger=_logger)
+    labels = get_non_spatial_labels(ds, variable, labels=dimensions, logger=_logger, ignore=["time"])
     return labels

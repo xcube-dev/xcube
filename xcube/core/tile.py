@@ -675,13 +675,20 @@ def get_non_spatial_labels(
     variable: xr.DataArray,
     labels: Optional[dict[str, Any]],
     logger: logging.Logger = None,
+    ignore: Optional[list[str]] = None,
 ) -> dict[Hashable, Any]:
     labels = labels if labels is not None else {}
+    ignore = ignore or []
 
     new_labels = {}
     # assuming last two dims are spatial: [..., y, x]
+    # and ignore specified dims to keep the log clean (see
+    # xcube.webapi.timeseries.routes.get_non_spatial_dimensions)
     assert variable.ndim >= 2
-    non_spatial_dims = variable.dims[0:-2]
+    non_spatial_dims = [
+        dim for dim in variable.dims[0:-2]
+        if dim not in ignore
+    ]
     if not non_spatial_dims:
         #  Ignore any extra labels passed.
         return new_labels
@@ -697,6 +704,7 @@ def get_non_spatial_labels(
         dim_name = str(dim)
 
         label = labels.get(dim_name)
+
         if label is None:
             if logger:
                 logger.debug(
