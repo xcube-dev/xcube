@@ -1,3 +1,16 @@
+## Changes in 1.13.3
+
+### Enhancements
+* WebAPI now supports statistics and time series for dataset variables with
+  additional non-spatial dimensions beyond `time`, `lat`, and `lon` (e.g. `depth`).
+  Dimension values can be passed as query parameters; if omitted, a value is selected
+  automatically. As part of this, `xcube.core.tile.get_non_spatial_labels` has been
+  made a public function. (#1213)
+
+### Fixes
+* Bundled [xcube Viewer 1.7.3](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.3)
+  with tile vizualisation fix.
+
 ## Changes in 1.13.2
 
 ### Enhancements
@@ -5,11 +18,6 @@
   that comes with, e.g., several bug fixes including issues with the time series legend,
   the zoom information box, persisted states, and the progress bar, as well as updated 
   dependencies such as `chartlets ^0.2.0`.
-* WebAPI now supports statistics and time series for dataset variables with
-  additional non-spatial dimensions beyond `time`, `lat`, and `lon` (e.g. `depth`).
-  Dimension values can be passed as query parameters; if omitted, a value is selected
-  automatically. As part of this, `xcube.core.tile.get_non_spatial_labels` has been
-  made a public function. (#1213)
 
 ### Fixes
 * Adapted to xarray version 2026.04.0 (#1211)
