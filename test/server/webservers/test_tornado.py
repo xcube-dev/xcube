@@ -4,14 +4,15 @@
 
 import unittest
 from collections.abc import Awaitable, Sequence
-from test.server.mocks import mock_server
-from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import pytest
 import tornado.httputil
 import tornado.web
 from tornado import concurrent
+from tornado.concurrent import Future
 
+from test.server.mocks import mock_server
 from xcube.server.api import (
     Api,
     ApiContextT,
@@ -380,6 +381,70 @@ class TornadoRequestHandlerTest(unittest.TestCase):
         import asyncio
 
         asyncio.run(test_it())
+
+    # noinspection PyMethodMayBeStatic
+    def test_allowed_hosts(self):
+        application = tornado.web.Application()
+        context = MockContext()
+        setattr(application, SERVER_CTX_ATTR_NAME, context)
+
+        class TestHandler(ApiHandler):
+            def get(self):
+                pass
+
+        async def make_not_validated_request():
+            # noinspection PyTypeChecker
+            tr = tornado.httputil.HTTPServerRequest(
+                method="GET",
+                host="www.evil.empire",
+                uri="/datasets?details=x",
+                connection=MockConnection(),
+            )
+            api_route = ApiRoute("test", "/test", TestHandler)
+            handler = TornadoRequestHandler(application, tr, api_route=api_route)
+            # noinspection PyAsyncCall
+            handler.prepare()  # not automatically called in test
+            await handler.get()
+
+        async def make_valid_request():
+            # noinspection PyTypeChecker
+            tr = tornado.httputil.HTTPServerRequest(
+                method="GET",
+                host="localhost:8080",
+                uri="/datasets?details=x",
+                connection=MockConnection(),
+            )
+            api_route = ApiRoute("test", "/test", TestHandler)
+            handler = TornadoRequestHandler(application, tr, api_route=api_route)
+            # noinspection PyAsyncCall
+            handler.prepare()  # not automatically called in test
+            await handler.get()
+
+        async def make_invalid_request():
+            # noinspection PyTypeChecker
+            tr = tornado.httputil.HTTPServerRequest(
+                method="GET",
+                host="www.evil.empire",
+                uri="/datasets?details=x",
+                connection=MockConnection(),
+            )
+            api_route = ApiRoute("test", "/test", TestHandler)
+            with pytest.raises(tornado.web.HTTPError, match=r".*400.*"):
+                handler = TornadoRequestHandler(application, tr, api_route=api_route)
+                # noinspection PyAsyncCall
+                handler.prepare()  # not automatically called in test
+
+        import asyncio
+
+        context._config = {}
+
+        self.assertFalse("allowed_hosts" in context._config)
+        asyncio.run(make_not_validated_request())
+
+        context._config["allowed_hosts"] = "localhost:8080"
+
+        asyncio.run(make_valid_request())
+        asyncio.run(make_invalid_request())
 
 
 # Helpers

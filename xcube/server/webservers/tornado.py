@@ -291,6 +291,7 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
         super().__init__(application, request)
         server_ctx = getattr(application, SERVER_CTX_ATTR_NAME, None)
         assert isinstance(server_ctx, Context)
+        self._server_ctx = server_ctx
         api_route: ApiRoute = kwargs.pop("api_route")
         ctx: Context = server_ctx.get_api_ctx(api_route.api_name)
         self._api_handler: ApiHandler = api_route.handler_cls(
@@ -303,6 +304,10 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
             TornadoApiResponse(self),
             **api_route.handler_kwargs,
         )
+
+    @property
+    def server_ctx(self) -> Context:
+        return self._server_ctx
 
     def set_default_headers(self):
         self.set_header("Server", f"xcube-server/{version}")
@@ -329,6 +334,15 @@ class TornadoRequestHandler(tornado.web.RequestHandler):
             if isinstance(exc_val, tornado.web.HTTPError) and exc_val.reason:
                 error_info.update(reason=exc_val.reason)
         self.finish({"error": error_info})
+
+    def prepare(self) -> Optional[Awaitable[None]]:
+        if (
+            "allowed_hosts" in self.server_ctx.config
+            and self.request.host not in self.server_ctx.config["allowed_hosts"]
+        ):
+            raise tornado.web.HTTPError(
+                400, log_message=f"Host {self.request.host} not allowed."
+            )
 
     async def head(self, *args, **kwargs):
         await self._call_method("head", *args, **kwargs)
