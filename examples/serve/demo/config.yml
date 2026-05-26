@@ -18,9 +18,9 @@ DatasetAttribution:
 
 #DatasetChunkCacheSize: 100M
 
-## To improve security, you may want to set a list of allowed origin hosts.
+## To improve security, you may want to set a list of allowed hosts.
 ## (See also https://github.com/xcube-dev/xcube/issues/1203)
-allowed_origins:
+allowed_hosts:
     - "localhost:8080"
     #   - the address of your server instance
 
