@@ -20,6 +20,8 @@
   dependencies such as `chartlets ^0.2.0`.
 
 ### Fixes
+
+* Closed security vulnerability in xcube-server related to URL construction (#1203).
 * Adapted to xarray version 2026.04.0 (#1211)
 
 ## Changes in 1.13.1
