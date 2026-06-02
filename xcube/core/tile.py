@@ -141,8 +141,8 @@ def compute_tiles(
         ds_y_coords = variable_0[ds_y_name]
         ds_y_points_up = bool(ds_y_coords[0] < ds_y_coords[-1])
 
-        tile_res_x = (tile_x_max - tile_x_min) / (tile_width - 1)
-        tile_res_y = (tile_y_max - tile_y_min) / (tile_height - 1)
+        tile_res_x = (tile_x_max - tile_x_min) / tile_width
+        tile_res_y = (tile_y_max - tile_y_min) / tile_height
 
         tile_x_1d = np.linspace(
             tile_x_min + 0.5 * tile_res_x, tile_x_max - 0.5 * tile_res_x, tile_width
@@ -220,7 +220,7 @@ def compute_tiles(
             # A zero or a one in the tile's shape will produce a
             # non-existing or too small tile. It will also prevent
             # determining the current resolution.
-            if 0 in var_subset.shape or 1 in var_subset.shape:
+            if 0 in var_subset.shape:#  or 1 in var_subset.shape:
                 return None
 
     with measure_time("Transforming dataset coordinates into indices"):
@@ -229,21 +229,27 @@ def compute_tiles(
         ds_y_coords = var_subset_0[ds_y_name]
 
         ds_x1 = float(ds_x_coords[0])
-        ds_x2 = float(ds_x_coords[-1])
         ds_y1 = float(ds_y_coords[0])
-        ds_y2 = float(ds_y_coords[-1])
 
         ds_size_x = ds_x_coords.size
         ds_size_y = ds_y_coords.size
 
-        ds_dx = (ds_x2 - ds_x1) / (ds_size_x - 1)
-        ds_dy = (ds_y2 - ds_y1) / (ds_size_y - 1)
+        if ds_size_x > 1:
+            ds_dx = (float(ds_x_coords[-1]) - ds_x1) / (ds_size_x - 1)
+        else:
+            full_ds_x_coords = variable_0[ds_x_name]
+            ds_dx = float(full_ds_x_coords[1] - full_ds_x_coords[0])
+
+        if ds_size_y > 1:
+            ds_dy = (float(ds_y_coords[-1]) - ds_y1) / (ds_size_y - 1)
+        else:
+            full_ds_y_coords = variable_0[ds_y_name]
+            ds_dy = float(full_ds_y_coords[1] - full_ds_y_coords[0])
 
         ds_x_indices = (tile_ds_x_2d - ds_x1) / ds_dx
         ds_y_indices = (tile_ds_y_2d - ds_y1) / ds_dy
-
-        ds_x_indices = ds_x_indices.astype(dtype=np.int64)
-        ds_y_indices = ds_y_indices.astype(dtype=np.int64)
+        ds_x_indices = np.rint(ds_x_indices).astype(np.int64)
+        ds_y_indices = np.rint(ds_y_indices).astype(np.int64)
 
     with measure_time("Masking dataset indices"):
         ds_mask = (
