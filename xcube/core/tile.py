@@ -194,18 +194,21 @@ def compute_tiles(
         if (
             np.isnan(ds_x_min)
             or np.isnan(ds_y_min)
-            or np.isnan(ds_y_max)
+            or np.isnan(ds_x_max)
             or np.isnan(ds_y_max)
         ):
             raise TileNotFoundException(
                 "Tile bounds NaN after map projection", logger=logger
             )
 
+        full_ds_x_coords = variable_0[ds_x_name]
+        full_ds_y_coords = variable_0[ds_y_name]
+        full_ds_dx = abs(float(full_ds_x_coords[1] - full_ds_x_coords[0]))
+        full_ds_dy = abs(float(full_ds_y_coords[1] - full_ds_y_coords[0]))
+
         num_extra_pixels = tile_enlargement
-        res_x = (ds_x_max - ds_x_min) / tile_width
-        res_y = (ds_y_max - ds_y_min) / tile_height
-        extra_dx = num_extra_pixels * res_x
-        extra_dy = num_extra_pixels * res_y
+        extra_dx = (num_extra_pixels + 0.5) * full_ds_dx
+        extra_dy = (num_extra_pixels + 0.5) * full_ds_dy
         ds_x_slice = slice(ds_x_min - extra_dx, ds_x_max + extra_dx)
         if ds_y_points_up:
             ds_y_slice = slice(ds_y_min - extra_dy, ds_y_max + extra_dy)
@@ -220,7 +223,7 @@ def compute_tiles(
             # A zero or a one in the tile's shape will produce a
             # non-existing or too small tile. It will also prevent
             # determining the current resolution.
-            if 0 in var_subset.shape:#  or 1 in var_subset.shape:
+            if 0 in var_subset.shape or 1 in var_subset.shape:
                 return None
 
     with measure_time("Transforming dataset coordinates into indices"):
