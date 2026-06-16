@@ -11,6 +11,7 @@
 * Closed security vulnerability in xcube-server related to URL construction (#1203).
 * Bundled [xcube Viewer 1.7.3](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.3)
   with tile vizualisation fix.
+* Documentation: fixed broken link to mamba in installation instructions. (#1217)
 
 ## Changes in 1.13.2
 

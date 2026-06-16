@@ -8,7 +8,7 @@ xcube into a conda environment using the
 [mamba package manager](https://github.com/mamba-org/mamba), which will
 also automatically install and manage xcube’s dependencies.
 You can find [installation instructions for mamba itself
-here](https://mamba.readthedocs.io/en/latest/installation.html), if you
+here](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html), if you
 don’t already have it installed.
 
 In addition to mamba, there are alternative package managers available for
