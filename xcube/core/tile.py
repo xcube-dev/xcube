@@ -233,21 +233,14 @@ def compute_tiles(
 
         ds_x1 = float(ds_x_coords[0])
         ds_y1 = float(ds_y_coords[0])
+        ds_x2 = float(ds_x_coords[-1])
+        ds_y2 = float(ds_y_coords[-1])
 
         ds_size_x = ds_x_coords.size
         ds_size_y = ds_y_coords.size
 
-        if ds_size_x > 1:
-            ds_dx = (float(ds_x_coords[-1]) - ds_x1) / (ds_size_x - 1)
-        else:
-            full_ds_x_coords = variable_0[ds_x_name]
-            ds_dx = float(full_ds_x_coords[1] - full_ds_x_coords[0])
-
-        if ds_size_y > 1:
-            ds_dy = (float(ds_y_coords[-1]) - ds_y1) / (ds_size_y - 1)
-        else:
-            full_ds_y_coords = variable_0[ds_y_name]
-            ds_dy = float(full_ds_y_coords[1] - full_ds_y_coords[0])
+        ds_dx = (ds_x2 - ds_x1) / (ds_size_x - 1)
+        ds_dy = (ds_y2 - ds_y1) / (ds_size_y - 1)
 
         ds_x_indices = (tile_ds_x_2d - ds_x1) / ds_dx
         ds_y_indices = (tile_ds_y_2d - ds_y1) / ds_dy
