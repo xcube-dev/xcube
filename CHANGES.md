@@ -1,3 +1,9 @@
+## Changes in 1.13.4 (in development)
+ 
+### Fixes
+* Improved raster tile alignment by using nearest-pixel rounding during tile reprojection,
+  reducing visual offsets between rendered map tiles and dataset coordinates. (#1216)
+
 ## Changes in 1.13.3
 
 ### Enhancements
