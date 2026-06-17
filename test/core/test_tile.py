@@ -235,7 +235,6 @@ class ComputeRgbaTileTest(TileTest, unittest.TestCase):
             cmap_name="gray",
             value_ranges=(0, 10),
             non_spatial_labels={"time": 0},
-            tile_enlargement=0,
         )
         tile = compute_rgba_tile(*args, **kwargs, format="numpy")
         self.assertIsInstance(tile, np.ndarray)
@@ -296,7 +295,6 @@ class ComputeRgbaTileTest(TileTest, unittest.TestCase):
             tile_size=10,
             value_ranges=(0, 10),
             non_spatial_labels={"time": 0},
-            tile_enlargement=0,
         )
         tile = compute_rgba_tile(*args, **kwargs, format="numpy")
         self.assertIsInstance(tile, np.ndarray)
