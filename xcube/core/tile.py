@@ -206,15 +206,6 @@ def compute_tiles(
         res_y = (ds_y_max - ds_y_min) / tile_height
         extra_dx = num_extra_pixels * res_x
         extra_dy = num_extra_pixels * res_y
-
-        # full_ds_x_coords = variable_0[ds_x_name]
-        # full_ds_y_coords = variable_0[ds_y_name]
-        # full_ds_dx = abs(float(full_ds_x_coords[1] - full_ds_x_coords[0]))
-        # full_ds_dy = abs(float(full_ds_y_coords[1] - full_ds_y_coords[0]))
-        #
-        # num_extra_pixels = tile_enlargement
-        # extra_dx = (num_extra_pixels + 0.5) * full_ds_dx
-        # extra_dy = (num_extra_pixels + 0.5) * full_ds_dy
         ds_x_slice = slice(ds_x_min - extra_dx, ds_x_max + extra_dx)
         if ds_y_points_up:
             ds_y_slice = slice(ds_y_min - extra_dy, ds_y_max + extra_dy)
