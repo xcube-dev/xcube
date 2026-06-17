@@ -14,7 +14,7 @@ DataStores:
     StoreParams:
       root: xcube-examples
       storage_options:
-        anon: true
+        anon: false
     Datasets:
       - Path: openSR_nordfriesland_S2L2A_selected_dates_10m-v4.levels
         Identifier: waddensea
@@ -39,6 +39,22 @@ DataStores:
         Augmentation:
           Path: compute_indexes.py
           Function: compute_indexes
+      - Path: cmems_mod_bal_bgc_anfc_P1D-m_2025070115_36m_kattegat.zarr
+        Identifier: kattegat
+        Title: Kattegat
+        Style: kattegat
+        Description: >-
+            The Kattegat (/ˈkætəɡæt/; Danish: [ˈkʰætəkæt]; 
+            Swedish: Kattegatt [ˈkâtːɛˌɡat]) 
+            is a sea of roughly 24,000 km2 (9,300 sq mi) bounded by the 
+            [Skagerrak](https://en.wikipedia.org/wiki/Skagerrak) in the north, 
+            [Jutland](https://en.wikipedia.org/wiki/Jutland) in the west, 
+            the [Danish Straits](https://en.wikipedia.org/wiki/Danish_Straits) and 
+            [Sjaelland](https://en.wikipedia.org/wiki/Sjaelland) in the south and 
+            the Swedish provinces of Bohuslän, Västergötland, Halland and Scania 
+            in the east. The [Baltic Sea](https://en.wikipedia.org/wiki/Baltic_Sea) 
+            drains into the Kattegat through the Danish Straits. 
+            ![Kattegat](https://upload.wikimedia.org/wikipedia/commons/c/c2/Carte_Skagerrak-Kattegat2.png)
 
 Styles:
   - Identifier: waddensea
@@ -96,30 +112,17 @@ Styles:
           Variable: B02
           ValueRange: [0., 0.25]
 
-  - Identifier: louisville
+  - Identifier: kattegat
     ColorMappings:
-      band_1:
-        ColorBar: "gray"
-        ValueRange: [0, 5000]
-      band_2:
-        ColorBar: "gray"
-        ValueRange: [0, 5000]
-      band_3:
-        ColorBar: "gray"
-        ValueRange: [0, 5000]
-      band_4:
-        ColorBar: "bone"
-        ValueRange: [0, 10000]
-      rgb:
-        Red:
-          Variable: band_1
-          ValueRange: [0., 5000]
-        Green:
-          Variable: band_2
-          ValueRange: [0., 5000]
-        Blue:
-          Variable: band_3
-          ValueRange: [0., 5000]
+      chl:
+        ColorBar: "viridis"
+        ValueRange: [0, 15]
+      zooc:
+        ColorBar: "viridis"
+        ValueRange: [0, 15]
+      zsd:
+        ColorBar: "viridis"
+        ValueRange: [0, 15]
 
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
