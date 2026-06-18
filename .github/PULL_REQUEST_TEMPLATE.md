@@ -7,5 +7,4 @@ Checklist:
 * [ ] New/modified features documented in `docs/source/*`
 * [ ] Changes documented in `CHANGES.md`
 * [ ] GitHub CI passes
-* [ ] AppVeyor CI passes
 * [ ] Test coverage remains or increases (target 100%)
