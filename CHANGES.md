@@ -1,3 +1,8 @@
+## Changes in 1.13.4 (in developement)
+
+### Other changes
+* Constrained `matplotlib >=3.8.3,<3.11.0` (#1219)
+
 ## Changes in 1.13.3
 
 ### Enhancements
