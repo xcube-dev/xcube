@@ -14,7 +14,7 @@ DataStores:
     StoreParams:
       root: xcube-examples
       storage_options:
-        anon: false
+        anon: true
     Datasets:
       - Path: openSR_nordfriesland_S2L2A_selected_dates_10m-v4.levels
         Identifier: waddensea
