@@ -141,8 +141,8 @@ def compute_tiles(
         ds_y_coords = variable_0[ds_y_name]
         ds_y_points_up = bool(ds_y_coords[0] < ds_y_coords[-1])
 
-        tile_res_x = (tile_x_max - tile_x_min) / (tile_width - 1)
-        tile_res_y = (tile_y_max - tile_y_min) / (tile_height - 1)
+        tile_res_x = (tile_x_max - tile_x_min) / tile_width
+        tile_res_y = (tile_y_max - tile_y_min) / tile_height
 
         tile_x_1d = np.linspace(
             tile_x_min + 0.5 * tile_res_x, tile_x_max - 0.5 * tile_res_x, tile_width
@@ -194,7 +194,7 @@ def compute_tiles(
         if (
             np.isnan(ds_x_min)
             or np.isnan(ds_y_min)
-            or np.isnan(ds_y_max)
+            or np.isnan(ds_x_max)
             or np.isnan(ds_y_max)
         ):
             raise TileNotFoundException(
@@ -229,8 +229,8 @@ def compute_tiles(
         ds_y_coords = var_subset_0[ds_y_name]
 
         ds_x1 = float(ds_x_coords[0])
-        ds_x2 = float(ds_x_coords[-1])
         ds_y1 = float(ds_y_coords[0])
+        ds_x2 = float(ds_x_coords[-1])
         ds_y2 = float(ds_y_coords[-1])
 
         ds_size_x = ds_x_coords.size
@@ -241,9 +241,8 @@ def compute_tiles(
 
         ds_x_indices = (tile_ds_x_2d - ds_x1) / ds_dx
         ds_y_indices = (tile_ds_y_2d - ds_y1) / ds_dy
-
-        ds_x_indices = ds_x_indices.astype(dtype=np.int64)
-        ds_y_indices = ds_y_indices.astype(dtype=np.int64)
+        ds_x_indices = np.rint(ds_x_indices).astype(np.int64)
+        ds_y_indices = np.rint(ds_y_indices).astype(np.int64)
 
     with measure_time("Masking dataset indices"):
         ds_mask = (
