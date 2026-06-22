@@ -168,7 +168,7 @@ def _patch_dataset(
                 LOG.info(f"{k}: {del_count} attribute(s) deleted")
 
     if not dry_run:
-        zarr.convenience.consolidate_metadata(zarr_store)
+        zarr.consolidate_metadata(zarr_store)
     LOG.info(f"Consolidated {dataset_path}")
 
 

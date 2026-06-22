@@ -7,6 +7,7 @@ import os.path
 from typing import Callable
 
 import click
+import zarr
 
 from xcube.cli.common import (
     cli_option_quiet,
@@ -58,6 +59,22 @@ def _prune(input_path: str, dry_run: bool, monitor: Monitor):
     input_format = guess_dataset_format(input_path)
     if input_format != FORMAT_NAME_ZARR:
         raise click.ClickException("input must be a dataset in Zarr format")
+
+    # Detect Zarr format version
+    try:
+        zarr_group = zarr.open_group(input_path, mode="r")
+        zarr_format = getattr(zarr_group.metadata, "zarr_format", 2)
+    except Exception:
+        zarr_format = 2
+
+    if zarr_format >= 3:
+        monitor(
+            "Dataset uses Zarr format 3. "
+            "Empty chunks are not stored, pruning is unnecessary. "
+            "Nothing to do.",
+            1,
+        )
+        return
 
     num_deleted_total = 0
 

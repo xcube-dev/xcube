@@ -10,7 +10,7 @@ import numpy as np
 import pyproj
 import xarray as xr
 import zarr
-import zarr.convenience
+import zarr.storage
 
 from xcube.core.schema import get_dataset_chunks
 from xcube.util.assertions import assert_instance
@@ -313,7 +313,7 @@ def _find_dataset_tile_size(
 
 
 def add_spatial_ref(
-    dataset_store: zarr.convenience.StoreLike,
+    dataset_store: zarr.storage.StoreLike,
     crs: pyproj.CRS,
     crs_var_name: Optional[str] = "spatial_ref",
     xy_dim_names: Optional[tuple[str, str]] = None,
@@ -350,4 +350,4 @@ def add_spatial_ref(
             ):
                 item.attrs["grid_mapping"] = crs_var_name
 
-    zarr.convenience.consolidate_metadata(dataset_store)
+    zarr.consolidate_metadata(dataset_store)
