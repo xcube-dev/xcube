@@ -90,6 +90,13 @@ def render_panel(
         },
     )
 
+    progress = CircularProgress(
+        id="plot_progress",
+        visible=False,
+        size=28,
+        style={"margin": "2px 0"},
+    )
+
     control_bar = Box(
         children=[place_text, controls],
         style={
@@ -127,6 +134,7 @@ def render_panel(
         children=[
             instructions,
             control_bar,
+            progress,
             plot,
             error_message,
         ],
@@ -152,6 +160,7 @@ error_message = ""
     State("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
+    Output("plot_progress", "visible"),
 )
 def update_plot(
     ctx: Context,
@@ -161,7 +170,7 @@ def update_plot(
     var_2_name: str | None = None,
     time_label: float | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
-) -> alt.Chart | None:
+) -> tuple[alt.Chart | None, bool]:
     global error_message
     dataset = get_dataset(ctx, dataset_id)
 
@@ -181,12 +190,12 @@ def update_plot(
 
     if place_geometry is None or isinstance(place_geometry, shapely.geometry.Point):
         error_message = "Selected geometry must cover an area."
-        return None
+        return None, False
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
         error_message = "Selected geometry produces empty subset"
-        return None
+        return None, False
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
     var_2_data: np.ndarray = dataset[var_2_name].values.ravel()
@@ -268,7 +277,7 @@ def update_plot(
         height="container",
     )
     error_message = ""
-    return chart
+    return chart, False
 
 
 @panel.callback(
