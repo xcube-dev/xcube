@@ -3,8 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from collections.abc import MutableMapping
-from typing import Any, Dict
+from typing import Any
 
 import click
 
@@ -15,6 +14,11 @@ from xcube.cli.common import (
     configure_cli_output,
 )
 from xcube.constants import LOG
+from xcube.core.zarrcompat import (
+    consolidate_zarr_metadata,
+    new_zarr_store,
+    open_zarr_group,
+)
 
 DELETE_ATTR_VALUE = "__delete__"
 
@@ -131,11 +135,9 @@ def _patch_dataset(
     metadata: dict[str, Any],
     dry_run: bool,
 ):
-    import zarr
-
     LOG.info(f"Opening {dataset_path}...")
     zarr_store = _open_zarr_store(dataset_path, storage_options)
-    group = zarr.open(zarr_store, mode="r+" if not dry_run else "r")
+    group = open_zarr_group(zarr_store, mode="r+" if not dry_run else "r")
     for k, v in metadata.items():
         parts = k.split("/")
         item = None
@@ -168,15 +170,14 @@ def _patch_dataset(
                 LOG.info(f"{k}: {del_count} attribute(s) deleted")
 
     if not dry_run:
-        zarr.convenience.consolidate_metadata(zarr_store)
+        consolidate_zarr_metadata(zarr_store)
     LOG.info(f"Consolidated {dataset_path}")
 
 
-def _open_zarr_store(
-    dataset_path: str, storage_options: dict[str, Any]
-) -> MutableMapping[str, bytes]:
+def _open_zarr_store(dataset_path: str, storage_options: dict[str, Any]) -> Any:
     fs, root = get_fs_and_root(dataset_path, storage_options)
-    return fs.get_mapper(root=root)
+    zarr_store, _ = new_zarr_store(fs, root, mode="a")
+    return zarr_store
 
 
 def get_fs_and_root(dataset_path: str, storage_options: dict[str, Any]):

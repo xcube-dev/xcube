@@ -5,10 +5,8 @@
 import collections.abc
 from collections.abc import Iterator
 
-import zarr.storage
 
-
-class DiagnosticZarrStore(zarr.storage.Store):
+class DiagnosticZarrStore(collections.abc.MutableMapping):
     """A diagnostic Zarr store used for testing and investigating
     behaviour of Zarr and xarray's Zarr backend.
 

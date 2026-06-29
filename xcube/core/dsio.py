@@ -7,7 +7,7 @@ import shutil
 import warnings
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable, Mapping
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import botocore.exceptions
 import pandas as pd
@@ -30,6 +30,11 @@ from xcube.core.timeslice import (
     replace_time_slice,
 )
 from xcube.core.verify import assert_cube
+from xcube.core.zarrcompat import (
+    consolidate_zarr_metadata,
+    make_blosc_codec,
+    pop_zarr_write_options,
+)
 from xcube.util.plugin import ExtensionComponent, get_extension_registry
 
 _DEPRECATION_REASON = "Functionality is redundant. Use xcube.core.store API instead."
@@ -481,7 +486,11 @@ class ZarrDatasetIO(DatasetIO):
                 s3_client_kwargs=s3_client_kwargs,
                 mode="r",
             )
-            if max_cache_size is not None and max_cache_size > 0:
+            if (
+                max_cache_size is not None
+                and max_cache_size > 0
+                and hasattr(zarr, "LRUStoreCache")
+            ):
                 path_or_store = zarr.LRUStoreCache(
                     path_or_store, max_size=max_cache_size
                 )
@@ -504,8 +513,10 @@ class ZarrDatasetIO(DatasetIO):
             s3_client_kwargs=s3_client_kwargs,
             mode="w",
         )
-        encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
-        consolidated = kwargs.pop("consolidated", True)
+        kwargs, zarr_format, consolidated = pop_zarr_write_options(kwargs)
+        encoding = self._get_write_encodings(
+            dataset, compressor, chunksizes, packing, zarr_format
+        )
         dataset.to_zarr(
             path_or_store,
             mode="w",
@@ -515,7 +526,9 @@ class ZarrDatasetIO(DatasetIO):
         )
 
     @classmethod
-    def _get_write_encodings(cls, dataset, compressor, chunksizes, packing):
+    def _get_write_encodings(
+        cls, dataset, compressor, chunksizes, packing, zarr_format: int = 2
+    ):
         encoding = None
         if chunksizes:
             encoding = {}
@@ -542,14 +555,16 @@ class ZarrDatasetIO(DatasetIO):
                     encoding[var_name] = dict(packing[var_name])
 
         if compressor:
-            compressor = zarr.Blosc(**compressor)
+            compressor = make_blosc_codec(compressor, zarr_format)
+            compressor_key = "compressor" if zarr_format == 2 else "compressors"
+            compressor_value = compressor if zarr_format == 2 else (compressor,)
 
             if encoding:
                 for var_name in encoding.keys():
-                    encoding[var_name].update(compressor=compressor)
+                    encoding[var_name].update({compressor_key: compressor_value})
             else:
                 encoding = {
-                    var_name: dict(compressor=compressor)
+                    var_name: {compressor_key: compressor_value}
                     for var_name in dataset.data_vars
                 }
         return encoding
@@ -569,7 +584,7 @@ class ZarrDatasetIO(DatasetIO):
 
             ds = zarr.open_group(output_path, mode="r+", **kwargs)
             ds.attrs.update(global_attrs)
-            zarr.consolidate_metadata(output_path)
+            consolidate_zarr_metadata(output_path)
 
 
 # noinspection PyAbstractClass

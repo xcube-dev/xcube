@@ -9,17 +9,21 @@ import pathlib
 import warnings
 from collections.abc import Mapping, Sequence
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import fsspec
 import fsspec.core
 import numpy as np
 import xarray as xr
-import zarr
 
 # noinspection PyUnresolvedReferences
-import xcube.core.zarrstore
+import xcube.core.zarrstore  # noqa: F401
 from xcube.core.gridmapping import GridMapping
+from xcube.core.zarrcompat import (
+    has_consolidated_metadata,
+    new_zarr_store,
+    pop_zarr_write_options,
+)
 from xcube.core.subsampling import AggMethod, AggMethods
 from xcube.util.assertions import assert_instance
 from xcube.util.fspath import get_fs_path_class, resolve_path
@@ -125,7 +129,6 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
         fs = self._fs
 
-        open_params = dict(self._zarr_kwargs)
         base_dataset_open_params = None
 
         ds_path = self._get_path(self._path)
@@ -144,26 +147,25 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             # Nominal "{index}.zarr" must exist
             level_path = ds_path / f"{index}.zarr"
 
-        if isinstance(base_dataset_open_params, dict):
-            # TODO: complete logic here
-            engine = base_dataset_open_params.pop("engine", "zarr")
+        level_cache_size = None
+        if isinstance(cache_size, int) and cache_size >= self._MIN_CACHE_SIZE:
+            level_cache_size = math.ceil(self.size_weights[index] * cache_size)
+            if level_cache_size < self._MIN_CACHE_SIZE:
+                level_cache_size = None
 
-        level_zarr_store = fs.get_mapper(str(level_path))
+        level_zarr_store, level_zarr_mapping = new_zarr_store(
+            fs,
+            str(level_path),
+            mode="r",
+            cache_size=level_cache_size,
+            name=f"zarr_store({str(level_path)!r})",
+        )
 
         consolidated = (
             self._consolidate
             if self._consolidate is not None
-            else (".zmetadata" in level_zarr_store)
+            else has_consolidated_metadata(fs, str(level_path))
         )
-
-        if isinstance(cache_size, int) and cache_size >= self._MIN_CACHE_SIZE:
-            # compute cache size for level weighted by
-            # size in pixels for each level
-            cache_size = math.ceil(self.size_weights[index] * cache_size)
-            if cache_size >= self._MIN_CACHE_SIZE:
-                level_zarr_store = zarr.LRUStoreCache(
-                    level_zarr_store, max_size=cache_size
-                )
 
         try:
             level_dataset = xr.open_zarr(
@@ -174,7 +176,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 f"Failed to open dataset {level_path!r}: {e}"
             ) from e
 
-        level_dataset.zarr_store.set(level_zarr_store)
+        level_dataset.zarr_store.set(level_zarr_mapping)
         return level_dataset
 
     @staticmethod
@@ -244,7 +246,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         fs_kwargs: Optional[Mapping[str, Any]] = None,
         replace: bool = False,
         num_levels: Optional[int] = None,
-        consolidated: bool = True,
+        consolidated: Optional[bool] = None,
         tile_size: Optional[ScalarOrPair[int]] = None,
         use_saved_levels: bool = False,
         base_dataset_path: Optional[str] = None,
@@ -260,6 +262,10 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             tile_size = normalize_scalar_or_pair(
                 tile_size, item_type=int, name="tile_size"
             )
+
+        zarr_kwargs, _zarr_format, consolidated = pop_zarr_write_options(
+            dict(zarr_kwargs, consolidated=consolidated)
+        )
 
         assert_instance(path, str, name="path")
         assert_instance(fs, fsspec.AbstractFileSystem, name="fs")
@@ -347,7 +353,9 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             else:
                 # Write level "{index}.zarr"
                 level_path = data_path / f"{index}.zarr"
-                level_zarr_store = fs.get_mapper(str(level_path), create=True)
+                level_zarr_store, level_zarr_mapping = new_zarr_store(
+                    fs, str(level_path), mode="w"
+                )
                 try:
                     level_dataset.to_zarr(
                         level_zarr_store,
@@ -364,7 +372,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                     level_dataset = xr.open_zarr(
                         level_zarr_store, consolidated=consolidated
                     )
-                    level_dataset.zarr_store.set(level_zarr_store)
+                    level_dataset.zarr_store.set(level_zarr_mapping)
                     ml_dataset.set_dataset(index, level_dataset)
 
         return path

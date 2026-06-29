@@ -5,14 +5,13 @@
 import collections.abc
 import warnings
 from collections.abc import Iterator
-from typing import List
 
 import zarr.storage
 
 from xcube.util.assertions import assert_instance, assert_true
 
 
-class CachedZarrStore(zarr.storage.Store):
+class CachedZarrStore(collections.abc.MutableMapping):
     """A read-only Zarr store that is faster than
     *store* because it uses a writable *cache* store.
 
@@ -40,24 +39,25 @@ class CachedZarrStore(zarr.storage.Store):
     ):
         assert_instance(store, collections.abc.MutableMapping, name="store")
         assert_instance(cache, collections.abc.MutableMapping, name="cache")
-        if not isinstance(store, zarr.storage.BaseStore):
-            store = zarr.storage.KVStore(store)
-        if not isinstance(cache, zarr.storage.BaseStore):
-            cache = zarr.storage.KVStore(cache)
-        assert_true(store.is_readable(), message="store must be readable")
-        assert_true(cache.is_readable(), message="cache must be readable")
-        assert_true(cache.is_writeable(), message="cache must be writable")
+        if hasattr(zarr.storage, "BaseStore"):
+            if not isinstance(store, zarr.storage.BaseStore):
+                store = zarr.storage.KVStore(store)
+            if not isinstance(cache, zarr.storage.BaseStore):
+                cache = zarr.storage.KVStore(cache)
+            assert_true(store.is_readable(), message="store must be readable")
+            assert_true(cache.is_readable(), message="cache must be readable")
+            assert_true(cache.is_writeable(), message="cache must be writable")
         self._store = store
         self._cache = cache
         self._implement_op("listdir")
         self._implement_op("getsize")
 
     @property
-    def store(self) -> zarr.storage.BaseStore:
+    def store(self) -> collections.abc.MutableMapping:
         return self._store
 
     @property
-    def cache(self) -> zarr.storage.BaseStore:
+    def cache(self) -> collections.abc.MutableMapping:
         return self._cache
 
     def _implement_op(self, op: str):

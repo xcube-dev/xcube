@@ -8,10 +8,10 @@ from typing import Dict, Tuple, Union
 
 import numpy as np
 import xarray as xr
-import zarr
 
 from xcube.core.chunk import chunk_dataset
 from xcube.core.unchunk import unchunk_dataset
+from xcube.core.zarrcompat import detect_zarr_format, open_zarr_group
 
 DEFAULT_TIME_EPS = np.array(1000 * 1000, dtype="timedelta64[ns]")
 
@@ -77,7 +77,8 @@ def append_time_slice(
     # Unfortunately time_slice.to_zarr(store, mode='a', append_dim='time') will replace global attributes of store
     # with attributes of time_slice (xarray bug?), which are usually empty in our case.
     # Hence, we must save our old attributes in a copy of time_slice.
-    ds = zarr.open_group(store, mode="r")
+    zarr_format = detect_zarr_format(store) or 2
+    ds = open_zarr_group(store, mode="r", zarr_format=zarr_format)
     time_slice = time_slice.copy()
     time_slice.attrs.update(ds.attrs)
     if "coordinates" in time_slice.attrs:
@@ -86,7 +87,13 @@ def append_time_slice(
         # from next time_slice.to_zarr(...) call.
         time_slice.attrs.pop("coordinates")
 
-    time_slice.to_zarr(store, mode="a", append_dim="time", consolidated=True)
+    time_slice.to_zarr(
+        store,
+        mode="a",
+        append_dim="time",
+        consolidated=zarr_format != 3,
+        zarr_format=zarr_format,
+    )
 
     unchunk_dataset(store, coords_only=True)
 
@@ -173,17 +180,23 @@ def update_time_slice(
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name="zarr")
     temp_dir = tempfile.TemporaryDirectory(prefix="xcube-time-slice-", suffix=".zarr")
-    time_slice.to_zarr(temp_dir.name, encoding=encoding)
-    slice_root_group = zarr.open(temp_dir.name, mode="r")
+    zarr_format = detect_zarr_format(store) or 2
+    time_slice.to_zarr(
+        temp_dir.name,
+        encoding=encoding,
+        zarr_format=zarr_format,
+        consolidated=zarr_format != 3,
+    )
+    slice_root_group = open_zarr_group(temp_dir.name, mode="r", zarr_format=zarr_format)
     slice_arrays = dict(slice_root_group.arrays())
 
-    cube_root_group = zarr.open(store, mode="r+")
+    cube_root_group = open_zarr_group(store, mode="r+", zarr_format=zarr_format)
     for var_name, var_array in cube_root_group.arrays():
         if var_name in time_var_names:
             slice_array = slice_arrays[var_name]
             if insert_mode:
                 # Add one empty time step
-                empty = zarr.creation.empty(slice_array.shape, dtype=var_array.dtype)
+                empty = np.empty(slice_array.shape, dtype=var_array.dtype)
                 var_array.append(empty, axis=0)
                 # Shift contents
                 var_array[insert_index + 1 :, ...] = var_array[insert_index:-1, ...]

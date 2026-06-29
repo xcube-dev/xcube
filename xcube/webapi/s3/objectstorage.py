@@ -4,12 +4,12 @@
 
 import collections.abc
 from collections.abc import Iterator, Mapping
-from typing import Tuple, Union
+from typing import Union
 
 import xarray as xr
-import zarr.storage
 
 from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.zarrcompat import normalize_bytes_mapping_value
 from xcube.server.api import ApiError
 
 
@@ -62,7 +62,7 @@ class ObjectStorage(collections.abc.Mapping):
     def __getitem__(self, key: str) -> bytes:
         """Get bytes object for *key*."""
         zarr_store, item_key = self._parse_key(key)
-        value = zarr_store[item_key]
+        value = normalize_bytes_mapping_value(zarr_store[item_key])
         if not isinstance(value, bytes):
             raise RuntimeError(
                 f"Zarr store of type {type(zarr_store).__name__}"
@@ -71,7 +71,7 @@ class ObjectStorage(collections.abc.Mapping):
             )
         return value
 
-    def _parse_key(self, key: str) -> tuple[zarr.storage.BaseStore, str]:
+    def _parse_key(self, key: str) -> tuple[collections.abc.Mapping, str]:
         """Parses a given *key* which is expected to have format
         "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
         "{dataset_id}/{*path}" for other datasets.

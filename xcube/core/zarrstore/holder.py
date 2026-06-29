@@ -4,8 +4,7 @@
 
 import collections.abc
 import threading
-import warnings
-from typing import Optional
+from typing import Any, Optional
 
 import xarray as xr
 
@@ -42,14 +41,14 @@ class ZarrStoreHolder:
 
     def __init__(self, dataset: xr.Dataset):
         self._dataset = dataset
-        self._zarr_store: Optional[collections.abc.MutableMapping] = None
+        self._zarr_store: Optional[Any] = None
         self._lock = threading.RLock()
 
-    def get(self) -> collections.abc.MutableMapping:
+    def get(self) -> Any:
         """Get the Zarr store of a dataset.
         If no Zarr store has been set, the method will use
-        ``GenericZarrStore.from_dataset()`` to create and set
-        one.
+        ``dataset.to_zarr()`` to create and set an in-memory Zarr v2
+        mapping.
 
         Returns:
             The Zarr store.
@@ -58,7 +57,7 @@ class ZarrStoreHolder:
             # Double-checked locking pattern
             with self._lock:
                 if self._zarr_store is None:
-                    from xcube.core.zarrstore import GenericZarrStore
+                    from xcube.core.zarrstore.generic import GenericZarrStore
 
                     self._zarr_store = GenericZarrStore.from_dataset(self._dataset)
                     source = self._dataset.encoding.get("source", "?")
@@ -69,7 +68,7 @@ class ZarrStoreHolder:
                     )
         return self._zarr_store
 
-    def set(self, zarr_store: collections.abc.MutableMapping) -> None:
+    def set(self, zarr_store: Any) -> None:
         """Set the Zarr store of a dataset.
 
         Args:

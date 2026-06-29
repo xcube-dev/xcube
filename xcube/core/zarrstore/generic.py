@@ -15,7 +15,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numcodecs.abc
 import numpy as np
 import xarray as xr
-import zarr.storage
 
 from xcube.util.assertions import assert_instance, assert_true
 
@@ -305,7 +304,7 @@ class GenericArray(dict[str, any]):
 GenericArrayLike = Union[GenericArray, dict[str, Any]]
 
 
-class GenericZarrStore(zarr.storage.Store):
+class GenericZarrStore(collections.abc.MutableMapping):
     """A Zarr store that maintains generic arrays in a flat, top-level
     hierarchy. The root of the store is a Zarr group
     conforming to the Zarr spec v2.
@@ -392,6 +391,15 @@ class GenericZarrStore(zarr.storage.Store):
     def is_writeable(self) -> bool:
         """Return False, because arrays in this store are generative."""
         return False
+
+    def is_readable(self) -> bool:
+        return True
+
+    def is_listable(self) -> bool:
+        return True
+
+    def is_erasable(self) -> bool:
+        return True
 
     def listdir(self, path: str = "") -> list[str]:
         """List a store path.

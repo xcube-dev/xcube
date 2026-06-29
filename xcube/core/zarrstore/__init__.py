@@ -6,4 +6,4 @@ from .cached import CachedZarrStore
 from .diagnostic import DiagnosticZarrStore
 from .generic import GenericArray, GenericArrayLike, GenericZarrStore
 from .holder import ZarrStoreHolder
-from .logging import LoggingZarrStore
+from xcube.core.zarrcompat import LoggingZarrStore

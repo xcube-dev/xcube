@@ -56,8 +56,8 @@ dependencies = [
   "tabulate>=0.9",
   "tornado>=6.0",
   "urllib3>=1.26",
-  "xarray>=2024.7",
-  "zarr>=2.11,<3"
+  "xarray>=2025.1",
+  "zarr>=3,<4"
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
