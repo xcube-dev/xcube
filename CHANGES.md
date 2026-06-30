@@ -6,6 +6,11 @@
 
 ### Other changes
 * Constrained `matplotlib >=3.8.3,<3.11.0` (#1219)
+* Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
+  `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
+  Zarr store, making it independent of any specific Zarr store implementation. 
+  This change prepares xcube for the migration to Zarr v3, whose store API differs 
+  significantly from that of Zarr v2.
 
 ## Changes in 1.13.3
 

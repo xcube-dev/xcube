@@ -9,8 +9,6 @@ import tempfile
 import unittest
 import warnings
 from abc import ABC, abstractmethod
-
-
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from typing import Any, Callable, Optional, Union
 

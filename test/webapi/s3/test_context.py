@@ -26,7 +26,7 @@ class S3ContextTest(unittest.TestCase):
     def test_datasets_bucket(self):
         ctx = get_s3_ctx()
         bucket = ctx.get_bucket("datasets")
-        self.assertCountEqual(
+        self.assertEqual(
             [
                 "demo.zarr/.zmetadata",
                 "demo.zarr/.zgroup",
