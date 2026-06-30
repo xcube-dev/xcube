@@ -204,7 +204,6 @@ class TornadoFramework(Framework):
             for h in list(log.handlers):
                 log.removeHandler(h)
                 h.close()
-
             log.propagate = True
             # Use common log level
             log.setLevel(logging.root.level)
