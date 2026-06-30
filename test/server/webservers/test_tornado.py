@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import logging
 import unittest
 from collections.abc import Awaitable, Sequence
 from typing import Any, Callable, Optional, Union
@@ -43,6 +44,76 @@ class TornadoFrameworkTest(unittest.TestCase):
 
     def test_config_schema(self):
         self.assertIsInstance(self.framework.config_schema, JsonObjectSchema)
+
+    def test_configure_logging_uses_root_handler_once(self):
+        class CountingHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+                self.count = 0
+
+            def emit(self, record):
+                self.count += 1
+
+        logger_names = [
+            "tornado",
+            "tornado.access",
+            "tornado.application",
+            "tornado.general",
+        ]
+        root = logging.getLogger()
+
+        # save original logging state to restore after test
+        saved_root_handlers = list(root.handlers)
+        saved_root_level = root.level
+        saved_loggers = {
+            name: (
+                list(logging.getLogger(name).handlers),
+                logging.getLogger(name).level,
+                logging.getLogger(name).propagate,
+            )
+            for name in logger_names
+        }
+
+        try:
+            for handler in list(root.handlers):
+                root.removeHandler(handler)
+            root.setLevel(logging.INFO)
+            counting_handler = CountingHandler()
+            root.addHandler(counting_handler)
+
+            for name in logger_names:
+                logger = logging.getLogger(name)
+                for handler in list(logger.handlers):
+                    logger.removeHandler(handler)
+                logger.addHandler(logging.NullHandler())
+                logger.propagate = False
+
+            TornadoFramework.configure_logging()
+            for name in logger_names:
+                logger = logging.getLogger(name)
+                self.assertEqual([], logger.handlers)
+                self.assertTrue(logger.propagate)
+                self.assertEqual(logging.INFO, logger.level)
+
+            logging.getLogger("tornado.access").info("GET /api/viewer/test.txt")
+            self.assertEqual(1, counting_handler.count)
+            
+        # restore original logging state
+        finally:
+            for name in logger_names:
+                logger = logging.getLogger(name)
+                for handler in list(logger.handlers):
+                    logger.removeHandler(handler)
+                handlers, level, propagate = saved_loggers[name]
+                for handler in handlers:
+                    logger.addHandler(handler)
+                logger.setLevel(level)
+                logger.propagate = propagate
+            for handler in list(root.handlers):
+                root.removeHandler(handler)
+            for handler in saved_root_handlers:
+                root.addHandler(handler)
+            root.setLevel(saved_root_level)
 
     def test_add_routes(self):
         class Handler(ApiHandler):
