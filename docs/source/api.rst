@@ -183,24 +183,6 @@ Multi-Resolution Datasets
 .. autoclass:: xcube.core.mldataset.MappedMultiLevelDataset
     :members:
 
-Zarr Store
-==========
-
-.. autoclass:: xcube.core.zarrstore.ZarrStoreHolder
-    :members:
-
-.. autoclass:: xcube.core.zarrstore.GenericZarrStore
-    :members:
-
-.. autoclass:: xcube.core.zarrstore.GenericArray
-    :members:
-
-.. autoclass:: xcube.core.zarrstore.CachedZarrStore
-    :members:
-
-.. autoclass:: xcube.core.zarrstore.DiagnosticZarrStore
-    :members:
-
 Utilities
 =========
 

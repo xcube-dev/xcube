@@ -7,10 +7,10 @@ import warnings
 from collections.abc import Sequence
 from typing import AbstractSet, Any, Callable, Dict, Tuple, Union
 
+import dask.array as da
 import numpy as np
 import xarray as xr
 
-from xcube.core.chunkstore import ChunkStore
 from xcube.core.schema import CubeSchema
 from xcube.core.verify import assert_cube
 
@@ -195,40 +195,23 @@ def compute_dataset(
         cube_func, input_var_names
     )
 
-    def cube_func_wrapper(index_chunk, *input_var_chunks):
+    def cube_func_wrapper(ds: xr.Dataset, block_info=None) -> xr.Dataset:
         nonlocal input_cube_schema, input_var_names, input_params, input_vars
         nonlocal has_input_params, has_dim_coords, has_dim_ranges
 
-        # Note, xarray.apply_ufunc does a test call with empty input arrays,
-        # so index_chunk.size == 0 is a valid case
-        empty_call = index_chunk.size == 0
-
-        # TODO: when output_var_dims is given, index_chunk must be reordered
-        #   as core dimensions are moved to the and of index_chunk and input_var_chunks
-        if not empty_call:
-            index_chunk = index_chunk.ravel()
-
-        if index_chunk.size < 2 * input_cube_schema.ndim:
-            if not empty_call:
-                warnings.warn(
-                    f"unexpected index_chunk of size {index_chunk.size} received!"
-                )
-                return None
-
         dim_ranges = None
         if has_dim_ranges or has_dim_coords:
-            dim_ranges = {}
-            for i in range(input_cube_schema.ndim):
-                dim_name = input_cube_schema.dims[i]
-                if not empty_call:
-                    start = int(index_chunk[2 * i + 0])
-                    end = int(index_chunk[2 * i + 1])
-                    dim_ranges[dim_name] = start, end
-                else:
-                    dim_ranges[dim_name] = ()
+            if block_info is None:
+                dim_ranges = None
+            else:
+                dim_ranges = {}
+                info = block_info[0]
+                for i, dim_name in enumerate(input_cube_schema.dims):
+                    start, end = info["array-location"][i]
+                    dim_ranges[dim_name] = int(start), int(end)
 
         dim_coords = None
-        if has_dim_coords:
+        if has_dim_coords and dim_ranges is not None:
             dim_coords = {}
             for coord_var_name, coord_var in input_cube_schema.coords.items():
                 coord_slices = [slice(None)] * coord_var.ndim
@@ -247,53 +230,45 @@ def compute_dataset(
         if has_dim_coords:
             kwargs["dim_coords"] = dim_coords
 
-        return cube_func(*input_var_chunks, **kwargs)
+        result = cube_func(*[ds[name].data for name in input_var_names], **kwargs)
+        if isinstance(result, xr.DataArray):
+            da = result
+        else:
+            da = xr.DataArray(
+                result,
+                dims=output_var_dims or input_cube_schema.dims,
+            )
 
-    index_var = _gen_index_var(input_cube_schema)
+        return xr.Dataset({output_var_name: da})
 
-    all_input_vars = [index_var] + input_vars
+    input_ds = xr.Dataset({name: var for name, var in zip(input_var_names, input_vars)})
 
-    input_core_dims = None
-    if output_var_dims:
-        input_core_dims = []
-        has_warned = False
-        for i in range(len(all_input_vars)):
-            input_var = all_input_vars[i]
-            var_core_dims = [
-                dim for dim in input_var.dims if dim not in output_var_dims
-            ]
-            must_rechunk = False
-            if var_core_dims and input_var.chunks:
-                for var_core_dim in var_core_dims:
-                    dim_index = input_var.dims.index(var_core_dim)
-                    dim_chunk_size = input_var.chunks[dim_index][0]
-                    dim_shape_size = input_var.shape[dim_index]
-                    if dim_chunk_size != dim_shape_size:
-                        must_rechunk = True
-                        break
-            if must_rechunk:
-                if not has_warned:
-                    warnings.warn(
-                        f"Input variables must not be chunked in dimension(s): {', '.join(var_core_dims)}.\n"
-                        f"Rechunking applies, which may drastically decrease runtime performance "
-                        f"and increase memory usage."
-                    )
-                    has_warned = True
-                all_input_vars[i] = input_var.chunk(
-                    {var_core_dim: -1 for var_core_dim in var_core_dims}
-                )
-            input_core_dims.append(var_core_dims)
-
-    output_var = xr.apply_ufunc(
-        cube_func_wrapper,
-        *all_input_vars,
-        dask="parallelized",
-        input_core_dims=input_core_dims,
-        output_dtypes=[output_var_dtype],
+    template = xr.Dataset(
+        {
+            output_var_name: xr.DataArray(
+                da.empty(
+                    tuple(
+                        input_cube_schema.shape[input_cube_schema.dims.index(dim)]
+                        for dim in (output_var_dims or input_cube_schema.dims)
+                    ),
+                    dtype=output_var_dtype,
+                    chunks=input_cube_schema.chunks,
+                ),
+                dims=output_var_dims or input_cube_schema.dims,
+            )
+        }
     )
+
+    output_ds = xr.map_blocks(
+        cube_func_wrapper,
+        input_ds,
+        template=template,
+    )
+
     if output_var_attrs:
-        output_var.attrs.update(output_var_attrs)
-    return xr.Dataset({output_var_name: output_var}, coords=input_cube_schema.coords)
+        output_ds[output_var_name].attrs.update(output_var_attrs)
+
+    return output_ds
 
 
 def _inspect_cube_func(cube_func: CubeFunc, input_var_names: Sequence[str] = None):
@@ -334,32 +309,3 @@ def _inspect_cube_func(cube_func: CubeFunc, input_var_names: Sequence[str] = Non
     has_dim_coords = "dim_coords" in args or "dim_coords" in kwonlyargs
     has_dim_ranges = "dim_ranges" in args or "dim_ranges" in kwonlyargs
     return has_input_params, has_dim_coords, has_dim_ranges
-
-
-def _gen_index_var(cube_schema: CubeSchema):
-    dims = cube_schema.dims
-    shape = cube_schema.shape
-    chunks = cube_schema.chunks
-
-    # noinspection PyUnusedLocal
-    def get_chunk(cube_store: ChunkStore, name: str, index: tuple[int, ...]) -> bytes:
-        data = np.zeros(cube_store.chunks, dtype=np.uint64)
-        data_view = data.ravel()
-        if data_view.base is not data:
-            raise ValueError("view expected")
-        if data_view.size < cube_store.ndim * 2:
-            raise ValueError("size too small")
-        for i in range(cube_store.ndim):
-            j1 = cube_store.chunks[i] * index[i]
-            j2 = j1 + cube_store.chunks[i]
-            data_view[2 * i] = j1
-            data_view[2 * i + 1] = j2
-        return data.tobytes()
-
-    store = ChunkStore(dims, shape, chunks)
-    store.add_lazy_array("__index_var__", "<u8", get_chunk=get_chunk)
-
-    dataset = xr.open_zarr(store)
-    index_var = dataset.__index_var__
-    index_var = index_var.assign_coords(**cube_schema.coords)
-    return index_var

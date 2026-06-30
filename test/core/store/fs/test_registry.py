@@ -9,6 +9,8 @@ import tempfile
 import unittest
 import warnings
 from abc import ABC, abstractmethod
+
+import zarr.storage
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from typing import Any, Callable, Optional, Union
 
@@ -31,7 +33,6 @@ from xcube.core.store import (
 )
 from xcube.core.store.fs.registry import get_filename_extensions, new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
-from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
 
 ROOT_DIR = "xcube"
@@ -184,13 +185,7 @@ class FsDataStoresTestMixin(ABC):
             expected_return_type=xr.Dataset,
             expected_descriptor_type=DatasetDescriptor,
             assert_data_ok=self._assert_zarr_store_direct_ok,
-            # Not nice here, but we lack coverage for the case where
-            # the original Zarr store will be wrapped by the
-            # LoggingZarrStore and zarr.LRUStoreCache stores.
-            open_params={
-                "cache_size": 1 << 24,
-                "log_access": True,
-            },
+            open_params={"cache_size": 1 << 24},
         )
         self._assert_dataset_supported(
             data_store,
@@ -324,12 +319,11 @@ class FsDataStoresTestMixin(ABC):
         self.assertIsInstance(dataset, xr.Dataset)
         self.assertTrue(hasattr(dataset, "zarr_store"))
         self.assertIsInstance(dataset.zarr_store.get(), collections.abc.MutableMapping)
-        self.assertNotIsInstance(dataset.zarr_store.get(), GenericZarrStore)
 
     def _assert_zarr_store_generic_ok(self, dataset):
         self.assertIsInstance(dataset, xr.Dataset)
         self.assertTrue(hasattr(dataset, "zarr_store"))
-        self.assertIsInstance(dataset.zarr_store.get(), GenericZarrStore)
+        self.assertIsInstance(dataset.zarr_store.get(), zarr.storage.Store)
 
     def _assert_multi_level_dataset_data_ok(self, ml_dataset):
         self.assertIsInstance(ml_dataset, xcube.core.mldataset.MultiLevelDataset)
@@ -360,7 +354,6 @@ class FsDataStoresTestMixin(ABC):
             self.assertIsInstance(
                 dataset.zarr_store.get(), collections.abc.MutableMapping
             )
-            self.assertNotIsInstance(dataset.zarr_store.get(), GenericZarrStore)
 
     def _assert_multi_level_dataset_format_with_tile_size(
         self, data_store: FsDataStore

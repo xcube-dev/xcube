@@ -18,7 +18,6 @@ import xarray as xr
 import zarr
 
 # noinspection PyUnresolvedReferences
-import xcube.core.zarrstore
 from xcube.core.gridmapping import GridMapping
 from xcube.core.subsampling import AggMethod, AggMethods
 from xcube.util.assertions import assert_instance
