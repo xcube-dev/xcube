@@ -10,7 +10,7 @@ import unittest
 import warnings
 from abc import ABC, abstractmethod
 
-import zarr.storage
+
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from typing import Any, Callable, Optional, Union
 
@@ -33,6 +33,7 @@ from xcube.core.store import (
 )
 from xcube.core.store.fs.registry import get_filename_extensions, new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
+from xcube.core.zarrstore import GenericZarrStore
 from xcube.util.temp import new_temp_dir
 
 ROOT_DIR = "xcube"
@@ -317,9 +318,14 @@ class FsDataStoresTestMixin(ABC):
 
     def _assert_zarr_store_direct_ok(self, dataset):
         self.assertIsInstance(dataset, xr.Dataset)
+        self.assertTrue(hasattr(dataset, "zarr_store"))
+        self.assertIsInstance(dataset.zarr_store.get(), collections.abc.MutableMapping)
+        self.assertNotIsInstance(dataset.zarr_store.get(), GenericZarrStore)
 
     def _assert_zarr_store_generic_ok(self, dataset):
         self.assertIsInstance(dataset, xr.Dataset)
+        self.assertTrue(hasattr(dataset, "zarr_store"))
+        self.assertIsInstance(dataset.zarr_store.get(), GenericZarrStore)
 
     def _assert_multi_level_dataset_data_ok(self, ml_dataset):
         self.assertIsInstance(ml_dataset, xcube.core.mldataset.MultiLevelDataset)
@@ -345,6 +351,12 @@ class FsDataStoresTestMixin(ABC):
             self.assertTrue(np.isnan(dataset.var_a.encoding.get("_FillValue")))
             self.assertEqual(-9999, dataset.var_b.encoding.get("_FillValue"))
             self.assertEqual(None, dataset.var_c.encoding.get("_FillValue"))
+
+            self.assertTrue(hasattr(dataset, "zarr_store"))
+            self.assertIsInstance(
+                dataset.zarr_store.get(), collections.abc.MutableMapping
+            )
+            self.assertNotIsInstance(dataset.zarr_store.get(), GenericZarrStore)
 
     def _assert_multi_level_dataset_format_with_tile_size(
         self, data_store: FsDataStore

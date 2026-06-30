@@ -172,6 +172,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
                     f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
                 ) from e
 
+        dataset.zarr_store.set(zarr_store)
         return dataset
 
     # noinspection PyMethodMayBeStatic
