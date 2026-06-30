@@ -7,24 +7,19 @@ import inspect
 import itertools
 import json
 import math
-import threading
-import warnings
 from collections.abc import Iterator, Sequence
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numcodecs.abc
 import numpy as np
 import xarray as xr
-import zarr.storage
-
-from xcube.util.assertions import assert_instance, assert_true
 
 GetData = Callable[[tuple[int]], Union[bytes, np.ndarray]]
 
 OnClose = Callable[[dict[str, Any]], None]
 
 
-class GenericArray(dict[str, any]):
+class GenericArray(dict[str, Any]):
     """Represent a generic array in the ``GenericZarrStore`` as
     dictionary of properties.
 
@@ -112,7 +107,7 @@ class GenericArray(dict[str, any]):
 
     def __init__(
         self,
-        array: Optional[dict[str, any]] = None,
+        array: Optional[dict[str, Any]] = None,
         name: Optional[str] = None,
         get_data: Optional[GetData] = None,
         get_data_params: Optional[dict[str, Any]] = None,
@@ -305,7 +300,7 @@ class GenericArray(dict[str, any]):
 GenericArrayLike = Union[GenericArray, dict[str, Any]]
 
 
-class GenericZarrStore(zarr.storage.Store):
+class GenericZarrStore(collections.abc.MutableMapping):
     """A Zarr store that maintains generic arrays in a flat, top-level
     hierarchy. The root of the store is a Zarr group
     conforming to the Zarr spec v2.
@@ -646,7 +641,7 @@ class GenericZarrStore(zarr.storage.Store):
 
     # noinspection PyMethodMayBeStatic
     def _get_array_data_item(
-        self, array: dict[str, Any], chunk_index: tuple[int]
+        self, array: dict[str, Any], chunk_index: tuple[int, ...]
     ) -> Union[bytes, np.ndarray]:
         # Note, here array is expected to be "finalized",
         # that is, validated and normalized
@@ -733,7 +728,7 @@ class GenericZarrStore(zarr.storage.Store):
             raise KeyError(key)
         return array_name, value_id
 
-    def _get_array_chunk_index(self, array_name: str, index_id: str) -> tuple[int]:
+    def _get_array_chunk_index(self, array_name: str, index_id: str) -> tuple[int, ...]:
         try:
             chunk_index = tuple(map(int, index_id.split(".")))
         except (ValueError, TypeError):

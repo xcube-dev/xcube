@@ -331,7 +331,6 @@ Common parameters for opening [xarray.Dataset] instances:
 * `consolidated: bool` - Whether to open the store using Zarr's 
   consolidated metadata capability. Only works for stores that have already 
   been consolidated. Defaults to `False`.
-* `log_access: bool` - Defaults to `False`.
 
 ### Copernicus Climate Data Store `cds`
 

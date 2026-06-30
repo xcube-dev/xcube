@@ -30,20 +30,15 @@ class ComputeCubeTest(unittest.TestCase):
         calls = []
 
         def my_cube_func(
+            array: np.ndarray,
             input_params: dict[str, Any] = None,
             dim_coords: dict[str, np.ndarray] = None,
             dim_ranges: dict[str, tuple[int, int]] = None,
         ) -> CubeFuncOutput:
             nonlocal calls
             calls.append((input_params, dim_coords, dim_ranges))
-            lon_range = dim_ranges["lon"]
-            lat_range = dim_ranges["lat"]
-            time_range = dim_ranges["time"]
-            n_lon = lon_range[1] - lon_range[0]
-            n_lat = lat_range[1] - lat_range[0]
-            n_time = time_range[1] - time_range[0]
             fill_value = input_params["fill_value"]
-            return np.full((n_time, n_lat, n_lon), fill_value, dtype=np.float64)
+            return np.full(array.shape, fill_value, dtype=np.float64)
 
         output_cube = compute_cube(
             my_cube_func,
@@ -109,8 +104,8 @@ class ComputeCubeTest(unittest.TestCase):
         ) -> CubeFuncOutput:
             nonlocal calls
             calls.append((analysed_sst, analysis_error))
-            analysed_sst_mean = np.nanmean(analysed_sst, -1)
-            analysis_error_max = np.nanmax(analysis_error, -1)
+            analysed_sst_mean = np.nanmean(analysed_sst, 0)
+            analysis_error_max = np.nanmax(analysis_error, 0)
             return analysed_sst_mean + analysis_error_max
 
         output_dataset = compute_dataset(
@@ -118,7 +113,7 @@ class ComputeCubeTest(unittest.TestCase):
             self.cube,
             input_var_names=["analysed_sst", "analysis_error"],
             output_var_name="analysed_sst_max",
-            output_var_dims={"lat", "lon"},
+            output_var_dims=("lat", "lon"),
         )
 
         self.assertIsInstance(output_dataset, xr.Dataset)
