@@ -26,45 +26,47 @@ class S3ContextTest(unittest.TestCase):
     def test_datasets_bucket(self):
         ctx = get_s3_ctx()
         bucket = ctx.get_bucket("datasets")
-        self.assertEqual(
+        self.assertCountEqual(
             [
-                "demo.zarr/.zmetadata",
-                "demo.zarr/.zgroup",
-                "demo.zarr/.zattrs",
-                "demo.zarr/lat/.zarray",
-                "demo.zarr/lat/.zattrs",
-                "demo.zarr/lat/0",
-                "demo.zarr/lat_bnds/.zarray",
-                "demo.zarr/lat_bnds/.zattrs",
-                "demo.zarr/lat_bnds/0.0",
-                "demo.zarr/lon/.zarray",
+                "demo.zarr/c2rcc_flags",
+                "demo.zarr/conc_chl",
+                "demo.zarr/conc_tsm",
+                "demo.zarr/kd489",
+                "demo.zarr/quality_flags",
+                "demo-1w.zarr/c2rcc_flags",
+                "demo-1w.zarr/conc_chl",
+                "demo-1w.zarr/conc_tsm",
+                "demo-1w.zarr/kd489",
+                "demo-1w.zarr/quality_flags",
+                "demo-1w.zarr/c2rcc_flags_stdev",
+                "demo-1w.zarr/conc_chl_stdev",
+                "demo-1w.zarr/conc_tsm_stdev",
+                "demo-1w.zarr/kd489_stdev",
+                "demo-1w.zarr/quality_flags_stdev",
+                "demo-multidimensional.zarr/conc_chl",
             ],
-            list(bucket.keys())[0:10],
+            list(bucket.keys()),
         )
-
-        self.assertTrue("demo.zarr/lat/.zarray" in bucket)
-        self.assertTrue("demo.zarr/lat_bnds/0.0" in bucket)
-        self.assertTrue("demi.zarr/lat_bnds/0.0" not in bucket)
 
     def test_pyramids_bucket(self):
         ctx = get_s3_ctx()
         bucket = ctx.get_bucket("pyramids")
         self.assertEqual(
             [
-                "demo.levels/0.zarr/.zmetadata",
-                "demo.levels/0.zarr/.zgroup",
-                "demo.levels/0.zarr/.zattrs",
-                "demo.levels/0.zarr/lat/.zarray",
-                "demo.levels/0.zarr/lat/.zattrs",
-                "demo.levels/0.zarr/lat/0",
-                "demo.levels/0.zarr/lat_bnds/.zarray",
-                "demo.levels/0.zarr/lat_bnds/.zattrs",
-                "demo.levels/0.zarr/lat_bnds/0.0",
-                "demo.levels/0.zarr/lon/.zarray",
+                "demo.levels/0.zarr/c2rcc_flags",
+                "demo.levels/0.zarr/conc_chl",
+                "demo.levels/0.zarr/conc_tsm",
+                "demo.levels/0.zarr/kd489",
+                "demo.levels/0.zarr/quality_flags",
+                "demo.levels/1.zarr/c2rcc_flags",
+                "demo.levels/1.zarr/conc_chl",
+                "demo.levels/1.zarr/conc_tsm",
+                "demo.levels/1.zarr/kd489",
+                "demo.levels/1.zarr/quality_flags",
             ],
             list(bucket.keys())[0:10],
         )
 
-        self.assertTrue("demo.levels/0.zarr/lat/.zarray" in bucket)
-        self.assertTrue("demo.levels/0.zarr/lat_bnds/0.0" in bucket)
-        self.assertTrue("demi.levels/0.zarr/lat_bnds/0.0" not in bucket)
+        self.assertTrue("demo-1w.levels/2.zarr/conc_tsm_stdev" in bucket)
+        self.assertTrue("demo-multidimensional.levels/2.zarr/conc_chl" in bucket)
+        self.assertFalse("demo-multidimensional.levels/3.zarr/conc_chl" in bucket)

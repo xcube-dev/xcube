@@ -173,7 +173,6 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 f"Failed to open dataset {level_path!r}: {e}"
             ) from e
 
-        level_dataset.zarr_store.set(level_zarr_store)
         return level_dataset
 
     @staticmethod
@@ -363,7 +362,6 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                     level_dataset = xr.open_zarr(
                         level_zarr_store, consolidated=consolidated
                     )
-                    level_dataset.zarr_store.set(level_zarr_store)
                     ml_dataset.set_dataset(index, level_dataset)
 
         return path

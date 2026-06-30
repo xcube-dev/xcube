@@ -37,13 +37,11 @@ class ObjectStorage(collections.abc.Mapping):
             if isinstance(dataset, MultiLevelDataset):
                 for level in range(dataset.num_levels):
                     level_dataset = dataset.get_dataset(level)
-                    zarr_store = level_dataset.zarr_store.get()
-                    for k in zarr_store.keys():
+                    for k in level_dataset.keys():
                         yield f"{dataset_id}/{level}.zarr/{k}"
 
             else:
-                zarr_store = dataset.zarr_store.get()
-                for k in zarr_store.keys():
+                for k in dataset.keys():
                     yield f"{dataset_id}/{k}"
 
     def __contains__(self, key: str) -> bool:
@@ -52,26 +50,26 @@ class ObjectStorage(collections.abc.Mapping):
         for direct __getitem__() calls only.
         """
         try:
-            zarr_store, item_key = self._parse_key(key)
+            dataset, item_key = self._parse_key(key)
         except (KeyError, ApiError.NotFound):
             # Parsing failed, must be invalid key
             return False
         # Now check item_key
-        return item_key in zarr_store
+        return item_key in dataset
 
     def __getitem__(self, key: str) -> bytes:
         """Get bytes object for *key*."""
-        zarr_store, item_key = self._parse_key(key)
-        value = zarr_store[item_key]
+        dataset, item_key = self._parse_key(key)
+        value = dataset[item_key]
         if not isinstance(value, bytes):
             raise RuntimeError(
-                f"Zarr store of type {type(zarr_store).__name__}"
+                f"Zarr store of type {type(dataset).__name__}"
                 f" must return type bytes for key {key!r},"
                 f" but was {type(value).__name__}"
             )
         return value
 
-    def _parse_key(self, key: str) -> tuple[zarr.storage.BaseStore, str]:
+    def _parse_key(self, key: str) -> tuple[xr.Dataset, str]:
         """Parses a given *key* which is expected to have format
         "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
         "{dataset_id}/{*path}" for other datasets.
@@ -95,9 +93,6 @@ class ObjectStorage(collections.abc.Mapping):
                 raise KeyError(key)
             if not (0 <= level < dataset.num_levels):
                 raise KeyError(key)
-            level_dataset = dataset.get_dataset(level)
-            zarr_store = level_dataset.zarr_store.get()
-        else:
-            zarr_store = dataset.zarr_store.get()
+            dataset = dataset.get_dataset(level)
 
-        return zarr_store, item_key
+        return dataset, item_key

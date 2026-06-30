@@ -89,7 +89,7 @@ def compute_dataset(
     input_var_names: Sequence[str] = None,
     input_params: dict[str, Any] = None,
     output_var_name: str = "output",
-    output_var_dims: AbstractSet[str] = None,
+    output_var_dims: Tuple[str] = None,
     output_var_dtype: Any = np.float64,
     output_var_attrs: dict[str, Any] = None,
     vectorize: bool = None,
@@ -177,6 +177,28 @@ def compute_dataset(
 
     output_var_name = output_var_name or "output"
 
+    output_dims = output_var_dims or input_cube_schema.dims
+    template = xr.Dataset(
+        {
+            output_var_name: xr.DataArray(
+                da.empty(
+                    tuple(
+                        input_cube_schema.shape[input_cube_schema.dims.index(dim)]
+                        for dim in output_dims
+                    ),
+                    dtype=output_var_dtype,
+                    chunks=tuple(
+                        input_cube_schema.chunks[
+                            input_cube_schema.dims.index(dim)
+                        ]
+                        for dim in output_dims
+                    ),
+                ),
+                dims=output_dims,
+            )
+        }
+    )
+
     # Collect named input variables, raise if not found
     input_var_names = input_var_names or []
     input_vars = []
@@ -189,6 +211,11 @@ def compute_dataset(
         if input_var is None:
             raise ValueError(f"variable {var_name!r} not found in any of cubes")
         input_vars.append(input_var)
+    input_ds = xr.Dataset({name: var for name, var in zip(input_var_names, input_vars)})
+    if len(input_ds.data_vars) == 0:
+        input_ds = template.copy()
+    if not input_var_names:
+        input_var_names = ["output"]
 
     # Find out, if cube_func uses any of _PREDEFINED_KEYWORDS
     has_input_params, has_dim_coords, has_dim_ranges = _inspect_cube_func(
@@ -201,17 +228,18 @@ def compute_dataset(
 
         dim_ranges = None
         if has_dim_ranges or has_dim_coords:
+            dim_ranges = {}
             if block_info is None:
-                dim_ranges = None
+                for dim_name in input_cube_schema.dims:
+                    dim_ranges[dim_name] = ()
             else:
-                dim_ranges = {}
                 info = block_info[0]
                 for i, dim_name in enumerate(input_cube_schema.dims):
                     start, end = info["array-location"][i]
                     dim_ranges[dim_name] = int(start), int(end)
 
         dim_coords = None
-        if has_dim_coords and dim_ranges is not None:
+        if has_dim_coords and block_info is not None:
             dim_coords = {}
             for coord_var_name, coord_var in input_cube_schema.coords.items():
                 coord_slices = [slice(None)] * coord_var.ndim
@@ -240,24 +268,6 @@ def compute_dataset(
             )
 
         return xr.Dataset({output_var_name: da})
-
-    input_ds = xr.Dataset({name: var for name, var in zip(input_var_names, input_vars)})
-
-    template = xr.Dataset(
-        {
-            output_var_name: xr.DataArray(
-                da.empty(
-                    tuple(
-                        input_cube_schema.shape[input_cube_schema.dims.index(dim)]
-                        for dim in (output_var_dims or input_cube_schema.dims)
-                    ),
-                    dtype=output_var_dtype,
-                    chunks=input_cube_schema.chunks,
-                ),
-                dims=output_var_dims or input_cube_schema.dims,
-            )
-        }
-    )
 
     output_ds = xr.map_blocks(
         cube_func_wrapper,
