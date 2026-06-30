@@ -42,6 +42,7 @@
 [DataWriter]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataOpener
 [DataDescriptor]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DataDescriptor
 [DatasetDescriptor]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.store.DatasetDescriptor
+[GenericZarrStore]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.zarrstore.GenericZarrStore
 [MultiLevelDataset]: https://xcube.readthedocs.io/en/latest/api.html#xcube.core.mldataset.MultiLevelDataset
 [Server]: https://xcube.readthedocs.io/en/latest/cli/xcube_serve.html
 
@@ -785,6 +786,10 @@ The [DataStore], which implements the [DataOpener] interface delegates
 to specialized [DataOpener] implementations based on the open
 parameters passed to the `open_data()` method. The same holds for the 
 [DataWriter] implementations for a [MutableDataStore].
+
+New data stores that are backed by some cloud-based data API can 
+make use the xcube [GenericZarrStore] to implement the lazy fetching
+of data array chunks from the API.
 
 ### Registering the data store
 
