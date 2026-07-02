@@ -522,10 +522,12 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
             if cm_type == "stepwise":
                 # Turn cm_items into discrete step function
                 stepwise_cm_items = []
+                offset = 0
                 for i, (value, color) in enumerate(cm_items[0:-1]):
                     next_value = cm_items[i + 1][0]
-                    stepwise_cm_items.append((value, color))
+                    stepwise_cm_items.append((value + offset, color))
                     stepwise_cm_items.append((next_value, color))
+                    offset = 1e-8
                 cm_items = stepwise_cm_items
             cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
                 cm_base_name, cm_items
