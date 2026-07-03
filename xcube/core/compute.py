@@ -3,9 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import inspect
-import warnings
 from collections.abc import Sequence
-from typing import AbstractSet, Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Tuple, Union
 
 import dask.array as da
 import numpy as np
@@ -178,6 +177,10 @@ def compute_dataset(
     output_var_name = output_var_name or "output"
 
     output_dims = output_var_dims or input_cube_schema.dims
+    output_chunks = tuple(
+        input_cube_schema.chunks[input_cube_schema.dims.index(dim)]
+        for dim in output_dims
+    )
     template = xr.Dataset(
         {
             output_var_name: xr.DataArray(
@@ -187,12 +190,7 @@ def compute_dataset(
                         for dim in output_dims
                     ),
                     dtype=output_var_dtype,
-                    chunks=tuple(
-                        input_cube_schema.chunks[
-                            input_cube_schema.dims.index(dim)
-                        ]
-                        for dim in output_dims
-                    ),
+                    chunks=output_chunks,
                 ),
                 dims=output_dims,
             )
@@ -222,7 +220,7 @@ def compute_dataset(
         cube_func, input_var_names
     )
 
-    def cube_func_wrapper(ds: xr.Dataset, block_info=None) -> xr.Dataset:
+    def cube_func_wrapper(*arrays, block_info=None):
         nonlocal input_cube_schema, input_var_names, input_params, input_vars
         nonlocal has_input_params, has_dim_coords, has_dim_ranges
 
@@ -258,22 +256,24 @@ def compute_dataset(
         if has_dim_coords:
             kwargs["dim_coords"] = dim_coords
 
-        result = cube_func(*[ds[name].data for name in input_var_names], **kwargs)
-        if isinstance(result, xr.DataArray):
-            da = result
-        else:
-            da = xr.DataArray(
-                result,
-                dims=output_var_dims or input_cube_schema.dims,
-            )
+        return cube_func(*arrays, **kwargs)
 
-        return xr.Dataset({output_var_name: da})
-
-    output_ds = xr.map_blocks(
+    input_ndim = len(input_cube_schema.dims)
+    output_ndim = len(output_var_dims or input_cube_schema.dims)
+    drop_axis = list(range(input_ndim - output_ndim))
+    arrays = [input_ds[name].data for name in input_var_names]
+    result = da.map_blocks(
         cube_func_wrapper,
-        input_ds,
-        template=template,
+        *arrays,
+        chunks=template[output_var_name].chunks,
+        dtype=output_var_dtype,
+        drop_axis=drop_axis,
     )
+    data_array = xr.DataArray(
+        result,
+        dims=output_var_dims or input_cube_schema.dims,
+    )
+    output_ds = xr.Dataset({output_var_name: data_array})
 
     if output_var_attrs:
         output_ds[output_var_name].attrs.update(output_var_attrs)

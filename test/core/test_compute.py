@@ -49,15 +49,59 @@ class ComputeCubeTest(unittest.TestCase):
         self.assertIsInstance(output_cube, xr.Dataset)
         self.assertIn("output", output_cube.data_vars)
         output_var = output_cube.output
-        self.assertEqual(0, len(calls))
+        self.assertEqual(1, len(calls))
         self.assertEqual(("time", "lat", "lon"), output_var.dims)
         self.assertEqual((6, 180, 360), output_var.shape)
 
         values = output_var.values
-        self.assertEqual(2 * 2 * 4, len(calls))
+        self.assertEqual(1 + (2 * 2 * 4), len(calls))
         self.assertEqual((6, 180, 360), values.shape)
         self.assertAlmostEqual(0.74, values[0, 0, 0])
         self.assertAlmostEqual(0.74, values[-1, -1, -1])
+
+    def test_missing_input_variable(self):
+        def my_cube_func(array: np.ndarray) -> CubeFuncOutput:
+            return array
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"variable 'missing_var' not found in any of cubes",
+        ):
+            compute_cube(
+                my_cube_func,
+                self.cube,
+                input_var_names=["missing_var"],
+                cube_asserted=True,
+            )
+
+    def test_dim_ranges_are_passed(self):
+        calls = []
+
+        def my_cube_func(
+            analysed_sst: np.ndarray,
+            dim_ranges=True,
+        ):
+            calls.append(dim_ranges)
+            return analysed_sst
+
+        output = compute_cube(
+            my_cube_func,
+            self.cube,
+            input_var_names=["analysed_sst"],
+            cube_asserted=True,
+        )
+
+        # Force execution
+        _ = output.output.values
+
+        self.assertEqual(17, len(calls))
+
+        for dim_ranges in calls[2:]:
+            self.assertIn("time", dim_ranges)
+            self.assertIn("lat", dim_ranges)
+            self.assertIn("lon", dim_ranges)
+            self.assertIsInstance(dim_ranges["time"][0], int)
+            self.assertIsInstance(dim_ranges["time"][1], int)
 
     def test_from_two_inputs(self):
         calls = []
@@ -85,13 +129,13 @@ class ComputeCubeTest(unittest.TestCase):
         self.assertIsInstance(output_cube, xr.Dataset)
         self.assertIn("output", output_cube.data_vars)
         output_var = output_cube.output
-        self.assertEqual(0, len(calls))
+        self.assertEqual(1, len(calls))
         self.assertEqual(("time", "lat", "lon"), output_var.dims)
         self.assertEqual((6, 180, 360), output_var.shape)
         self.assertEqual(((3, 3), (90, 90), (90, 90, 90, 90)), output_var.chunks)
 
         values = output_var.values
-        self.assertEqual(2 * 2 * 4, len(calls))
+        self.assertEqual(1 + (2 * 2 * 4), len(calls))
         self.assertEqual((6, 180, 360), values.shape)
         self.assertAlmostEqual(275.3 + 0.5 * 2.1, values[0, 0, 0])
         self.assertAlmostEqual(275.3 + 0.5 * 2.1, values[-1, -1, -1])
@@ -119,13 +163,13 @@ class ComputeCubeTest(unittest.TestCase):
         self.assertIsInstance(output_dataset, xr.Dataset)
         self.assertIn("analysed_sst_max", output_dataset.data_vars)
         output_var = output_dataset.analysed_sst_max
-        self.assertEqual(0, len(calls))  # call from dask with 0-dim chunks
+        self.assertEqual(2, len(calls))  # call from dask with 0-dim chunks
         self.assertEqual(("lat", "lon"), output_var.dims)
         self.assertEqual((180, 360), output_var.shape)
         self.assertEqual(((90, 90), (90, 90, 90, 90)), output_var.chunks)
 
         values = output_var.values
-        self.assertEqual(2 * 4, len(calls))
+        self.assertEqual(2 + (2 * 4), len(calls))
         self.assertEqual((180, 360), values.shape)
         self.assertAlmostEqual(275.3 + 2.1, values[0, 0])
         self.assertAlmostEqual(275.3 + 2.1, values[-1, -1])
