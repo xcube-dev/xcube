@@ -3,7 +3,7 @@
 ### Fixes
 * Improved raster tile alignment by using nearest-pixel rounding during tile reprojection,
   reducing visual offsets between rendered map tiles and dataset coordinates. (#1216)
-* ensure compatibility with matplotlib 3.11.0 (#1219)
+* Ensure compatibility with matplotlib 3.11.0 (#1219)
 
 ### Other changes
 * Constrained `matplotlib >=3.8.3,<3.11.0` (#1219)
