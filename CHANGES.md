@@ -1,4 +1,8 @@
-## Changes in 1.13.4 (in development)
+## Changes in 1.14.0 (in development)
+ 
+
+
+## Changes in 1.13.4 
  
 ### Fixes
 * Improved raster tile alignment by using nearest-pixel rounding during tile reprojection,
