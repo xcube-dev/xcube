@@ -1,5 +1,6 @@
 ## Changes in 1.14.0 (in development)
 
+
 ### Other changes
 * Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
   `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
