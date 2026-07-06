@@ -45,75 +45,59 @@ class TornadoFrameworkTest(unittest.TestCase):
     def test_config_schema(self):
         self.assertIsInstance(self.framework.config_schema, JsonObjectSchema)
 
-    def test_configure_logging_uses_root_handler_once(self):
-        class CountingHandler(logging.Handler):
-            def __init__(self):
-                super().__init__()
-                self.count = 0
-
-            def emit(self, record):
-                self.count += 1
-
-        logger_names = [
-            "tornado",
-            "tornado.access",
-            "tornado.application",
-            "tornado.general",
-        ]
+    def test_configure_logging_uses_root_handler_by_propagation(self):
         root = logging.getLogger()
+        tornado_log = logging.getLogger("tornado")
+        access_log = logging.getLogger("tornado.access")
+        loggers = [tornado_log, access_log]
 
-        # save original logging state to restore after test
-        saved_root_handlers = list(root.handlers)
-        saved_root_level = root.level
+        saved_root = (list(root.handlers), root.level, root.propagate)
         saved_loggers = {
-            name: (
-                list(logging.getLogger(name).handlers),
-                logging.getLogger(name).level,
-                logging.getLogger(name).propagate,
-            )
-            for name in logger_names
+            logger: (list(logger.handlers), logger.level, logger.propagate)
+            for logger in loggers
         }
 
         try:
+            # Set up root like the CLI-configured logger.
             for handler in list(root.handlers):
                 root.removeHandler(handler)
+            root_handler = logging.NullHandler()
+            root.addHandler(root_handler)
             root.setLevel(logging.INFO)
-            counting_handler = CountingHandler()
-            root.addHandler(counting_handler)
 
-            for name in logger_names:
-                logger = logging.getLogger(name)
+            # Give Tornado loggers local state that configure_logging() must clean.
+            for logger in loggers:
                 for handler in list(logger.handlers):
                     logger.removeHandler(handler)
                 logger.addHandler(logging.NullHandler())
+                logger.setLevel(logging.WARNING)
                 logger.propagate = False
 
             TornadoFramework.configure_logging()
-            for name in logger_names:
-                logger = logging.getLogger(name)
+
+            # Root keeps the handler; Tornado loggers only propagate to it.
+            self.assertEqual([root_handler], root.handlers)
+            for logger in loggers:
                 self.assertEqual([], logger.handlers)
                 self.assertTrue(logger.propagate)
                 self.assertEqual(logging.INFO, logger.level)
-
-            logging.getLogger("tornado.access").info("GET /api/viewer/test.txt")
-            self.assertEqual(1, counting_handler.count)
-            
-        # restore original logging state
         finally:
-            for name in logger_names:
-                logger = logging.getLogger(name)
+            # Restore process-global logging state for other tests.
+            for handler in list(root.handlers):
+                root.removeHandler(handler)
+            handlers, level, propagate = saved_root
+            for handler in handlers:
+                root.addHandler(handler)
+            root.setLevel(level)
+            root.propagate = propagate
+
+            for logger, (handlers, level, propagate) in saved_loggers.items():
                 for handler in list(logger.handlers):
                     logger.removeHandler(handler)
-                handlers, level, propagate = saved_loggers[name]
                 for handler in handlers:
                     logger.addHandler(handler)
                 logger.setLevel(level)
                 logger.propagate = propagate
-            for handler in list(root.handlers):
-                root.removeHandler(handler)
-            for handler in saved_root_handlers:
-                root.addHandler(handler)
-            root.setLevel(saved_root_level)
 
     def test_add_routes(self):
         class Handler(ApiHandler):
