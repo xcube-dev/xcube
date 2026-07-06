@@ -1,8 +1,13 @@
 ## Changes in 1.14.0 (in development)
- 
 
+### Other changes
+* Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
+  `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
+  Zarr store, making it independent of any specific Zarr store implementation. 
+  This change prepares xcube for the migration to Zarr v3, whose store API differs 
+  significantly from that of Zarr v2.
 
-## Changes in 1.13.4 
+## Changes in 1.13.4
  
 ### Fixes
 * Improved raster tile alignment by using nearest-pixel rounding during tile reprojection,

@@ -184,13 +184,7 @@ class FsDataStoresTestMixin(ABC):
             expected_return_type=xr.Dataset,
             expected_descriptor_type=DatasetDescriptor,
             assert_data_ok=self._assert_zarr_store_direct_ok,
-            # Not nice here, but we lack coverage for the case where
-            # the original Zarr store will be wrapped by the
-            # LoggingZarrStore and zarr.LRUStoreCache stores.
-            open_params={
-                "cache_size": 1 << 24,
-                "log_access": True,
-            },
+            open_params={"cache_size": 1 << 24},
         )
         self._assert_dataset_supported(
             data_store,
