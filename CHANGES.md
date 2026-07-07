@@ -3,6 +3,7 @@
 ### Fixes
 * Improved raster tile alignment by using nearest-pixel rounding during tile reprojection,
   reducing visual offsets between rendered map tiles and dataset coordinates. (#1216)
+* Fixed duplicated `tornado` log entries emitted by xcube Server. (#1224)
 
 ### Other changes
 * Constrained `matplotlib >=3.8.3,<3.11.0` (#1219)
