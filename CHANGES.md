@@ -7,6 +7,8 @@
 
 ### Other changes
 * Constrained `matplotlib >=3.8.3,<3.11.0` (#1219)
+* Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
+  rasterio/GDAL binary incompatibilities.
 
 ## Changes in 1.13.3
 
