@@ -4,6 +4,7 @@
 * Improved raster tile alignment by using nearest-pixel rounding during tile reprojection,
   reducing visual offsets between rendered map tiles and dataset coordinates. (#1216)
 * Ensure compatibility with matplotlib 3.11.0 (#1219)
+* Fixed duplicated `tornado` log entries emitted by xcube Server. (#1224)
 
 ### Other changes
 * Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
