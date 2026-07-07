@@ -521,6 +521,8 @@ def parse_cm_code(cm_code: str) -> tuple[str, Optional[Colormap]]:
                 cm_items = list(zip(norm_values, colors))
             if cm_type == "stepwise":
                 # Turn cm_items into discrete step function
+                # We use a small offset to make values increase strictly
+                # monotonically, which is required since matplotlib v3.11
                 stepwise_cm_items = []
                 offset = 0
                 for i, (value, color) in enumerate(cm_items[0:-1]):
