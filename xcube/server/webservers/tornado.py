@@ -541,7 +541,6 @@ def _assert_allowed_query_params(
         raise tornado.web.HTTPError(
             404,
             reason=(
-                "Unknown query parameter(s): "
-                f"{', '.join(sorted(unknown_query_params))}"
+                f"Unknown query parameter(s): {', '.join(sorted(unknown_query_params))}"
             ),
         )

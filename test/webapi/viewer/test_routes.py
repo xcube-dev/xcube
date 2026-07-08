@@ -36,6 +36,7 @@ class ViewerRoutesTest(RoutesTestCase):
         response = self.fetch("/viewer/?rest_route=/wp/v2/users/")
         self.assertEqual(404, response.status)
 
+
 class ViewerConfigRoutesTest(RoutesTestCase):
     def test_viewer_config(self):
         response = self.fetch("/viewer/config/config.json")
