@@ -233,9 +233,9 @@ class TornadoFramework(Framework):
 
     @staticmethod
     def configure_logging():
-        # Configure Tornado loggers to use root handlers, so we
-        # have a single log level and format. Root handlers are
-        # assumed to be already configured by xcube CLI.
+        # Configure Tornado loggers to use root handlers through
+        # propagation, so we have a single log level and format.
+        # Root handlers are assumed to be already configured by xcube CLI.
         for logger_name in [
             "tornado",
             "tornado.access",
@@ -247,9 +247,7 @@ class TornadoFramework(Framework):
             for h in list(log.handlers):
                 log.removeHandler(h)
                 h.close()
-            # Add root handlers configured by xcube CLI
-            for h in list(logging.root.handlers):
-                log.addHandler(h)
+            log.propagate = True
             # Use common log level
             log.setLevel(logging.root.level)
 

@@ -22,8 +22,10 @@ dependencies:
   - jdcal >=1.4
   - jsonschema >=3.2
   - libgdal-jp2openjpeg
+  # because >=0.12.0 causes CI failures with rasterio/GDAL binaries
+  - libjxl <=0.11.2
   - mashumaro
-  - matplotlib-base >=3.8.3,<3.11.0 # see Issue #1219
+  - matplotlib-base >=3.8.3,<4
   - netcdf4 >=1.5
   - numba >=0.52
   - numcodecs >=0.12.1
