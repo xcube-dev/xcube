@@ -22,6 +22,19 @@ class ViewerRoutesTest(RoutesTestCase):
         response = self.fetch("/viewer/images/logo.png")
         self.assertResponseOK(response)
 
+    def test_viewer_known_query_params(self):
+        response = self.fetch(
+            "/viewer/?serverUrl=http://localhost:8080"
+            "&serverId=local&serverName=Local&compact=1"
+        )
+        self.assertResponseOK(response)
+
+    def test_viewer_unknown_query_param(self):
+        response = self.fetch("/viewer?rest_route=/wp/v2/users/")
+        self.assertEqual(404, response.status)
+
+        response = self.fetch("/viewer/?rest_route=/wp/v2/users/")
+        self.assertEqual(404, response.status)
 
 class ViewerConfigRoutesTest(RoutesTestCase):
     def test_viewer_config(self):
