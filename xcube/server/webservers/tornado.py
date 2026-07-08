@@ -43,6 +43,34 @@ from xcube.version import version
 SERVER_CTX_ATTR_NAME = "__xcube_server_ctx"
 
 
+class QueryValidatingRedirectHandler(tornado.web.RedirectHandler):
+    def initialize(
+        self,
+        url: str,
+        permanent: bool = True,
+        allowed_query_params: Sequence[str] = (),
+    ):
+        super().initialize(url, permanent=permanent)
+        self._allowed_query_params = allowed_query_params
+
+    def prepare(self):
+        _assert_allowed_query_params(self.request, self._allowed_query_params)
+
+
+class QueryValidatingStaticFileHandler(tornado.web.StaticFileHandler):
+    def initialize(
+        self,
+        path: str,
+        default_filename: Optional[str] = None,
+        allowed_query_params: Sequence[str] = (),
+    ):
+        super().initialize(path=path, default_filename=default_filename)
+        self._allowed_query_params = allowed_query_params
+
+    def prepare(self):
+        _assert_allowed_query_params(self.request, self._allowed_query_params)
+
+
 class TornadoFramework(Framework):
     """
     The Tornado web server framework.
@@ -103,15 +131,30 @@ class TornadoFramework(Framework):
         for api_route in api_routes:
             base_url = f"{url_prefix}{api_route.path}"
             default_filename = api_route.default_filename
+            allowed_query_params = api_route.allowed_query_params
+            if allowed_query_params:
+                redirect_handler = QueryValidatingRedirectHandler
+                static_file_handler = QueryValidatingStaticFileHandler
+                redirect_kwargs = {
+                    "url": f"{base_url}/",
+                    "allowed_query_params": allowed_query_params,
+                }
+                static_file_kwargs = {
+                    "path": api_route.dir_path,
+                    "default_filename": default_filename,
+                    "allowed_query_params": allowed_query_params,
+                }
+            else:
+                redirect_handler = tornado.web.RedirectHandler
+                static_file_handler = tornado.web.StaticFileHandler
+                redirect_kwargs = {"url": f"{base_url}/"}
+                static_file_kwargs = {
+                    "path": api_route.dir_path,
+                    "default_filename": default_filename,
+                }
+            handlers.append((f"{base_url}", redirect_handler, redirect_kwargs))
             handlers.append(
-                (f"{base_url}", tornado.web.RedirectHandler, {"url": f"{base_url}/"})
-            )
-            handlers.append(
-                (
-                    f"{base_url}/(.*)",
-                    tornado.web.StaticFileHandler,
-                    {"path": api_route.dir_path, "default_filename": default_filename},
-                )
+                (f"{base_url}/(.*)", static_file_handler, static_file_kwargs)
             )
             LOG.log(
                 LOG_LEVEL_DETAIL,
@@ -490,3 +533,17 @@ class TornadoApiResponse(ApiResponse):
     ):
         self.write(data, content_type)
         return self._handler.finish()
+
+
+def _assert_allowed_query_params(
+    request: tornado.httputil.HTTPServerRequest, allowed_query_params: Sequence[str]
+):
+    unknown_query_params = set(request.query_arguments) - set(allowed_query_params)
+    if unknown_query_params:
+        raise tornado.web.HTTPError(
+            404,
+            reason=(
+                "Unknown query parameter(s): "
+                f"{', '.join(sorted(unknown_query_params))}"
+            ),
+        )
