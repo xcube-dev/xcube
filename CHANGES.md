@@ -5,7 +5,9 @@
   reducing visual offsets between rendered map tiles and dataset coordinates. (#1216)
 * Ensure compatibility with matplotlib 3.11.0 (#1219)
 * Fixed duplicated `tornado` log entries emitted by xcube Server. (#1224)
-
+* Added validation of allowed query parameters for static routes and 
+  configured allowed query parameters for `api/viewer/`. (#1225)
+  
 ### Other changes
 * Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
   rasterio/GDAL binary incompatibilities.
