@@ -42,6 +42,17 @@ from xcube.version import version
 
 SERVER_CTX_ATTR_NAME = "__xcube_server_ctx"
 
+def _assert_allowed_query_params(
+    request: tornado.httputil.HTTPServerRequest, allowed_query_params: Sequence[str]
+):
+    unknown_query_params = set(request.query_arguments) - set(allowed_query_params)
+    if unknown_query_params:
+        raise tornado.web.HTTPError(
+            404,
+            reason=(
+                f"Unknown query parameter(s): {', '.join(sorted(unknown_query_params))}"
+            ),
+        )
 
 class QueryValidatingRedirectHandler(tornado.web.RedirectHandler):
     def initialize(
@@ -531,16 +542,3 @@ class TornadoApiResponse(ApiResponse):
     ):
         self.write(data, content_type)
         return self._handler.finish()
-
-
-def _assert_allowed_query_params(
-    request: tornado.httputil.HTTPServerRequest, allowed_query_params: Sequence[str]
-):
-    unknown_query_params = set(request.query_arguments) - set(allowed_query_params)
-    if unknown_query_params:
-        raise tornado.web.HTTPError(
-            404,
-            reason=(
-                f"Unknown query parameter(s): {', '.join(sorted(unknown_query_params))}"
-            ),
-        )
