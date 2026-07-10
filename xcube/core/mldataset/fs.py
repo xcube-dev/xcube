@@ -22,7 +22,7 @@ import xcube.core.zarrstore
 from xcube.core.gridmapping import GridMapping
 from xcube.core.subsampling import AggMethod, AggMethods
 from xcube.util.assertions import assert_instance
-from xcube.util.fspath import get_fs_path_class, resolve_path
+from xcube.util.fspath import get_fs_path_class, is_local_fs, resolve_path
 from xcube.util.types import ScalarOrPair, normalize_scalar_or_pair
 
 from .abc import MultiLevelDataset
@@ -149,6 +149,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             engine = base_dataset_open_params.pop("engine", "zarr")
 
         level_zarr_store = fs.get_mapper(str(level_path))
+        xarray_store = str(level_path) if is_local_fs(fs) else level_zarr_store
 
         consolidated = (
             self._consolidate
@@ -161,13 +162,15 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             # size in pixels for each level
             cache_size = math.ceil(self.size_weights[index] * cache_size)
             if cache_size >= self._MIN_CACHE_SIZE:
-                level_zarr_store = zarr.LRUStoreCache(
-                    level_zarr_store, max_size=cache_size
-                )
+                lru_store_cache = getattr(zarr, "LRUStoreCache", None)
+                if lru_store_cache is not None:
+                    xarray_store = lru_store_cache(
+                        xarray_store, max_size=cache_size
+                    )
 
         try:
             level_dataset = xr.open_zarr(
-                level_zarr_store, consolidated=consolidated, **self._zarr_kwargs
+                xarray_store, consolidated=consolidated, **self._zarr_kwargs
             )
         except ValueError as e:
             raise FsMultiLevelDatasetError(
@@ -348,11 +351,13 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                 # Write level "{index}.zarr"
                 level_path = data_path / f"{index}.zarr"
                 level_zarr_store = fs.get_mapper(str(level_path), create=True)
+                xarray_store = str(level_path) if is_local_fs(fs) else level_zarr_store
                 try:
                     level_dataset.to_zarr(
-                        level_zarr_store,
+                        xarray_store,
                         mode="w" if replace else None,
                         consolidated=consolidated,
+                        zarr_format=2,
                         **zarr_kwargs,
                     )
                 except ValueError as e:
@@ -362,7 +367,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                     ) from e
                 if use_saved_levels:
                     level_dataset = xr.open_zarr(
-                        level_zarr_store, consolidated=consolidated
+                        xarray_store, consolidated=consolidated
                     )
                     level_dataset.zarr_store.set(level_zarr_store)
                     ml_dataset.set_dataset(index, level_dataset)

@@ -66,7 +66,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         )
 
     def test_io_nl_4_ts_256_base(self):
-        self.dataset.to_zarr(self.fs.get_mapper("test.zarr"))
+        self.dataset.to_zarr(self.fs.get_mapper("test.zarr"), zarr_version=2)
         self.assert_io_ok(
             "test.levels",
             num_levels=4,

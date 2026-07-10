@@ -5,11 +5,13 @@
 import os
 import shutil
 import warnings
+import zipfile
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable, Mapping
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import botocore.exceptions
+import numcodecs
 import pandas as pd
 import s3fs
 import urllib3.util
@@ -475,17 +477,27 @@ class ZarrDatasetIO(DatasetIO):
         path_or_store = path
         consolidated = False
         if isinstance(path, str):
-            path_or_store, consolidated = get_path_or_s3_store(
-                path_or_store,
-                s3_kwargs=s3_kwargs,
-                s3_client_kwargs=s3_client_kwargs,
-                mode="r",
-            )
-            if max_cache_size is not None and max_cache_size > 0:
-                path_or_store = zarr.LRUStoreCache(
-                    path_or_store, max_size=max_cache_size
+            if path.lower().endswith(".zarr.zip"):
+                path_or_store = zarr.storage.ZipStore(path, mode="r")
+                with zipfile.ZipFile(path) as zip_file:
+                    consolidated = ".zmetadata" in zip_file.namelist()
+            else:
+                path_or_store, consolidated = get_path_or_s3_store(
+                    path_or_store,
+                    s3_kwargs=s3_kwargs,
+                    s3_client_kwargs=s3_client_kwargs,
+                    mode="r",
                 )
-        return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
+            if max_cache_size is not None and max_cache_size > 0:
+                lru_store_cache = getattr(zarr, "LRUStoreCache", None)
+                if lru_store_cache is not None:
+                    path_or_store = lru_store_cache(
+                        path_or_store, max_size=max_cache_size
+                    )
+        try:
+            return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
+        except (FileNotFoundError, zarr.errors.GroupNotFoundError) as e:
+            raise ValueError(str(e)) from e
 
     def write(
         self,
@@ -511,6 +523,7 @@ class ZarrDatasetIO(DatasetIO):
             mode="w",
             encoding=encoding,
             consolidated=consolidated,
+            zarr_format=2,
             **kwargs,
         )
 
@@ -542,7 +555,7 @@ class ZarrDatasetIO(DatasetIO):
                     encoding[var_name] = dict(packing[var_name])
 
         if compressor:
-            compressor = zarr.Blosc(**compressor)
+            compressor = numcodecs.Blosc(**compressor)
 
             if encoding:
                 for var_name in encoding.keys():

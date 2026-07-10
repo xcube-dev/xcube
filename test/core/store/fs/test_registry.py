@@ -76,7 +76,7 @@ class DataPackingTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         data = new_cube_data()
-        data.to_zarr(cls.path, mode="w")
+        data.to_zarr(cls.path, mode="w", zarr_version=2)
 
     @classmethod
     def tearDownClass(cls) -> None:

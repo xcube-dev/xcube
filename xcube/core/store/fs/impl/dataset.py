@@ -153,20 +153,23 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
             "consolidated", fs.exists(f"{data_id}/.zmetadata")
         )
         zarr_store = fs.get_mapper(data_id)
+        xarray_store = data_id if is_local_fs(fs) else zarr_store
         if isinstance(cache_size, int) and cache_size > 0:
-            zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
+            lru_store_cache = getattr(zarr, "LRUStoreCache", None)
+            if lru_store_cache is not None:
+                xarray_store = lru_store_cache(xarray_store, max_size=cache_size)
         # TODO: test whether we really need to distinguish here as we know
         #   we are opening a zarr dataset, even without another backend.
         if engine == "zarr":
             try:
                 dataset = xr.open_zarr(
-                    zarr_store, consolidated=consolidated, **open_params
+                    xarray_store, consolidated=consolidated, **open_params
                 )
             except ValueError as e:
                 raise DataStoreError(f"Failed to open dataset {data_id!r}: {e}") from e
         else:
             try:
-                dataset = xr.open_dataset(zarr_store, engine=engine, **open_params)
+                dataset = xr.open_dataset(xarray_store, engine=engine, **open_params)
             except ValueError as e:
                 raise DataStoreError(
                     f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
@@ -186,12 +189,14 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         assert_instance(data_id, str, name="data_id")
         fs, root, write_params = self.load_fs(write_params)
         zarr_store = fs.get_mapper(data_id, create=True)
+        xarray_store = data_id if is_local_fs(fs) else zarr_store
         consolidated = write_params.pop("consolidated", True)
         try:
             data.to_zarr(
-                zarr_store,
+                xarray_store,
                 mode="w" if replace else None,
                 consolidated=consolidated,
+                zarr_format=2,
                 **write_params,
             )
         except ValueError as e:

@@ -12,6 +12,7 @@ import xarray as xr
 
 import xcube.core.new
 from xcube.core.gridmapping import GridMapping
+from xcube.core.dsio import ZarrDatasetIO
 
 # noinspection PyProtectedMember
 
@@ -102,7 +103,7 @@ class DatasetGridMappingTest(unittest.TestCase):
             "S3-OLCI-L2A.zarr.zip",
         )
 
-        dataset = xr.open_zarr(olci_l2_path, consolidated=False)
+        dataset = ZarrDatasetIO().read(olci_l2_path)
         gm = GridMapping.from_dataset(dataset)
         self.assertEqual((1189, 1890), gm.size)
         self.assertEqual((512, 512), gm.tile_size)

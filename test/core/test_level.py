@@ -158,7 +158,7 @@ class PyramidTest(unittest.TestCase):
 
         try:
             dataset = self.create_test_dataset(shape, chunks=(1, *tile_shape))
-            dataset.to_zarr(input_path)
+            dataset.to_zarr(input_path, zarr_version=2)
 
             t0 = time.perf_counter()
 

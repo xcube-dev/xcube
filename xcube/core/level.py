@@ -185,7 +185,7 @@ def write_levels(
                 fp.write(input_path)
         else:
             path = os.path.join(output_path, f"{index}.zarr")
-            level_dataset.to_zarr(path)
+            level_dataset.to_zarr(path, zarr_format=2)
             level_dataset.close()
             level_dataset = xr.open_zarr(path)
 

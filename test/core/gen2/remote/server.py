@@ -284,8 +284,8 @@ def _init_local_store():
     local_base_dir = new_temp_dir(suffix="_local_store")
     dataset_1 = new_cube(width=36, height=18, variables={"A": 0.1, "B": 0.2})
     dataset_2 = new_cube(width=36, height=18, variables={"C": 0.2, "D": 0.3})
-    dataset_1.to_zarr(os.path.join(local_base_dir, "DATASET-1.zarr"))
-    dataset_2.to_zarr(os.path.join(local_base_dir, "DATASET-2.zarr"))
+    dataset_1.to_zarr(os.path.join(local_base_dir, "DATASET-1.zarr"), zarr_version=2)
+    dataset_2.to_zarr(os.path.join(local_base_dir, "DATASET-2.zarr"), zarr_version=2)
 
     global STORES_CONFIG_PATH
     _, STORES_CONFIG_PATH = new_temp_file(suffix="_stores.yaml")
