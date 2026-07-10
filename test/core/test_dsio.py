@@ -277,7 +277,7 @@ class ZarrDatasetIOTest(unittest.TestCase):
 
     def test_read(self):
         ds_io = ZarrDatasetIO()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(FileNotFoundError):
             ds_io.read("test.zarr")
 
 
