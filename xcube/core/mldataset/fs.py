@@ -15,7 +15,7 @@ import fsspec
 import fsspec.core
 import numpy as np
 import xarray as xr
-import zarr
+from zarr.storage import FsspecStore
 
 # noinspection PyUnresolvedReferences
 import xcube.core.zarrstore
@@ -162,12 +162,15 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             # size in pixels for each level
             cache_size = math.ceil(self.size_weights[index] * cache_size)
             if cache_size >= self._MIN_CACHE_SIZE:
-                lru_store_cache = getattr(zarr, "LRUStoreCache", None)
-                if lru_store_cache is not None:
-                    xarray_store = lru_store_cache(
-                        xarray_store, max_size=cache_size
-                    )
+                from zarr.experimental.cache_store import CacheStore
+                from zarr.storage import MemoryStore
 
+                xarray_store = FsspecStore.from_mapper(level_zarr_store)
+                xarray_store = CacheStore(
+                    store=xarray_store,
+                    cache_store=MemoryStore(),
+                    max_size=cache_size,
+                )
         try:
             level_dataset = xr.open_zarr(
                 xarray_store, consolidated=consolidated, **self._zarr_kwargs

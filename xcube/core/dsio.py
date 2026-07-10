@@ -466,7 +466,8 @@ class ZarrDatasetIO(DatasetIO):
                 client_kwargs=s3_client_kwargs)``.
             max_cache_size: if this is a positive integer, the store
                 will be wrapped in an in-memory cache, that is ``store =
-                zarr.LRUStoreCache(store, max_size=max_cache_size)``.
+                zarr.experimental.cache_store.CacheStore(store=path,
+                cache_store=MemoryStore(), max_size=max_cache_size)``.
             **kwargs: Keyword-arguments passed to xarray Zarr adapter,
                 that is ``xarray.open_zarr(..., **kwargs)``. In
                 addition, the parameter **
@@ -489,15 +490,15 @@ class ZarrDatasetIO(DatasetIO):
                     mode="r",
                 )
             if max_cache_size is not None and max_cache_size > 0:
-                lru_store_cache = getattr(zarr, "LRUStoreCache", None)
-                if lru_store_cache is not None:
-                    path_or_store = lru_store_cache(
-                        path_or_store, max_size=max_cache_size
-                    )
-        try:
-            return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
-        except (FileNotFoundError, zarr.errors.GroupNotFoundError) as e:
-            raise ValueError(str(e)) from e
+                from zarr.experimental.cache_store import CacheStore
+                from zarr.storage import MemoryStore
+
+                path_or_store = CacheStore(
+                    store=path_or_store,
+                    cache_store=MemoryStore(),
+                    max_size=max_cache_size,
+                )
+        return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
 
     def write(
         self,

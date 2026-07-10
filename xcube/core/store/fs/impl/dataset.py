@@ -3,10 +3,9 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import ABC
-from typing import Optional
 
 import xarray as xr
-import zarr
+from zarr.storage import FsspecStore
 
 # Note, we need the following reference to register the
 # xarray property accessor
@@ -155,9 +154,15 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         zarr_store = fs.get_mapper(data_id)
         xarray_store = data_id if is_local_fs(fs) else zarr_store
         if isinstance(cache_size, int) and cache_size > 0:
-            lru_store_cache = getattr(zarr, "LRUStoreCache", None)
-            if lru_store_cache is not None:
-                xarray_store = lru_store_cache(xarray_store, max_size=cache_size)
+            from zarr.experimental.cache_store import CacheStore
+            from zarr.storage import MemoryStore
+
+            xarray_store = FsspecStore.from_mapper(zarr_store)
+            xarray_store = CacheStore(
+                store=xarray_store,
+                cache_store=MemoryStore(),
+                max_size=cache_size,
+            )
         # TODO: test whether we really need to distinguish here as we know
         #   we are opening a zarr dataset, even without another backend.
         if engine == "zarr":

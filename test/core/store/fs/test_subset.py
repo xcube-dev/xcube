@@ -48,9 +48,11 @@ class FsStoreSubset:
             for i in range(3):
                 zarr_path = f"{dir_path}/olci-l1b-2022050{i + 1}.zarr"
                 cube.to_zarr(
-                    zarr_path
-                    if is_local_fs(cls.fs)
-                    else cls.fs.get_mapper(root=zarr_path, create=True),
+                    (
+                        zarr_path
+                        if is_local_fs(cls.fs)
+                        else cls.fs.get_mapper(root=zarr_path)
+                    ),
                     mode="w",
                     zarr_version=2,
                 )
@@ -60,9 +62,11 @@ class FsStoreSubset:
             for i in range(3):
                 zarr_path = f"{dir_path}/olci-l2-2022050{i + 1}.zarr"
                 cube.to_zarr(
-                    zarr_path
-                    if is_local_fs(cls.fs)
-                    else cls.fs.get_mapper(root=zarr_path, create=True),
+                    (
+                        zarr_path
+                        if is_local_fs(cls.fs)
+                        else cls.fs.get_mapper(root=zarr_path)
+                    ),
                     mode="w",
                     zarr_version=2,
                 )
@@ -75,9 +79,11 @@ class FsStoreSubset:
                 for j in range(4):
                     zarr_path = f"{levels_path}/{j}.zarr"
                     cube.to_zarr(
-                        zarr_path
-                        if is_local_fs(cls.fs)
-                        else cls.fs.get_mapper(root=zarr_path, create=True),
+                        (
+                            zarr_path
+                            if is_local_fs(cls.fs)
+                            else cls.fs.get_mapper(root=zarr_path)
+                        ),
                         mode="w",
                         zarr_version=2,
                     )
