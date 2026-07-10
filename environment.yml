@@ -45,7 +45,7 @@ dependencies:
   - tornado >=6.0,<6.5
   - urllib3 >=2.0
   - xarray >=2024.7
-  - zarr >=3.0
+  - zarr >=3.0,<4
   # Chartlets
   - altair
   - chartlets >= 0.1.3
