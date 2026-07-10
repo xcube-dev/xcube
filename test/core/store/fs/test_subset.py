@@ -54,7 +54,7 @@ class FsStoreSubset:
                         else cls.fs.get_mapper(root=zarr_path)
                     ),
                     mode="w",
-                    zarr_version=2,
+                    zarr_format=2,
                 )
 
             dir_path = f"{cls.root}/l2"
@@ -68,7 +68,7 @@ class FsStoreSubset:
                         else cls.fs.get_mapper(root=zarr_path)
                     ),
                     mode="w",
-                    zarr_version=2,
+                    zarr_format=2,
                 )
 
             dir_path = f"{cls.root}/l3"
@@ -85,7 +85,7 @@ class FsStoreSubset:
                             else cls.fs.get_mapper(root=zarr_path)
                         ),
                         mode="w",
-                        zarr_version=2,
+                        zarr_format=2,
                     )
 
         @classmethod

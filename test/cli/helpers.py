@@ -43,7 +43,7 @@ class CliDataTest(CliTest, metaclass=ABCMeta):
         if self.chunks() is not None:
             dataset = dataset.chunk(self.chunks())
         dataset.to_netcdf(TEST_NC_FILE, mode="w")
-        dataset.to_zarr(TEST_ZARR_DIR, mode="w", zarr_version=2)
+        dataset.to_zarr(TEST_ZARR_DIR, mode="w", zarr_format=2)
 
     def tearDown(self):
         self._rm_outputs()
