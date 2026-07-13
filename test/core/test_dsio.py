@@ -5,6 +5,7 @@
 import os
 import os.path
 import unittest
+from unittest.mock import patch
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
 from typing import Set
@@ -23,6 +24,7 @@ from xcube.core.dsio import (
     ZarrDatasetIO,
     find_dataset_io,
     get_path_or_s3_store,
+    new_s3_file_system,
     open_cube,
     open_dataset,
     parse_s3_url_and_kwargs,
@@ -424,6 +426,15 @@ class GetPathOrObsStoreTest(S3Test):
         self.assertEqual("../examples/serve/demo/cube-1-250-250.zarr", path)
         self.assertEqual(False, consolidated)
 
+    def test_path_or_store_with_explicit_s3_kwargs_for_local_path(self):
+        s3_store, consolidated = get_path_or_s3_store(
+            "examples/serve/demo/cube-1-250-250.zarr",
+            s3_kwargs={"anon": True},
+            mode="r",
+        )
+        self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
+        self.assertEqual(False, consolidated)
+
 
 class ParseObsUrlAndKwargsTest(unittest.TestCase):
     def test_http(self):
@@ -484,6 +495,17 @@ class ParseObsUrlAndKwargsTest(unittest.TestCase):
         self.assertEqual(
             {"endpoint_url": "https://s3.eu-central-1.amazonaws.com"}, s3_client_kwargs
         )
+
+
+class NewS3FileSystemTest(unittest.TestCase):
+    @patch("xcube.core.dsio.s3fs.S3FileSystem")
+    def test_no_credentials_warning_is_emitted(self, mock_s3_file_system):
+        import botocore
+
+        mock_s3_file_system.side_effect = botocore.exceptions.NoCredentialsError()
+        with self.assertWarns(UserWarning):
+            with self.assertRaises(botocore.exceptions.NoCredentialsError):
+                new_s3_file_system(s3_kwargs={}, s3_client_kwargs={})
 
 
 class SplitBucketUrlTest(unittest.TestCase):

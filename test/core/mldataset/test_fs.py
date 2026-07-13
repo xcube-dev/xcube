@@ -4,6 +4,7 @@
 
 
 import math
+import json
 import unittest
 from collections.abc import Mapping
 from typing import List, Optional, Any
@@ -13,6 +14,7 @@ import fsspec.core
 import xarray as xr
 
 from xcube.core.mldataset import FsMultiLevelDataset
+from xcube.core.mldataset.fs import FsMultiLevelDatasetError
 from xcube.core.new import new_cube
 from xcube.core.subsampling import AggMethod
 
@@ -136,3 +138,24 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         self.assertEqual(
             [201523393, 50380849, 12595213, 3148804, 787201], weighted_sizes
         )
+
+    def test_invalid_base_dataset_path_raises(self):
+        with self.assertRaises(FsMultiLevelDatasetError):
+            FsMultiLevelDataset.write_dataset(
+                self.dataset,
+                "store/test.levels",
+                fs=self.fs,
+                fs_root="",
+                replace=True,
+                num_levels=1,
+                base_dataset_path="base.zarr",
+            )
+
+    def test_invalid_levels_spec_raises_type_error(self):
+        self.fs.mkdirs("test.levels", exist_ok=True)
+        with self.fs.open("test.levels/.zlevels", "w") as fp:
+            json.dump([], fp)
+
+        ml_dataset = FsMultiLevelDataset("test.levels", fs=self.fs)
+        with self.assertRaises(TypeError):
+            _ = ml_dataset.num_levels
