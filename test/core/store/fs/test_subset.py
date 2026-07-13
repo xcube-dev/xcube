@@ -12,6 +12,7 @@ import fsspec
 from xcube.core.new import new_cube
 from xcube.core.store.fs.registry import new_fs_data_store
 from xcube.core.store.fs.store import FsDataStore
+from xcube.util.fspath import is_local_fs
 from xcube.util.temp import new_temp_dir
 
 
@@ -46,13 +47,29 @@ class FsStoreSubset:
             cls.fs.mkdir(dir_path)
             for i in range(3):
                 zarr_path = f"{dir_path}/olci-l1b-2022050{i + 1}.zarr"
-                cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode="w")
+                cube.to_zarr(
+                    (
+                        zarr_path
+                        if is_local_fs(cls.fs)
+                        else cls.fs.get_mapper(root=zarr_path)
+                    ),
+                    mode="w",
+                    zarr_format=2,
+                )
 
             dir_path = f"{cls.root}/l2"
             cls.fs.mkdir(dir_path)
             for i in range(3):
                 zarr_path = f"{dir_path}/olci-l2-2022050{i + 1}.zarr"
-                cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode="w")
+                cube.to_zarr(
+                    (
+                        zarr_path
+                        if is_local_fs(cls.fs)
+                        else cls.fs.get_mapper(root=zarr_path)
+                    ),
+                    mode="w",
+                    zarr_format=2,
+                )
 
             dir_path = f"{cls.root}/l3"
             cls.fs.mkdir(dir_path)
@@ -61,7 +78,15 @@ class FsStoreSubset:
                 cls.fs.mkdir(levels_path)
                 for j in range(4):
                     zarr_path = f"{levels_path}/{j}.zarr"
-                    cube.to_zarr(cls.fs.get_mapper(root=zarr_path), mode="w")
+                    cube.to_zarr(
+                        (
+                            zarr_path
+                            if is_local_fs(cls.fs)
+                            else cls.fs.get_mapper(root=zarr_path)
+                        ),
+                        mode="w",
+                        zarr_format=2,
+                    )
 
         @classmethod
         def tearDownClass(cls) -> None:

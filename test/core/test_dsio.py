@@ -5,6 +5,7 @@
 import os
 import os.path
 import unittest
+from unittest.mock import patch
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
 from typing import Set
@@ -23,6 +24,7 @@ from xcube.core.dsio import (
     ZarrDatasetIO,
     find_dataset_io,
     get_path_or_s3_store,
+    new_s3_file_system,
     open_cube,
     open_dataset,
     parse_s3_url_and_kwargs,
@@ -277,8 +279,8 @@ class ZarrDatasetIOTest(unittest.TestCase):
 
     def test_read(self):
         ds_io = ZarrDatasetIO()
-        with self.assertRaises(ValueError):
-            ds_io.read("test.zarr")
+        with self.assertRaises(FileNotFoundError):
+            ds_io.read("test.zarr", max_cache_size=2**20)
 
 
 class ZarrDatasetS3IOTest(S3Test):
@@ -291,6 +293,7 @@ class ZarrDatasetS3IOTest(S3Test):
 
         ds1 = new_cube(width=36, height=18, variables=dict(chl=0.5, tsm=0.2))
 
+        # write as zarr v2
         write_cube(
             ds1,
             "upload_bucket/cube-1-250-250.zarr",
@@ -301,6 +304,26 @@ class ZarrDatasetS3IOTest(S3Test):
 
         ds2 = open_cube(
             "upload_bucket/cube-1-250-250.zarr",
+            format_name="zarr",
+            s3_kwargs=s3_kwargs,
+            s3_client_kwargs=s3_client_kwargs,
+        )
+
+        self.assertEqual(set(ds1.coords), set(ds2.coords))
+        self.assertEqual(set(ds1.data_vars), set(ds2.data_vars))
+
+        # write as zarr v3
+        write_cube(
+            ds1,
+            "upload_bucket/cube-1-250-250_v3.zarr",
+            format_name="zarr",
+            s3_kwargs=s3_kwargs,
+            s3_client_kwargs=s3_client_kwargs,
+            zarr_format=3,
+        )
+
+        ds2 = open_cube(
+            "upload_bucket/cube-1-250-250_v3.zarr",
             format_name="zarr",
             s3_kwargs=s3_kwargs,
             s3_client_kwargs=s3_client_kwargs,
@@ -424,6 +447,15 @@ class GetPathOrObsStoreTest(S3Test):
         self.assertEqual("../examples/serve/demo/cube-1-250-250.zarr", path)
         self.assertEqual(False, consolidated)
 
+    def test_path_or_store_with_explicit_s3_kwargs_for_local_path(self):
+        s3_store, consolidated = get_path_or_s3_store(
+            "examples/serve/demo/cube-1-250-250.zarr",
+            s3_kwargs={"anon": True},
+            mode="r",
+        )
+        self.assertIsInstance(s3_store, fsspec.mapping.FSMap)
+        self.assertEqual(False, consolidated)
+
 
 class ParseObsUrlAndKwargsTest(unittest.TestCase):
     def test_http(self):
@@ -484,6 +516,17 @@ class ParseObsUrlAndKwargsTest(unittest.TestCase):
         self.assertEqual(
             {"endpoint_url": "https://s3.eu-central-1.amazonaws.com"}, s3_client_kwargs
         )
+
+
+class NewS3FileSystemTest(unittest.TestCase):
+    @patch("xcube.core.dsio.s3fs.S3FileSystem")
+    def test_no_credentials_warning_is_emitted(self, mock_s3_file_system):
+        import botocore
+
+        mock_s3_file_system.side_effect = botocore.exceptions.NoCredentialsError()
+        with self.assertWarns(UserWarning):
+            with self.assertRaises(botocore.exceptions.NoCredentialsError):
+                new_s3_file_system(s3_kwargs={}, s3_client_kwargs={})
 
 
 class SplitBucketUrlTest(unittest.TestCase):

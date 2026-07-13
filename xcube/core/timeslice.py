@@ -86,7 +86,9 @@ def append_time_slice(
         # from next time_slice.to_zarr(...) call.
         time_slice.attrs.pop("coordinates")
 
-    time_slice.to_zarr(store, mode="a", append_dim="time", consolidated=True)
+    time_slice.to_zarr(
+        store, mode="a", append_dim="time", consolidated=True, zarr_format=2
+    )
 
     unchunk_dataset(store, coords_only=True)
 
@@ -173,7 +175,7 @@ def update_time_slice(
     if chunk_sizes:
         time_slice = chunk_dataset(time_slice, chunk_sizes, format_name="zarr")
     temp_dir = tempfile.TemporaryDirectory(prefix="xcube-time-slice-", suffix=".zarr")
-    time_slice.to_zarr(temp_dir.name, encoding=encoding)
+    time_slice.to_zarr(temp_dir.name, encoding=encoding, zarr_format=2)
     slice_root_group = zarr.open(temp_dir.name, mode="r")
     slice_arrays = dict(slice_root_group.arrays())
 
@@ -183,7 +185,7 @@ def update_time_slice(
             slice_array = slice_arrays[var_name]
             if insert_mode:
                 # Add one empty time step
-                empty = zarr.creation.empty(slice_array.shape, dtype=var_array.dtype)
+                empty = np.empty(slice_array.shape, dtype=var_array.dtype)
                 var_array.append(empty, axis=0)
                 # Shift contents
                 var_array[insert_index + 1 :, ...] = var_array[insert_index:-1, ...]

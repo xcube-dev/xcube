@@ -3,10 +3,9 @@
 # https://opensource.org/licenses/MIT.
 
 from abc import ABC
-from typing import Optional
 
 import xarray as xr
-import zarr
+from zarr.storage import FsspecStore
 
 # Note, we need the following reference to register the
 # xarray property accessor
@@ -115,6 +114,11 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             description="If set, the dimension on which the data will be appended.",
             min_length=1,
         ),
+        zarr_format=JsonIntegerSchema(
+            description="Zarr format version to write. Supported values are 2 and 3.",
+            enum=[2, 3],
+            default=2,
+        ),
         replace=JsonBooleanSchema(
             description="If set, an existing dataset will be replaced without warning.",
         ),
@@ -152,9 +156,18 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         consolidated = open_params.pop(
             "consolidated", fs.exists(f"{data_id}/.zmetadata")
         )
-        zarr_store = fs.get_mapper(data_id)
+        fs_map = fs.get_mapper(data_id)
+        zarr_store = data_id if is_local_fs(fs) else fs_map
         if isinstance(cache_size, int) and cache_size > 0:
-            zarr_store = zarr.LRUStoreCache(zarr_store, max_size=cache_size)
+            from zarr.experimental.cache_store import CacheStore
+            from zarr.storage import MemoryStore
+
+            zarr_store = FsspecStore.from_mapper(fs_map)
+            zarr_store = CacheStore(
+                store=zarr_store,
+                cache_store=MemoryStore(),
+                max_size=cache_size,
+            )
         # TODO: test whether we really need to distinguish here as we know
         #   we are opening a zarr dataset, even without another backend.
         if engine == "zarr":
@@ -172,7 +185,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
                     f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
                 ) from e
 
-        dataset.zarr_store.set(zarr_store)
+        dataset.zarr_store.set(fs_map)
         return dataset
 
     # noinspection PyMethodMayBeStatic
@@ -185,13 +198,16 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         assert_instance(data, xr.Dataset, name="data")
         assert_instance(data_id, str, name="data_id")
         fs, root, write_params = self.load_fs(write_params)
-        zarr_store = fs.get_mapper(data_id, create=True)
+        fs_map = fs.get_mapper(data_id, create=True)
+        zarr_store = data_id if is_local_fs(fs) else fs_map
         consolidated = write_params.pop("consolidated", True)
+        zarr_format = write_params.pop("zarr_format", 2)
         try:
             data.to_zarr(
                 zarr_store,
                 mode="w" if replace else None,
                 consolidated=consolidated,
+                zarr_format=zarr_format,
                 **write_params,
             )
         except ValueError as e:

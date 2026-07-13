@@ -512,7 +512,7 @@ class TsPerfTest(unittest.TestCase):
 
             cube = new_cube(time_periods=2000, variables=dict(analysed_sst=280.4))
             cube = cube.chunk(dict(time=1, lon=90, lat=90))
-            cube.to_zarr(test_cube)
+            cube.to_zarr(test_cube, zarr_version=2)
 
         ctx = get_timeseries_ctx(
             dict(
