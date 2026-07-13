@@ -4,7 +4,7 @@
 
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import fsspec
 import xarray as xr
@@ -14,6 +14,7 @@ from xcube.core.store.fs.impl.dataset import (
     DatasetNetcdfFsDataAccessor,
     DatasetZarrFsDataAccessor,
 )
+from xcube.core.store.fs.impl.mldataset import MultiLevelDatasetLevelsFsDataAccessor
 
 
 class DatasetZarrFsDataAccessorTest(unittest.TestCase):
@@ -43,6 +44,37 @@ class DatasetZarrFsDataAccessorTest(unittest.TestCase):
         mock_open_dataset.assert_called_once()
         self.assertIsInstance(opened, xr.Dataset)
 
+    def test_write_data_params_schema_exposes_zarr_format(self):
+        accessor = DatasetZarrFsDataAccessor()
+        schema = accessor.get_write_data_params_schema().to_dict()
+
+        self.assertEqual(
+            [2, 3], schema["properties"]["zarr_format"]["enum"]
+        )
+        self.assertEqual(
+            2, schema["properties"]["zarr_format"]["default"]
+        )
+
+    @patch("xcube.core.store.fs.impl.dataset.is_local_fs", return_value=False)
+    def test_write_data_uses_default_zarr_format_2(self, _mock_is_local_fs):
+        accessor = DatasetZarrFsDataAccessor()
+        dataset = MagicMock()
+        fs = fsspec.filesystem("memory")
+
+        accessor.write_data(dataset, "cube.zarr", fs=fs, root=None)
+
+        self.assertEqual(2, dataset.to_zarr.call_args.kwargs["zarr_format"])
+
+    @patch("xcube.core.store.fs.impl.dataset.is_local_fs", return_value=False)
+    def test_write_data_passes_through_zarr_format_3(self, _mock_is_local_fs):
+        accessor = DatasetZarrFsDataAccessor()
+        dataset = MagicMock()
+        fs = fsspec.filesystem("memory")
+
+        accessor.write_data(dataset, "cube.zarr", fs=fs, root=None, zarr_format=3)
+
+        self.assertEqual(3, dataset.to_zarr.call_args.kwargs["zarr_format"])
+
 
 class DatasetNetcdfFsDataAccessorTest(unittest.TestCase):
     @patch("xcube.core.store.fs.impl.dataset.is_https_fs", return_value=True)
@@ -59,3 +91,16 @@ class DatasetNetcdfFsDataAccessorTest(unittest.TestCase):
             "https://root.example/sample.nc#mode=bytes", engine="netcdf4"
         )
         self.assertIsInstance(opened, xr.Dataset)
+
+
+class MultiLevelDatasetLevelsFsDataAccessorTest(unittest.TestCase):
+    def test_write_data_params_schema_exposes_zarr_format(self):
+        accessor = MultiLevelDatasetLevelsFsDataAccessor()
+        schema = accessor.get_write_data_params_schema().to_dict()
+
+        self.assertEqual(
+            [2, 3], schema["properties"]["zarr_format"]["enum"]
+        )
+        self.assertEqual(
+            2, schema["properties"]["zarr_format"]["default"]
+        )

@@ -114,6 +114,11 @@ ZARR_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
             description="If set, the dimension on which the data will be appended.",
             min_length=1,
         ),
+        zarr_format=JsonIntegerSchema(
+            description="Zarr format version to write. Supported values are 2 and 3.",
+            enum=[2, 3],
+            default=2,
+        ),
         replace=JsonBooleanSchema(
             description="If set, an existing dataset will be replaced without warning.",
         ),
@@ -196,12 +201,13 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         zarr_store = fs.get_mapper(data_id, create=True)
         xarray_store = data_id if is_local_fs(fs) else zarr_store
         consolidated = write_params.pop("consolidated", True)
+        zarr_format = write_params.pop("zarr_format", 2)
         try:
             data.to_zarr(
                 xarray_store,
                 mode="w" if replace else None,
                 consolidated=consolidated,
-                zarr_format=2,
+                zarr_format=zarr_format,
                 **write_params,
             )
         except ValueError as e:

@@ -519,12 +519,13 @@ class ZarrDatasetIO(DatasetIO):
         )
         encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
         consolidated = kwargs.pop("consolidated", True)
+        zarr_format = kwargs.pop("zarr_format", 2)
         dataset.to_zarr(
             path_or_store,
             mode="w",
             encoding=encoding,
             consolidated=consolidated,
-            zarr_format=2,
+            zarr_format=zarr_format,
             **kwargs,
         )
 

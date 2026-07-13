@@ -282,6 +282,22 @@ class ZarrDatasetIOTest(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             ds_io.read("test.zarr")
 
+    @patch("xcube.core.dsio.get_path_or_s3_store", return_value=("test.zarr", False))
+    def test_write_uses_default_zarr_format_2(self, _mock_get_path_or_s3_store):
+        dataset = xr.Dataset()
+        with patch.object(dataset, "to_zarr") as mock_to_zarr:
+            ZarrDatasetIO().write(dataset, "test.zarr")
+
+        self.assertEqual(2, mock_to_zarr.call_args.kwargs["zarr_format"])
+
+    @patch("xcube.core.dsio.get_path_or_s3_store", return_value=("test.zarr", False))
+    def test_write_passes_through_zarr_format_3(self, _mock_get_path_or_s3_store):
+        dataset = xr.Dataset()
+        with patch.object(dataset, "to_zarr") as mock_to_zarr:
+            ZarrDatasetIO().write(dataset, "test.zarr", zarr_format=3)
+
+        self.assertEqual(3, mock_to_zarr.call_args.kwargs["zarr_format"])
+
 
 class ZarrDatasetS3IOTest(S3Test):
     def test_write_to_and_read_from_s3(self):
@@ -293,6 +309,7 @@ class ZarrDatasetS3IOTest(S3Test):
 
         ds1 = new_cube(width=36, height=18, variables=dict(chl=0.5, tsm=0.2))
 
+        # write as zarr v2
         write_cube(
             ds1,
             "upload_bucket/cube-1-250-250.zarr",
@@ -303,6 +320,26 @@ class ZarrDatasetS3IOTest(S3Test):
 
         ds2 = open_cube(
             "upload_bucket/cube-1-250-250.zarr",
+            format_name="zarr",
+            s3_kwargs=s3_kwargs,
+            s3_client_kwargs=s3_client_kwargs,
+        )
+
+        self.assertEqual(set(ds1.coords), set(ds2.coords))
+        self.assertEqual(set(ds1.data_vars), set(ds2.data_vars))
+
+        # write as zarr v3
+        write_cube(
+            ds1,
+            "upload_bucket/cube-1-250-250_v3.zarr",
+            format_name="zarr",
+            s3_kwargs=s3_kwargs,
+            s3_client_kwargs=s3_client_kwargs,
+            zarr_format=3,
+        )
+
+        ds2 = open_cube(
+            "upload_bucket/cube-1-250-250_v3.zarr",
             format_name="zarr",
             s3_kwargs=s3_kwargs,
             s3_client_kwargs=s3_client_kwargs,

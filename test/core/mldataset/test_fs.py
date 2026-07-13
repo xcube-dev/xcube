@@ -7,11 +7,12 @@ import math
 import json
 import unittest
 from collections.abc import Mapping
-from typing import List, Optional, Any
+from typing import Optional, Any
 
 import fsspec
 import fsspec.core
 import xarray as xr
+import zarr
 
 from xcube.core.mldataset import FsMultiLevelDataset
 from xcube.core.mldataset.fs import FsMultiLevelDatasetError
@@ -83,6 +84,23 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             expected_agg_methods={"CHL": "mean", "qflags": "first"},
         )
 
+    def test_io_nl_4_ts_256_base_zarr3(self):
+        self.dataset.to_zarr(self.fs.get_mapper("test.zarr"), zarr_version=2)
+        self.assert_io_ok(
+            "test.levels",
+            num_levels=4,
+            agg_methods=None,
+            tile_size=256,
+            use_saved_levels=False,
+            base_dataset_path="test.zarr",
+            base_dataset_params=None,
+            expected_files=[".zlevels", "0.link", "1.zarr", "2.zarr", "3.zarr"],
+            expected_num_levels=4,
+            expected_tile_size=[256, 256],
+            expected_agg_methods={"CHL": "mean", "qflags": "first"},
+            zarr_kwargs={"zarr_format": 3},
+        )
+
     def assert_io_ok(
         self,
         path: str,
@@ -96,6 +114,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         expected_num_levels: int,
         expected_agg_methods: Optional[Mapping[str, AggMethod]],
         expected_tile_size: list[int],
+        zarr_kwargs: Optional[dict] = None,
     ):
         fs = self.fs
         FsMultiLevelDataset.write_dataset(
@@ -110,6 +129,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             use_saved_levels=use_saved_levels,
             base_dataset_path=base_dataset_path,
             base_dataset_params=base_dataset_params,
+            **zarr_kwargs,
         )
         self.assertTrue(fs.isdir(path))
         self.assertEqual(

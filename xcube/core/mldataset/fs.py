@@ -266,6 +266,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
             tile_size = normalize_scalar_or_pair(
                 tile_size, item_type=int, name="tile_size"
             )
+        zarr_format = zarr_kwargs.pop("zarr_format", 2)
 
         assert_instance(path, str, name="path")
         assert_instance(fs, fsspec.AbstractFileSystem, name="fs")
@@ -360,7 +361,7 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                         xarray_store,
                         mode="w" if replace else None,
                         consolidated=consolidated,
-                        zarr_format=2,
+                        zarr_format=zarr_format,
                         **zarr_kwargs,
                     )
                 except ValueError as e:
