@@ -117,6 +117,8 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         zarr_kwargs: Optional[dict] = None,
     ):
         fs = self.fs
+        if zarr_kwargs is None:
+            zarr_kwargs = {}
         FsMultiLevelDataset.write_dataset(
             self.dataset,
             path,

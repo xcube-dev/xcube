@@ -156,15 +156,15 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         consolidated = open_params.pop(
             "consolidated", fs.exists(f"{data_id}/.zmetadata")
         )
-        zarr_store = fs.get_mapper(data_id)
-        xarray_store = data_id if is_local_fs(fs) else zarr_store
+        fs_map = fs.get_mapper(data_id)
+        zarr_store = data_id if is_local_fs(fs) else fs_map
         if isinstance(cache_size, int) and cache_size > 0:
             from zarr.experimental.cache_store import CacheStore
             from zarr.storage import MemoryStore
 
-            xarray_store = FsspecStore.from_mapper(zarr_store)
-            xarray_store = CacheStore(
-                store=xarray_store,
+            zarr_store = FsspecStore.from_mapper(fs_map)
+            zarr_store = CacheStore(
+                store=zarr_store,
                 cache_store=MemoryStore(),
                 max_size=cache_size,
             )
@@ -173,19 +173,19 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         if engine == "zarr":
             try:
                 dataset = xr.open_zarr(
-                    xarray_store, consolidated=consolidated, **open_params
+                    zarr_store, consolidated=consolidated, **open_params
                 )
             except ValueError as e:
                 raise DataStoreError(f"Failed to open dataset {data_id!r}: {e}") from e
         else:
             try:
-                dataset = xr.open_dataset(xarray_store, engine=engine, **open_params)
+                dataset = xr.open_dataset(zarr_store, engine=engine, **open_params)
             except ValueError as e:
                 raise DataStoreError(
                     f"Failed to open dataset {data_id!r} using engine {engine!r}: {e}"
                 ) from e
 
-        dataset.zarr_store.set(zarr_store)
+        dataset.zarr_store.set(fs_map)
         return dataset
 
     # noinspection PyMethodMayBeStatic
@@ -198,13 +198,13 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         assert_instance(data, xr.Dataset, name="data")
         assert_instance(data_id, str, name="data_id")
         fs, root, write_params = self.load_fs(write_params)
-        zarr_store = fs.get_mapper(data_id, create=True)
-        xarray_store = data_id if is_local_fs(fs) else zarr_store
+        fs_map = fs.get_mapper(data_id, create=True)
+        zarr_store = data_id if is_local_fs(fs) else fs_map
         consolidated = write_params.pop("consolidated", True)
         zarr_format = write_params.pop("zarr_format", 2)
         try:
             data.to_zarr(
-                xarray_store,
+                zarr_store,
                 mode="w" if replace else None,
                 consolidated=consolidated,
                 zarr_format=zarr_format,
