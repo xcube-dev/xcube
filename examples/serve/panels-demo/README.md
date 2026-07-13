@@ -5,7 +5,7 @@
 ```shell
 conda activate xcube
 cd xcube
-xcube serve --traceback --loglevel -vvv -c examples/serve/panels-demo/config.yaml
+xcube serve -vvv -c examples/serve/panels-demo/config.yaml
 ```
 
 ### Test data
