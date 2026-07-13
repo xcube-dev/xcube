@@ -489,6 +489,8 @@ class ZarrDatasetIO(DatasetIO):
                     s3_client_kwargs=s3_client_kwargs,
                     mode="r",
                 )
+                if isinstance(path_or_store, str):
+                    path_or_store = zarr.storage.LocalStore(path_or_store)
             if max_cache_size is not None and max_cache_size > 0:
                 from zarr.experimental.cache_store import CacheStore
                 from zarr.storage import MemoryStore

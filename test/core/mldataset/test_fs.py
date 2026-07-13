@@ -139,14 +139,14 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             set(fs.listdir(path, detail=False)),
         )
 
-        ml_dataset = FsMultiLevelDataset(path, fs=fs)
+        ml_dataset = FsMultiLevelDataset(path, fs=fs, cache_size=2**22)
         self.assertEqual(expected_num_levels, ml_dataset.num_levels)
         self.assertEqual(expected_agg_methods, ml_dataset.agg_methods)
         self.assertEqual(expected_tile_size, ml_dataset.tile_size)
         self.assertEqual(use_saved_levels, ml_dataset.use_saved_levels)
         self.assertEqual(base_dataset_path, ml_dataset.base_dataset_path)
         self.assertEqual(base_dataset_params, ml_dataset.base_dataset_params)
-        self.assertEqual(None, ml_dataset.cache_size)
+        self.assertEqual(2**22, ml_dataset.cache_size)
         self.assertEqual(num_levels, len(ml_dataset.size_weights))
         self.assertTrue(all(ml_dataset.size_weights > 0.0))
         for i in range(num_levels):

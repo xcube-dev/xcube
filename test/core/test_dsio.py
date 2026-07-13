@@ -280,7 +280,7 @@ class ZarrDatasetIOTest(unittest.TestCase):
     def test_read(self):
         ds_io = ZarrDatasetIO()
         with self.assertRaises(FileNotFoundError):
-            ds_io.read("test.zarr")
+            ds_io.read("test.zarr", max_cache_size=2**20)
 
 
 class ZarrDatasetS3IOTest(S3Test):
