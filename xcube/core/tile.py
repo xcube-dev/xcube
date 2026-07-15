@@ -138,6 +138,7 @@ def compute_tiles(
     with measure_time("Transforming tile map to dataset coordinates"):
         ds_x_name, ds_y_name = ml_dataset.grid_mapping.xy_dim_names
 
+        ds_x_coords = variable_0[ds_x_name]
         ds_y_coords = variable_0[ds_y_name]
         ds_y_points_up = bool(ds_y_coords[0] < ds_y_coords[-1])
 
@@ -201,11 +202,18 @@ def compute_tiles(
                 "Tile bounds NaN after map projection", logger=logger
             )
 
+        try:
+            ds_dx = abs(_get_coord_step(ds_x_coords))
+            ds_dy = abs(_get_coord_step(ds_y_coords))
+        except (IndexError, ZeroDivisionError) as e:
+            raise TileException(
+                "Cannot determine dataset coordinate step", logger=logger
+            ) from e
+
         num_extra_pixels = tile_enlargement
-        res_x = (ds_x_max - ds_x_min) / tile_width
-        res_y = (ds_y_max - ds_y_min) / tile_height
-        extra_dx = num_extra_pixels * res_x
-        extra_dy = num_extra_pixels * res_y
+        extra_dx = (num_extra_pixels + 0.5) * ds_dx
+        extra_dy = (num_extra_pixels + 0.5) * ds_dy
+
         ds_x_slice = slice(ds_x_min - extra_dx, ds_x_max + extra_dx)
         if ds_y_points_up:
             ds_y_slice = slice(ds_y_min - extra_dy, ds_y_max + extra_dy)
@@ -230,14 +238,11 @@ def compute_tiles(
 
         ds_x1 = float(ds_x_coords[0])
         ds_y1 = float(ds_y_coords[0])
-        ds_x2 = float(ds_x_coords[-1])
-        ds_y2 = float(ds_y_coords[-1])
-
         ds_size_x = ds_x_coords.size
         ds_size_y = ds_y_coords.size
 
-        ds_dx = (ds_x2 - ds_x1) / (ds_size_x - 1)
-        ds_dy = (ds_y2 - ds_y1) / (ds_size_y - 1)
+        ds_dx = _get_coord_step(ds_x_coords)
+        ds_dy = _get_coord_step(ds_y_coords)
 
         ds_x_indices = (tile_ds_x_2d - ds_x1) / ds_dx
         ds_y_indices = (tile_ds_y_2d - ds_y1) / ds_dy
@@ -285,6 +290,12 @@ def compute_tiles(
         )
 
     return var_tiles
+
+
+def _get_coord_step(coord: xr.DataArray) -> float:
+    coord_1 = float(coord[0])
+    coord_2 = float(coord[-1])
+    return (coord_2 - coord_1) / (coord.size - 1)
 
 
 def _new_tile_dataset(
@@ -674,7 +685,7 @@ def get_non_spatial_labels(
     variable: xr.DataArray,
     labels: Optional[dict[str, Any]],
     logger: logging.Logger = None,
-    excluded_dims: Iterable[str] | None = None
+    excluded_dims: Iterable[str] | None = None,
 ) -> dict[Hashable, Any]:
     labels = labels if labels is not None else {}
     excluded_dims = excluded_dims or []
@@ -684,10 +695,7 @@ def get_non_spatial_labels(
     # and ignore specified dims to keep the log clean (see
     # xcube.webapi.timeseries.routes.get_non_spatial_dimensions)
     assert variable.ndim >= 2
-    non_spatial_dims = [
-        dim for dim in variable.dims[0:-2]
-        if dim not in excluded_dims
-    ]
+    non_spatial_dims = [dim for dim in variable.dims[0:-2] if dim not in excluded_dims]
     if not non_spatial_dims:
         #  Ignore any extra labels passed.
         return new_labels
