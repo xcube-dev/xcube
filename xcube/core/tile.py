@@ -203,8 +203,8 @@ def compute_tiles(
             )
 
         try:
-            ds_dx = abs(_get_coord_step(ds_x_coords))
-            ds_dy = abs(_get_coord_step(ds_y_coords))
+            ds_dx = abs(_get_pixel_size(ds_x_coords))
+            ds_dy = abs(_get_pixel_size(ds_y_coords))
         except (IndexError, ZeroDivisionError) as e:
             raise TileException(
                 "Cannot determine dataset coordinate step", logger=logger
@@ -241,8 +241,8 @@ def compute_tiles(
         ds_size_x = ds_x_coords.size
         ds_size_y = ds_y_coords.size
 
-        ds_dx = _get_coord_step(ds_x_coords)
-        ds_dy = _get_coord_step(ds_y_coords)
+        ds_dx = _get_pixel_size(ds_x_coords)
+        ds_dy = _get_pixel_size(ds_y_coords)
 
         ds_x_indices = (tile_ds_x_2d - ds_x1) / ds_dx
         ds_y_indices = (tile_ds_y_2d - ds_y1) / ds_dy
@@ -292,7 +292,7 @@ def compute_tiles(
     return var_tiles
 
 
-def _get_coord_step(coord: xr.DataArray) -> float:
+def _get_pixel_size(coord: xr.DataArray) -> float:
     coord_1 = float(coord[0])
     coord_2 = float(coord[-1])
     return (coord_2 - coord_1) / (coord.size - 1)
