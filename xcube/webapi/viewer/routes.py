@@ -24,6 +24,17 @@ ENV_VAR_XCUBE_VIEWER_PATH = "XCUBE_VIEWER_PATH"
 _viewer_module = "xcube.webapi.viewer"
 _data_dir = "dist"
 _default_filename = "index.html"
+_allowed_query_params = frozenset(
+    (
+        "compact",
+        "dataset",
+        "serverId",
+        "serverName",
+        "serverUrl",
+        "stateKey",
+        "variable",
+    )
+)
 
 _responses = {
     200: {
@@ -40,6 +51,7 @@ _responses = {
 @api.static_route(
     "/viewer",
     default_filename=_default_filename,
+    allowed_query_params=_allowed_query_params,
     summary="Brings up the xcube Viewer webpage",
     responses=_responses,
 )
