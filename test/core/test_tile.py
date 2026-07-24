@@ -14,7 +14,12 @@ import pytest
 import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset, MultiLevelDataset
-from xcube.core.tile import compute_rgba_tile, compute_tiles, get_var_valid_range
+from xcube.core.tile import (
+    TileException,
+    compute_rgba_tile,
+    compute_tiles,
+    get_var_valid_range,
+)
 from xcube.core.tilingscheme import GEOGRAPHIC_CRS_NAME, WEB_MERCATOR_CRS_NAME
 from xcube.util.cmaps import Colormap, ColormapProvider
 
@@ -193,6 +198,20 @@ class ComputeTilesTest(TileTest, unittest.TestCase):
                 dtype=np.float32,
             ),
         )
+
+    def test_compute_tiles_with_single_x_coord(self):
+        ml_ds = self._get_ml_dataset(self.crs_name)
+        ml_ds.set_dataset(0, ml_ds.get_dataset(0).isel(x=[0]))
+
+        with self.assertRaises(TileException) as cm:
+            compute_tiles(
+                ml_ds,
+                "var_a",
+                self.args[2],
+                **self.kwargs,
+            )
+
+        self.assertEqual("Cannot determine dataset coordinate step", str(cm.exception))
 
     def test_compute_tiles_with_assignment_expr(self):
         tiles = compute_tiles(
