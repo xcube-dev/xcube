@@ -6,12 +6,14 @@
 import math
 import unittest
 from collections.abc import Mapping
-from typing import List, Optional, Any
+from typing import Any, Optional
+from unittest.mock import Mock, patch
 
 import fsspec
 import fsspec.core
 import xarray as xr
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import FsMultiLevelDataset
 from xcube.core.new import new_cube
 from xcube.core.subsampling import AggMethod
@@ -136,3 +138,79 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         self.assertEqual(
             [201523393, 50380849, 12595213, 3148804, 787201], weighted_sizes
         )
+
+    def test_get_non_spatial_coords(self):
+        grid_mapping = GridMapping.from_dataset(self.dataset)
+
+        non_spatial_coords = FsMultiLevelDataset._get_non_spatial_coords(
+            self.dataset, grid_mapping
+        )
+
+        self.assertEqual({"time", "time_bnds"}, set(non_spatial_coords))
+        for name, coord in non_spatial_coords.items():
+            xr.testing.assert_identical(self.dataset.coords[name], coord)
+
+    @patch("xcube.core.mldataset.fs.xr.open_zarr")
+    def test_open_level_dataset_reuses_non_spatial_coords(self, open_zarr: Mock):
+        level_zero = self.dataset
+        grid_mapping = GridMapping.from_dataset(level_zero)
+        ml_dataset = Mock()
+        ml_dataset.get_dataset.return_value = level_zero
+        ml_dataset.grid_mapping = grid_mapping
+        level_one = level_zero.isel(lon=slice(None, None, 2), lat=slice(None, None, 2))
+        opened_dataset = xr.Dataset(
+            coords={
+                name: level_one.coords[name]
+                for name in ("lon", "lat", "lon_bnds", "lat_bnds")
+            }
+        )
+        open_zarr.return_value = opened_dataset
+        zarr_store = {}
+
+        level_dataset = FsMultiLevelDataset._open_level_dataset(
+            ml_dataset,
+            zarr_store,
+            index=1,
+            consolidated=True,
+            decode_times=False,
+        )
+
+        ml_dataset.get_dataset.assert_called_once_with(0)
+        open_zarr.assert_called_once_with(
+            zarr_store,
+            consolidated=True,
+            drop_variables=["time", "time_bnds"],
+            decode_times=False,
+        )
+        for name in ("time", "time_bnds"):
+            xr.testing.assert_identical(
+                level_zero.coords[name], level_dataset.coords[name]
+            )
+        for name in ("lon", "lat", "lon_bnds", "lat_bnds"):
+            xr.testing.assert_identical(
+                opened_dataset.coords[name], level_dataset.coords[name]
+            )
+        self.assertIs(zarr_store, level_dataset.zarr_store.get())
+
+    @patch("xcube.core.mldataset.fs.xr.open_zarr")
+    def test_open_level_zero_does_not_reuse_coords(self, open_zarr: Mock):
+        ml_dataset = Mock()
+        opened_dataset = xr.Dataset()
+        open_zarr.return_value = opened_dataset
+        zarr_store = {}
+
+        level_dataset = FsMultiLevelDataset._open_level_dataset(
+            ml_dataset,
+            zarr_store,
+            index=0,
+            consolidated=False,
+        )
+
+        ml_dataset.get_dataset.assert_not_called()
+        open_zarr.assert_called_once_with(
+            zarr_store,
+            consolidated=False,
+            drop_variables=None,
+        )
+        self.assertIs(opened_dataset, level_dataset)
+        self.assertIs(zarr_store, level_dataset.zarr_store.get())
