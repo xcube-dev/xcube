@@ -2,4 +2,9 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-version = "1.13.4.dev0"
+from importlib.metadata import version as get_version, PackageNotFoundError
+
+try:
+    version = get_version("xcube")
+except PackageNotFoundError:
+    version = get_version("xcube-core")

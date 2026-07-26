@@ -1,10 +1,7 @@
-[build-system]
-requires = ["setuptools >= 61.2.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "xcube" # PYPI RENAME THIS LINE (do not remove this comment, see #1010) 
-dynamic = ["version", "readme"]
+name = "xcube" # PYPI RENAME THIS LINE (do not remove this comment, see #1010)
+version = "1.13.4.dev0"
+dynamic = ["readme"]
 authors = [
   {name = "xcube Development Team"}
 ]
@@ -86,6 +83,10 @@ xcube = "xcube.cli.main:main"
 [project.entry-points.xcube_plugins]
 xcube = "xcube.plugin:init_plugin"
 
+[build-system]
+requires = ["setuptools >= 61.2.0"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools.package-data]
 "xcube.webapi.meta" = [
     "data/openapi.html",
@@ -104,19 +105,6 @@ exclude = [
   "doc*"
 ]
 
-[project.optional-dependencies]
-dev = [
-  "flake8>=3.7",
-  "isort>=6",
-  "moto>=4",
-  "pytest>=4.4",
-  "pytest-cov>=2.6",
-  "pytz",  # for test/util/test_timeindex.py
-  "requests-mock>=1.8",
-  "ruff>=0.9",
-  "werkzeug"
-]
-
 [project.urls]
 Documentation = "https://xcube.readthedocs.io/en/latest/"
 Source = "https://github.com/xcube-dev/xcube"
@@ -125,7 +113,38 @@ Tracker = "https://github.com/xcube-dev/xcube/issues"
 "Release notes" = "https://github.com/xcube-dev/xcube/releases"
 Changelog = "https://github.com/xcube-dev/xcube/blob/main/CHANGES.md"
 
-# --- Pixi configuration
+# --- Tool configuration
+
+[tool.isort]
+known_first_party = ["xcube"]
+line_length = 88
+profile = "black"
+skip = [".idea", ".github", ".pixi", "htmlcov", "site"]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+include = [
+    "notebooks/**/*.py",
+    "xcube/**/*.py",
+]
+
+[tool.ruff.lint]
+ignore = ["E501", "I001"]
+isort = { relative-imports-order = "closest-to-furthest" }
+per-file-ignores = { "*.ipynb" = ["E402"] }
+select = ["I", "F", "E"]
+
+[tool.coverage.report]
+omit = []
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+disable_error_code = ["valid-type", "import-untyped"]
+
+# --- Pixi tool configuration
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
@@ -134,20 +153,15 @@ platforms = ["linux-64", "win-64", "osx-64"]
 [tool.pixi.pypi-dependencies]
 xcube = { path = ".", editable = true }
 
-[tool.pixi.environments]
-default = { solve-group = "default" }
-dev = { features = ["dev"], solve-group = "default" }
-xcube = { features = ["xcube"], no-default-feature = true }
-
-[tool.pixi.feature.xcube]
-channels = ["conda-forge"]
-
-[tool.pixi.feature.xcube.dependencies]
-python = ">=3.10"
+[tool.pixi.dependencies]
+# python
+python = ">=3.10,<3.13"
+# library dependencies
 affine = ">=2.2"
 botocore = ">=1.34.51"
 cftime = ">=1.6.3"
-click = ">=8.2.0"
+chartlets = ">=0.1.3"
+click = ">=8.2.0"  # TODO: drop in favor of typer
 cmocean = ">=2.0"
 cryptography = "*"
 dask = ">=2024.8"
@@ -161,7 +175,7 @@ geopandas = ">=0.8"
 jdcal = ">=1.4"
 jsonschema = ">=3.2"
 libgdal-jp2openjpeg = "*"
-libjxl = "<=0.11.2"
+libjxl = "<=0.11.2"  # because >=0.12.0 causes CI failures with rasterio/GDAL binaries
 mashumaro = "*"
 matplotlib-base = ">=3.8.3,<4"
 netcdf4 = ">=1.5"
@@ -175,27 +189,32 @@ pyproj = ">=3.0"
 pyyaml = ">=5.4"
 rasterio = ">=1.2"
 requests = ">=2.25"
-rfc3339-validator = ">=0.1"
+rfc3339-validator = ">=0.1"  # for python-jsonschema date-time format validation
 rioxarray = ">=0.11"
 s3fs = ">=2021.6"
-setuptools = ">=41.0"
+setuptools = ">=41.0"  # TODO: drop in favor of stdlib
 shapely = ">=1.6"
 tabulate = ">=0.9"
 tornado = ">=6.0,<6.5"
 urllib3 = ">=2.0"
 xarray = ">=2024.7"
-zarr = ">=2.11,<3"
-altair = "*"
-chartlets = ">=0.1.3"
-flake8 = ">=3.7"
-isort = ">=6"
+zarr = ">=2.11,<3"  # until we can ensure zarr 3 compatibility; see Issue #1102
+altair = "*"  # for chartlets
+# Pixi IDE integration
+pixi-pycharm = ">=0.0.11"
+# Code formatting & checking
+isort = "*"
+flake8 = ">=3.7"  # TODO: drop in favor of ruff check
+ruff = "*"
+mypy = "*"
+# Unit-testing
+pytest = "*"
+pytest-cov = "*"
+# Extra unit testing dependencies
 kerchunk = "*"
 moto = ">=4"
-pytest = ">=4.4"
-pytest-cov = ">=2.6"
-pytz = "*"
+pytz = "*"  # for test/util/test_timeindex.py
 requests-mock = ">=1.8"
-ruff = ">=0.9"
 werkzeug = "*"
 
 # pixi run ...
@@ -205,7 +224,7 @@ werkzeug = "*"
 doc-serve = "mkdocs serve"
 doc-build = "mkdocs build"
 jl = "jupyter-lab"
-tests = "pytest tests"
+tests = "pytest"
 # The following are helpers for composite tasks that use `depends-on`
 format-with-isort = "isort src tests"
 format-with-ruff = "ruff format src tests"
