@@ -24,7 +24,7 @@ class OptimizeDataTest(CliDataTest):
 
     def setUp(self):
         self._clear_outputs()
-        TEST_CUBE.to_zarr(INPUT_CUBE_PATH)
+        TEST_CUBE.to_zarr(INPUT_CUBE_PATH, zarr_version=2)
 
     def tearDown(self):
         self._clear_outputs()
