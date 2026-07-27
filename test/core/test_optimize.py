@@ -70,7 +70,7 @@ class OptimizeDatasetTest(unittest.TestCase):
 
     def setUp(self):
         self._clear_outputs()
-        TEST_CUBE.to_zarr(INPUT_CUBE_PATH)
+        TEST_CUBE.to_zarr(INPUT_CUBE_PATH, zarr_version=2)
         self.assertEqual(INPUT_CUBE_FILE_SET, list_file_set(INPUT_CUBE_PATH))
 
     def tearDown(self):

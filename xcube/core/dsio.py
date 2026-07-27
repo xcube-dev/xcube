@@ -5,11 +5,13 @@
 import os
 import shutil
 import warnings
+import zipfile
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable, Mapping
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import botocore.exceptions
+import numcodecs
 import pandas as pd
 import s3fs
 import urllib3.util
@@ -464,7 +466,8 @@ class ZarrDatasetIO(DatasetIO):
                 client_kwargs=s3_client_kwargs)``.
             max_cache_size: if this is a positive integer, the store
                 will be wrapped in an in-memory cache, that is ``store =
-                zarr.LRUStoreCache(store, max_size=max_cache_size)``.
+                zarr.experimental.cache_store.CacheStore(store=path,
+                cache_store=MemoryStore(), max_size=max_cache_size)``.
             **kwargs: Keyword-arguments passed to xarray Zarr adapter,
                 that is ``xarray.open_zarr(..., **kwargs)``. In
                 addition, the parameter **
@@ -475,15 +478,27 @@ class ZarrDatasetIO(DatasetIO):
         path_or_store = path
         consolidated = False
         if isinstance(path, str):
-            path_or_store, consolidated = get_path_or_s3_store(
-                path_or_store,
-                s3_kwargs=s3_kwargs,
-                s3_client_kwargs=s3_client_kwargs,
-                mode="r",
-            )
+            if path.lower().endswith(".zarr.zip"):
+                path_or_store = zarr.storage.ZipStore(path, mode="r")
+                with zipfile.ZipFile(path) as zip_file:
+                    consolidated = ".zmetadata" in zip_file.namelist()
+            else:
+                path_or_store, consolidated = get_path_or_s3_store(
+                    path_or_store,
+                    s3_kwargs=s3_kwargs,
+                    s3_client_kwargs=s3_client_kwargs,
+                    mode="r",
+                )
+                if isinstance(path_or_store, str):
+                    path_or_store = zarr.storage.LocalStore(path_or_store)
             if max_cache_size is not None and max_cache_size > 0:
-                path_or_store = zarr.LRUStoreCache(
-                    path_or_store, max_size=max_cache_size
+                from zarr.experimental.cache_store import CacheStore
+                from zarr.storage import MemoryStore
+
+                path_or_store = CacheStore(
+                    store=path_or_store,
+                    cache_store=MemoryStore(),
+                    max_size=max_cache_size,
                 )
         return xr.open_zarr(path_or_store, consolidated=consolidated, **kwargs)
 
@@ -506,11 +521,13 @@ class ZarrDatasetIO(DatasetIO):
         )
         encoding = self._get_write_encodings(dataset, compressor, chunksizes, packing)
         consolidated = kwargs.pop("consolidated", True)
+        zarr_format = kwargs.pop("zarr_format", 2)
         dataset.to_zarr(
             path_or_store,
             mode="w",
             encoding=encoding,
             consolidated=consolidated,
+            zarr_format=zarr_format,
             **kwargs,
         )
 
@@ -542,7 +559,7 @@ class ZarrDatasetIO(DatasetIO):
                     encoding[var_name] = dict(packing[var_name])
 
         if compressor:
-            compressor = zarr.Blosc(**compressor)
+            compressor = numcodecs.Blosc(**compressor)
 
             if encoding:
                 for var_name in encoding.keys():

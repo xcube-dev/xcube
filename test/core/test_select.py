@@ -14,6 +14,8 @@ import cftime
 import numpy as np
 import pytest
 import xarray as xr
+from zarr.core.buffer.cpu import Buffer
+from zarr.storage import MemoryStore
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.new import new_cube
@@ -454,7 +456,10 @@ def new_virtual_dataset(
         [time_chunk or time_size, lat_chunk or lat_size, lon_chunk or lon_size],
     )
 
-    return xr.open_zarr(chunk_store, consolidated=False)
+    store_dict = {
+        key: Buffer.from_bytes(value) for key, value in chunk_store._entries.items()
+    }
+    return xr.open_zarr(MemoryStore(store_dict=store_dict), consolidated=False)
 
 
 class VirtualChunkStore(MutableMapping):
