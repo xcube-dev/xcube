@@ -2,4 +2,11 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-version = "1.14.0.dev0"
+from importlib.metadata import PackageNotFoundError, version as get_version
+
+try:
+    # xcube on conda-forge and editable pip installs
+    version = get_version("xcube")
+except PackageNotFoundError:
+    # On PyPI, xcube is called xcube-core
+    version = get_version("xcube-core")

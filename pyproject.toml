@@ -1,10 +1,7 @@
-[build-system]
-requires = ["setuptools >= 61.2.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "xcube" # PYPI RENAME THIS LINE (do not remove this comment, see #1010) 
-dynamic = ["version", "readme"]
+name = "xcube" # PYPI RENAME THIS LINE (do not remove this comment, see #1010)
+version = "1.14.0.dev0"
+dynamic = ["readme"]
 authors = [
   {name = "xcube Development Team"}
 ]
@@ -85,6 +82,10 @@ xcube = "xcube.cli.main:main"
 # entry point xcube's default extensions
 [project.entry-points.xcube_plugins]
 xcube = "xcube.plugin:init_plugin"
+
+[build-system]
+requires = ["setuptools >= 61.2.0"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
 "xcube.webapi.meta" = [
