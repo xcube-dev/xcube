@@ -211,7 +211,7 @@ mypy = "*"
 pytest = "*"
 pytest-cov = "*"
 # Extra unit testing dependencies
-kerchunk = "*"
+kerchunk = ">=0.2.8"
 moto = ">=4"
 pytz = "*"  # for test/util/test_timeindex.py
 requests-mock = ">=1.8"
