@@ -3,7 +3,7 @@
 ### Enhancements
 
 * Migrated to Zarr v3, adapting xcube's Zarr handling to the new Zarr store API and
-  ensuring compatibility with the latest Zarr ecosystem.
+  ensuring compatibility with the latest Zarr ecosystem.  (#1182)
 
 ### Fixes
 
@@ -11,6 +11,7 @@
   reducing visual offsets between rendered map tiles and dataset coordinates. (#1216, #1234)
 * Ensure compatibility with matplotlib 3.11.0 (#1219)
 * Fixed duplicated `tornado` log entries emitted by xcube Server. (#1224)
+* Fixed race conditions in `LazyMultiLevelDataset`. (#1225)
 
 ### Other changes
 
@@ -18,7 +19,7 @@
   `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
   Zarr store, making it independent of any specific Zarr store implementation. 
   This change prepares xcube for the migration to Zarr v3, whose store API differs 
-  significantly from that of Zarr v2.
+  significantly from that of Zarr v2.  (#1182)
 * Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
   rasterio/GDAL binary incompatibilities.
 * Migrated the development environment and project tasks to Pixi. (#1237)
