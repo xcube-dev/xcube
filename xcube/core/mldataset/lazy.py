@@ -49,7 +49,8 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def ds_id(self) -> str:
         if self._ds_id is None:
             with self._lock:
-                self._ds_id = str(uuid.uuid4())
+                if self._ds_id is None:
+                    self._ds_id = str(uuid.uuid4())
         return self._ds_id
 
     @ds_id.setter
@@ -61,14 +62,16 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def grid_mapping(self) -> GridMapping:
         if self._grid_mapping is None:
             with self._lock:
-                self._grid_mapping = self._get_grid_mapping_lazily()
+                if self._grid_mapping is None:
+                    self._grid_mapping = self._get_grid_mapping_lazily()
         return self._grid_mapping
 
     @property
     def num_levels(self) -> int:
         if self._num_levels is None:
             with self._lock:
-                self._num_levels = self._get_num_levels_lazily()
+                if self._num_levels is None:
+                    self._num_levels = self._get_num_levels_lazily()
         return self._num_levels
 
     @property
@@ -89,9 +92,10 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         """
         if index not in self._level_datasets:
             with self._lock:
-                # noinspection PyTypeChecker
-                level_dataset = self._get_dataset_lazily(index, self._parameters)
-                self.set_dataset(index, level_dataset)
+                if index not in self._level_datasets:
+                    # noinspection PyTypeChecker
+                    level_dataset = self._get_dataset_lazily(index, self._parameters)
+                    self.set_dataset(index, level_dataset)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
 

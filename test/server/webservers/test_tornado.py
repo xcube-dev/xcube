@@ -2,6 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import logging
 import unittest
 from collections.abc import Awaitable, Sequence
 from typing import Any, Callable, Optional, Union
@@ -43,6 +44,60 @@ class TornadoFrameworkTest(unittest.TestCase):
 
     def test_config_schema(self):
         self.assertIsInstance(self.framework.config_schema, JsonObjectSchema)
+
+    def test_configure_logging_uses_root_handler_by_propagation(self):
+        root = logging.getLogger()
+        tornado_log = logging.getLogger("tornado")
+        access_log = logging.getLogger("tornado.access")
+        loggers = [tornado_log, access_log]
+
+        saved_root = (list(root.handlers), root.level, root.propagate)
+        saved_loggers = {
+            logger: (list(logger.handlers), logger.level, logger.propagate)
+            for logger in loggers
+        }
+
+        try:
+            # Set up root like the CLI-configured logger.
+            for handler in list(root.handlers):
+                root.removeHandler(handler)
+            root_handler = logging.NullHandler()
+            root.addHandler(root_handler)
+            root.setLevel(logging.INFO)
+
+            # Give Tornado loggers local state that configure_logging() must clean.
+            for logger in loggers:
+                for handler in list(logger.handlers):
+                    logger.removeHandler(handler)
+                logger.addHandler(logging.NullHandler())
+                logger.setLevel(logging.WARNING)
+                logger.propagate = False
+
+            TornadoFramework.configure_logging()
+
+            # Root keeps the handler; Tornado loggers only propagate to it.
+            self.assertEqual([root_handler], root.handlers)
+            for logger in loggers:
+                self.assertEqual([], logger.handlers)
+                self.assertTrue(logger.propagate)
+                self.assertEqual(logging.INFO, logger.level)
+        finally:
+            # Restore process-global logging state for other tests.
+            for handler in list(root.handlers):
+                root.removeHandler(handler)
+            handlers, level, propagate = saved_root
+            for handler in handlers:
+                root.addHandler(handler)
+            root.setLevel(level)
+            root.propagate = propagate
+
+            for logger, (handlers, level, propagate) in saved_loggers.items():
+                for handler in list(logger.handlers):
+                    logger.removeHandler(handler)
+                for handler in handlers:
+                    logger.addHandler(handler)
+                logger.setLevel(level)
+                logger.propagate = propagate
 
     def test_add_routes(self):
         class Handler(ApiHandler):
