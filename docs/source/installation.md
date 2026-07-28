@@ -58,15 +58,15 @@ mamba install --channel conda-forge xcube
 First, clone the repository and create a conda environment from it:
 
 ```bash
-git clone https://github.com/dcs4cop/xcube.git
+git clone https://github.com/xcube-dev/xcube.git
 cd xcube
-mamba env create
+mamba create -f environment.yml
 ```
 
 From this point on, all instructions assume that your current directory is the
 root of the xcube repository.
 
-The `mamba env create` command above creates an environment according to
+The `mamba create` command above creates an environment according to
 the specifications in the `environment.yml` file in the repository, which
 by default takes the name `xcube`. Then, to activate the environment and
 install xcube from the repository:

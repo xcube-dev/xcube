@@ -10,6 +10,8 @@
 ### Other changes
 * Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
   rasterio/GDAL binary incompatibilities.
+* Updated installation instructions to use current mamba syntax and
+  canonical xcube repository URL (#1232)
 
 ## Changes in 1.13.3
 
