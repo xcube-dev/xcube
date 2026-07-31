@@ -1,4 +1,15 @@
-## Changes in 1.13.4 (in development)
+## Changes in 1.14.0 (in development)
+
+### Other changes
+* Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
+  `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
+  Zarr store, making it independent of any specific Zarr store implementation. 
+  This change prepares xcube for the migration to Zarr v3, whose store API differs 
+  significantly from that of Zarr v2.
+* Migrated to Zarr v3, adapting xcube's Zarr handling to the new Zarr store API and
+  ensuring compatibility with the latest Zarr ecosystem.
+
+## Changes in 1.13.4
  
 ### Enhancements
 
@@ -12,6 +23,7 @@
   coordinates. (#1216, #1234)
 * Ensure compatibility with matplotlib 3.11.0 (#1219)
 * Fixed duplicated `tornado` log entries emitted by xcube Server. (#1224)
+* Fixed race conditions in `LazyMultiLevelDataset`. (#1225)
 
 ### Other changes
 
