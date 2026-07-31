@@ -20,7 +20,7 @@ dependencies = [
 "altair",
   "botocore>=1.34.51",
   "cftime>=1.6.3",
-  "click>=8.0",
+  "click>=8.2.0",
   "cmocean>=2.0",
   "chartlets>=0.1.3",
   "cryptography",  # pyjwt optional dependency; see PR #1199
