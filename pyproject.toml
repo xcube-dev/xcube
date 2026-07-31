@@ -54,7 +54,7 @@ dependencies = [
   "shapely>=1.6",
   "tabulate>=0.9",
   "tornado>=6.0,<6.5",
-  "urllib3>=1.26",
+  "urllib3>=2.0",
   "xarray>=2024.7",
   "zarr>=3.1.4,<4",
 ]
