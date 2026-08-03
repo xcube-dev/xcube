@@ -1,13 +1,19 @@
 ## Changes in 1.14.0 (in development)
 
+### Enhancements
+
+* Migrated to Zarr v3, adapting xcube's Zarr handling to the new Zarr store API and
+  ensuring compatibility with the latest Zarr ecosystem.  (#1182)
+
 ### Other changes
+
 * Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
   `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
   Zarr store, making it independent of any specific Zarr store implementation. 
   This change prepares xcube for the migration to Zarr v3, whose store API differs 
-  significantly from that of Zarr v2.
-* Migrated to Zarr v3, adapting xcube's Zarr handling to the new Zarr store API and
-  ensuring compatibility with the latest Zarr ecosystem.
+  significantly from that of Zarr v2. (#1226)
+* Migrated the development environment and project tasks to Pixi. (#1237)
+
 
 ## Changes in 1.13.4
  
@@ -29,6 +35,7 @@
 
 * Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
   rasterio/GDAL binary incompatibilities.
+
 
 ## Changes in 1.13.3
 
