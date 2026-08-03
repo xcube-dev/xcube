@@ -17,5 +17,6 @@ except PackageNotFoundError:
         # project file relative to this source file.
         from pathlib import Path
         import tomllib
+
         with open(Path(__file__).parent.parent / "pyproject.toml", "rb") as f:
-            version = tomllib.load(f)["project"]["version"]```
+            version = tomllib.load(f)["project"]["version"]
