@@ -7,9 +7,9 @@ import json
 import math
 import pathlib
 import warnings
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, MutableMapping
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import fsspec
 import fsspec.core
@@ -18,7 +18,8 @@ import xarray as xr
 from zarr.storage import FsspecStore
 
 # noinspection PyUnresolvedReferences
-import xcube.core.zarrstore
+import xcube.core.zarrstore  # noqa: F401
+
 from xcube.core.gridmapping import GridMapping
 from xcube.core.subsampling import AggMethod, AggMethods
 from xcube.util.assertions import assert_instance
@@ -125,9 +126,6 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
 
         fs = self._fs
 
-        open_params = dict(self._zarr_kwargs)
-        base_dataset_open_params = None
-
         ds_path = self._get_path(self._path)
         link_path = ds_path / f"{index}.link"
         if fs.isfile(str(link_path)):
@@ -143,10 +141,10 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
         else:
             # Nominal "{index}.zarr" must exist
             level_path = ds_path / f"{index}.zarr"
+            base_dataset_open_params = None
 
         if isinstance(base_dataset_open_params, dict):
-            # TODO: complete logic here
-            engine = base_dataset_open_params.pop("engine", "zarr")
+            base_dataset_open_params.pop("engine", "zarr")
 
         level_zarr_store = fs.get_mapper(str(level_path))
         xarray_store = str(level_path) if is_local_fs(fs) else level_zarr_store
@@ -172,15 +170,18 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                     max_size=cache_size,
                 )
         try:
-            level_dataset = xr.open_zarr(
-                xarray_store, consolidated=consolidated, **self._zarr_kwargs
+            level_dataset = self._open_level_dataset(
+                self,
+                level_zarr_store,
+                index=index,
+                consolidated=consolidated,
+                **self._zarr_kwargs,
             )
         except ValueError as e:
             raise FsMultiLevelDatasetError(
                 f"Failed to open dataset {level_path!r}: {e}"
             ) from e
 
-        level_dataset.zarr_store.set(level_zarr_store)
         return level_dataset
 
     @staticmethod
@@ -370,13 +371,70 @@ class FsMultiLevelDataset(LazyMultiLevelDataset):
                         f"Failed to write dataset {path}: {e}"
                     ) from e
                 if use_saved_levels:
-                    level_dataset = xr.open_zarr(
-                        xarray_store, consolidated=consolidated
+                    level_dataset = cls._open_level_dataset(
+                        ml_dataset,
+                        level_zarr_store,
+                        index=index,
+                        consolidated=consolidated,
                     )
-                    level_dataset.zarr_store.set(level_zarr_store)
                     ml_dataset.set_dataset(index, level_dataset)
 
         return path
+
+    @classmethod
+    def _open_level_dataset(
+        cls,
+        ml_dataset: MultiLevelDataset,
+        zarr_store: MutableMapping[str, Any],
+        *,
+        index: int,
+        consolidated: bool,
+        **zarr_kwargs,
+    ) -> xr.Dataset:
+        """
+        Open a level dataset.
+
+        Opening with `index > 0` is optimized such that non-spatial coordinates
+        are not read, but directly taken from the dataset at `index == 0`.
+        See also https://github.com/xcube-dev/xcube/issues/1236.
+
+        Args:
+            ml_dataset: The current MultiLevelDataset
+            zarr_store: The zarr store to read from
+            index: The index of the level to open
+            consolidated: Whether to consolidate the dataset metadata
+            zarr_kwargs: Additional keyword arguments to pass to the zarr store
+        Returns:
+            The opened level dataset
+        """
+        immutable_coords: dict[str, Any] = {}
+        if index > 0:
+            ds_0 = ml_dataset.get_dataset(0)
+            gm_0 = ml_dataset.grid_mapping
+            immutable_coords = cls._get_non_spatial_coords(ds_0, gm_0)
+        drop_coords = list(immutable_coords.keys()) if immutable_coords else None
+        ds_i = xr.open_zarr(
+            zarr_store,
+            consolidated=consolidated,
+            drop_variables=drop_coords,
+            **zarr_kwargs,
+        )
+        if immutable_coords:
+            ds_i = ds_i.assign_coords(immutable_coords)
+        ds_i.zarr_store.set(zarr_store)
+        return ds_i
+
+    @classmethod
+    def _get_non_spatial_coords(
+        cls, ds: xr.Dataset, gm: GridMapping
+    ) -> dict[str, xr.DataArray]:
+        ns_var_names = gm.xy_var_names
+        ns_dim_names = gm.xy_dim_names
+        return {
+            str(k): v
+            for k, v in ds.coords.items()
+            if not (k in ns_var_names or any(d in ns_dim_names for d in v.dims))
+        }
 
 
 class FsMultiLevelDatasetError(ValueError):
