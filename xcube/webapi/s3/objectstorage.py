@@ -71,7 +71,7 @@ class ObjectStorage(collections.abc.Mapping):
             )
         return value
 
-    def _parse_key(self, key: str) -> tuple[zarr.storage.BaseStore, str]:
+    def _parse_key(self, key: str) -> tuple[collections.abc.MutableMapping, str]:
         """Parses a given *key* which is expected to have format
         "{dataset_id}/{level}.zarr/{*path}" for multi-level datasets and
         "{dataset_id}/{*path}" for other datasets.

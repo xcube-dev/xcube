@@ -720,12 +720,12 @@ class DefaultProcessTest(unittest.TestCase):
             ds_default_compressor.analysed_sst.values, ds_compressed.analysed_sst.values
         )
         self.assertEqual(
-            "Blosc(cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0)",
-            str(ds_default_compressor.analysed_sst.encoding["compressor"]),
+            "(Blosc(cname='lz4', clevel=5, shuffle=SHUFFLE, blocksize=0),)",
+            str(ds_default_compressor.analysed_sst.encoding["compressors"]),
         )
         self.assertEqual(
-            "Blosc(cname='zstd', clevel=1, shuffle=BITSHUFFLE, blocksize=0)",
-            str(ds_compressed.analysed_sst.encoding["compressor"]),
+            "(Blosc(cname='zstd', clevel=1, shuffle=BITSHUFFLE, blocksize=0),)",
+            str(ds_compressed.analysed_sst.encoding["compressors"]),
         )
 
     def assert_cube_ok(

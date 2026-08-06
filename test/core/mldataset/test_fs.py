@@ -4,15 +4,20 @@
 
 
 import math
+import json
 import unittest
 from collections.abc import Mapping
-from typing import List, Optional, Any
+from typing import Any, Optional
+from unittest.mock import Mock, patch
 
 import fsspec
 import fsspec.core
 import xarray as xr
+import zarr
 
+from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import FsMultiLevelDataset
+from xcube.core.mldataset.fs import FsMultiLevelDatasetError
 from xcube.core.new import new_cube
 from xcube.core.subsampling import AggMethod
 
@@ -66,7 +71,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         )
 
     def test_io_nl_4_ts_256_base(self):
-        self.dataset.to_zarr(self.fs.get_mapper("test.zarr"))
+        self.dataset.to_zarr(self.fs.get_mapper("test.zarr"), zarr_version=2)
         self.assert_io_ok(
             "test.levels",
             num_levels=4,
@@ -79,6 +84,23 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             expected_num_levels=4,
             expected_tile_size=[256, 256],
             expected_agg_methods={"CHL": "mean", "qflags": "first"},
+        )
+
+    def test_io_nl_4_ts_256_base_zarr3(self):
+        self.dataset.to_zarr(self.fs.get_mapper("test.zarr"), zarr_version=2)
+        self.assert_io_ok(
+            "test.levels",
+            num_levels=4,
+            agg_methods=None,
+            tile_size=256,
+            use_saved_levels=False,
+            base_dataset_path="test.zarr",
+            base_dataset_params=None,
+            expected_files=[".zlevels", "0.link", "1.zarr", "2.zarr", "3.zarr"],
+            expected_num_levels=4,
+            expected_tile_size=[256, 256],
+            expected_agg_methods={"CHL": "mean", "qflags": "first"},
+            zarr_kwargs={"zarr_format": 3},
         )
 
     def assert_io_ok(
@@ -94,8 +116,11 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         expected_num_levels: int,
         expected_agg_methods: Optional[Mapping[str, AggMethod]],
         expected_tile_size: list[int],
+        zarr_kwargs: Optional[dict] = None,
     ):
         fs = self.fs
+        if zarr_kwargs is None:
+            zarr_kwargs = {}
         FsMultiLevelDataset.write_dataset(
             self.dataset,
             path,
@@ -108,6 +133,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             use_saved_levels=use_saved_levels,
             base_dataset_path=base_dataset_path,
             base_dataset_params=base_dataset_params,
+            **zarr_kwargs,
         )
         self.assertTrue(fs.isdir(path))
         self.assertEqual(
@@ -115,14 +141,14 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
             set(fs.listdir(path, detail=False)),
         )
 
-        ml_dataset = FsMultiLevelDataset(path, fs=fs)
+        ml_dataset = FsMultiLevelDataset(path, fs=fs, cache_size=2**22)
         self.assertEqual(expected_num_levels, ml_dataset.num_levels)
         self.assertEqual(expected_agg_methods, ml_dataset.agg_methods)
         self.assertEqual(expected_tile_size, ml_dataset.tile_size)
         self.assertEqual(use_saved_levels, ml_dataset.use_saved_levels)
         self.assertEqual(base_dataset_path, ml_dataset.base_dataset_path)
         self.assertEqual(base_dataset_params, ml_dataset.base_dataset_params)
-        self.assertEqual(None, ml_dataset.cache_size)
+        self.assertEqual(2**22, ml_dataset.cache_size)
         self.assertEqual(num_levels, len(ml_dataset.size_weights))
         self.assertTrue(all(ml_dataset.size_weights > 0.0))
         for i in range(num_levels):
@@ -136,3 +162,99 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         self.assertEqual(
             [201523393, 50380849, 12595213, 3148804, 787201], weighted_sizes
         )
+
+    def test_get_non_spatial_coords(self):
+        grid_mapping = GridMapping.from_dataset(self.dataset)
+
+        non_spatial_coords = FsMultiLevelDataset._get_non_spatial_coords(
+            self.dataset, grid_mapping
+        )
+
+        self.assertEqual({"time", "time_bnds"}, set(non_spatial_coords))
+        for name, coord in non_spatial_coords.items():
+            xr.testing.assert_identical(self.dataset.coords[name], coord)
+
+    @patch("xcube.core.mldataset.fs.xr.open_zarr")
+    def test_open_level_dataset_reuses_non_spatial_coords(self, open_zarr: Mock):
+        level_zero = self.dataset
+        grid_mapping = GridMapping.from_dataset(level_zero)
+        ml_dataset = Mock()
+        ml_dataset.get_dataset.return_value = level_zero
+        ml_dataset.grid_mapping = grid_mapping
+        level_one = level_zero.isel(lon=slice(None, None, 2), lat=slice(None, None, 2))
+        opened_dataset = xr.Dataset(
+            coords={
+                name: level_one.coords[name]
+                for name in ("lon", "lat", "lon_bnds", "lat_bnds")
+            }
+        )
+        open_zarr.return_value = opened_dataset
+        zarr_store = {}
+
+        level_dataset = FsMultiLevelDataset._open_level_dataset(
+            ml_dataset,
+            zarr_store,
+            index=1,
+            consolidated=True,
+            decode_times=False,
+        )
+
+        ml_dataset.get_dataset.assert_called_once_with(0)
+        open_zarr.assert_called_once_with(
+            zarr_store,
+            consolidated=True,
+            drop_variables=["time", "time_bnds"],
+            decode_times=False,
+        )
+        for name in ("time", "time_bnds"):
+            xr.testing.assert_identical(
+                level_zero.coords[name], level_dataset.coords[name]
+            )
+        for name in ("lon", "lat", "lon_bnds", "lat_bnds"):
+            xr.testing.assert_identical(
+                opened_dataset.coords[name], level_dataset.coords[name]
+            )
+        self.assertIs(zarr_store, level_dataset.zarr_store.get())
+
+    @patch("xcube.core.mldataset.fs.xr.open_zarr")
+    def test_open_level_zero_does_not_reuse_coords(self, open_zarr: Mock):
+        ml_dataset = Mock()
+        opened_dataset = xr.Dataset()
+        open_zarr.return_value = opened_dataset
+        zarr_store = {}
+
+        level_dataset = FsMultiLevelDataset._open_level_dataset(
+            ml_dataset,
+            zarr_store,
+            index=0,
+            consolidated=False,
+        )
+
+        ml_dataset.get_dataset.assert_not_called()
+        open_zarr.assert_called_once_with(
+            zarr_store,
+            consolidated=False,
+            drop_variables=None,
+        )
+        self.assertIs(opened_dataset, level_dataset)
+        self.assertIs(zarr_store, level_dataset.zarr_store.get())
+    def test_invalid_base_dataset_path_raises(self):
+        with self.assertRaises(FsMultiLevelDatasetError):
+            FsMultiLevelDataset.write_dataset(
+                self.dataset,
+                "store/test.levels",
+                fs=self.fs,
+                fs_root="",
+                replace=True,
+                num_levels=1,
+                base_dataset_path="base.zarr",
+            )
+
+    def test_invalid_levels_spec_raises_type_error(self):
+        self.fs.mkdirs("test.levels", exist_ok=True)
+        with self.fs.open("test.levels/.zlevels", "w") as fp:
+            json.dump([], fp)
+
+        ml_dataset = FsMultiLevelDataset("test.levels", fs=self.fs)
+        with self.assertRaises(TypeError):
+            _ = ml_dataset.num_levels
