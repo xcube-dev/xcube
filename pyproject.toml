@@ -87,6 +87,7 @@ xcube = "xcube.cli.main:main"
 xcube = "xcube.plugin:init_plugin"
 
 [tool.setuptools.package-data]
+"xcube" = ["py.typed"]
 "xcube.webapi.meta" = [
     "data/openapi.html",
 ]
