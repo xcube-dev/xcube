@@ -6,6 +6,8 @@
   ensuring compatibility with the latest Zarr ecosystem.  (#1182)
 * Optimized opening of multi-level datasets by reusing non-spatial coordinates
   from level zero instead of reading them again for every level. (#1236)
+* Declare xcube as typed by adding the PEP 561 `xcube/py.typed` marker. (#1244)
+
 
 ### Fixes
 
