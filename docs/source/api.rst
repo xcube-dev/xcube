@@ -192,15 +192,6 @@ Zarr Store
 .. autoclass:: xcube.core.zarrstore.GenericZarrStore
     :members:
 
-.. autoclass:: xcube.core.zarrstore.GenericArray
-    :members:
-
-.. autoclass:: xcube.core.zarrstore.CachedZarrStore
-    :members:
-
-.. autoclass:: xcube.core.zarrstore.DiagnosticZarrStore
-    :members:
-
 Utilities
 =========
 
