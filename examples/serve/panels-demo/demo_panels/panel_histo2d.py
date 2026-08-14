@@ -92,7 +92,7 @@ def render_panel(
 
     progress = CircularProgress(
         id="plot_progress",
-        visible=False,
+        hidden=True,
         size=28,
         style={"margin": "2px 0"},
     )
@@ -160,7 +160,7 @@ error_message = ""
     State("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
-    Output("plot_progress", "visible"),
+    Output("plot_progress", "hidden"),
 )
 def update_plot(
     ctx: Context,
@@ -190,12 +190,12 @@ def update_plot(
 
     if place_geometry is None or isinstance(place_geometry, shapely.geometry.Point):
         error_message = "Selected geometry must cover an area."
-        return None, False
+        return None, True
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
         error_message = "Selected geometry produces empty subset"
-        return None, False
+        return None, True
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
     var_2_data: np.ndarray = dataset[var_2_name].values.ravel()
@@ -277,7 +277,7 @@ def update_plot(
         height="container",
     )
     error_message = ""
-    return chart, False
+    return chart, True
 
 
 @panel.callback(

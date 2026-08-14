@@ -82,7 +82,7 @@ def render_panel(
 
     progress = CircularProgress(
         id="plot_progress",
-        visible=False,
+        hidden=True,
         size=28,
         style={"margin": "2px 0"},
     )
@@ -223,7 +223,7 @@ def update_text(
     Input("exploration_radio_group", "value"),
     State("plot", "chart"),
     Output("plot", "chart"),
-    Output("plot_progress", "visible"),
+    Output("plot_progress", "hidden"),
     Output("error_message", "children"),
     Output("@container", "spectrum_list"),
     Output("@container", "previous_mode"),
@@ -240,7 +240,7 @@ def update_plot(
     current_chart: alt.Chart | None = None,
 ) -> tuple[alt.Chart | None, bool, str, list, str]:
     if exploration_radio_group is None:
-        return None, False, "Missing exploration mode choice", spectrum_list, previous_mode
+        return None, True, "Missing exploration mode choice", spectrum_list, previous_mode
 
     dataset = get_dataset(ctx, dataset_id)
     has_point = any(
@@ -250,16 +250,16 @@ def update_plot(
     )
 
     if dataset is None:
-        return None, False, "Missing dataset selection", spectrum_list, exploration_radio_group
+        return None, True, "Missing dataset selection", spectrum_list, exploration_radio_group
     elif not place_group or not has_point:
-        return None, False, "Missing point selection", spectrum_list, exploration_radio_group
+        return None, True, "Missing point selection", spectrum_list, exploration_radio_group
 
     label = find_selected_point_label(place_group, place_geo)
 
     if label is None:
         return (
             None,
-            False,
+            True,
             "There is no label for the selected point or no point is selected",
             spectrum_list,
             previous_mode,
@@ -280,14 +280,14 @@ def update_plot(
             ]
         )
     else:
-        return None, False, "Selected geometry must be a point", spectrum_list, previous_mode
+        return None, True, "Selected geometry must be a point", spectrum_list, previous_mode
 
     place_group_geodf["time"] = pd.to_datetime(time_label).tz_localize(None)
     places_select = [label]
     new_spectrum_data = get_spectra(dataset, place_group_geodf, places_select)
 
     if new_spectrum_data is None or new_spectrum_data.empty:
-        return None, False, "No reflectances found in Variables", spectrum_list, previous_mode
+        return None, True, "No reflectances found in Variables", spectrum_list, previous_mode
 
     new_spectrum_data["Legend"] = new_spectrum_data["places"] + ": " + time_label
 
@@ -331,7 +331,7 @@ def update_plot(
     )
 
     new_chart = create_chart_from_data(updated_data)
-    return new_chart, False, "", spectrum_list, exploration_radio_group
+    return new_chart, True, "", spectrum_list, exploration_radio_group
 
 
 def find_selected_point_label(
