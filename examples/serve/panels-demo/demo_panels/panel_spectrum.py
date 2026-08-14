@@ -166,10 +166,15 @@ def get_spectra(
     result = pd.DataFrame()
 
     for place in places:
-        i = (dataset_place.name_ref == place).argmax().item()
+        place_index_by_name = {
+            place_name: idx for idx, place_name in enumerate(place_group["name"])
+        }
+
+        place_index = place_index_by_name.get(place)
+
         selected_values = (
             dataset_place.drop_vars("geometry_ref")
-            .sel(idx=i)
+            .sel(idx=place_index)
             .compute()
             .to_dict()["data_vars"]
         )
