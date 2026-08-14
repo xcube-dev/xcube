@@ -1,15 +1,43 @@
-## Changes in 1.13.4 (in development)
- 
+## Changes in 1.14.0 (in development)
+
+### Enhancements
+
+* Migrated to Zarr v3, adapting xcube's Zarr handling to the new Zarr store API and
+  ensuring compatibility with the latest Zarr ecosystem.  (#1182)
+* Optimized opening of multi-level datasets by reusing non-spatial coordinates
+  from level zero instead of reading them again for every level. (#1236)
+* Declare xcube as typed by adding the PEP 561 `xcube/py.typed` marker. (#1244)
+
+
 ### Fixes
-* Improved raster tile alignment by using nearest-pixel rounding during tile reprojection,
-  reducing visual offsets between rendered map tiles and dataset coordinates. (#1216)
+
+* Improved raster tile alignment by using nearest-pixel rounding during tile 
+  reprojection, reducing visual offsets between rendered map tiles and dataset 
+  coordinates. (#1216, #1234)
+* Ensure compatibility with matplotlib 3.11.0 (#1219)
+* Fixed duplicated `tornado` log entries emitted by xcube Server. (#1224)
+* Fixed race conditions in `LazyMultiLevelDataset`. (#1225)
 
 ### Other changes
-* Constrained `matplotlib >=3.8.3,<3.11.0` (#1219)
+
+* Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
+  `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
+  Zarr store, making it independent of any specific Zarr store implementation. 
+  This change prepares xcube for the migration to Zarr v3, whose store API differs 
+  significantly from that of Zarr v2. (#1226)
+* Migrated the development environment and project tasks to Pixi. (#1238)
+* The xcube version identifier is now retrieved from `pyproject.toml` as single 
+  source of truth. (#1242)
+* Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
+  rasterio/GDAL binary incompatibilities. (#1229)
+* Updated installation instructions to use current mamba syntax and
+  canonical xcube repository URL (#1232)
+
 
 ## Changes in 1.13.3
 
 ### Enhancements
+
 * WebAPI now supports statistics and time series for dataset variables with
   additional non-spatial dimensions beyond `time`, `lat`, and `lon` (e.g. `depth`).
   Dimension values can be passed as query parameters; if omitted, a value is selected
@@ -17,6 +45,7 @@
   made a public function. (#1213)
 
 ### Fixes
+
 * Closed security vulnerability in xcube-server related to URL construction (#1203).
 * Bundled [xcube Viewer 1.7.3](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.3)
   with tile vizualisation fix.
@@ -24,17 +53,20 @@
 ## Changes in 1.13.2
 
 ### Enhancements
+
 * Bundled [xcube Viewer 1.7.2](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.2)
   that comes with, e.g., several bug fixes including issues with the time series legend,
   the zoom information box, persisted states, and the progress bar, as well as updated 
   dependencies such as `chartlets ^0.2.0`.
 
 ### Fixes
+
 * Adapted to xarray version 2026.04.0 (#1211)
 
 ## Changes in 1.13.1
 
 ### Enhancements
+
 * Expanded support for keyword arguments of `rioxarray.open_rasterio` when opening
   raster files via `xcube.core.store.DataStore.open_data()`. (#1192)
   * `rioxarray.open_rasterio` is now called with `chunks="auto"` by default in
@@ -47,22 +79,25 @@
     patterns and avoids unnecessary transformations.
 
 ### Fixes
+
 * Avoid authentication error due to missing cryptography package (#1191)
 
 ### Other changes
-* Require dask >=2024.8 (#1196)
 
+* Require dask >=2024.8 (#1196)
 * For Read the Docs, use Ubuntu 24.04 and Python mambaforge-23.11 (#1205)
 
 ## Changes in 1.13.0
 
 ### Enhancements
+
 * Bundled [xcube Viewer 1.7.1](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.1)
   that comes with, e.g., a progress bar for tile loading, a zoom information box, 
   an About window, a ‘copy screenshot to clipboard’ feature and a new styling of the map
   buttons.
 
 ### Fixes
+
 * Fixed duplicate rendering of the `preload_data` table in the data store framework.
   The table now updates in place instead of clearing the entire Jupyter cell output.
 
@@ -70,6 +105,7 @@
 ## Changes in 1.12.0
 
 ### Enhancements
+
 * Added function `get_filename_extensions()` to data store framework: 
   `from xcube.core.store import get_filename_extensions`.
   It allows for retrieving mappings of recognized filename extensions to 
@@ -93,10 +129,12 @@
       the spatial units of the dataset's CRS.
 
 ### Other changes
+
 * Added two new versions of the xcube logo, one for dark and one for light themes,
   and replaced the logo in the documentation with the light logo.
 
 ### Fixes
+
 * Fix STAC item asset endpoint_url (was incorrectly set to http://localhost:8080/s3; 
   now correctly parsed from the base URL). (#1178)
 * Disabled `compact` mode for JupyterLab Viewer integration. (#1173)

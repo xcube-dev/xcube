@@ -10,7 +10,6 @@ import numpy as np
 import pyproj
 import xarray as xr
 import zarr
-import zarr.convenience
 
 from xcube.core.schema import get_dataset_chunks
 from xcube.util.assertions import assert_instance
@@ -313,7 +312,7 @@ def _find_dataset_tile_size(
 
 
 def add_spatial_ref(
-    dataset_store: zarr.convenience.StoreLike,
+    dataset_store: str | MutableMapping,
     crs: pyproj.CRS,
     crs_var_name: Optional[str] = "spatial_ref",
     xy_dim_names: Optional[tuple[str, str]] = None,
@@ -336,10 +335,12 @@ def add_spatial_ref(
     spatial_attrs = crs.to_cf()
     spatial_attrs["_ARRAY_DIMENSIONS"] = []  # Required by xarray
     group = zarr.open(dataset_store, mode="r+")
-    spatial_ref = group.array(crs_var_name, 0, shape=(), dtype=np.uint8, fill_value=0)
+    spatial_ref = group.create_array(
+        crs_var_name, shape=(), dtype=np.uint8, fill_value=0
+    )
     spatial_ref.attrs.update(**spatial_attrs)
 
-    for item_name, item in group.items():
+    for item_name, item in group.arrays():
         if item_name != crs_var_name:
             dims = item.attrs.get("_ARRAY_DIMENSIONS")
             if (
@@ -350,4 +351,4 @@ def add_spatial_ref(
             ):
                 item.attrs["grid_mapping"] = crs_var_name
 
-    zarr.convenience.consolidate_metadata(dataset_store)
+    zarr.consolidate_metadata(dataset_store)

@@ -14,4 +14,9 @@ sphinx:
 conda:
   environment: rtd-environment.yml
 
+python:
+  install:
+    - method: pip
+      path: .
+
 formats: all
