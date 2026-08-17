@@ -66,7 +66,21 @@ class ViewerContext(ResourcesContext):
             path, **(storage_options or {})
         )
         fs, root = fs_root
-        self.persistence = fs.get_mapper(root, create=True, check=True)
+        # using the check parameter fails for s3 file systems,
+        # so we "only" check whether we can add and remove files
+        self.persistence = fs.get_mapper(root, create=True, check=False)
+        try:
+            count = 0
+            dummy_file = f"dummy/{count}"
+            while dummy_file in self.persistence:
+                count += 1
+                dummy_file = f"dummy/{count}"
+            self.persistence[dummy_file] = b""
+            del self.persistence[dummy_file]
+        except:
+            raise ValueError(
+                f"Persistence path '{root}' does not exist and could not be created."
+            )
         LOG.info(f"Viewer persistence established for path {path!r}")
 
     def set_extension_context(self, path: str | None, extension_refs: list[str]):

@@ -17,6 +17,8 @@
 * Ensure compatibility with matplotlib 3.11.0 (#1219)
 * Fixed duplicated `tornado` log entries emitted by xcube Server. (#1224)
 * Fixed race conditions in `LazyMultiLevelDataset`. (#1225)
+* xcube server will not start when persistence path points to non-existing key 
+  on s3 filesystem (#1248)
 
 ### Other changes
 
