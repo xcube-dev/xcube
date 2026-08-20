@@ -32,6 +32,8 @@
   rasterio/GDAL binary incompatibilities. (#1229)
 * Updated installation instructions to use current mamba syntax and
   canonical xcube repository URL (#1232)
+* Updated server side panels in `examples/serve/panels-demo` and 
+  `chartlets` dependency to >=0.2.1 (#1247)
 
 
 ## Changes in 1.13.3
