@@ -245,7 +245,7 @@ def update_plot(
     current_chart: alt.Chart | None = None,
 ) -> tuple[alt.Chart | None, bool, str, list, str]:
     if exploration_radio_group is None:
-        return None, True, "Missing exploration mode choice", spectrum_list, previous_mode
+        return None, True, "Please choose an exploration mode.", spectrum_list, previous_mode
 
     dataset = get_dataset(ctx, dataset_id)
     has_point = any(
@@ -255,9 +255,9 @@ def update_plot(
     )
 
     if dataset is None:
-        return None, True, "Missing dataset selection", spectrum_list, exploration_radio_group
+        return None, True, "Please select a dataset.", spectrum_list, exploration_radio_group
     elif not place_group or not has_point:
-        return None, True, "Missing point selection", spectrum_list, exploration_radio_group
+        return None, True, "Please create or select a point of interest in the map.", spectrum_list, exploration_radio_group
 
     label = find_selected_point_label(place_group, place_geo)
 
@@ -265,7 +265,7 @@ def update_plot(
         return (
             None,
             True,
-            "There is no label for the selected point or no point is selected",
+            "There is no label for the selected point or no point is selected.",
             spectrum_list,
             previous_mode,
         )

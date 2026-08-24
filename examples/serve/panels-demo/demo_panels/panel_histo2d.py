@@ -359,20 +359,6 @@ def update_text(
         return [f"{dataset_title} / {time_label[0:-1]} / {place_name}"]
     return [f"{dataset_title} "]
 
-
-# TODO: Doesn't work. We need to ensure that show_progress() returns
-#   before update_plot(). EDIT: This cannot work in its current form!
-# @panel.callback(
-#     Input("button", "clicked"),
-#     Output("button", ""),
-# )
-def show_progress(
-    _ctx: Context,
-    _clicked: bool | None = None,  # trigger, will always be True
-) -> alt.Chart | None:
-    return CircularProgress(id="button", size=28)
-
-
 @panel.callback(
     Input("@app", "selectedDatasetId"),
     Input("@app", "selectedPlaceGeometry"),
@@ -395,12 +381,12 @@ def update_error_message(
 
     if error_message == "":
         if dataset_id is None:
-            error_message = "Missing dataset selection"
+            error_message = "Please select a dataset."
 
         if not place_geometry:
-            error_message = "Missing place geometry selection"
+            error_message = "Please create or select an area of interest in the map."
 
         elif not var_1_name or not var_2_name:
-            error_message = "Missing variable selection"
+            error_message = "Please select a variable."
 
     return error_message
