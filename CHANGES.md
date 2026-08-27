@@ -32,9 +32,12 @@
   rasterio/GDAL binary incompatibilities. (#1229)
 * Updated installation instructions to use current mamba syntax and
   canonical xcube repository URL (#1232)
-* Updated server side panels in `examples/serve/panels-demo` and 
-  `chartlets` dependency to >=0.2.1 (#1247)
-
+* Bundled [xcube Viewer 1.7.4](https://github.com/xcube-dev/xcube-viewer/releases/tag/v1.7.4),
+  including a new Reset application action in the Settings dialog, fixes for
+  variable/RGB layer extents and pinned-variable color bar updates, updated dependencies 
+  such as `chartlets ^0.2.1`, and the new `selectedPlaceLabel` state property. Also 
+  updated the server-side panels in `examples/serve/panels-demo` and the `chartlets` 
+  dependency to `>=0.2.1` respectively. (#1247)
 
 ## Changes in 1.13.3
 
