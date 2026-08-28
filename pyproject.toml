@@ -235,6 +235,10 @@ check-with-mypy = "mypy src"
 cov-base = "pytest --cov src/sen4cap_client --cov-report= --cov-append tests"
 cov-report-html = "coverage html -d .cov-report && coverage report"
 cov-report-xml = "coverage xml -o coverage.xml && coverage report"
+server-demo1 = "xcube serve -vvv -c examples/serve/demo/config.yml"
+viewer-demo1 = "xcube serve -vvv -c examples/serve/demo/config.yml --open-viewer"
+server-demo2 = "xcube serve -vvv -c examples/serve/panels-demo/config.yaml"
+viewer-demo2 = "xcube serve -vvv -c examples/serve/panels-demo/config.yaml --open-viewer"
 
 # pixi run format
 
