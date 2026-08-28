@@ -52,11 +52,30 @@ therefore we use [isort](https://pycqa.github.io/isort/) with default setting
 to automatically order them (see also section below).
 
 Given what has been stated above, the recommended way to automatically format 
-new xcube code is:
+xcube code is to run the Pixi formatting task from the repository root:
 
 ```shell
-isort <path>
-ruff format <path>
+pixi run format
+```
+
+The `format` task first sorts imports with isort and then runs `ruff format`.
+To run `ruff check` and mypy without formatting the code, use the `checks`
+task:
+
+```shell
+pixi run checks
+```
+
+Run the unit test suite with:
+
+```shell
+pixi run tests
+```
+
+or with coverage report:
+
+```shell
+pixi run coverage
 ```
 
 ### Order of Imports

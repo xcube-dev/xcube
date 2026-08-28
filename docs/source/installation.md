@@ -78,20 +78,15 @@ The default environment includes the development and test dependencies. Run
 the unit test suite with:
     
 ```bash
-pixi run pytest
+pixi run tests
 ```
 
-To analyse test coverage:
+To run the tests with coverage and produce an HTML
+[coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html)
+in `.cov-report/`:
 
 ```bash
-pixi run pytest --cov=xcube
-```
-
-To produce an HTML
-[coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html):
-
-```bash
-pixi run pytest --cov-report html --cov=xcube
+pixi run coverage
 ```
 
 ## Docker
