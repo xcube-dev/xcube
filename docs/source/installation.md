@@ -67,8 +67,8 @@ tool requires the legacy conda environment files, you can generate them from
 the repository root:
 
 ```bash
-pixi project export conda-environment environment.yml
-pixi project export conda-environment --environment docs rtd-environment.yml
+pixi project export conda-environment --from-lock-file environment.yml
+pixi project export conda-environment --from-lock-file --environment docs rtd-environment.yml
 ```
 
 The generated files are for interoperability with conda-compatible tools and

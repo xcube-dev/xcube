@@ -153,7 +153,7 @@ disable_error_code = ["valid-type", "import-untyped"]
 channels = ["conda-forge"]
 platforms = ["linux-64", "win-64", "osx-64"]
 
-[tool.pixi.pypi-dependencies]
+[tool.pixi.feature.dev.pypi-dependencies]
 xcube = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
@@ -230,6 +230,7 @@ recommonmark = "*"
 mock = "*"
 
 [tool.pixi.environments]
+default = ["dev"]
 docs = ["docs"]
 
 [tool.pixi.tasks]
