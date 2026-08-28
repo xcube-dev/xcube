@@ -3,9 +3,8 @@
 ### Running the xcube Server demo configuration
 
 ```shell
-conda activate xcube
 cd xcube
-xcube serve -vvv -c examples/serve/panels-demo/config.yaml
+pixi run xcube serve -vvv -c examples/serve/panels-demo/config.yaml
 ```
 
 ### Test data
@@ -22,4 +21,3 @@ The following data is used by the demo configuration `config.yaml`:
    - Spatial, temporal, scene and band subset
 
 Both datasets are provided solely for demonstration purposes and contain modified Copernicus information.
-

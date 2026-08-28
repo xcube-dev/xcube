@@ -3,9 +3,8 @@
 ### Running the xcube Server demo configuration
 
 ```shell
-conda activate xcube
 cd xcube
-xcube serve --traceback --loglevel DETAIL serve --prefix api/v1 -vvv -c examples/serve/demo/config.yml
+pixi run xcube serve --traceback --loglevel DETAIL serve --prefix api/v1 -vvv -c examples/serve/demo/config.yml
 ```
 
 ### Test data
@@ -28,4 +27,3 @@ The following data is used by the demo configuration `config.yml`:
   https://rb.gy/h8qz14
   This image is one of many free GeoTIFFs available from 
   [Sentinel-2](https://registry.opendata.aws/sentinel-2-l2a-cogs/).
-

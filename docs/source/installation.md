@@ -1,43 +1,18 @@
 # Installation
 
-## Prerequisites
-
-xcube releases are packaged as conda packages in the
-[conda-forge](https://conda-forge.org/) channel. It is recommended to install
-xcube into a conda environment using the
-[mamba package manager](https://github.com/mamba-org/mamba), which will
-also automatically install and manage xcube’s dependencies.
-You can find [installation instructions for mamba itself
-here](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html), if you
-don’t already have it installed.
-
-In addition to mamba, there are alternative package managers available for
-conda environments:
-
-1. The original `conda` tool. When considering this tool, please note that
-   package installation and management with conda may be significantly slower 
-   than with mamba.
-2. The `micromamba` tool, a minimalistic, self-contained version of mamba.
-
-## Overview of installation methods
-
-There are two main ways to install the xcube package:
-
-1.  **Install an official release** from a conda-forge package, using the mamba
-    package manager. This method is recommended for most users.
-2.  Use mamba to install only xcube’s dependencies, but not xcube itself.
-    Then **clone the xcube git repository** and install directly from your
-    local repository. You should use this method if you intend to participate
-    in the development of xcube, or if you need to use features that are
-    so new that they are not yet available in an officially release conda-forge
-    package.
-
-These methods are described in more detail in the following sections.
-
 ## Installation from the conda-forge package
 
-To install the latest release of xcube into a new conda environment called
-`xcube`, run the following command.
+xcube releases are distributed as conda packages through the
+[conda-forge](https://conda-forge.org/) channel. To install a released version
+of xcube, you need a
+[conda-compatible package manager](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html),
+such as [Conda](https://docs.conda.io/),
+[Mamba](https://mamba.readthedocs.io/),
+[Micromamba](https://mamba.readthedocs.io/en/stable/user_guide/micromamba.html),
+or [Pixi](https://pixi.sh/).
+
+The following example uses Mamba to install the latest xcube release into a
+new environment called `xcube`:
 
 ```bash
 mamba create --name xcube --channel conda-forge xcube
@@ -46,8 +21,8 @@ mamba create --name xcube --channel conda-forge xcube
 You can give the environment a different name by providing a different argument
 to the `--name` option.
 
-To install xcube into an existing, currently activated conda environment,
-use the following command.
+To install xcube into an existing, currently activated conda-compatible
+environment, use:
 
 ```bash
 mamba install --channel conda-forge xcube
@@ -55,59 +30,56 @@ mamba install --channel conda-forge xcube
 
 ## Installation from the source code repository
 
-First, clone the repository and create a conda environment from it:
+Use this method if you intend to contribute to xcube or need changes that are
+not yet available in an official release. A source installation requires
+[Pixi](https://pixi.sh/).
+
+First, clone the repository and install its default Pixi environment:
 
 ```bash
 git clone https://github.com/xcube-dev/xcube.git
 cd xcube
-mamba create -f environment.yml
+pixi install
 ```
 
 From this point on, all instructions assume that your current directory is the
-root of the xcube repository.
+root of the xcube repository. The Pixi project configuration in
+`pyproject.toml` defines the environment and installs xcube in editable mode,
+so changes to the source code take effect without reinstalling the package.
 
-The `mamba create` command above creates an environment according to
-the specifications in the `environment.yml` file in the repository, which
-by default takes the name `xcube`. Then, to activate the environment and
-install xcube from the repository:
-
-```bash    
-mamba activate xcube
-pip install --no-deps --editable .
-```
-
-The second command installs xcube in ‘editable mode’, meaning that it will
-be run directly from the repository, and changes to the code in the repository
-will take immediate effect without reinstallation. Note that `pip` offers the
-advantage of easily uninstalling the respective package.
-
-To update the install to the latest repository version and update the
-environment to reflect to any changes in `environment.yml`:
+You can either run commands in the environment using `pixi run`, or activate
+the environment in your current shell:
 
 ```bash
-mamba activate xcube
-git pull --force
-mamba env update -n xcube --file environment.yml --prune
+pixi shell
 ```
 
-To install `pytest` and run the unit test suite:
+To update the checkout and synchronize the environment with changes in
+`pyproject.toml` and `pixi.lock`:
+
+```bash
+git pull
+pixi install
+```
+
+The default environment includes the development and test dependencies. Run
+the unit test suite with:
     
 ```bash
-mamba install pytest
-pytest
+pixi run pytest
 ```
 
-To analyse test coverage (after installing pytest as above):
+To analyse test coverage:
 
 ```bash
-pytest --cov=xcube
+pixi run pytest --cov=xcube
 ```
 
 To produce an HTML
 [coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html):
 
 ```bash
-pytest --cov-report html --cov=xcube
+pixi run pytest --cov-report html --cov=xcube
 ```
 
 ## Docker
