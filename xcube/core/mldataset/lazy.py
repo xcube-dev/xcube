@@ -6,7 +6,7 @@ import threading
 import uuid
 from abc import ABCMeta, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import xarray as xr
 

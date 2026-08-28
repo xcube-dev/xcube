@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Mapping
-from typing import Dict, Optional
+from typing import Optional
 
 from xcube.constants import LOG
 from xcube.core.tile import (

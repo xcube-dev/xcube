@@ -3,7 +3,6 @@
 # https://opensource.org/licenses/MIT.
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from xcube.core.mldataset import IdentityMultiLevelDataset, MultiLevelDataset

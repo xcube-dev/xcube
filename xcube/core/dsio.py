@@ -8,7 +8,7 @@ import warnings
 import zipfile
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable, Mapping
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import botocore.exceptions
 import numcodecs

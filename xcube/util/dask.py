@@ -8,7 +8,7 @@ import re
 import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import dask.array as da
 import dask.array.core as dac
@@ -228,7 +228,7 @@ def new_cluster(
             import coiled
         except ImportError as e:
             raise ImportError(
-                f"provider 'coiled' requires package'coiled' to be installed"
+                "provider 'coiled' requires package'coiled' to be installed"
             ) from e
         if software is None and "JUPYTER_IMAGE" in os.environ:
             # If the JUPYTER_IMAGE environment variable is set, we're

@@ -10,7 +10,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.cli.prune import _delete_block_file
-from xcube.core.dsio import rimraf, write_cube
+from xcube.core.dsio import rimraf
 from xcube.core.new import new_cube
 from xcube.core.verify import assert_cube
 

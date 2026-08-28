@@ -7,7 +7,6 @@ import os.path
 import unittest
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
 from test.sampledata import new_test_dataset
-from typing import Set
 from unittest.mock import patch
 
 import boto3

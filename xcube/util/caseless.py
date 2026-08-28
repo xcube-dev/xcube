@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Dict, Optional, TypeVar
+from typing import Optional, TypeVar
 
 
 def caseless_dict(*args, **kwargs) -> dict:

@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import fnmatch
-from typing import Optional, Set
+from typing import Optional
 
 from xcube.server.api import ApiError
 

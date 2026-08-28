@@ -13,7 +13,6 @@ from unittest.mock import Mock, patch
 import fsspec
 import fsspec.core
 import xarray as xr
-import zarr
 
 from xcube.core.gridmapping import GridMapping
 from xcube.core.mldataset import FsMultiLevelDataset

@@ -4,7 +4,6 @@
 
 import os.path
 from test.cli.helpers import TEST_ZARR_DIR, CliDataTest
-from typing import List
 
 import fiona
 import pandas as pd

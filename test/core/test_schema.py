@@ -27,8 +27,8 @@ class CubeSchemaTest(unittest.TestCase):
         )
 
     def test_xarray_accessor(self):
-        # noinspection PyUnresolvedReferences
-        import xcube.core.xarray
+        # Import for side effects: registers xcube xarray extensions.
+        import xcube.core.xarray  # noqa: F401
 
         cube = new_cube(variables=dict(a=2, b=3, c=4))
         schema = cube.xcube.schema

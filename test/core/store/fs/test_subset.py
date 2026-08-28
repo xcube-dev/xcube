@@ -5,7 +5,6 @@
 import unittest
 from abc import ABC, abstractmethod
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
-from typing import Tuple
 
 import fsspec
 

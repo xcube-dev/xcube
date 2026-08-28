@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from xcube.server.api import ApiError, ApiHandler
+from xcube.server.api import ApiHandler
 
 from .api import api
 from .config import DEFAULT_COLLECTION_ID, PATH_PREFIX

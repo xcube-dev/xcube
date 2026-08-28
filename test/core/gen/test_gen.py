@@ -6,7 +6,7 @@ import os
 import unittest
 from collections.abc import Sequence
 from test.core.gen.helpers import get_inputdata_path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import numpy as np
 import xarray as xr

@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from functools import cached_property
 from itertools import filterfalse
 from string import Template
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Optional, Union
 
 import jwt
 import jwt.algorithms

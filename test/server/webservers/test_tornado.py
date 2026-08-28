@@ -12,7 +12,6 @@ import pytest
 import tornado.httputil
 import tornado.web
 from tornado import concurrent
-from tornado.concurrent import Future
 
 from xcube.server.api import (
     Api,

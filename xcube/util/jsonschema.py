@@ -5,7 +5,7 @@
 import collections.abc
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 from xcube.util.assertions import assert_instance, assert_true
 

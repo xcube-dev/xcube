@@ -3,7 +3,6 @@
 # https://opensource.org/licenses/MIT.
 
 import unittest
-from typing import Type
 
 import jsonschema
 import numpy as np

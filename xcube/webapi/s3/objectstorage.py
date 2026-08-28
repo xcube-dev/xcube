@@ -4,10 +4,9 @@
 
 import collections.abc
 from collections.abc import Iterator, Mapping
-from typing import Tuple, Union
+from typing import Union
 
 import xarray as xr
-import zarr.storage
 
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.server.api import ApiError

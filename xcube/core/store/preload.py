@@ -334,7 +334,9 @@ class PreloadDisplay(ABC):
     ) -> "PreloadDisplay":
         try:
             from IPython import get_ipython
-            from IPython.display import display
+
+            # Import used to raise ImportError, if display is missing
+            from IPython.display import display  # noqa: F401
 
             # Only use IPyGeneratorDisplay if we are actually inside a notebook
             shell = get_ipython().__class__.__name__

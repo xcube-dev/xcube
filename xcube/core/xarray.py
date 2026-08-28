@@ -4,7 +4,7 @@
 
 import threading
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,6 @@ from xcube.core.extract import (
     get_dataset_indexes,
 )
 from xcube.core.gridmapping import GridMapping
-from xcube.core.level import compute_levels
 from xcube.core.new import new_cube
 from xcube.core.normalize import DatasetIsNotACubeError, decode_cube
 from xcube.core.schema import CubeSchema, get_cube_schema

@@ -4,7 +4,7 @@
 
 import fractions
 import math
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import click
 
@@ -211,7 +211,7 @@ def factor_out_two(x: int) -> tuple[int, int]:
     "--int_inv_res",
     metavar="INT_INV_RES",
     is_flag=True,
-    help=f"Find only resolutions whose inverse are integers.",
+    help="Find only resolutions whose inverse are integers.",
 )
 @click.option(
     "--sort_by",
@@ -442,7 +442,7 @@ def _fetch_height_and_coverage_from_options(
     coverage = _fetch_coverage_from_option(coverage_str)
     if res_str is not None:
         if height is not None:
-            raise click.ClickException(f"Either RES or HEIGHT must be given, not both")
+            raise click.ClickException("Either RES or HEIGHT must be given, not both")
         try:
             res = fractions.Fraction(res_str)
         except ValueError as e:
@@ -456,7 +456,7 @@ def _fetch_height_and_coverage_from_options(
             )
         height = height.numerator
     elif height is None:
-        raise click.ClickException(f"Either RES or HEIGHT must be given.")
+        raise click.ClickException("Either RES or HEIGHT must be given.")
     return height, coverage
 
 

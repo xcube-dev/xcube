@@ -8,7 +8,7 @@ import math
 import unittest
 from collections.abc import Iterator, KeysView, MutableMapping, Sequence
 from test.sampledata import create_highroc_dataset
-from typing import Any, Dict
+from typing import Any
 
 import cftime
 import numpy as np

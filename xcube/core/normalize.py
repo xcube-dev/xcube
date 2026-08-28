@@ -5,7 +5,7 @@
 import warnings
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import cftime
 import numpy as np

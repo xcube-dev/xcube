@@ -6,3 +6,12 @@ from .context import VarExprContext
 from .error import VarExprError
 from .helpers import split_var_assignment
 from .varexpr import VarExpr, evaluate, parse
+
+__all__ = [
+    "VarExpr",
+    "VarExprContext",
+    "VarExprError",
+    "evaluate",
+    "parse",
+    "split_var_assignment",
+]
