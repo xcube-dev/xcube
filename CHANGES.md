@@ -20,13 +20,15 @@
 
 ### Other changes
 
-* We are now using [pixi](https://pixi.prefix.dev/) as the primary package manager: (#1238)
-  - Pixi configuration is maintained `pyproject.toml` 
+* We are now using [pixi](https://pixi.prefix.dev/) as the primary package manager: (#1238, #1250)
+  - Pixi configuration is maintained in `pyproject.toml` 
   - Updated source-installation and developer documentation
   - Migrated CI and related automation
   - Added a dedicated documentation environment and removed committed conda environment files
   - Corrected and documented the testing, formatting, and checking tasks
   - The two `xcube serve` demos can also now be run with pixi:
+    - run xcube Server only: `pixi run server-demo`, `pixi run server-panels-demo`
+    - run xcube server and open Viewer in browser tab: `pixi run viewer-demo`, `pixi run viewer-panels-demo`  
     -  
 * Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
   `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
