@@ -116,7 +116,7 @@ class MaintenanceUpdateHandler(ApiHandler[MetaContext]):
 
 
 @api.route("/maintenance/kill")
-class MaintenanceUpdateHandler(ApiHandler[MetaContext]):
+class MaintenanceKillHandler(ApiHandler[MetaContext]):
     @api.operation(
         operation_id="killServer", summary="Force server to shut down immediately."
     )
@@ -126,7 +126,7 @@ class MaintenanceUpdateHandler(ApiHandler[MetaContext]):
 
 
 @api.route("/maintenance/oom")
-class MaintenanceUpdateHandler(ApiHandler[MetaContext]):
+class MaintenanceOomHandler(ApiHandler[MetaContext]):
     @api.operation(
         operation_id="forceOutOfMemory",
         summary="Force an out-of-memory error (for testing).",
