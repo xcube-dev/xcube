@@ -11,8 +11,8 @@ import pyproj
 import xarray as xr
 
 import xcube.core.new
-from xcube.core.gridmapping import GridMapping
 from xcube.core.dsio import ZarrDatasetIO
+from xcube.core.gridmapping import GridMapping
 
 # noinspection PyProtectedMember
 

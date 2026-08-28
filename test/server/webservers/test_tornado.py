@@ -5,6 +5,7 @@
 import logging
 import unittest
 from collections.abc import Awaitable, Sequence
+from test.server.mocks import mock_server
 from typing import Any, Callable, Optional, Union
 
 import pytest
@@ -13,7 +14,6 @@ import tornado.web
 from tornado import concurrent
 from tornado.concurrent import Future
 
-from test.server.mocks import mock_server
 from xcube.server.api import (
     Api,
     ApiContextT,

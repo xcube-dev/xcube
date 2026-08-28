@@ -3,8 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 
-import math
 import json
+import math
 import unittest
 from collections.abc import Mapping
 from typing import Any, Optional
@@ -238,6 +238,7 @@ class FsMultiLevelDatasetTest(unittest.TestCase):
         )
         self.assertIs(opened_dataset, level_dataset)
         self.assertIs(zarr_store, level_dataset.zarr_store.get())
+
     def test_invalid_base_dataset_path_raises(self):
         with self.assertRaises(FsMultiLevelDatasetError):
             FsMultiLevelDataset.write_dataset(

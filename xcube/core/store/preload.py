@@ -328,14 +328,13 @@ class ExecutorPreloadHandle(PreloadHandle):
 
 
 class PreloadDisplay(ABC):
-
     @classmethod
     def create(
         cls, states: list[PreloadState], silent: bool | None = None
     ) -> "PreloadDisplay":
         try:
-            from IPython.display import display
             from IPython import get_ipython
+            from IPython.display import display
 
             # Only use IPyGeneratorDisplay if we are actually inside a notebook
             shell = get_ipython().__class__.__name__

@@ -2,8 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from xcube.core.mldataset import IdentityMultiLevelDataset, MultiLevelDataset

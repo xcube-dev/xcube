@@ -71,9 +71,7 @@ class LazyMultiLevelDatasetTest(unittest.TestCase):
             "xcube.core.mldataset.lazy.uuid.uuid4",
             side_effect=["first-id", "second-id"],
         ) as uuid4:
-            results = self._run_two_threads(
-                lambda: ml_dataset.ds_id, ml_dataset.lock
-            )
+            results = self._run_two_threads(lambda: ml_dataset.ds_id, ml_dataset.lock)
 
         self.assertEqual(["first-id", "first-id"], results)
         # The inner lock check must prevent the waiting thread from
@@ -93,9 +91,7 @@ class LazyMultiLevelDatasetTest(unittest.TestCase):
     def test_num_levels_computes_missing_value_only_once_if_threads_race(self):
         ml_dataset = _ConcurrentLazyMultiLevelDataset()
 
-        results = self._run_two_threads(
-            lambda: ml_dataset.num_levels, ml_dataset.lock
-        )
+        results = self._run_two_threads(lambda: ml_dataset.num_levels, ml_dataset.lock)
 
         self.assertEqual([1, 1], results)
         self.assertEqual(1, ml_dataset.num_levels_load_count)

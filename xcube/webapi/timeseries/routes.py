@@ -2,19 +2,19 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import pandas as pd
-
-from xcube.server.api import ApiHandler
-
-from ..datasets import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
-
-from .api import api
-from .context import TimeSeriesContext
-from .controllers import get_time_series
 import logging
 from collections.abc import Hashable
 from typing import Any
+
+import pandas as pd
+
 from xcube.core.tile import get_non_spatial_labels
+from xcube.server.api import ApiHandler
+
+from ..datasets import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
+from .api import api
+from .context import TimeSeriesContext
+from .controllers import get_time_series
 
 _logger = logging.getLogger(__name__)
 
@@ -120,5 +120,7 @@ def get_non_spatial_dimensions(ctx, request, ds_id, var) -> dict[Hashable, Any]:
         if value is not None:
             dimensions[str(dim)] = value
 
-    labels = get_non_spatial_labels(ds, variable, labels=dimensions, logger=_logger, excluded_dims=["time"])
+    labels = get_non_spatial_labels(
+        ds, variable, labels=dimensions, logger=_logger, excluded_dims=["time"]
+    )
     return labels
