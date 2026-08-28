@@ -123,3 +123,7 @@ examples/serve/demo2/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# Conda environment files generated from the Pixi project
+/environment.yml
+/rtd-environment.yml

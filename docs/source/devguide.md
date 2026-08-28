@@ -434,7 +434,8 @@ In detail, the steps are:
    1. Update the sha256 hash of the source archive prepared by GitHub.
 
    1. If the dependencies have changed, update the list of dependencies 
-   in the `-run` subsection to match those in the environment.yml file.
+   in the `-run` subsection to match the runtime dependencies in
+   `pyproject.toml`.
 
 1. Commit the changes and push them to GitHub. 
    A pull request at the feedstock repository on conda-forge will be automatically 

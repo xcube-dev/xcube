@@ -7,6 +7,11 @@ build:
   os: "ubuntu-24.04"
   tools:
     python: "mambaforge-23.11"
+  jobs:
+    post_checkout:
+      - curl -fsSL https://pixi.sh/install.sh -o /tmp/install-pixi.sh
+      - PIXI_VERSION=v0.77.1 sh /tmp/install-pixi.sh
+      - $HOME/.pixi/bin/pixi project export conda-environment --environment docs rtd-environment.yml
 
 sphinx:
   configuration: docs/source/conf.py

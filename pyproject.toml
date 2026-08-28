@@ -219,6 +219,18 @@ pytz = "*"  # for test/util/test_timeindex.py
 requests-mock = ">=1.8"
 werkzeug = "*"
 
+[tool.pixi.feature.docs.pypi-dependencies]
+sphinx = "*"
+sphinx-rtd-theme = "*"
+sphinx-argparse = "*"
+sphinx-autodoc-annotation = "*"
+sphinx-markdown-tables = "*"
+recommonmark = "*"
+mock = "*"
+
+[tool.pixi.environments]
+docs = ["docs"]
+
 # pixi run ...
 
 [tool.pixi.tasks]

@@ -62,6 +62,18 @@ git pull
 pixi install
 ```
 
+The Pixi configuration is the source of truth for xcube's environments. If a
+tool requires the legacy conda environment files, you can generate them from
+the repository root:
+
+```bash
+pixi project export conda-environment environment.yml
+pixi project export conda-environment --environment docs rtd-environment.yml
+```
+
+The generated files are for interoperability with conda-compatible tools and
+are not tracked in the repository.
+
 The default environment includes the development and test dependencies. Run
 the unit test suite with:
     
