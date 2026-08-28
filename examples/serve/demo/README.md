@@ -3,9 +3,14 @@
 ### Running the xcube Server demo configuration
 
 ```shell
-cd xcube
 pixi run xcube serve --traceback --loglevel DETAIL serve --prefix api/v1 -vvv -c examples/serve/demo/config.yml
 ```
+
+or simpler
+
+- `pixi run viewer-demo` to run the xcube Server and open xcube Viewer in a browser tab
+- `pixi run server-demo` to run the xcube Server only
+
 
 ### Test data
 

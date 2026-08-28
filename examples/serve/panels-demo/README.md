@@ -3,9 +3,14 @@
 ### Running the xcube Server demo configuration
 
 ```shell
-cd xcube
 pixi run xcube serve -vvv -c examples/serve/panels-demo/config.yaml
 ```
+
+or simpler
+
+- `pixi run viewer-panels-demo` to run the xcube Server and open xcube Viewer in a browser tab
+- `pixi run server-panels-demo` to run the xcube Server only
+
 
 ### Test data
 
