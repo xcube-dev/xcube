@@ -4,7 +4,7 @@
 
 import json
 from collections.abc import Sequence
-from typing import AbstractSet, Any, Optional
+from typing import AbstractSet, Any, Optional, TYPE_CHECKING
 
 import click
 
@@ -15,6 +15,10 @@ from xcube.constants import (
     LOG,
 )
 from xcube.util.plugin import get_extension_registry
+
+if TYPE_CHECKING:
+    from xcube.core.store import DataStore
+    from xcube.util.jsonschema import JsonSchema, JsonObjectSchema
 
 _NO_TITLE = "<no title>"
 _NO_DESCRIPTION = "<no description>"
@@ -586,7 +590,7 @@ io.add_command(dump)
 
 # noinspection PyUnresolvedReferences
 def _format_params_schema(
-    params_schema: "xcube.util.jsonschema.JsonObjectSchema",
+    params_schema: "JsonObjectSchema",
 ) -> str:
     text = []
     if params_schema.properties:
@@ -603,7 +607,7 @@ def _format_params_schema(
 
 # noinspection PyUnresolvedReferences
 def _format_required_params_schema(
-    params_schema: "xcube.util.jsonschema.JsonObjectSchema",
+    params_schema: "JsonObjectSchema",
 ) -> str:
     text = ["Required parameters:"]
     for param_name, param_schema in params_schema.properties.items():
@@ -613,7 +617,7 @@ def _format_required_params_schema(
 
 
 # noinspection PyUnresolvedReferences
-def _format_param_schema(param_schema: "xcube.util.jsonschema.JsonSchema"):
+def _format_param_schema(param_schema: "JsonSchema"):
     from xcube.util.undefined import UNDEFINED
 
     param_info = []
@@ -661,23 +665,21 @@ def _dump_extensions(point: str) -> int:
 
 
 # noinspection PyUnresolvedReferences
-def _dump_store_openers(
-    data_store: "xcube.core.store.DataStore", data_id: str = None
-) -> int:
+def _dump_store_openers(data_store: "DataStore", data_id: str = None) -> int:
     return _dump_named_extensions(
         EXTENSION_POINT_DATA_OPENERS, data_store.get_data_opener_ids(data_id=data_id)
     )
 
 
 # noinspection PyUnresolvedReferences
-def _dump_store_writers(data_store: "xcube.core.store.DataStore") -> int:
+def _dump_store_writers(data_store: "DataStore") -> int:
     return _dump_named_extensions(
         EXTENSION_POINT_DATA_WRITERS, data_store.get_data_writer_ids()
     )
 
 
 # noinspection PyUnresolvedReferences
-def _dump_store_data_ids(data_store: "xcube.core.store.DataStore") -> int:
+def _dump_store_data_ids(data_store: "DataStore") -> int:
     count = 0
     for data_id, data_attrs in sorted(data_store.get_data_ids(include_attrs=["title"])):
         print(f"  {data_id:>32s}  {data_attrs.get('title') or _NO_TITLE}")
@@ -700,7 +702,7 @@ def _dump_named_extensions(point: str, names: Sequence[str]) -> int:
 
 
 # noinspection PyUnresolvedReferences
-def _dump_data_resources(data_store: "xcube.core.store.DataStore") -> int:
+def _dump_data_resources(data_store: "DataStore") -> int:
     count = 0
     for data_id, title in data_store.get_data_ids():
         print(f"  {data_id:<32s}  {title or _NO_TITLE}")
@@ -709,9 +711,7 @@ def _dump_data_resources(data_store: "xcube.core.store.DataStore") -> int:
 
 
 # noinspection PyUnresolvedReferences
-def _new_data_store(
-    store_id: str, store_params: list[str]
-) -> "xcube.core.store.DataStore":
+def _new_data_store(store_id: str, store_params: list[str]) -> "DataStore":
     from xcube.core.store import new_data_store
 
     store_params_dict = dict()

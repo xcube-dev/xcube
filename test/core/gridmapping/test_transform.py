@@ -9,9 +9,9 @@ import pyproj.crs
 
 from xcube.core.gridmapping import CRS_CRS84, CRS_WGS84, GridMapping
 
-CRS_UTM_32N = pyproj.crs.CRS(32632)
-
 import numpy as np
+
+CRS_UTM_32N = pyproj.crs.CRS(32632)
 
 
 # noinspection PyMethodMayBeStatic

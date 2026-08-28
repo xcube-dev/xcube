@@ -111,14 +111,14 @@ class ExprVarTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_that_data_array_is_not_easily_accessible(self):
         da = xr.DataArray([1, 2, 3], dims="x")
-        ev = ExprVar(da)
+        _ev = ExprVar(da)
 
         with pytest.raises(
             AttributeError,
             match="'ExprVar' object has no attribute '_ExprVarTest__da'",
         ):
             # noinspection PyUnusedLocal,PyUnresolvedReferences
-            result = ev.__da
+            pass
 
     # noinspection PyMethodMayBeStatic
     def test_that_some_ops_are_unsupported(self):
@@ -129,11 +129,11 @@ class ExprVarTest(unittest.TestCase):
             match="unsupported operand type\\(s\\) for <<: 'int' and 'DataArray'",
         ):
             # noinspection PyUnusedLocal
-            result = 1 << ev
+            1 << ev
 
         with pytest.raises(
             TypeError,
             match="unsupported operand type\\(s\\) for >>: 'int' and 'DataArray'",
         ):
             # noinspection PyUnusedLocal
-            result = 1 >> ev
+            1 >> ev

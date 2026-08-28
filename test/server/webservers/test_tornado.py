@@ -287,8 +287,8 @@ class TornadoApiRequestTest(unittest.TestCase):
         )
         request = TornadoApiRequest(tr)
         with self.assertRaises(ApiError.BadRequest) as cm:
-            # noinspection PyUnusedLocal
-            result = request.json
+            # require accessing request.json property
+            _result = request.json  # noqa: F401
         self.assertEqual(
             "HTTP status 400:"
             " Body does not contain valid JSON:"

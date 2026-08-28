@@ -171,7 +171,7 @@ class PruneDataTest(CliTest):
             block_file = os.path.join(self.TEST_CUBE, "precipitation", "1.1.1")
             # Open block, so we cannot delete (Windows only)
             # noinspection PyUnusedLocal
-            with open(block_file, "wb") as fp:
+            with open(block_file, "wb"):
                 actual_message = None
                 ok = _delete_block_file(
                     self.TEST_CUBE, "precipitation", (1, 1, 1), False, monitor=monitor
