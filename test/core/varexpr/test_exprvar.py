@@ -111,14 +111,13 @@ class ExprVarTest(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     def test_that_data_array_is_not_easily_accessible(self):
         da = xr.DataArray([1, 2, 3], dims="x")
-        _ev = ExprVar(da)
+        ev = ExprVar(da)
 
         with pytest.raises(
             AttributeError,
             match="'ExprVar' object has no attribute '_ExprVarTest__da'",
         ):
-            # noinspection PyUnusedLocal,PyUnresolvedReferences
-            pass
+            _result = ev.__da
 
     # noinspection PyMethodMayBeStatic
     def test_that_some_ops_are_unsupported(self):
