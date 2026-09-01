@@ -20,18 +20,25 @@
 
 ### Other changes
 
+* We are now using [pixi](https://pixi.prefix.dev/) as the primary package manager: (#1238, #1250)
+  - Pixi configuration is maintained in `pyproject.toml` 
+  - Updated source-installation and developer documentation
+  - Migrated CI and related automation
+  - Added a dedicated documentation environment and removed committed conda environment files
+  - Corrected and documented the testing, formatting, and checking tasks
+  - The two `xcube serve` demos can also now be run with pixi:
+    - run xcube Server only: `pixi run server-demo`, `pixi run server-panels-demo`
+    - run xcube server and open Viewer in browser tab: `pixi run viewer-demo`, `pixi run viewer-panels-demo`  
+    -  
 * Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
   `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
   Zarr store, making it independent of any specific Zarr store implementation. 
   This change prepares xcube for the migration to Zarr v3, whose store API differs 
   significantly from that of Zarr v2. (#1226)
-* Migrated the development environment and project tasks to Pixi. (#1238)
 * The xcube version identifier is now retrieved from `pyproject.toml` as single 
   source of truth. (#1242)
 * Pinned libjxl <=0.11.2 because libjxl >=0.12.0 causes CI failures due to 
   rasterio/GDAL binary incompatibilities. (#1229)
-* Updated installation instructions to use current mamba syntax and
-  canonical xcube repository URL (#1232)
 
 
 ## Changes in 1.13.3
