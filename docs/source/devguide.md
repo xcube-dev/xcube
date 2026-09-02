@@ -52,11 +52,30 @@ therefore we use [isort](https://pycqa.github.io/isort/) with default setting
 to automatically order them (see also section below).
 
 Given what has been stated above, the recommended way to automatically format 
-new xcube code is:
+xcube code is to run the Pixi formatting task from the repository root:
 
 ```shell
-isort <path>
-ruff format <path>
+pixi run format
+```
+
+The `format` task first sorts imports with isort and then runs `ruff format`.
+To run `ruff check` and mypy without formatting the code, use the `checks`
+task:
+
+```shell
+pixi run checks
+```
+
+Run the unit test suite with:
+
+```shell
+pixi run tests
+```
+
+or with coverage report:
+
+```shell
+pixi run coverage
 ```
 
 ### Order of Imports
@@ -434,7 +453,8 @@ In detail, the steps are:
    1. Update the sha256 hash of the source archive prepared by GitHub.
 
    1. If the dependencies have changed, update the list of dependencies 
-   in the `-run` subsection to match those in the environment.yml file.
+   in the `-run` subsection to match the runtime dependencies in
+   `pyproject.toml`.
 
 1. Commit the changes and push them to GitHub. 
    A pull request at the feedstock repository on conda-forge will be automatically 

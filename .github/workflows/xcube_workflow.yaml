@@ -16,32 +16,21 @@ jobs:
     env:
       NUMBA_DISABLE_JIT: 0
     steps:
-      - name: git-checkout
+      - name: Check out repository
         uses: actions/checkout@v4
-      # Setup miniconda build env
-      - name: Set up Micromamba
-        uses: mamba-org/setup-micromamba@v1
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@v0.10.1
         with:
-          micromamba-version: '1.4.8-0'
-          environment-file: environment.yml
-          init-shell: >-
-            bash
-          # Don't cache the environment, since this would prevent us from
-          # catching test failures caused by updated versions of dependencies.
-          cache-environment: false
-          post-cleanup: 'all'
-      # Setup xcube
-      - name: setup-xcube
-        shell: bash -l {0}
+          manifest-path: pyproject.toml
+          pixi-version: v0.77.1
+          locked: true
+          cache: true
+      - name: Show environment information
         run: |
-          conda info
-          conda list
-          pip install -e .
-      # Run unittests
-      - name: unittest-xcube
-        shell: bash -l {0}
-        run: |
-          pytest --cov=xcube --cov-report=xml
+          pixi info
+          pixi list
+      - name: Run unit tests
+        run: pixi run -x pytest --cov=xcube --cov-report=xml
       - uses: codecov/codecov-action@v4
         with:
           verbose: true # optional (default = false)
@@ -58,7 +47,7 @@ jobs:
       # Determine release tag from git ref
       - name: get-release-tag
         id: release
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+        run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
       # Print some info
       - name: info
         id: info
@@ -74,4 +63,3 @@ jobs:
           registry: ${{ env.IMG_REG_NAME }}
           username: ${{ secrets.IMG_REG_USERNAME }}
           password: ${{ secrets.IMG_REG_PASSWORD }}
-

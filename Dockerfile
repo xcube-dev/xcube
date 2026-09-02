@@ -1,3 +1,13 @@
+# Export the locked default Pixi environment for the Micromamba runtime image.
+FROM ghcr.io/prefix-dev/pixi:0.77.1 AS pixi-export
+
+WORKDIR /workspace
+COPY pyproject.toml pixi.lock ./
+RUN pixi project export conda-environment \
+    --from-lock-file \
+    --no-pypi \
+    environment.yml
+
 # For micromamba image documentation,
 # goto https://hub.docker.com/r/mambaorg/micromamba
 ARG MICROMAMBA_VERSION=1.3.1
@@ -41,8 +51,9 @@ ENV MAMBA_USER=$NEW_MAMBA_USER
 
 USER $MAMBA_USER
 
-# Install xcube dependencies
-COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/environment.yml
+# Install xcube dependencies exported from the Pixi lock file.
+COPY --from=pixi-export --chown=$MAMBA_USER:$MAMBA_USER \
+    /workspace/environment.yml /tmp/environment.yml
 RUN micromamba install -y -n base -f /tmp/environment.yml \
     && micromamba clean --all --yes
 
