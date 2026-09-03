@@ -28,5 +28,5 @@ class ComputeContextTest(unittest.TestCase):
         self.assertTrue(is_job_status(dict(state=dict(status="failed")), "failed"))
 
     def test_is_status_with_invalid_status(self):
-        with self.assertRaises(ValueError) as test_context:
+        with self.assertRaises(ValueError):
             is_job_status(dict(state=dict(status="failed")), "not_a_valid_status")

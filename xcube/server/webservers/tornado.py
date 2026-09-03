@@ -9,7 +9,7 @@ import logging
 import traceback
 import urllib.parse
 from collections.abc import Awaitable, Mapping, Sequence
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import tornado.escape
 import tornado.httputil
@@ -161,7 +161,7 @@ class TornadoFramework(Framework):
         test_url = f"http://{address_}:{port}{url_prefix}/openapi.html"
         LOG.info(f"Service running, listening on {address}:{port}")
         LOG.info(f"Try {test_url}")
-        LOG.info(f"Press CTRL+C to stop service")
+        LOG.info("Press CTRL+C to stop service")
 
         if not self._shared_io_loop:
             self.io_loop.start()

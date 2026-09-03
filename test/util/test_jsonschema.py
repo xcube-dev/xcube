@@ -4,7 +4,7 @@
 
 import unittest
 from collections import namedtuple
-from typing import Any, Dict
+from typing import Any
 
 from xcube.util.jsonschema import (
     JsonArraySchema,

@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Dict, Union
+from typing import Union
 
 from xcube.util.config import load_json_or_yaml_config
 from xcube.util.jsonschema import JsonObject, JsonObjectSchema, JsonStringSchema

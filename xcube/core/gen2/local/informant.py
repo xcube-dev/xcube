@@ -4,10 +4,9 @@
 
 import datetime
 import numbers
-import traceback
 import warnings
 from collections.abc import Sequence
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import pandas as pd
 import pyproj

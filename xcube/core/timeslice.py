@@ -4,7 +4,7 @@
 
 import tempfile
 from collections.abc import MutableMapping
-from typing import Dict, Tuple, Union
+from typing import Union
 
 import numpy as np
 import xarray as xr

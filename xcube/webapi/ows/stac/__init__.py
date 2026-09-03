@@ -3,3 +3,5 @@
 # https://opensource.org/licenses/MIT.
 
 from .routes import api
+
+__all__ = ["api"]

@@ -4,7 +4,7 @@
 
 import math
 from fractions import Fraction
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import affine
 import dask.array as da

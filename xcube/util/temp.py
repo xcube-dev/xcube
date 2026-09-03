@@ -3,11 +3,9 @@
 # https://opensource.org/licenses/MIT.
 
 import atexit
-import io
 import os
 import shutil
 import tempfile
-from typing import Tuple
 
 DEFAULT_TEMP_FILE_PREFIX = "xcube-"
 

@@ -16,7 +16,7 @@ from typing import Callable
 
 import moto.server
 
-MOTO_SERVER_ENDPOINT_URL = f"http://127.0.0.1:5000"
+MOTO_SERVER_ENDPOINT_URL = "http://127.0.0.1:5000"
 
 MOTOSERVER_PATH = moto.server.__file__
 MOTOSERVER_ARGS = [sys.executable, MOTOSERVER_PATH]

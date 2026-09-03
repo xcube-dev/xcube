@@ -6,7 +6,7 @@ import os
 import os.path
 import unittest
 from collections.abc import Sequence
-from typing import Set, Union
+from typing import Union
 
 from xcube.constants import FORMAT_NAME_ZARR
 from xcube.core.chunk import chunk_dataset

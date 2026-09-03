@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Tuple, Type, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 from xcube.util.assertions import assert_true
 

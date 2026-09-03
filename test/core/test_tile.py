@@ -10,7 +10,6 @@ import matplotlib.cm
 import matplotlib.colors
 import numpy as np
 import pyproj
-import pytest
 import xarray as xr
 
 from xcube.core.mldataset import BaseMultiLevelDataset, MultiLevelDataset

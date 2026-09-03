@@ -3,9 +3,8 @@
 # https://opensource.org/licenses/MIT.
 
 import json
-import sys
 from collections.abc import Sequence
-from typing import AbstractSet, Any, Dict, List, Optional, Set
+from typing import AbstractSet, Any, Optional, TYPE_CHECKING
 
 import click
 
@@ -17,6 +16,10 @@ from xcube.constants import (
 )
 from xcube.util.plugin import get_extension_registry
 
+if TYPE_CHECKING:
+    from xcube.core.store import DataStore
+    from xcube.util.jsonschema import JsonSchema, JsonObjectSchema
+
 _NO_TITLE = "<no title>"
 _NO_DESCRIPTION = "<no description>"
 _UNKNOWN_EXTENSION = "<unknown!>"
@@ -25,7 +28,7 @@ _UNKNOWN_EXTENSION = "<unknown!>"
 @click.command(name="list")
 def store_list():
     """List names of data stores."""
-    print(f"Data stores:")
+    print("Data stores:")
     count = _dump_data_stores()
     print(f"{count} data store{'s' if count != 1 else ''} found.")
 
@@ -33,7 +36,7 @@ def store_list():
 @click.command(name="list")
 def opener_list():
     """List names of data openers."""
-    print(f"Data openers:")
+    print("Data openers:")
     count = _dump_data_openers()
     print(f"{count} data opener{'s' if count != 1 else ''} found.")
 
@@ -41,7 +44,7 @@ def opener_list():
 @click.command(name="list")
 def writer_list():
     """List names of data writers."""
-    print(f"Data writers:")
+    print("Data writers:")
     count = _dump_data_writers()
     print(f"{count} data writer{'s' if count != 1 else ''} found.")
 
@@ -129,23 +132,23 @@ def store_info(
         if show_openers:
             print(json.dumps(d, indent=2))
     else:
-        print(f"\nData store description:")
+        print("\nData store description:")
         print(f"  {description or _NO_DESCRIPTION}")
         if show_params:
             print(_format_params_schema(params_schema))
         if show_openers:
-            print(f"\nData openers:")
+            print("\nData openers:")
             _dump_store_openers(data_store)
         if show_writers:
             if isinstance(data_store, MutableDataStore):
-                print(f"\nData writers:")
+                print("\nData writers:")
                 _dump_store_writers(data_store)
             else:
                 print(
                     f'No writers available, because data store "{store_id}" is not mutable.'
                 )
         if show_data_ids:
-            print(f"\nData resources:")
+            print("\nData resources:")
             count = _dump_store_data_ids(data_store)
             print(f"{count} data resource{'s' if count != 1 else ''} found.")
 
@@ -274,10 +277,10 @@ _SHORT_INCLUDE = ",".join(
     ' data resources (prefix "data.") of stores,'
     ' and variables (prefix "var.") of data resources.',
 )
-@click.option("--csv", "csv_format", is_flag=True, help=f"Use CSV output format.")
-@click.option("--yaml", "yaml_format", is_flag=True, help=f"Use YAML output format.")
+@click.option("--csv", "csv_format", is_flag=True, help="Use CSV output format.")
+@click.option("--yaml", "yaml_format", is_flag=True, help="Use YAML output format.")
 @click.option(
-    "--json", "json_format", is_flag=True, help=f"Use JSON output format (the default)."
+    "--json", "json_format", is_flag=True, help="Use JSON output format (the default)."
 )
 def dump(
     output_file_path: Optional[str],
@@ -587,7 +590,7 @@ io.add_command(dump)
 
 # noinspection PyUnresolvedReferences
 def _format_params_schema(
-    params_schema: "xcube.util.jsonschema.JsonObjectSchema",
+    params_schema: "JsonObjectSchema",
 ) -> str:
     text = []
     if params_schema.properties:
@@ -598,13 +601,13 @@ def _format_params_schema(
                 f"{param_name:>24s}  {_format_param_schema(param_schema)}"
             )
     else:
-        text.append(f"No parameters required.")
+        text.append("No parameters required.")
     return "\n".join(text)
 
 
 # noinspection PyUnresolvedReferences
 def _format_required_params_schema(
-    params_schema: "xcube.util.jsonschema.JsonObjectSchema",
+    params_schema: "JsonObjectSchema",
 ) -> str:
     text = ["Required parameters:"]
     for param_name, param_schema in params_schema.properties.items():
@@ -614,7 +617,7 @@ def _format_required_params_schema(
 
 
 # noinspection PyUnresolvedReferences
-def _format_param_schema(param_schema: "xcube.util.jsonschema.JsonSchema"):
+def _format_param_schema(param_schema: "JsonSchema"):
     from xcube.util.undefined import UNDEFINED
 
     param_info = []
@@ -662,23 +665,21 @@ def _dump_extensions(point: str) -> int:
 
 
 # noinspection PyUnresolvedReferences
-def _dump_store_openers(
-    data_store: "xcube.core.store.DataStore", data_id: str = None
-) -> int:
+def _dump_store_openers(data_store: "DataStore", data_id: str = None) -> int:
     return _dump_named_extensions(
         EXTENSION_POINT_DATA_OPENERS, data_store.get_data_opener_ids(data_id=data_id)
     )
 
 
 # noinspection PyUnresolvedReferences
-def _dump_store_writers(data_store: "xcube.core.store.DataStore") -> int:
+def _dump_store_writers(data_store: "DataStore") -> int:
     return _dump_named_extensions(
         EXTENSION_POINT_DATA_WRITERS, data_store.get_data_writer_ids()
     )
 
 
 # noinspection PyUnresolvedReferences
-def _dump_store_data_ids(data_store: "xcube.core.store.DataStore") -> int:
+def _dump_store_data_ids(data_store: "DataStore") -> int:
     count = 0
     for data_id, data_attrs in sorted(data_store.get_data_ids(include_attrs=["title"])):
         print(f"  {data_id:>32s}  {data_attrs.get('title') or _NO_TITLE}")
@@ -701,7 +702,7 @@ def _dump_named_extensions(point: str, names: Sequence[str]) -> int:
 
 
 # noinspection PyUnresolvedReferences
-def _dump_data_resources(data_store: "xcube.core.store.DataStore") -> int:
+def _dump_data_resources(data_store: "DataStore") -> int:
     count = 0
     for data_id, title in data_store.get_data_ids():
         print(f"  {data_id:<32s}  {title or _NO_TITLE}")
@@ -710,10 +711,8 @@ def _dump_data_resources(data_store: "xcube.core.store.DataStore") -> int:
 
 
 # noinspection PyUnresolvedReferences
-def _new_data_store(
-    store_id: str, store_params: list[str]
-) -> "xcube.core.store.DataStore":
-    from xcube.core.store import get_data_store_params_schema, new_data_store
+def _new_data_store(store_id: str, store_params: list[str]) -> "DataStore":
+    from xcube.core.store import new_data_store
 
     store_params_dict = dict()
     if store_params:

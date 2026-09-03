@@ -2,11 +2,11 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import dask
 import json
 import os.path
 from test.cli.helpers import CliTest
 
+import dask
 import yaml
 
 from xcube.core.dsio import rimraf

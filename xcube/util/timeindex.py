@@ -16,7 +16,7 @@ https://github.com/dcs4cop/xcube/issues/605 for more background information.
 import logging
 import warnings
 from collections.abc import Hashable
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd

@@ -2,7 +2,6 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import List
 
 import numpy as np
 import xarray as xr
@@ -23,7 +22,7 @@ def assert_cube(dataset: xr.Dataset, name=None) -> xr.Dataset:
     """
     report = verify_cube(dataset)
     if report:
-        message = f"Dataset" + (name + " " if name else " ")
+        message = "Dataset" + (name + " " if name else " ")
         message += "is not a valid xcube dataset, because:\n"
         message += "- " + ";\n- ".join(report) + "."
         raise ValueError(message)
@@ -53,11 +52,11 @@ def verify_cube(dataset: xr.Dataset) -> list[str]:
 
     xy_var_names = get_dataset_xy_var_names(dataset, must_exist=False)
     if xy_var_names is None:
-        report.append(f"missing spatial x,y coordinate variables")
+        report.append("missing spatial x,y coordinate variables")
 
     time_var_name = get_dataset_time_var_name(dataset, must_exist=False)
     if time_var_name is None:
-        report.append(f"missing time coordinate variable")
+        report.append("missing time coordinate variable")
 
     if time_var_name:
         _check_time(dataset, time_var_name, report)

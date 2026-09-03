@@ -5,15 +5,14 @@
 import logging
 import unittest
 from collections.abc import Awaitable, Sequence
+from test.server.mocks import mock_server
 from typing import Any, Callable, Optional, Union
 
 import pytest
 import tornado.httputil
 import tornado.web
 from tornado import concurrent
-from tornado.concurrent import Future
 
-from test.server.mocks import mock_server
 from xcube.server.api import (
     Api,
     ApiContextT,
@@ -288,8 +287,8 @@ class TornadoApiRequestTest(unittest.TestCase):
         )
         request = TornadoApiRequest(tr)
         with self.assertRaises(ApiError.BadRequest) as cm:
-            # noinspection PyUnusedLocal
-            result = request.json
+            # require accessing request.json property
+            _result = request.json  # noqa: F401
         self.assertEqual(
             "HTTP status 400:"
             " Body does not contain valid JSON:"

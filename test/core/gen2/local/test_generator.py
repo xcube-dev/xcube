@@ -5,7 +5,7 @@
 import copy
 import json
 import unittest
-from typing import Any, Dict
+from typing import Any
 
 import requests_mock
 import xarray as xr

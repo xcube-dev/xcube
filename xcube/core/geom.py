@@ -5,7 +5,7 @@
 import math
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import affine
 import dask.array as da
@@ -129,8 +129,8 @@ def rasterize_features(
     for v in var_props.values():
         if v and "converter" in v:
             warnings.warn(
-                f'the "converter" property of var_props'
-                f" has been deprecated and will be ignored",
+                'the "converter" property of var_props'
+                " has been deprecated and will be ignored",
                 DeprecationWarning,
             )
 

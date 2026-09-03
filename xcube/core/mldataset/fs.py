@@ -7,7 +7,7 @@ import json
 import math
 import pathlib
 import warnings
-from collections.abc import Mapping, Sequence, MutableMapping
+from collections.abc import Mapping, MutableMapping, Sequence
 from functools import cached_property
 from typing import Any, Optional, Union
 
@@ -19,7 +19,6 @@ from zarr.storage import FsspecStore
 
 # noinspection PyUnresolvedReferences
 import xcube.core.zarrstore  # noqa: F401
-
 from xcube.core.gridmapping import GridMapping
 from xcube.core.subsampling import AggMethod, AggMethods
 from xcube.util.assertions import assert_instance

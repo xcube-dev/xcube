@@ -29,8 +29,10 @@ jobs:
         run: |
           pixi info
           pixi list
-      - name: Run unit tests
-        run: pixi run -x pytest --cov=xcube --cov-report=xml
+      - name: Run code checks
+        run: pixi run checks
+      - name: Run unit tests with coverage
+        run: pixi run coverage-ci
       - uses: codecov/codecov-action@v4
         with:
           verbose: true # optional (default = false)

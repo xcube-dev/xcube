@@ -4,7 +4,6 @@
 
 import unittest
 from fractions import Fraction
-from typing import List
 
 import click
 import click.testing

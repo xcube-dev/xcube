@@ -4,7 +4,7 @@
 
 import warnings
 from collections.abc import Hashable, MutableMapping
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pyproj

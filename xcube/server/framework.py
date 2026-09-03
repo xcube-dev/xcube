@@ -4,7 +4,7 @@
 
 import abc
 from collections.abc import Sequence
-from typing import List, Optional, Tuple, Type
+from typing import Optional
 
 from xcube.constants import EXTENSION_POINT_SERVER_FRAMEWORKS
 from xcube.util.extension import get_extension_registry

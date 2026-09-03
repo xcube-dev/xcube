@@ -46,7 +46,7 @@ class ServiceTest(unittest.TestCase):
             server_path = os.path.join(PARENT_DIR, "server.py")
             print(f"Tests in {__file__} ignored,")
             print(f"test server at {SERVER_URL} is not running.")
-            print(f"You can start the test server using:")
+            print("You can start the test server using:")
             print(f"$ {sys.executable} {server_path}")
 
     def test_service_byoa_inline_code(self):
@@ -192,7 +192,7 @@ class ServiceTest(unittest.TestCase):
             print("Status code:\n", e.status_code, flush=True)
             print("Remote output:\n", e.remote_output, flush=True)
             print("Remote traceback:\n", e.remote_traceback, flush=True)
-            self.fail(f"CubeGeneratorError: get_cube_info() failed")
+            self.fail("CubeGeneratorError: get_cube_info() failed")
 
         try:
             result = service.generate_cube(request_dict)
@@ -207,7 +207,7 @@ class ServiceTest(unittest.TestCase):
             print("Status code:\n", e.status_code, flush=True)
             print("Remote output:\n", e.remote_output, flush=True)
             print("Remote traceback:\n", e.remote_traceback, flush=True)
-            self.fail(f"CubeGeneratorError: generate_cube() failed")
+            self.fail("CubeGeneratorError: generate_cube() failed")
 
     def test_service_simple_copy(self):
         """

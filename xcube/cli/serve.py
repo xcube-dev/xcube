@@ -4,7 +4,7 @@
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import click
 
@@ -129,7 +129,7 @@ assets_to_show_choices.extend([a + ".json" for a in assets_to_show])
     "--open-viewer",
     "open_viewer",
     is_flag=True,
-    help=f"After starting the server, open xcube Viewer in a browser tab.",
+    help="After starting the server, open xcube Viewer in a browser tab.",
 )
 @cli_option_quiet
 @cli_option_verbosity

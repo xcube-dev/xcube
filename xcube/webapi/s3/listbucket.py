@@ -7,7 +7,7 @@ import datetime
 import hashlib
 import time
 from collections.abc import Mapping
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from xcube.util.assertions import assert_instance
 
