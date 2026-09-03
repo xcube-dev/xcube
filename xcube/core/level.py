@@ -4,7 +4,7 @@
 
 import os
 from collections.abc import Sequence
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Optional
 
 import xarray as xr
 from deprecated import deprecated

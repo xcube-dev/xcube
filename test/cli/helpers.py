@@ -4,7 +4,7 @@
 
 import unittest
 from abc import ABCMeta
-from typing import Dict, List, Optional
+from typing import Optional
 
 import click
 import click.testing

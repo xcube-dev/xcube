@@ -4,7 +4,7 @@
 
 import ast
 import warnings
-from typing import Any, Dict
+from typing import Any
 
 
 def compute_array_expr(

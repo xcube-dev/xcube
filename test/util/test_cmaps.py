@@ -2,15 +2,15 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import os
-from unittest import TestCase
-import numpy.testing as nt
-
 import base64
+import os
 from io import BytesIO
+from unittest import TestCase
+
 import matplotlib.colors
-from PIL import Image
 import numpy as np
+import numpy.testing as nt
+from PIL import Image
 
 from xcube.util.cmaps import (
     CUSTOM_CATEGORY,

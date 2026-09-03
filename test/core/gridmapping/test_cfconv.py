@@ -5,7 +5,6 @@
 import shutil
 import unittest
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
-from typing import Set
 
 import fsspec
 import numpy as np

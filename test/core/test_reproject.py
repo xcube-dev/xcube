@@ -7,8 +7,8 @@ from test.sampledata import create_highroc_dataset
 
 import numpy as np
 
-# noinspection PyUnresolvedReferences
-from matplotlib import pyplot as plt
+# Import for side effects used by tests
+from matplotlib import pyplot as plt  # noqa: F401
 from numpy.testing import assert_array_almost_equal
 
 from xcube.core.reproject import reproject_xy_to_wgs84

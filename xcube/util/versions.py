@@ -3,7 +3,6 @@
 # https://opensource.org/licenses/MIT.
 
 import sys
-from typing import Dict, List
 
 DEFAULT_DEPENDENCY_NAMES = [
     "affine",
@@ -120,7 +119,7 @@ def get_versions(
                 dependencies_dict[module_key.split(".version")[0]] = module_version(
                     module
                 )
-            except BaseException as e:
+            except BaseException:
                 dependencies_dict[module_key.split(".version")[0]] = "installed"
 
     return dependencies_dict

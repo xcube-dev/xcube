@@ -169,7 +169,7 @@ def compute_dataset(
                 assert_cube(cube)
             if cube != input_cubes[0]:
                 # noinspection PyUnusedLocal
-                other_schema = CubeSchema.new(cube)
+                CubeSchema.new(cube)
                 # TODO (forman): broadcast all cubes to same shape, rechunk to same chunks
     elif input_cube_schema is None:
         raise ValueError("input_cube_schema must be given")

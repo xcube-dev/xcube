@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Sequence
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from xcube.util.undefined import UNDEFINED
 

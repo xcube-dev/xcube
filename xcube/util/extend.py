@@ -5,7 +5,7 @@
 import inspect
 import threading
 from collections.abc import Mapping, Sequence
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 from xcube.util.assertions import assert_true
 

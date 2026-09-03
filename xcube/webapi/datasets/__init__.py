@@ -12,3 +12,14 @@ from .routes import (
     QUERY_PARAM_VMIN,
     api,
 )
+
+__all__ = [
+    "PATH_PARAM_DATASET_ID",
+    "PATH_PARAM_VAR_NAME",
+    "QUERY_PARAM_CMAP",
+    "QUERY_PARAM_CRS",
+    "QUERY_PARAM_NORM",
+    "QUERY_PARAM_VMAX",
+    "QUERY_PARAM_VMIN",
+    "api",
+]

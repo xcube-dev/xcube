@@ -2,9 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import warnings
 from collections.abc import Sequence
-from typing import Any, Dict
+from typing import Any
 
 import click
 
@@ -246,4 +245,4 @@ def _resample_in_time(
         if not dry_run:
             write_cube(agg_ds, output_path, output_format, cube_asserted=True)
 
-        monitor(f"Done.")
+        monitor("Done.")

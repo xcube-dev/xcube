@@ -170,7 +170,7 @@ class PyramidTest(unittest.TestCase):
                 link_input=link_input,
             )
 
-            print(f"write time total: ", time.perf_counter() - t0)
+            print("write time total: ", time.perf_counter() - t0)
 
             self._assert_levels_ok(
                 levels, expected_num_levels, expected_shapes, expected_chunks
@@ -180,7 +180,7 @@ class PyramidTest(unittest.TestCase):
 
             levels = read_levels(output_path)
 
-            print(f"read time total: ", time.perf_counter() - t0)
+            print("read time total: ", time.perf_counter() - t0)
 
             self._assert_levels_ok(
                 levels, expected_num_levels, expected_shapes, expected_chunks

@@ -2,7 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from importlib.metadata import PackageNotFoundError, version as get_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as get_version
 
 try:
     # xcube on conda-forge and editable pip installs
@@ -15,8 +16,8 @@ except PackageNotFoundError:
     except PackageNotFoundError:
         # If neither distribution package is installed, look for the
         # project file relative to this source file.
-        from pathlib import Path
         import tomllib
+        from pathlib import Path
 
         with open(Path(__file__).parent.parent / "pyproject.toml", "rb") as f:
             version = tomllib.load(f)["project"]["version"]

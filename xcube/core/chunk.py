@@ -4,7 +4,6 @@
 
 import itertools
 from collections.abc import Iterable, Iterator
-from typing import Dict, Tuple
 
 import numpy as np
 import xarray as xr

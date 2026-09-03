@@ -4,3 +4,10 @@
 
 from .generic import GenericArray, GenericArrayLike, GenericZarrStore
 from .holder import ZarrStoreHolder
+
+__all__ = [
+    "GenericArray",
+    "GenericArrayLike",
+    "GenericZarrStore",
+    "ZarrStoreHolder",
+]

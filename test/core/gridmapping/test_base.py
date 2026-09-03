@@ -504,11 +504,11 @@ class GridMappingTest(SourceDatasetMixin, unittest.TestCase):
         # different from locally or with GitHub Unit testing. Therefore, this
         # workaround.
         expected_geospatial_bounds = (
-            f"POLYGON((19.73859219445214 56.011953311099965, "
-            f"19.73859219445214 57.96226854502516, "
-            f"24.490858156706885 57.96226854502516, "
-            f"24.490858156706885 56.011953311099965, "
-            f"19.73859219445214 56.011953311099965))"
+            "POLYGON((19.73859219445214 56.011953311099965, "
+            "19.73859219445214 57.96226854502516, "
+            "24.490858156706885 57.96226854502516, "
+            "24.490858156706885 56.011953311099965, "
+            "19.73859219445214 56.011953311099965))"
         )
 
         expected_polygon = shapely.wkt.loads(expected_geospatial_bounds)

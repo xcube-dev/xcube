@@ -5,7 +5,7 @@
 import os
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Sequence
-from typing import Any, Generic, List, Tuple, Type, TypeVar, Union
+from typing import Any, Generic, TypeVar, Union
 
 import geopandas
 import xarray

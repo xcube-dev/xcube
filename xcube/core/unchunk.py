@@ -5,7 +5,6 @@
 import json
 import os.path
 from collections.abc import Sequence
-from typing import List
 
 import numpy as np
 import xarray as xr

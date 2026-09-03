@@ -2,7 +2,6 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import traceback
 
 from xcube.core.normalize import DatasetIsNotACubeError, decode_cube
 from xcube.core.store import (

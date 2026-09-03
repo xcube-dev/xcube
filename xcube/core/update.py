@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import datetime
-from typing import Any, Dict
+from typing import Any
 
 import xarray as xr
 

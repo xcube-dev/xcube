@@ -4,7 +4,7 @@
 
 import collections.abc
 from collections.abc import Iterator
-from typing import Dict, Set, Union
+from typing import Union
 
 import xarray as xr
 

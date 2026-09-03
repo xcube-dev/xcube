@@ -25,7 +25,7 @@ DEFAULT_FORMAT = YAML_FORMAT
     f"If not given, derived from OUTPUT name extension.",
 )
 @click.option(
-    "--output", "-o", "output_path", metavar="OUTPUT", help=f"Output file path."
+    "--output", "-o", "output_path", metavar="OUTPUT", help="Output file path."
 )
 def versions(format_name: Optional[str], output_path: Optional[str]):
     """

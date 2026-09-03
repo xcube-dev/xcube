@@ -18,7 +18,7 @@ import json
 import os
 import os.path
 import subprocess
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 import click
 import flask

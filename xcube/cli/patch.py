@@ -4,7 +4,7 @@
 
 import warnings
 from collections.abc import MutableMapping
-from typing import Any, Dict
+from typing import Any
 
 import click
 

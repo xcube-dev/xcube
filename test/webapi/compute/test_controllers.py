@@ -4,7 +4,7 @@
 
 
 import unittest
-from typing import Any, List
+from typing import Any
 
 from xcube.webapi.compute.controllers import (
     get_compute_operation,
