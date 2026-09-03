@@ -15087,7 +15087,7 @@ packages:
   - cftime>=1.6.3
   - click>=8.2.0
   - cmocean>=2.0
-  - chartlets>=0.1.3
+  - chartlets>=0.2.1
   - cryptography
   - dask>=2024.8
   - dask-image>=0.6
