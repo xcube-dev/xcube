@@ -1,6 +1,6 @@
 [project]
 name = "xcube" # PYPI RENAME THIS LINE (do not remove this comment, see #1010)
-version = "1.14.0"
+version = "1.14.1.dev0"
 dynamic = ["readme"]
 authors = [
   {name = "xcube Development Team"}
