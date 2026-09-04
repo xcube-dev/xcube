@@ -1,4 +1,4 @@
-## Changes in 1.14.0 (in development)
+## Changes in 1.14.0
 
 ### Enhancements
 
@@ -29,7 +29,6 @@
   - The two `xcube serve` demos can also now be run with pixi:
     - run xcube Server only: `pixi run server-demo`, `pixi run server-panels-demo`
     - run xcube server and open Viewer in browser tab: `pixi run viewer-demo`, `pixi run viewer-panels-demo`  
-    -  
 * Removed most Zarr store implementations from `xcube.core.zarrstore`, retaining only
   `GenericZarrStore`. `GenericZarrStore` provides a flat `MutableMapping` view of a 
   Zarr store, making it independent of any specific Zarr store implementation. 
