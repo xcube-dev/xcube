@@ -376,7 +376,7 @@ you need to adjust the paths accordingly.
 * Check issues in progress, close any open issues that have been fixed.
 * Make sure that all unit tests pass and that test coverage is 100% 
   (or as near to 100% as practicable).
-* In `xcube/version.py` remove the `.dev` suffix from version name.
+* In `pyproject.toml` remove the `.dev` suffix from version name.
 * Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
   from the last version headline.
 * Push changes to either main or a new maintenance branch (see above).
@@ -389,7 +389,7 @@ you need to adjust the paths accordingly.
   - Press "Publish release" button
 * After the release on GitHub, rebase sources, if the branch was `main`, 
   create a new maintenance branch (see above)
-* In `xcube/version.py` increase version number and append a `.dev0` suffix 
+* In `pyproject.toml` increase version number and append a `.dev0` suffix 
   to the version name so that it is still PEP-440 compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)`
   to it.
