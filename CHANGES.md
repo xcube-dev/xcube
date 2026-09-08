@@ -1,4 +1,8 @@
-## Changes in 1.14.1 (in development)
+## Changes in 1.14.1 
+
+### Fixes
+
+* Fixed Docker build workflow. (#1254)
 
 ## Changes in 1.14.0
 
