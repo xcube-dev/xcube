@@ -1,4 +1,4 @@
-ARG MICROMAMBA_VERSION=1.3.1
+ARG MICROMAMBA_VERSION=2.9.0
 
 # Export the locked default Pixi environment for the Micromamba runtime image.
 FROM ghcr.io/prefix-dev/pixi:0.77.1 AS pixi-export

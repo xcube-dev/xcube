@@ -2,7 +2,7 @@
 
 ### Fixes
 
-* Fixed Docker build workflow. (#1254)
+* Fixed Docker build workflow. (#1254, #1258)
 
 ## Changes in 1.14.0
 
