@@ -160,7 +160,9 @@ class ViewerStateHandler(ApiHandler[ViewerContext]):
 class ViewerExtHandler(ApiHandler[ViewerContext]):
     def do_get_contributions(self):
         if self.ctx.ext_ctx is None:
-            self._write_no_ext_status()
+            self._write_response(
+                ExtResponse.success({"extensions": [], "contributions": {}})
+            )
         else:
             self._write_response(get_contributions(self.ctx.ext_ctx))
 
