@@ -121,6 +121,7 @@ def _compute_ml_dataset_tile(
             non_spatial_labels=args,
             format=format,
             trace_perf=trace_perf,
+            nearest_index_cache=ctx.datasets_ctx.get_nearest_index_cache(ds_id),
         )
     except TileNotFoundException as e:
         raise ApiError.NotFound(f"{e}") from e

@@ -6,6 +6,8 @@ import unittest
 from test.webapi.helpers import get_api_ctx
 from typing import Union
 
+import xarray as xr
+
 from xcube.constants import CRS84
 from xcube.server.api import ApiError, ServerConfig
 from xcube.webapi.tiles.context import TilesContext
@@ -19,6 +21,25 @@ def get_tiles_ctx(
 
 
 class TilesControllerTest(unittest.TestCase):
+    def test_compute_tile_with_duplicate_times(self):
+        ctx = get_tiles_ctx()
+        first = ctx.datasets_ctx.get_dataset("demo").isel(time=slice(0, 1))
+        other = first.copy()
+        other["conc_tsm"] = first.conc_tsm + 100
+        duplicate = xr.concat([first, other], dim="time")
+        ctx.datasets_ctx.add_dataset(first, ds_id="reference")
+        ctx.datasets_ctx.add_dataset(duplicate, ds_id="duplicate")
+
+        def render(ds_id, params):
+            return compute_ml_dataset_tile(
+                ctx, ds_id, "conc_tsm", CRS84, "0", "0", "0", params
+            )
+
+        expected = render("reference", {})
+        for params in ({}, {"time": "first"}, {"time": "current"}):
+            with self.subTest(params=params):
+                self.assertEqual(expected, render("duplicate", params))
+
     def test_compute_ml_dataset_tile(self):
         ctx = get_tiles_ctx()
         tile = compute_ml_dataset_tile(

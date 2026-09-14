@@ -7,11 +7,12 @@ import unittest
 from collections.abc import Mapping
 from test.webapi.helpers import get_api_ctx, get_server
 from typing import Any, Union
+from unittest.mock import patch
 
 import pytest
 import xarray as xr
 
-from xcube.core.mldataset import MultiLevelDataset
+from xcube.core.mldataset import BaseMultiLevelDataset, MultiLevelDataset
 from xcube.server.api import ApiError, Context
 from xcube.webapi.datasets.context import DatasetsContext
 
@@ -23,6 +24,52 @@ def get_datasets_ctx(
 
 
 class DatasetsContextTest(unittest.TestCase):
+    def test_duplicate_coordinate_warning_on_first_open(self):
+        ctx = get_datasets_ctx()
+        source = ctx.get_dataset("demo").isel(time=[0, 0])
+        # Include a spatial duplicate and a variable not using time.
+        source = source.assign_coords(lat=source.lat.values * 0)
+        source["static"] = source.conc_tsm.isel(time=0, drop=True)
+        ml_ds = BaseMultiLevelDataset(
+            source,
+            ds_id="demo-1w",
+            grid_mapping=ctx.get_ml_dataset("demo").grid_mapping,
+        )
+        with patch.object(ctx, "_open_ml_dataset", return_value=ml_ds) as opener:
+            with self.assertLogs("xcube", level="WARNING") as logs:
+                ctx.get_ml_dataset("demo-1w")
+                ctx.get_ml_dataset("demo-1w")
+            opener.assert_called_once()
+        self.assertEqual(2, len(logs.output))
+        time_warning = next(message for message in logs.output if "'time'" in message)
+        self.assertIn("Dataset 'demo-1w'", time_warning)
+        self.assertIn("conc_chl", time_warning)
+        self.assertIn("conc_tsm", time_warning)
+        self.assertNotIn("static", time_warning)
+        spatial_warning = next(message for message in logs.output if "'lat'" in message)
+        self.assertIn("static", spatial_warning)
+
+    def test_unique_coordinates_do_not_warn(self):
+        ctx = get_datasets_ctx()
+        with self.assertNoLogs("xcube", level="WARNING"):
+            ctx.get_dataset("demo")
+
+    def test_nearest_index_cache_lifecycle(self):
+        ctx = get_datasets_ctx()
+        cache = ctx.get_nearest_index_cache("demo")
+        self.assertIs(cache, ctx.get_nearest_index_cache("demo"))
+        source = ctx.get_dataset("demo")
+        ctx.add_dataset(source, ds_id="demo")
+        added_cache = ctx.get_nearest_index_cache("demo")
+        self.assertIsNot(cache, added_cache)
+        ctx.set_ml_dataset(BaseMultiLevelDataset(source, ds_id="demo"))
+        self.assertIsNot(added_cache, ctx.get_nearest_index_cache("demo"))
+        ctx.remove_dataset("demo")
+        self.assertNotIn("demo", ctx._nearest_index_caches)
+        ctx.add_dataset(source, ds_id="demo")
+        ctx.on_dispose()
+        self.assertFalse(ctx._nearest_index_caches)
+
     def test_ctx_ok(self):
         ctx = get_datasets_ctx()
         self.assertIsInstance(ctx.server_ctx, Context)

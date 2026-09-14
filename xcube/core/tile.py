@@ -22,6 +22,7 @@ from xcube.util.assertions import assert_in, assert_instance, assert_true
 from xcube.util.cmaps import DEFAULT_CMAP_NAME, ColormapProvider
 from xcube.util.perf import measure_time_cm
 from xcube.util.projcache import ProjCache
+from xcube.util.selection import NearestIndexCache, select_nearest
 from xcube.util.timeindex import ensure_time_label_compatible
 from xcube.util.types import Pair, ScalarOrPair, normalize_scalar_or_pair
 
@@ -49,6 +50,7 @@ def compute_tiles(
     trace_perf: bool = False,
     # Deprecated
     variable_names: Optional[Union[str, Sequence[str]]] = None,
+    nearest_index_cache: NearestIndexCache | None = None,
 ) -> Optional[Union[list[np.ndarray], xr.Dataset]]:
     """Compute tiles for given *var_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -97,6 +99,8 @@ def compute_tiles(
         trace_perf: If set, detailed performance
             metrics are logged using the level of the "xcube" logger.
         variable_names: Deprecated. Same as *var_names.
+        nearest_index_cache: Optional dataset-scoped cache for nearest-label
+            lookups on non-spatial coordinates.
 
     Returns:
         A list of numpy.ndarray instances according to variables
@@ -128,7 +132,12 @@ def compute_tiles(
     with measure_time("Preparing 2D subset"):
         variables = [
             _get_variable(
-                ml_dataset.ds_id, dataset, var_name, non_spatial_labels, logger
+                ml_dataset.ds_id,
+                dataset,
+                var_name,
+                non_spatial_labels,
+                logger,
+                nearest_index_cache,
             )
             for var_name in var_names
         ]
@@ -368,6 +377,7 @@ def compute_rgba_tile(
     format: str = DEFAULT_FORMAT,
     tile_enlargement: int = DEFAULT_TILE_ENLARGEMENT,
     trace_perf: bool = False,
+    nearest_index_cache: NearestIndexCache | None = None,
 ) -> Union[bytes, np.ndarray]:
     """Compute an RGBA image tile from *variable_names* in
     given multi-resolution dataset *mr_dataset*.
@@ -432,6 +442,8 @@ def compute_rgba_tile(
         format: Either 'png', 'image/png' or 'numpy'.
         trace_perf: If set, detailed performance metrics are logged
             using the level of the "xcube" logger.
+        nearest_index_cache: Optional dataset-scoped cache for nearest-label
+            lookups on non-spatial coordinates.
 
     Returns:
         PNG bytes or unit8 numpy array, depending on *format*
@@ -491,6 +503,7 @@ def compute_rgba_tile(
         non_spatial_labels=non_spatial_labels,
         tile_enlargement=tile_enlargement,
         trace_perf=trace_perf,
+        nearest_index_cache=nearest_index_cache,
     )
 
     if var_tiles is None:
@@ -612,6 +625,7 @@ def _get_variable(
     var_name_or_assign: str,
     non_spatial_labels: dict[str, Any],
     logger: logging.Logger,
+    nearest_index_cache: NearestIndexCache | None = None,
 ):
     var_name, var_expr = split_var_assignment(var_name_or_assign)
     if var_expr:
@@ -639,7 +653,9 @@ def _get_variable(
         non_spatial_labels_safe = ensure_time_label_compatible(
             variable, non_spatial_labels
         )
-        variable = variable.sel(**non_spatial_labels_safe, method="nearest")
+        variable = select_nearest(
+            variable, non_spatial_labels_safe, nearest_index_cache
+        )
     return variable
 
 

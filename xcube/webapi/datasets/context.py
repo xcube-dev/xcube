@@ -47,6 +47,7 @@ from xcube.util.cmaps import (
     create_colormap_from_config,
     load_custom_colormap,
 )
+from xcube.util.selection import NearestIndexCache
 from xcube.webapi.common.context import ResourcesContext
 from xcube.webapi.places import PlacesContext
 
@@ -82,6 +83,7 @@ class DatasetsContext(ResourcesContext):
         # cache for all dataset configs
         # contains tuples of form (MultiLevelDataset, dataset_config)
         self._dataset_cache = dict()
+        self._nearest_index_caches: dict[str, NearestIndexCache] = {}
         (
             self._data_store_pool,
             self._dataset_configs,
@@ -102,6 +104,7 @@ class DatasetsContext(ResourcesContext):
             # Clear all caches
             if self._dataset_cache:
                 self._dataset_cache.clear()
+            self._nearest_index_caches.clear()
             if self._data_store_pool:
                 self._data_store_pool.remove_all_store_configs()
             self._dataset_configs = None
@@ -169,6 +172,12 @@ class DatasetsContext(ResourcesContext):
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset
 
+    def get_nearest_index_cache(self, ds_id: str) -> NearestIndexCache:
+        """Return the lookup cache belonging to the currently opened dataset."""
+        with self.rlock:
+            self._get_dataset_entry(ds_id)
+            return self._nearest_index_caches[ds_id]
+
     def set_ml_dataset(self, ml_dataset: MultiLevelDataset):
         self._set_dataset_entry(
             (ml_dataset, _new_dataset_config(Identifier=ml_dataset.ds_id, Hidden=True))
@@ -214,7 +223,7 @@ class DatasetsContext(ResourcesContext):
             style = style or ds_id
             dataset_config.update(dict(Style=style))
             self._cm_styles[style] = color_mappings
-        self._dataset_cache[ds_id] = ml_dataset, dataset_config
+        self._set_dataset_entry((ml_dataset, dataset_config))
         self._dataset_configs.append(dataset_config)
         return ds_id
 
@@ -223,6 +232,7 @@ class DatasetsContext(ResourcesContext):
         assert_given(ds_id, "ds_id")
         if ds_id in self._dataset_cache:
             del self._dataset_cache[ds_id]
+        self._nearest_index_caches.pop(ds_id, None)
         self._dataset_configs = [
             dc for dc in self._dataset_configs if dc["Identifier"] != ds_id
         ]
@@ -626,14 +636,35 @@ class DatasetsContext(ResourcesContext):
     def _get_dataset_entry(self, ds_id: str) -> tuple[MultiLevelDataset, ServerConfig]:
         if ds_id not in self._dataset_cache:
             with self.rlock:
-                self._set_dataset_entry(self._create_dataset_entry(ds_id))
+                if ds_id not in self._dataset_cache:
+                    self._set_dataset_entry(self._create_dataset_entry(ds_id))
         return self._dataset_cache[ds_id]
 
     def _set_dataset_entry(
         self, dataset_entry: tuple[MultiLevelDataset, DatasetConfig]
     ):
         ml_dataset, dataset_config = dataset_entry
-        self._dataset_cache[ml_dataset.ds_id] = ml_dataset, dataset_config
+        with self.rlock:
+            ds_id = ml_dataset.ds_id
+            dataset = ml_dataset.base_dataset
+            indexes = dataset.indexes
+            for dim in dataset.dims:
+                index = indexes.get(dim)
+                if index is not None and not index.is_unique:
+                    variables = [
+                        str(name)
+                        for name, variable in dataset.data_vars.items()
+                        if dim in variable.dims
+                    ]
+                    LOG.warning(
+                        "Dataset %r: coordinate for dimension %r contains duplicate "
+                        "values; used by variables: %s",
+                        ds_id,
+                        dim,
+                        ", ".join(variables) or "(none)",
+                    )
+            self._nearest_index_caches[ds_id] = NearestIndexCache()
+            self._dataset_cache[ds_id] = ml_dataset, dataset_config
 
     def _create_dataset_entry(
         self, ds_id: str

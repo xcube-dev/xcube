@@ -3,6 +3,10 @@
 ### Fixes
 
 * Fixed Docker build workflow. (#1254, #1258)
+* Fixed tile rendering failures in `xcube serve` for duplicate non-spatial
+  coordinate values. Nearest-label selection now uses the first duplicate
+  occurrence and caches lookups per dataset. When datasets are first opened,
+  warnings identify duplicate dimension coordinates and the affected variables.
 
 ## Changes in 1.14.0
 
