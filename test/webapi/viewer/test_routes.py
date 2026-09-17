@@ -141,7 +141,10 @@ class ViewerExtRoutesWithDefaultConfigTest(RoutesTestCase):
 
     def test_viewer_ext_contributions(self):
         response = self.fetch("/viewer/ext/contributions")
-        self.assertResourceNotFoundResponse(response)
+        self.assertResponseOK(response)
+        self.assertEqual(
+            {"result": {"extensions": [], "contributions": {}}}, response.json()
+        )
 
     def test_viewer_ext_layout(self):
         response = self.fetch(
