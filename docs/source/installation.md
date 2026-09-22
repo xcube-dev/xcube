@@ -89,37 +89,95 @@ in `.cov-report/`:
 pixi run coverage
 ```
 
-## Docker
+## Docker images
 
-To start a demo using docker use the following commands
+The xcube repository contains a Dockerfile which can be used to build a
+Docker image of xcube. A pre-built Docker image is also published for each
+release.
+
+### Pulling pre-built xcube Docker images
+
+xcube Docker images are published at `quay.io/xcube` and tagged with the
+version number, prefixed with `v`. So, for instance, you can pull an image
+for version 1.14.1 of xcube with this command:
 
 ```bash
-docker build -t [your name] .
-docker run [your name]
-docker run -d -p [host port]:8080 [your name]
+docker pull quay.io/bcdev/xcube:v1.14.1
 ```
-    
-Example 1:
+
+### Building your own xcube Docker images
+
+You can build an xcube Docker image from the repository. This can be useful
+if you require an image with customizations not available in the published
+release images. To build and tag a new xcube image, clone the git repository
+and execute the following command in the root directory of the repository:
 
 ```bash
-docker build -t xcube:0.10.0 .
-docker run xcube:0.10.0
+docker build -t [identifier] .
 ```
 
-This will create the docker container and list the functionality of the 
-`xcube` cli.
-
-Example 2:
+The format of the identifier is `[registry/][repository][:tag]`.
+The registry, repository, and tag can be freely chosen, and the registry and
+tag can be omitted. For example:
 
 ```bash
-docker build -t xcube:0.10.0 .
-docker run -d -p 8001:8080 xcube:0.10.0 "xcube serve -v --address 0.0.0.0 --port 8080 -c /home/xcube/examples/serve/demo/config.yml"
+docker build -t xcube-custom:1.13.3 .
+```
+
+### Running xcube from a Docker image
+
+To run the default command in a Docker image, use this command:
+
+```bash
+docker run [identifier]
+```
+
+For example, to use version 1.14.1 of the published xcube Docker image:
+
+```bash
+docker run quay.io/bcdev/xcube:v1.14.1
+```
+
+The default command in the published images is `xcube --help`, so running
+this command will simply output the help message for the `xcube` CLI command.
+
+For a more interesting demonstration, you can build a customized image and
+use it to run a local xcube server with some example datasets. In the
+root directory of the xcube git repository, run the following command.
+
+```bash
+echo 'COPY --chown=$MAMBA_USER:$MAMBA_USER examples' \
+     '/home/$MAMBA_USER/examples' >>Dockerfile
+```
+
+The command above adds a line to the Dockerfile which copies some example
+configurations and data into the container image during the build process.
+Now build your customized image:
+
+```bash
+docker build -t xcube-custom:1 .
+```
+
+Now you have a local xcube Docker image which you can run as a server:
+
+```bash
+docker run -d -p 8080:8080 xcube-custom:1 xcube serve -v --address 0.0.0.0 \
+       -c /home/xcube/examples/serve/demo/config.yml
+```
+
+This will start an xcube server in the background. You can see details of the
+running process like this:
+
+```bash
 docker ps
 ```
 
-This will start a service in the background which can be accessed 
-through port 8001, as the startup of a service is configured as default
-behaviour.
+Now you can use a web browser to interact with the xcube server:
+
+-   <http://localhost:8080/viewer/> to explore the example datasets using
+    xcube's web viewer
+-   <http://localhost:8080/openapi.html> to explore the xcube server's
+    REST APIs from its OpenAPI page
 
 ## Installing soft dependencies
 
