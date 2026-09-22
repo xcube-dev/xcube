@@ -1,3 +1,7 @@
+## Changes in 1.14.2 (in progress)
+
+* Update Docker image documentation (#1260)
+
 ## Changes in 1.14.1 
 
 ### Fixes
