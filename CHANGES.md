@@ -1,7 +1,9 @@
 ## Changes in 1.14.2 (in progress)
 
 * Update Docker image documentation (#1260)
-
+* Added validation of allowed query parameters for static routes and 
+  configured allowed query parameters for route `/viewer`. (#1225)
+  
 ## Changes in 1.14.1 
 
 ### Fixes

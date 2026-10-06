@@ -182,7 +182,11 @@ class Api(Generic[ServerContextT]):
         return self._optional_apis
 
     def static_route(
-        self, path: str, default_filename: Optional[str] = None, **openapi_metadata
+        self,
+        path: str,
+        default_filename: Optional[str] = None,
+        allowed_query_params: Optional[Sequence[str]] = None,
+        **openapi_metadata,
     ):
         """Decorator that adds static route to this API.
 
@@ -194,6 +198,9 @@ class Api(Generic[ServerContextT]):
             path: The route path.
             default_filename: Optional default filename, e.g.,
                 "index.html".
+            allowed_query_params: Optional names of query parameters allowed
+                for this static route. If given, other query parameters should
+                be rejected by web framework implementations.
             **openapi_metadata: Optional OpenAPI GET operation metadata.
         """
 
@@ -206,6 +213,7 @@ class Api(Generic[ServerContextT]):
                         str(root_path),
                         api_name=self.name,
                         default_filename=default_filename,
+                        allowed_query_params=allowed_query_params,
                         openapi_metadata=openapi_metadata,
                     )
                 )
@@ -821,6 +829,9 @@ class ApiStaticRoute:
         default_filename: Optional default filename, e.g., "index.html".
         api_name: Optional name of the API to which this route belongs
             to.
+        allowed_query_params: Optional names of query parameters allowed
+            for this static route. If given, other query parameters should
+            be rejected by web framework implementations.
         openapi_metadata: Optional OpenAPI operation metadata.
     """
 
@@ -830,6 +841,7 @@ class ApiStaticRoute:
         dir_path: str,
         default_filename: Optional[str] = None,
         api_name: Optional[str] = None,
+        allowed_query_params: Optional[Sequence[str]] = None,
         openapi_metadata: Optional[dict[str, Any]] = None,
     ):
         assert_instance(path, str, name="path")
@@ -839,11 +851,17 @@ class ApiStaticRoute:
         )
         assert_instance(default_filename, (type(None), str), name="default_filename")
         assert_instance(api_name, (type(None), str), name="api_name")
+        if allowed_query_params is not None:
+            assert_true(
+                all(isinstance(param, str) for param in allowed_query_params),
+                message="allowed_query_params must contain strings",
+            )
         assert_instance(openapi_metadata, (type(None), dict), name="openapi_metadata")
         self.path = path
         self.dir_path = dir_path
         self.default_filename = default_filename
         self.api_name = api_name
+        self.allowed_query_params = tuple(allowed_query_params or ())
         self.openapi_metadata = openapi_metadata
 
 
