@@ -40,7 +40,7 @@ class TimeSliceTest(unittest.TestCase):
 
     def write_cube(self, start_date, num_days: int):
         cube = self.make_cube(start_date, num_days)
-        cube.to_zarr(self.CUBE_PATH)
+        cube.to_zarr(self.CUBE_PATH, zarr_version=2)
 
     @staticmethod
     def make_cube(start_date, num_days: int) -> xr.Dataset:
@@ -212,7 +212,7 @@ class TimeSliceTest(unittest.TestCase):
             dims=new_dims,
             coords=cube.precipitation.coords,
         )
-        cube.to_zarr(self.CUBE_PATH_2)
+        cube.to_zarr(self.CUBE_PATH_2, zarr_version=2)
 
         with self.assertRaises(ValueError) as cm:
             insert_time_slice(self.CUBE_PATH_2, 2, self.make_slice("2019-01-02T06:30"))
@@ -238,14 +238,10 @@ class ZarrStoreTest(unittest.TestCase):
             variables=dict(precipitation=0.1, temperature=270.5, soil_moisture=0.2),
         )
         cube = chunk_dataset(cube, dict(time=1, lat=90, lon=90), format_name="zarr")
-        cube.to_zarr(self.CUBE_PATH)
+        cube.to_zarr(self.CUBE_PATH, zarr_version=2)
         cube.close()
 
-        diagnostic_store = DiagnosticStore(
-            zarr.DirectoryStore(self.CUBE_PATH),
-            logging_observer(log_path="local-cube.log"),
-        )
-        xr.open_zarr(diagnostic_store)
+        xr.open_zarr(zarr.storage.LocalStore(self.CUBE_PATH))
 
     @unittest.skipUnless(False, "is enabled")
     def test_remote(self):

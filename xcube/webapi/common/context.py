@@ -4,7 +4,7 @@
 
 import threading
 from collections.abc import Iterator, Mapping
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import fsspec
 

@@ -2,7 +2,6 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import json
 import unittest
 from typing import Optional
 
@@ -232,7 +231,7 @@ class ServerTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             Server(MockFramework(), {}, extension_registry=extension_registry)
         self.assertEqual(
-            f"API 'datasets': configuration parameter 'address' is already defined.",
+            "API 'datasets': configuration parameter 'address' is already defined.",
             f"{cm.exception}",
         )
 

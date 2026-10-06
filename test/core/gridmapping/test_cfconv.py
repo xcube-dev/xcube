@@ -5,7 +5,6 @@
 import shutil
 import unittest
 from test.s3test import MOTO_SERVER_ENDPOINT_URL, S3Test
-from typing import Set
 
 import fsspec
 import numpy as np
@@ -241,12 +240,12 @@ class XarrayDecodeCfTest(unittest.TestCase):
     @classmethod
     def _write_coords(cls, noise, crs, lon, lat):
         dataset = xr.Dataset(dict(noise=noise, crs=crs), coords=dict(lon=lon, lat=lat))
-        dataset.to_zarr("noise.zarr", mode="w")
+        dataset.to_zarr("noise.zarr", mode="w", zarr_version=2)
 
     @classmethod
     def _write_data_vars(cls, noise, crs, lon, lat):
         dataset = xr.Dataset(dict(noise=noise, crs=crs, lon=lon, lat=lat))
-        dataset.to_zarr("noise.zarr", mode="w")
+        dataset.to_zarr("noise.zarr", mode="w", zarr_version=2)
 
     @classmethod
     def tearDownClass(cls) -> None:

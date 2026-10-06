@@ -6,8 +6,8 @@ import unittest
 
 import xarray as xr
 
-# noinspection PyUnresolvedReferences
-import xcube.core.xarray
+# Import for side effects: registers xcube xarray extensions.
+import xcube.core.xarray  # noqa: F401
 from xcube.core.byoa import CodeConfig
 from xcube.core.gen2 import CubeConfig, CubeGeneratorError
 from xcube.core.gen2.local.usercode import CubeUserCodeExecutor

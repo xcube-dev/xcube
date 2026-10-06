@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Container, Iterator
-from typing import Any, Optional, Union, TypeAlias
+from typing import Any, Optional, TypeAlias, Union
 
 from xcube.constants import EXTENSION_POINT_DATA_STORES
 from xcube.util.extension import Extension, ExtensionPredicate, ExtensionRegistry
@@ -28,7 +28,7 @@ def new_data_store(
     data_store_id: str,
     extension_registry: Optional[ExtensionRegistry] = None,
     **data_store_params,
-) -> Union["DataStore", "MutableDataStore", "PreloadDataStore"]:
+) -> Union["DataStore", "MutableDataStore"]:
     """Create a new data store instance for given
     *data_store_id* and *data_store_params*.
 
@@ -693,7 +693,7 @@ class MutableDataStore(DataStore, DataWriter, ABC):
 
 class Preloaded(DataStore):
     """A preload data store is a multable data store which contains the preload handle.
-    This class solely acts as a protocol description or marker interface for `DataStore` 
+    This class solely acts as a protocol description or marker interface for `DataStore`
     instances returned from another data store's `preload_data` method.
 
     The data stores returned from `preload_data` are not required to directly implement this interface.

@@ -14,7 +14,7 @@ from xcube.core.new import new_cube
 
 class CubeMetadataAdjusterTest(unittest.TestCase):
     def test_metadata_adjusted_geo_crs(self):
-        (x1, x2), (y1, y2) = (53, 54), (11, 12)
+        (x1, x2), (y1, _y2) = (53, 54), (11, 12)
         cube1 = new_cube(
             width=1000,
             height=1000,

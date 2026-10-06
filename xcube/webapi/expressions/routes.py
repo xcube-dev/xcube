@@ -18,7 +18,7 @@ PATH_PARAM_VAR_EXPR = {
 
 
 @api.route("/expressions/capabilities")
-class ExpressionsNamespaceHandler(ApiHandler[ExpressionsContext]):
+class ExpressionsCapabilitiesHandler(ApiHandler[ExpressionsContext]):
     @api.operation(
         operation_id="getExpressionCapabilities",
         summary=(
@@ -31,7 +31,7 @@ class ExpressionsNamespaceHandler(ApiHandler[ExpressionsContext]):
 
 # noinspection PyPep8Naming
 @api.route("/expressions/validate/{datasetId}/{varExpr}")
-class ExpressionsNamespaceHandler(ApiHandler[ExpressionsContext]):
+class ExpressionsValidateHandler(ApiHandler[ExpressionsContext]):
     @api.operation(
         operation_id="validateExpression",
         summary="Validate the given variable expression",

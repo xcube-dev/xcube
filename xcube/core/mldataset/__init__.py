@@ -15,3 +15,17 @@ from .fs import FsMultiLevelDataset, FsMultiLevelDatasetError
 from .identity import IdentityMultiLevelDataset
 from .lazy import LazyMultiLevelDataset
 from .mapped import MappedMultiLevelDataset
+
+__all__ = [
+    "BaseMultiLevelDataset",
+    "CombinedMultiLevelDataset",
+    "ComputedMultiLevelDataset",
+    "FsMultiLevelDataset",
+    "FsMultiLevelDatasetError",
+    "IdentityMultiLevelDataset",
+    "LazyMultiLevelDataset",
+    "MappedMultiLevelDataset",
+    "MultiLevelDataset",
+    "augment_ml_dataset",
+    "open_ml_dataset_from_python_code",
+]

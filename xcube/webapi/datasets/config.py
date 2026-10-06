@@ -14,10 +14,10 @@ from xcube.webapi.common.schemas import (
     FILE_SYSTEM_SCHEMA,
     GEO_BOUNDING_BOX_SCHEMA,
     IDENTIFIER_SCHEMA,
+    NUMBER_SCHEMA,
     PATH_SCHEMA,
     STRING_SCHEMA,
     URI_SCHEMA,
-    NUMBER_SCHEMA,
 )
 
 from ..places.config import PLACE_GROUP_SCHEMA

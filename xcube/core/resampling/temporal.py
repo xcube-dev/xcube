@@ -2,9 +2,8 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import warnings
 from collections.abc import Sequence
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 import numpy as np
 import xarray as xr

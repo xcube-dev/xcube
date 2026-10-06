@@ -1,7 +1,8 @@
 # Copyright (c) 2018-2026 by xcube team and contributors
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
-from typing import Tuple, Union
+
+from typing import Union
 
 import dask.array as da
 import numba as nb

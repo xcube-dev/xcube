@@ -5,7 +5,7 @@
 
 import importlib
 from collections.abc import Mapping, Sequence
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -43,15 +43,15 @@ class Extension:
         **metadata,
     ):
         if point is None:
-            raise ValueError(f"point must be given")
+            raise ValueError("point must be given")
         if name is None:
-            raise ValueError(f"name must be given")
+            raise ValueError("name must be given")
         if (loader is not None and component is not None) or (
             loader is None and component is None
         ):
-            raise ValueError(f"either component or loader must be given")
+            raise ValueError("either component or loader must be given")
         if loader is not None and not callable(loader):
-            raise ValueError(f"loader must be callable")
+            raise ValueError("loader must be callable")
 
         self._component = component
         self._loader = loader

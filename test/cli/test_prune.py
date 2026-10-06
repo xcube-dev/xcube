@@ -10,7 +10,7 @@ import numpy as np
 import xarray as xr
 
 from xcube.cli.prune import _delete_block_file
-from xcube.core.dsio import rimraf, write_cube
+from xcube.core.dsio import rimraf
 from xcube.core.new import new_cube
 from xcube.core.verify import assert_cube
 
@@ -31,7 +31,7 @@ class PruneDataTest(CliTest):
         ).chunk(dict(time=1, lat=90, lon=90))
         fv_encoding = dict(_FillValue=None)
         encoding = dict(precipitation=fv_encoding, temperature=fv_encoding)
-        cube.to_zarr(self.TEST_CUBE, encoding=encoding)
+        cube.to_zarr(self.TEST_CUBE, encoding=encoding, zarr_version=2)
 
     def tearDown(self) -> None:
         rimraf(self.TEST_CUBE)
@@ -171,7 +171,7 @@ class PruneDataTest(CliTest):
             block_file = os.path.join(self.TEST_CUBE, "precipitation", "1.1.1")
             # Open block, so we cannot delete (Windows only)
             # noinspection PyUnusedLocal
-            with open(block_file, "wb") as fp:
+            with open(block_file, "wb"):
                 actual_message = None
                 ok = _delete_block_file(
                     self.TEST_CUBE, "precipitation", (1, 1, 1), False, monitor=monitor

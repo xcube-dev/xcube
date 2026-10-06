@@ -21,7 +21,7 @@ class UnchunkDatasetTest(unittest.TestCase):
         cube = chunk_dataset(
             cube, chunk_sizes=dict(time=1, lat=90, lon=90), format_name=FORMAT_NAME_ZARR
         )
-        cube.to_zarr(self.TEST_ZARR)
+        cube.to_zarr(self.TEST_ZARR, zarr_version=2)
 
         self.chunked_a_files = {
             ".zarray",

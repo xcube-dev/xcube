@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Mapping
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from xcube.constants import LOG
 from xcube.server.api import ApiError

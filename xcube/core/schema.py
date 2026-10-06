@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Hashable, Mapping, Sequence
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import xarray as xr

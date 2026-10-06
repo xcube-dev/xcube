@@ -4,7 +4,7 @@
 
 import os.path
 from test.cli.helpers import TEST_NC_FILE, TEST_ZARR_DIR, CliDataTest, CliTest
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 from xcube.core.mldataset import MultiLevelDataset
 from xcube.core.store import new_fs_data_store

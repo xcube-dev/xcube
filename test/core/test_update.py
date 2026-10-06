@@ -7,7 +7,9 @@ from test.sampledata import create_highroc_dataset
 
 import numpy as np
 import pandas as pd
-import rioxarray  # this is needed for adding crs to a dataset and used as rio
+
+# Import for side effects: registers xcube xarray extensions.
+import rioxarray  # noqa: F401
 import xarray as xr
 
 from xcube.core.new import new_cube

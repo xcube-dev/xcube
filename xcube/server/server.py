@@ -6,7 +6,7 @@ import collections.abc
 import concurrent.futures
 import copy
 from collections.abc import Awaitable, Mapping, Sequence
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Optional, Union
 
 import jsonschema.exceptions
 
@@ -128,14 +128,14 @@ class Server(AsyncExecution):
 
     def start(self):
         """Start this server."""
-        LOG.info(f"Starting service...")
+        LOG.info("Starting service...")
         for api in self._apis:
             api.on_start(self.ctx)
         self._framework.start(self.ctx)
 
     def stop(self):
         """Stop this server."""
-        LOG.info(f"Stopping service...")
+        LOG.info("Stopping service...")
         self._framework.stop(self.ctx)
         for api in self._apis:
             api.on_stop(self.ctx)
@@ -271,7 +271,7 @@ class Server(AsyncExecution):
         framework_config_schema = framework.config_schema
         if framework_config_schema is not None:
             cls._update_config_schema(
-                effective_config_schema, framework_config_schema, f"Server"
+                effective_config_schema, framework_config_schema, "Server"
             )
         for api in apis:
             api_config_schema = api.config_schema
@@ -482,9 +482,9 @@ class ServerContext(Context):
 
     def on_update(self, prev_ctx: Optional["ServerContext"]):
         if prev_ctx is None:
-            LOG.info(f"Applying initial configuration...")
+            LOG.info("Applying initial configuration...")
         else:
-            LOG.info(f"Applying configuration changes...")
+            LOG.info("Applying configuration changes...")
         for api in self.apis:
             prev_api_ctx: Optional[ApiContext] = None
             if prev_ctx is not None:

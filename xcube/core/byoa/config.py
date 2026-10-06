@@ -297,7 +297,7 @@ class CodeConfig(JsonObject):
         Args:
             func_or_class: A callable
         """
-        assert_true(callable(func_or_class), f"func_or_class must be callable")
+        assert_true(callable(func_or_class), "func_or_class must be callable")
         self._callable = func_or_class
 
     def _load_callable(self) -> Callable:
@@ -423,9 +423,9 @@ def _load_callable(
     module_name, callable_name = _normalize_callable_ref(callable_ref)
     if install_required:
         warnings.warn(
-            f"This user-code configuration requires "
-            f"package installation, "
-            f"but this is not supported yet"
+            "This user-code configuration requires "
+            "package installation, "
+            "but this is not supported yet"
         )
     if dir_path not in sys.path:
         # Ok, we need to change global state here.
@@ -476,7 +476,7 @@ def _callable_to_module(
     """
     callable_name = _callable.__name__
     if not callable_name:
-        raise ValueError(f"cannot detect name for func_or_class")
+        raise ValueError("cannot detect name for func_or_class")
 
     module = inspect.getmodule(_callable)
     module_name = module.__name__ if module is not None else None

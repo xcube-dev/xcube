@@ -48,7 +48,7 @@ class ResolveConfigPathTest(unittest.TestCase):
 
         self.assertEqual(
             "/cyanoalert/configs/demo.yaml",
-            resolve_config_path(dict(base_dir=base_dir), f"demo.yaml"),
+            resolve_config_path(dict(base_dir=base_dir), "demo.yaml"),
         )
 
         self.assertEqual(
@@ -62,7 +62,7 @@ class ResolveConfigPathTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            f"/cyanoalert/testing/demo.yaml",
+            "/cyanoalert/testing/demo.yaml",
             resolve_config_path(dict(base_dir=base_dir), "../testing/demo.yaml"),
         )
 
@@ -71,7 +71,7 @@ class ResolveConfigPathTest(unittest.TestCase):
 
         self.assertEqual(
             "s3://cyanoalert/configs/demo.yaml",
-            resolve_config_path(dict(base_dir=base_dir), f"demo.yaml"),
+            resolve_config_path(dict(base_dir=base_dir), "demo.yaml"),
         )
 
         self.assertEqual(
@@ -80,12 +80,12 @@ class ResolveConfigPathTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            f"s3://cyanoalert/configs/demo.yaml",
+            "s3://cyanoalert/configs/demo.yaml",
             resolve_config_path(dict(base_dir=base_dir), "./testing/../demo.yaml"),
         )
 
         self.assertEqual(
-            f"s3://cyanoalert/testing/demo.yaml",
+            "s3://cyanoalert/testing/demo.yaml",
             resolve_config_path(dict(base_dir=base_dir), "../testing/demo.yaml"),
         )
 

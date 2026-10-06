@@ -4,7 +4,7 @@
 
 import os.path
 from collections.abc import Mapping
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from xcube.util.assertions import assert_given, assert_instance
 from xcube.util.jsonschema import (

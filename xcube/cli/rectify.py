@@ -5,7 +5,7 @@
 import functools
 import operator
 from collections.abc import Sequence
-from typing import Optional, Tuple
+from typing import Optional
 
 import click
 
@@ -33,8 +33,8 @@ DEFAULT_CRS = "EPSG:4326"
 @click.option(
     "--xy-vars",
     "xy_var_names",
-    help=f"Comma-separated names of variables providing x any y coordinates. "
-    f'If omitted, names will be guessed from available coordinate variables in INPUT, e.g. "lon,lat".',
+    help="Comma-separated names of variables providing x any y coordinates. "
+    'If omitted, names will be guessed from available coordinate variables in INPUT, e.g. "lon,lat".',
 )
 @click.option(
     "--var",
@@ -266,4 +266,4 @@ def _rectify(
     if not dry_run:
         write_dataset(rectified_ds, output_path, output_format)
 
-    monitor(f"Done.")
+    monitor("Done.")

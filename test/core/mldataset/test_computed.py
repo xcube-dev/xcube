@@ -85,14 +85,14 @@ class ComputedMultiLevelDatasetTest(unittest.TestCase):
         script_dir = get_script_dir()
 
         with zipfile.ZipFile(f"{script_dir}/modules.zip", "w") as zf:
-            with zf.open(f"module_1.py", "w") as fp:
+            with zf.open("module_1.py", "w") as fp:
                 fp.write(
                     b"import module_2 as m2\n"
                     b"\n"
                     b"def compute_dataset(ds):\n"
                     b"    return m2.process_dataset(ds)\n"
                 )
-            with zf.open(f"module_2.py", "w") as fp:
+            with zf.open("module_2.py", "w") as fp:
                 fp.write(b"\ndef process_dataset(ds):\n    return ds.copy()\n")
 
         try:

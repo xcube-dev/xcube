@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 import xarray as xr

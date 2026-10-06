@@ -5,7 +5,7 @@
 import logging
 import sys
 from collections.abc import Sequence
-from typing import Any, Dict, Optional, Tuple, Type, Union
+from typing import Any, Optional, Union
 
 import click
 
@@ -289,7 +289,7 @@ def handle_cli_exception(
         LOG.error("OS error: %s", e, exc_info=exc_info)
         exit_code = exit_code or 2
     else:
-        LOG.error(f"Internal error: %s", e, exc_info=exc_info)
+        LOG.error("Internal error: %s", e, exc_info=exc_info)
         exit_code = exit_code or 3
     LOG.debug("Exit with code %d", exit_code)
     return exit_code

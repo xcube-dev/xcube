@@ -135,7 +135,7 @@ class AuthContextIdTokenTest(unittest.TestCase):
         auth_ctx = get_auth_ctx({})
         self.assertIsNone(
             auth_ctx.get_id_token(
-                {"Authorization": f"Bearer my_t0k3n"}, require_auth=True
+                {"Authorization": "Bearer my_t0k3n"}, require_auth=True
             )
         )
 

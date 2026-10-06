@@ -5,7 +5,7 @@
 import collections.abc
 import inspect
 import typing
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 import xarray as xr
 from mashumaro.jsonschema import build_json_schema

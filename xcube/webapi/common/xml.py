@@ -4,7 +4,7 @@
 
 import abc
 from collections.abc import Sequence
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 from xcube.util.assertions import assert_false, assert_given
 

@@ -234,7 +234,7 @@ def _select_variables(
     elif isinstance(var_names, str):
         var_names = (var_names,)
     elif len(var_names) == 0:
-        raise ValueError(f"empty var_names")
+        raise ValueError("empty var_names")
     src_vars = {}
     for var_name in var_names:
         src_var = source_ds[var_name]

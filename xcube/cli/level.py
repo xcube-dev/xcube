@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import click
 
@@ -55,9 +55,9 @@ DEFAULT_AGG_METHOD = "first"
     "-n",
     metavar="NUM_LEVELS_MAX",
     type=int,
-    help=f"Maximum number of levels to generate."
-    f" If not given, the number of levels will"
-    f" be derived from spatial dimension and tile sizes.",
+    help="Maximum number of levels to generate."
+    " If not given, the number of levels will"
+    " be derived from spatial dimension and tile sizes.",
 )
 @click.option(
     "--agg-methods",
@@ -76,15 +76,15 @@ DEFAULT_AGG_METHOD = "first"
     "-r",
     is_flag=True,
     flag_value=True,
-    help=f"Whether to replace an existing dataset at OUTPUT.",
+    help="Whether to replace an existing dataset at OUTPUT.",
 )
 @click.option(
     "--anon",
     "-a",
     is_flag=True,
     flag_value=True,
-    help=f"For S3 inputs or outputs, whether the access"
-    f" is anonymous. By default, credentials are required.",
+    help="For S3 inputs or outputs, whether the access"
+    " is anonymous. By default, credentials are required.",
 )
 @cli_option_quiet
 @cli_option_verbosity
@@ -134,7 +134,7 @@ def level(
         )
 
     if num_levels_max is not None and num_levels_max < 1:
-        raise click.ClickException(f"NUM_LEVELS_MAX must be a positive integer")
+        raise click.ClickException("NUM_LEVELS_MAX must be a positive integer")
 
     try:
         if "=" in agg_methods:

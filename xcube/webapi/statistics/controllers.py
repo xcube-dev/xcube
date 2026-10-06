@@ -67,7 +67,7 @@ def _compute_statistics(
             geometry = normalize_geometry(geometry)
         except (TypeError, ValueError, AttributeError) as e:
             raise ApiError.BadRequest(
-                f"Invalid GeoJSON geometry encountered: {{e}}"
+                "Invalid GeoJSON geometry encountered: {e}"
             ) from e
 
     if geometry is not None and not grid_mapping.crs.is_geographic:

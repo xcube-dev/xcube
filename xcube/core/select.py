@@ -2,13 +2,11 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import warnings
 from collections.abc import Collection, Mapping
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import cftime
 import dask.array as da
-import numpy as np
 import pandas as pd
 import xarray as xr
 

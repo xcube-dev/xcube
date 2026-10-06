@@ -4,7 +4,7 @@
 
 import unittest
 from test.util.test_progress import _TestProgressObserver
-from typing import Any, Dict, List
+from typing import Any
 
 import requests_mock
 

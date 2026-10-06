@@ -25,8 +25,8 @@ jobs:
       - name: Get latest release
         id: latest_release
         run: |
-            LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/xcube-dev/xcube/releases/latest" | jq -r .tag_name)
-            echo "::set-output name=release_tag::$LATEST_RELEASE"
+          LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/xcube-dev/xcube/releases/latest" | jq -r .tag_name)
+          echo "release_tag=$LATEST_RELEASE" >> "$GITHUB_OUTPUT"
 
       # checkout the repo with the release tag from previous step
       - name: git-checkout

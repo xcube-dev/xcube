@@ -71,7 +71,7 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         assert_given(script_path, name="script_path")
         assert_true(
             callable(input_ml_dataset_getter),
-            message=f"input_ml_dataset_getter must be a callable",
+            message="input_ml_dataset_getter must be a callable",
         )
         assert_given(input_ml_dataset_getter, name="input_ml_dataset_getter")
         assert_instance(ds_id, str, name="ds_id")

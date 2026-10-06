@@ -8,3 +8,13 @@ from .rectify import rectify_dataset
 from .reproject import reproject_dataset
 from .spatial import resample_in_space
 from .temporal import resample_in_time
+
+__all__ = [
+    "affine_transform_dataset",
+    "encode_grid_mapping",
+    "rectify_dataset",
+    "reproject_dataset",
+    "resample_in_space",
+    "resample_in_time",
+    "resample_ndimage",
+]

@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 from xcube.util.jsonschema import JsonObjectSchema, JsonSchema
 

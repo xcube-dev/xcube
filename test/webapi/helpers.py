@@ -6,7 +6,7 @@ import collections.abc
 import os
 from collections.abc import Mapping
 from test.server.mocks import MockFramework
-from typing import Any, Optional, Type, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 import yaml
 
@@ -142,7 +142,7 @@ class RoutesTestCase(ServerTestCase):
     def get_config_filename(self) -> str:
         """Get configuration filename.
         Default impl. returns ``'config.yml'``."""
-        return f"config.yml"
+        return "config.yml"
 
     # noinspection PyMethodMayBeStatic
     def get_config_path(self) -> str:

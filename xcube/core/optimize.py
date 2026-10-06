@@ -5,7 +5,7 @@
 import os.path
 import shutil
 from collections.abc import Sequence
-from typing import Type, Union
+from typing import Union
 
 import zarr
 
@@ -47,7 +47,10 @@ def optimize_dataset(
         exception_type: Type of exception to be used on value errors.
     """
 
-    if not os.path.isfile(os.path.join(input_path, ".zgroup")):
+    if not (
+        os.path.isfile(os.path.join(input_path, ".zgroup"))
+        or os.path.isfile(os.path.join(input_path, "zarr.json"))
+    ):
         raise exception_type("Input path must point to ZARR dataset directory.")
 
     input_path = os.path.abspath(os.path.normpath(input_path))
@@ -56,13 +59,13 @@ def optimize_dataset(
         output_path = input_path
     else:
         if not output_path:
-            raise exception_type(f"Output path must be given.")
+            raise exception_type("Output path must be given.")
         if "{input}" in output_path:
             base_name, _ = os.path.splitext(os.path.basename(input_path))
             output_path = output_path.format(input=base_name)
         output_path = os.path.abspath(os.path.normpath(output_path))
         if os.path.exists(output_path):
-            raise exception_type(f"Output path already exists.")
+            raise exception_type("Output path already exists.")
 
     if not in_place:
         shutil.copytree(input_path, output_path)
@@ -76,4 +79,4 @@ def optimize_dataset(
             var_names = tuple(unchunk_coords)
         unchunk_dataset(output_path, var_names=var_names, coords_only=True)
 
-    zarr.convenience.consolidate_metadata(output_path)
+    zarr.consolidate_metadata(output_path)

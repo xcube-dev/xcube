@@ -11,7 +11,7 @@ import sys
 import time
 import traceback
 import warnings
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 from xcube.constants import (
     PLUGIN_ENTRY_POINT_GROUP_NAME,

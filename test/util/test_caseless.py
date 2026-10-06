@@ -25,8 +25,7 @@ class CaselessDictTest(unittest.TestCase):
         self.assertEqual(53.6, d["LON"])
 
         with self.assertRaises(KeyError):
-            # noinspection PyUnusedLocal
-            var = d["lat"]
+            _var = d["lat"]  # noqa: F401
 
     def test_setitem(self):
         d = caseless_dict()

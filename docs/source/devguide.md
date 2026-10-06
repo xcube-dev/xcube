@@ -52,11 +52,30 @@ therefore we use [isort](https://pycqa.github.io/isort/) with default setting
 to automatically order them (see also section below).
 
 Given what has been stated above, the recommended way to automatically format 
-new xcube code is:
+xcube code is to run the Pixi formatting task from the repository root:
 
 ```shell
-isort <path>
-ruff format <path>
+pixi run format
+```
+
+The `format` task first sorts imports with isort and then runs `ruff format`.
+To run `ruff check` and mypy without formatting the code, use the `checks`
+task:
+
+```shell
+pixi run checks
+```
+
+Run the unit test suite with:
+
+```shell
+pixi run tests
+```
+
+or with coverage report:
+
+```shell
+pixi run coverage
 ```
 
 ### Order of Imports
@@ -357,7 +376,7 @@ you need to adjust the paths accordingly.
 * Check issues in progress, close any open issues that have been fixed.
 * Make sure that all unit tests pass and that test coverage is 100% 
   (or as near to 100% as practicable).
-* In `xcube/version.py` remove the `.dev` suffix from version name.
+* In `pyproject.toml` remove the `.dev` suffix from version name.
 * Make sure `CHANGES.md` is complete. Remove the suffix ` (in development)` 
   from the last version headline.
 * Push changes to either main or a new maintenance branch (see above).
@@ -370,7 +389,7 @@ you need to adjust the paths accordingly.
   - Press "Publish release" button
 * After the release on GitHub, rebase sources, if the branch was `main`, 
   create a new maintenance branch (see above)
-* In `xcube/version.py` increase version number and append a `.dev0` suffix 
+* In `pyproject.toml` increase version number and append a `.dev0` suffix 
   to the version name so that it is still PEP-440 compatible.
 * In `CHANGES.md` add a new version headline and attach ` (in development)`
   to it.
@@ -434,7 +453,8 @@ In detail, the steps are:
    1. Update the sha256 hash of the source archive prepared by GitHub.
 
    1. If the dependencies have changed, update the list of dependencies 
-   in the `-run` subsection to match those in the environment.yml file.
+   in the `-run` subsection to match the runtime dependencies in
+   `pyproject.toml`.
 
 1. Commit the changes and push them to GitHub. 
    A pull request at the feedstock repository on conda-forge will be automatically 

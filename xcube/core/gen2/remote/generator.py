@@ -5,7 +5,7 @@
 import json
 import os.path
 import time
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 import requests
 

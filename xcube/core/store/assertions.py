@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 import jsonschema
 

@@ -3,7 +3,6 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Sequence
-from typing import List
 
 import click
 
@@ -27,8 +26,8 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
     "-P",
     metavar="INPUT-PROCESSOR",
     default=None,
-    help=f"Input processor name. "
-    f"The available input processor names and additional information about input processors "
+    help="Input processor name. "
+    "The available input processor names and additional information about input processors "
     'can be accessed by calling xcube gen --info . Defaults to "default", an input processor '
     'that can deal with simple datasets whose variables have dimensions ("lat", "lon") and '
     "conform with the CF conventions.",
@@ -52,7 +51,7 @@ resampling_methods = sorted(RESAMPLING_METHOD_NAMES)
     "--format",
     "-f",
     metavar="FORMAT",
-    help=f"Output format. "
+    help="Output format. "
     "Information about output formats can be accessed by calling "
     "xcube gen --info. If omitted, the format will be guessed from the given output path.",
 )

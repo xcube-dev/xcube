@@ -90,6 +90,13 @@ def render_panel(
         },
     )
 
+    progress = CircularProgress(
+        id="plot_progress",
+        hidden=True,
+        size=28,
+        style={"margin": "2px 0"},
+    )
+
     control_bar = Box(
         children=[place_text, controls],
         style={
@@ -127,6 +134,7 @@ def render_panel(
         children=[
             instructions,
             control_bar,
+            progress,
             plot,
             error_message,
         ],
@@ -152,6 +160,7 @@ error_message = ""
     State("@app", "selectedTimeLabel"),
     Input("button", "clicked"),
     Output("plot", "chart"),
+    Output("plot_progress", "hidden"),
 )
 def update_plot(
     ctx: Context,
@@ -161,7 +170,7 @@ def update_plot(
     var_2_name: str | None = None,
     time_label: float | None = None,
     _clicked: bool | None = None,  # trigger, will always be True
-) -> alt.Chart | None:
+) -> tuple[alt.Chart | None, bool]:
     global error_message
     dataset = get_dataset(ctx, dataset_id)
 
@@ -181,12 +190,12 @@ def update_plot(
 
     if place_geometry is None or isinstance(place_geometry, shapely.geometry.Point):
         error_message = "Selected geometry must cover an area."
-        return None
+        return None, True
 
     dataset = mask_dataset_by_geometry(dataset, place_geometry)
     if dataset is None:
         error_message = "Selected geometry produces empty subset"
-        return None
+        return None, True
 
     var_1_data: np.ndarray = dataset[var_1_name].values.ravel()
     var_2_data: np.ndarray = dataset[var_2_name].values.ravel()
@@ -268,7 +277,7 @@ def update_plot(
         height="container",
     )
     error_message = ""
-    return chart
+    return chart, True
 
 
 @panel.callback(
@@ -350,20 +359,6 @@ def update_text(
         return [f"{dataset_title} / {time_label[0:-1]} / {place_name}"]
     return [f"{dataset_title} "]
 
-
-# TODO: Doesn't work. We need to ensure that show_progress() returns
-#   before update_plot(). EDIT: This cannot work in its current form!
-# @panel.callback(
-#     Input("button", "clicked"),
-#     Output("button", ""),
-# )
-def show_progress(
-    _ctx: Context,
-    _clicked: bool | None = None,  # trigger, will always be True
-) -> alt.Chart | None:
-    return CircularProgress(id="button", size=28)
-
-
 @panel.callback(
     Input("@app", "selectedDatasetId"),
     Input("@app", "selectedPlaceGeometry"),
@@ -386,12 +381,12 @@ def update_error_message(
 
     if error_message == "":
         if dataset_id is None:
-            error_message = "Missing dataset selection"
+            error_message = "Please select a dataset."
 
         if not place_geometry:
-            error_message = "Missing place geometry selection"
+            error_message = "Please create or select an area of interest in the map."
 
         elif not var_1_name or not var_2_name:
-            error_message = "Missing variable selection"
+            error_message = "Please select a variable."
 
     return error_message

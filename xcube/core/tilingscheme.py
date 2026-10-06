@@ -4,7 +4,7 @@
 
 import math
 from collections.abc import Sequence
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import pyproj

@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 import inspect
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 from xcube.server.api import ApiError
 

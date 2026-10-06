@@ -4,7 +4,6 @@
 
 import collections.abc
 import threading
-import warnings
 from typing import Optional
 
 import xarray as xr

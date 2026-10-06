@@ -21,11 +21,12 @@ The input files contain analysed sea surface temperature and sea surface tempera
 and are provided by `Copernicus Marine Environment Monitoring Service`_.
 The data is described in a dedicated `Product User Manual`_.
 
-Before starting the example, you need to activate the xcube environment:
+Before starting the example, activate the default Pixi environment from the
+xcube repository root:
 
 ::
 
-    $ conda activate xcube
+    $ pixi shell
 
 If you want to take a look at the input data you can use :doc:`../cli/xcube_dump` to print out the metadata of a selected input file:
 

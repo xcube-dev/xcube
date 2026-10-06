@@ -3,7 +3,6 @@
 # https://opensource.org/licenses/MIT.
 
 import warnings
-from typing import Type
 
 
 def register_json_formatter(cls: type, to_dict_method_name: str = "to_dict"):

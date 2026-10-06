@@ -137,7 +137,7 @@ class PatchZarrCubeTest(CliTest):
                 "TileSize": "1024:1024",  # SNAP adds this to NetCDFs
             }
         )
-        cube.to_zarr(cls.CUBE_PATH)
+        cube.to_zarr(cls.CUBE_PATH, zarr_version=2)
 
     def tearDown(self) -> None:
         rimraf(self.CUBE_PATH, self.METADATA_PATH, self.OPTIONS_PATH)

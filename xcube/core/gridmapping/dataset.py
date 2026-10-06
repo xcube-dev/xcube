@@ -2,8 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-import warnings
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import pyproj
 import xarray as xr

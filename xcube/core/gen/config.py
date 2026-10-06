@@ -64,8 +64,8 @@ def get_config_dict(
             output_size = None
         if output_size is None or len(output_size) != 2:
             raise ValueError(
-                f"output_size must have the form <width>,<height>,"
-                f" where both values must be positive integer numbers"
+                "output_size must have the form <width>,<height>,"
+                " where both values must be positive integer numbers"
             )
         config["output_size"] = output_size
 
@@ -76,8 +76,8 @@ def get_config_dict(
             output_region = None
         if output_region is None or len(output_region) != 4:
             raise ValueError(
-                f"output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
-                f" where all four numbers must be floating point numbers in degrees"
+                "output_region must have the form <lon_min>,<lat_min>,<lon_max>,<lat_max>,"
+                " where all four numbers must be floating point numbers in degrees"
             )
         config["output_region"] = output_region
 

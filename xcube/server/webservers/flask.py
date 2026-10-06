@@ -4,7 +4,7 @@
 
 import concurrent.futures
 from collections.abc import Awaitable, Sequence
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 from xcube.server.api import ApiRoute, ApiStaticRoute, Context, ReturnT
 from xcube.server.framework import Framework

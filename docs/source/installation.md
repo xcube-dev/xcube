@@ -1,43 +1,18 @@
 # Installation
 
-## Prerequisites
-
-xcube releases are packaged as conda packages in the
-[conda-forge](https://conda-forge.org/) channel. It is recommended to install
-xcube into a conda environment using the
-[mamba package manager](https://github.com/mamba-org/mamba), which will
-also automatically install and manage xcube’s dependencies.
-You can find [installation instructions for mamba itself
-here](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html), if you
-don’t already have it installed.
-
-In addition to mamba, there are alternative package managers available for
-conda environments:
-
-1. The original `conda` tool. When considering this tool, please note that
-   package installation and management with conda may be significantly slower 
-   than with mamba.
-2. The `micromamba` tool, a minimalistic, self-contained version of mamba.
-
-## Overview of installation methods
-
-There are two main ways to install the xcube package:
-
-1.  **Install an official release** from a conda-forge package, using the mamba
-    package manager. This method is recommended for most users.
-2.  Use mamba to install only xcube’s dependencies, but not xcube itself.
-    Then **clone the xcube git repository** and install directly from your
-    local repository. You should use this method if you intend to participate
-    in the development of xcube, or if you need to use features that are
-    so new that they are not yet available in an officially release conda-forge
-    package.
-
-These methods are described in more detail in the following sections.
-
 ## Installation from the conda-forge package
 
-To install the latest release of xcube into a new conda environment called
-`xcube`, run the following command.
+xcube releases are distributed as conda packages through the
+[conda-forge](https://conda-forge.org/) channel. To install a released version
+of xcube, you need a
+[conda-compatible package manager](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html),
+such as [Conda](https://docs.conda.io/),
+[Mamba](https://mamba.readthedocs.io/),
+[Micromamba](https://mamba.readthedocs.io/en/stable/user_guide/micromamba.html),
+or [Pixi](https://pixi.sh/).
+
+The following example uses Mamba to install the latest xcube release into a
+new environment called `xcube`:
 
 ```bash
 mamba create --name xcube --channel conda-forge xcube
@@ -46,8 +21,8 @@ mamba create --name xcube --channel conda-forge xcube
 You can give the environment a different name by providing a different argument
 to the `--name` option.
 
-To install xcube into an existing, currently activated conda environment,
-use the following command.
+To install xcube into an existing, currently activated conda-compatible
+environment, use:
 
 ```bash
 mamba install --channel conda-forge xcube
@@ -55,92 +30,154 @@ mamba install --channel conda-forge xcube
 
 ## Installation from the source code repository
 
-First, clone the repository and create a conda environment from it:
+Use this method if you intend to contribute to xcube or need changes that are
+not yet available in an official release. A source installation requires
+[Pixi](https://pixi.sh/).
+
+First, clone the repository and install its default Pixi environment:
 
 ```bash
-git clone https://github.com/dcs4cop/xcube.git
+git clone https://github.com/xcube-dev/xcube.git
 cd xcube
-mamba env create
+pixi install
 ```
 
 From this point on, all instructions assume that your current directory is the
-root of the xcube repository.
+root of the xcube repository. The Pixi project configuration in
+`pyproject.toml` defines the environment and installs xcube in editable mode,
+so changes to the source code take effect without reinstalling the package.
 
-The `mamba env create` command above creates an environment according to
-the specifications in the `environment.yml` file in the repository, which
-by default takes the name `xcube`. Then, to activate the environment and
-install xcube from the repository:
-
-```bash    
-mamba activate xcube
-pip install --no-deps --editable .
-```
-
-The second command installs xcube in ‘editable mode’, meaning that it will
-be run directly from the repository, and changes to the code in the repository
-will take immediate effect without reinstallation. Note that `pip` offers the
-advantage of easily uninstalling the respective package.
-
-To update the install to the latest repository version and update the
-environment to reflect to any changes in `environment.yml`:
+You can either run commands in the environment using `pixi run`, or activate
+the environment in your current shell:
 
 ```bash
-mamba activate xcube
-git pull --force
-mamba env update -n xcube --file environment.yml --prune
+pixi shell
 ```
 
-To install `pytest` and run the unit test suite:
+To update the checkout and synchronize the environment with changes in
+`pyproject.toml` and `pixi.lock`:
+
+```bash
+git pull
+pixi install
+```
+
+The Pixi configuration is the source of truth for xcube's environments. If a
+tool requires the legacy conda environment files, you can generate them from
+the repository root:
+
+```bash
+pixi project export conda-environment --from-lock-file environment.yml
+pixi project export conda-environment --from-lock-file --environment docs rtd-environment.yml
+```
+
+The generated files are for interoperability with conda-compatible tools and
+are not tracked in the repository.
+
+The default environment includes the development and test dependencies. Run
+the unit test suite with:
     
 ```bash
-mamba install pytest
-pytest
+pixi run tests
 ```
 
-To analyse test coverage (after installing pytest as above):
+To run the tests with coverage and produce an HTML
+[coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html)
+in `.cov-report/`:
 
 ```bash
-pytest --cov=xcube
+pixi run coverage
 ```
 
-To produce an HTML
-[coverage report](https://pytest-cov.readthedocs.io/en/latest/reporting.html):
+## Docker images
+
+The xcube repository contains a Dockerfile which can be used to build a
+Docker image of xcube. A pre-built Docker image is also published for each
+release.
+
+### Pulling pre-built xcube Docker images
+
+xcube Docker images are published at `quay.io/xcube` and tagged with the
+version number, prefixed with `v`. So, for instance, you can pull an image
+for version 1.14.1 of xcube with this command:
 
 ```bash
-pytest --cov-report html --cov=xcube
+docker pull quay.io/bcdev/xcube:v1.14.1
 ```
 
-## Docker
+### Building your own xcube Docker images
 
-To start a demo using docker use the following commands
-
-```bash
-docker build -t [your name] .
-docker run [your name]
-docker run -d -p [host port]:8080 [your name]
-```
-    
-Example 1:
+You can build an xcube Docker image from the repository. This can be useful
+if you require an image with customizations not available in the published
+release images. To build and tag a new xcube image, clone the git repository
+and execute the following command in the root directory of the repository:
 
 ```bash
-docker build -t xcube:0.10.0 .
-docker run xcube:0.10.0
+docker build -t [identifier] .
 ```
 
-This will create the docker container and list the functionality of the 
-`xcube` cli.
-
-Example 2:
+The format of the identifier is `[registry/][repository][:tag]`.
+The registry, repository, and tag can be freely chosen, and the registry and
+tag can be omitted. For example:
 
 ```bash
-docker build -t xcube:0.10.0 .
-docker run -d -p 8001:8080 xcube:0.10.0 "xcube serve -v --address 0.0.0.0 --port 8080 -c /home/xcube/examples/serve/demo/config.yml"
+docker build -t xcube-custom:1.13.3 .
+```
+
+### Running xcube from a Docker image
+
+To run the default command in a Docker image, use this command:
+
+```bash
+docker run [identifier]
+```
+
+For example, to use version 1.14.1 of the published xcube Docker image:
+
+```bash
+docker run quay.io/bcdev/xcube:v1.14.1
+```
+
+The default command in the published images is `xcube --help`, so running
+this command will simply output the help message for the `xcube` CLI command.
+
+For a more interesting demonstration, you can build a customized image and
+use it to run a local xcube server with some example datasets. In the
+root directory of the xcube git repository, run the following command.
+
+```bash
+echo 'COPY --chown=$MAMBA_USER:$MAMBA_USER examples' \
+     '/home/$MAMBA_USER/examples' >>Dockerfile
+```
+
+The command above adds a line to the Dockerfile which copies some example
+configurations and data into the container image during the build process.
+Now build your customized image:
+
+```bash
+docker build -t xcube-custom:1 .
+```
+
+Now you have a local xcube Docker image which you can run as a server:
+
+```bash
+docker run -d -p 8080:8080 xcube-custom:1 xcube serve -v --address 0.0.0.0 \
+       -c /home/xcube/examples/serve/demo/config.yml
+```
+
+This will start an xcube server in the background. You can see details of the
+running process like this:
+
+```bash
 docker ps
 ```
 
-This will start a service in the background which can be accessed 
-through port 8001, as the startup of a service is configured as default
-behaviour.
+Now you can use a web browser to interact with the xcube server:
+
+-   <http://localhost:8080/viewer/> to explore the example datasets using
+    xcube's web viewer
+-   <http://localhost:8080/openapi.html> to explore the xcube server's
+    REST APIs from its OpenAPI page
 
 ## Installing soft dependencies
 

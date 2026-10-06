@@ -125,7 +125,7 @@ _FS_DATA_OPENER_ITEMS = _FS_DATA_WRITER_ITEMS + (
         "mldataset",
         "j2k",
         "xcube.core.mldataset.MultiLevelDataset in JPEG 2000 format",
-        [".jp2", ".j2k"]
+        [".jp2", ".j2k"],
     ),
 )
 

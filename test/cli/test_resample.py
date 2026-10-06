@@ -4,7 +4,6 @@
 
 import os.path
 from test.cli.helpers import TEST_ZARR_DIR, CliDataTest, CliTest
-from typing import List
 
 import xarray as xr
 

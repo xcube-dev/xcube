@@ -2,18 +2,18 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
+import logging
+from collections.abc import Hashable
+from typing import Any
+
+from xcube.core.tile import get_non_spatial_labels
 from xcube.server.api import ApiHandler
 from xcube.util.undefined import UNDEFINED
 
 from ..datasets.routes import PATH_PARAM_DATASET_ID, PATH_PARAM_VAR_NAME
-
 from .api import api
 from .context import StatisticsContext
 from .controllers import compute_statistics
-import logging
-from collections.abc import Hashable
-from typing import Any
-from xcube.core.tile import get_non_spatial_labels
 
 _logger = logging.getLogger(__name__)
 

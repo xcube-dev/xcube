@@ -245,7 +245,7 @@ class StacControllersTest(unittest.TestCase):
             self.assertIsInstance(feature.get("geometry"), dict)
             self.assertIsInstance(feature.get("assets"), dict)
             self.assertIsInstance(feature.get("id"), str)
-            self.assertIn(feature["id"], {"demo", "demo-1w","demo-multidimensional"})
+            self.assertIn(feature["id"], {"demo", "demo-1w", "demo-multidimensional"})
             # TODO (forman): add more assertions
             # import pprint
             # pprint.pprint(feature)

@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from functools import cached_property
 from itertools import filterfalse
 from string import Template
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Optional, Union
 
 import jwt
 import jwt.algorithms
@@ -39,11 +39,6 @@ class AuthContext(ApiContext):
 
     @cached_property
     def jwks(self) -> dict[str, Any]:
-        response = requests.get(self.auth_config.well_known_jwks)
-        return json.loads(response.content)
-
-    @cached_property
-    def jwks(self):
         assert self.auth_config is not None
         jwks_uri = self.auth_config.well_known_jwks
         openid_config_uri = self.auth_config.well_known_oid_config
@@ -53,10 +48,8 @@ class AuthContext(ApiContext):
             if openid_config and "jwks_uri" in openid_config:
                 jwks_uri = openid_config["jwks_uri"]
         response = requests.get(jwks_uri)
-        if response.ok:
-            return json.loads(response.content)
-        # TODO (forman): convert into ApiError
         response.raise_for_status()
+        return json.loads(response.content)
 
     def get_granted_scopes(
         self, request_headers: Mapping[str, str]

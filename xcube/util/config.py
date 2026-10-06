@@ -10,7 +10,7 @@ import os
 import os.path
 import string
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Optional
 
 import fsspec
 import yaml
@@ -65,7 +65,7 @@ def to_name_dict_pair(name: Any, parent: Any = None, default_key=None):
                 pass
 
     if not isinstance(name, str):
-        raise ValueError(f"name must be a string")
+        raise ValueError("name must be a string")
 
     if value is None:
         return name, None

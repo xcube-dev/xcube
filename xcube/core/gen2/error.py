@@ -2,7 +2,7 @@
 # Permissions are hereby granted under the terms of the MIT License:
 # https://opensource.org/licenses/MIT.
 
-from typing import List, Optional
+from typing import Optional
 
 from xcube.util.assertions import assert_instance
 

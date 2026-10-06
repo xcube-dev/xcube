@@ -12,9 +12,7 @@ import time
 import traceback
 import warnings
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Tuple
-
-import xarray as xr
+from typing import Any, Callable
 
 from xcube.core.dsio import DatasetIO, find_dataset_io, guess_dataset_format, rimraf
 from xcube.core.evaluate import evaluate_dataset
@@ -25,7 +23,6 @@ from xcube.core.gen.defaults import (
 )
 from xcube.core.gen.iproc import InputProcessor, find_input_processor_class
 from xcube.core.gridmapping import CRS_WGS84, GridMapping
-from xcube.core.optimize import optimize_dataset
 from xcube.core.select import select_spatial_subset, select_variables_subset
 from xcube.core.timecoord import add_time_coords, from_time_in_days_since_1970
 from xcube.core.timeslice import find_time_slice

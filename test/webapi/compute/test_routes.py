@@ -41,7 +41,7 @@ class ComputeJobsRoutesTest(RoutesTestCase):
         self.assert_job_ok(job)
         self.assertEqual(200, status)
 
-        jobs, status = self.fetch_json(f"/compute/jobs")
+        jobs, status = self.fetch_json("/compute/jobs")
         self.assertIsInstance(jobs, dict)
         self.assertIsInstance(jobs.get("jobs"), list)
         self.assertEqual(200, status)
@@ -90,7 +90,7 @@ class ComputeJobsRoutesTest(RoutesTestCase):
         self.assert_job_ok(job)
         self.assertEqual(200, status)
 
-        jobs, status = self.fetch_json(f"/compute/jobs")
+        jobs, status = self.fetch_json("/compute/jobs")
         self.assertIsInstance(jobs, dict)
         self.assertIsInstance(jobs.get("jobs"), list)
         self.assertEqual(200, status)

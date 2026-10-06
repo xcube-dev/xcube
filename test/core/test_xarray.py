@@ -156,7 +156,7 @@ class XarrayEncodingTest(unittest.TestCase):
 
         if engine == "zarr":
             path = self.zarr_path
-            ds.to_zarr(path, mode="w")
+            ds.to_zarr(path, mode="w", zarr_version=2)
         else:
             path = self.nc_path
             ds.to_netcdf(path, mode="w")

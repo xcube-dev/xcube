@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Sequence
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Optional
 
 import xarray as xr
 

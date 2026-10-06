@@ -218,7 +218,9 @@ class ReprojectDatasetTest(SourceDatasetMixin, unittest.TestCase):
         )
         self.assertCountEqual(["temperature"], list(target_ds.data_vars))
         self.assertAlmostEqual(target_ds.temperature.values[0, 0, 0], 6427.718652710034)
-        self.assertAlmostEqual(target_ds.temperature.values[0, -1, -1], 3085.9507290783004)
+        self.assertAlmostEqual(
+            target_ds.temperature.values[0, -1, -1], 3085.9507290783004
+        )
         self.assertEqual(
             [2, 5, 5],
             [

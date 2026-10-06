@@ -5,7 +5,7 @@
 import json
 import sys
 import traceback
-from typing import Any, Dict
+from typing import Any
 
 import click
 

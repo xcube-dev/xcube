@@ -5,7 +5,7 @@
 import collections.abc
 import numbers
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import pyproj
 

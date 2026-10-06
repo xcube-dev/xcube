@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 from collections.abc import Hashable, Mapping, Sequence
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import dask.array as da
 import numpy as np

@@ -4,7 +4,7 @@
 
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 
 from xcube.core.store import DatasetDescriptor
 from xcube.util.assertions import assert_in, assert_instance

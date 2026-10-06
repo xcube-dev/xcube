@@ -5,17 +5,15 @@
 import collections.abc
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import Any, Callable, Dict, Optional, Tuple, Union
-
-from xcube.util.assertions import assert_instance, assert_true
-
-# Make sure rfc3339-validator package is installed : jsonschema uses it for
-# validating instances of JsonDateSchema and JsonDatetimeSchema.
-# Use of __import__ avoids "unused package" warnings.
-__import__("rfc3339_validator")
+from typing import Any, Callable, Optional, Union
 
 import jsonschema
 
+# Make sure rfc3339-validator package is installed : jsonschema uses it for
+# validating instances of JsonDateSchema and JsonDatetimeSchema.
+import rfc3339_validator  # noqa: F401
+
+from xcube.util.assertions import assert_instance, assert_true
 from xcube.util.ipython import register_json_formatter
 from xcube.util.undefined import UNDEFINED
 

@@ -4,7 +4,7 @@
 
 import os
 from collections.abc import Mapping
-from typing import Set, Tuple, Union
+from typing import Union
 
 import xarray as xr
 

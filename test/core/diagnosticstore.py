@@ -5,7 +5,7 @@
 import time
 from collections.abc import Iterator, MutableMapping
 from types import MethodType
-from typing import Any, Callable, List, Tuple, TypeVar
+from typing import Any, Callable, TypeVar
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")

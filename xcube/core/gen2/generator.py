@@ -4,7 +4,7 @@
 
 import traceback
 from abc import ABC, abstractmethod
-from typing import Optional, Type, TypeVar
+from typing import Optional, TypeVar
 
 from xcube.core.store import DataStorePool, DataStorePoolLike
 from xcube.util.assertions import assert_instance, assert_true

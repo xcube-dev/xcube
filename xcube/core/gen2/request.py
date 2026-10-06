@@ -6,7 +6,7 @@ import json
 import os.path
 import sys
 from collections.abc import Sequence
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import jsonschema
 import yaml
@@ -213,4 +213,4 @@ class CubeGeneratorRequest(JsonObject):
                 f'Error loading generator request "{gen_config_file}": {e}'
             ) from e
 
-        raise CubeGeneratorError(f"Missing cube generator request.")
+        raise CubeGeneratorError("Missing cube generator request.")

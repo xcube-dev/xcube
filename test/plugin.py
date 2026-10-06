@@ -4,5 +4,4 @@
 
 # init_plugin() is used by test/util/test_plugin
 
-# noinspection PyUnresolvedReferences
-from test.util.test_plugin import init_plugin
+from test.util.test_plugin import init_plugin as init_plugin  # noqa: F401

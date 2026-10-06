@@ -3,7 +3,7 @@
 # https://opensource.org/licenses/MIT.
 
 
-from typing import Dict, Union
+from typing import Union
 
 import pyproj
 
