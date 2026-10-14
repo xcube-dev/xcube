@@ -233,7 +233,10 @@ class TornadoApiRequestTest(unittest.TestCase):
     def test_basic_props(self):
         body = b'{"type": "feature", "id": 137}'
         tr = tornado.httputil.HTTPServerRequest(
-            method="GET", host="localhost:8080", uri="/datasets", body=body
+            method="GET",
+            headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
+            uri="/datasets",
+            body=body,
         )
         request = TornadoApiRequest(tr)
         self.assertEqual("http://localhost:8080/datasets", request.url)
@@ -244,7 +247,7 @@ class TornadoApiRequestTest(unittest.TestCase):
     def test_get_query_args(self):
         tr = tornado.httputil.HTTPServerRequest(
             method="GET",
-            host="localhost:8080",
+            headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
             uri="/datasets?details=1",
         )
         request = TornadoApiRequest(tr)
@@ -256,7 +259,7 @@ class TornadoApiRequestTest(unittest.TestCase):
     def test_get_query_args_case_insensitive(self):
         tr = tornado.httputil.HTTPServerRequest(
             method="GET",
-            host="localhost:8080",
+            headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
             uri="/datasets?details=1",
         )
         request = TornadoApiRequest(tr)
@@ -268,7 +271,7 @@ class TornadoApiRequestTest(unittest.TestCase):
     def test_get_query_args_invalid_type(self):
         tr = tornado.httputil.HTTPServerRequest(
             method="GET",
-            host="localhost:8080",
+            headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
             uri="/datasets?details=x",
         )
         request = TornadoApiRequest(tr)
@@ -282,7 +285,7 @@ class TornadoApiRequestTest(unittest.TestCase):
     def test_invalid_json(self):
         tr = tornado.httputil.HTTPServerRequest(
             method="GET",
-            host="localhost:8080",
+            headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
             uri="/datasets?details=x",
         )
         request = TornadoApiRequest(tr)
@@ -300,7 +303,7 @@ class TornadoApiRequestTest(unittest.TestCase):
 class TornadoApiRequestUrlTest(unittest.TestCase):
     tr = tornado.httputil.HTTPServerRequest(
         method="GET",
-        host="localhost:8080",
+        headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
         uri="/datasets?details=1",
     )
 
@@ -396,7 +399,7 @@ class TornadoRequestHandlerTest(unittest.TestCase):
         # noinspection PyTypeChecker
         request = tornado.httputil.HTTPServerRequest(
             method="GET",
-            host="localhost:8080",
+            headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
             uri="/datasets?details=x",
             connection=MockConnection(),
         )
@@ -450,7 +453,7 @@ class TornadoRequestHandlerTest(unittest.TestCase):
             # noinspection PyTypeChecker
             tr = tornado.httputil.HTTPServerRequest(
                 method="GET",
-                host="www.evil.empire",
+                headers=tornado.httputil.HTTPHeaders({"Host": "www.evil.empire"}),
                 uri="/datasets?details=x",
                 connection=MockConnection(),
             )
@@ -464,7 +467,7 @@ class TornadoRequestHandlerTest(unittest.TestCase):
             # noinspection PyTypeChecker
             tr = tornado.httputil.HTTPServerRequest(
                 method="GET",
-                host="localhost:8080",
+                headers=tornado.httputil.HTTPHeaders({"Host": "localhost:8080"}),
                 uri="/datasets?details=x",
                 connection=MockConnection(),
             )
@@ -478,7 +481,7 @@ class TornadoRequestHandlerTest(unittest.TestCase):
             # noinspection PyTypeChecker
             tr = tornado.httputil.HTTPServerRequest(
                 method="GET",
-                host="www.evil.empire",
+                headers=tornado.httputil.HTTPHeaders({"Host": "www.evil.empire"}),
                 uri="/datasets?details=x",
                 connection=MockConnection(),
             )
