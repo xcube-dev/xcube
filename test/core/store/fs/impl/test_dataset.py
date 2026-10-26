@@ -55,6 +55,43 @@ class DatasetZarrFsDataAccessorTest(unittest.TestCase):
 
 
 class DatasetNetcdfFsDataAccessorTest(unittest.TestCase):
+    @patch("xcube.core.store.fs.impl.dataset.is_s3_fs", return_value=True)
+    @patch("xcube.core.store.fs.impl.dataset.xr.open_dataset")
+    def test_open_data_s3_uses_store_and_open_cache_options(
+        self, mock_open_dataset, _mock_is_s3_fs
+    ):
+        mock_open_dataset.return_value = xr.Dataset()
+
+        accessor = DatasetNetcdfFsDataAccessor()
+        opened = accessor.open_data(
+            "sample.nc",
+            fs=fsspec.filesystem("memory"),
+            root="bucket/root",
+            storage_options={
+                "key": "store-key",
+                "secret": "store-secret",
+                "default_cache_type": "store-cache",
+                "default_block_size": 123,
+            },
+            default_cache_type="open-cache",
+            backend_kwargs={"storage_options": {"default_block_size": 456}},
+        )
+
+        mock_open_dataset.assert_called_once_with(
+            "s3://bucket/root/sample.nc",
+            engine="h5netcdf",
+            chunks={},
+            backend_kwargs={
+                "storage_options": {
+                    "key": "store-key",
+                    "secret": "store-secret",
+                    "default_cache_type": "open-cache",
+                    "default_block_size": 456,
+                }
+            },
+        )
+        self.assertIsInstance(opened, xr.Dataset)
+
     @patch("xcube.core.store.fs.impl.dataset.is_https_fs", return_value=True)
     @patch("xcube.core.store.fs.impl.dataset.xr.open_dataset")
     def test_open_data_https_uses_bytes_mode(

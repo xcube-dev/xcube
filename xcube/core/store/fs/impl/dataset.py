@@ -11,7 +11,7 @@ from zarr.storage import FsspecStore
 # xarray property accessor
 # noinspection PyUnresolvedReferences
 from xcube.util.assertions import assert_instance
-from xcube.util.fspath import is_https_fs, is_local_fs
+from xcube.util.fspath import is_https_fs, is_local_fs, is_s3_fs
 from xcube.util.jsonschema import (
     JsonArraySchema,
     JsonBooleanSchema,
@@ -222,7 +222,13 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
 
 NETCDF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
-        # TODO: add more from xr.open_dataset()
+        default_cache_type=JsonStringSchema(
+            description="Cache type used for remote S3 NetCDF access."
+        ),
+        default_block_size=JsonIntegerSchema(
+            minimum=1,
+            description="Default S3 block-cache size in bytes.",
+        ),
     ),
     additional_properties=True,
 )
@@ -247,6 +253,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name="data_id")
+        storage_options = dict(open_params.get("storage_options") or {})
         fs, root, open_params = self.load_fs(open_params)
 
         # This doesn't yet work as expected with fsspec and netcdf:
@@ -258,6 +265,45 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
             file_path = data_id
         elif is_https_fs(fs):
             file_path = f"https://{data_id}#mode=bytes"
+        elif is_s3_fs(fs):
+            file_path = f"s3://{root}/{data_id}"
+            backend_kwargs = dict(open_params.pop("backend_kwargs", {}) or {})
+            backend_storage_options = dict(
+                backend_kwargs.pop("storage_options", {}) or {}
+            )
+
+            # Explicit open parameters take precedence over backend and store
+            # storage options, which in turn take precedence over defaults.
+            cache_type = open_params.pop(
+                "default_cache_type",
+                backend_storage_options.get(
+                    "default_cache_type",
+                    storage_options.get("default_cache_type", "blockcache"),
+                ),
+            )
+            block_size = open_params.pop(
+                "default_block_size",
+                backend_storage_options.get(
+                    "default_block_size",
+                    storage_options.get("default_block_size", 16 * 1024**2),
+                ),
+            )
+            backend_kwargs["storage_options"] = {
+                **storage_options,
+                **backend_storage_options,
+                "default_cache_type": cache_type,
+                "default_block_size": block_size,
+            }
+            engine = open_params.pop("engine", "h5netcdf")
+            chunks = open_params.pop("chunks", {})
+            return xr.open_dataset(
+                file_path,
+                engine=engine,
+                chunks=chunks,
+                backend_kwargs=backend_kwargs,
+                **open_params,
+            )
+
         else:
             _, file_path = new_temp_file(suffix=".nc")
             fs.get_file(data_id, file_path)
