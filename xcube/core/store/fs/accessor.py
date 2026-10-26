@@ -61,7 +61,9 @@ class FsAccessor:
     @classmethod
     def load_fs(
         cls, params: dict[str, Any]
-    ) -> tuple[fsspec.AbstractFileSystem, Optional[str], dict[str, Any]]:
+    ) -> tuple[
+        fsspec.AbstractFileSystem, Optional[str], dict[str, Any], dict[str, Any]
+    ]:
         """
         Load a filesystem instance from *params*.
 
@@ -83,12 +85,16 @@ class FsAccessor:
         # data opener and writer calls.
         fs = params.pop(FS_PARAM_NAME, None)
         root = params.pop(ROOT_PARAM_NAME, None)
+        storage_options = params.pop(STORAGE_OPTIONS_PARAM_NAME, None)
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name=FS_PARAM_NAME)
         if root is not None:
             assert_instance(root, str, name=ROOT_PARAM_NAME)
+        if storage_options is not None:
+            assert_instance(storage_options, dict, name=STORAGE_OPTIONS_PARAM_NAME)
+            storage_options = dict(storage_options)
         if fs:
-            return fs, root, params
+            return fs, root, storage_options or {}, params
 
         protocol = cls.get_protocol()
         if protocol == "abstract":
@@ -99,11 +105,6 @@ class FsAccessor:
                     f" try using parameter"
                     f" {PROTOCOL_PARAM_NAME!r}"
                 )
-
-        storage_options = params.pop(STORAGE_OPTIONS_PARAM_NAME, None)
-        if storage_options is not None:
-            assert_instance(storage_options, dict, name=STORAGE_OPTIONS_PARAM_NAME)
-            storage_options = dict(storage_options)
 
         # Note, by default, filesystem data stores are writable and hence
         # SHALL NOT cache any directory listings!
@@ -121,6 +122,7 @@ class FsAccessor:
                     **(storage_options or {}),
                 ),
                 root,
+                storage_options or {},
                 params,
             )
         except (ValueError, ImportError) as error:
@@ -191,5 +193,5 @@ class FsDataAccessor(DataOpener, DataWriter, FsAccessor, ABC):
         )
 
     def delete_data(self, data_id: str, **delete_params):
-        fs, _, delete_params = self.load_fs(delete_params)
+        fs, _, _, delete_params = self.load_fs(delete_params)
         fs.delete(data_id, **delete_params)

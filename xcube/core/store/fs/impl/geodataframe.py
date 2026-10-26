@@ -39,7 +39,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor):
     def open_data(self, data_id: str, **open_params) -> gpd.GeoDataFrame:
         # TODO: implement me correctly,
         #  this is not valid for shapefile AND geojson
-        fs, root, open_params = self.load_fs(open_params)
+        fs, root, storage_options, open_params = self.load_fs(open_params)
         is_local = is_local_fs(fs)
         if is_local:
             file_path = data_id
@@ -60,7 +60,7 @@ class GeoDataFrameFsDataAccessor(FsDataAccessor):
         # TODO: implement me correctly,
         #  this is not valid for shapefile AND geojson
         assert_instance(data, (gpd.GeoDataFrame, pd.DataFrame), "data")
-        fs, root, write_params = self.load_fs(write_params)
+        fs, root, storage_options, write_params = self.load_fs(write_params)
         is_local = is_local_fs(fs)
         if is_local:
             file_path = data_id

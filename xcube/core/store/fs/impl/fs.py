@@ -89,6 +89,20 @@ class S3FsAccessor(FsAccessor):
                     ' things like "ServerSideEncryption".',
                     additional_properties=True,
                 ),
+                default_cache_type=JsonStringSchema(
+                    description=(
+                        "Default cache type value used for `open()` "
+                        "See [s3fs.core.S3FileSystem](https://s3fs.readthedocs.io/en/latest/api.html?highlight=default_block_size#s3fs.core.S3FileSystem.)"
+                    ),
+                    default="blockcache",
+                ),
+                default_block_size=JsonIntegerSchema(
+                    description=(
+                        "Default block size value used for `open()` "
+                        "See [s3fs.core.S3FileSystem](https://s3fs.readthedocs.io/en/latest/api.html?highlight=default_block_size#s3fs.core.S3FileSystem.)"
+                    ),
+                    default=16 * 1024**2,
+                ),
                 client_kwargs=JsonObjectSchema(
                     description="Parameters for the botocore client.",
                     properties=dict(

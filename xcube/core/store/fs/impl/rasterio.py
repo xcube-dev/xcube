@@ -226,7 +226,7 @@ class RasterioMultiLevelDataset(LazyMultiLevelDataset):
             if isinstance(self._fs.protocol, str)
             else self._fs.protocol[0]
         )
-        if self._root:
+        if self._root and not self._path.startswith(self._root + self._fs.sep):
             return protocol + "://" + self._root + self._fs.sep + self._path
         return protocol + "://" + self._path
 
@@ -245,10 +245,10 @@ class DatasetRasterIoFsDataAccessor(FsDataAccessor, ABC):
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name="data_id")
-        fs, root, open_params = self.load_fs(open_params)
+        fs, root, storage_options, open_params = self.load_fs(open_params)
 
         protocol = fs.protocol if isinstance(fs.protocol, str) else fs.protocol[0]
-        if root is not None:
+        if root is not None and not data_id.startswith(root + fs.sep):
             file_path = protocol + "://" + root + fs.sep + data_id
         else:
             file_path = protocol + "://" + data_id
@@ -310,7 +310,7 @@ class MultiLevelDatasetRasterioFsDataAccessor(FsDataAccessor, ABC):
 
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
         assert_instance(data_id, str, name="data_id")
-        fs, root, open_params = self.load_fs(open_params)
+        fs, root, storage_options, open_params = self.load_fs(open_params)
         return RasterioMultiLevelDataset(fs, root, data_id, **open_params)
 
 

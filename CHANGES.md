@@ -1,5 +1,7 @@
 ## Changes in 1.14.2 (in progress)
 
+* Added direct, cached access to NetCDF datasets stored in S3, avoiding a
+  temporary local download.
 * Update Docker image documentation (#1260)
 * Require Tornado >=6.5.10,<7 to include security fixes and remove the obsolete
   <6.5 version cap. Replace deprecated request constructor arguments in server tests.

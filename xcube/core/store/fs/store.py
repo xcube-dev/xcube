@@ -882,7 +882,7 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
 
     def _load_fs(self) -> fsspec.AbstractFileSystem:
         # Note, this is invoked only once per store instance.
-        fs, _, _ = self.load_fs({STORAGE_OPTIONS_PARAM_NAME: self._storage_options})
+        fs, _, _, _ = self.load_fs({STORAGE_OPTIONS_PARAM_NAME: self._storage_options})
         return fs
 
     @classmethod

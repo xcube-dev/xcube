@@ -150,7 +150,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name="data_id")
-        fs, root, open_params = self.load_fs(open_params)
+        fs, root, storage_options, open_params = self.load_fs(open_params)
         engine = open_params.pop("engine", "zarr")
         cache_size = open_params.pop("cache_size", None)
         consolidated = open_params.pop(
@@ -197,7 +197,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
     ) -> str:
         assert_instance(data, xr.Dataset, name="data")
         assert_instance(data_id, str, name="data_id")
-        fs, root, write_params = self.load_fs(write_params)
+        fs, root, storage_options, write_params = self.load_fs(write_params)
         fs_map = fs.get_mapper(data_id, create=True)
         zarr_store = data_id if is_local_fs(fs) else fs_map
         consolidated = write_params.pop("consolidated", True)
@@ -215,20 +215,14 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
         return data_id
 
     def delete_data(self, data_id: str, **delete_params):
-        fs, root, delete_params = self.load_fs(delete_params)
+        fs, root, storage_options, delete_params = self.load_fs(delete_params)
         delete_params.pop("recursive", None)
         fs.delete(data_id, recursive=True, **delete_params)
 
 
 NETCDF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
-        default_cache_type=JsonStringSchema(
-            description="Cache type used for remote S3 NetCDF access."
-        ),
-        default_block_size=JsonIntegerSchema(
-            minimum=1,
-            description="Default S3 block-cache size in bytes.",
-        ),
+        # TODO: add more from ds.open_dataset()
     ),
     additional_properties=True,
 )
@@ -253,8 +247,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
 
     def open_data(self, data_id: str, **open_params) -> xr.Dataset:
         assert_instance(data_id, str, name="data_id")
-        storage_options = dict(open_params.get("storage_options") or {})
-        fs, root, open_params = self.load_fs(open_params)
+        fs, root, storage_options, open_params = self.load_fs(open_params)
 
         # This doesn't yet work as expected with fsspec and netcdf:
         # engine = open_params.pop('engine', 'scipy')
@@ -266,41 +259,16 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
         elif is_https_fs(fs):
             file_path = f"https://{data_id}#mode=bytes"
         elif is_s3_fs(fs):
-            file_path = f"s3://{root}/{data_id}"
-            backend_kwargs = dict(open_params.pop("backend_kwargs", {}) or {})
-            backend_storage_options = dict(
-                backend_kwargs.pop("storage_options", {}) or {}
-            )
-
-            # Explicit open parameters take precedence over backend and store
-            # storage options, which in turn take precedence over defaults.
-            cache_type = open_params.pop(
-                "default_cache_type",
-                backend_storage_options.get(
-                    "default_cache_type",
-                    storage_options.get("default_cache_type", "blockcache"),
-                ),
-            )
-            block_size = open_params.pop(
-                "default_block_size",
-                backend_storage_options.get(
-                    "default_block_size",
-                    storage_options.get("default_block_size", 16 * 1024**2),
-                ),
-            )
-            backend_kwargs["storage_options"] = {
-                **storage_options,
-                **backend_storage_options,
-                "default_cache_type": cache_type,
-                "default_block_size": block_size,
-            }
+            file_path = f"s3://{data_id}"
+            storage_options.setdefault("default_cache_type", "blockcache")
+            storage_options.setdefault("default_block_size", 16 * 1024**2)
             engine = open_params.pop("engine", "h5netcdf")
             chunks = open_params.pop("chunks", {})
             return xr.open_dataset(
                 file_path,
                 engine=engine,
                 chunks=chunks,
-                backend_kwargs=backend_kwargs,
+                backend_kwargs={"storage_options": storage_options},
                 **open_params,
             )
 
@@ -320,7 +288,7 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
     ) -> str:
         assert_instance(data, xr.Dataset, name="data")
         assert_instance(data_id, str, name="data_id")
-        fs, root, write_params = self.load_fs(write_params)
+        fs, root, storage_options, write_params = self.load_fs(write_params)
         if not replace and fs.exists(data_id):
             raise DataStoreError(f"Data resource {data_id} already exists")
 

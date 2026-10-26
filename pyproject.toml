@@ -32,6 +32,7 @@ dependencies = [
   "fsspec>=2021.6",
   "gdal>=3.0",
   "geopandas>=0.8",
+  "h5netcdf",
   "jdcal>=1.4",
   "jsonschema>=3.2",
   "mashumaro",
@@ -176,6 +177,7 @@ fiona = ">=1.8"
 fsspec = ">=2021.6"
 gdal = ">=3.0"
 geopandas = ">=0.8"
+h5netcdf = "*"
 jdcal = ">=1.4"
 jsonschema = ">=3.2"
 libgdal-jp2openjpeg = "*"
