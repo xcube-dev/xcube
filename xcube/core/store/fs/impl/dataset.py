@@ -259,6 +259,8 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
         elif is_https_fs(fs):
             file_path = f"https://{data_id}#mode=bytes"
         elif is_s3_fs(fs):
+            if root and not data_id.startswith(f"{root}{fs.sep}"):
+                data_id = f"{root}{fs.sep}{data_id}"
             file_path = f"s3://{data_id}"
             storage_options.setdefault("default_cache_type", "blockcache")
             storage_options.setdefault("default_block_size", 16 * 1024**2)

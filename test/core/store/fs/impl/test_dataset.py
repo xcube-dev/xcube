@@ -73,8 +73,6 @@ class DatasetNetcdfFsDataAccessorTest(unittest.TestCase):
                 "default_cache_type": "store-cache",
                 "default_block_size": 123,
             },
-            default_cache_type="open-cache",
-            backend_kwargs={"storage_options": {"default_block_size": 456}},
         )
 
         mock_open_dataset.assert_called_once_with(
@@ -85,8 +83,8 @@ class DatasetNetcdfFsDataAccessorTest(unittest.TestCase):
                 "storage_options": {
                     "key": "store-key",
                     "secret": "store-secret",
-                    "default_cache_type": "open-cache",
-                    "default_block_size": 456,
+                    "default_cache_type": "store-cache",
+                    "default_block_size": 123,
                 }
             },
         )
