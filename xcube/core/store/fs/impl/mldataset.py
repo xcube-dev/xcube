@@ -45,7 +45,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
 
     def open_data(self, data_id: str, **open_params) -> MultiLevelDataset:
         assert_instance(data_id, str, name="data_id")
-        fs, fs_root, open_params = self.load_fs(open_params)
+        fs, fs_root, storage_options, open_params = self.load_fs(open_params)
         try:
             return FsMultiLevelDataset(data_id, fs=fs, fs_root=fs_root, **open_params)
         except FsMultiLevelDatasetError as e:
@@ -132,7 +132,7 @@ class MultiLevelDatasetLevelsFsDataAccessor(DatasetZarrFsDataAccessor):
         **write_params,
     ) -> str:
         assert_instance(data, (xr.Dataset, MultiLevelDataset), name="data")
-        fs, fs_root, write_params = self.load_fs(write_params)
+        fs, fs_root, storage_options, write_params = self.load_fs(write_params)
         base_dataset_id = write_params.pop("base_dataset_id", None)
         try:
             return FsMultiLevelDataset.write_dataset(

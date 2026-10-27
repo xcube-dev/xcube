@@ -8,6 +8,7 @@ from collections.abc import Iterator
 import fsspec
 from fsspec.implementations.http import HTTPFileSystem
 from fsspec.implementations.local import LocalFileSystem
+from s3fs import S3FileSystem
 
 
 def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
@@ -20,8 +21,13 @@ def is_local_fs(fs: fsspec.AbstractFileSystem) -> bool:
 
 
 def is_https_fs(fs: fsspec.AbstractFileSystem) -> bool:
-    """Check whether *fs* is a local filesystem."""
+    """Check whether *fs* is a https filesystem."""
     return "https" in fs.protocol or isinstance(fs, HTTPFileSystem)
+
+
+def is_s3_fs(fs: fsspec.AbstractFileSystem) -> bool:
+    """Check whether *fs* is a s3 filesystem."""
+    return "s3" in fs.protocol or isinstance(fs, S3FileSystem)
 
 
 def get_fs_path_class(fs: fsspec.AbstractFileSystem) -> type[pathlib.PurePath]:

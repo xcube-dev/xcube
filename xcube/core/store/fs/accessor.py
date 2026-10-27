@@ -61,21 +61,33 @@ class FsAccessor:
     @classmethod
     def load_fs(
         cls, params: dict[str, Any]
-    ) -> tuple[fsspec.AbstractFileSystem, Optional[str], dict[str, Any]]:
-        """
-        Load a filesystem instance from *params*.
+    ) -> tuple[
+        fsspec.AbstractFileSystem, Optional[str], dict[str, Any], dict[str, Any]
+    ]:
+        """Get or create a filesystem from the supplied parameters.
 
-        Pops useful parameters from a copy of *params* to get
-        or instantiate the filesystem.
-        Returns the filesystem and *params* reduced by
-        the used parameters.
+        Uses an existing filesystem if provided; otherwise, instantiates one
+        using the store's protocol and storage options. If the store's protocol
+        is abstract, it must be specified explicitly in *params*.
+
+        Extracts filesystem-related parameters from a copy of *params*, leaving
+        the remaining parameters for subsequent opener or writer calls.
 
         Args:
-            params: Parameters passed to a filesystem
-                data store, opener, or writer call.
+            params: Parameters passed to a data store, opener, or writer,
+                optionally including an existing filesystem, a root path,
+                a protocol, and storage options.
 
-        Returns: A tuple comprising the filesystem, an optional root path,
-            and the modified *params*.
+        Returns:
+            A tuple containing:
+                - The filesystem instance.
+                - The optional root path.
+                - The storage options used to configure the filesystem.
+                - The remaining parameters for the opener or writer.
+
+        Raises:
+            DataStoreError: If the filesystem protocol cannot be determined
+                or the filesystem cannot be instantiated.
         """
         params = dict(params)
 
@@ -83,12 +95,16 @@ class FsAccessor:
         # data opener and writer calls.
         fs = params.pop(FS_PARAM_NAME, None)
         root = params.pop(ROOT_PARAM_NAME, None)
+        storage_options = params.pop(STORAGE_OPTIONS_PARAM_NAME, None)
         if fs is not None:
             assert_instance(fs, fsspec.AbstractFileSystem, name=FS_PARAM_NAME)
         if root is not None:
             assert_instance(root, str, name=ROOT_PARAM_NAME)
+        if storage_options is not None:
+            assert_instance(storage_options, dict, name=STORAGE_OPTIONS_PARAM_NAME)
+            storage_options = dict(storage_options)
         if fs:
-            return fs, root, params
+            return fs, root, storage_options or {}, params
 
         protocol = cls.get_protocol()
         if protocol == "abstract":
@@ -99,11 +115,6 @@ class FsAccessor:
                     f" try using parameter"
                     f" {PROTOCOL_PARAM_NAME!r}"
                 )
-
-        storage_options = params.pop(STORAGE_OPTIONS_PARAM_NAME, None)
-        if storage_options is not None:
-            assert_instance(storage_options, dict, name=STORAGE_OPTIONS_PARAM_NAME)
-            storage_options = dict(storage_options)
 
         # Note, by default, filesystem data stores are writable and hence
         # SHALL NOT cache any directory listings!
@@ -121,6 +132,7 @@ class FsAccessor:
                     **(storage_options or {}),
                 ),
                 root,
+                storage_options or {},
                 params,
             )
         except (ValueError, ImportError) as error:
@@ -191,5 +203,5 @@ class FsDataAccessor(DataOpener, DataWriter, FsAccessor, ABC):
         )
 
     def delete_data(self, data_id: str, **delete_params):
-        fs, _, delete_params = self.load_fs(delete_params)
+        fs, _, _, delete_params = self.load_fs(delete_params)
         fs.delete(data_id, **delete_params)
