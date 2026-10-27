@@ -102,6 +102,7 @@ class FsAccessor:
             assert_instance(root, str, name=ROOT_PARAM_NAME)
         if storage_options is not None:
             assert_instance(storage_options, dict, name=STORAGE_OPTIONS_PARAM_NAME)
+            storage_options = dict(storage_options)
         if fs:
             return fs, root, storage_options or {}, params
 
