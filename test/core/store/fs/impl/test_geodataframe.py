@@ -68,7 +68,3 @@ class GeoDataFrameGeoJsonFsDataAccessorTest(unittest.TestCase):
             driver="GeoJSON",
             encoding="utf-8",
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
