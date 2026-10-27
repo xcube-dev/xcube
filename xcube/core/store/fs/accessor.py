@@ -64,20 +64,30 @@ class FsAccessor:
     ) -> tuple[
         fsspec.AbstractFileSystem, Optional[str], dict[str, Any], dict[str, Any]
     ]:
-        """
-        Load a filesystem instance from *params*.
+        """Get or create a filesystem from the supplied parameters.
 
-        Pops useful parameters from a copy of *params* to get
-        or instantiate the filesystem.
-        Returns the filesystem and *params* reduced by
-        the used parameters.
+        Uses an existing filesystem if provided; otherwise, instantiates one
+        using the store's protocol and storage options. If the store's protocol
+        is abstract, it must be specified explicitly in *params*.
+
+        Extracts filesystem-related parameters from a copy of *params*, leaving
+        the remaining parameters for subsequent opener or writer calls.
 
         Args:
-            params: Parameters passed to a filesystem
-                data store, opener, or writer call.
+            params: Parameters passed to a data store, opener, or writer,
+                optionally including an existing filesystem, a root path,
+                a protocol, and storage options.
 
-        Returns: A tuple comprising the filesystem, an optional root path,
-            and the modified *params*.
+        Returns:
+            A tuple containing:
+                - The filesystem instance.
+                - The optional root path.
+                - The storage options used to configure the filesystem.
+                - The remaining parameters for the opener or writer.
+
+        Raises:
+            DataStoreError: If the filesystem protocol cannot be determined
+                or the filesystem cannot be instantiated.
         """
         params = dict(params)
 
@@ -92,7 +102,6 @@ class FsAccessor:
             assert_instance(root, str, name=ROOT_PARAM_NAME)
         if storage_options is not None:
             assert_instance(storage_options, dict, name=STORAGE_OPTIONS_PARAM_NAME)
-            storage_options = dict(storage_options)
         if fs:
             return fs, root, storage_options or {}, params
 
