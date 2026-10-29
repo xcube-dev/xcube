@@ -58,6 +58,12 @@ class ViewerContextTest(unittest.TestCase):
         ctx = get_viewer_ctx("config-persistence.yml")
         self.assertIsInstance(ctx.persistence, MutableMapping)
 
+    @s3_test()
+    def test_with_persistence_s3(self, endpoint_url: str):
+        server_config = get_server_config("config-persistence-nonmemory.yml")
+        ctx = get_viewer_ctx(server_config)
+        self.assertIsInstance(ctx.persistence, MutableMapping)
+
     def test_panels_local(self):
         ctx = get_viewer_ctx("config-panels.yml")
         self.assert_extensions_ok(ctx.ext_ctx)
