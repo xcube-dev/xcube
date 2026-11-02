@@ -222,7 +222,7 @@ class DatasetZarrFsDataAccessor(DatasetFsDataAccessor):
 
 NETCDF_OPEN_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     properties=dict(
-        # TODO: add more from ds.open_dataset()
+        # TODO: add more from xr.open_dataset()
     ),
     additional_properties=True,
 )
@@ -233,6 +233,9 @@ NETCDF_WRITE_DATA_PARAMS_SCHEMA = JsonObjectSchema(
     ),
     additional_properties=True,
 )
+# Default S3 caching options for remote NetCDF access via s3.
+NETCDF_DEFAULT_S3_CACHE_TYPE = "blockcache"
+NETCDF_DEFAULT_S3_BLOCK_SIZE = 16 * 1024**2  # 16 MiB
 
 
 class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
@@ -262,8 +265,16 @@ class DatasetNetcdfFsDataAccessor(DatasetFsDataAccessor):
             if root and not data_id.startswith(f"{root}{fs.sep}"):
                 data_id = f"{root}{fs.sep}{data_id}"
             file_path = f"s3://{data_id}"
-            storage_options.setdefault("default_cache_type", "blockcache")
-            storage_options.setdefault("default_block_size", 16 * 1024**2)
+
+            # Use block caching to avoid repeatedly downloading data when
+            # accessing remote NetCDF files. The default block size is 16 MiB.
+            storage_options.setdefault(
+                "default_cache_type", NETCDF_DEFAULT_S3_CACHE_TYPE
+            )
+            storage_options.setdefault(
+                "default_block_size", NETCDF_DEFAULT_S3_BLOCK_SIZE
+            )
+
             engine = open_params.pop("engine", "h5netcdf")
             chunks = open_params.pop("chunks", {})
             return xr.open_dataset(
