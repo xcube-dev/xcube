@@ -160,6 +160,12 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
                 root = self._raw_root
                 if is_local:
                     root = os.path.abspath(root)
+                elif self.protocol == "https":
+                    # Data IDs and paths of https stores are kept without
+                    # the URL scheme, which is added back on access.
+                    # pathlib would otherwise collapse "https://" into
+                    # "https:/".
+                    root = _strip_url_scheme(root)
                 self._root = pathlib.Path(root).as_posix()
         return self._root
 
@@ -777,11 +783,18 @@ class BaseFsDataStore(DefaultSearchMixin, MutableDataStore):
         current_depth: int,
     ) -> _DataIds:
         root = self.root + ("/" + dir_path if dir_path else "")
+        is_https = self.protocol == "https"
+        if is_https:
+            # The HTTP filesystem only understands full URLs.
+            root = f"{self.protocol}://{root}"
         if not self.fs.exists(root):
             return
         # noinspection PyArgumentEqualDefault
         for file_info in self.fs.ls(root, detail=True):
             file_path: str = file_info["name"]
+            if is_https:
+                # Listed names are full URLs, directories end with "/".
+                file_path = _strip_url_scheme(file_path).rstrip("/")
             if file_path.startswith(self.root):
                 file_path = file_path[len(self.root) + 1 :]
             elif file_path.startswith("/" + self.root):
@@ -949,3 +962,9 @@ class FsDataStore(BaseFsDataStore, FsAccessor):
                 else:
                     filename_extensions[filename_ext] = ext_names
         return filename_extensions
+
+
+def _strip_url_scheme(path: str) -> str:
+    """Remove a leading URL scheme such as ``"https://"`` from *path*."""
+    scheme, sep, rest = path.partition("://")
+    return rest if sep and "/" not in scheme else path
