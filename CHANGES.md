@@ -5,6 +5,9 @@
 * Update Docker image documentation (#1260)
 * Require Tornado >=6.5.10,<7 to include security fixes and remove the obsolete
   <6.5 version cap. Replace deprecated request constructor arguments in server tests.
+* Fixed `list_data_ids()` of `"https"` data stores always returning an empty
+  list. The root is now listed via its full URL, and a root given with an
+  `https://` scheme is no longer mangled into `https:/`. (#1263)
 
 ## Changes in 1.14.1 
 
